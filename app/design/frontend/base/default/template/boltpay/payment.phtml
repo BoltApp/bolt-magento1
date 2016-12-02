@@ -1,0 +1,18 @@
+<?php
+  $quote = Mage::getSingleton('checkout/session')->getQuote();
+
+  if($quote->getPayment()->getMethodInstance()->getCode() == 'boltpay'): ?>
+
+  <?php $theme = Mage::getStoreConfig('payment/boltpay/theme'); ?>
+  <?php if (Mage::getStoreConfig('payment/boltpay/skip_payment')): ?>
+    <form id="co-payment-form">
+      <input type="hidden" id="p_method_boltpay" value="boltpay" name="payment[method]" >
+      <input type="hidden" id="p_method_boltpay_reference" name="payment[reference]">
+      <input type="hidden" id="p_method_boltpay_transaction_status" name="payment[transaction_status]">
+    </form>
+  <?php endif; ?>
+  <div class="bolt-checkout-button with-cards <?= $theme; ?>"></div>
+  <script><?= $this->getCartDataJs() ?></script>
+<?php else: ?>
+  <?= $this->getChildHtml('button_original') ?>
+<?php endif; ?>

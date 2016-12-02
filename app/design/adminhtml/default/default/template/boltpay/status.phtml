@@ -1,0 +1,16 @@
+<?php
+/**
+ * @see Mage_Payment_Block_Info
+ */
+?>
+<h1>BoltPay Status</h1>
+<table>
+    <tr>
+        <td><i>Current Version of Bolt plugin: </></td>
+        <td><b><?php echo $this->getBoltInstallStatus() ?></b></td>
+    </tr>
+    <tr>
+        <td><i>Bolt User Id Schema change: </i></td>
+        <td><b><?php echo $this->getBoltUserIdStatus() ?></b></td>
+    </tr>
+</table>

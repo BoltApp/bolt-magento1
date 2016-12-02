@@ -1,0 +1,146 @@
+<?xml version="1.0"?>
+<config>
+
+  <modules>
+    <Bolt_Boltpay>
+      <version>0.0.2</version>
+    </Bolt_Boltpay>
+  </modules>
+
+  <global>
+    <models>
+      <boltpay>
+        <class>Bolt_Boltpay_Model</class>
+      </boltpay>
+    </models>
+
+    <blocks>
+      <boltpay>
+        <class>Bolt_Boltpay_Block</class>
+      </boltpay>
+
+      <checkout>
+        <rewrite>
+          <onepage>Bolt_Boltpay_Block_Rewrite_Onepage</onepage>
+        </rewrite>
+      </checkout>
+    </blocks>
+
+    <helpers>
+      <boltpay>
+        <class>Bolt_Boltpay_Helper</class>
+      </boltpay>
+    </helpers>
+
+    <rewrite>
+      <bolt_boltpay_onepage>
+        <from><![CDATA[#^/checkout/onepage/#]]></from>
+        <to>/boltpay/onepage/</to>
+      </bolt_boltpay_onepage>
+    </rewrite>
+
+    <resources>
+      <bolt_boltpay_setup>
+        <setup>
+          <module>Bolt_Boltpay</module>
+          <class>Mage_Eav_Model_Entity_Setup</class>
+        </setup>
+
+        <connection>
+          <use>core_setup</use>
+        </connection>
+      </bolt_boltpay_setup>
+    </resources>
+
+    <events>
+
+      <!-- Call after onepage checkout order has been saved -->
+      <checkout_type_onepage_save_order_after>
+        <observers>
+          <bolt_boltpay_onepage_save_order_after>
+            <class>Bolt_Boltpay_Model_Observer</class>
+            <method>saveOrderAfter</method>
+          </bolt_boltpay_onepage_save_order_after>
+        </observers>
+      </checkout_type_onepage_save_order_after>
+
+      <!--&lt;!&ndash; Call after onepage checkout render is called &ndash;&gt;-->
+      <!--<controller_action_layout_render_before_checkout_onepage_index>-->
+        <!--<observers>-->
+          <!--<bolt_boltpay_onepage_checkout_index_render>-->
+            <!--<class>Bolt_Boltpay_Model_Observer</class>-->
+            <!--<method>saveOnRenderOnepageCheckoutLayout</method>-->
+          <!--</bolt_boltpay_onepage_checkout_index_render>-->
+        <!--</observers>-->
+      <!--</controller_action_layout_render_before_checkout_onepage_index>-->
+    </events>
+
+  </global>
+
+  <adminhtml>
+    <layout>
+      <updates>
+        <boltpayadmin>
+          <file>boltpay.xml</file>
+        </boltpayadmin>
+      </updates>
+    </layout>
+  </adminhtml>
+
+  <admin>
+    <routers>
+      <boltpayadmin>
+        <use>admin</use>
+        <args>
+          <module>Bolt_Boltpay</module>
+          <frontName>boltpay</frontName>
+        </args>
+      </boltpayadmin>
+    </routers>
+  </admin>
+
+  <frontend>
+    <routers>
+      <boltpay>
+        <use>standard</use>
+        <args>
+          <module>Bolt_Boltpay</module>
+          <frontName>boltpay</frontName>
+        </args>
+      </boltpay>
+    </routers>
+    <translate>
+      <modules>
+        <Bolt_Boltpay>
+          <files>
+            <default>Bolt_Boltpay.csv</default>
+          </files>
+        </Bolt_Boltpay>
+      </modules>
+    </translate>
+    <layout>
+      <updates>
+        <boltpay>
+          <file>boltpay.xml</file>
+        </boltpay>
+      </updates>
+    </layout>
+  </frontend>
+
+  <default>
+    <payment>
+      <boltpay>
+        <active>1</active>
+        <model>boltpay/payment</model>
+        <theme>dark</theme>
+        <title>Bolt Pay</title>
+        <order_status>pending_payment</order_status>
+        <payment_action>authorize</payment_action>
+        <currency>USD</currency>
+        <skip_payment>0</skip_payment>
+        <skip_confirm>1</skip_confirm>
+        <sort_order>0</sort_order>
+      </boltpay>
+    </payment>
+  </default>
+</config>
