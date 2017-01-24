@@ -14,10 +14,18 @@ class Bolt_Boltpay_Block_Checkout_Boltpay
             self::JS_URL_PROD;
     }
 
+    public function createOrder($quote) {
+        $boltHelper = Mage::helper('boltpay/api');
+        $order_request = $boltHelper->buildOrder($quote, $this->getItems());
+        return $boltHelper->handleErrorResponse($boltHelper->transmit('orders', $order_request));
+    }
+
     public function getCartDataJs() {
         $customerSession = Mage::getSingleton('customer/session');
         $session = Mage::getSingleton('checkout/session');
         $onepage = Mage::getSingleton('checkout/type_onepage');
+        $boltHelper = Mage::helper('boltpay/api');
+        $hint_data = array();
         $quote = $session->getQuote();
 
         $quote->reserveOrderId()->save();
@@ -25,18 +33,11 @@ class Bolt_Boltpay_Block_Checkout_Boltpay
         $signResponse = null;
 
         if ($reservedUserId != null) {
-            $boltHelper = Mage::helper('boltpay/api');
             $signRequest = array(
                 'merchant_user_id' => $reservedUserId,
             );
             $signResponse = $boltHelper->handleErrorResponse($boltHelper->transmit('sign', $signRequest));
         }
-
-        $billing = $quote->getBillingAddress();
-        $shipping = $quote->getShippingAddress();
-        $items = $this->getItems();
-        $totals = $quote->getTotals();
-        $shippingAddress = $quote->getShippingAddress();
 
         if (Mage::getStoreConfig('payment/boltpay/auto_capture') == self::AUTO_CAPTURE_ENABLED) {
             $authCapture = 'true';
@@ -44,94 +45,10 @@ class Bolt_Boltpay_Block_Checkout_Boltpay
             $authCapture = 'false';
         }
 
-        $productMediaConfig = Mage::getModel('catalog/product_media_config');
-
+        $orderCreationResponse = $this->createOrder($quote);
         $cart_data = array(
-            'id' => $quote->getId(),
-            'displayId' => $quote->getReservedOrderId(),
             'authcapture' => $authCapture,
-            'items' => array_map(function($item) use($quote, $productMediaConfig) {
-                $image_url = $productMediaConfig->getMediaUrl($item->getProduct()->getThumbnail());
-                $product = Mage::getModel('catalog/product')->load($item->getProductId());
-                $coreHelper = Mage::helper('core');
-                return array(
-                    'reference' => $quote->getId(),
-                    'image' => $image_url,
-                    'name' => $item->getName(),
-                    'desc' => $product->getDescription(),
-                    'price' => $coreHelper->currency($item->getPrice(), true, false),
-                    'quantity' => $item->getQty()
-                );
-            }, $items),
-        );
-
-        if ($shippingAddress != null) {
-            $tax = null;
-            // WeltPixel has custom tax calculator which writes into a field field called taxjar_fee in shipping address
-            if ($shippingAddress->getTaxjarFee() != 0) {
-                $tax = $this->asMoney($shippingAddress->getTaxjarFee());
-            } elseif ($shippingAddress->getTaxAmount() != 0) {
-                $tax = $this->asMoney($shippingAddress->getTaxAmount());
-            }
-
-            if ($tax != null) {
-                $cart_data['tax'] = array(
-                    'name' => 'Tax',
-                    'price' => $tax,
-                );
-            }
-        }
-
-        if (array_key_exists('shipping', $totals)) {
-            $cart_data['shipping'] = array(
-                'name' => 'Shipping',
-                'price' => $this->asMoney($totals['shipping']->getValue()),
-            );
-        }
-
-        if (array_key_exists('discount', $totals)) {
-            $cart_data['discounts'] = array(array(
-                'amount' => $this->asMoney($totals['discount']->getValue()),
-                'description' => $totals['discount']->getTitle(),
-            ));
-        }
-
-        if (array_key_exists('grand_total', $totals)) {
-            $cart_data['total'] = $this->asMoney($totals['grand_total']->getValue());
-        }
-
-        $billingAddress = $billing->getStreet();
-        $shippingAddress = $shipping->getStreet();
-
-        $hint_data = array(
-            'first_name' => $billing->getFirstname(),
-            'last_name' => $billing->getLastname(),
-            'phone' => $billing->getTelephone(),
-            'email' => $billing->getEmail(),
-            'billing' => array(
-                'AddressLine1' => array_key_exists(0, $billingAddress) ? $billingAddress[0] : '',
-                'AddressLine2' => array_key_exists(1, $billingAddress) ? $billingAddress[1] : '',
-                'AddressLine3' => array_key_exists(2, $billingAddress) ? $billingAddress[2] : '',
-                'AddressLine4' => array_key_exists(3, $billingAddress) ? $billingAddress[2] : '',
-                'FirstName' => $billing->getFirstname(),
-                'LastName' => $billing->getLastname(),
-                'City' => $billing->getCity(),
-                'State' => $billing->getRegion(),
-                'Zip' => $billing->getPostcode(),
-                'CountryCode' => $billing->getCountry(),
-            ),
-            'shipping' => array(
-                'AddressLine1' => array_key_exists(0, $shippingAddress) ? $shippingAddress[0] : '',
-                'AddressLine2' => array_key_exists(1, $shippingAddress) ? $shippingAddress[1] : '',
-                'AddressLine3' => array_key_exists(2, $shippingAddress) ? $shippingAddress[2] : '',
-                'AddressLine4' => array_key_exists(3, $shippingAddress) ? $shippingAddress[3] : '',
-                'FirstName' => $shipping->getFirstname(),
-                'LastName' => $shipping->getLastname(),
-                'City' => $shipping->getCity(),
-                'State' => $shipping->getRegion(),
-                'Zip' => $shipping->getPostcode(),
-                'CountryCode' => $shipping->getCountry(),
-            ),
+            'orderToken' => $orderCreationResponse->token,
         );
 
         if ($signResponse != null) {
@@ -147,7 +64,10 @@ class Bolt_Boltpay_Block_Checkout_Boltpay
             array('form_key' => Mage::getSingleton('core/session')->getFormKey())
         );
         $json_cart = json_encode($cart_data);
-        $json_hints = json_encode($hint_data);
+        $json_hints = '{}';
+        if (sizeof($hint_data) != 0) {
+            $json_hints = json_encode($hint_data);
+        }
         $url = $this->getUrl('checkout/onepage/success');
         return (
             "var boltreview = new Review(

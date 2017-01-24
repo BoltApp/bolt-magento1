@@ -1,7 +1,6 @@
 <?php
 
-class Bolt_Boltpay_Model_Observer
-{
+class Bolt_Boltpay_Model_Observer {
     public function saveOrderAfter($observer) {
         Mage::log("Bolt_Boltpay_Model_Observer.saveOrderAfter: Started", null, 'bolt.log');
         $quote = $observer->getEvent()->getQuote();
@@ -33,5 +32,29 @@ class Bolt_Boltpay_Model_Observer
         }
 
         Mage::log("Bolt_Boltpay_Model_Observer.saveOrderAfter: Completed", null, 'bolt.log');
+    }
+
+    public function saveOrderBefore($observer) {
+        Mage::log("Bolt_Boltpay_Model_Observer.saveOrderBefore: Started", null, 'bolt.log');
+        $boltHelper = Mage::helper('boltpay/api');
+        $quote = $observer->getEvent()->getQuote();
+        $payment = $quote->getPayment();
+        $items = Mage::getSingleton('checkout/session')->getQuote()->getAllVisibleItems();
+
+        if (Mage::getStoreConfig('payment/boltpay/auto_capture') == Bolt_Boltpay_Block_Checkout_Boltpay::AUTO_CAPTURE_ENABLED) {
+            $authCapture = 'true';
+        } else {
+            $authCapture = 'false';
+        }
+
+        $reference = $payment->getAdditionalInformation('bolt_reference');
+        $cart_request = $boltHelper->buildCart($quote, $items);
+        $complete_authorize_request = array(
+            'cart' => $cart_request,
+            'reference' => $reference,
+            'auto_capture' => $authCapture
+        );
+        $boltHelper->handleErrorResponse($boltHelper->transmit('complete_authorize', $complete_authorize_request));
+        Mage::log("Bolt_Boltpay_Model_Observer.saveOrderBefore: Completed", null, 'bolt.log');
     }
 }
