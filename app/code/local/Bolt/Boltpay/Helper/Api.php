@@ -84,7 +84,7 @@ class Bolt_Boltpay_Helper_Api extends Bolt_Boltpay_Helper_Data {
               $product = Mage::getModel('catalog/product')->load($item->getProductId());
               return array(
                   'reference' => $quote->getId(),
-                  'image' => $image_url,
+                  'image_url' => $image_url,
                   'name' => $item->getName(),
                   'description' => $product->getDescription(),
                   'total_amount' => floor($item->getPrice() * 100 * $item->getQty()),
