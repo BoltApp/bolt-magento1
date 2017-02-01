@@ -40,7 +40,11 @@ class Bolt_Boltpay_Model_Observer {
         $quote = $observer->getEvent()->getQuote();
         $payment = $quote->getPayment();
         $items = Mage::getSingleton('checkout/session')->getQuote()->getAllVisibleItems();
-
+        $method = $quote->getPayment()->getMethod();
+        if (strtolower($method) != Bolt_Boltpay_Model_Payment::METHOD_CODE) {
+            return;
+        }
+        
         if (Mage::getStoreConfig('payment/boltpay/auto_capture') == Bolt_Boltpay_Block_Checkout_Boltpay::AUTO_CAPTURE_ENABLED) {
             $authCapture = true;
         } else {
