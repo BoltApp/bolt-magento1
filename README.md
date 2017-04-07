@@ -4,7 +4,7 @@ Plugin to integrate Bolt with Magento
 Supported Magento versions:
 + 1.9
 
-###Releases
+### Releases
 
 [v0.0.4](https://s3-us-west-1.amazonaws.com/bolt-public/magento-integration-release/magento_integration_v004.tar.gz)
 
