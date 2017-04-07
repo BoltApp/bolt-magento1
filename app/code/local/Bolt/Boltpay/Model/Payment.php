@@ -400,6 +400,12 @@ class Bolt_Boltpay_Model_Payment extends Mage_Payment_Model_Method_Abstract {
                     $order->setState(Mage_Sales_Model_Order::STATE_CANCELED, true, $message);
                     $payment->save();
                     $order->save();
+                } elseif ($newTransactionStatus == self::TRANSACTION_REJECTED_REVERSIBLE) {
+                    $order = $payment->getOrder();
+                    $message = Mage::helper('boltpay')->__(sprintf('Transaction reference "%s" has been rejected by Bolt internal review but is eligible for force approval on Bolt\'s merchant dashboard', $reference));
+                    $order->setState('Bolt Rejected', true, $message);
+                    $payment->save();
+                    $order->save();
                 }
             } else {
                 $payment->setShouldCloseParentTransaction(true);

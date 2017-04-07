@@ -3,7 +3,7 @@
 class Bolt_Boltpay_Block_Checkout_Boltpay
     extends Mage_Checkout_Block_Onepage_Review_Info {
 
-    const JS_URL_TEST = 'https://cdn-connect-sandbox.boltapp.com/connect.js';
+    const JS_URL_TEST = 'https://cdn-connect-staging.boltapp.com/connect.js';
     const JS_URL_PROD = 'https://connect.boltapp.com/connect.js';
     const AUTO_CAPTURE_ENABLED = 1;
 
