@@ -12,14 +12,16 @@ class Bolt_Boltpay_Model_Payment extends Mage_Payment_Model_Method_Abstract {
     // Transaction States
     const TRANSACTION_AUTHORIZED = 'authorized';
     const TRANSACTION_CANCELLED = 'cancelled';
-    const TRANSACTION_FAILED = 'failed';
     const TRANSACTION_COMPLETED = 'completed';
     const TRANSACTION_PENDING = 'pending';
+    const TRANSACTION_REJECTED_REVERSIBLE = 'rejected_reversible';
+    const TRANSACTION_REJECTED_IRREVERSIBLE = 'rejected_irreversible';
     const TRANSACTION_NO_NEW_STATE = 'no_new_state';
 
     const HOOK_TYPE_AUTH = 'auth';
     const HOOK_TYPE_CAPTURE = 'capture';
-    const HOOK_TYPE_FAILED = 'failed';
+    const HOOK_TYPE_REJECTED_REVERSIBLE = 'rejected_reversible';
+    const HOOK_TYPE_REJECTED_IRREVERSIBLE = 'rejected_irreversible';
     const HOOK_TYPE_PAYMENT = 'payment';
     const HOOK_TYPE_PENDING = 'pending';
     const HOOK_TYPE_VOID = 'void';
@@ -53,8 +55,9 @@ class Bolt_Boltpay_Model_Payment extends Mage_Payment_Model_Method_Abstract {
     protected $_validStateTransitions = array(
         self::TRANSACTION_AUTHORIZED => array(self::TRANSACTION_COMPLETED, self::TRANSACTION_CANCELLED),
         self::TRANSACTION_COMPLETED => array(self::TRANSACTION_NO_NEW_STATE),
-        self::TRANSACTION_PENDING => array(self::TRANSACTION_AUTHORIZED, self::TRANSACTION_CANCELLED, self::TRANSACTION_FAILED, self::TRANSACTION_COMPLETED),
-        self::TRANSACTION_FAILED => array(self::TRANSACTION_NO_NEW_STATE),
+        self::TRANSACTION_PENDING => array(self::TRANSACTION_AUTHORIZED, self::TRANSACTION_CANCELLED, self::TRANSACTION_REJECTED_REVERSIBLE, self::TRANSACTION_REJECTED_IRREVERSIBLE, self::TRANSACTION_COMPLETED),
+        self::TRANSACTION_REJECTED_IRREVERSIBLE => array(self::TRANSACTION_NO_NEW_STATE),
+        self::TRANSACTION_REJECTED_REVERSIBLE => array(self::TRANSACTION_AUTHORIZED, self::TRANSACTION_CANCELLED, self::TRANSACTION_REJECTED_IRREVERSIBLE, self::TRANSACTION_COMPLETED),
         self::TRANSACTION_CANCELLED => array(self::TRANSACTION_NO_NEW_STATE)
     );
 
@@ -65,7 +68,8 @@ class Bolt_Boltpay_Model_Payment extends Mage_Payment_Model_Method_Abstract {
         self::HOOK_TYPE_CAPTURE => self::TRANSACTION_COMPLETED,
         self::HOOK_TYPE_PAYMENT => self::TRANSACTION_COMPLETED,
         self::HOOK_TYPE_PENDING => self::TRANSACTION_PENDING,
-        self::HOOK_TYPE_FAILED => self::TRANSACTION_FAILED,
+        self::HOOK_TYPE_REJECTED_REVERSIBLE => self::TRANSACTION_REJECTED_REVERSIBLE,
+        self::HOOK_TYPE_REJECTED_IRREVERSIBLE => self::TRANSACTION_REJECTED_IRREVERSIBLE,
         self::HOOK_TYPE_VOID => self::TRANSACTION_CANCELLED
     );
 
@@ -387,12 +391,12 @@ class Bolt_Boltpay_Model_Payment extends Mage_Payment_Model_Method_Abstract {
                     $order->setState(Mage_Sales_Model_Order::STATE_CANCELED, true, $message);
                     $payment->save();
                     $order->save();
-                } elseif ($newTransactionStatus == self::TRANSACTION_FAILED) {
+                } elseif ($newTransactionStatus == self::TRANSACTION_REJECTED_IRREVERSIBLE) {
                     $order = $payment->getOrder();
                     $payment->setParentTransactionId($reference);
                     $payment->setTransactionId(sprintf("%s-rejected", $reference));
                     $payment->addTransaction(Mage_Sales_Model_Order_Payment_Transaction::TYPE_VOID, null, true);
-                    $message = Mage::helper('boltpay')->__(sprintf('Transaction reference "%s" has been rejected by Bolt', $reference));
+                    $message = Mage::helper('boltpay')->__(sprintf('Transaction reference "%s" has been permanently rejected by Bolt', $reference));
                     $order->setState(Mage_Sales_Model_Order::STATE_CANCELED, true, $message);
                     $payment->save();
                     $order->save();
