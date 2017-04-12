@@ -82,14 +82,15 @@ class Bolt_Boltpay_Helper_Api extends Bolt_Boltpay_Helper_Data {
           'items' => array_map(function ($item) use ($quote, $productMediaConfig) {
               $image_url = $productMediaConfig->getMediaUrl($item->getProduct()->getThumbnail());
               $product = Mage::getModel('catalog/product')->load($item->getProductId());
+              $unitPrice = round($item->getPrice() * 100);
               return array(
                   'reference' => $quote->getId(),
                   'image_url' => $image_url,
                   'name' => $item->getName(),
                   'sku' => $product->getData('sku'),
                   'description' => $product->getDescription(),
-                  'total_amount' => floor($item->getPrice() * 100 * $item->getQty()),
-                  'unit_price' => floor($item->getPrice() * 100),
+                  'total_amount' => $unitPrice * $item->getQty(),
+                  'unit_price' => $unitPrice,
                   'quantity' => $item->getQty()
               );
           }, $items),
@@ -105,19 +106,19 @@ class Bolt_Boltpay_Helper_Api extends Bolt_Boltpay_Helper_Data {
           }
 
           if ($tax != null) {
-              $cart_submission_data['tax_amount'] = floor($tax * 100);
+              $cart_submission_data['tax_amount'] = round($tax * 100);
           }
       }
 
       if (array_key_exists('discount', $totals)) {
           $cart_submission_data['discounts'] = array(array(
-              'amount' => -1 * floor($totals['discount']->getValue() * 100),
+              'amount' => -1 * round($totals['discount']->getValue() * 100),
               'description' => $totals['discount']->getTitle(),
           ));
       }
 
       if (array_key_exists('grand_total', $totals)) {
-          $cart_submission_data['total_amount'] = floor($totals['grand_total']->getValue() * 100);
+          $cart_submission_data['total_amount'] = round($totals['grand_total']->getValue() * 100);
       }
 
       $cart_submission_data['currency'] = $quote->getQuoteCurrencyCode();
@@ -158,7 +159,7 @@ class Bolt_Boltpay_Helper_Api extends Bolt_Boltpay_Helper_Data {
       if (array_key_exists('shipping', $totals)) {
           $cart_submission_data['shipments'] = array(array(
               'shipping_address' => $shipping_address,
-              'cost' => floor($totals['shipping']->getValue() * 100),
+              'cost' => round($totals['shipping']->getValue() * 100),
           ));
       }
 
