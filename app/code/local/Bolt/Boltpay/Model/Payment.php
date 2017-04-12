@@ -112,7 +112,7 @@ class Bolt_Boltpay_Model_Payment extends Mage_Payment_Model_Method_Abstract {
             $boltHelper = Mage::helper('boltpay/api');
             $reference = $payment->getAdditionalInformation('bolt_reference');
             $response = $boltHelper->handleErrorResponse($boltHelper->transmit($reference, null));
-            if (strlen($response->status)) {
+            if (strlen($response->status) == 0) {
                 Mage::throwException('Bad fetch transaction response. Empty transaction status');
             }
             $transactionStatus = strtolower($response->status);
@@ -192,7 +192,7 @@ class Bolt_Boltpay_Model_Payment extends Mage_Payment_Model_Method_Abstract {
                     'transaction_id' => $merchantTransId,
                 );
                 $response = $boltHelper->handleErrorResponse($boltHelper->transmit('capture', $captureRequest));
-                if (strlen($response->status)) {
+                if (strlen($response->status) == 0) {
                     Mage::throwException('Bad capture response. Empty transaction status');
                 }
                 $responseStatus = $response->status;
@@ -231,11 +231,11 @@ class Bolt_Boltpay_Model_Payment extends Mage_Payment_Model_Method_Abstract {
             );
             $response = $boltHelper->handleErrorResponse($boltHelper->transmit('credit', $data));
             
-            if (strlen($response->reference)) {
+            if (strlen($response->reference) == 0) {
                 Mage::throwException('Bad refund response. Empty transaction reference');
             }
 
-            if (strlen($response->id)) {
+            if (strlen($response->id) == 0) {
                 Mage::throwException('Bad refund response. Empty transaction id');
             }
 
@@ -287,7 +287,7 @@ class Bolt_Boltpay_Model_Payment extends Mage_Payment_Model_Method_Abstract {
                 'transaction_id' => $transId,
             );
             $response = $boltHelper->handleErrorResponse($boltHelper->transmit('void', $data));
-            if (strlen($response->status)) {
+            if (strlen($response->status) == 0) {
                 Mage::throwException('Bad void response. Empty transaction status');
             }
             $responseStatus = $response->status;
