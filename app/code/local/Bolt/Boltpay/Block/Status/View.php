@@ -44,6 +44,45 @@ class Bolt_Boltpay_Block_Status_View extends Mage_Adminhtml_Block_Template {
 
     public function getMerchantCall() {
         $boltApi = Mage::helper('boltpay/api');
-        return $boltApi->transmit('', null, 'merchant', '');
+        $result = $boltApi->transmit('', null, 'merchant', '');
+        $resp = array();
+        if ($result != null) {
+            if (strlen($result->description) != 0) {
+                $resp['name'] = $result->description;
+            }
+            if (strlen($result->public_id) != 0) {
+                $resp['public_id'] = $result->public_id;
+            }
+            if (strlen($result->public_id) != 0) {
+                $resp['support_phone'] = $result->support_phone;
+            }
+            if (strlen($result->public_id) != 0) {
+                $resp['support_email'] = $result->support_email;
+            }
+            return json_encode($resp, JSON_PRETTY_PRINT);
+        }
+        return "No response from Bolt Backend";
+    }
+
+    public function getTransactionsEndpoint() {
+        $boltApi = Mage::helper('boltpay/api');
+        $result = $boltApi->transmit('ABCD-1234-EFGH', null, 'merchant', 'transactions');
+        $resp = array();
+        if ($result != null) {
+            if (strlen($result->description) != 0) {
+                $resp['name'] = $result->description;
+            }
+            if (strlen($result->public_id) != 0) {
+                $resp['public_id'] = $result->public_id;
+            }
+            if (strlen($result->public_id) != 0) {
+                $resp['support_phone'] = $result->support_phone;
+            }
+            if (strlen($result->public_id) != 0) {
+                $resp['support_email'] = $result->support_email;
+            }
+            return json_encode($result, JSON_PRETTY_PRINT);
+        }
+        return "No response from Bolt Backend";
     }
 }
