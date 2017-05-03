@@ -26,12 +26,24 @@ class Bolt_Boltpay_Block_Status_View extends Mage_Adminhtml_Block_Template {
     }
 
     public function getConnectionStatusToBolt() {
-        $boltUrl = Mage::helper('boltpay/api')->getApiUrl();
-        if ($sock = fsockopen($boltUrl, 443, $errNo, $errStr, 10)) {
+        $boltUrl = str_replace("https://", "", Mage::helper('boltpay/api')->getApiUrl());
+        $boltUrl = str_replace("/", "", $boltUrl);
+        try {
+          if ($sock = fsockopen($boltUrl, 443, $errNo, $errStr, 10)) {
             fclose($sock);
-            return 'Connection to ' . $boltURL . ": OK";
-        } else {
-            return 'Connection to ' . $boltURL . ": FAIL. Error: " . $errstr;
+            return 'Connection to ' . $boltUrl . ": OK";
+          } else {
+            return 'Connection to ' . $boltUrl . ": FAIL. Error: " . $errstr;
+          }
+        } catch (Exception $e) {
+          $error = array('error' => $e->getMessage());
+          Mage::log($error, null, 'bolt.log');
+          return 'Connection to ' . $boltUrl . ": ERROR. Error: " . $e;
         }
+    }
+
+    public function getMerchantCall() {
+        $boltApi = Mage::helper('boltpay/api');
+        return $boltApi->transmit('', null, 'merchant', '');
     }
 }

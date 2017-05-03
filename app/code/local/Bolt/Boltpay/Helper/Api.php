@@ -10,6 +10,8 @@ class Bolt_Boltpay_Helper_Api extends Bolt_Boltpay_Helper_Data {
         Mage::log(sprintf("Making an API call to %s", $command), null, 'bolt.log');
         if($command == 'sign') {
             $url .= $object . '/' . $command;
+        } elseif ($command == null || $command == '') {
+            $url .= $object;
         } elseif ($command == 'orders') {
             $url .= $object . '/' . $command;
         } else {
@@ -24,6 +26,8 @@ class Bolt_Boltpay_Helper_Api extends Bolt_Boltpay_Helper_Data {
         }
 
         if ($command == 'oauth' && $type == 'division') {
+            $key = Mage::getStoreConfig('payment/boltpay/merchant_key');
+        } elseif ($command == '' && $type == '' && $object == 'merchant') {
             $key = Mage::getStoreConfig('payment/boltpay/merchant_key');
         } elseif ($command == 'sign') {
             $key = Mage::getStoreConfig('payment/boltpay/management_key');
