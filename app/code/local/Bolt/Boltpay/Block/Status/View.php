@@ -53,10 +53,10 @@ class Bolt_Boltpay_Block_Status_View extends Mage_Adminhtml_Block_Template {
             if (strlen($result->public_id) != 0) {
                 $resp['public_id'] = $result->public_id;
             }
-            if (strlen($result->public_id) != 0) {
+            if (strlen($result->support_phone) != 0) {
                 $resp['support_phone'] = $result->support_phone;
             }
-            if (strlen($result->public_id) != 0) {
+            if (strlen($result->support_email) != 0) {
                 $resp['support_email'] = $result->support_email;
             }
             return json_encode($resp, JSON_PRETTY_PRINT);
