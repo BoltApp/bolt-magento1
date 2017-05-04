@@ -47,11 +47,15 @@ class Bolt_Boltpay_Helper_Api extends Bolt_Boltpay_Helper_Data {
           curl_close($ch);
           Mage::throwException("Curl error: " . curl_error($ch));
         }
-        $result = json_decode($result);
+        $resultJSON = json_decode($result);
+        if ($result != null && $resultJSON == null) {
+          curl_close($ch);
+          Mage::throwException("JSON Parse Error: " . $result);
+        }
         curl_close($ch);
-        Mage::getModel('boltpay/payment')->debugData($result);
+        Mage::getModel('boltpay/payment')->debugData($resultJSON);
 
-        return $result;
+        return $resultJSON;
     }
 
     public function handleErrorResponse($response) {
