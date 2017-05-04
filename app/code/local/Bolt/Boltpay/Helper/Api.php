@@ -45,6 +45,7 @@ class Bolt_Boltpay_Helper_Api extends Bolt_Boltpay_Helper_Data {
         $result = curl_exec($ch);
         if ($result === false) {
           curl_close($ch);
+          Mage::log("Curl info: " . var_dump(curl_getinfo($ch)), null, 'bolt.log');
           Mage::throwException("Curl error: " . curl_error($ch));
         }
         $resultJSON = json_decode($result);

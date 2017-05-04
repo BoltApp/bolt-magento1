@@ -75,7 +75,17 @@ class Bolt_Boltpay_Block_Status_View extends Mage_Adminhtml_Block_Template {
     }
 
     public function isCurlEnabled() {
-        return function_exists('curl_version')
-    };
-}
+        return function_exists('curl_version');
+    }
+
+    public function testCurl() {
+        $boltUrl = Mage::helper('boltpay/api')->getApiUrl() . "v1/merchant";
+        $ch = curl_init($boltUrl);
+        curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+        $curlresult = curl_exec($ch);
+        $dumpStr = var_dump(curl_getinfo($ch));
+        curl_close($ch);
+        return $dumpStr;
+    }
+
 }
