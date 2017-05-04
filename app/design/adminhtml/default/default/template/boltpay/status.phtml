@@ -4,33 +4,38 @@
  */
 ?>
 <h1>BoltPay Status</h1>
+<style>
+  .label {
+    width: 250px;
+  }
+</style>
 <table>
     <tr>
-        <td><i>Current Version of Bolt plugin: </></td>
+        <td class="label"><i>Current Version of Bolt plugin: </></td>
         <td><b><?php echo $this->getBoltInstallStatus() ?></b></td>
     </tr>
     <tr>
-        <td><i>Bolt User Id Schema change: </i></td>
+        <td class="label"><i>Bolt User Id Schema change: </i></td>
         <td><b><?php echo $this->getBoltUserIdStatus() ?></b></td>
     </tr>
     <tr>
-        <td><i>Connection Status: </i></td>
+        <td class="label"><i>Connection Status: </i></td>
         <td><b><?php echo $this->getConnectionStatusToBolt() ?></b></td>
     </tr>
     <tr>
-        <td><i>Curl Status: </i></td>
+        <td class="label"><i>Curl Status: </i></td>
         <td><b><?php echo $this->isCurlEnabled() ?></b></td>
     </tr>
     <tr>
-        <td><i>Curl Response: </i></td>
+        <td class="label"><i>Curl Response: </i></td>
         <td><b><?php echo $this->testCurl() ?></b></td>
     </tr>
     <tr>
-        <td><i>Merchant Description: </i></td>
+        <td class="label"><i>Merchant Description: </i></td>
         <td><b><?php echo $this->getMerchantCall() ?></b></td>
     </tr>
     <tr>
-        <td><i>Get Transactions for ABCD-1234-EFGH: </i></td>
+        <td class="label"><i>Get Transactions for ABCD-1234-EFGH: </i></td>
         <td><b><?php echo $this->getTransactionsEndpoint() ?></b></td>
     </tr>
 </table>
