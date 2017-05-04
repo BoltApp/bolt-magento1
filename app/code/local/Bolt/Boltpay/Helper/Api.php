@@ -48,9 +48,10 @@ class Bolt_Boltpay_Helper_Api extends Bolt_Boltpay_Helper_Data {
           Mage::throwException("Curl error: " . curl_error($ch));
         }
         $resultJSON = json_decode($result);
-        if ($result != null && $resultJSON == null) {
+        $jsonError = $this->handleJSONParseError();
+        if ($jsonError != null) {
           curl_close($ch);
-          Mage::throwException("JSON Parse Error: " . $result);
+          Mage::throwException("JSON Parse Type: " . $jsonError . " Response: " . $result);
         }
         curl_close($ch);
         Mage::getModel('boltpay/payment')->debugData($resultJSON);
@@ -68,6 +69,31 @@ class Bolt_Boltpay_Helper_Api extends Bolt_Boltpay_Helper_Data {
 
         return $response;
     }
+
+  public function handleJSONParseError() {
+    switch (json_last_error()) {
+        case JSON_ERROR_NONE:
+            return null;
+
+        case JSON_ERROR_DEPTH:
+            return 'Maximum stack depth exceeded';
+
+        case JSON_ERROR_STATE_MISMATCH:
+            return 'Underflow or the modes mismatch';
+
+        case JSON_ERROR_CTRL_CHAR:
+            return 'Unexpected control character found';
+
+        case JSON_ERROR_SYNTAX:
+            return 'Syntax error, malformed JSON';
+
+        case JSON_ERROR_UTF8:
+            return 'Malformed UTF-8 characters, possibly incorrectly encoded';
+
+        default:
+            return 'Unknown error';
+    }
+  }
 
   public function getApiUrl() {
       return Mage::getStoreConfig('payment/boltpay/test') ?
