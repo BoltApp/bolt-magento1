@@ -73,4 +73,9 @@ class Bolt_Boltpay_Block_Status_View extends Mage_Adminhtml_Block_Template {
         }
         return "No response from Bolt Backend";
     }
+
+    public function isCurlEnabled() {
+        return function_exists('curl_version')
+    };
+}
 }
