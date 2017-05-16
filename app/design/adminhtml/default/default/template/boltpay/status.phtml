@@ -23,6 +23,10 @@
         <td><b><?php echo $this->getConnectionStatusToBolt() ?></b></td>
     </tr>
     <tr>
+        <td class="label"><i>SSL Status: </i></td>
+        <td><b><?php echo $this->getSSLData() ?></b></td>
+    </tr>
+    <tr>
         <td class="label"><i>Curl Status: </i></td>
         <td><b><?php echo $this->isCurlEnabled() ?></b></td>
     </tr>

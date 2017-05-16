@@ -42,9 +42,27 @@ class Bolt_Boltpay_Block_Status_View extends Mage_Adminhtml_Block_Template {
         }
     }
 
+    public function getSSLData() {
+        $ch = curl_init('https://www.howsmyssl.com/a/check');
+        curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+        $data = curl_exec($ch);
+        curl_close($ch);
+
+        $json = json_decode($data);
+        return var_dump($json);
+    }
+
     public function getMerchantCall() {
         $boltApi = Mage::helper('boltpay/api');
-        $result = $boltApi->transmit('', null, 'merchant', '');
+        $result = "";
+        try {
+            $result = $boltApi->transmit('', null, 'merchant', '');
+        } catch (Exception $e) {
+            $error = array('error' => $e->getMessage());
+            Mage::log($error, null, 'bolt.log');
+            return 'Bolt call failed. Error has been logged to bolt.log';
+        }
+        
         $resp = array();
         if ($result != null) {
             if (strlen($result->description) != 0) {
@@ -66,7 +84,15 @@ class Bolt_Boltpay_Block_Status_View extends Mage_Adminhtml_Block_Template {
 
     public function getTransactionsEndpoint() {
         $boltApi = Mage::helper('boltpay/api');
-        $result = $boltApi->transmit('ABCD-1234-EFGH', null, 'merchant', 'transactions');
+        $result = "";
+        try {
+            $result = $boltApi->transmit('ABCD-1234-EFGH', null, 'merchant', 'transactions');
+        } catch (Exception $e) {
+            $error = array('error' => $e->getMessage());
+            Mage::log($error, null, 'bolt.log');
+            return 'Bolt call failed. Error has been logged to bolt.log';
+        }
+
         $resp = array();
         if ($result != null) {
             return json_encode($result, JSON_PRETTY_PRINT);
@@ -75,7 +101,10 @@ class Bolt_Boltpay_Block_Status_View extends Mage_Adminhtml_Block_Template {
     }
 
     public function isCurlEnabled() {
-        return function_exists('curl_version');
+        if (function_exists('curl_version') > 0) {
+            return var_dump(curl_version());
+        };
+        return "Curl version not found";
     }
 
     public function testCurl() {
