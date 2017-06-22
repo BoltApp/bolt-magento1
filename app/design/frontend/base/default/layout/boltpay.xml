@@ -1,6 +1,12 @@
 <?xml version="1.0"?>
 <layout version="0.1.0">
 
+  <default>
+    <reference name="head">
+      <block type="boltpay/checkout_boltpay" name="track_script" as="track_script" template="boltpay/track.phtml" />
+    </reference>
+  </default>
+
   <checkout_onepage_progress_payment>
     <!-- Mage_Checkout -->
     <remove name="right"/>
