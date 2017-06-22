@@ -5,3 +5,10 @@
   data-merchant-key="<?= Mage::helper('core')->decrypt(Mage::getStoreConfig('payment/boltpay/merchant_key')); ?>"
   data-shopping-cart-id="Magento">
 </script>
+
+<script
+  id="bolt-track"
+  type="text/javascript"
+  src="<?= $this->getTrackJsUrl(); ?>"
+  data-merchant-key="<?= Mage::helper('core')->decrypt(Mage::getStoreConfig('payment/boltpay/merchant_key')); ?>">
+</script>

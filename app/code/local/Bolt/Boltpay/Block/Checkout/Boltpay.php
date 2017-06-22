@@ -3,15 +3,21 @@
 class Bolt_Boltpay_Block_Checkout_Boltpay
     extends Mage_Checkout_Block_Onepage_Review_Info {
 
-    const JS_URL_TEST = 'https://cdn-connect-staging.boltapp.com/connect.js';
-    const JS_URL_PROD = 'https://connect.boltapp.com/connect.js';
+    const JS_URL_TEST = 'https://cdn-connect-staging.boltapp.com';
+    const JS_URL_PROD = 'https://connect.boltapp.com';
     const AUTO_CAPTURE_ENABLED = 1;
 
     public function _construct() {
         parent::_construct();
         $this->_jsUrl = Mage::getStoreConfig('payment/boltpay/test') ?
-            self::JS_URL_TEST:
-            self::JS_URL_PROD;
+            self::JS_URL_TEST . "/connect.js":
+            self::JS_URL_PROD . "/connect.js";
+    }
+
+    public function getTrackJsUrl() {
+        return Mage::getStoreConfig('payment/boltpay/test') ?
+            self::JS_URL_TEST . "/track.js":
+            self::JS_URL_PROD . "/track.js";
     }
 
     public function createOrder($quote) {
