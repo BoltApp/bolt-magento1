@@ -55,6 +55,10 @@ class Bolt_Boltpay_Model_Observer {
                 'reference' => $reference,
                 'auto_capture' => $authCapture
             );
+            if (Mage::getStoreConfig('payment/boltpay/disable_complete_authorize'))  {
+               Mage::log("Bolt_Boltpay_Model_Observer.saveOrderBefore: Skipping complete authorize", null, 'bolt.log');
+               return;
+            }
             $boltHelper->handleErrorResponse($boltHelper->transmit('complete_authorize', $complete_authorize_request));
         }
 
