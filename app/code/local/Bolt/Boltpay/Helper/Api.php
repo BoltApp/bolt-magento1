@@ -1,7 +1,7 @@
 <?php
 
 class Bolt_Boltpay_Helper_Api extends Bolt_Boltpay_Helper_Data {
-    const API_URL_TEST = 'https://api-sandbox.boltapp.com/';
+    const API_URL_TEST = 'https://api-staging.boltapp.com/';
     const API_URL_PROD = 'https://api.boltapp.com/';
 
     public function transmit($command, $data, $object='merchant', $type='transactions') {
