@@ -21,7 +21,7 @@
               <show_in_store>0</show_in_store>
             </active>
             <merchant_key translate="label">
-              <label>Checkout Key</label>
+              <label>Publishable Key</label>
               <frontend_type>obscure</frontend_type>
               <backend_model>adminhtml/system_config_backend_encrypted</backend_model>
               <sort_order>10</sort_order>
@@ -30,7 +30,7 @@
               <show_in_store>0</show_in_store>
             </merchant_key>
             <management_key translate="label">
-              <label>Management Key</label>
+              <label>API Key</label>
               <frontend_type>obscure</frontend_type>
               <backend_model>adminhtml/system_config_backend_encrypted</backend_model>
               <sort_order>11</sort_order>
