@@ -33,7 +33,7 @@ class Bolt_Boltpay_Block_Status_View extends Mage_Adminhtml_Block_Template {
             fclose($sock);
             return 'Connection to ' . $boltUrl . ": OK";
           } else {
-            return 'Connection to ' . $boltUrl . ": FAIL. Error: " . $errstr;
+            return 'Connection to ' . $boltUrl . ": FAIL. Error: " . $errStr;
           }
         } catch (Exception $e) {
           $error = array('error' => $e->getMessage());

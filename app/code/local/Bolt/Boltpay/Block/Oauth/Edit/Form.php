@@ -1,4 +1,7 @@
 <?php
+/**
+ * Class which defines the admin form for Bolt OAuth settings used to call Magento store API
+ * */
 class Bolt_Boltpay_Block_Oauth_Edit_Form extends Mage_Adminhtml_Block_Widget_Form {
 
     public function __construct()
@@ -7,6 +10,11 @@ class Bolt_Boltpay_Block_Oauth_Edit_Form extends Mage_Adminhtml_Block_Widget_For
         $this->setId('oauth_edit_form');
     }
 
+    /**
+     * Sets up form fields
+     *
+     * @return Mage_Adminhtml_Block_Widget_Form   The form for the admin Bolt OAuth settings
+     */
     protected function _prepareForm()
     {
         $form = new Varien_Data_Form(array(

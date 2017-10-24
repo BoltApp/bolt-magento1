@@ -3,7 +3,7 @@
 
   <modules>
     <Bolt_Boltpay>
-      <version>0.0.6</version>
+      <version>0.0.8</version> <!-- version number should be incremented appropriately  -->
     </Bolt_Boltpay>
   </modules>
 
@@ -64,14 +64,23 @@
         </observers>
       </checkout_type_onepage_save_order_after>
 
-      <checkout_type_onepage_save_order>
-        <observers>
-          <bolt_boltpay_onepage_save_order>
-            <class>Bolt_Boltpay_Model_Observer</class>
-            <method>saveOrderBefore</method>
-          </bolt_boltpay_onepage_save_order>
-        </observers>
-      </checkout_type_onepage_save_order>
+
+      <!--
+
+        For Multi Step Checkout, which seems to be the one and only checkout flow type in the Bolt API for Magento,
+        the initial cart data and the cart data after shipping is applied are different, therefore the following
+        observer would always throw an exception. It is removed from the configuration.
+
+      -->
+      <!--<checkout_type_onepage_save_order>-->
+        <!--<observers>-->
+          <!--<bolt_boltpay_onepage_save_order>-->
+            <!--<class>Bolt_Boltpay_Model_Observer</class>-->
+            <!--<method>saveOrderBefore</method>-->
+          <!--</bolt_boltpay_onepage_save_order>-->
+        <!--</observers>-->
+      <!--</checkout_type_onepage_save_order>-->
+
 
       <!--&lt;!&ndash; Call after onepage checkout render is called &ndash;&gt;-->
       <!--<controller_action_layout_render_before_checkout_onepage_index>-->

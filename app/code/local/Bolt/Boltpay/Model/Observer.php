@@ -1,6 +1,18 @@
 <?php
 
+/**
+ * Class Bolt_Boltpay_Model_Observer
+ *
+ * This class implements order event behavior
+ */
 class Bolt_Boltpay_Model_Observer {
+
+    /**
+     * Event handler called after a save event
+     *
+     * @param $observer
+     * @throws Exception
+     */
     public function saveOrderAfter($observer) {
         Mage::log("Bolt_Boltpay_Model_Observer.saveOrderAfter: Started", null, 'bolt.log');
         $quote = $observer->getEvent()->getQuote();
@@ -34,6 +46,15 @@ class Bolt_Boltpay_Model_Observer {
         Mage::log("Bolt_Boltpay_Model_Observer.saveOrderAfter: Completed", null, 'bolt.log');
     }
 
+    /**
+     * Event handler called before a save event
+     *
+     * @deprecated          For Multi Step Checkout, which seems to be the one and only checkout flow type in the Bolt API for Magento,
+     *                      the initial cart data and the cart data after shipping is applied are different, therefore the following
+     *                      observer would always throw an exception. It is removed from the configuration.
+     *
+     * @param $observer
+     */
     public function saveOrderBefore($observer) {
         Mage::log("Bolt_Boltpay_Model_Observer.saveOrderBefore: Started", null, 'bolt.log');
         $boltHelper = Mage::helper('boltpay/api');

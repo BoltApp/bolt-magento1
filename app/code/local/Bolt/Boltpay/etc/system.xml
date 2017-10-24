@@ -21,7 +21,7 @@
               <show_in_store>0</show_in_store>
             </active>
             <merchant_key translate="label">
-              <label>Publishable Key</label>
+              <label>Checkout Key</label>
               <frontend_type>obscure</frontend_type>
               <backend_model>adminhtml/system_config_backend_encrypted</backend_model>
               <sort_order>10</sort_order>
@@ -30,7 +30,7 @@
               <show_in_store>0</show_in_store>
             </merchant_key>
             <management_key translate="label">
-              <label>API Key</label>
+              <label>Management Key</label>
               <frontend_type>obscure</frontend_type>
               <backend_model>adminhtml/system_config_backend_encrypted</backend_model>
               <sort_order>11</sort_order>
@@ -38,6 +38,21 @@
               <show_in_website>1</show_in_website>
               <show_in_store>0</show_in_store>
             </management_key>
+
+            <!--
+                The Bolt Signing Secret Key configuration, used to verify web hook request signature.
+             -->
+            <signing_key translate="label">
+              <label>Signing Secret Key</label>
+              <frontend_type>obscure</frontend_type>
+              <backend_model>adminhtml/system_config_backend_encrypted</backend_model>
+              <sort_order>12</sort_order>
+              <show_in_default>1</show_in_default>
+              <show_in_website>1</show_in_website>
+              <show_in_store>0</show_in_store>
+            </signing_key>
+
+
             <title translate="label">
               <label>Title</label>
               <frontend_type>text</frontend_type>
@@ -74,15 +89,24 @@
               <show_in_website>1</show_in_website>
               <show_in_store>0</show_in_store>
             </test>
-            <disable_complete_authorize translate="label">
-              <label>Disable Complete Authorize</label>
-              <frontend_type>select</frontend_type>
-              <source_model>adminhtml/system_config_source_yesno</source_model>
-              <sort_order>45</sort_order>
-              <show_in_default>1</show_in_default>
-              <show_in_website>1</show_in_website>
-              <show_in_store>0</show_in_store>
-            </disable_complete_authorize>
+
+            <!--
+
+              For Multi Step Checkout, which seems to be the one and only checkout flow type in the Bolt API for Magento,
+              the initial cart data and the cart data after shipping is applied are different, therefore
+              the Complete Authorize API call would always fail. It is removed from the configuration.
+
+            -->
+            <!--<disable_complete_authorize translate="label">-->
+              <!--<label>Disable Complete Authorize</label>-->
+              <!--<frontend_type>select</frontend_type>-->
+              <!--<source_model>adminhtml/system_config_source_yesno</source_model>-->
+              <!--<sort_order>45</sort_order>-->
+              <!--<show_in_default>1</show_in_default>-->
+              <!--<show_in_website>1</show_in_website>-->
+              <!--<show_in_store>0</show_in_store>-->
+            <!--</disable_complete_authorize>-->
+
             <auto_capture translate="label">
               <label>Automatic Capture Mode</label>
               <frontend_type>select</frontend_type>

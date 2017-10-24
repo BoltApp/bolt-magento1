@@ -1,19 +1,33 @@
 <?php
 
+/**
+ * Class Bolt_Boltpay_Model_Api2_Order_Rest_Admin_V1
+ *
+ * This class implements this magento store's webhooks
+ */
 class Bolt_Boltpay_Model_Api2_Order_Rest_Admin_V1 extends Bolt_Boltpay_Model_Api2_Order
 {
+    /**
+     * @var array  The response payload for successful order creation
+     */
     public static $SUCCESS_ORDER_CREATED = array(
         'message' => 'New Order created',
         'status' => 'success',
         'http_response_code' => 201
     );
 
+    /**
+     * @var array  The response payload for successful order updates
+     */
     public static $SUCCESS_ORDER_UPDATED = array(
         'message' => 'Updated existing order',
         'status' => 'success',
         'http_response_code' => 200
     );
 
+    /**
+     * @inheritdoc
+     */
     public function dispatch() {
         parent::dispatch();
         $this->getResponse()->clearHeader("Location");
@@ -36,23 +50,39 @@ class Bolt_Boltpay_Model_Api2_Order_Rest_Admin_V1 extends Bolt_Boltpay_Model_Api
 ////            ->getFirstItem();
 //    }
 
+    /**
+     * API Hook enpoint that processes all web hook requests
+     *
+     * @param array $couponData    Currently this array is not being used but it called at some points with "filteredData"
+     * @return null
+     */
     function _create($couponData)
     {
+
         try {
             Mage::log('Initiating webhook call', null, 'bolt.log');
+
             $bodyParams = $this->getRequest()->getBodyParams();
             $quoteId = $bodyParams['quote_id'];
             $reference = $bodyParams['reference'];
             $transactionId = $bodyParams['transaction_id'];
             $hookType = $bodyParams['notification_type'];
 
+            $boltHelper = Mage::helper('boltpay/api');
+
+            $boltHelperBase = Mage::helper('boltpay');
+            $boltHelperBase::$from_hooks = true;
+
             if ($hookType == 'credit') {
                 Mage::log('notification_type is credit. Ignoring it');
             }
 
+            $transaction = $boltHelper->fetchTransaction($reference);
+            $display_id = $transaction->order->cart->display_id;
+
             $quote = Mage::getModel('sales/quote')
                 ->getCollection()
-                ->addFieldToFilter('entity_id', $quoteId)
+                ->addFieldToFilter('reserved_order_id', $display_id)
                 ->getFirstItem();
 
             if (sizeof($quote->getData()) == 0) {
@@ -105,28 +135,17 @@ class Bolt_Boltpay_Model_Api2_Order_Rest_Admin_V1 extends Bolt_Boltpay_Model_Api
                     ->__('Inactive cart/quote cannot be converted to an order'), Mage_Api2_Model_Server::HTTP_BAD_REQUEST);
             }
 
-            $payment = $quote->getPayment();
 
             if (empty($reference) || empty($transactionId)) {
                 $this->_critical(Mage::helper('boltpay')
                     ->__('Reference and/or transaction_id is missing'), Mage_Api2_Model_Server::HTTP_BAD_REQUEST);
             }
 
-            $newTransactionStatus = $payment->getMethodInstance()->translateHookTypeToTransactionStatus($hookType);
-            $payment->setAdditionalInformation('bolt_merchant_transaction_id', $transactionId);
-            $payment->setAdditionalInformation('bolt_reference', $reference);
-            $payment->setAdditionalInformation('bolt_transaction_status', $newTransactionStatus);
-            $payment->setTransactionId($transactionId);
-            $payment->setIsTransactionClosed(true);
+            /********************************************************************
+             * Order creation is moved to helper API
+             ********************************************************************/
 
-            $service = Mage::getModel('sales/service_quote', $quote);
-            $quote->collectTotals();
-            $service->submitAll();
-            $quote->setIsActive(false);
-            $quote->save();
-            $order = $service->getOrder();
-
-            Mage::getModel('boltpay/payment')->handleOrderUpdate($order);
+            $order = $boltHelper->createOrder($reference, $session_quote_id = null);
 
             $this->getResponse()->addMessage(
                 self::$SUCCESS_ORDER_CREATED['message'], self::$SUCCESS_ORDER_CREATED['http_response_code'],

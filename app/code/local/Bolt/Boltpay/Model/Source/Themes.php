@@ -1,5 +1,10 @@
 <?php
 
+/**
+ * Class Bolt_Boltpay_Model_Source_Themes
+ *
+ * This class defines options for themes
+ */
 class Bolt_Boltpay_Model_Source_Themes
 {
   public function toOptionArray()

@@ -133,7 +133,7 @@ class Bolt_Boltpay_Model_Payment extends Mage_Payment_Model_Method_Abstract {
         if(!empty($quote)) {
             $quote->collectTotals();
 
-            return Mage::helper('boltpay')->canUseBolt();
+            return Mage::helper('boltpay')->canUseBolt($quote);
         }
 
         return false;

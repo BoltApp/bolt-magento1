@@ -57,6 +57,10 @@ class Bolt_Boltpay_OnepageController extends Mage_Checkout_OnepageController {
         }
     }
 
+    /**
+     * @deprecated Order is saved from a Bolt_Boltpay_OrderController::saveAction
+     * which in turn calls the helper class Bolt_Boltpay_Helper_Api::createOrder
+     */
     public function saveOrderAction() {
         $payment = $this->getOnepage()->getQuote()->getPayment();
         $method = $payment->getMethod();
