@@ -21,8 +21,6 @@ class Bolt_Boltpay_Helper_Data extends Mage_Core_Helper_Abstract {
      */
     public function canUseBolt($quote) {
 
-        //Mage::log('FROM HOOKS: ' . var_export(self::$from_hooks, true), null, 'hooks.log');
-
         /**
          * If called from hooks always return true
          */

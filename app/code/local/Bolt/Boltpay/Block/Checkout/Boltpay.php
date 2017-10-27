@@ -108,7 +108,6 @@ class Bolt_Boltpay_Block_Checkout_Boltpay
                     "signature" => $signResponse->signature,
                     "nonce" => $signResponse->nonce,
                 );
-                // add customer address info to hints
             }
 
             $key = $this->getUrl(
@@ -127,7 +126,9 @@ class Bolt_Boltpay_Block_Checkout_Boltpay
                     $json_cart,
                     $json_hints,
                     {
-                        close: function() {
+                        check: function() {
+                            var json_cart = $json_cart;
+                            return json_cart.orderToken != '';
                         },
                         success: function(transaction, callback) {
                         
@@ -161,7 +162,7 @@ class Bolt_Boltpay_Block_Checkout_Boltpay
             );
 
         } catch (Exception $e) {
-
+            Mage::log($e->getMessage(), null, 'bolt.log');
         }
     }
 

@@ -19,10 +19,6 @@ class Bolt_Boltpay_ShippingController extends Mage_Core_Controller_Front_Action 
 
         $request_json = file_get_contents('php://input');
 
-        $request_pretty = json_encode(json_decode($request_json), JSON_PRETTY_PRINT);
-
-        //Mage::log("SHIPPING REQUEST: " . $request_pretty, null, 'shipping_and_tax.log');
-
         $boltHelper = Mage::helper('boltpay/api');
 
         if (! $boltHelper->verify_hook($request_json, $hmac_header)) exit;
@@ -79,12 +75,10 @@ class Bolt_Boltpay_ShippingController extends Mage_Core_Controller_Front_Action 
 
         $quote->getShippingAddress()->addData($address_data)->save();
 
-        //Mage::log("SHIPPING ADDRESS: " . print_r($quote->getShippingAddress()->getData(), true), null, 'shipping_and_tax.log');
-
         $billingAddress = $quote->getBillingAddress();
 
         $quote->getBillingAddress()->addData(array(
-            'email'      => $billingAddress->getEmail() ?: $shipping_address->email,
+            'email'      => $billingAddress->getEmail()     ?: $shipping_address->email,
             'firstname'  => $billingAddress->getFirstname() ?: $shipping_address->first_name,
             'lastname'   => $billingAddress->getLastname()  ?: $shipping_address->last_name,
             'street'     => $billingAddress->getStreet()    ?: $shipping_address->street_address1 . ($shipping_address->street_address2 ? "\n" . $shipping_address->street_address2 : ''),
@@ -112,12 +106,20 @@ class Bolt_Boltpay_ShippingController extends Mage_Core_Controller_Front_Action 
 
         $items = $quote->getAllItems();
 
-        $total_tax = 0;  // this number is in BOLT format (i.e. in cents)
+        $items_price = 0;
 
         foreach($items as $item) {
-            $item_tax = $item->getPrice()*$item->getQty() * $taxCalculationModel->getRate($rate_request->setProductClassId($item->getProduct()->getTaxClassId()));
-            $total_tax += $item_tax;
+            $items_price += $item->getPrice()*$item->getQty();
         }
+
+        $applyTaxAfterDiscount = Mage::helper('tax')->applyTaxAfterDiscount();
+        $totals = $quote->getTotals();
+
+        if ($totals['discount'] && $applyTaxAfterDiscount) {
+            $items_price += $totals['discount']->getValue();
+        }
+
+        $total_tax = $items_price * $taxCalculationModel->getRate($rate_request->setProductClassId($item->getProduct()->getTaxClassId()));
 
         $tax_remain = $total_tax - round($total_tax);
 
@@ -155,10 +157,12 @@ class Bolt_Boltpay_ShippingController extends Mage_Core_Controller_Front_Action 
                 $tax_amount = $price * $tax_rate;
             }
 
+            $cost = round(100 *  $price);
+
             $option = array(
                 "service"    => $rate->getCarrierTitle().' - '.$rate->getMethodTitle(),
-                "cost"       => round(100 *  $price),
-                "tax_amount" => round($tax_amount + $tax_remain)
+                "cost"       => $cost,
+                "tax_amount" => $cost == 0 ? 0 : round(round(($tax_amount + $tax_remain) * 100) / 100)
             );
 
             $response['shipping_options'][] = $option;

@@ -371,9 +371,12 @@ class Bolt_Boltpay_Model_Payment extends Mage_Payment_Model_Method_Abstract {
                 $payment->save();
                 $payment->setShouldCloseParentTransaction(true);
 
+                Mage::log("NewTransactionStatus: $newTransactionStatus\n", null, "transaction.log");
+
                 if ($newTransactionStatus == self::TRANSACTION_AUTHORIZED) {
                     $order = $payment->getOrder();
                     $order->setState(Mage_Sales_Model_Order::STATE_PROCESSING, true, '');
+                    //$order->setState(self::TRANSACTION_AUTHORIZED, true, '');
                     $order->save();
                 } elseif ($newTransactionStatus == self::TRANSACTION_COMPLETED) {
                     $order = $payment->getOrder();
