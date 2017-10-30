@@ -1,6 +1,3 @@
-<dt class="complete">
-    <?php echo $this->__('Payment Method') ?>
-</dt>
 <dd class="complete">
-    <?= $this->__(Mage::getSingleton('checkout/session')->getQuote()->getPayment()->getMethodInstance()->getTitle()) ?>
+    <?= Bolt_Boltpay_Model_Payment::TITLE ?>
 </dd>

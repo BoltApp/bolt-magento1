@@ -1,0 +1,194 @@
+<?php
+/********************************************************************
+ * Bolt replace button JavaScript / CSS that added to every pagge.
+ ********************************************************************/
+
+if(! Mage::getStoreConfig('payment/boltpay/active')) {
+    return;
+}
+
+try {
+    // force the calculation shipping and taxes, redundant, does not work
+    // left for the reference, may be fixed or deleted in the future
+    $quote = Mage::getSingleton('checkout/session')->getQuote();
+    $quote->getShippingAddress()->setCollectShippingRates(true)->collectShippingRates()->save();
+    $quote->collectTotals()->save();
+
+} catch (Exception $e) {
+    // no checkout session quote
+}
+
+$theme = Mage::getStoreConfig('payment/boltpay/theme');
+
+/*******************************************************************************************
+ * Creating the order at Bolt end, if applicable (cart not empty).
+ * Generating BoltConnect.process code to be added below if buttons were found and replaced.
+ *******************************************************************************************/
+$bolt_connect = $this->getCartDataJs();
+
+$test_mode = Mage::getStoreConfig('payment/boltpay/test');
+?>
+
+
+<script>
+
+    // If Bolt Payment is in sandbox / test mode hide top checkout link
+    if (<?=$test_mode; ?>) {
+
+        var top_link_checkout = document.querySelectorAll('.top-link-checkout')[0];
+
+        if (top_link_checkout) {
+            top_link_checkout.parentNode.style.display = 'none';
+        }
+    }
+
+    (function(){
+
+        // generic function for making jsonp calls
+        var jsonpRequest = function(parent, element, attributes, params, callback_fn) {
+
+            if (params) {
+
+                var ts  = new Date().getTime();
+                params.push('cachebust' + '=' + encodeURIComponent(ts));
+
+                if (callback_fn) params.push('callback' + '=' + encodeURIComponent(callback_fn));
+
+                params = params.join('&');
+                attributes.src += '?' + params;
+            }
+
+            var el = document.createElement(element);
+
+            if (attributes) {
+                for (var attr in attributes) {
+                    el.setAttribute(attr, attributes[attr]);
+                }
+            }
+
+            var parent = document.getElementsByTagName(parent)[0];
+            parent.appendChild(el);
+        };
+
+        // load connect.js with jsonp request
+        var loadConnectJS = function() {
+            jsonpRequest('body', 'script', {"src": "<?= $this->getJsUrl(); ?>", "id":"bolt-connect", "type":"text/javascript", "data-shopping-cart-id":"Magento", "data-merchant-key":"<?= Mage::helper('core')->decrypt(Mage::getStoreConfig('payment/boltpay/merchant_key')); ?>"});
+
+        };
+
+        /****************************************************************************************************
+         * Finds and replaces specified buttons witn Bolt checkout buttons. Runs internal function
+         * on every 0.5 seconds up to 20 times. If no button was found for 10 seconds it clears the interlal
+         ****************************************************************************************************/
+        var replaceCheckout = function() {
+
+            var replaceRetries  = 20;
+            var replaceInterval = 500;
+
+
+            // replaceable button selectors and types of Bolt buttons to replace them with
+            var selectors = {
+                ".btn-proceed-checkout"                             : "bolt-checkout-button with-cards bolt-multi-step-checkout <?=$theme; ?>",
+                ".block-cart .block-content .actions button.button" : "bolt-checkout-button with-cards bolt-multi-step-checkout forward-to-cart <?=$theme; ?>"
+            };
+
+            var tryInterval = setInterval(
+
+                function() {
+
+                    replaceRetries -= 1;
+                    if (replaceRetries == 0) clearInterval(tryInterval);
+
+                    var found_elements = false;
+
+                    /*************************************************************
+                     * Try to find all replaceable buttons in every iteration.
+                     * Hide every button found and insert a Bolt button next to it.
+                     *************************************************************/
+                    for (var selector in selectors) {
+
+                        if (selectors.hasOwnProperty(selector)) {
+
+                            var elements = document.querySelectorAll(selector);
+
+                            for (var i = 0, length = elements.length; i < length; i++ ) {
+
+                                var element = elements[i];
+                                found_elements = true;
+
+                                element.style.display = "none";
+
+                                var div =  document.createElement("div");
+                                div.setAttribute("class",selectors[selector]);
+
+                                element.parentNode.insertBefore(div, element);
+                            }
+                        }
+                    }
+
+                    if (! found_elements) return;
+
+                    // Bolt buttons were placed on the page
+
+                    // do nut run the replacement routine again
+                    clearInterval(tryInterval);
+
+                    // load Bolt connect javascript
+                    loadConnectJS();
+
+                    // after a timeout (1,5 sec) the connect script did it's job
+                    // styling and attaching the events to Bolt buttons
+                    // then the checkout button on products page is set up to forward to
+                    // cart page and finally BoltConnect.process is executed.
+                    setTimeout(
+                        function () {
+
+                            var forward_button = document.querySelectorAll('.forward-to-cart')[0];
+
+                            if (forward_button) {
+
+                                var styleEl = document.createElement('style'), styleSheet;
+                                document.head.appendChild(styleEl);
+                                styleSheet = styleEl.sheet;
+                                styleSheet.insertRule("#bolt-modal-background { display:none; }", 0);
+
+                                forward_button.onclick = function(event){
+                                    event.preventDefault();
+                                    event.stopPropagation();
+                                    location = '/checkout/cart';
+                                };
+                            }
+
+                            <?=$bolt_connect; ?>
+                        },
+                        1500
+                    );
+
+                }, replaceInterval);
+        };
+
+        replaceCheckout();
+
+    })();
+
+</script>
+
+<style>
+
+.actions .bolt-checkout-button-button {
+    min-width: max-content!important;
+}
+
+#review-buttons-container p.f-left {
+    float: inherit!important;
+}
+
+.cart .cart-collaterals .shipping {
+    display: none!important;
+}
+
+</style>
+
+
+
+

@@ -1,3 +1,8 @@
+<?php
+
+if (! Mage::getStoreConfig('payment/boltpay/skip_payment')) return;
+
+?>
 <script
   type="text/javascript"
   src="<?= $this->getSkinUrl('boltpay/opcheckout.js') ?>">

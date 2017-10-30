@@ -7,6 +7,8 @@
  */
 class Bolt_Boltpay_Model_Observer {
 
+    const READY_FOR_SHIPMENT = 'ready_for_shipment';
+
     /**
      * Event handler called after a save event
      *
@@ -84,5 +86,17 @@ class Bolt_Boltpay_Model_Observer {
         }
 
         Mage::log("Bolt_Boltpay_Model_Observer.saveOrderBefore: Completed", null, 'bolt.log');
+    }
+
+    public function invoicePayAfter($observer) {
+
+        $order = $observer->getEvent()->getInvoice()->getOrder();
+
+        $payment = $order->getPayment();
+        $method = $payment->getMethod();
+
+        if (strtolower($method) == Bolt_Boltpay_Model_Payment::METHOD_CODE) {
+            $order->setState($this::READY_FOR_SHIPMENT, true, '');
+        }
     }
 }

@@ -42,6 +42,7 @@ class Bolt_Boltpay_Helper_Api extends Bolt_Boltpay_Helper_Data {
             return false;
         }
 
+        //Mage::log("TransactionInfo: $result \n", null, "transaction.log");
 
         $result = json_decode($result);
         $jsonError = $this->handleJSONParseError();
@@ -125,22 +126,22 @@ class Bolt_Boltpay_Helper_Api extends Bolt_Boltpay_Helper_Data {
      */
     public function createOrder($reference, $session_quote_id = null) {
 
-// fetch transaction info
+        // fetch transaction info
         $transaction = $this->fetchTransaction($reference);
 
         $transactionStatus = $transaction->status;
 
-// shipping carrier set up during checkout
+        // shipping carrier set up during checkout
         $service = $transaction->order->cart->shipments[0]->service;
 
         $quote_id = $transaction->order->cart->order_reference;
 
-// check if the quotes matches, frontend only
+        // check if the quotes matches, frontend only
         if ($session_quote_id && $session_quote_id != $quote_id) {
             return false;
         }
 
-//$quote = Mage::getModel('sales/quote')->load($quote_id);
+        //$quote = Mage::getModel('sales/quote')->load($quote_id);
 
         $display_id = $transaction->order->cart->display_id;
 
@@ -148,6 +149,14 @@ class Bolt_Boltpay_Helper_Api extends Bolt_Boltpay_Helper_Data {
             ->getCollection()
             ->addFieldToFilter('reserved_order_id', $display_id)
             ->getFirstItem();
+
+        // adding guest user email to order
+        if (empty($quote->getCustomerEmail())) {
+
+            $email = $transaction->from_credit_card->billing_address->email_address;
+            $quote->setCustomerEmail($email);
+            $quote->save();
+        }
 
         $quote->getShippingAddress()->setShouldIgnoreValidation(true)->save();
         $quote->getBillingAddress()->setShouldIgnoreValidation(true)->save();
@@ -168,7 +177,7 @@ class Bolt_Boltpay_Helper_Api extends Bolt_Boltpay_Helper_Data {
             }
         }
 
-// setting Bolt as payment method
+        // setting Bolt as payment method
 
         $data = array('method' => Bolt_Boltpay_Model_Payment::METHOD_CODE);
 
@@ -178,18 +187,19 @@ class Bolt_Boltpay_Helper_Api extends Bolt_Boltpay_Helper_Data {
 
         $payment->importData($data);
 
-// adding transaction data to payment instance
+        // adding transaction data to payment instance
         $payment->setAdditionalInformation('bolt_transaction_status', $transactionStatus);
         $payment->setAdditionalInformation('bolt_reference', $reference);
+        $payment->setAdditionalInformation('bolt_merchant_transaction_id', $transaction->id);
         $payment->setTransactionId($transaction->id);
 
         $quote->collectTotals()->save();
 
-// a call to internal Magento service for orde creation
+        // a call to internal Magento service for orde creation
         $service = Mage::getModel('sales/service_quote', $quote);
         $service->submitAll();
 
-// inactivate quote
+        // inactivate quote
         $quote->setIsActive(false);
         $quote->save();
 

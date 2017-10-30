@@ -177,8 +177,16 @@ class Bolt_Boltpay_Model_Payment extends Mage_Payment_Model_Method_Abstract {
             $boltHelper = Mage::helper('boltpay/api');
             // Get the merchant transaction id
             $merchantTransId = $payment->getAdditionalInformation('bolt_merchant_transaction_id');
+
+            Mage::log("capture merchantTransId: " . $merchantTransId, null, 'transaction.log');
+
             $reference = $payment->getAdditionalInformation('bolt_reference');
+
+            Mage::log("capture reference: " . $reference, null, 'transaction.log');
+
             $transactionStatus = $payment->getAdditionalInformation('bolt_transaction_status');
+
+            Mage::log("capture transactionStatus: " . $transactionStatus, null, 'transaction.log');
 
             if ($merchantTransId == null && !$payment->getData('auto_capture')) {
                 // If a capture is called with transaction status == Completed, it implies its
@@ -196,8 +204,14 @@ class Bolt_Boltpay_Model_Payment extends Mage_Payment_Model_Method_Abstract {
                     Mage::throwException('Bad capture response. Empty transaction status');
                 }
                 $responseStatus = $response->status;
+
+                Mage::log("capture responseStatus: " . $responseStatus, null, 'transaction.log');
+
                 $this->_handleBoltTransactionStatus($payment, $responseStatus);
                 $payment->setAdditionalInformation('bolt_transaction_status', $responseStatus);
+
+                $payment->save();
+
             } elseif ($transactionStatus != self::TRANSACTION_COMPLETED) {
                 Mage::throwException(sprintf('Capture attempted denied. Transaction status: %s', $transactionStatus));
             }
@@ -332,6 +346,9 @@ class Bolt_Boltpay_Model_Payment extends Mage_Payment_Model_Method_Abstract {
 
     public function handleTransactionUpdate(Mage_Payment_Model_Info $payment, $newTransactionStatus, $prevTransactionStatus) {
         try {
+
+            Mage::log("handleTransactionUpdate newTransactionStatus: " . $newTransactionStatus, null, 'transaction.log');
+
             $newTransactionStatus = strtolower($newTransactionStatus);
 
             // null prevTransactionStatus indicates a new transaction
@@ -371,12 +388,12 @@ class Bolt_Boltpay_Model_Payment extends Mage_Payment_Model_Method_Abstract {
                 $payment->save();
                 $payment->setShouldCloseParentTransaction(true);
 
-                Mage::log("NewTransactionStatus: $newTransactionStatus\n", null, "transaction.log");
+                //Mage::log("NewTransactionStatus: $newTransactionStatus\n", null, "transaction.log");
 
                 if ($newTransactionStatus == self::TRANSACTION_AUTHORIZED) {
                     $order = $payment->getOrder();
-                    $order->setState(Mage_Sales_Model_Order::STATE_PROCESSING, true, '');
-                    //$order->setState(self::TRANSACTION_AUTHORIZED, true, '');
+                    //$order->setState(Mage_Sales_Model_Order::STATE_PROCESSING, true, '');
+                    $order->setState('authorized', true, '');
                     $order->save();
                 } elseif ($newTransactionStatus == self::TRANSACTION_COMPLETED) {
                     $order = $payment->getOrder();
@@ -424,7 +441,7 @@ class Bolt_Boltpay_Model_Payment extends Mage_Payment_Model_Method_Abstract {
                 } elseif ($newTransactionStatus == self::TRANSACTION_REJECTED_REVERSIBLE) {
                     $order = $payment->getOrder();
                     $message = Mage::helper('boltpay')->__(sprintf('Transaction reference "%s" has been rejected by Bolt internal review but is eligible for force approval on Bolt\'s merchant dashboard', $reference));
-                    $order->setState(Mage_Sales_Model_Order::STATE_PAYMENT_REVIEW, true, $message);
+                    $order->setState(Mage_Sales_Model_Order::STATE_PAYMENT_REVIEW, true, $message, true);
                     $order->save();
                 }
             } else {
