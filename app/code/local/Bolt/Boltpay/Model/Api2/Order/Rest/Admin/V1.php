@@ -146,10 +146,18 @@ class Bolt_Boltpay_Model_Api2_Order_Rest_Admin_V1 extends Bolt_Boltpay_Model_Api
             $error = $invalid->getMessage();
             Mage::log($error, null, 'bolt.log');
             Mage::log("Late queue event. Returning as OK", null, 'bolt.log');
+            Mage::helper('boltpay/bugsnag')-> getBugsnag()->leaveBreadcrumb(
+                'Exception',
+                \Bugsnag\Breadcrumbs\Breadcrumb::ERROR_TYPE,
+                ['message' => $error]);
             $this->_critical($error, Mage_Api2_Model_Server::HTTP_OK);
         } catch (Exception $e) {
             $error = $e->getMessage();
             Mage::log($error, null, 'bolt.log');
+            Mage::helper('boltpay/bugsnag')-> getBugsnag()->leaveBreadcrumb(
+                'Exception',
+                \Bugsnag\Breadcrumbs\Breadcrumb::ERROR_TYPE,
+                ['message' => $error]);
             $this->_critical($error, Mage_Api2_Model_Server::HTTP_INTERNAL_ERROR);
         }
     }

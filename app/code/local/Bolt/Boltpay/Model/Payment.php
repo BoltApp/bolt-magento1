@@ -358,6 +358,10 @@ class Bolt_Boltpay_Model_Payment extends Mage_Payment_Model_Method_Abstract {
         } catch (Exception $e) {
             $error = array('error' => $e->getMessage());
             Mage::log($error, null, 'bolt.log');
+            Mage::helper('boltpay/bugsnag')-> getBugsnag()->leaveBreadcrumb(
+                'Exception',
+                \Bugsnag\Breadcrumbs\Breadcrumb::ERROR_TYPE,
+                ['message' => $error['error']]);
             throw $e;
         }
     }
@@ -470,6 +474,10 @@ class Bolt_Boltpay_Model_Payment extends Mage_Payment_Model_Method_Abstract {
         } catch (Exception $e) {
             $error = array('error' => $e->getMessage());
             Mage::log($error, null, 'bolt.log');
+            Mage::helper('boltpay/bugsnag')-> getBugsnag()->leaveBreadcrumb(
+                'Exception',
+                \Bugsnag\Breadcrumbs\Breadcrumb::ERROR_TYPE,
+                ['message' => $error['error']]);
             throw $e;
         }
     }
