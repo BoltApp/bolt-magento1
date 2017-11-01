@@ -13,31 +13,46 @@ class Bolt_Boltpay_OrderController extends Mage_Core_Controller_Front_Action {
      */
     public function saveAction()
     {
+        $bugsnag = Mage::helper('boltpay/bugsnag')-> getBugsnag();
 
-        if (!$this->getRequest()->isAjax()) {
-            exit;
+        try {
+
+            $boltHelper = Mage::helper('boltpay/api');
+
+            if (!$this->getRequest()->isAjax()) {
+                Mage::throwException("OrderController::saveAction called with a non AJAX call");
+            }
+
+            $checkout_session = Mage::getSingleton('checkout/session');
+
+            $reference = $this->getRequest()->getPost('reference');
+
+            $bugsnag->leaveBreadcrumb(
+                'OrderController::saveAction',
+                \Bugsnag\Breadcrumbs\Breadcrumb::LOG_TYPE,
+                ['reference'  => $reference]);
+
+            $session_quote = $checkout_session->getQuote();
+
+            $order = $boltHelper->createOrder($reference, $session_quote->getId());
+
+            $checkout_session->setLastQuoteId($session_quote->getId())
+                ->setLastSuccessQuoteId($session_quote->getId())
+                ->clearHelperData();
+
+            if ($order) {
+
+                // add order information to the session
+                $checkout_session->setLastOrderId($order->getId())
+                    ->setRedirectUrl('')
+                    ->setLastRealOrderId($order->getIncrementId());
+            }
+
+        } catch (Exception $e) {
+            $bugsnag->notifyException($e);
+            throw $e;
         }
 
-        $boltHelper = Mage::helper('boltpay/api');
-        $checkout_session = Mage::getSingleton('checkout/session');
-
-        $reference = $this->getRequest()->getPost('reference');
-
-        $session_quote = $checkout_session->getQuote();
-
-        $order = $boltHelper->createOrder($reference, $session_quote->getId());
-
-        $checkout_session->setLastQuoteId($session_quote->getId())
-            ->setLastSuccessQuoteId($session_quote->getId())
-            ->clearHelperData();
-
-        if ($order) {
-
-            // add order information to the session
-            $checkout_session->setLastOrderId($order->getId())
-                ->setRedirectUrl('')
-                ->setLastRealOrderId($order->getIncrementId());
-        }
 
     }
 }

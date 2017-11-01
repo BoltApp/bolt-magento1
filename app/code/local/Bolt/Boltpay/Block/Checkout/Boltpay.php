@@ -1,5 +1,4 @@
 <?php
-
 /**
  * Class Bolt_Boltpay_Block_Checkout_Boltpay
  *
@@ -11,6 +10,7 @@
  * create the order on Bolt side and set up BoltConnect process with cart and hint data.
  *
  */
+
 class Bolt_Boltpay_Block_Checkout_Boltpay
     extends Mage_Checkout_Block_Onepage_Review_Info {
 
@@ -55,9 +55,19 @@ class Bolt_Boltpay_Block_Checkout_Boltpay
      * @return mixed json based PHP object
      */
     public function createOrder($quote) {
+
         $boltHelper = Mage::helper('boltpay/api');
         $order_request = $boltHelper->buildOrder($quote, $this->getItems());
-        return $boltHelper->handleErrorResponse($boltHelper->transmit('orders', $order_request));
+
+        //Mage::log("order_request: ". var_export($order_request, true), null,"bolt.log");
+
+        $order_response = $boltHelper->transmit('orders', $order_request);
+
+        //Mage::log("order_response: ". var_export($order_response, true), null,"bolt.log");
+
+        $response = $boltHelper->handleErrorResponse($order_response);
+
+        return $response;
     }
 
     /**
@@ -70,6 +80,8 @@ class Bolt_Boltpay_Block_Checkout_Boltpay
     public function getCartDataJs() {
 
         try {
+
+            if (count($this->getItems()) == 0) return;
 
             $customerSession = Mage::getSingleton('customer/session');
             $session = Mage::getSingleton('checkout/session');
@@ -86,6 +98,7 @@ class Bolt_Boltpay_Block_Checkout_Boltpay
                     'merchant_user_id' => $reservedUserId,
                 );
                 $signResponse = $boltHelper->handleErrorResponse($boltHelper->transmit('sign', $signRequest));
+                //Mage::log("signResponse: ". var_export($signResponse, true), null,"bolt.log");
             }
 
             if (Mage::getStoreConfig('payment/boltpay/auto_capture') == self::AUTO_CAPTURE_ENABLED) {
@@ -95,6 +108,7 @@ class Bolt_Boltpay_Block_Checkout_Boltpay
             }
 
             $orderCreationResponse = $this->createOrder($quote);
+
             $cart_data = array(
                 'authcapture' => $authCapture,
                 'orderToken' => $orderCreationResponse->token,
@@ -110,10 +124,6 @@ class Bolt_Boltpay_Block_Checkout_Boltpay
                 );
             }
 
-            $key = $this->getUrl(
-                'checkout/onepage/saveOrder',
-                array('form_key' => Mage::getSingleton('core/session')->getFormKey())
-            );
             $json_cart = json_encode($cart_data);
             $json_hints = '{}';
             if (sizeof($hint_data) != 0) {
@@ -163,6 +173,7 @@ class Bolt_Boltpay_Block_Checkout_Boltpay
 
         } catch (Exception $e) {
             Mage::log($e->getMessage(), null, 'bolt.log');
+            Mage::helper('boltpay/bugsnag')-> getBugsnag()->notifyException($e);
         }
     }
 
@@ -175,6 +186,7 @@ class Bolt_Boltpay_Block_Checkout_Boltpay
     private function getAddressHints($session, $quote) {
 
         $hints = array();
+
 
         $address = $quote->getShippingAddress();
 
@@ -189,7 +201,10 @@ class Bolt_Boltpay_Block_Checkout_Boltpay
             $address = $customer->getDefaultShippingAddress();
         }
 
+        Mage::log("hint_data: ". var_export($address->getEmail(), true), null,"bolt.log");
+
         if (@$address->getEmail()) {
+
 
             $country_id      = $address->getCountryId();
             $country         = Mage::getModel('directory/country')->loadByCode($country_id)->getName();
@@ -207,6 +222,7 @@ class Bolt_Boltpay_Block_Checkout_Boltpay
             $hints['country']         = $country;
             if ($street_address2) $hints['street_address2'] = $street_address2;
         }
+
 
         return $hints;
     }
@@ -228,6 +244,7 @@ class Bolt_Boltpay_Block_Checkout_Boltpay
 
             if ($customer->getBoltUserId() == 0 || $customer->getBoltUserId() == null) {
                 Mage::log("Creating new user id for logged in user", null, 'bolt.log');
+
                 $custId = Mage::getSingleton('eav/config')->getEntityType("customer")->fetchNewIncrementId($quote->getStoreId());
                 $customer->setBoltUserId($custId);
                 $customer->save();

@@ -16,6 +16,7 @@ class Bolt_Boltpay_Model_Observer {
      * @throws Exception
      */
     public function saveOrderAfter($observer) {
+
         Mage::log("Bolt_Boltpay_Model_Observer.saveOrderAfter: Started", null, 'bolt.log');
         $quote = $observer->getEvent()->getQuote();
         $session = Mage::getSingleton('customer/session');
@@ -40,6 +41,7 @@ class Bolt_Boltpay_Model_Observer {
         } catch (Exception $e) {
             $error = array('error' => $e->getMessage());
             Mage::log($error, null, 'bolt.log');
+            Mage::helper('boltpay/bugsnag')-> getBugsnag()->notifyException($e);
             throw $e;
         } finally {
             $session->unsBoltUserId();
@@ -90,13 +92,27 @@ class Bolt_Boltpay_Model_Observer {
 
     public function invoicePayAfter($observer) {
 
-        $order = $observer->getEvent()->getInvoice()->getOrder();
+        try {
 
-        $payment = $order->getPayment();
-        $method = $payment->getMethod();
+            $invoice = $observer->getEvent()->getInvoice();
+            $is_paid = $invoice->getIsPaid();
 
-        if (strtolower($method) == Bolt_Boltpay_Model_Payment::METHOD_CODE) {
-            $order->setState($this::READY_FOR_SHIPMENT, true, '');
+            $order = $invoice->getOrder();
+
+            $state = $order->getState();
+
+            $payment = $order->getPayment();
+            $method = $payment->getMethod();
+
+            if (strtolower($method) == Bolt_Boltpay_Model_Payment::METHOD_CODE
+                && $is_paid
+                && $state == Mage_Sales_Model_Order::STATE_PROCESSING) {
+
+                $order->setState($this::READY_FOR_SHIPMENT, true, '');
+            }
+        } catch (Exception $e) {
+            Mage::helper('boltpay/bugsnag')-> getBugsnag()->notifyException($e);
+            throw $e;
         }
     }
 }

@@ -29,26 +29,15 @@ class Bolt_Boltpay_Model_Api2_Order_Rest_Admin_V1 extends Bolt_Boltpay_Model_Api
      * @inheritdoc
      */
     public function dispatch() {
-        parent::dispatch();
-        $this->getResponse()->clearHeader("Location");
-    }
+        try {
+            parent::dispatch();
+            $this->getResponse()->clearHeader("Location");
+        } catch (Exception $e) {
+            Mage::helper('boltpay/bugsnag')-> getBugsnag()->notifyException($e);
+            throw $e;
+        }
 
-//    function _retrieve() {
-//        $activeQuotes = Mage::getModel('sales/quote')
-//            ->getCollection()
-//            ->addFieldToFilter('is_active', true)
-//            ->getItems();
-//
-//        $allQuotes = Mage::getModel('sales/quote')
-//            ->getCollection()
-//            ->getItems();
-//
-//        $allQuotes = Mage::getModel('sales/quote')
-//            ->getCollection()
-//            ->getItems();
-////            ->addFieldToFilter('entity_id', $quoteId)
-////            ->getFirstItem();
-//    }
+    }
 
     /**
      * API Hook enpoint that processes all web hook requests
@@ -58,7 +47,6 @@ class Bolt_Boltpay_Model_Api2_Order_Rest_Admin_V1 extends Bolt_Boltpay_Model_Api
      */
     function _create($couponData)
     {
-
         try {
             Mage::log('Initiating webhook call', null, 'bolt.log');
 

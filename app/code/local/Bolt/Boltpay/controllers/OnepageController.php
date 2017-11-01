@@ -7,6 +7,8 @@ class Bolt_Boltpay_OnepageController extends Mage_Checkout_OnepageController {
         if ($this->_expireAjax()) {
             return;
         }
+
+        $bugsnag = Mage::helper('boltpay/bugsnag')-> getBugsnag();
     
         if ($this->getRequest()->isPost()) {
             $data = $this->getRequest()->getPost('shipping_method', '');
@@ -22,11 +24,14 @@ class Bolt_Boltpay_OnepageController extends Mage_Checkout_OnepageController {
                             $result['fields'] = $e->getFields();
                         }
                         $result['error'] = $e->getMessage();
+                        $bugsnag->notifyException($e);
                     } catch (Mage_Core_Exception $e) {
                         $result['error'] = $e->getMessage();
+                        $bugsnag->notifyException($e);
                     } catch (Exception $e) {
                         Mage::logException($e);
                         $result['error'] = $this->__('Unable to set Payment Method.');
+                        $bugsnag->notifyException($e);
                     }
                 }
 

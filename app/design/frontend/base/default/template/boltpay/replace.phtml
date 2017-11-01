@@ -73,7 +73,6 @@ $test_mode = Mage::getStoreConfig('payment/boltpay/test');
         // load connect.js with jsonp request
         var loadConnectJS = function() {
             jsonpRequest('body', 'script', {"src": "<?= $this->getJsUrl(); ?>", "id":"bolt-connect", "type":"text/javascript", "data-shopping-cart-id":"Magento", "data-merchant-key":"<?= Mage::helper('core')->decrypt(Mage::getStoreConfig('payment/boltpay/merchant_key')); ?>"});
-
         };
 
         /****************************************************************************************************
@@ -136,32 +135,39 @@ $test_mode = Mage::getStoreConfig('payment/boltpay/test');
                     // load Bolt connect javascript
                     loadConnectJS();
 
-                    // after a timeout (1,5 sec) the connect script did it's job
-                    // styling and attaching the events to Bolt buttons
-                    // then the checkout button on products page is set up to forward to
-                    // cart page and finally BoltConnect.process is executed.
-                    setTimeout(
-                        function () {
+                    // On every 50 ms check if the Bolt connect.js javascript is inserted
+                    // by checking the BoltConnect object existence. Clear the interval when
+                    // BoltConnect is found. On products page the Bolt checkout button
+                    // is set up to forward to the cart page. On cart page BoltConnect.process is executed.
+                    var processInterval = setInterval(
+                        function() {
 
-                            var forward_button = document.querySelectorAll('.forward-to-cart')[0];
+                            if (typeof BoltConnect !== "undefined") {
 
-                            if (forward_button) {
+                                clearInterval(processInterval);
 
-                                var styleEl = document.createElement('style'), styleSheet;
-                                document.head.appendChild(styleEl);
-                                styleSheet = styleEl.sheet;
-                                styleSheet.insertRule("#bolt-modal-background { display:none; }", 0);
+                                // selector that indicates that forward to the cart
+                                // functionality should be implemented, products page.
+                                var forward_button = document.querySelectorAll('.forward-to-cart')[0];
 
-                                forward_button.onclick = function(event){
-                                    event.preventDefault();
-                                    event.stopPropagation();
-                                    location = '/checkout/cart';
-                                };
+                                if (forward_button) {
+
+                                    var styleEl = document.createElement('style'), styleSheet;
+                                    document.head.appendChild(styleEl);
+                                    styleSheet = styleEl.sheet;
+                                    styleSheet.insertRule("#bolt-modal-background { display:none; }", 0);
+
+                                    forward_button.onclick = function(event){
+                                        event.preventDefault();
+                                        event.stopPropagation();
+                                        location = '/checkout/cart';
+                                    };
+                                } else {
+                                    <?=$bolt_connect; ?>
+                                }
                             }
 
-                            <?=$bolt_connect; ?>
-                        },
-                        1500
+                        }, 50
                     );
 
                 }, replaceInterval);

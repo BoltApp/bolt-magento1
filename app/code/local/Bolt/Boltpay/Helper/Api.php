@@ -1,5 +1,4 @@
 <?php
-
 /**
  * Class Bolt_Boltpay_Helper_Api
  *
@@ -19,42 +18,28 @@ class Bolt_Boltpay_Helper_Api extends Bolt_Boltpay_Helper_Data {
     /**
      * A call to Fetch Bolt API endpoint. Gets the transaction info.
      *
-     * @param $reference        Bolt transaction reference
-     * @return bool|mixed       Transaction info
+     * @param string $reference        Bolt transaction reference
+     * @param int $tries
+     *
+     * @throws Mage_Core_Exception     thrown if multiple (3) calls fail
+     * @return bool|mixed Transaction info
      */
-    public function fetchTransaction($reference) {
+    public function fetchTransaction($reference, $tries = 3) {
 
-        $url = $this->getApiUrl() . "v1/merchant/transactions/$reference";
-        $key = Mage::getStoreConfig('payment/boltpay/management_key');
-        $key = Mage::helper('core')->decrypt($key);
+        $bugsnag = Mage::helper('boltpay/bugsnag')-> getBugsnag();
 
-        $ch = curl_init($url);
-
-        curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
-        curl_setopt($ch, CURLOPT_HTTPHEADER, array(
-            "X-Merchant-Key: $key"
-        ));
-
-        $result = curl_exec($ch);
-
-        if ($result === false) {
-            curl_close($ch);
-            return false;
+        if ($tries-- == 0) {
+            $message = "BoltPay Gateway error: Fetch Transaction call failed multiple times for transaction referenced: $reference";
+            $bugsnag->notifyError('Exception', $message);
+            Mage::throwException($message);
         }
 
-        //Mage::log("TransactionInfo: $result \n", null, "transaction.log");
-
-        $result = json_decode($result);
-        $jsonError = $this->handleJSONParseError();
-
-        if ($jsonError != null) {
-            curl_close($ch);
-            return false;
+        try {
+            $response = $this->transmit($reference, null);
+            return $this->handleErrorResponse($response);
+        } catch (Exception $e) {
+            return $this->fetchTransaction($reference, $tries);
         }
-
-        curl_close($ch);
-
-        return $result;
     }
 
     /**
@@ -78,31 +63,40 @@ class Bolt_Boltpay_Helper_Api extends Bolt_Boltpay_Helper_Data {
      * @param $payload
      * @param $hmac_header
      * @return bool
+     * @throws Exception
      */
     private function verify_hook_api($payload, $hmac_header) {
 
-        $url = $this->getApiUrl() . "/v1/merchant/verify_signature";
+        try {
 
-        $key = Mage::getStoreConfig('payment/boltpay/management_key');
-        $key = Mage::helper('core')->decrypt($key);
+            $url = $this->getApiUrl() . "/v1/merchant/verify_signature";
 
-        $ch = curl_init($url);
+            $key = Mage::getStoreConfig('payment/boltpay/management_key');
+            $key = Mage::helper('core')->decrypt($key);
 
-        curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
-        curl_setopt($ch, CURLOPT_HTTPHEADER, array(
-            "X-Merchant-Key: $key",
-            "X-Bolt-Hmac-Sha256: $hmac_header",
-            "Content-type: application/json",
-        ));
+            $ch = curl_init($url);
 
-        curl_setopt($ch, CURLOPT_POST, true);
-        curl_setopt($ch, CURLOPT_POSTFIELDS, $payload);
+            curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+            curl_setopt($ch, CURLOPT_HTTPHEADER, array(
+                "X-Merchant-Key: $key",
+                "X-Bolt-Hmac-Sha256: $hmac_header",
+                "Content-type: application/json",
+            ));
 
-        curl_exec($ch);
+            curl_setopt($ch, CURLOPT_POST, true);
+            curl_setopt($ch, CURLOPT_POSTFIELDS, $payload);
 
-        $response = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+            curl_exec($ch);
 
-        return $response == 200;
+            $response = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+
+            return $response == 200;
+
+        } catch (Exception $e) {
+            Mage::helper('boltpay/bugsnag')-> getBugsnag()->notifyException($e);
+            return false;
+        }
+
     }
 
     /**
@@ -123,6 +117,7 @@ class Bolt_Boltpay_Helper_Api extends Bolt_Boltpay_Helper_Data {
      * @param $reference                Bolt transaction reference
      * @param null $session_quote_id    Session quote id, if triggered from frontend
      * @return mixed                    Order on successful creation
+     * @throws Exception
      */
     public function createOrder($reference, $session_quote_id = null) {
 
@@ -140,8 +135,6 @@ class Bolt_Boltpay_Helper_Api extends Bolt_Boltpay_Helper_Data {
         if ($session_quote_id && $session_quote_id != $quote_id) {
             return false;
         }
-
-        //$quote = Mage::getModel('sales/quote')->load($quote_id);
 
         $display_id = $transaction->order->cart->display_id;
 
@@ -169,9 +162,9 @@ class Bolt_Boltpay_Helper_Api extends Bolt_Boltpay_Helper_Data {
         $rates = $quote->getShippingAddress()->getAllShippingRates();
 
         foreach ($rates as $rate) {
-            if ($rate->getCarrierTitle().' - '.$rate->getMethodTitle() == $service) {
+            if ($rate->getCarrierTitle() . ' - ' . $rate->getMethodTitle() == $service) {
 
-                $shippingMethod = $rate->getCarrier().'_'.$rate->getMethod();
+                $shippingMethod = $rate->getCarrier() . '_' . $rate->getMethod();
                 $quote->getShippingAddress()->setShippingMethod($shippingMethod)->save();
                 break;
             }
@@ -199,7 +192,7 @@ class Bolt_Boltpay_Helper_Api extends Bolt_Boltpay_Helper_Data {
         $service = Mage::getModel('sales/service_quote', $quote);
         $service->submitAll();
 
-        // inactivate quote
+        // deactivate quote
         $quote->setIsActive(false);
         $quote->save();
 
@@ -208,6 +201,7 @@ class Bolt_Boltpay_Helper_Api extends Bolt_Boltpay_Helper_Data {
         Mage::getModel('boltpay/payment')->handleOrderUpdate($order);
 
         return $order;
+
     }
 
     /**
@@ -220,6 +214,7 @@ class Bolt_Boltpay_Helper_Api extends Bolt_Boltpay_Helper_Data {
      * @return mixed           Object derived from Json got as a response
      */
     public function transmit($command, $data, $object='merchant', $type='transactions') {
+
         $url = $this->getApiUrl() . 'v1/';
 
         Mage::log(sprintf("Making an API call to %s", $command), null, 'bolt.log');
@@ -262,14 +257,19 @@ class Bolt_Boltpay_Helper_Api extends Bolt_Boltpay_Helper_Data {
             $curl_info = var_dump(curl_getinfo($ch));
             $curl_err = curl_error($ch);
             curl_close($ch);
-            Mage::log("Curl info: " . $curl_info, null, 'bolt.log');
-            Mage::throwException("Curl error: " . $curl_err);
+
+            $message ="Curl info: " . $curl_info;
+
+            Mage::log($message, null, 'bolt.log');
+
+            Mage::throwException($message);
         }
         $resultJSON = json_decode($result);
         $jsonError = $this->handleJSONParseError();
         if ($jsonError != null) {
             curl_close($ch);
-            Mage::throwException("JSON Parse Type: " . $jsonError . " Response: " . $result);
+            $message ="JSON Parse Type: " . $jsonError . " Response: " . $result;
+            Mage::throwException($message);
         }
         curl_close($ch);
         Mage::getModel('boltpay/payment')->debugData($resultJSON);
@@ -286,8 +286,10 @@ class Bolt_Boltpay_Helper_Api extends Bolt_Boltpay_Helper_Data {
      * @return mixed  If there is no error then the response is returned unaltered.
      */
     public function handleErrorResponse($response) {
+
         if (is_null($response)) {
-            Mage::throwException("BoltPay Gateway error: No response from Bolt. Please re-try again");
+            $message ="BoltPay Gateway error: No response from Bolt. Please re-try again";
+            Mage::throwException($message);
         } elseif (self::isResponseError($response)) {
             $message = sprintf("BoltPay Gateway error: %s", serialize($response));
             Mage::throwException($message);
@@ -386,7 +388,7 @@ class Bolt_Boltpay_Helper_Api extends Bolt_Boltpay_Helper_Data {
 
         $cart_submission_data['total_amount'] = round($totals[$total_key]->getValue() * 100);
 
-        if ($totals['discount']) {
+        if (@$totals['discount']) {
 
             $amount = round($totals['discount']->getValue() * 100);
 

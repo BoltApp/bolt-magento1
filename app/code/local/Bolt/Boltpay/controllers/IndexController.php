@@ -10,23 +10,29 @@ class Bolt_Boltpay_IndexController extends Mage_Adminhtml_Controller_Action {
     }
 
     public function saveAction() {
-        $req = $this->getRequest();
-        $consumerKey = $req->getParam('consumer_key');
-        $consumerToken = $req->getParam('consumer_token');
-        $token = $req->getParam('access_token');
-        $tokenSecret = $req->getParam('access_token_secret');
+        try {
 
-        $boltHelper = Mage::helper('boltpay/api');
+            $req = $this->getRequest();
+            $consumerKey = $req->getParam('consumer_key');
+            $consumerToken = $req->getParam('consumer_token');
+            $token = $req->getParam('access_token');
+            $tokenSecret = $req->getParam('access_token_secret');
 
-        $reqData = array(
-            'consumer_key' => $consumerKey,
-            'consumer_secret' => $consumerToken,
-            'access_token' => $token,
-            'access_token_secret' => $tokenSecret
-        );
+            $boltHelper = Mage::helper('boltpay/api');
 
-        $boltHelper->handleErrorResponse($boltHelper->transmit('oauth', $reqData, 'merchant', 'division'));
-        $this->_getSession()->addSuccess($this->__('Publish Successful'));
-        $this->loadLayout()->renderLayout();
+            $reqData = array(
+                'consumer_key' => $consumerKey,
+                'consumer_secret' => $consumerToken,
+                'access_token' => $token,
+                'access_token_secret' => $tokenSecret
+            );
+
+            $boltHelper->handleErrorResponse($boltHelper->transmit('oauth', $reqData, 'merchant', 'division'));
+            $this->_getSession()->addSuccess($this->__('Publish Successful'));
+            $this->loadLayout()->renderLayout();
+        } catch (Exception $e) {
+            Mage::helper('boltpay/bugsnag')-> getBugsnag()->notifyException($e);
+            throw $e;
+        }
     }
 }
