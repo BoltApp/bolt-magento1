@@ -142,8 +142,7 @@ class Bolt_Boltpay_Helper_Api extends Bolt_Boltpay_Helper_Data {
             ->getFirstItem();
 
         // adding guest user email to order
-        if (empty($quote->getCustomerEmail())) {
-
+        if (!$quote->getCustomerEmail()) {
             $email = $transaction->from_credit_card->billing_address->email_address;
             $quote->setCustomerEmail($email);
             $quote->save();
