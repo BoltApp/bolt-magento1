@@ -3,7 +3,7 @@
 
   <modules>
     <Bolt_Boltpay>
-      <version>0.0.8</version> <!-- version number should be incremented appropriately  -->
+      <version>0.0.9</version> <!-- version number should be incremented appropriately  -->
     </Bolt_Boltpay>
   </modules>
 
@@ -54,15 +54,6 @@
 
     <events>
 
-      <sales_order_invoice_pay>
-        <observers>
-          <bolt_boltpay_sales_order_invoice_pay>
-            <class>Bolt_Boltpay_Model_Observer</class>
-            <method>invoicePayAfter</method>
-          </bolt_boltpay_sales_order_invoice_pay>
-        </observers>
-      </sales_order_invoice_pay>
-
       <!-- Call after onepage checkout order has been saved -->
       <checkout_type_onepage_save_order_after>
         <observers>
@@ -73,14 +64,6 @@
         </observers>
       </checkout_type_onepage_save_order_after>
 
-
-      <!--
-
-        For Multi Step Checkout, which seems to be the one and only checkout flow type in the Bolt API for Magento,
-        the initial cart data and the cart data after shipping is applied are different, therefore the following
-        observer would always throw an exception. It is removed from the configuration.
-
-      -->
       <!--<checkout_type_onepage_save_order>-->
         <!--<observers>-->
           <!--<bolt_boltpay_onepage_save_order>-->
@@ -100,31 +83,23 @@
           <!--</bolt_boltpay_onepage_checkout_index_render>-->
         <!--</observers>-->
       <!--</controller_action_layout_render_before_checkout_onepage_index>-->
+
     </events>
 
     <sales>
       <order>
         <statuses>
-          <authorized translate="label">
-            <label>Authorized</label>
-          </authorized>
-          <ready_for_shipment translate="label">
-            <label>Ready for Shipment</label>
-          </ready_for_shipment>
+          <deferred translate="label">
+            <label>Deferred</label>
+          </deferred>
         </statuses>
         <states>
-          <authorized translate="label">
-            <label>Authorized</label>
+          <deferred translate="label">
+            <label>Deferred</label>
             <statuses>
-              <authorized default="1"/>
+              <deferred default="1"/>
             </statuses>
-          </authorized>
-          <ready_for_shipment translate="label">
-            <label>Ready for Shipment</label>
-            <statuses>
-              <ready_for_shipment default="1"/>
-            </statuses>
-          </ready_for_shipment>
+          </deferred>
         </states>
       </order>
     </sales>
@@ -188,9 +163,12 @@
         <model>boltpay/payment</model>
         <theme>dark</theme>
         <title>Bolt Pay</title>
-        <order_status>pending_payment</order_status>
+        <order_status>processing</order_status>
         <payment_action>authorize</payment_action>
         <currency>USD</currency>
+        <selectors>.btn-proceed-checkout</selectors>
+        <styles>float:right;</styles>
+        <successpage>checkout/onepage/success</successpage>
         <skip_payment>0</skip_payment>
         <skip_confirm>1</skip_confirm>
         <sort_order>0</sort_order>

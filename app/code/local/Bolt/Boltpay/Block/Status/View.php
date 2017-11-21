@@ -38,7 +38,7 @@ class Bolt_Boltpay_Block_Status_View extends Mage_Adminhtml_Block_Template {
         } catch (Exception $e) {
             $error = array('error' => $e->getMessage());
             Mage::log($error, null, 'bolt.log');
-            Mage::helper('boltpay/bugsnag')-> getBugsnag()->notifyException($e);
+            Mage::helper('boltpay/bugsnag')->notifyException($e);
           return 'Connection to ' . $boltUrl . ": ERROR. Error: " . $e;
         }
     }
@@ -55,13 +55,12 @@ class Bolt_Boltpay_Block_Status_View extends Mage_Adminhtml_Block_Template {
 
     public function getMerchantCall() {
         $boltApi = Mage::helper('boltpay/api');
-        $result = "";
         try {
             $result = $boltApi->transmit('', null, 'merchant', '');
         } catch (Exception $e) {
             $error = array('error' => $e->getMessage());
             Mage::log($error, null, 'bolt.log');
-            Mage::helper('boltpay/bugsnag')-> getBugsnag()->notifyException($e);
+            Mage::helper('boltpay/bugsnag')->notifyException($e);
             return 'Bolt call failed. Error has been logged to bolt.log';
         }
         
@@ -86,17 +85,15 @@ class Bolt_Boltpay_Block_Status_View extends Mage_Adminhtml_Block_Template {
 
     public function getTransactionsEndpoint() {
         $boltApi = Mage::helper('boltpay/api');
-        $result = "";
         try {
             $result = $boltApi->transmit('ABCD-1234-EFGH', null, 'merchant', 'transactions');
         } catch (Exception $e) {
             $error = array('error' => $e->getMessage());
             Mage::log($error, null, 'bolt.log');
-            Mage::helper('boltpay/bugsnag')-> getBugsnag()->notifyException($e);
+            Mage::helper('boltpay/bugsnag')->notifyException($e);
             return 'Bolt call failed. Error has been logged to bolt.log';
         }
 
-        $resp = array();
         if ($result != null) {
             return json_encode($result, JSON_PRETTY_PRINT);
         }
@@ -114,7 +111,7 @@ class Bolt_Boltpay_Block_Status_View extends Mage_Adminhtml_Block_Template {
         $boltUrl = Mage::helper('boltpay/api')->getApiUrl() . "v1/merchant";
         $ch = curl_init($boltUrl);
         curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
-        $curlresult = curl_exec($ch);
+        curl_exec($ch);
         $dumpStr = var_dump(curl_getinfo($ch));
         curl_close($ch);
         return $dumpStr;

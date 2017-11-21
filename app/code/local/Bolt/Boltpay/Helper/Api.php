@@ -28,7 +28,7 @@ class Bolt_Boltpay_Helper_Api extends Bolt_Boltpay_Helper_Data {
 
         if ($tries-- == 0) {
             $message = "BoltPay Gateway error: Fetch Transaction call failed multiple times for transaction referenced: $reference";
-            Mage::helper('boltpay/bugsnag')-> getBugsnag()->notifyError('Exception', $message);
+            Mage::helper('boltpay/bugsnag')->notifyError('Exception', $message);
             Mage::throwException($message);
         }
 
@@ -69,7 +69,7 @@ class Bolt_Boltpay_Helper_Api extends Bolt_Boltpay_Helper_Data {
 
             $url = $this->getApiUrl() . "/v1/merchant/verify_signature";
 
-            $key = Mage::getStoreConfig('payment/boltpay/management_key');
+            $key = Mage::getStoreConfig('payment/boltpay/api_key');
             $key = Mage::helper('core')->decrypt($key);
 
             $ch = curl_init($url);
@@ -91,7 +91,7 @@ class Bolt_Boltpay_Helper_Api extends Bolt_Boltpay_Helper_Data {
             return $response == 200;
 
         } catch (Exception $e) {
-            Mage::helper('boltpay/bugsnag')-> getBugsnag()->notifyException($e);
+            Mage::helper('boltpay/bugsnag')->notifyException($e);
             return false;
         }
 
@@ -233,14 +233,16 @@ class Bolt_Boltpay_Helper_Api extends Bolt_Boltpay_Helper_Data {
         }
 
         if ($command == 'oauth' && $type == 'division') {
-            $key = Mage::getStoreConfig('payment/boltpay/merchant_key');
+            $key = Mage::getStoreConfig('payment/boltpay/publishable_key_multipage');
         } elseif ($command == '' && $type == '' && $object == 'merchant') {
-            $key = Mage::getStoreConfig('payment/boltpay/merchant_key');
+            $key = Mage::getStoreConfig('payment/boltpay/publishable_key_multipage');
         } elseif ($command == 'sign') {
-            $key = Mage::getStoreConfig('payment/boltpay/management_key');
+            $key = Mage::getStoreConfig('payment/boltpay/api_key');
         } else {
-            $key = Mage::getStoreConfig('payment/boltpay/management_key');
+            $key = Mage::getStoreConfig('payment/boltpay/api_key');
         }
+
+        //Mage::log('KEY: ' . Mage::helper('core')->decrypt($key), null, 'bolt.log');
 
         curl_setopt($ch, CURLOPT_HTTPHEADER, array(
             'Content-Type: application/json',
@@ -340,10 +342,11 @@ class Bolt_Boltpay_Helper_Api extends Bolt_Boltpay_Helper_Data {
      *
      * @param $quote            Maagento quote instance
      * @param array $items      array of Magento products
+     * @param bool $multipage   Is checkout type Multi-Page Checkout, the default is true, set to false for One Page Checkout
      * @return array            The order payload to be sent as to bolt in API call as a PHP array
      */
-    public function buildOrder($quote, $items) {
-        $cart = $this->buildCart($quote, $items);
+    public function buildOrder($quote, $items, $multipage) {
+        $cart = $this->buildCart($quote, $items, $multipage);
         return array(
             'cart' => $cart
         );
@@ -352,55 +355,144 @@ class Bolt_Boltpay_Helper_Api extends Bolt_Boltpay_Helper_Data {
     /**
      * Generates cart submission data for sending to Bolt order cart field.
      *
-     * @param $quote    Maagento quote instance
-     * @param $items    array of Magento products
-     * @return array    The cart data part of the order payload to be sent as to bolt in API call as a PHP array
+     * @param $quote            Maagento quote instance
+     * @param $items            array of Magento products
+     * @param bool $multipage   Is checkout type Multi-Page Checkout, the default is true, set to false for One Page Checkout
+     * @return array            The cart data part of the order payload to be sent as to bolt in API call as a PHP array
      */
-    public function buildCart($quote, $items) {
+    public function buildCart($quote, $items, $multipage) {
+
         $totals   = $quote->getTotals();
+
+        //Mage::log("totals: " . var_export(array_keys($totals), true), null, "bolt.log");
 
         $productMediaConfig = Mage::getModel('catalog/product_media_config');
 
         $cart_submission_data = array(
             'order_reference' => $quote->getId(),
-            'display_id' => $quote->getReservedOrderId(),
-            'items' => array_map(function ($item) use ($quote, $productMediaConfig) {
+            'display_id'      => $quote->getReservedOrderId(),
+            'items'           => array_map(function ($item) use ($quote, $productMediaConfig) {
                 $image_url = $productMediaConfig->getMediaUrl($item->getProduct()->getThumbnail());
-                $product = Mage::getModel('catalog/product')->load($item->getProductId());
-                $unitPrice = round($item->getPrice() * 100);
+                $product   = Mage::getModel('catalog/product')->load($item->getProductId());
                 return array(
-                    'reference' => $quote->getId(),
-                    'image_url' => $image_url,
-                    'name' => $item->getName(),
-                    'sku' => $product->getData('sku'),
-                    'description' => $product->getDescription(),
-                    'total_amount' => $unitPrice * $item->getQty(),
-                    'unit_price' => $unitPrice,
-                    'quantity' => $item->getQty()
+                    'reference'    => $quote->getId(),
+                    'image_url'    => $image_url,
+                    'name'         => $item->getName(),
+                    'sku'          => $product->getData('sku'),
+                    'description'  => $product->getDescription(),
+                    'total_amount' => round($item->getPrice() * 100 * $item->getQty()),
+                    'unit_price'   => round($item->getPrice() * 100),
+                    'quantity'     => $item->getQty()
                 );
             }, $items),
+            'currency' => $quote->getQuoteCurrencyCode(),
         );
 
-        $total_key = $totals['subtotal'] ? 'subtotal' : 'grand_total';
-
-        $cart_submission_data['total_amount'] = round($totals[$total_key]->getValue() * 100);
+        $discount_amount = 0;
 
         if (@$totals['discount']) {
 
-            $amount = round($totals['discount']->getValue() * 100);
+            $discount_amount = round($totals['discount']->getValue() * 100);
+
+            preg_match('#\((.*?)\)#', $totals['discount']->getTitle(), $description);
+            $description =  $description[1] ?: $totals['discount']->getTitle();
 
             $cart_submission_data['discounts'] = array(array(
-                'amount' => -1 * $amount,
-                'description' => $totals['discount']->getTitle(),
+                'amount'      => -1 * $discount_amount,
+                'description' => $description,
             ));
-
-            $cart_submission_data['total_amount'] += $amount;
-
         }
 
-        $currency = $quote->getQuoteCurrencyCode();
+        if ($multipage) {
 
-        $cart_submission_data['currency'] = $currency;
+            $total_key = @$totals['subtotal'] ? 'subtotal' : 'grand_total';
+
+            $cart_submission_data['total_amount'] = round($totals[$total_key]->getValue() * 100);
+            $cart_submission_data['total_amount'] += $discount_amount;
+
+        } else {
+
+            $shippingAddress = $quote->getShippingAddress();
+            $billingAddress  = $quote->getBillingAddress();
+
+            $cart_submission_data['total_amount'] = round($totals["grand_total"]->getValue() * 100);
+
+            if (@$totals['tax']) {
+                $cart_submission_data['tax_amount'] = round($totals['tax']->getValue() * 100);
+            }
+
+            $required_address_fields = array(
+                'first_name',
+                'last_name',
+                'street_address1',
+                'locality',
+                'region',
+                'postal_code',
+                'country_code',
+            );
+
+            $cart_submission_data['billing_address'] = array(
+                'street_address1' => $billingAddress->getStreet1(),
+                'street_address2' => $billingAddress->getStreet2(),
+                'street_address3' => $billingAddress->getStreet3(),
+                'street_address4' => $billingAddress->getStreet4(),
+                'first_name'      => $billingAddress->getFirstname(),
+                'last_name'       => $billingAddress->getLastname(),
+                'locality'        => $billingAddress->getCity(),
+                'region'          => $billingAddress->getRegion(),
+                'postal_code'     => $billingAddress->getPostcode(),
+                'country_code'    => $billingAddress->getCountry(),
+                'phone'           => $billingAddress->getTelephone(),
+                'email'           => $billingAddress->getEmail(),
+                'phone_number'    => $billingAddress->getTelephone(),
+                'email_address'   => $billingAddress->getEmail(),
+            );
+
+            foreach ($required_address_fields as $field) {
+                if (empty($cart_submission_data['billing_address'][$field])) {
+                    unset($cart_submission_data['billing_address']);
+                    break;
+                }
+            }
+
+            $shipping_address = array(
+                'street_address1' => $shippingAddress->getStreet1(),
+                'street_address2' => $shippingAddress->getStreet2(),
+                'street_address3' => $shippingAddress->getStreet3(),
+                'street_address4' => $shippingAddress->getStreet4(),
+                'first_name'      => $shippingAddress->getFirstname(),
+                'last_name'       => $shippingAddress->getLastname(),
+                'locality'        => $shippingAddress->getCity(),
+                'region'          => $shippingAddress->getRegion(),
+                'postal_code'     => $shippingAddress->getPostcode(),
+                'country_code'    => $shippingAddress->getCountry(),
+                'phone'           => $shippingAddress->getTelephone(),
+                'email'           => $shippingAddress->getEmail(),
+                'phone_number'    => $shippingAddress->getTelephone(),
+                'email_address'   => $shippingAddress->getEmail(),
+            );
+
+            //Mage::log("shipping_address: " . var_export($shipping_address, true), null, "bolt.log");
+
+            if (@$totals['shipping']) {
+                $cart_submission_data['shipments'] = array(array(
+                    'shipping_address' => $shipping_address,
+                    'tax_amount'       => round($quote->getShippingAddress()->getShippingTaxAmount() * 100),
+                    'service'          => $shippingAddress->getShippingDescription(),
+                    'carrier'          => $shippingAddress->getShippingMethod(),
+                    'cost'             => round($totals['shipping']->getValue() * 100),
+                ));
+            }
+
+            foreach ($required_address_fields as $field) {
+                if (empty($shipping_address[$field])) {
+                    unset($cart_submission_data['shipments']);
+                    break;
+                }
+            }
+        }
+
+        //Mage::log(var_export($cart_submission_data, true), null, "bolt.log");
 
         return $cart_submission_data;
     }

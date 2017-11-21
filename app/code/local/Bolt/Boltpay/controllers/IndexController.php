@@ -31,7 +31,7 @@ class Bolt_Boltpay_IndexController extends Mage_Adminhtml_Controller_Action {
             $this->_getSession()->addSuccess($this->__('Publish Successful'));
             $this->loadLayout()->renderLayout();
         } catch (Exception $e) {
-            Mage::helper('boltpay/bugsnag')-> getBugsnag()->notifyException($e);
+            Mage::helper('boltpay/bugsnag')->notifyException($e);
             throw $e;
         }
     }

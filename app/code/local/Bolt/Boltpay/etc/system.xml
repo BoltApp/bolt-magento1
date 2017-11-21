@@ -20,33 +20,42 @@
               <show_in_website>1</show_in_website>
               <show_in_store>0</show_in_store>
             </active>
-            <merchant_key translate="label">
-              <label>Checkout / Processing Key</label>
+            <api_key translate="label">
+              <label>API Key</label>
               <frontend_type>obscure</frontend_type>
               <backend_model>adminhtml/system_config_backend_encrypted</backend_model>
               <sort_order>10</sort_order>
               <show_in_default>1</show_in_default>
               <show_in_website>1</show_in_website>
               <show_in_store>0</show_in_store>
-            </merchant_key>
-            <management_key translate="label">
-              <label>Management / Merchant Key</label>
+            </api_key>
+            <publishable_key_onepage translate="label">
+              <label> Publishable Key - One Page Checkout</label>
               <frontend_type>obscure</frontend_type>
               <backend_model>adminhtml/system_config_backend_encrypted</backend_model>
               <sort_order>11</sort_order>
               <show_in_default>1</show_in_default>
               <show_in_website>1</show_in_website>
               <show_in_store>0</show_in_store>
-            </management_key>
+            </publishable_key_onepage>
+            <publishable_key_multipage translate="label">
+              <label> Publishable Key - Multi-Page Checkout</label>
+              <frontend_type>obscure</frontend_type>
+              <backend_model>adminhtml/system_config_backend_encrypted</backend_model>
+              <sort_order>12</sort_order>
+              <show_in_default>1</show_in_default>
+              <show_in_website>1</show_in_website>
+              <show_in_store>0</show_in_store>
+            </publishable_key_multipage>
 
             <!--
                 The Bolt Signing Secret Key configuration, used to verify web hook request signature.
              -->
             <signing_key translate="label">
-              <label>Signing Secret Key</label>
+              <label>Signing Key</label>
               <frontend_type>obscure</frontend_type>
               <backend_model>adminhtml/system_config_backend_encrypted</backend_model>
-              <sort_order>12</sort_order>
+              <sort_order>13</sort_order>
               <show_in_default>1</show_in_default>
               <show_in_website>1</show_in_website>
               <show_in_store>0</show_in_store>
@@ -70,6 +79,36 @@
               <show_in_website>1</show_in_website>
               <show_in_store>0</show_in_store>
             </theme>
+
+            <styles translate="label">
+              <label>Bolt Button CSS Styles</label>
+              <frontend_type>text</frontend_type>
+              <comment>Semicolon delimited, default: float:right;</comment>
+              <sort_order>30</sort_order>
+              <show_in_default>1</show_in_default>
+              <show_in_website>1</show_in_website>
+              <show_in_store>0</show_in_store>
+            </styles>
+
+            <selectors translate="label">
+              <label>Replace Button Selectors</label>
+              <frontend_type>text</frontend_type>
+              <comment>Comma delimited, default: .btn-proceed-checkout</comment>
+              <sort_order>30</sort_order>
+              <show_in_default>1</show_in_default>
+              <show_in_website>1</show_in_website>
+              <show_in_store>0</show_in_store>
+            </selectors>
+
+            <successpage translate="label">
+              <label>Success Page Redirect</label>
+              <frontend_type>text</frontend_type>
+              <sort_order>40</sort_order>
+              <show_in_default>1</show_in_default>
+              <show_in_website>1</show_in_website>
+              <show_in_store>0</show_in_store>
+            </successpage>
+
             <skip_payment translate="label">
               <label>Skip Payment Method Step</label>
               <frontend_type>select</frontend_type>
@@ -90,13 +129,6 @@
               <show_in_store>0</show_in_store>
             </test>
 
-            <!--
-
-              For Multi Step Checkout, which seems to be the one and only checkout flow type in the Bolt API for Magento,
-              the initial cart data and the cart data after shipping is applied are different, therefore
-              the Complete Authorize API call would always fail. It is removed from the configuration.
-
-            -->
             <!--<disable_complete_authorize translate="label">-->
               <!--<label>Disable Complete Authorize</label>-->
               <!--<frontend_type>select</frontend_type>-->

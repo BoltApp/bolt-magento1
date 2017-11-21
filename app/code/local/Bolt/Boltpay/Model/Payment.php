@@ -9,6 +9,10 @@ class Bolt_Boltpay_Model_Payment extends Mage_Payment_Model_Method_Abstract {
     const METHOD_CODE               = 'boltpay';
     const TITLE                     = "Credit & Debit Card";
 
+
+    // Order States
+    const ORDER_DEFERRED = 'deferred';
+
     // Transaction States
     const TRANSACTION_AUTHORIZED = 'authorized';
     const TRANSACTION_CANCELLED = 'cancelled';
@@ -126,7 +130,7 @@ class Bolt_Boltpay_Model_Payment extends Mage_Payment_Model_Method_Abstract {
         } catch (Exception $e) {
             $error = array('error' => $e->getMessage());
             Mage::log($error, null, 'bolt.log');
-            Mage::helper('boltpay/bugsnag')-> getBugsnag()->notifyException($e);
+            Mage::helper('boltpay/bugsnag')->notifyException($e);
             throw $e;
         }
     }
@@ -161,10 +165,11 @@ class Bolt_Boltpay_Model_Payment extends Mage_Payment_Model_Method_Abstract {
             // Set the transaction id
             $payment->setTransactionId($reference);
 
-            // Log the
+            // Log the payment info
             $msg = sprintf(
                 "Bolt Operation: \"Authorization\". Bolt Reference: \"%s\".", $reference);
-            $payment->getOrder()->addStatusHistoryComment($msg);
+            $payment->getOrder()->setState(Mage_Sales_Model_Order::STATE_PROCESSING, true, $msg);
+
 
             // Auth transactions need to be kept open to support cancelling/voiding transaction
             $payment->setIsTransactionClosed(false);
@@ -173,7 +178,7 @@ class Bolt_Boltpay_Model_Payment extends Mage_Payment_Model_Method_Abstract {
         } catch (Exception $e) {
             $error = array('error' => $e->getMessage());
             Mage::log($error, null, 'bolt.log');
-            Mage::helper('boltpay/bugsnag')-> getBugsnag()->notifyException($e);
+            Mage::helper('boltpay/bugsnag')->notifyException($e);
             throw $e;
         }
     }
@@ -185,15 +190,9 @@ class Bolt_Boltpay_Model_Payment extends Mage_Payment_Model_Method_Abstract {
             // Get the merchant transaction id
             $merchantTransId = $payment->getAdditionalInformation('bolt_merchant_transaction_id');
 
-            Mage::log("capture merchantTransId: " . $merchantTransId, null, 'transaction.log');
-
             $reference = $payment->getAdditionalInformation('bolt_reference');
 
-            Mage::log("capture reference: " . $reference, null, 'transaction.log');
-
             $transactionStatus = $payment->getAdditionalInformation('bolt_transaction_status');
-
-            Mage::log("capture transactionStatus: " . $transactionStatus, null, 'transaction.log');
 
             if ($merchantTransId == null && !$payment->getData('auto_capture')) {
                 // If a capture is called with transaction status == Completed, it implies its
@@ -214,8 +213,6 @@ class Bolt_Boltpay_Model_Payment extends Mage_Payment_Model_Method_Abstract {
                 }
                 $responseStatus = $response->status;
 
-                Mage::log("capture responseStatus: " . $responseStatus, null, 'transaction.log');
-
                 $this->_handleBoltTransactionStatus($payment, $responseStatus);
                 $payment->setAdditionalInformation('bolt_transaction_status', $responseStatus);
 
@@ -233,7 +230,7 @@ class Bolt_Boltpay_Model_Payment extends Mage_Payment_Model_Method_Abstract {
         } catch (Exception $e) {
             $error = array('error' => $e->getMessage());
             Mage::log($error, null, 'bolt.log');
-            Mage::helper('boltpay/bugsnag')-> getBugsnag()->notifyException($e);
+            Mage::helper('boltpay/bugsnag')->notifyException($e);
             throw $e;
         }
     }
@@ -298,7 +295,7 @@ class Bolt_Boltpay_Model_Payment extends Mage_Payment_Model_Method_Abstract {
         } catch (Exception $e) {
             $error = array('error' => $e->getMessage());
             Mage::log($error, null, 'bolt.log');
-            Mage::helper('boltpay/bugsnag')-> getBugsnag()->notifyException($e);
+            Mage::helper('boltpay/bugsnag')->notifyException($e);
             throw $e;
         }
     }
@@ -331,7 +328,7 @@ class Bolt_Boltpay_Model_Payment extends Mage_Payment_Model_Method_Abstract {
         } catch (Exception $e) {
             $error = array('error' => $e->getMessage());
             Mage::log($error, null, 'bolt.log');
-            Mage::helper('boltpay/bugsnag')-> getBugsnag()->notifyException($e);
+            Mage::helper('boltpay/bugsnag')->notifyException($e);
             throw $e;
         }
     }
@@ -358,18 +355,23 @@ class Bolt_Boltpay_Model_Payment extends Mage_Payment_Model_Method_Abstract {
         } catch (Exception $e) {
             $error = array('error' => $e->getMessage());
             Mage::log($error, null, 'bolt.log');
-            Mage::helper('boltpay/bugsnag')-> getBugsnag()->leaveBreadcrumb(
-                'Exception',
-                \Bugsnag\Breadcrumbs\Breadcrumb::ERROR_TYPE,
-                ['message' => $error['error']]);
+
+            Mage::helper('boltpay/bugsnag')->addMetaData(
+                array(
+                    "handle order update" => array (
+                        "message" => $error['error'],
+                        "class" => __CLASS__,
+                        "method" => __METHOD__,
+                    )
+                )
+            );
+
             throw $e;
         }
     }
 
     public function handleTransactionUpdate(Mage_Payment_Model_Info $payment, $newTransactionStatus, $prevTransactionStatus) {
         try {
-
-            Mage::log("handleTransactionUpdate newTransactionStatus: " . $newTransactionStatus, null, 'transaction.log');
 
             $newTransactionStatus = strtolower($newTransactionStatus);
 
@@ -412,11 +414,14 @@ class Bolt_Boltpay_Model_Payment extends Mage_Payment_Model_Method_Abstract {
                 $payment->save();
                 $payment->setShouldCloseParentTransaction(true);
 
-                //Mage::log("NewTransactionStatus: $newTransactionStatus\n", null, "transaction.log");
-
                 if ($newTransactionStatus == self::TRANSACTION_AUTHORIZED) {
+                    if ($prevTransactionStatus ==  self::TRANSACTION_PENDING) {
+                        $message = Mage::helper('boltpay')->__('Payment transaction is approved.');
+                    } else {
+                        $message = '';
+                    }
                     $order = $payment->getOrder();
-                    $order->setState(self::TRANSACTION_AUTHORIZED, true, '');
+                    $order->setState(Mage_Sales_Model_Order::STATE_PROCESSING, true, $message);
                     $order->save();
                 } elseif ($newTransactionStatus == self::TRANSACTION_COMPLETED) {
                     $order = $payment->getOrder();
@@ -465,7 +470,7 @@ class Bolt_Boltpay_Model_Payment extends Mage_Payment_Model_Method_Abstract {
                 } elseif ($newTransactionStatus == self::TRANSACTION_REJECTED_REVERSIBLE) {
                     $order = $payment->getOrder();
                     $message = Mage::helper('boltpay')->__(sprintf('Transaction reference "%s" has been rejected by Bolt internal review but is eligible for force approval on Bolt\'s merchant dashboard', $reference));
-                    $order->setState(Mage_Sales_Model_Order::STATE_PAYMENT_REVIEW, true, $message);
+                    $order->setState(self::ORDER_DEFERRED, true, $message);
                     $order->save();
                 }
             } else {
@@ -474,10 +479,17 @@ class Bolt_Boltpay_Model_Payment extends Mage_Payment_Model_Method_Abstract {
         } catch (Exception $e) {
             $error = array('error' => $e->getMessage());
             Mage::log($error, null, 'bolt.log');
-            Mage::helper('boltpay/bugsnag')-> getBugsnag()->leaveBreadcrumb(
-                'Exception',
-                \Bugsnag\Breadcrumbs\Breadcrumb::ERROR_TYPE,
-                ['message' => $error['error']]);
+
+            Mage::helper('boltpay/bugsnag')->addMetaData(
+                array(
+                    "handle transaction update" => array (
+                        "message" => $error['error'],
+                        "class" => __CLASS__,
+                        "method" => __METHOD__,
+                    )
+                )
+            );
+
             throw $e;
         }
     }

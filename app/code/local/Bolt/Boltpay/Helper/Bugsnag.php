@@ -1,7 +1,6 @@
 <?php
 
-require_once(Mage::getBaseDir('lib') . DS .  'Boltpay/Guzzle/autoloader.php');
-require_once(Mage::getBaseDir('lib') . DS .  'Boltpay/Bugsnag/autoloader.php');
+require_once(Mage::getBaseDir('lib') . DS .  'Boltpay/Bugsnag/Autoload.php');
 
 class Bolt_Boltpay_Helper_Bugsnag extends Mage_Core_Helper_Abstract {
 
@@ -10,18 +9,47 @@ class Bolt_Boltpay_Helper_Bugsnag extends Mage_Core_Helper_Abstract {
 
     private $bugsnag;
 
-    public function getBugsnag() {
+    private $metaData = array("breadcrumbs_" => array ());
 
-        if (empty($this->bugsnag)) {
+    public function addMetaData($metaData) {
+        $this->metaData['breadcrumbs_'] = array_merge($metaData, $this->metaData['breadcrumbs_']);
+    }
 
-            $bugsnag = \Bugsnag\Client::make($this->apiKey);
+    public function test() {
+        $this->getBugsnag()->notifyError('ErrorType', 'Test Error');
+    }
+
+    private function getBugsnag() {
+
+        if (!$this->bugsnag) {
+
+            $bugsnag = new Bugsnag_Client($this->apiKey);
+
             $bugsnag->setErrorReportingLevel(E_ERROR);
             $bugsnag->setReleaseStage($this->mode);
             $bugsnag->setBatchSending(true);
-            Bugsnag\Handler::register($bugsnag);
+
+            set_error_handler(array($bugsnag, 'errorHandler'));
+            set_exception_handler(array($bugsnag, 'exceptionHandler'));
+
+            $bugsnag->setBeforeNotifyFunction(array($this, 'beforeNotifyFunction'));
 
             $this->bugsnag = $bugsnag;
         }
         return $this->bugsnag;
+    }
+
+    public function beforeNotifyFunction($error) {
+        if (count($this->metaData['breadcrumbs_'])) {
+            $error->setMetaData($this->metaData);
+        }
+    }
+
+    public function notifyException($throwable, array $metaData = null, $severity = null) {
+        $this->getBugsnag()->notifyException($throwable, $metaData, $severity);
+    }
+
+    public function notifyError($name, $message, array $metaData = null, $severity = null) {
+        $this->getBugsnag()->notifyError($name, $message, $metaData, $severity );
     }
 }

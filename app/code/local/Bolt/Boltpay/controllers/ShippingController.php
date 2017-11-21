@@ -20,14 +20,12 @@ class Bolt_Boltpay_ShippingController extends Mage_Core_Controller_Front_Action 
             $hmac_header = $_SERVER['HTTP_X_BOLT_HMAC_SHA256'];
 
             $request_json = file_get_contents('php://input');
+            $request_data = json_decode($request_json);
 
-            Mage::log('SHIPPING AND TAX REQUEST: ' . $request_json, null, 'shipping_and_tax.log');
+            //Mage::log('SHIPPING AND TAX REQUEST: ' . json_encode($request_data, JSON_PRETTY_PRINT), null, 'shipping_and_tax.log');
 
             $boltHelper = Mage::helper('boltpay/api');
-
             if (!$boltHelper->verify_hook($request_json, $hmac_header)) exit;
-
-            $request_data = json_decode($request_json);
 
             $shipping_address = $request_data->shipping_address;
 
@@ -94,7 +92,6 @@ class Bolt_Boltpay_ShippingController extends Mage_Core_Controller_Front_Action 
                 'telephone' => $billingAddress->getTelephone() ?: $shipping_address->phone
             ))->save();
 
-            $quote->getShippingAddress()->setCollectShippingRates(true)->collectShippingRates()->save();
 
             $response = array(
                 'shipping_options' => array(),
@@ -103,34 +100,18 @@ class Bolt_Boltpay_ShippingController extends Mage_Core_Controller_Front_Action 
             /*****************************************************************************************
              * Calculate tax
              *****************************************************************************************/
+            $quote->getShippingAddress()->setShippingMethod(null)->save();
+
+            $quote->collectTotals()->save();
+
             $store = Mage::getModel('core/store')->load($quote->getStoreId());
             $taxCalculationModel = Mage::getSingleton('tax/calculation');
             $shipping_tax_class_id = Mage::getStoreConfig('tax/classes/shipping_tax_class', $quote->getStoreId());
             $rate_request = $taxCalculationModel->getRateRequest($quote->getShippingAddress(), $quote->getBillingAddress(), $quote->getCustomerTaxClassId(), $store);
-
-            $items = $quote->getAllItems();
-
-            $items_price = 0;
-
-            foreach ($items as $item) {
-                $items_price += $item->getPrice() * $item->getQty();
-            }
-
-            $applyTaxAfterDiscount = Mage::helper('tax')->applyTaxAfterDiscount();
             $totals = $quote->getTotals();
 
-            if (@$totals['discount'] && $applyTaxAfterDiscount) {
-                $items_price += $totals['discount']->getValue();
-            }
-
-            $total_tax = $items_price * $taxCalculationModel->getRate($rate_request->setProductClassId($item->getProduct()->getTaxClassId()));
-
-            $tax_remain = $total_tax - round($total_tax);
-
-            $total_tax = round($total_tax);
-
             $response['tax_result'] = array(
-                "amount" => $total_tax
+                "amount" => @$totals['tax'] ? round($totals['tax']->getValue() * 100) : 0
             );
             /*****************************************************************************************/
 
@@ -138,6 +119,8 @@ class Bolt_Boltpay_ShippingController extends Mage_Core_Controller_Front_Action 
             /*****************************************************************************************
              * Calculate shipping and shipping tax
              *****************************************************************************************/
+            $quote->getShippingAddress()->setCollectShippingRates(true)->collectShippingRates()->save();
+
             $rates = $quote->getShippingAddress()->getAllShippingRates();
 
             foreach ($rates as $rate) {
@@ -166,25 +149,29 @@ class Bolt_Boltpay_ShippingController extends Mage_Core_Controller_Front_Action 
                 $option = array(
                     "service" => $rate->getCarrierTitle() . ' - ' . $rate->getMethodTitle(),
                     "cost" => $cost,
-                    "tax_amount" => $cost == 0 ? 0 : round(round(($tax_amount + $tax_remain) * 100) / 100)
+                    "tax_amount" => abs(round($tax_amount -  0.25))
                 );
 
                 $response['shipping_options'][] = $option;
             }
             /*****************************************************************************************/
 
-            $key = Mage::getStoreConfig('payment/boltpay/management_key');
+            $key = Mage::getStoreConfig('payment/boltpay/api_key');
             $key = Mage::helper('core')->decrypt($key);
+
+            $response = json_encode($response, JSON_PRETTY_PRINT);
+
+            //Mage::log('SHIPPING AND TAX RESPONSE: ' . $response, null, 'shipping_and_tax.log');
 
             $this->getResponse()->clearHeaders()
                 ->setHeader('Content-type', 'application/json', true)
                 ->setHeader('X-Merchant-Key', $key, true)
                 ->setHeader('X-Nonce', rand(100000000, 999999999), true);
 
-            $this->getResponse()->setBody(Mage::helper('core')->jsonEncode($response));
+            $this->getResponse()->setBody($response);
 
         } catch (Exception $e) {
-            Mage::helper('boltpay/bugsnag')-> getBugsnag()->notifyException($e);
+            Mage::helper('boltpay/bugsnag')->notifyException($e);
             throw $e;
         }
     }

@@ -27,6 +27,15 @@ $theme = Mage::getStoreConfig('payment/boltpay/theme');
 $bolt_connect = $this->getCartDataJs();
 
 $test_mode = Mage::getStoreConfig('payment/boltpay/test');
+
+$config_selectors = json_encode(array_filter(explode(',', Mage::getStoreConfig('payment/boltpay/selectors'))));
+
+$bolt_only_payment = Mage::getStoreConfig('payment/boltpay/skip_payment');
+
+$success_url = $this->getUrl(Mage::getStoreConfig('payment/boltpay/successpage'));
+$save_order_url = $this->getUrl('boltpay/order/save');
+$cart_url = $this->getUrl('checkout/cart');
+
 ?>
 
 
@@ -38,11 +47,14 @@ $test_mode = Mage::getStoreConfig('payment/boltpay/test');
         var top_link_checkout = document.querySelectorAll('.top-link-checkout')[0];
 
         if (top_link_checkout) {
-            top_link_checkout.parentNode.style.display = 'none';
+            //top_link_checkout.parentNode.style.display = 'none';
         }
     }
 
     (function(){
+
+        var paymentonly_key = "<?= Mage::helper('core')->decrypt(Mage::getStoreConfig('payment/boltpay/publishable_key_onepage')); ?>";
+        var multistep_key = "<?= Mage::helper('core')->decrypt(Mage::getStoreConfig('payment/boltpay/publishable_key_multipage')); ?>";
 
         // generic function for making jsonp calls
         var jsonpRequest = function(parent, element, attributes, params, callback_fn) {
@@ -71,8 +83,8 @@ $test_mode = Mage::getStoreConfig('payment/boltpay/test');
         };
 
         // load connect.js with jsonp request
-        var loadConnectJS = function() {
-            jsonpRequest('body', 'script', {"src": "<?= $this->getJsUrl(); ?>", "id":"bolt-connect", "type":"text/javascript", "data-shopping-cart-id":"Magento", "data-merchant-key":"<?= Mage::helper('core')->decrypt(Mage::getStoreConfig('payment/boltpay/merchant_key')); ?>"});
+        var loadConnectJS = function(key) {
+            jsonpRequest('body', 'script', {"src": "<?= $this->getJsUrl(); ?>", "id":"bolt-connect", "type":"text/javascript", "data-shopping-cart-id":"Magento", "data-publishable-key":key});
         };
 
         /****************************************************************************************************
@@ -87,16 +99,23 @@ $test_mode = Mage::getStoreConfig('payment/boltpay/test');
 
             // replaceable button selectors and types of Bolt buttons to replace them with
             var selectors = {
-                ".btn-proceed-checkout"                             : "bolt-checkout-button with-cards bolt-multi-step-checkout <?=$theme; ?>",
                 ".block-cart .block-content .actions button.button" : "bolt-checkout-button with-cards bolt-multi-step-checkout forward-to-cart <?=$theme; ?>"
             };
+
+            var config_selectors = JSON.parse('<?=$config_selectors;?>');
+
+            for (var i = 0, length = config_selectors.length; i < length; i++ ) {
+
+                var selector = config_selectors[i];
+                selectors[selector] = "bolt-checkout-button with-cards bolt-multi-step-checkout <?=$theme; ?>";
+            }
 
             var tryInterval = setInterval(
 
                 function() {
 
                     replaceRetries -= 1;
-                    if (replaceRetries == 0) clearInterval(tryInterval);
+                    if (replaceRetries === 0) clearInterval(tryInterval);
 
                     var found_elements = false;
 
@@ -117,15 +136,37 @@ $test_mode = Mage::getStoreConfig('payment/boltpay/test');
 
                                 element.style.display = "none";
 
-                                var div =  document.createElement("div");
-                                div.setAttribute("class",selectors[selector]);
+                                var bolt_button =  document.createElement("div");
+                                bolt_button.setAttribute("class",selectors[selector]);
+                                bolt_button.setAttribute("style", "<?=Mage::getStoreConfig('payment/boltpay/styles');?>");
 
-                                element.parentNode.insertBefore(div, element);
+                                element.parentNode.insertBefore(bolt_button, element);
+
+                                if (element.parentNode.style.display === "") {
+                                    element.parentNode.style.display = "block";
+                                }
                             }
                         }
                     }
 
                     if (! found_elements) return;
+
+                    if (<?=$bolt_only_payment;?>) {
+
+                        var lis = document.querySelectorAll('ul.checkout-types li');
+
+                        for (var i = 0, length = lis.length; i < length; i++) {
+                            var li = lis[i];
+
+                            if (li.style.display != "block")  li.style.display = "none";
+                        }
+
+                        var proceed_link = document.querySelectorAll('div.checkout_proceed_link a.button_link.checkout-proceed')[0];
+
+                        if (proceed_link) {
+                            proceed_link.text = proceed_link.text = "<?=$this->__('Proceed to Checkout');?>";
+                        }
+                    }
 
                     // Bolt buttons were placed on the page
 
@@ -133,7 +174,7 @@ $test_mode = Mage::getStoreConfig('payment/boltpay/test');
                     clearInterval(tryInterval);
 
                     // load Bolt connect javascript
-                    loadConnectJS();
+                    loadConnectJS(multistep_key);
 
                     // On every 50 ms check if the Bolt connect.js javascript is inserted
                     // by checking the BoltConnect object existence. Clear the interval when
@@ -160,7 +201,7 @@ $test_mode = Mage::getStoreConfig('payment/boltpay/test');
                                     forward_button.onclick = function(event){
                                         event.preventDefault();
                                         event.stopPropagation();
-                                        location = '/checkout/cart';
+                                        location.href = '<?=$cart_url;?>';
                                     };
                                 } else {
                                     <?=$bolt_connect; ?>
@@ -173,7 +214,202 @@ $test_mode = Mage::getStoreConfig('payment/boltpay/test');
                 }, replaceInterval);
         };
 
-        replaceCheckout();
+
+        /****************************************************************************************************
+         * Fire Checkout extension
+         ****************************************************************************************************/
+        var fireCheckout = function() {
+
+            if (typeof FireCheckout !== "function") return false;
+
+            FireCheckout.prototype.createBoltOrder = function() {
+
+                if (this.loadWaiting != false) {
+                    return;
+                }
+
+                if (!this.validate()) {
+                    return;
+                }
+
+                var params = this.getFormData();
+
+                checkout.setLoadWaiting(true);
+
+                new Ajax.Request('<?=$this->getUrl('boltpay/order/firecheckoutcreate');?>', {
+                    method:'post',
+                    parameters:params,
+                    onSuccess: this.setBoltResponse.bind(this),
+                    onFailure: this.ajaxFailure.bind(this)
+                });
+            };
+
+            FireCheckout.prototype.setBoltResponse = function(response){
+
+                checkout.setLoadWaiting(false);
+
+                var responseJSON = response.responseJSON;
+
+                if (responseJSON.cart_data) {
+                    eval(responseJSON.cart_data);
+                    var bolt_button = document.querySelectorAll('.bolt-checkout-button-button')[0];
+                    bolt_button.click();
+                    setOverlay();
+                } else {
+                    this.setResponse(response);
+                }
+            };
+
+            var i, length;
+
+            var place_order_button = document.querySelectorAll('.button.btn-checkout')[0];
+
+            var bolt_button =  document.createElement("div");
+            bolt_button.setAttribute("class", "bolt-checkout-button with-cards <?=$theme; ?>");
+            bolt_button.setAttribute("style", "<?=Mage::getStoreConfig('payment/boltpay/styles');?>");
+            bolt_button.style.display = "none";
+
+            place_order_button.parentNode.insertBefore(bolt_button, element);
+
+            loadConnectJS(paymentonly_key);
+
+            var payment_radios = document.querySelectorAll('[name="payment[method]"]');
+
+            for (i = 0, length = payment_radios.length; i < length; i++) {
+
+                var payment_radio = payment_radios[i];
+
+                (function(payment_radio){
+
+                    var payment_radio_onclick = payment_radio.onclick;
+
+                    payment_radio.onclick = function() {
+
+                        if (payment_radio.id == "p_method_boltpay") {
+                            bolt_button.style.display="";
+                            place_order_button.style.display="none";
+                        } else {
+                            bolt_button.style.display="none";
+                            place_order_button.style.display="";
+                        }
+
+                        payment_radio_onclick.call(payment_radio);
+                    };
+
+                    if (<?=$bolt_only_payment;?>) {
+                        if (payment_radio.id == "p_method_boltpay") {
+                            payment_radio.click();
+                        } else {
+                            payment_radio.parentNode.style.display = "none";
+                        }
+                    }
+
+                    if (payment_radio.checked) payment_radio.click();
+
+                })(payment_radio);
+            }
+
+
+            var setOverlay = function() {
+
+                var replaceRetries  = 10;
+                var replaceInterval = 500;
+
+                var tryInterval = setInterval(
+
+                    function() {
+
+                        replaceRetries -= 1;
+                        if (replaceRetries <= 0) clearInterval(tryInterval);
+
+                        if (typeof BoltConnect === "undefined") {
+                            replaceRetries = 10;
+                            return;
+                        }
+
+                        if (replaceRetries > 5) replaceRetries = 5;
+
+                        BoltConnect.process(
+                            {},
+                            {},
+                            {
+                                check: function() {
+                                    return false;
+                                },
+                                close: function() {
+                                    setOverlay();
+                                },
+                                success: function(transaction, callback) {
+
+                                    var onSuccess = function() {
+                                        setTimeout(function(){location.href = '<?=$success_url;?>';}, 5000);
+                                        callback();
+                                    };
+
+                                    var parameters = 'reference='+transaction.reference;
+
+                                    new Ajax.Request(
+                                        '<?=$save_order_url;?>',
+                                        {
+                                            method:'post',
+                                            onSuccess: onSuccess,
+                                            parameters: parameters
+                                        }
+                                    );
+                                }
+                            }
+                        );
+
+                        var bolt_button_overlay = document.getElementById('bolt_button_overlay');
+
+                        if (bolt_button_overlay) {
+                            clearInterval(tryInterval);
+                            return;
+                        }
+
+                        var bolt_button = document.querySelectorAll('.bolt-checkout-button')[0];
+
+                        if (! bolt_button) return;
+
+                        bolt_button_overlay = document.createElement("div");
+                        bolt_button_overlay.setAttribute("id", "bolt_button_overlay");
+                        bolt_button_overlay.style.cssText = 'cursor:pointer;top:0;left:0;position:absolute;width:100%;height:60px;opacity:0.0;z-index:10000;background:#fff;';
+
+                        bolt_button.appendChild(bolt_button_overlay);
+
+                        bolt_button_overlay.onclick = function() {
+
+                            clearInterval(tryInterval);
+
+                            checkout.createBoltOrder();
+                        };
+                    },
+                    replaceInterval
+                );
+            };
+
+            setOverlay();
+
+            window.onload = function () {
+
+                var shipping_selected = false;
+                var shipping_methods  = document.querySelectorAll('input[name=shipping_method]');
+
+                for (i = 0, length = shipping_methods.length; i < length; i++) {
+                    var shipping_method = shipping_methods[i];
+                    if (shipping_method.checked) {
+                        shipping_selected = true;
+                        shipping_method.click();
+                    }
+                }
+
+                if (!shipping_selected)  document.querySelectorAll('input[name=shipping_method]')[0].click();
+            };
+
+            return true;
+        };
+
+        if (!fireCheckout()) replaceCheckout();
 
     })();
 
@@ -181,16 +417,12 @@ $test_mode = Mage::getStoreConfig('payment/boltpay/test');
 
 <style>
 
-.actions .bolt-checkout-button-button {
+.bolt-checkout-button-button {
     min-width: max-content!important;
 }
 
-#review-buttons-container p.f-left {
-    float: inherit!important;
-}
-
 .cart .cart-collaterals .shipping {
-    display: none!important;
+    display: none;
 }
 
 </style>

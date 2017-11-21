@@ -33,7 +33,7 @@ class Bolt_Boltpay_Model_Api2_Order_Rest_Admin_V1 extends Bolt_Boltpay_Model_Api
             parent::dispatch();
             $this->getResponse()->clearHeader("Location");
         } catch (Exception $e) {
-            Mage::helper('boltpay/bugsnag')-> getBugsnag()->notifyException($e);
+            Mage::helper('boltpay/bugsnag')->notifyException($e);
             throw $e;
         }
 
@@ -48,10 +48,12 @@ class Bolt_Boltpay_Model_Api2_Order_Rest_Admin_V1 extends Bolt_Boltpay_Model_Api
     function _create($couponData)
     {
         try {
+
             Mage::log('Initiating webhook call', null, 'bolt.log');
 
             $bodyParams = $this->getRequest()->getBodyParams();
-            $quoteId = $bodyParams['quote_id'];
+            //Mage::log(json_encode($bodyParams), null, 'api.log');
+
             $reference = $bodyParams['reference'];
             $transactionId = $bodyParams['transaction_id'];
             $hookType = $bodyParams['notification_type'];
@@ -72,6 +74,8 @@ class Bolt_Boltpay_Model_Api2_Order_Rest_Admin_V1 extends Bolt_Boltpay_Model_Api
                 ->getCollection()
                 ->addFieldToFilter('reserved_order_id', $display_id)
                 ->getFirstItem();
+
+            $quoteId = $quote->getId();
 
             if (sizeof($quote->getData()) == 0) {
                 $this->_critical(Mage::helper('boltpay')
@@ -146,18 +150,33 @@ class Bolt_Boltpay_Model_Api2_Order_Rest_Admin_V1 extends Bolt_Boltpay_Model_Api
             $error = $invalid->getMessage();
             Mage::log($error, null, 'bolt.log');
             Mage::log("Late queue event. Returning as OK", null, 'bolt.log');
-            Mage::helper('boltpay/bugsnag')-> getBugsnag()->leaveBreadcrumb(
-                'Exception',
-                \Bugsnag\Breadcrumbs\Breadcrumb::ERROR_TYPE,
-                ['message' => $error]);
+
+
+            Mage::helper('boltpay/bugsnag')->addMetaData(
+                array(
+                    "API HOOKS late queue event" => array (
+                        "message" => $error,
+                        "class" => __CLASS__,
+                        "method" => __METHOD__,
+                    )
+                )
+            );
+
             $this->_critical($error, Mage_Api2_Model_Server::HTTP_OK);
         } catch (Exception $e) {
             $error = $e->getMessage();
             Mage::log($error, null, 'bolt.log');
-            Mage::helper('boltpay/bugsnag')-> getBugsnag()->leaveBreadcrumb(
-                'Exception',
-                \Bugsnag\Breadcrumbs\Breadcrumb::ERROR_TYPE,
-                ['message' => $error]);
+
+            Mage::helper('boltpay/bugsnag')->addMetaData(
+                array(
+                    "API HOOKS Exception" => array (
+                        "message" => $error,
+                        "class" => __CLASS__,
+                        "method" => __METHOD__,
+                    )
+                )
+            );
+
             $this->_critical($error, Mage_Api2_Model_Server::HTTP_INTERNAL_ERROR);
         }
     }

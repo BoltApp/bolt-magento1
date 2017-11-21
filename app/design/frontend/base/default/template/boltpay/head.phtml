@@ -2,6 +2,6 @@
   id="bolt-connect"
   type="text/javascript"
   src="<?= $this->getJsUrl(); ?>"
-  data-merchant-key="<?= Mage::helper('core')->decrypt(Mage::getStoreConfig('payment/boltpay/merchant_key')); ?>"
+  data-publishable-key="<?= Mage::helper('core')->decrypt(Mage::getStoreConfig('payment/boltpay/publishable_key_onepage')); ?>"
   data-shopping-cart-id="Magento">
 </script>

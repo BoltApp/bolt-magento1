@@ -52,18 +52,19 @@ class Bolt_Boltpay_Block_Checkout_Boltpay
      * Creates an order on Bolt end
      *
      * @param Mage_Sales_Model_Quote $quote    Magento quote object which represents order/cart data
+     * @param bool $multipage                  Is checkout type Multi-Page Checkout, the default is true, set to false for One Page Checkout
      * @return mixed json based PHP object
      */
-    public function createOrder($quote) {
+    public function createOrder($quote, $multipage) {
 
         $boltHelper = Mage::helper('boltpay/api');
-        $order_request = $boltHelper->buildOrder($quote, $this->getItems());
+        $order_request = $boltHelper->buildOrder($quote, $this->getItems(), $multipage);
 
         //Mage::log("order_request: ". var_export($order_request, true), null,"bolt.log");
 
         $order_response = $boltHelper->transmit('orders', $order_request);
 
-        //Mage::log("order_response: ". var_export($order_response, true), null,"bolt.log");
+        //Mage::log("order_response: ". json_encode($order_response, JSON_PRETTY_PRINT), null,"bolt.log");
 
         $response = $boltHelper->handleErrorResponse($order_response);
 
@@ -75,9 +76,10 @@ class Bolt_Boltpay_Block_Checkout_Boltpay
      * In BoltConnect.process success callback the order is saved in additional ajax call to
      * Bolt_Boltpay_OrderController save action.
      *
-     * @return string           BoltConnect.process javascript
+     * @param bool $multipage       Is checkout type Multi-Page Checkout, the default is true, set to false for One Page Checkout
+     * @return string               BoltConnect.process javascript
      */
-    public function getCartDataJs() {
+    public function getCartDataJs($multipage = true) {
 
         try {
 
@@ -98,7 +100,6 @@ class Bolt_Boltpay_Block_Checkout_Boltpay
                     'merchant_user_id' => $reservedUserId,
                 );
                 $signResponse = $boltHelper->handleErrorResponse($boltHelper->transmit('sign', $signRequest));
-                //Mage::log("signResponse: ". var_export($signResponse, true), null,"bolt.log");
             }
 
             if (Mage::getStoreConfig('payment/boltpay/auto_capture') == self::AUTO_CAPTURE_ENABLED) {
@@ -107,7 +108,7 @@ class Bolt_Boltpay_Block_Checkout_Boltpay
                 $authCapture = 'false';
             }
 
-            $orderCreationResponse = $this->createOrder($quote);
+            $orderCreationResponse = $this->createOrder($quote, $multipage);
 
             $cart_data = array(
                 'authcapture' => $authCapture,
@@ -129,7 +130,8 @@ class Bolt_Boltpay_Block_Checkout_Boltpay
             if (sizeof($hint_data) != 0) {
                 $json_hints = json_encode($hint_data);
             }
-            $url = $this->getUrl('checkout/onepage/success');
+            $success_url = $this->getUrl(Mage::getStoreConfig('payment/boltpay/successpage'));
+            $save_order_url = $this->getUrl('boltpay/order/save');
 
             return ("
                 BoltConnect.process(
@@ -142,27 +144,18 @@ class Bolt_Boltpay_Block_Checkout_Boltpay
                         },
                         success: function(transaction, callback) {
                         
-                            var onComplete = function() {
-                            };
-                           
                             var onSuccess = function() {
-                                callback();
-                                setTimeout(function(){location.href = '$url';}, 5000);
-                                
+                                setTimeout(function(){location.href = '$success_url';}, 5000);
+                                callback();  
                             };
-                           
-                            var onFailure = function() {
-                            };
-                            
+                         
                             var parameters = 'reference='+transaction.reference;
                             
                             new Ajax.Request(
-                                '/boltpay/order/save',
+                                '$save_order_url',
                                 {
                                     method:'post',
-                                    onComplete: onComplete,
                                     onSuccess: onSuccess,
-                                    onFailure: onFailure,
                                     parameters: parameters
                                 }
                             );
@@ -173,7 +166,7 @@ class Bolt_Boltpay_Block_Checkout_Boltpay
 
         } catch (Exception $e) {
             Mage::log($e->getMessage(), null, 'bolt.log');
-            Mage::helper('boltpay/bugsnag')-> getBugsnag()->notifyException($e);
+            Mage::helper('boltpay/bugsnag')->notifyException($e);
         }
     }
 

@@ -13,24 +13,28 @@ class Bolt_Boltpay_OrderController extends Mage_Core_Controller_Front_Action {
      */
     public function saveAction()
     {
-        $bugsnag = Mage::helper('boltpay/bugsnag')-> getBugsnag();
-
         try {
-
-            $boltHelper = Mage::helper('boltpay/api');
 
             if (!$this->getRequest()->isAjax()) {
                 Mage::throwException("OrderController::saveAction called with a non AJAX call");
             }
 
+            $boltHelper = Mage::helper('boltpay/api');
+
             $checkout_session = Mage::getSingleton('checkout/session');
+
 
             $reference = $this->getRequest()->getPost('reference');
 
-            $bugsnag->leaveBreadcrumb(
-                'OrderController::saveAction',
-                \Bugsnag\Breadcrumbs\Breadcrumb::LOG_TYPE,
-                ['reference'  => $reference]);
+            Mage::helper('boltpay/bugsnag')->addMetaData(
+                array(
+                    "Save Action reference" => array (
+                        "reference" => $reference,
+                        "class" => __CLASS__,
+                        "method" => __METHOD__,
+                    )
+                )
+            );
 
             $session_quote = $checkout_session->getQuote();
 
@@ -49,10 +53,103 @@ class Bolt_Boltpay_OrderController extends Mage_Core_Controller_Front_Action {
             }
 
         } catch (Exception $e) {
-            $bugsnag->notifyException($e);
+            Mage::helper('boltpay/bugsnag')->notifyException($e);
             throw $e;
         }
+    }
 
+    /**
+     * Creating the Bolt order and returning Bolt.process javascript.
+     * Called from the firecheckout page.
+     */
+    public function firecheckoutcreateAction() {
 
+        try {
+
+            if (!$this->getRequest()->isAjax()) {
+                Mage::throwException("OrderController::createAction called with a non AJAX call");
+            }
+
+            $checkout = Mage::getSingleton('firecheckout/type_standard');
+            $quote = $checkout->getQuote();
+            $billing  = $this->getRequest()->getPost('billing', array());
+
+            $checkout->applyShippingMethod($this->getRequest()->getPost('shipping_method', false));
+
+            $this->getResponse()->setHeader('Content-type', 'application/json', true);
+
+            $result = $checkout->saveBilling(
+                $billing,
+                $this->getRequest()->getPost('billing_address_id', false)
+            );
+
+            if ($result) {
+                $result['success'] = false;
+                $result['error']   = true;
+                if ($result['message'] === $checkout->getCustomerEmailExistsMessage()) {
+                    unset($result['message']);
+                    $result['body'] = array(
+                        'id'      => 'emailexists',
+                        'modal'   => 1,
+                        'window'  => array(
+                            'triggers' => array(),
+                            'destroy'  => 1,
+                            'size'     => array(
+                                'maxWidth' => 400
+                            )
+                        ),
+                        'content' => $this->getLayout()->createBlock('core/template')
+                            ->setTemplate('tm/firecheckout/emailexists.phtml')
+                            ->toHtml()
+                    );
+                } else {
+                    $result['error_messages'] = $result['message'];
+                    $result['onecolumn_step'] = 'step-address';
+                }
+
+                $this->getResponse()->setBody(Mage::helper('core')->jsonEncode($result));
+                return;
+            }
+
+            if ((!isset($billing['use_for_shipping']) || !$billing['use_for_shipping'])
+                && !$quote->isVirtual()) {
+
+                $result = $checkout->saveShipping(
+                    $this->getRequest()->getPost('shipping', array()),
+                    $this->getRequest()->getPost('shipping_address_id', false)
+                );
+                if ($result) {
+                    $result['success'] = false;
+                    $result['error']   = true;
+                    $result['error_messages'] = $result['message'];
+                    $result['onecolumn_step'] = 'step-address';
+                    $this->getResponse()->setBody(Mage::helper('core')->jsonEncode($result));
+                    return;
+                }
+            }
+
+            $checkout->registerCustomerIfRequested();
+
+            $quote->collectTotals()->save();
+
+            $block = $this->getLayout()->createBlock('boltpay/checkout_boltpay');
+
+            $result = array();
+
+            $result['cart_data'] = $block->getCartDataJs(false);
+
+            if (!$result['cart_data']) {
+                $result['success'] = false;
+                $result['error']   = true;
+                $result['error_messages'] = "Network error. Please try again.";
+            }
+
+            $this->getResponse()->setHeader('Content-type', 'application/json', true);
+            $this->getResponse()->setBody(Mage::helper('core')->jsonEncode($result));
+
+        } catch (Exception $e) {
+            Mage::helper('boltpay/bugsnag')->notifyException($e);
+            throw $e;
+        }
     }
 }

@@ -27,7 +27,7 @@
                 </attributes>
                 <routes>
                     <route_collection>
-                        <route>/bolt/boltpay/create_or_update_order/api/rest/bolt/boltpay/create_or_update_order</route>
+                        <route>/bolt/boltpay/create_or_update_order</route>
                         <action_type>collection</action_type>
                     </route_collection>
                     <route_entity>
