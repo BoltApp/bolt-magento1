@@ -36,6 +36,47 @@ $success_url = $this->getUrl(Mage::getStoreConfig('payment/boltpay/successpage')
 $save_order_url = $this->getUrl('boltpay/order/save');
 $cart_url = $this->getUrl('checkout/cart');
 
+$bolt_css_suffix = $this->getCssSuffix();
+
+$selector_styles = Mage::getStoreConfig('payment/boltpay/selector_styles');
+
+$selector_styles = array_map('trim', explode('||', trim($selector_styles)));
+
+$selectors_css = '';
+
+foreach ($selector_styles as $selector) {
+
+    preg_match('/[^{}]+/', $selector, $selector_identifier);
+
+    $selector_identifier = trim($selector_identifier[0]);
+
+    $selector = trim($selector);
+    preg_match_all('/[^{}]+{[^{}]*}/', $selector, $matches);
+
+    foreach ($matches as $match_array) {
+        foreach ($match_array as $match) {
+
+            preg_match('/{[^{}]*}/', $match, $css);
+            $css = $css[0];
+
+            preg_match('/[^{}]+/', $match, $identifiers);
+
+            foreach ($identifiers as $comma_delimited) {
+
+                $comma_delimited = trim($comma_delimited);
+                $single_identifiers = array_map('trim', explode(',', $comma_delimited));
+
+                foreach ($single_identifiers as $identifier) {
+                    $selectors_css .= $identifier . $selector_identifier . "-$bolt_css_suffix" . $css;
+                    $selectors_css .= $selector_identifier . "-$bolt_css_suffix " . $identifier . $css;
+                }
+            }
+        }
+    }
+}
+
+$additional_css = Mage::getStoreConfig('payment/boltpay/additional_css');
+
 ?>
 
 
@@ -107,7 +148,7 @@ $cart_url = $this->getUrl('checkout/cart');
             for (var i = 0, length = config_selectors.length; i < length; i++ ) {
 
                 var selector = config_selectors[i];
-                selectors[selector] = "bolt-checkout-button with-cards bolt-multi-step-checkout <?=$theme; ?>";
+                selectors[selector] = "bolt-checkout-button with-cards bolt-multi-step-checkout " + selector.replace(/^[.#]*/, "").replace(/[.#]*$/, "") + "-<?=$bolt_css_suffix; ?> <?=$theme; ?>";
             }
 
             var tryInterval = setInterval(
@@ -138,7 +179,7 @@ $cart_url = $this->getUrl('checkout/cart');
 
                                 var bolt_button =  document.createElement("div");
                                 bolt_button.setAttribute("class",selectors[selector]);
-                                bolt_button.setAttribute("style", "<?=Mage::getStoreConfig('payment/boltpay/styles');?>");
+                                //bolt_button.setAttribute("style", "<?=Mage::getStoreConfig('payment/boltpay/styles_multipage');?>");
 
                                 element.parentNode.insertBefore(bolt_button, element);
 
@@ -265,8 +306,8 @@ $cart_url = $this->getUrl('checkout/cart');
             var place_order_button = document.querySelectorAll('.button.btn-checkout')[0];
 
             var bolt_button =  document.createElement("div");
-            bolt_button.setAttribute("class", "bolt-checkout-button with-cards <?=$theme; ?>");
-            bolt_button.setAttribute("style", "<?=Mage::getStoreConfig('payment/boltpay/styles');?>");
+            bolt_button.setAttribute("class", "bolt-checkout-button with-cards <?=$bolt_css_suffix; ?> <?=$theme; ?>");
+            //bolt_button.setAttribute("style", "<?=Mage::getStoreConfig('payment/boltpay/styles_onepage');?>");
             bolt_button.style.display = "none";
 
             place_order_button.parentNode.insertBefore(bolt_button, element);
@@ -416,17 +457,6 @@ $cart_url = $this->getUrl('checkout/cart');
 </script>
 
 <style>
-
-.bolt-checkout-button-button {
-    min-width: max-content!important;
-}
-
-.cart .cart-collaterals .shipping {
-    display: none;
-}
-
+<?=$selectors_css;?>
+<?=$additional_css;?>
 </style>
-
-
-
-

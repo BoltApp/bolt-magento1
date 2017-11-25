@@ -252,7 +252,10 @@ class Bolt_Boltpay_Block_Checkout_Boltpay
             $session->setBoltUserId($custId);
             return $custId;
         }
+    }
 
+    function getCssSuffix() {
+        return 'bolt-css-suffix';
     }
 }
 

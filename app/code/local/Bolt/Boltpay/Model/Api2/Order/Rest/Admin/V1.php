@@ -75,11 +75,11 @@ class Bolt_Boltpay_Model_Api2_Order_Rest_Admin_V1 extends Bolt_Boltpay_Model_Api
                 ->addFieldToFilter('reserved_order_id', $display_id)
                 ->getFirstItem();
 
-            $quoteId = $quote->getId();
+            $quoteId = $bodyParams['quote_id'] ?: $quote->getId();
 
             if (sizeof($quote->getData()) == 0) {
-                $this->_critical(Mage::helper('boltpay')
-                    ->__('Quote not found'), Mage_Api2_Model_Server::HTTP_NOT_FOUND);
+                Mage::log("Quote not found: $quoteId.  Quote must have been already processed.", null, 'bolt.log');
+                return;
             }
 
             $order = Mage::getModel('sales/order')

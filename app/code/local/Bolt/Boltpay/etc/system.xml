@@ -80,25 +80,33 @@
               <show_in_store>0</show_in_store>
             </theme>
 
-            <styles translate="label">
-              <label>Bolt Button CSS Styles</label>
-              <frontend_type>text</frontend_type>
-              <comment>Semicolon delimited, default: float:right;</comment>
-              <sort_order>30</sort_order>
-              <show_in_default>1</show_in_default>
-              <show_in_website>1</show_in_website>
-              <show_in_store>0</show_in_store>
-            </styles>
-
             <selectors translate="label">
               <label>Replace Button Selectors</label>
               <frontend_type>text</frontend_type>
               <comment>Comma delimited, default: .btn-proceed-checkout</comment>
-              <sort_order>30</sort_order>
+              <sort_order>35</sort_order>
               <show_in_default>1</show_in_default>
               <show_in_website>1</show_in_website>
               <show_in_store>0</show_in_store>
             </selectors>
+
+            <selector_styles translate="label">
+              <label>Replace Buttons Style</label>
+              <frontend_type>textarea</frontend_type>
+              <sort_order>36</sort_order>
+              <show_in_default>1</show_in_default>
+              <show_in_website>1</show_in_website>
+              <show_in_store>0</show_in_store>
+            </selector_styles>
+
+            <additional_css translate="label">
+              <label>Additional CSS</label>
+              <frontend_type>textarea</frontend_type>
+              <sort_order>38</sort_order>
+              <show_in_default>1</show_in_default>
+              <show_in_website>1</show_in_website>
+              <show_in_store>0</show_in_store>
+            </additional_css>
 
             <successpage translate="label">
               <label>Success Page Redirect</label>
