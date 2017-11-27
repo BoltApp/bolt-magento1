@@ -3,99 +3,22 @@
  * Bolt replace button JavaScript / CSS that added to every pagge.
  ********************************************************************/
 
-if(! Mage::getStoreConfig('payment/boltpay/active')) {
-    return;
-}
-
-try {
-    // force the calculation shipping and taxes, redundant, does not work
-    // left for the reference, may be fixed or deleted in the future
-    $quote = Mage::getSingleton('checkout/session')->getQuote();
-    $quote->getShippingAddress()->setCollectShippingRates(true)->collectShippingRates()->save();
-    $quote->collectTotals()->save();
-
-} catch (Exception $e) {
-    // no checkout session quote
-}
-
-$theme = Mage::getStoreConfig('payment/boltpay/theme');
-
-/*******************************************************************************************
- * Creating the order at Bolt end, if applicable (cart not empty).
- * Generating BoltConnect.process code to be added below if buttons were found and replaced.
- *******************************************************************************************/
-$bolt_connect = $this->getCartDataJs();
-
-$test_mode = Mage::getStoreConfig('payment/boltpay/test');
-
-$config_selectors = json_encode(array_filter(explode(',', Mage::getStoreConfig('payment/boltpay/selectors'))));
-
-$bolt_only_payment = Mage::getStoreConfig('payment/boltpay/skip_payment');
-
-$success_url = $this->getUrl(Mage::getStoreConfig('payment/boltpay/successpage'));
-$save_order_url = $this->getUrl('boltpay/order/save');
-$cart_url = $this->getUrl('checkout/cart');
-
-$bolt_css_suffix = $this->getCssSuffix();
-
-$selector_styles = Mage::getStoreConfig('payment/boltpay/selector_styles');
-
-$selector_styles = array_map('trim', explode('||', trim($selector_styles)));
-
-$selectors_css = '';
-
-foreach ($selector_styles as $selector) {
-
-    preg_match('/[^{}]+/', $selector, $selector_identifier);
-
-    $selector_identifier = trim($selector_identifier[0]);
-
-    $selector = trim($selector);
-    preg_match_all('/[^{}]+{[^{}]*}/', $selector, $matches);
-
-    foreach ($matches as $match_array) {
-        foreach ($match_array as $match) {
-
-            preg_match('/{[^{}]*}/', $match, $css);
-            $css = $css[0];
-
-            preg_match('/[^{}]+/', $match, $identifiers);
-
-            foreach ($identifiers as $comma_delimited) {
-
-                $comma_delimited = trim($comma_delimited);
-                $single_identifiers = array_map('trim', explode(',', $comma_delimited));
-
-                foreach ($single_identifiers as $identifier) {
-                    $selectors_css .= $identifier . $selector_identifier . "-$bolt_css_suffix" . $css;
-                    $selectors_css .= $selector_identifier . "-$bolt_css_suffix " . $identifier . $css;
-                }
-            }
-        }
-    }
-}
-
-$additional_css = Mage::getStoreConfig('payment/boltpay/additional_css');
+if(! $this->isBoltActive()) return;
 
 ?>
-
 
 <script>
 
     // If Bolt Payment is in sandbox / test mode hide top checkout link
-    if (<?=$test_mode; ?>) {
-
+    <?php if ($this->isTestMode()): ?>
         var top_link_checkout = document.querySelectorAll('.top-link-checkout')[0];
 
         if (top_link_checkout) {
             //top_link_checkout.parentNode.style.display = 'none';
         }
-    }
+    <?php endif; ?>
 
     (function(){
-
-        var paymentonly_key = "<?= Mage::helper('core')->decrypt(Mage::getStoreConfig('payment/boltpay/publishable_key_onepage')); ?>";
-        var multistep_key = "<?= Mage::helper('core')->decrypt(Mage::getStoreConfig('payment/boltpay/publishable_key_multipage')); ?>";
 
         // generic function for making jsonp calls
         var jsonpRequest = function(parent, element, attributes, params, callback_fn) {
@@ -140,15 +63,15 @@ $additional_css = Mage::getStoreConfig('payment/boltpay/additional_css');
 
             // replaceable button selectors and types of Bolt buttons to replace them with
             var selectors = {
-                ".block-cart .block-content .actions button.button" : "bolt-checkout-button with-cards bolt-multi-step-checkout forward-to-cart <?=$theme; ?>"
+                ".block-cart .block-content .actions button.button" : "bolt-checkout-button with-cards bolt-multi-step-checkout forward-to-cart <?=$this->getTheme(); ?>"
             };
 
-            var config_selectors = JSON.parse('<?=$config_selectors;?>');
+            var config_selectors = JSON.parse('<?=$this->getConfigSelectors();?>');
 
             for (var i = 0, length = config_selectors.length; i < length; i++ ) {
 
                 var selector = config_selectors[i];
-                selectors[selector] = "bolt-checkout-button with-cards bolt-multi-step-checkout " + selector.replace(/^[.#]*/, "").replace(/[.#]*$/, "") + "-<?=$bolt_css_suffix; ?> <?=$theme; ?>";
+                selectors[selector] = "bolt-checkout-button with-cards bolt-multi-step-checkout " + selector.replace(/^[.#]*/, "").replace(/[.#]*$/, "") + "-<?=$this->getCssSuffix(); ?> <?=$this->getTheme(); ?>";
             }
 
             var tryInterval = setInterval(
@@ -179,7 +102,6 @@ $additional_css = Mage::getStoreConfig('payment/boltpay/additional_css');
 
                                 var bolt_button =  document.createElement("div");
                                 bolt_button.setAttribute("class",selectors[selector]);
-                                //bolt_button.setAttribute("style", "<?=Mage::getStoreConfig('payment/boltpay/styles_multipage');?>");
 
                                 element.parentNode.insertBefore(bolt_button, element);
 
@@ -192,7 +114,7 @@ $additional_css = Mage::getStoreConfig('payment/boltpay/additional_css');
 
                     if (! found_elements) return;
 
-                    if (<?=$bolt_only_payment;?>) {
+                    <?php if ($this->isBoltOnlyPayment()): ?>
 
                         var lis = document.querySelectorAll('ul.checkout-types li');
 
@@ -207,7 +129,8 @@ $additional_css = Mage::getStoreConfig('payment/boltpay/additional_css');
                         if (proceed_link) {
                             proceed_link.text = proceed_link.text = "<?=$this->__('Proceed to Checkout');?>";
                         }
-                    }
+
+                    <?php endif; ?>
 
                     // Bolt buttons were placed on the page
 
@@ -215,7 +138,7 @@ $additional_css = Mage::getStoreConfig('payment/boltpay/additional_css');
                     clearInterval(tryInterval);
 
                     // load Bolt connect javascript
-                    loadConnectJS(multistep_key);
+                    loadConnectJS('<?=$this->getPaymentKey();?>');
 
                     // On every 50 ms check if the Bolt connect.js javascript is inserted
                     // by checking the BoltConnect object existence. Clear the interval when
@@ -242,10 +165,14 @@ $additional_css = Mage::getStoreConfig('payment/boltpay/additional_css');
                                     forward_button.onclick = function(event){
                                         event.preventDefault();
                                         event.stopPropagation();
-                                        location.href = '<?=$cart_url;?>';
+                                        location.href = '<?=$this->getCartURL();?>';
                                     };
                                 } else {
-                                    <?=$bolt_connect; ?>
+                                    /*****************************************************************
+                                     * Creating the order at Bolt end, if applicable (cart not empty).
+                                     * Generating BoltConnect.process code.
+                                     *****************************************************************/
+                                    <?=$this->getCartDataJs(); ?>
                                 }
                             }
 
@@ -306,13 +233,12 @@ $additional_css = Mage::getStoreConfig('payment/boltpay/additional_css');
             var place_order_button = document.querySelectorAll('.button.btn-checkout')[0];
 
             var bolt_button =  document.createElement("div");
-            bolt_button.setAttribute("class", "bolt-checkout-button with-cards <?=$bolt_css_suffix; ?> <?=$theme; ?>");
-            //bolt_button.setAttribute("style", "<?=Mage::getStoreConfig('payment/boltpay/styles_onepage');?>");
+            bolt_button.setAttribute("class", "bolt-checkout-button with-cards <?=$this->getCssSuffix(); ?> <?=$this->getTheme(); ?>");
             bolt_button.style.display = "none";
 
             place_order_button.parentNode.insertBefore(bolt_button, element);
 
-            loadConnectJS(paymentonly_key);
+            loadConnectJS('<?=$this->getPaymentKey(false);?>');
 
             var payment_radios = document.querySelectorAll('[name="payment[method]"]');
 
@@ -337,13 +263,15 @@ $additional_css = Mage::getStoreConfig('payment/boltpay/additional_css');
                         payment_radio_onclick.call(payment_radio);
                     };
 
-                    if (<?=$bolt_only_payment;?>) {
+                    <?php if ($this->isBoltOnlyPayment()): ?>
+
                         if (payment_radio.id == "p_method_boltpay") {
                             payment_radio.click();
                         } else {
                             payment_radio.parentNode.style.display = "none";
                         }
-                    }
+
+                    <?php endif; ?>
 
                     if (payment_radio.checked) payment_radio.click();
 
@@ -383,14 +311,14 @@ $additional_css = Mage::getStoreConfig('payment/boltpay/additional_css');
                                 success: function(transaction, callback) {
 
                                     var onSuccess = function() {
-                                        setTimeout(function(){location.href = '<?=$success_url;?>';}, 5000);
+                                        setTimeout(function(){location.href = '<?=$this->getSuccessURL();?>';}, 5000);
                                         callback();
                                     };
 
                                     var parameters = 'reference='+transaction.reference;
 
                                     new Ajax.Request(
-                                        '<?=$save_order_url;?>',
+                                        '<?=$this->getSaveOrderURL();?>',
                                         {
                                             method:'post',
                                             onSuccess: onSuccess,
@@ -457,6 +385,6 @@ $additional_css = Mage::getStoreConfig('payment/boltpay/additional_css');
 </script>
 
 <style>
-<?=$selectors_css;?>
-<?=$additional_css;?>
+<?=$this->getSelectorsCSS();?>
+<?=$this->getAdditionalCSS();?>
 </style>

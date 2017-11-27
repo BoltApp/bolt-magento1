@@ -29,6 +29,9 @@ class Bolt_Boltpay_Block_Checkout_Boltpay
      */
     const AUTO_CAPTURE_ENABLED = 1;
 
+
+    const CSS_SUFFIX = 'bolt-css-suffix';
+
     /**
      * Set the connect javascript url to production or sandbox based on store config settings
      */
@@ -254,8 +257,139 @@ class Bolt_Boltpay_Block_Checkout_Boltpay
         }
     }
 
+    /**
+     * Returns CSS_SUFFIX constant to be added to selector identifiers
+     * @return string
+     */
     function getCssSuffix() {
-        return 'bolt-css-suffix';
+        return self::CSS_SUFFIX;
+    }
+
+    /**
+     * Reads the Replace Buttons Style config and generates selectors CSS
+     * @return string
+     */
+    function getSelectorsCSS() {
+
+        $selector_styles = Mage::getStoreConfig('payment/boltpay/selector_styles');
+
+        $selector_styles = array_map('trim', explode('||', trim($selector_styles)));
+
+        $selectors_css = '';
+
+        foreach ($selector_styles as $selector) {
+
+            preg_match('/[^{}]+/', $selector, $selector_identifier);
+
+            $bolt_selector  = trim($selector_identifier[0]) . "-" . self::CSS_SUFFIX;
+
+            preg_match_all('/[^{}]+{[^{}]*}/', $selector, $matches);
+
+            foreach ($matches as $match_array) {
+                foreach ($match_array as $match) {
+
+                    preg_match('/{[^{}]*}/', $match, $css);
+                    $css = $css[0];
+
+                    preg_match('/[^{}]+/', $match, $identifiers);
+
+                    foreach ($identifiers as $comma_delimited) {
+
+                        $comma_delimited = trim($comma_delimited);
+                        $single_identifiers = array_map('trim', explode(',', $comma_delimited));
+
+                        foreach ($single_identifiers as $identifier) {
+                            $selectors_css .= $identifier . $bolt_selector . $css;
+                            $selectors_css .= $bolt_selector . " " . $identifier . $css;
+                        }
+                    }
+                }
+            }
+        }
+
+        return $selectors_css;
+    }
+
+    /**
+     * Returns Additional CSS from configuration.
+     * @return string
+     */
+    function getAdditionalCSS() {
+        return Mage::getStoreConfig('payment/boltpay/additional_css');
+    }
+
+    /**
+     * Returns the Bolt Button Theme from configuration.
+     * @return string
+     */
+    function getTheme() {
+        return Mage::getStoreConfig('payment/boltpay/theme');
+    }
+
+    /**
+     * Returns the Bolt Sandbox Mode configuration.
+     * @return string
+     */
+    function isTestMode() {
+        return Mage::getStoreConfig('payment/boltpay/test');
+    }
+
+    /**
+     * Returns the Replace Button Selectors configuration.
+     * @return string
+     */
+    function getConfigSelectors() {
+        return json_encode(array_filter(explode(',', Mage::getStoreConfig('payment/boltpay/selectors'))));
+    }
+
+    /**
+     * Returns the Skip Payment Method Step configuration.
+     * @return string
+     */
+    function isBoltOnlyPayment() {
+        Mage::getStoreConfig('payment/boltpay/skip_payment');
+    }
+
+    /**
+     * Returns the Success Page Redirect configuration.
+     * @return string
+     */
+    function getSuccessURL() {
+        return $this->getUrl(Mage::getStoreConfig('payment/boltpay/successpage'));
+    }
+
+    /**
+     * Returns the Bolt Save Order Url.
+     * @return string
+     */
+    function getSaveOrderURL() {
+        return $this->getUrl('boltpay/order/save');
+    }
+
+    /**
+     * Returns the Cart Url.
+     * @return string
+     */
+    function getCartURL() {
+        return $this->getUrl('checkout/cart');
+    }
+
+    /**
+     * Returns the One Page / Multi-Page checkout Publishable key.
+     * @return string
+     */
+    function getPaymentKey($multipage = true) {
+       return $multipage
+           ? Mage::helper('core')->decrypt(Mage::getStoreConfig('payment/boltpay/publishable_key_multipage'))
+           : Mage::helper('core')->decrypt(Mage::getStoreConfig('payment/boltpay/publishable_key_onepage'));
+    }
+
+    /**
+     * Returns the Enabled Bolt configuration option value.
+     * @return string
+     */
+    function isBoltActive() {
+        return Mage::getStoreConfig('payment/boltpay/active');
     }
 }
 

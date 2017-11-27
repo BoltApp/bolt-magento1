@@ -62,6 +62,11 @@ class Bolt_Boltpay_Helper_Data extends Mage_Core_Helper_Abstract {
      * @return bool   true if Bolt can be used, otherwise false
      */
     public function canUseForCountry($country) {
+
+        if(!Mage::getStoreConfig('payment/boltpay/active')) {
+            return false;
+        }
+
         if (Mage::getStoreConfig('payment/boltpay/skip_payment') == 1) {
             return true;
         }

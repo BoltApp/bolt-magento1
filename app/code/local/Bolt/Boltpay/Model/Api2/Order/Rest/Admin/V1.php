@@ -52,7 +52,7 @@ class Bolt_Boltpay_Model_Api2_Order_Rest_Admin_V1 extends Bolt_Boltpay_Model_Api
             Mage::log('Initiating webhook call', null, 'bolt.log');
 
             $bodyParams = $this->getRequest()->getBodyParams();
-            //Mage::log(json_encode($bodyParams), null, 'api.log');
+            Mage::log(trim(json_encode($bodyParams)), null, 'bolt.log');
 
             $reference = $bodyParams['reference'];
             $transactionId = $bodyParams['transaction_id'];
@@ -70,22 +70,7 @@ class Bolt_Boltpay_Model_Api2_Order_Rest_Admin_V1 extends Bolt_Boltpay_Model_Api
             $transaction = $boltHelper->fetchTransaction($reference);
             $display_id = $transaction->order->cart->display_id;
 
-            $quote = Mage::getModel('sales/quote')
-                ->getCollection()
-                ->addFieldToFilter('reserved_order_id', $display_id)
-                ->getFirstItem();
-
-            $quoteId = $bodyParams['quote_id'] ?: $quote->getId();
-
-            if (sizeof($quote->getData()) == 0) {
-                Mage::log("Quote not found: $quoteId.  Quote must have been already processed.", null, 'bolt.log');
-                return;
-            }
-
-            $order = Mage::getModel('sales/order')
-                ->getCollection()
-                ->addFieldToFilter('quote_id', $quoteId)
-                ->getFirstItem();
+            $order = Mage::getModel('sales/order')->loadByIncrementId($display_id);
 
             if (sizeof($order->getData()) > 0) {
                 Mage::log('Order Found. Updating it', null, 'bolt.log');
@@ -122,11 +107,25 @@ class Bolt_Boltpay_Model_Api2_Order_Rest_Admin_V1 extends Bolt_Boltpay_Model_Api
             }
 
             Mage::log('Order not found. Creating one', null, 'bolt.log');
-            if (!$quote->getIsActive()) {
+
+            $quote = Mage::getModel('sales/quote')
+                ->getCollection()
+                ->addFieldToFilter('reserved_order_id', $display_id)
+                ->getFirstItem();
+
+            $quoteId = $bodyParams['quote_id'] ?: $quote->getId();
+
+            if (sizeof($quote->getData()) == 0) {
+                Mage::log("Quote not found: $quoteId. Quote must have been already processed.", null, 'bolt.log');
                 $this->_critical(Mage::helper('boltpay')
-                    ->__('Inactive cart/quote cannot be converted to an order'), Mage_Api2_Model_Server::HTTP_BAD_REQUEST);
+                    ->__("Quote not found: $quoteId.  Quote must have been already processed."), Mage_Api2_Model_Server::HTTP_BAD_REQUEST);
             }
 
+            if (!$quote->getIsActive()) {
+                Mage::log("Inactive cart/quote, quote ID: $quoteId, cannot be converted to an order.", null, 'bolt.log');
+                $this->_critical(Mage::helper('boltpay')
+                    ->__("Inactive cart/quote, quote ID: $quoteId, cannot be converted to an order."), Mage_Api2_Model_Server::HTTP_BAD_REQUEST);
+            }
 
             if (empty($reference) || empty($transactionId)) {
                 $this->_critical(Mage::helper('boltpay')
@@ -137,7 +136,7 @@ class Bolt_Boltpay_Model_Api2_Order_Rest_Admin_V1 extends Bolt_Boltpay_Model_Api
              * Order creation is moved to helper API
              ********************************************************************/
 
-            $order = $boltHelper->createOrder($reference, $session_quote_id = null);
+            $boltHelper->createOrder($reference, $session_quote_id = null);
 
             $this->getResponse()->addMessage(
                 self::$SUCCESS_ORDER_CREATED['message'], self::$SUCCESS_ORDER_CREATED['http_response_code'],

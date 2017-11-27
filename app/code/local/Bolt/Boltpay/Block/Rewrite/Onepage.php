@@ -14,7 +14,7 @@ class Bolt_Boltpay_Block_Rewrite_Onepage extends Mage_Checkout_Block_Onepage {
      */
     protected function _getStepCodes() {
         $steps = array('login', 'billing', 'shipping', 'shipping_method');
-        if (Mage::getStoreConfig('payment/boltpay/skip_payment') != 1) {
+        if (!Mage::getStoreConfig('payment/boltpay/active') || !Mage::getStoreConfig('payment/boltpay/skip_payment')) {
             array_push($steps, 'payment');
         }
         array_push($steps, 'review');
