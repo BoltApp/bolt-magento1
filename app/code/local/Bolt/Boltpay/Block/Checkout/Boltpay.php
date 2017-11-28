@@ -41,7 +41,7 @@ class Bolt_Boltpay_Block_Checkout_Boltpay
             self::JS_URL_TEST . "/connect.js":
             self::JS_URL_PROD . "/connect.js";
     }
-
+    
     /**
      * Get the track javascript url, production or sandbox, based on store config settings
      */
@@ -60,22 +60,27 @@ class Bolt_Boltpay_Block_Checkout_Boltpay
      */
     public function createOrder($quote, $multipage) {
 
+        // Load the required helper class
         $boltHelper = Mage::helper('boltpay/api');
+
+        // Generates order data for sending to Bolt create order API.
         $order_request = $boltHelper->buildOrder($quote, $this->getItems(), $multipage);
 
         //Mage::log("order_request: ". var_export($order_request, true), null,"bolt.log");
 
+        // Calls Bolt create order API
         $order_response = $boltHelper->transmit('orders', $order_request);
 
         //Mage::log("order_response: ". json_encode($order_response, JSON_PRETTY_PRINT), null,"bolt.log");
 
+        // Bolt Api call response wrapper method that checks for potential error responses.
         $response = $boltHelper->handleErrorResponse($order_response);
 
         return $response;
     }
 
     /**
-     * Initiates Bolt order creation / token receiving and sets up BoltConnect with generated data.
+     * Initiates the Bolt order creation / token receiving and sets up BoltConnect with generated data.
      * In BoltConnect.process success callback the order is saved in additional ajax call to
      * Bolt_Boltpay_OrderController save action.
      *
@@ -86,16 +91,33 @@ class Bolt_Boltpay_Block_Checkout_Boltpay
 
         try {
 
+            // Return if the quote is empty
             if (count($this->getItems()) == 0) return;
 
+            // Get customer and cart session objects
             $customerSession = Mage::getSingleton('customer/session');
             $session = Mage::getSingleton('checkout/session');
-            $onepage = Mage::getSingleton('checkout/type_onepage');
-            $boltHelper = Mage::helper('boltpay/api');
-            $quote = $session->getQuote();
 
+            // Get the session quote/cart
+            $quote = $session->getQuote();
+            // Generate new increment order id and associate it with current quote, if not already assigned
             $quote->reserveOrderId()->save();
-            $reservedUserId = $this->getReservedUserId($quote, $customerSession, $onepage);
+
+            // Load the required helper class
+            $boltHelper = Mage::helper('boltpay/api');
+
+            ///////////////////////////////////////////////////////////////
+            // Populate hints data from quote or customer shipping address.
+            //////////////////////////////////////////////////////////////
+            $hint_data = $this->getAddressHints($customerSession, $quote);
+            ///////////////////////////////////////////////////////////////
+
+
+            ///////////////////////////////////////////////////////////////////////////////////////
+            // Merchant scope: get "bolt_user_id" if the user is logged in or should be registered,
+            // sign it and add to hints.
+            ///////////////////////////////////////////////////////////////////////////////////////
+            $reservedUserId = $this->getReservedUserId($quote, $customerSession);
             $signResponse = null;
 
             if ($reservedUserId) {
@@ -105,21 +127,6 @@ class Bolt_Boltpay_Block_Checkout_Boltpay
                 $signResponse = $boltHelper->handleErrorResponse($boltHelper->transmit('sign', $signRequest));
             }
 
-            if (Mage::getStoreConfig('payment/boltpay/auto_capture') == self::AUTO_CAPTURE_ENABLED) {
-                $authCapture = 'true';
-            } else {
-                $authCapture = 'false';
-            }
-
-            $orderCreationResponse = $this->createOrder($quote, $multipage);
-
-            $cart_data = array(
-                'authcapture' => $authCapture,
-                'orderToken' => $orderCreationResponse->token,
-            );
-
-            $hint_data = $this->getAddressHints($customerSession, $quote);
-
             if ($signResponse != null) {
                 $hint_data['signed_merchant_user_id'] = array(
                     "merchant_user_id" => $signResponse->merchant_user_id,
@@ -127,15 +134,40 @@ class Bolt_Boltpay_Block_Checkout_Boltpay
                     "nonce" => $signResponse->nonce,
                 );
             }
+            ///////////////////////////////////////////////////////////////////////////////////////
+
+
+            if (Mage::getStoreConfig('payment/boltpay/auto_capture') == self::AUTO_CAPTURE_ENABLED) {
+                $authCapture = 'true';
+            } else {
+                $authCapture = 'false';
+            }
+
+            // Call Bolt create order API
+            $orderCreationResponse = $this->createOrder($quote, $multipage);
+
+            //////////////////////////////////////////////////////////////////////////
+            // Generate JSON cart and hints objects for the javascript returned below.
+            //////////////////////////////////////////////////////////////////////////
+            $cart_data = array(
+                'authcapture' => $authCapture,
+                'orderToken' => $orderCreationResponse->token,
+            );
 
             $json_cart = json_encode($cart_data);
             $json_hints = '{}';
             if (sizeof($hint_data) != 0) {
                 $json_hints = json_encode($hint_data);
             }
-            $success_url = $this->getUrl(Mage::getStoreConfig('payment/boltpay/successpage'));
+            //////////////////////////////////////////////////////////////////////////
+
+            // Format the success and save order urls for the javascript returned below.
+            $success_url    = $this->getUrl(Mage::getStoreConfig('payment/boltpay/successpage'));
             $save_order_url = $this->getUrl('boltpay/order/save');
 
+            //////////////////////////////////////////////////////
+            // Generate and return BoltConnect.process javascript.
+            //////////////////////////////////////////////////////
             return ("
                 BoltConnect.process(
                     $json_cart,
@@ -166,6 +198,7 @@ class Bolt_Boltpay_Block_Checkout_Boltpay
                     }
                 );"
             );
+            //////////////////////////////////////////////////////
 
         } catch (Exception $e) {
             Mage::log($e->getMessage(), null, 'bolt.log');
@@ -183,57 +216,62 @@ class Bolt_Boltpay_Block_Checkout_Boltpay
 
         $hints = array();
 
-
+        ///////////////////////////////////////////////////////////////
+        // Check if the quote shipping address is set,
+        // otherwise use customer shipping address for logged in users.
+        ///////////////////////////////////////////////////////////////
         $address = $quote->getShippingAddress();
 
-        if (!$address->getEmail() && $session && $session->isLoggedIn()) {
+        if (!$address && $session && $session->isLoggedIn()) {
 
             $customer = Mage::getModel('customer/customer')->load($session->getId());
-
-            $hints['email']           = $customer->getEmail();
-            $hints['first_name']      = $customer->getFirstname();
-            $hints['last_name']       = $customer->getLastname();
-
             $address = $customer->getDefaultShippingAddress();
         }
+        //////////////////////////////////////////////////////////////
 
-        Mage::log("hint_data: ". var_export($address->getEmail(), true), null,"bolt.log");
+        /////////////////////////////////////////////////////////////////////////
+        // If address exists populate the hints array with existing address data.
+        /////////////////////////////////////////////////////////////////////////
+        if ($address) {
 
-        if (@$address->getEmail()) {
+            $country_id = @$address->getCountryId();
 
+            if ($country_id) {
+                $country      = Mage::getModel('directory/country')->loadByCode($country_id);
+                $country_name = @$country->getName();
+            }
 
-            $country_id      = $address->getCountryId();
-            $country         = Mage::getModel('directory/country')->loadByCode($country_id)->getName();
-            $street_address2 = $address->getStreet2();
-
-            $hints['email']           = $address->getEmail();
-            $hints['first_name']      = $address->getFirstname();
-            $hints['last_name']       = $address->getLastname();
-            $hints['street_address1'] = $address->getStreet1();
-            $hints['locality']        = $address->getCity();
-            $hints['region']          = $address->getRegion();
-            $hints['postal_code']     = $address->getPostcode();
-            $hints['phone']           = $address->getTelephone();
-            $hints['country_code']    = $country_id;
-            $hints['country']         = $country;
-            if ($street_address2) $hints['street_address2'] = $street_address2;
+            if (@$address->getEmail())     $hints['email']           = $address->getEmail();
+            if (@$address->getFirstname()) $hints['first_name']      = $address->getFirstname();
+            if (@$address->getLastname())  $hints['last_name']       = $address->getLastname();
+            if (@$address->getStreet1())   $hints['street_address1'] = $address->getStreet1();
+            if (@$address->getStreet2())   $hints['street_address2'] = $address->getStreet2();
+            if (@$address->getCity())      $hints['locality']        = $address->getCity();
+            if (@$address->getRegion())    $hints['region']          = $address->getRegion();
+            if (@$address->getPostcode())  $hints['postal_code']     = $address->getPostcode();
+            if (@$address->getTelephone()) $hints['phone']           = $address->getTelephone();
+            if (@$country_name)            $hints['country_code']    = $country_id;
+            if (@$country_name)            $hints['country']         = $country_name;
         }
-
+        /////////////////////////////////////////////////////////////////////////
 
         return $hints;
     }
 
     /**
      * Gets the customer custom attribute, "bolt_user_id", if not set creates one by
-     * fetching new Magento customer auto increment ID for the store
+     * fetching new Magento customer auto increment ID for the store.
+     * Applies to logged in users or the users in the process of registration during the the checkout (checkout type is "register").
      *
      * @param $quote        Magento quote object
      * @param $session      Magento customer/session object
-     * @param $onepage      Magento checkout/type_onepage object
      * @return string|null  the ID used for the Bolt user, or null if the user is not logged in and is not on the onepage checkout page
      */
-    function getReservedUserId($quote, $session, $onepage) {
-        $checkoutMethod = $onepage->getCheckoutMethod();
+    function getReservedUserId($quote, $session) {
+
+        $checkout = Mage::getSingleton('checkout/type_onepage');
+
+        $checkoutMethod = $checkout->getCheckoutMethod();
 
         if ($session->isLoggedIn()) {
             $customer = Mage::getModel('customer/customer')->load($session->getId());

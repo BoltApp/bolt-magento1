@@ -362,12 +362,13 @@ class Bolt_Boltpay_Helper_Api extends Bolt_Boltpay_Helper_Data {
      */
     public function buildCart($quote, $items, $multipage) {
 
+        // Get quote totals
         $totals   = $quote->getTotals();
-
-        //Mage::log("totals: " . var_export(array_keys($totals), true), null, "bolt.log");
-
         $productMediaConfig = Mage::getModel('catalog/product_media_config');
 
+        ///////////////////////////////////////////////////////////
+        // Generate base cart data, quote, order and items related.
+        ///////////////////////////////////////////////////////////
         $cart_submission_data = array(
             'order_reference' => $quote->getId(),
             'display_id'      => $quote->getReservedOrderId(),
@@ -387,7 +388,11 @@ class Bolt_Boltpay_Helper_Api extends Bolt_Boltpay_Helper_Data {
             }, $items),
             'currency' => $quote->getQuoteCurrencyCode(),
         );
+        ///////////////////////////////////////////////////////////
 
+        /////////////////////////////////////////////////////////////////////////
+        // Check for the discount and include it in the submission data if found.
+        /////////////////////////////////////////////////////////////////////////
         $discount_amount = 0;
 
         if (@$totals['discount']) {
@@ -402,34 +407,25 @@ class Bolt_Boltpay_Helper_Api extends Bolt_Boltpay_Helper_Data {
                 'description' => $description,
             ));
         }
+        /////////////////////////////////////////////////////////////////////////
 
-        if ($multipage) {
+        // Biling / shipping address fields that are required when the address data is sent to Bolt.
+        $required_address_fields = array(
+            'first_name',
+            'last_name',
+            'street_address1',
+            'locality',
+            'region',
+            'postal_code',
+            'country_code',
+        );
 
-            $total_key = @$totals['subtotal'] ? 'subtotal' : 'grand_total';
+        ///////////////////////////////////////////
+        // Include billing address info if defined.
+        ///////////////////////////////////////////
+        $billingAddress  = $quote->getBillingAddress();
 
-            $cart_submission_data['total_amount'] = round($totals[$total_key]->getValue() * 100);
-            $cart_submission_data['total_amount'] += $discount_amount;
-
-        } else {
-
-            $shippingAddress = $quote->getShippingAddress();
-            $billingAddress  = $quote->getBillingAddress();
-
-            $cart_submission_data['total_amount'] = round($totals["grand_total"]->getValue() * 100);
-
-            if (@$totals['tax']) {
-                $cart_submission_data['tax_amount'] = round($totals['tax']->getValue() * 100);
-            }
-
-            $required_address_fields = array(
-                'first_name',
-                'last_name',
-                'street_address1',
-                'locality',
-                'region',
-                'postal_code',
-                'country_code',
-            );
+        if ($billingAddress) {
 
             $cart_submission_data['billing_address'] = array(
                 'street_address1' => $billingAddress->getStreet1(),
@@ -454,42 +450,69 @@ class Bolt_Boltpay_Helper_Api extends Bolt_Boltpay_Helper_Data {
                     break;
                 }
             }
+        }
+        ///////////////////////////////////////////
 
-            $shipping_address = array(
-                'street_address1' => $shippingAddress->getStreet1(),
-                'street_address2' => $shippingAddress->getStreet2(),
-                'street_address3' => $shippingAddress->getStreet3(),
-                'street_address4' => $shippingAddress->getStreet4(),
-                'first_name'      => $shippingAddress->getFirstname(),
-                'last_name'       => $shippingAddress->getLastname(),
-                'locality'        => $shippingAddress->getCity(),
-                'region'          => $shippingAddress->getRegion(),
-                'postal_code'     => $shippingAddress->getPostcode(),
-                'country_code'    => $shippingAddress->getCountry(),
-                'phone'           => $shippingAddress->getTelephone(),
-                'email'           => $shippingAddress->getEmail(),
-                'phone_number'    => $shippingAddress->getTelephone(),
-                'email_address'   => $shippingAddress->getEmail(),
-            );
+        if ($multipage) {
+            /////////////////////////////////////////////////////////////////////////////////////////
+            // For multi-page checkout type send only subtotal, do not include shipping and tax info.
+            /////////////////////////////////////////////////////////////////////////////////////////
+            $total_key = @$totals['subtotal'] ? 'subtotal' : 'grand_total';
 
-            //Mage::log("shipping_address: " . var_export($shipping_address, true), null, "bolt.log");
+            $cart_submission_data['total_amount'] = round($totals[$total_key]->getValue() * 100);
+            $cart_submission_data['total_amount'] += $discount_amount;
+            /////////////////////////////////////////////////////////////////////////////////////////
+        } else {
+            ////////////////////////////////////////////////////////////////////////////////////
+            // For one page checkout type include tax and shipment / address data in submission.
+            ////////////////////////////////////////////////////////////////////////////////////
+            $cart_submission_data['total_amount'] = round($totals["grand_total"]->getValue() * 100);
 
-            if (@$totals['shipping']) {
-                $cart_submission_data['shipments'] = array(array(
-                    'shipping_address' => $shipping_address,
-                    'tax_amount'       => round($quote->getShippingAddress()->getShippingTaxAmount() * 100),
-                    'service'          => $shippingAddress->getShippingDescription(),
-                    'carrier'          => $shippingAddress->getShippingMethod(),
-                    'cost'             => round($totals['shipping']->getValue() * 100),
-                ));
+            if (@$totals['tax']) {
+                $cart_submission_data['tax_amount'] = round($totals['tax']->getValue() * 100);
             }
 
-            foreach ($required_address_fields as $field) {
-                if (empty($shipping_address[$field])) {
-                    unset($cart_submission_data['shipments']);
-                    break;
+            $shippingAddress = $quote->getShippingAddress();
+
+            if ($shippingAddress) {
+
+                $shipping_address = array(
+                    'street_address1' => $shippingAddress->getStreet1(),
+                    'street_address2' => $shippingAddress->getStreet2(),
+                    'street_address3' => $shippingAddress->getStreet3(),
+                    'street_address4' => $shippingAddress->getStreet4(),
+                    'first_name'      => $shippingAddress->getFirstname(),
+                    'last_name'       => $shippingAddress->getLastname(),
+                    'locality'        => $shippingAddress->getCity(),
+                    'region'          => $shippingAddress->getRegion(),
+                    'postal_code'     => $shippingAddress->getPostcode(),
+                    'country_code'    => $shippingAddress->getCountry(),
+                    'phone'           => $shippingAddress->getTelephone(),
+                    'email'           => $shippingAddress->getEmail(),
+                    'phone_number'    => $shippingAddress->getTelephone(),
+                    'email_address'   => $shippingAddress->getEmail(),
+                );
+
+                //Mage::log("shipping_address: " . var_export($shipping_address, true), null, "bolt.log");
+
+                if (@$totals['shipping']) {
+                    $cart_submission_data['shipments'] = array(array(
+                        'shipping_address' => $shipping_address,
+                        'tax_amount'       => round($quote->getShippingAddress()->getShippingTaxAmount() * 100),
+                        'service'          => $shippingAddress->getShippingDescription(),
+                        'carrier'          => $shippingAddress->getShippingMethod(),
+                        'cost'             => round($totals['shipping']->getValue() * 100),
+                    ));
+                }
+
+                foreach ($required_address_fields as $field) {
+                    if (empty($shipping_address[$field])) {
+                        unset($cart_submission_data['shipments']);
+                        break;
+                    }
                 }
             }
+            ////////////////////////////////////////////////////////////////////////////////////
         }
 
         //Mage::log(var_export($cart_submission_data, true), null, "bolt.log");
