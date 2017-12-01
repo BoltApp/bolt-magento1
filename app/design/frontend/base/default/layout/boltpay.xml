@@ -28,14 +28,6 @@
     <reference name="content" >
       <block type="core/template" name="bolt_js" after="-" as="bolt_js"  template="boltpay/boltjs.phtml" />
     </reference>
-
-    <reference name="head">
-      <block
-        type="boltpay/checkout_boltpay"
-        name="boltpay_script"
-        as="boltpay_script"
-        template="boltpay/head.phtml" />
-    </reference>
   </checkout_onepage_index>
 
 
@@ -44,20 +36,15 @@
       <remove name="button" />
 
       <block
-        type="boltpay/checkout_boltpay"
-        name="checkout.onepage.review.button"
-        as="button"
-        template="boltpay/payment.phtml">
+          type="boltpay/checkout_boltpay"
+          name="checkout.onepage.review.button"
+          as="button"
+          template="boltpay/payment.phtml">
         <block
           type="core/template"
           name="checkout.onepage.review.button.original"
           as="button_original"
           template="checkout/onepage/review/button.phtml"/>
-        <block
-          type="core/template"
-          name="checkout.onepage.review.connect"
-          as="connect"
-          template="boltpay/head.phtml" />
       </block>
     </reference>
   </checkout_onepage_review>

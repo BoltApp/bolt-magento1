@@ -15,6 +15,20 @@ class Bolt_Boltpay_Helper_Api extends Bolt_Boltpay_Helper_Data {
     const API_URL_TEST = 'https://api-sandbox.boltapp.com/';
     const API_URL_PROD = 'https://api.boltapp.com/';
 
+    ///////////////////////////////////////////////////////
+    // Store discount types, internal and 3rd party.
+    // Can appear as keys in Quote::getTotals result array.
+    ///////////////////////////////////////////////////////
+    private $discount_types = array(
+        'discount',
+        'giftcardcredit',
+        'giftcardcredit_after_tax',
+        'giftvoucher',
+        'giftvoucher_after_tax',
+        'aw_storecredit',
+    );
+    ///////////////////////////////////////////////////////
+
     /**
      * A call to Fetch Bolt API endpoint. Gets the transaction info.
      *
@@ -155,7 +169,6 @@ class Bolt_Boltpay_Helper_Api extends Bolt_Boltpay_Helper_Data {
          * Setting up shipping method by finding the carier code that matches
          * the one set during checkout
          ********************************************************************/
-
         $rates = $quote->getShippingAddress()->getAllShippingRates();
 
         foreach ($rates as $rate) {
@@ -168,14 +181,13 @@ class Bolt_Boltpay_Helper_Api extends Bolt_Boltpay_Helper_Data {
         }
 
         // setting Bolt as payment method
-
         $data = array('method' => Bolt_Boltpay_Model_Payment::METHOD_CODE);
 
         $quote->getShippingAddress()->setPaymentMethod($data['method'])->save();
 
         $payment = $quote->getPayment();
 
-        $payment->importData($data);
+        if (!$payment->getMethod()) $payment->importData($data);
 
         // adding transaction data to payment instance
         $payment->setAdditionalInformation('bolt_transaction_status', $transactionStatus);
@@ -189,11 +201,11 @@ class Bolt_Boltpay_Helper_Api extends Bolt_Boltpay_Helper_Data {
         $service = Mage::getModel('sales/service_quote', $quote);
         $service->submitAll();
 
+        $order = $service->getOrder();
+
         // deactivate quote
         $quote->setIsActive(false);
         $quote->save();
-
-        $order = $service->getOrder();
 
         Mage::getModel('boltpay/payment')->handleOrderUpdate($order);
 
@@ -363,7 +375,8 @@ class Bolt_Boltpay_Helper_Api extends Bolt_Boltpay_Helper_Data {
     public function buildCart($quote, $items, $multipage) {
 
         // Get quote totals
-        $totals   = $quote->getTotals();
+        $quote->collectTotals()->save();
+        $totals = $quote->getTotals();
         $productMediaConfig = Mage::getModel('catalog/product_media_config');
 
         ///////////////////////////////////////////////////////////
@@ -393,19 +406,25 @@ class Bolt_Boltpay_Helper_Api extends Bolt_Boltpay_Helper_Data {
         /////////////////////////////////////////////////////////////////////////
         // Check for the discount and include it in the submission data if found.
         /////////////////////////////////////////////////////////////////////////
-        $discount_amount = 0;
+        $total_discount = 0;
 
-        if (@$totals['discount']) {
+        $cart_submission_data['discounts'] = array();
 
-            $discount_amount = round($totals['discount']->getValue() * 100);
+        foreach ($this->discount_types as $discount) {
 
-            preg_match('#\((.*?)\)#', $totals['discount']->getTitle(), $description);
-            $description =  $description[1] ?: $totals['discount']->getTitle();
+            if (@$totals[$discount]) {
 
-            $cart_submission_data['discounts'] = array(array(
-                'amount'      => -1 * $discount_amount,
-                'description' => $description,
-            ));
+                $discount_amount = round($totals[$discount]->getValue() * 100);
+
+                preg_match('#\((.*?)\)#', $totals[$discount]->getTitle(), $description);
+                $description = @$description[1] ?: $totals[$discount]->getTitle();
+
+                $cart_submission_data['discounts'][] = array(
+                    'amount'      => -1 * $discount_amount,
+                    'description' => $description,
+                );
+                $total_discount += $discount_amount;
+            }
         }
         /////////////////////////////////////////////////////////////////////////
 
@@ -453,14 +472,17 @@ class Bolt_Boltpay_Helper_Api extends Bolt_Boltpay_Helper_Data {
         }
         ///////////////////////////////////////////
 
-        if ($multipage) {
+
+        // Separating multi page and one page checkout order creation was necessary, it is not anymore
+        // TODO: remove the checkout type condition and '$multipage' parameter all the way back
+        if (false && $multipage) {
             /////////////////////////////////////////////////////////////////////////////////////////
             // For multi-page checkout type send only subtotal, do not include shipping and tax info.
             /////////////////////////////////////////////////////////////////////////////////////////
             $total_key = @$totals['subtotal'] ? 'subtotal' : 'grand_total';
 
             $cart_submission_data['total_amount'] = round($totals[$total_key]->getValue() * 100);
-            $cart_submission_data['total_amount'] += $discount_amount;
+            $cart_submission_data['total_amount'] += $total_discount;
             /////////////////////////////////////////////////////////////////////////////////////////
         } else {
             ////////////////////////////////////////////////////////////////////////////////////
