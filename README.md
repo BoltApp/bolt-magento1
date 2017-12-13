@@ -7,8 +7,8 @@ Supported Magento versions:
 
 ### Releases
 
-+ [v0.0.9](https://s3-us-west-1.amazonaws.com/bolt-public/magento-integration-release/magento_integration_v009.tar.gz)
-+ [v0.0.8](https://s3-us-west-1.amazonaws.com/bolt-public/magento-integration-release/magento_integration_v008.tar.gz)
++ [v0.0.9](https://s3-us-west-1.amazonaws.com/bolt-public/magento-integration-release/magento_integration_v009.tar.gz) (Nov 28, 2017)
++ [v0.0.8](https://s3-us-west-1.amazonaws.com/bolt-public/magento-integration-release/magento_integration_v008.tar.gz) (Nov 6, 2017)
 + [v0.0.7](https://s3-us-west-1.amazonaws.com/bolt-public/magento-integration-release/magento_integration_v007.tar.gz)
 + [v0.0.6](https://s3-us-west-1.amazonaws.com/bolt-public/magento-integration-release/magento_integration_v006.tar.gz)
 + [v0.0.5](https://s3-us-west-1.amazonaws.com/bolt-public/magento-integration-release/magento_integration_v005.tar.gz)
