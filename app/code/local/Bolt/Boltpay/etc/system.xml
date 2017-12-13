@@ -83,7 +83,7 @@
             <selectors translate="label">
               <label>Replace Button Selectors</label>
               <frontend_type>text</frontend_type>
-              <comment>Comma delimited, default: .btn-proceed-checkout</comment>
+              <comment>CSS selectors of buttons to be replaced by Bolt.  Selectors are comma delimited, default: .btn-proceed-checkout</comment>
               <sort_order>35</sort_order>
               <show_in_default>1</show_in_default>
               <show_in_website>1</show_in_website>
@@ -91,8 +91,30 @@
             </selectors>
 
             <selector_styles translate="label">
-              <label>Replace Buttons Style</label>
+              <label>Targeted CSS</label>
               <frontend_type>textarea</frontend_type>
+              <comment>
+                A `||` delimited list of blocks of CSS associated with a replace button
+                selector added to the pages on which the specified button it is found.
+                An example can be seen in the tooltip for adding css depending on if a
+                specific button is found.
+              </comment>
+              <tooltip>
+                <![CDATA[
+<b>Example of adding styles based on two different selectors:</b>
+<pre>
+  .btn-proceed-checkout {
+    body { max-width: 95%;}
+    li.button-box { float: right; margin: 2px;}
+  }
+  <b>||</b>
+  .btn-quickbuy {
+    li.button-container { float: left; }
+    .btn-quickbuy { width: 10px; }
+  }
+</pre>
+                ]]>
+              </tooltip>
               <sort_order>36</sort_order>
               <show_in_default>1</show_in_default>
               <show_in_website>1</show_in_website>
@@ -100,7 +122,8 @@
             </selector_styles>
 
             <additional_css translate="label">
-              <label>Additional CSS</label>
+              <label>Global CSS</label>
+              <comment>Any CSS that is to be added to pages when any Bolt button selector is found</comment>
               <frontend_type>textarea</frontend_type>
               <sort_order>38</sort_order>
               <show_in_default>1</show_in_default>
@@ -136,17 +159,6 @@
               <show_in_website>1</show_in_website>
               <show_in_store>0</show_in_store>
             </test>
-
-            <!--<disable_complete_authorize translate="label">-->
-              <!--<label>Disable Complete Authorize</label>-->
-              <!--<frontend_type>select</frontend_type>-->
-              <!--<source_model>adminhtml/system_config_source_yesno</source_model>-->
-              <!--<sort_order>45</sort_order>-->
-              <!--<show_in_default>1</show_in_default>-->
-              <!--<show_in_website>1</show_in_website>-->
-              <!--<show_in_store>0</show_in_store>-->
-            <!--</disable_complete_authorize>-->
-
             <auto_capture translate="label">
               <label>Automatic Capture Mode</label>
               <frontend_type>select</frontend_type>
@@ -197,6 +209,7 @@
             <sort_order translate="label">
               <label>Sort Order</label>
               <frontend_type>text</frontend_type>
+              <comment>Influences display order on checkout pages relative to other payment options.  This does not affect any other pages including the shopping cart and product pages.</comment>
               <sort_order>100</sort_order>
               <show_in_default>1</show_in_default>
               <show_in_website>1</show_in_website>

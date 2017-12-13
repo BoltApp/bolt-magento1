@@ -179,8 +179,6 @@ class Bolt_Boltpay_ShippingController extends Mage_Core_Controller_Front_Action 
             }
             /*****************************************************************************************/
 
-
-
             $key = Mage::getStoreConfig('payment/boltpay/api_key');
             $key = Mage::helper('core')->decrypt($key);
 
