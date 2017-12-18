@@ -12,8 +12,8 @@
  */
 class Bolt_Boltpay_Helper_Api extends Bolt_Boltpay_Helper_Data {
 
-    const API_URL_TEST = 'https://api-sandbox.boltapp.com/';
-    const API_URL_PROD = 'https://api.boltapp.com/';
+    const API_URL_TEST = 'https://api-sandbox.bolt.com/';
+    const API_URL_PROD = 'https://api.bolt.com/';
 
     ///////////////////////////////////////////////////////
     // Store discount types, internal and 3rd party.
@@ -26,6 +26,7 @@ class Bolt_Boltpay_Helper_Api extends Bolt_Boltpay_Helper_Data {
         'giftvoucher',
         'giftvoucher_after_tax',
         'aw_storecredit',
+        'credit',
     );
     ///////////////////////////////////////////////////////
 
@@ -415,12 +416,15 @@ class Bolt_Boltpay_Helper_Api extends Bolt_Boltpay_Helper_Data {
             if (@$totals[$discount]) {
 
                 $discount_amount = round($totals[$discount]->getValue() * 100);
+                if ($discount_amount < 0) {
+                    $discount_amount = -1 * $discount_amount;
+                }
 
                 preg_match('#\((.*?)\)#', $totals[$discount]->getTitle(), $description);
                 $description = @$description[1] ?: $totals[$discount]->getTitle();
 
                 $cart_submission_data['discounts'][] = array(
-                    'amount'      => -1 * $discount_amount,
+                    'amount'      => $discount_amount,
                     'description' => $description,
                 );
                 $total_discount += $discount_amount;
