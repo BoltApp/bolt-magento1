@@ -32,6 +32,7 @@ Create .tar.gz file and .zip file.
 Upload to s3
 
 > aws s3 cp magento.zip s3://bolt-public/magento-integration-release/magento.zip --acl public-read
+
 > aws s3 cp bolt_magento_plugin.tar.gz s3://bolt-public/magento-integration-release/magento_integration_v0012.tar.gz --acl public-read
 
 ## Run tests
