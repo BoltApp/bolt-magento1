@@ -37,6 +37,13 @@ Plugin to integrate Bolt with Magento
 
 > aws s3 cp bolt_magento_plugin.tar.gz s3://bolt-public/magento-integration-release/magento_integration_vxxx.tar.gz --acl public-read
 
+5. Add git tag
+
+```
+git tag magento_v0.xx
+git push origin --tags
+```
+
 ## Run tests
 
 Run the following (Assuming you have MAMP)
