@@ -21,15 +21,17 @@ Plugin to integrate Bolt with Magento
 
 ## Release instructions
 
-Check what is the latest versions
+1. Bump plugin version in `app/code/local/Bolt/Boltpay/etc/config.xml`
+
+2. Check what is the latest versions
 
 > aws s3 ls s3://bolt-public/magento-integration-release/
 
-Create .tar.gz file and .zip file.
+3. Create .tar.gz file and .zip file.
 
 > ./create_release.sh
 
-Upload to s3
+4. Upload to s3
 
 > aws s3 cp magento.zip s3://bolt-public/magento-integration-release/magento.zip --acl public-read
 
