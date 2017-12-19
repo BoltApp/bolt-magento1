@@ -1,7 +1,7 @@
 # MagentoIntegration
 Plugin to integrate Bolt with Magento
 
-Supported Magento versions:
+## Supported Magento versions
 + 1.7
 + 1.9
 
@@ -19,5 +19,18 @@ Supported Magento versions:
 + [v0.0.2](https://s3-us-west-1.amazonaws.com/bolt-public/magento-integration-release/magento_integration_v002.tar.gz)
 + [v0.0.1](https://s3-us-west-1.amazonaws.com/bolt-public/magento-integration-release/magento_integration_v001.tar.gz)
 
-To run tests, run the following (Assuming you have MAMP)
-/Applications/MAMP/bin/php/php5.6.25/bin/php /usr/local/bin/phpunit
+## Release instructions
+
+Check what is the latest versions
+
+> aws s3 ls s3://bolt-public/magento-integration-release/
+
+Create .tar.gz file and .zip file.
+
+> ./create_release.sh
+
+## Run tests
+
+Run the following (Assuming you have MAMP)
+
+> /Applications/MAMP/bin/php/php5.6.25/bin/php /usr/local/bin/phpunit
