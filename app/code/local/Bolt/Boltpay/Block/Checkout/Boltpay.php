@@ -17,7 +17,7 @@ class Bolt_Boltpay_Block_Checkout_Boltpay
     /**
      * @var string The Bolt sandbox url for the javascript
      */
-    const JS_URL_TEST = 'https://cdn-connect-sandbox.bolt.com';
+    const JS_URL_TEST = 'https://connect-sandbox.bolt.com';
 
     /**
      * @var string The Bolt production url for the javascript
