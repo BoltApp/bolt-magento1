@@ -12,8 +12,8 @@
  */
 class Bolt_Boltpay_Helper_Api extends Bolt_Boltpay_Helper_Data {
 
-    const API_URL_TEST = 'https://api-sandbox.boltapp.com/';
-    const API_URL_PROD = 'https://api.boltapp.com/';
+    const API_URL_TEST = 'https://api-sandbox.bolt.com/';
+    const API_URL_PROD = 'https://api.bolt.com/';
 
     ///////////////////////////////////////////////////////
     // Store discount types, internal and 3rd party.
@@ -209,6 +209,8 @@ class Bolt_Boltpay_Helper_Api extends Bolt_Boltpay_Helper_Data {
 
         Mage::getModel('boltpay/payment')->handleOrderUpdate($order);
 
+        Mage::dispatchEvent('bolt_boltpay_save_order_after', array('order'=>$order, 'quote'=>$quote));
+
         return $order;
 
     }
@@ -275,6 +277,7 @@ class Bolt_Boltpay_Helper_Api extends Bolt_Boltpay_Helper_Data {
 
             Mage::throwException($message);
         }
+
         $resultJSON = json_decode($result);
         $jsonError = $this->handleJSONParseError();
         if ($jsonError != null) {

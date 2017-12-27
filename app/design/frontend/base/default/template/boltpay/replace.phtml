@@ -10,13 +10,13 @@ if(! $this->isBoltActive()) return;
 <script>
 
     // If Bolt Payment is in sandbox / test mode hide top checkout link
-    <?php if ($this->isTestMode()): ?>
-        var top_link_checkout = document.querySelectorAll('.top-link-checkout')[0];
+	<?php if ($this->isTestMode()): ?>
+    var top_link_checkout = document.querySelectorAll('.top-link-checkout')[0];
 
-        if (top_link_checkout) {
-            //top_link_checkout.parentNode.style.display = 'none';
-        }
-    <?php endif; ?>
+    if (top_link_checkout) {
+        //top_link_checkout.parentNode.style.display = 'none';
+    }
+	<?php endif; ?>
 
     (function(){
 
@@ -114,23 +114,23 @@ if(! $this->isBoltActive()) return;
 
                     if (! found_elements) return;
 
-                    <?php if ($this->isBoltOnlyPayment()): ?>
+					<?php if ($this->isBoltOnlyPayment()): ?>
 
-                        var lis = document.querySelectorAll('ul.checkout-types li');
+                    var lis = document.querySelectorAll('ul.checkout-types li');
 
-                        for (var i = 0, length = lis.length; i < length; i++) {
-                            var li = lis[i];
+                    for (var i = 0, length = lis.length; i < length; i++) {
+                        var li = lis[i];
 
-                            if (li.style.display != "block")  li.style.display = "none";
-                        }
+                        if (li.style.display != "block")  li.style.display = "none";
+                    }
 
-                        var proceed_link = document.querySelectorAll('div.checkout_proceed_link a.button_link.checkout-proceed')[0];
+                    var proceed_link = document.querySelectorAll('div.checkout_proceed_link a.button_link.checkout-proceed')[0];
 
-                        if (proceed_link) {
-                            proceed_link.text = proceed_link.text = "<?=$this->__('Proceed to Checkout');?>";
-                        }
+                    if (proceed_link) {
+                        proceed_link.text = proceed_link.text = "<?=$this->__('Proceed to Checkout');?>";
+                    }
 
-                    <?php endif; ?>
+					<?php endif; ?>
 
                     // Bolt buttons were placed on the page
 
@@ -172,7 +172,7 @@ if(! $this->isBoltActive()) return;
                                      * Creating the order at Bolt end, if applicable (cart not empty).
                                      * Generating BoltConnect.process code.
                                      *****************************************************************/
-                                    <?=$this->getCartDataJs(); ?>
+									<?=$this->getCartDataJs(); ?>
                                 }
                             }
 
@@ -222,7 +222,6 @@ if(! $this->isBoltActive()) return;
                     eval(responseJSON.cart_data);
                     var bolt_button = document.querySelectorAll('.bolt-checkout-button-button')[0];
                     bolt_button.click();
-                    setOverlay();
                 } else {
                     this.setResponse(response);
                 }
@@ -236,7 +235,7 @@ if(! $this->isBoltActive()) return;
             bolt_button.setAttribute("class", "bolt-checkout-button with-cards <?=$this->getCssSuffix(); ?> <?=$this->getTheme(); ?>");
             bolt_button.style.display = "none";
 
-            place_order_button.parentNode.insertBefore(bolt_button, element);
+            place_order_button.parentNode.insertBefore(bolt_button, place_order_button);
 
             loadConnectJS('<?=$this->getPaymentKey(false);?>');
 
@@ -263,21 +262,20 @@ if(! $this->isBoltActive()) return;
                         payment_radio_onclick.call(payment_radio);
                     };
 
-                    <?php if ($this->isBoltOnlyPayment()): ?>
+					<?php if ($this->isBoltOnlyPayment()): ?>
 
-                        if (payment_radio.id == "p_method_boltpay") {
-                            payment_radio.click();
-                        } else {
-                            payment_radio.parentNode.style.display = "none";
-                        }
+                    if (payment_radio.id == "p_method_boltpay") {
+                        payment_radio.click();
+                    } else {
+                        payment_radio.parentNode.style.display = "none";
+                    }
 
-                    <?php endif; ?>
+					<?php endif; ?>
 
                     if (payment_radio.checked) payment_radio.click();
 
                 })(payment_radio);
             }
-
 
             var setOverlay = function() {
 
@@ -342,7 +340,7 @@ if(! $this->isBoltActive()) return;
 
                         bolt_button_overlay = document.createElement("div");
                         bolt_button_overlay.setAttribute("id", "bolt_button_overlay");
-                        bolt_button_overlay.style.cssText = 'cursor:pointer;top:0;left:0;position:absolute;width:100%;height:60px;opacity:0.0;z-index:10000;background:#fff;';
+                        bolt_button_overlay.style.cssText = 'cursor:pointer;top:6px;left:0px;position:absolute;width:100%;height:44px;opacity:0.0;z-index:10000;background:#fff;';
 
                         bolt_button.appendChild(bolt_button_overlay);
 
@@ -356,6 +354,8 @@ if(! $this->isBoltActive()) return;
                     replaceInterval
                 );
             };
+
+            var bolt_checkout_close = setOverlay;
 
             setOverlay();
 
@@ -385,6 +385,6 @@ if(! $this->isBoltActive()) return;
 </script>
 
 <style>
-<?=$this->getSelectorsCSS();?>
-<?=$this->getAdditionalCSS();?>
+    <?=$this->getSelectorsCSS();?>
+    <?=$this->getAdditionalCSS();?>
 </style>

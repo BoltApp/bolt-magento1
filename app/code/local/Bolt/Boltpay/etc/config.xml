@@ -53,37 +53,19 @@
     </resources>
 
     <events>
-
-      <!-- Call after onepage checkout order has been saved -->
-      <checkout_type_onepage_save_order_after>
+      <!-- Call after order has been saved -->
+      <bolt_boltpay_save_order_after>
         <observers>
-          <bolt_boltpay_onepage_save_order_after>
+          <bolt_boltpay_verify_order_contents>
             <class>Bolt_Boltpay_Model_Observer</class>
-            <method>saveOrderAfter</method>
-          </bolt_boltpay_onepage_save_order_after>
+            <method>verifyOrderContents</method>
+          </bolt_boltpay_verify_order_contents>
+          <bolt_boltpay_set_bolt_user_id>
+            <class>Bolt_Boltpay_Model_Observer</class>
+            <method>setBoltUserId</method>
+          </bolt_boltpay_set_bolt_user_id>
         </observers>
-      </checkout_type_onepage_save_order_after>
-
-      <!--<checkout_type_onepage_save_order>-->
-        <!--<observers>-->
-          <!--<bolt_boltpay_onepage_save_order>-->
-            <!--<class>Bolt_Boltpay_Model_Observer</class>-->
-            <!--<method>saveOrderBefore</method>-->
-          <!--</bolt_boltpay_onepage_save_order>-->
-        <!--</observers>-->
-      <!--</checkout_type_onepage_save_order>-->
-
-
-      <!--&lt;!&ndash; Call after onepage checkout render is called &ndash;&gt;-->
-      <!--<controller_action_layout_render_before_checkout_onepage_index>-->
-        <!--<observers>-->
-          <!--<bolt_boltpay_onepage_checkout_index_render>-->
-            <!--<class>Bolt_Boltpay_Model_Observer</class>-->
-            <!--<method>saveOnRenderOnepageCheckoutLayout</method>-->
-          <!--</bolt_boltpay_onepage_checkout_index_render>-->
-        <!--</observers>-->
-      <!--</controller_action_layout_render_before_checkout_onepage_index>-->
-
+      </bolt_boltpay_save_order_after>
     </events>
 
     <sales>

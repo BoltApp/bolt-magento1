@@ -28,10 +28,6 @@ class Bolt_Boltpay_Helper_Bugsnag extends Mage_Core_Helper_Abstract {
             $bugsnag->setErrorReportingLevel(E_ERROR);
             $bugsnag->setReleaseStage($this->mode);
             $bugsnag->setBatchSending(true);
-
-            set_error_handler(array($bugsnag, 'errorHandler'));
-            set_exception_handler(array($bugsnag, 'exceptionHandler'));
-
             $bugsnag->setBeforeNotifyFunction(array($this, 'beforeNotifyFunction'));
 
             $this->bugsnag = $bugsnag;

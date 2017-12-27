@@ -10,17 +10,16 @@ class Bolt_Boltpay_Model_Observer {
     const READY_FOR_SHIPMENT = 'ready_for_shipment';
 
     /**
-     * Event handler called after a save event
+     * Event handler called after a save event.
+     * Adds the Bolt User Id to the newly registered customer.
      *
      * @param $observer
      * @throws Exception
      */
-    public function saveOrderAfter($observer) {
+    public function setBoltUserId($observer) {
 
-        Mage::log("Bolt_Boltpay_Model_Observer.saveOrderAfter: Started", null, 'bolt.log');
         $quote = $observer->getEvent()->getQuote();
         $session = Mage::getSingleton('customer/session');
-        $order = $observer->getEvent()->getOrder();
 
         try {
             $customer = $quote->getCustomer();
@@ -33,34 +32,24 @@ class Bolt_Boltpay_Model_Observer {
                     $customer->save();
                 }
             }
-
-            $method = $quote->getPayment()->getMethod();
-            if (strtolower($method) == Bolt_Boltpay_Model_Payment::METHOD_CODE) {
-                Mage::getModel('boltpay/payment')->handleOrderUpdate($order);
-            }
         } catch (Exception $e) {
-            $session->unsBoltUserId();
-            $error = array('error' => $e->getMessage());
-            Mage::log($error, null, 'bolt.log');
             Mage::helper('boltpay/bugsnag')->notifyException($e);
-            throw $e;
         }
 
         $session->unsBoltUserId();
-        Mage::log("Bolt_Boltpay_Model_Observer.saveOrderAfter: Completed", null, 'bolt.log');
     }
 
     /**
-     * Event handler called before a save event
-     *
-     * @deprecated          For Multi Step Checkout, which seems to be the one and only checkout flow type in the Bolt API for Magento,
-     *                      the initial cart data and the cart data after shipping is applied are different, therefore the following
-     *                      observer would always throw an exception. It is removed from the configuration.
+     * Event handler called after a save event.
+     * Calls the complete authorize Bolt end point to confirm the order is valid.
+     * If the order has been changed between the creation on Bolt end and the save in Magento
+     * an order info message is recorded to inform the merchant and a bugsnag notification sent to Bolt.
      *
      * @param $observer
+     * @throws Exception
      */
-    public function saveOrderBefore($observer) {
-        Mage::log("Bolt_Boltpay_Model_Observer.saveOrderBefore: Started", null, 'bolt.log');
+    public function verifyOrderContents($observer) {
+
         $boltHelper = Mage::helper('boltpay/api');
         $quote = $observer->getEvent()->getQuote();
         $payment = $quote->getPayment();
@@ -81,12 +70,27 @@ class Bolt_Boltpay_Model_Observer {
                 'auto_capture' => $authCapture
             );
             if (Mage::getStoreConfig('payment/boltpay/disable_complete_authorize'))  {
-               Mage::log("Bolt_Boltpay_Model_Observer.saveOrderBefore: Skipping complete authorize", null, 'bolt.log');
+               Mage::log("Bolt_Boltpay_Model_Observer.saveOrderAfter: Skipping complete authorize", null, 'bolt.log');
                return;
             }
-            $boltHelper->handleErrorResponse($boltHelper->transmit('complete_authorize', $complete_authorize_request));
-        }
 
-        Mage::log("Bolt_Boltpay_Model_Observer.saveOrderBefore: Completed", null, 'bolt.log');
+            try {
+                $boltHelper->handleErrorResponse($boltHelper->transmit('complete_authorize', $complete_authorize_request));
+            } catch (Exception $e) {
+                $order = $observer->getEvent()->getOrder();
+                $message = "THERE IS A MISMATCH IN THE ORDER PAID AND ORDER RECORDED.<br>PLEASE COMPARE THE ORDER DETAILS WITH THAT RECORD IN YOUR BOLT MERCHANT ACCOUNT AT: ";
+                $message .= Mage::getStoreConfig('payment/boltpay/test') ? "https://merchant-sandbox.bolt.com" : "https://merchant.bolt.com";
+                $message .= "/transaction/$reference";
+                $order->addStatusHistoryComment($message)->save();
+
+                $metaData = array(
+                    'endpoint'   => "complete_authorize",
+                    'reference'  => $reference,
+                    'quote_id'   => $quote->getId(),
+                    'display_id' => $quote->getReservedOrderId(),
+                );
+                Mage::helper('boltpay/bugsnag')->notifyException($e, $metaData);
+            }
+        }
     }
 }

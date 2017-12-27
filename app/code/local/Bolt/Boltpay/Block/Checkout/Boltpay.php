@@ -17,12 +17,12 @@ class Bolt_Boltpay_Block_Checkout_Boltpay
     /**
      * @var string The Bolt sandbox url for the javascript
      */
-    const JS_URL_TEST = 'https://cdn-connect-sandbox.boltapp.com';
+    const JS_URL_TEST = 'https://connect-sandbox.bolt.com';
 
     /**
      * @var string The Bolt production url for the javascript
      */
-    const JS_URL_PROD = 'https://connect.boltapp.com';
+    const JS_URL_PROD = 'https://connect.bolt.com';
 
     /**
      * @var int flag that represents if the capture is automatically done on authentication
@@ -176,6 +176,9 @@ class Bolt_Boltpay_Block_Checkout_Boltpay
                         check: function() {
                             var json_cart = $json_cart;
                             return json_cart.orderToken != '';
+                        },
+                        close: function() {
+                            if (typeof bolt_checkout_close === 'function') bolt_checkout_close();
                         },
                         success: function(transaction, callback) {
                         

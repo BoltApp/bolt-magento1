@@ -121,12 +121,6 @@ class Bolt_Boltpay_Model_Api2_Order_Rest_Admin_V1 extends Bolt_Boltpay_Model_Api
                     ->__("Quote not found: $quoteId.  Quote must have been already processed."), Mage_Api2_Model_Server::HTTP_BAD_REQUEST);
             }
 
-            if (!$quote->getIsActive()) {
-                Mage::log("Inactive cart/quote, quote ID: $quoteId, cannot be converted to an order.", null, 'bolt.log');
-                $this->_critical(Mage::helper('boltpay')
-                    ->__("Inactive cart/quote, quote ID: $quoteId, cannot be converted to an order."), Mage_Api2_Model_Server::HTTP_BAD_REQUEST);
-            }
-
             if (empty($reference) || empty($transactionId)) {
                 $this->_critical(Mage::helper('boltpay')
                     ->__('Reference and/or transaction_id is missing'), Mage_Api2_Model_Server::HTTP_BAD_REQUEST);
