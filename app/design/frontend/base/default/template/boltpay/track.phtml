@@ -1,12 +1,6 @@
-<?php
-  $publishableKey = Mage::helper('core')->decrypt(Mage::getStoreConfig('payment/boltpay/publishable_key_multipage'));
-  if (!$publishableKey) {
-    $publishableKey = Mage::helper('core')->decrypt(Mage::getStoreConfig('payment/boltpay/publishable_key_onepage'));
-  }
-?>
 <script
   id="bolt-track"
   type="text/javascript"
   src="<?= $this->getTrackJsUrl(); ?>"
-  data-publishable-key="<?= $publishableKey; ?>">
+  data-publishable-key="<?= Mage::helper('core')->decrypt(Mage::getStoreConfig('payment/boltpay/publishable_key_multipage')); ?>">
 </script>

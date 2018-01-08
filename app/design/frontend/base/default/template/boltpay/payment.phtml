@@ -5,9 +5,7 @@ $quote = Mage::getSingleton('checkout/session')->getQuote();
 if($quote->getPayment()->getMethodInstance()->getCode() == 'boltpay'): ?>
 
     <?php $theme = Mage::getStoreConfig('payment/boltpay/theme'); ?>
-    <div class="bolt-checkout-button-wrapper">
-      <div class="bolt-checkout-button with-cards <?= $theme; ?>"></div>
-    </div>
+    <div class="bolt-checkout-button with-cards <?= $theme; ?>"></div>
     <script type="text/javascript">
 
         (function() {
@@ -58,10 +56,6 @@ if($quote->getPayment()->getMethodInstance()->getCode() == 'boltpay'): ?>
 
         })();
     </script>
-    <style>
-      <?=$this->getSelectorsCSS();?>
-      <?=$this->getAdditionalCSS();?>
-    </style>
 <?php else: ?>
     <?= $this->getChildHtml('button_original') ?>
 <?php endif; ?>

@@ -26,7 +26,6 @@ class Bolt_Boltpay_Helper_Api extends Bolt_Boltpay_Helper_Data {
         'giftvoucher',
         'giftvoucher_after_tax',
         'aw_storecredit',
-        'credit',
     );
     ///////////////////////////////////////////////////////
 
@@ -167,10 +166,12 @@ class Bolt_Boltpay_Helper_Api extends Bolt_Boltpay_Helper_Data {
         $quote->getBillingAddress()->setShouldIgnoreValidation(true)->save();
 
         /********************************************************************
-         * Setting up shipping method by finding the carier code that matches
+         * Setting up shipping method by finding the carrier code that matches
          * the one set during checkout
          ********************************************************************/
-        $rates = $quote->getShippingAddress()->getAllShippingRates();
+        $shipping_address = $quote->getShippingAddress();
+        $shipping_address->setCollectShippingRates(true)->collectShippingRates();
+        $rates = $shipping_address->getAllShippingRates();
 
         foreach ($rates as $rate) {
             if ($rate->getCarrierTitle() . ' - ' . $rate->getMethodTitle() == $service) {
@@ -198,7 +199,7 @@ class Bolt_Boltpay_Helper_Api extends Bolt_Boltpay_Helper_Data {
 
         $quote->collectTotals()->save();
 
-        // a call to internal Magento service for orde creation
+        // a call to internal Magento service for order creation
         $service = Mage::getModel('sales/service_quote', $quote);
         $service->submitAll();
 
@@ -419,15 +420,12 @@ class Bolt_Boltpay_Helper_Api extends Bolt_Boltpay_Helper_Data {
             if (@$totals[$discount]) {
 
                 $discount_amount = round($totals[$discount]->getValue() * 100);
-                if ($discount_amount < 0) {
-                    $discount_amount = -1 * $discount_amount;
-                }
 
                 preg_match('#\((.*?)\)#', $totals[$discount]->getTitle(), $description);
                 $description = @$description[1] ?: $totals[$discount]->getTitle();
 
                 $cart_submission_data['discounts'][] = array(
-                    'amount'      => $discount_amount,
+                    'amount'      => -1 * $discount_amount,
                     'description' => $description,
                 );
                 $total_discount += $discount_amount;
@@ -479,10 +477,7 @@ class Bolt_Boltpay_Helper_Api extends Bolt_Boltpay_Helper_Data {
         }
         ///////////////////////////////////////////
 
-
-        // Separating multi page and one page checkout order creation was necessary, it is not anymore
-        // TODO: remove the checkout type condition and '$multipage' parameter all the way back
-        if (false && $multipage) {
+        if ($multipage) {
             /////////////////////////////////////////////////////////////////////////////////////////
             // For multi-page checkout type send only subtotal, do not include shipping and tax info.
             /////////////////////////////////////////////////////////////////////////////////////////

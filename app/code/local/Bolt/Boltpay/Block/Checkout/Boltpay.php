@@ -6,7 +6,7 @@
  *
  * This is defined in boltpay.xml config file
  *
- * The purpose is to add the Bolt tracking javascript files to every pagee, Bolt connect javascript to order and product pages,
+ * The purpose is to add the Bolt tracking javascript files to every page, Bolt connect javascript to order and product pages,
  * create the order on Bolt side and set up BoltConnect process with cart and hint data.
  *
  */

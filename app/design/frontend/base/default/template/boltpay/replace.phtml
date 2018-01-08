@@ -52,7 +52,7 @@ if(! $this->isBoltActive()) return;
         };
 
         /****************************************************************************************************
-         * Finds and replaces specified buttons witn Bolt checkout buttons. Runs internal function
+         * Finds and replaces specified buttons with Bolt checkout buttons. Runs internal function
          * on every 0.5 seconds up to 20 times. If no button was found for 10 seconds it clears the interlal
          ****************************************************************************************************/
         var replaceCheckout = function() {
@@ -200,7 +200,7 @@ if(! $this->isBoltActive()) return;
                     return;
                 }
 
-                var params = this.getFormData();
+                var params = this.getFormData ? this.getFormData() : Form.serialize(this.form, true);
 
                 checkout.setLoadWaiting(true);
 
