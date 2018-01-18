@@ -1,0 +1,8 @@
+<script>
+    (function() {
+        var xmlhttp = new XMLHttpRequest();
+        xmlhttp.open("POST", "<?=$this->getUrl('boltpay/shipping/prefetchEstimate');?>", true);
+        xmlhttp.setRequestHeader("Content-type", "application/json");
+        xmlhttp.send(JSON.stringify(<?=$this->getLocationEstimate()?>));
+    })();
+</script>

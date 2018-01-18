@@ -553,5 +553,103 @@ class Bolt_Boltpay_Helper_Api extends Bolt_Boltpay_Helper_Data {
     public function isResponseError($response) {
         return array_key_exists('errors', $response) || array_key_exists('error_code', $response);
     }
+
+    /**
+     * Gets the shipping and the tax estimate for a quote
+     *
+     * @param $quote    A quote object with pre-populated addresses
+     * @return array
+     */
+    public function getShippingAndTaxEstimate( $quote ) {
+
+        $response = array(
+            'shipping_options' => array(),
+        );
+
+        /*****************************************************************************************
+         * Calculate tax
+         *****************************************************************************************/
+        $quote->getShippingAddress()->setShippingMethod(null);
+        $quote->collectTotals();
+        $totals = $quote->getTotals();
+
+        $response['tax_result'] = array(
+            "amount" => @$totals['tax'] ? round($totals['tax']->getValue() * 100) : 0
+        );
+        /*****************************************************************************************/
+
+
+        /*****************************************************************************************
+         * Calculate shipping and shipping tax
+         *****************************************************************************************/
+        $store = Mage::getModel('core/store')->load($quote->getStoreId());
+        $taxCalculationModel = Mage::getSingleton('tax/calculation');
+        $shipping_tax_class_id = Mage::getStoreConfig('tax/classes/shipping_tax_class', $quote->getStoreId());
+        $rate_request = $taxCalculationModel->getRateRequest($quote->getShippingAddress(), $quote->getBillingAddress(), $quote->getCustomerTaxClassId(), $store);
+
+        $shipping_address = $quote->getShippingAddress();
+        $shipping_address->setCollectShippingRates(true)->collectShippingRates()->save();
+
+        $rates = $shipping_address->getAllShippingRates();
+
+        //////////////////////////////////////////////////////////////////////////////////
+        //  Support for Onepica Avatax plugin
+        //////////////////////////////////////////////////////////////////////////////////
+        $onepica_avatax = null;
+        foreach ($shipping_address->getTotalCollector()->getCollectors() as $model) {
+            if (get_class($model) == 'OnePica_AvaTax_Model_Sales_Quote_Address_Total_Tax') {
+                $onepica_avatax = $model;
+            }
+        }
+
+        if ($onepica_avatax) {
+            $avatax_tax_rate = 0;
+            $summary = Mage::getModel('avatax/avatax_estimate')->getSummary($shipping_address->getId());
+
+            foreach ($summary as $tax) {
+                $avatax_tax_rate += $tax['rate'];
+            }
+            Mage::log('ShippingController.php: summary:'.var_export($summary, true), null, 'shipping_and_tax.log');
+        }
+        //////////////////////////////////////////////////////////////////////////////////
+
+
+        foreach ($rates as $rate) {
+
+            $shipping_address->setShippingMethod($rate->getMethod())->save();
+
+            $price = $rate->getPrice();
+
+            $is_tax_included = Mage::helper('tax')->shippingPriceIncludesTax();
+
+            $tax_rate = @$avatax_tax_rate ? $avatax_tax_rate : $taxCalculationModel->getRate($rate_request->setProductClassId($shipping_tax_class_id));
+
+            if ($is_tax_included) {
+
+                $price_excluding_tax = $price / (1 + $tax_rate / 100);
+
+                $tax_amount = 100 * ($price - $price_excluding_tax);
+
+                $price = $price_excluding_tax;
+
+            } else {
+
+                $tax_amount = $price * $tax_rate;
+            }
+
+            $cost = round(100 * $price);
+
+            $option = array(
+                "service" => $rate->getCarrierTitle() . ' - ' . $rate->getMethodTitle(),
+                "cost" => $cost,
+                "tax_amount" => abs(round($tax_amount))
+            );
+
+            $response['shipping_options'][] = $option;
+        }
+        /*****************************************************************************************/
+
+        return $response;
+    }
 }
 

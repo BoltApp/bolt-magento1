@@ -91,93 +91,18 @@ class Bolt_Boltpay_ShippingController extends Mage_Core_Controller_Front_Action 
                 'telephone' => $billingAddress->getTelephone() ?: $shipping_address->phone
             ))->save();
 
+            ////////////////////////////////////////////////////////////////////////////////////////
+            // Check session cache for estimate.  If the shipping city or postcode, and the country code match,
+            // then use the cached version.  Otherwise, we have to do another calculation
+            ////////////////////////////////////////////////////////////////////////////////////////
+            $cached_address = unserialize(Mage::app()->getCache()->load("quote_location_".$quote->getId()));
 
-            $response = array(
-                'shipping_options' => array(),
-            );
-
-            /*****************************************************************************************
-             * Calculate tax
-             *****************************************************************************************/
-            $quote->getShippingAddress()->setShippingMethod(null);
-            $quote->collectTotals();
-            $totals = $quote->getTotals();
-
-            $response['tax_result'] = array(
-                "amount" => @$totals['tax'] ? round($totals['tax']->getValue() * 100) : 0
-            );
-            /*****************************************************************************************/
-
-
-            /*****************************************************************************************
-             * Calculate shipping and shipping tax
-             *****************************************************************************************/
-            $store = Mage::getModel('core/store')->load($quote->getStoreId());
-            $taxCalculationModel = Mage::getSingleton('tax/calculation');
-            $shipping_tax_class_id = Mage::getStoreConfig('tax/classes/shipping_tax_class', $quote->getStoreId());
-            $rate_request = $taxCalculationModel->getRateRequest($quote->getShippingAddress(), $quote->getBillingAddress(), $quote->getCustomerTaxClassId(), $store);
-
-            $shipping_address = $quote->getShippingAddress();
-            $shipping_address->setCollectShippingRates(true)->collectShippingRates()->save();
-
-            $rates = $shipping_address->getAllShippingRates();
-
-            //////////////////////////////////////////////////////////////////////////////////
-            //  Support for Onepica Avatax plugin
-            //////////////////////////////////////////////////////////////////////////////////
-            $onepica_avatax = null;
-            foreach ($shipping_address->getTotalCollector()->getCollectors() as $model) {
-                if (get_class($model) == 'OnePica_AvaTax_Model_Sales_Quote_Address_Total_Tax') {
-                    $onepica_avatax = $model;
-                }
+            if ($cached_address && ((strtoupper($cached_address->city) == strtoupper($address_data->city)) || ($cached_address->postcode == $address_data->postcode)) && ($cached_address->country_code == $address_data->country_code)) {
+                $response = unserialize(Mage::app()->getCache()->load("quote_shipping_and_tax_estimate_".$quote->getId()));
+            } else {
+                $response = Mage::helper('boltpay/api')->getShippingAndTaxEstimate($quote);
             }
-
-            if ($onepica_avatax) {
-                $avatax_tax_rate = 0;
-                $summary = Mage::getModel('avatax/avatax_estimate')->getSummary($shipping_address->getId());
-
-                foreach ($summary as $tax) {
-                    $avatax_tax_rate += $tax['rate'];
-                }
-                Mage::log('ShippingController.php: summary:'.var_export($summary, true), null, 'shipping_and_tax.log');
-            }
-            //////////////////////////////////////////////////////////////////////////////////
-
-
-            foreach ($rates as $rate) {
-
-                $shipping_address->setShippingMethod($rate->getMethod())->save();
-
-                $price = $rate->getPrice();
-
-                $is_tax_included = Mage::helper('tax')->shippingPriceIncludesTax();
-
-                $tax_rate = @$avatax_tax_rate ? $avatax_tax_rate : $taxCalculationModel->getRate($rate_request->setProductClassId($shipping_tax_class_id));
-
-                if ($is_tax_included) {
-
-                    $price_excluding_tax = $price / (1 + $tax_rate / 100);
-
-                    $tax_amount = 100 * ($price - $price_excluding_tax);
-
-                    $price = $price_excluding_tax;
-
-                } else {
-
-                    $tax_amount = $price * $tax_rate;
-                }
-
-                $cost = round(100 * $price);
-
-                $option = array(
-                    "service" => $rate->getCarrierTitle() . ' - ' . $rate->getMethodTitle(),
-                    "cost" => $cost,
-                    "tax_amount" => abs(round($tax_amount))
-                );
-
-                $response['shipping_options'][] = $option;
-            }
-            /*****************************************************************************************/
+            ////////////////////////////////////////////////////////////////////////////////////////
 
             $key = Mage::getStoreConfig('payment/boltpay/api_key');
             $key = Mage::helper('core')->decrypt($key);
@@ -197,5 +122,42 @@ class Bolt_Boltpay_ShippingController extends Mage_Core_Controller_Front_Action 
             Mage::helper('boltpay/bugsnag')->notifyException($e);
             throw $e;
         }
+    }
+
+    /**
+     * Prefetches and stores the shipping and tax estimate and stores it in the session
+     *
+     * This expects to receive JSON with the values:
+     *        city, region_code, zip_code, country_code
+     */
+    function prefetchEstimateAction() {
+        $quote = Mage::getSingleton('checkout/session')->getQuote();
+        $cached_quote_location = Mage::app()->getCache()->load("quote_location_".$quote->getId());
+        ////////////////////////////////////////////////////////////////////////
+        // Clear previously set estimates.  This helps if this
+        // process fails or is aborted, which will force the actual index action
+        // to get fresh data instead of reading from the session cache
+        ////////////////////////////////////////////////////////////////////////
+        Mage::app()->getCache()->remove("quote_location_".$quote->getId());
+        Mage::app()->getCache()->remove("quote_shipping_and_tax_estimate_".$quote->getId());
+        ////////////////////////////////////////////////////////////////////////
+
+        $request_json = file_get_contents('php://input');
+        $request_data = json_decode($request_json);
+
+        $address_data = array(
+            'city' => $request_data->city,
+            'region' => $request_data->region_code,
+            'postcode' => $request_data->zip_code,
+            'country_id' => $request_data->country_code
+        );
+
+        $quote->getShippingAddress()->addData($address_data);
+        $quote->getShippingAddress()->addData($address_data);
+
+        $estimate_response = Mage::helper('boltpay/api')->getShippingAndTaxEstimate($quote);
+
+        Mage::app()->getCache()->save(serialize($address_data), "quote_location_".$quote->getId());
+        Mage::app()->getCache()->save(serialize($estimate_response), "quote_shipping_and_tax_estimate_".$quote->getId());
     }
 }

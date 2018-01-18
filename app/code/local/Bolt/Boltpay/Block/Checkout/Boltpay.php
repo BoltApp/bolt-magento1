@@ -432,5 +432,46 @@ class Bolt_Boltpay_Block_Checkout_Boltpay
     function isBoltActive() {
         return Mage::getStoreConfig('payment/boltpay/active');
     }
+
+    /**
+     * Gets the IP address of the requesting customer.  This is used instead of simply $_SERVER['REMOTE_ADDR'] to give more accurate IPs if a
+     * proxy is being used.
+     *
+     * @return string  The IP address of the customer
+     */
+    function getIpAddress(){
+        foreach (array('HTTP_CLIENT_IP', 'HTTP_X_FORWARDED_FOR', 'HTTP_X_FORWARDED', 'HTTP_X_CLUSTER_CLIENT_IP', 'HTTP_FORWARDED_FOR', 'HTTP_FORWARDED', 'REMOTE_ADDR') as $key){
+            if (array_key_exists($key, $_SERVER) === true){
+                foreach (explode(',', $_SERVER[$key]) as $ip){
+                    $ip = trim($ip); // just to be safe
+
+                    if (filter_var($ip, FILTER_VALIDATE_IP, FILTER_FLAG_NO_PRIV_RANGE | FILTER_FLAG_NO_RES_RANGE) !== false){
+                        return $ip;
+                    }
+                }
+            }
+        }
+    }
+
+    /**
+     * Gets the estimated location of the client based on client's IP address
+     * This currently uses http://freegeoip.net to obtain this data which has a
+     * limit of 15000 queries per hour from the store.
+     *
+     * When there is a need to increase this limit, it can be downloaded and hosted
+     * on Bolt to remove this limit.
+     *
+     * @return bool|string  JSON containing geolocation info of the client, or false if the ip could not be obtained.
+     */
+    function getLocationEstimate() {
+        $location_info = Mage::getSingleton('core/session')->getLocationInfo();
+
+        if (empty($location_info)) {
+            $location_info = file_get_contents("http://freegeoip.net/json/".$this->getIpAddress());
+            Mage::getSingleton('core/session')->setLocationInfo($location_info);
+        }
+
+        return $location_info;
+    }
 }
 

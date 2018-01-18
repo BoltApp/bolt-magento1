@@ -130,5 +130,5 @@ if (!lastPrice) {
 }
 
 payment.addAfterInitFunction('boltpay', function() {
-    //jQuery("#p_method_boltpay").trigger('click');
+    jQuery("#p_method_boltpay").trigger('click');
 });
