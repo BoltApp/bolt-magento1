@@ -6,6 +6,8 @@ Plugin to integrate Bolt with Magento
 + 1.9
 
 ### Releases
++ [v0.0.14](https://s3-us-west-1.amazonaws.com/bolt-public/magento-integration-release/magento_integration_v0014.zip) (Jan 23, 2018)
++ [v0.0.13](https://s3-us-west-1.amazonaws.com/bolt-public/magento-integration-release/magento_integration_v0013.zip)
 + [v0.0.12](https://s3-us-west-1.amazonaws.com/bolt-public/magento-integration-release/magento_integration_v0012.tar.gz) (Dec 19, 2017)
 + [v0.0.11](https://s3-us-west-1.amazonaws.com/bolt-public/magento-integration-release/magento_integration_v0011.tar.gz) (Dec 18, 2017)
 + [v0.0.10](https://s3-us-west-1.amazonaws.com/bolt-public/magento-integration-release/magento_integration_v0010.tar.gz) (Dec 13, 2017)
