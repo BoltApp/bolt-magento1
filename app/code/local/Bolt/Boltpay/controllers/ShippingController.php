@@ -113,7 +113,7 @@ class Bolt_Boltpay_ShippingController extends Mage_Core_Controller_Front_Action 
 
             $this->getResponse()->clearHeaders()
                 ->setHeader('Content-type', 'application/json', true)
-                ->setHeader('X-Merchant-Key', $key, true)
+                ->setHeader('X-Api-Key', $key, true)
                 ->setHeader('X-Nonce', rand(100000000, 999999999), true);
 
             $this->getResponse()->setBody($response);

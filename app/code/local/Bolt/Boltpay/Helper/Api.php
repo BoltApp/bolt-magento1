@@ -90,7 +90,7 @@ class Bolt_Boltpay_Helper_Api extends Bolt_Boltpay_Helper_Data {
 
             curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
             curl_setopt($ch, CURLOPT_HTTPHEADER, array(
-                "X-Merchant-Key: $key",
+                "X-Api-Key: $key",
                 "X-Bolt-Hmac-Sha256: $hmac_header",
                 "Content-type: application/json",
             ));
@@ -263,7 +263,7 @@ class Bolt_Boltpay_Helper_Api extends Bolt_Boltpay_Helper_Data {
         curl_setopt($ch, CURLOPT_HTTPHEADER, array(
             'Content-Type: application/json',
             'Content-Length: ' . strlen($params),
-            'X-Merchant-Key: ' . Mage::helper('core')->decrypt($key),
+            'X-Api-Key: ' . Mage::helper('core')->decrypt($key),
             'X-Nonce: ' . rand(100000000, 999999999),
         ));
         curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
@@ -652,4 +652,3 @@ class Bolt_Boltpay_Helper_Api extends Bolt_Boltpay_Helper_Data {
         return $response;
     }
 }
-
