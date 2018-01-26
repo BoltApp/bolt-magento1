@@ -104,16 +104,12 @@ class Bolt_Boltpay_ShippingController extends Mage_Core_Controller_Front_Action 
             }
             ////////////////////////////////////////////////////////////////////////////////////////
 
-            $key = Mage::getStoreConfig('payment/boltpay/api_key');
-            $key = Mage::helper('core')->decrypt($key);
-
             $response = json_encode($response, JSON_PRETTY_PRINT);
 
             //Mage::log('SHIPPING AND TAX RESPONSE: ' . $response, null, 'shipping_and_tax.log');
 
             $this->getResponse()->clearHeaders()
                 ->setHeader('Content-type', 'application/json', true)
-                ->setHeader('X-Api-Key', $key, true)
                 ->setHeader('X-Nonce', rand(100000000, 999999999), true);
 
             $this->getResponse()->setBody($response);
