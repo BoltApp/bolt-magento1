@@ -224,6 +224,7 @@ if(! $this->isBoltActive()) return;
                     bolt_button.click();
                 } else {
                     this.setResponse(response);
+                    window.location.href = "<?=Mage::getURL('checkout/cart');?>";
                 }
             };
 
@@ -239,43 +240,57 @@ if(! $this->isBoltActive()) return;
 
             loadConnectJS('<?=$this->getPaymentKey(false);?>');
 
-            var payment_radios = document.querySelectorAll('[name="payment[method]"]');
+            /**
+             * Click event to payment method radio buttons that toggle
+             * display of the bolt button
+             */
+            var toggleBoltButton = function () {
+                if (this.id == "p_method_boltpay") {
+                    bolt_button.style.display="";
+                    place_order_button.style.display="none";
+                } else {
+                    bolt_button.style.display="none";
+                    place_order_button.style.display="";
+                }
+            };
 
-            for (i = 0, length = payment_radios.length; i < length; i++) {
+            /**
+             * Attaches click event to all radio buttons
+             *
+             * @param   An option list passed in by an observer if this function is called in that context
+             *          This can be omitted.
+             */
+            var attachClickEvents = function(mutationList) {
 
-                var payment_radio = payment_radios[i];
+                var payment_radios = document.querySelectorAll('[name="payment[method]"]');
+                for (i = 0, length = payment_radios.length; i < length; i++) {
 
-                (function(payment_radio){
+                    var payment_radio = payment_radios[i];
 
-                    var payment_radio_onclick = payment_radio.onclick;
+                    payment_radio.onclick = toggleBoltButton;
 
-                    payment_radio.onclick = function() {
-
-                        if (payment_radio.id == "p_method_boltpay") {
-                            bolt_button.style.display="";
-                            place_order_button.style.display="none";
-                        } else {
-                            bolt_button.style.display="none";
-                            place_order_button.style.display="";
-                        }
-
-                        payment_radio_onclick.call(payment_radio);
-                    };
-
-					<?php if ($this->isBoltOnlyPayment()): ?>
-
+                    <?php if ($this->isBoltOnlyPayment()): ?>
                     if (payment_radio.id == "p_method_boltpay") {
                         payment_radio.click();
                     } else {
                         payment_radio.parentNode.style.display = "none";
                     }
-
-					<?php endif; ?>
+                    <?php endif; ?>
 
                     if (payment_radio.checked) payment_radio.click();
+                }
 
-                })(payment_radio);
             }
+
+            attachClickEvents();
+
+            //////////////////////////////////////////////////////////////////////
+            // Watch for changes in the payment methods to re-attach click events
+            //////////////////////////////////////////////////////////////////////
+            var paymentMethodsContainer = document.getElementById('checkout-payment-method-load');
+            var paymentMethodObserver = new MutationObserver(attachClickEvents);
+            paymentMethodObserver.observe(paymentMethodsContainer, { childList: true });
+            //////////////////////////////////////////////////////////////////////
 
             var setOverlay = function() {
 

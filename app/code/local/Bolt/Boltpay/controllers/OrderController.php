@@ -141,7 +141,7 @@ class Bolt_Boltpay_OrderController extends Mage_Core_Controller_Front_Action {
             if (!$result['cart_data']) {
                 $result['success'] = false;
                 $result['error']   = true;
-                $result['error_messages'] = "Network error. Please try again.";
+                $result['error_messages'] = "Your shopping cart is empty.  Your session may have expired.";
             }
 
             $this->getResponse()->setHeader('Content-type', 'application/json', true);

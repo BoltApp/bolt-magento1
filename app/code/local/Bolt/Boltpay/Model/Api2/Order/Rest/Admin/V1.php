@@ -40,7 +40,7 @@ class Bolt_Boltpay_Model_Api2_Order_Rest_Admin_V1 extends Bolt_Boltpay_Model_Api
     }
 
     /**
-     * API Hook enpoint that processes all web hook requests
+     * API Hook endpoint that processes all web hook requests
      *
      * @param array $couponData    Currently this array is not being used but it called at some points with "filteredData"
      * @return null
