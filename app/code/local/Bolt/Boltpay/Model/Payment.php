@@ -67,7 +67,7 @@ class Bolt_Boltpay_Model_Payment extends Mage_Payment_Model_Method_Abstract {
 
     // We will ignore "credit" type for now
     // There is no hook when the transaction Authorize fails.
-    protected $_hookTypeToStatusTranslator = array(
+    public static $_hookTypeToStatusTranslator = array(
         self::HOOK_TYPE_AUTH => self::TRANSACTION_AUTHORIZED,
         self::HOOK_TYPE_CAPTURE => self::TRANSACTION_COMPLETED,
         self::HOOK_TYPE_PAYMENT => self::TRANSACTION_COMPLETED,
@@ -92,10 +92,10 @@ class Bolt_Boltpay_Model_Payment extends Mage_Payment_Model_Method_Abstract {
         return parent::getConfigData($field, $storeId);
     }
 
-    public function translateHookTypeToTransactionStatus($hookType) {
+    public static function translateHookTypeToTransactionStatus($hookType) {
         $hookType = strtolower($hookType);
-        if (array_key_exists($hookType, $this->_hookTypeToStatusTranslator)) {
-            return $this->_hookTypeToStatusTranslator[$hookType];
+        if (array_key_exists($hookType, static::$_hookTypeToStatusTranslator)) {
+            return static::$_hookTypeToStatusTranslator[$hookType];
         } else {
             $message = sprintf('Invalid hook type %s', $hookType);
             Mage::throwException($message);

@@ -76,9 +76,7 @@ class Bolt_Boltpay_Model_Api2_Order_Rest_Admin_V1 extends Bolt_Boltpay_Model_Api
                 Mage::log('Order Found. Updating it', null, 'bolt.log');
                 $orderPayment = $order->getPayment();
 
-                $newTransactionStatus = $orderPayment
-                    ->getMethodInstance()
-                    ->translateHookTypeToTransactionStatus($hookType);
+                $newTransactionStatus = Bolt_Boltpay_Model_Payment::translateHookTypeToTransactionStatus($hookType);
 
                 $prevTransactionStatus = $orderPayment->getAdditionalInformation('bolt_transaction_status');
                 $merchantTransactionId = $orderPayment->getAdditionalInformation('bolt_merchant_transaction_id');
