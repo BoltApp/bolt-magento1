@@ -398,7 +398,7 @@ class Bolt_Boltpay_Helper_Api extends Bolt_Boltpay_Helper_Data {
                     'image_url'    => $image_url,
                     'name'         => $item->getName(),
                     'sku'          => $product->getData('sku'),
-                    'description'  => $product->getDescription(),
+                    'description'  => substr($product->getDescription(), 0, 8182),
                     'total_amount' => round($item->getPrice() * 100 * $item->getQty()),
                     'unit_price'   => round($item->getPrice() * 100),
                     'quantity'     => $item->getQty()
