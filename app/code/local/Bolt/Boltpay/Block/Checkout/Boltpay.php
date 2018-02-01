@@ -41,7 +41,7 @@ class Bolt_Boltpay_Block_Checkout_Boltpay
             self::JS_URL_TEST . "/connect.js":
             self::JS_URL_PROD . "/connect.js";
     }
-    
+
     /**
      * Get the track javascript url, production or sandbox, based on store config settings
      */
@@ -58,7 +58,7 @@ class Bolt_Boltpay_Block_Checkout_Boltpay
      * @param bool $multipage                  Is checkout type Multi-Page Checkout, the default is true, set to false for One Page Checkout
      * @return mixed json based PHP object
      */
-    public function createOrder($quote, $multipage) {
+    private function createBoltOrder($quote, $multipage) {
 
         // Load the required helper class
         $boltHelper = Mage::helper('boltpay/api');
@@ -144,7 +144,7 @@ class Bolt_Boltpay_Block_Checkout_Boltpay
             }
 
             // Call Bolt create order API
-            $orderCreationResponse = $this->createOrder($quote, $multipage);
+            $orderCreationResponse = $this->createBoltOrder($quote, $multipage);
 
             //////////////////////////////////////////////////////////////////////////
             // Generate JSON cart and hints objects for the javascript returned below.
@@ -181,14 +181,14 @@ class Bolt_Boltpay_Block_Checkout_Boltpay
                             if (typeof bolt_checkout_close === 'function') bolt_checkout_close();
                         },
                         success: function(transaction, callback) {
-                        
+
                             var onSuccess = function() {
                                 setTimeout(function(){location.href = '$success_url';}, 5000);
-                                callback();  
+                                callback();
                             };
-                         
+
                             var parameters = 'reference='+transaction.reference;
-                            
+
                             new Ajax.Request(
                                 '$save_order_url',
                                 {
@@ -474,4 +474,3 @@ class Bolt_Boltpay_Block_Checkout_Boltpay
         return $location_info;
     }
 }
-
