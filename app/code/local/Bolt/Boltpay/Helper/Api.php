@@ -357,7 +357,7 @@ class Bolt_Boltpay_Helper_Api extends Bolt_Boltpay_Helper_Data {
     /**
      * Generates order data for sending to Bolt.
      *
-     * @param $quote            Magento quote instance
+     * @param $quote            Maagento quote instance
      * @param array $items      array of Magento products
      * @param bool $multipage   Is checkout type Multi-Page Checkout, the default is true, set to false for One Page Checkout
      * @return array            The order payload to be sent as to bolt in API call as a PHP array
@@ -372,7 +372,7 @@ class Bolt_Boltpay_Helper_Api extends Bolt_Boltpay_Helper_Data {
     /**
      * Generates cart submission data for sending to Bolt order cart field.
      *
-     * @param $quote            Magento quote instance
+     * @param $quote            Maagento quote instance
      * @param $items            array of Magento products
      * @param bool $multipage   Is checkout type Multi-Page Checkout, the default is true, set to false for One Page Checkout
      * @return array            The cart data part of the order payload to be sent as to bolt in API call as a PHP array
@@ -485,14 +485,6 @@ class Bolt_Boltpay_Helper_Api extends Bolt_Boltpay_Helper_Data {
 
             $cart_submission_data['total_amount'] = round($totals[$total_key]->getValue() * 100);
             $cart_submission_data['total_amount'] += $total_discount;
-
-            // Exclude shipping and tax (they'll be recalculated during bolt checkout)
-            if (@$totals['tax']) {
-                $cart_submission_data['total_amount'] -= round($totals['tax']->getValue() * 100);
-            }
-            if (@$totals['shipping']) {
-                $cart_submission_data['total_amount'] -= round($totals['shipping']->getValue() * 100);
-            }
             /////////////////////////////////////////////////////////////////////////////////////////
         } else {
             ////////////////////////////////////////////////////////////////////////////////////
