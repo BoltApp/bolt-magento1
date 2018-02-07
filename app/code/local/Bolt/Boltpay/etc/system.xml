@@ -61,7 +61,7 @@
                 The Bolt Signing Secret Key configuration, used to verify web hook request signature.
              -->
             <signing_key translate="label">
-              <label>Signing Key</label>
+              <label>Signing Secret</label>
               <frontend_type>obscure</frontend_type>
               <backend_model>adminhtml/system_config_backend_encrypted</backend_model>
               <sort_order>13</sort_order>

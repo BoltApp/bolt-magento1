@@ -24,7 +24,8 @@ class Bolt_Boltpay_IndexController extends Mage_Adminhtml_Controller_Action {
                 'consumer_key' => $consumerKey,
                 'consumer_secret' => $consumerToken,
                 'access_token' => $token,
-                'access_token_secret' => $tokenSecret
+                'access_token_secret' => $tokenSecret,
+                'type' => 'magento_oauth1'
             );
 
             $boltHelper->handleErrorResponse($boltHelper->transmit('oauth', $reqData, 'merchant', 'division'));

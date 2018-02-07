@@ -63,6 +63,10 @@ class Bolt_Boltpay_Block_Checkout_Boltpay
         // Load the required helper class
         $boltHelper = Mage::helper('boltpay/api');
 
+        $items = $this->getItems();
+
+        if (empty($items)) return;
+
         // Generates order data for sending to Bolt create order API.
         $order_request = $boltHelper->buildOrder($quote, $this->getItems(), $multipage);
 
@@ -183,8 +187,8 @@ class Bolt_Boltpay_Block_Checkout_Boltpay
                         success: function(transaction, callback) {
 
                             var onSuccess = function() {
-                                setTimeout(function(){location.href = '$success_url';}, 5000);
-                                callback();
+                                setTimeout(function(){location.href = '$success_url';}, 10000);
+                                callback();  
                             };
 
                             var parameters = 'reference='+transaction.reference;

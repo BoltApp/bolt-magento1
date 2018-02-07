@@ -357,7 +357,7 @@ class Bolt_Boltpay_Helper_Api extends Bolt_Boltpay_Helper_Data {
     /**
      * Generates order data for sending to Bolt.
      *
-     * @param $quote            Maagento quote instance
+     * @param $quote            Magento quote instance
      * @param array $items      array of Magento products
      * @param bool $multipage   Is checkout type Multi-Page Checkout, the default is true, set to false for One Page Checkout
      * @return array            The order payload to be sent as to bolt in API call as a PHP array
@@ -372,7 +372,7 @@ class Bolt_Boltpay_Helper_Api extends Bolt_Boltpay_Helper_Data {
     /**
      * Generates cart submission data for sending to Bolt order cart field.
      *
-     * @param $quote            Maagento quote instance
+     * @param $quote            Magento quote instance
      * @param $items            array of Magento products
      * @param bool $multipage   Is checkout type Multi-Page Checkout, the default is true, set to false for One Page Checkout
      * @return array            The cart data part of the order payload to be sent as to bolt in API call as a PHP array
@@ -433,7 +433,7 @@ class Bolt_Boltpay_Helper_Api extends Bolt_Boltpay_Helper_Data {
         }
         /////////////////////////////////////////////////////////////////////////
 
-        // Biling / shipping address fields that are required when the address data is sent to Bolt.
+        // Billing / shipping address fields that are required when the address data is sent to Bolt.
         $required_address_fields = array(
             'first_name',
             'last_name',

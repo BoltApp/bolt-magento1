@@ -161,6 +161,9 @@ class Bolt_Boltpay_Model_Payment extends Mage_Payment_Model_Method_Abstract {
             Mage::log(sprintf('Initiating authorize on payment id: %d', $payment->getId()), null, 'bolt.log');
             // Get the merchant transaction id
             $reference = $payment->getAdditionalInformation('bolt_reference');
+            if (empty($reference)) {
+                throw new Exception("Payment missing expected transaction ID.");
+            }
 
             // Set the transaction id
             $payment->setTransactionId($reference);
