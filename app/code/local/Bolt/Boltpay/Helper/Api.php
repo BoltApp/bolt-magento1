@@ -40,8 +40,7 @@ class Bolt_Boltpay_Helper_Api extends Bolt_Boltpay_Helper_Data {
      */
     public function fetchTransaction($reference, $tries = 3) {
         try {
-            $response = $this->transmit($reference, null);
-            return $this->handleErrorResponse($response);
+            return $this->transmit($reference, null);
         } catch (Exception $e) {
             if (--$tries == 0) {
                 $message = "BoltPay Gateway error: Fetch Transaction call failed multiple times for transaction referenced: $reference";
@@ -222,13 +221,12 @@ class Bolt_Boltpay_Helper_Api extends Bolt_Boltpay_Helper_Data {
      * @param string $data     an object to be encoded to JSON as the value passed to the endpoint
      * @param string $object   defines part of endpoint url which is normally/always??? set to merchant
      * @param string $type     Defines the endpoint type (i.e. order|transactions|sign) that is used as part of the url
+     * @throws  Mage_Core_Exception  thrown if an error is detected in a response
      * @return mixed           Object derived from Json got as a response
      */
     public function transmit($command, $data, $object='merchant', $type='transactions') {
-
         $url = $this->getApiUrl() . 'v1/';
 
-        Mage::log(sprintf("Making an API call to %s", $command), null, 'bolt.log');
         if($command == 'sign') {
             $url .= $object . '/' . $command;
         } elseif ($command == null || $command == '') {
@@ -238,6 +236,7 @@ class Bolt_Boltpay_Helper_Api extends Bolt_Boltpay_Helper_Data {
         } else {
             $url .= $object . '/' . $type . '/' . $command;
         }
+        Mage::log(sprintf("Making an API call to %s", $url), null, 'bolt.log');
 
         $ch = curl_init($url);
         $params = "";
@@ -288,24 +287,29 @@ class Bolt_Boltpay_Helper_Api extends Bolt_Boltpay_Helper_Data {
         curl_close($ch);
         Mage::getModel('boltpay/payment')->debugData($resultJSON);
 
-        return $resultJSON;
+        return $this->_handleErrorResponse($resultJSON, $url, $params)
     }
 
     /**
      * Bolt Api call response wrapper method that checks for potential error responses.
      *
      * @param mixed $response   A response received from calling a Bolt endpoint
+     * @param $url
      *
      * @throws  Mage_Core_Exception  thrown if an error is detected in a response
      * @return mixed  If there is no error then the response is returned unaltered.
      */
-    public function handleErrorResponse($response) {
+    private function _handleErrorResponse($response, $url, $request) {
+        if (strpos($url, 'v1/merchant/division/oauth') !== false) {
+          // Not log division keys here since it is sensitive.
+          $request = "<deducted>";
+        }
 
         if (is_null($response)) {
             $message ="BoltPay Gateway error: No response from Bolt. Please re-try again";
             Mage::throwException($message);
         } elseif (self::isResponseError($response)) {
-            $message = sprintf("BoltPay Gateway error: %s", serialize($response));
+            $message = sprintf("BoltPay Gateway error for %s: Request: %s, Response: %s", $url, $request, serialize($response));
             Mage::throwException($message);
         }
         return $response;

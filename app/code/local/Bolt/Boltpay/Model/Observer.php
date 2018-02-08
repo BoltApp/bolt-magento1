@@ -75,7 +75,7 @@ class Bolt_Boltpay_Model_Observer {
             }
 
             try {
-                $boltHelper->handleErrorResponse($boltHelper->transmit('complete_authorize', $complete_authorize_request));
+                $boltHelper->transmit('complete_authorize', $complete_authorize_request);
             } catch (Exception $e) {
                 $order = $observer->getEvent()->getOrder();
                 $message = "THERE IS A MISMATCH IN THE ORDER PAID AND ORDER RECORDED.<br>PLEASE COMPARE THE ORDER DETAILS WITH THAT RECORD IN YOUR BOLT MERCHANT ACCOUNT AT: ";
