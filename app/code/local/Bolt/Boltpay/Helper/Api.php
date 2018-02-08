@@ -39,17 +39,15 @@ class Bolt_Boltpay_Helper_Api extends Bolt_Boltpay_Helper_Data {
      * @return bool|mixed Transaction info
      */
     public function fetchTransaction($reference, $tries = 3) {
-
-        if ($tries-- == 0) {
-            $message = "BoltPay Gateway error: Fetch Transaction call failed multiple times for transaction referenced: $reference";
-            Mage::helper('boltpay/bugsnag')->notifyError('Exception', $message);
-            Mage::throwException($message);
-        }
-
         try {
             $response = $this->transmit($reference, null);
             return $this->handleErrorResponse($response);
         } catch (Exception $e) {
+            if (--$tries == 0) {
+                $message = "BoltPay Gateway error: Fetch Transaction call failed multiple times for transaction referenced: $reference";
+                Mage::helper('boltpay/bugsnag')->notifyException($e);
+                throw $e;
+            }
             return $this->fetchTransaction($reference, $tries);
         }
     }
