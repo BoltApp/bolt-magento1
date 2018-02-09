@@ -15,6 +15,7 @@ class Bolt_Boltpay_Helper_Bugsnag extends Mage_Core_Helper_Abstract {
     }
 
     public function test() {
+        $this->notifyError('ErrorType', 'Test Error');
         $this->notifyException(new Exception("Test Exception"));
     }
 
