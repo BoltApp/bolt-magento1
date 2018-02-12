@@ -74,6 +74,8 @@ class Bolt_Boltpay_ShippingController extends Mage_Core_Controller_Front_Action 
                 }
             }
 
+            $quote->removeAllAddresses();
+            $quote->save();
             $quote->getShippingAddress()->addData($address_data)->save();
 
             $billingAddress = $quote->getBillingAddress();
@@ -97,9 +99,12 @@ class Bolt_Boltpay_ShippingController extends Mage_Core_Controller_Front_Action 
             ////////////////////////////////////////////////////////////////////////////////////////
             $cached_address = unserialize(Mage::app()->getCache()->load("quote_location_".$quote->getId()));
 
-            if ($cached_address && ((strtoupper($cached_address->city) == strtoupper($address_data->city)) || ($cached_address->postcode == $address_data->postcode)) && ($cached_address->country_code == $address_data->country_code)) {
+            if ( $cached_address && ((strtoupper($cached_address["city"]) == strtoupper($address_data["city"])) || ($cached_address["postcode"] == $address_data["postcode"])) && ($cached_address["country_id"] == $address_data["country_id"])) {
+                //Mage::log('Using cached address: '.var_export($cached_address, true), null, 'shipping_and_tax.log');
                 $response = unserialize(Mage::app()->getCache()->load("quote_shipping_and_tax_estimate_".$quote->getId()));
             } else {
+                //Mage::log('Generating address from quote', null, 'shipping_and_tax.log');
+                //Mage::log('Live address: '.var_export($address_data, true), null, 'shipping_and_tax.log');
                 $response = Mage::helper('boltpay/api')->getShippingAndTaxEstimate($quote);
             }
             ////////////////////////////////////////////////////////////////////////////////////////
