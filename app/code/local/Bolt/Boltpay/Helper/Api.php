@@ -289,7 +289,7 @@ class Bolt_Boltpay_Helper_Api extends Bolt_Boltpay_Helper_Data {
         curl_close($ch);
         Mage::getModel('boltpay/payment')->debugData($resultJSON);
 
-        return $this->_handleErrorResponse($resultJSON, $url, $params)
+        return $this->_handleErrorResponse($resultJSON, $url, $params);
     }
 
     /**
