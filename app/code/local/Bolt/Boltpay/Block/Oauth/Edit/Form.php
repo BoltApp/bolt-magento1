@@ -36,8 +36,8 @@ class Bolt_Boltpay_Block_Oauth_Edit_Form extends Mage_Adminhtml_Block_Widget_For
 
         $fieldset->addField('consumer_token', 'text', array(
             'name'      => 'consumer_token',
-            'label'     => Mage::helper('boltpay')->__('Consumer Token'),
-            'title'     => Mage::helper('boltpay')->__('Consumer Token'),
+            'label'     => Mage::helper('boltpay')->__('Consumer Secret'),
+            'title'     => Mage::helper('boltpay')->__('Consumer Secret'),
             'required'  => true
         ));
 

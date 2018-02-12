@@ -63,7 +63,8 @@ class Bolt_Boltpay_Block_Checkout_Boltpay
         // Load the required helper class
         $boltHelper = Mage::helper('boltpay/api');
 
-        if (empty($items = $this->getItems())) return;
+        $items = $this->getItems();
+        if ( empty($items) ) return json_decode('{"token" : ""}');
 
         // Generates order data for sending to Bolt create order API.
         $order_request = $boltHelper->buildOrder($quote, $items, $multipage);
@@ -71,14 +72,7 @@ class Bolt_Boltpay_Block_Checkout_Boltpay
         //Mage::log("order_request: ". var_export($order_request, true), null,"bolt.log");
 
         // Calls Bolt create order API
-        $order_response = $boltHelper->transmit('orders', $order_request);
-
-        //Mage::log("order_response: ". json_encode($order_response, JSON_PRETTY_PRINT), null,"bolt.log");
-
-        // Bolt Api call response wrapper method that checks for potential error responses.
-        $response = $boltHelper->handleErrorResponse($order_response);
-
-        return $response;
+        return $boltHelper->transmit('orders', $order_request);
     }
 
     /**
@@ -92,9 +86,6 @@ class Bolt_Boltpay_Block_Checkout_Boltpay
     public function getCartDataJs($multipage = true) {
 
         try {
-
-            // Return if the quote is empty
-            if (count($this->getItems()) == 0) return;
 
             // Get customer and cart session objects
             $customerSession = Mage::getSingleton('customer/session');
@@ -126,7 +117,7 @@ class Bolt_Boltpay_Block_Checkout_Boltpay
                 $signRequest = array(
                     'merchant_user_id' => $reservedUserId,
                 );
-                $signResponse = $boltHelper->handleErrorResponse($boltHelper->transmit('sign', $signRequest));
+                $signResponse = $boltHelper->transmit('sign', $signRequest);
             }
 
             if ($signResponse != null) {
@@ -185,7 +176,7 @@ class Bolt_Boltpay_Block_Checkout_Boltpay
                         success: function(transaction, callback) {
 
                             var onSuccess = function() {
-                                setTimeout(function(){location.href = '$success_url';}, 8000);
+                                setTimeout(function(){location.href = '$success_url';}, 5000);
                                 callback();  
                             };
 

@@ -168,6 +168,8 @@ class Bolt_Boltpay_Model_Api2_Order_Rest_Admin_V1 extends Bolt_Boltpay_Model_Api
                 )
             );
 
+            Mage::helper('boltpay/bugsnag')->notifyException($e);
+
             $this->_critical($error, Mage_Api2_Model_Server::HTTP_INTERNAL_ERROR);
         }
     }

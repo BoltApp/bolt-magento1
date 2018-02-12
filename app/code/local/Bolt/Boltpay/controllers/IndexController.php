@@ -28,7 +28,7 @@ class Bolt_Boltpay_IndexController extends Mage_Adminhtml_Controller_Action {
                 'type' => 'magento_oauth1'
             );
 
-            $boltHelper->handleErrorResponse($boltHelper->transmit('oauth', $reqData, 'merchant', 'division'));
+            $boltHelper->transmit('oauth', $reqData, 'merchant', 'division');
             $this->_getSession()->addSuccess($this->__('Publish Successful'));
             $this->loadLayout()->renderLayout();
         } catch (Exception $e) {
