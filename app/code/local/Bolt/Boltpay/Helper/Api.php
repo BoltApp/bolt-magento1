@@ -224,7 +224,6 @@ class Bolt_Boltpay_Helper_Api extends Bolt_Boltpay_Helper_Data {
      * @return mixed           Object derived from Json got as a response
      */
     public function transmit($command, $data, $object='merchant', $type='transactions') {
-
         $url = $this->getApiUrl() . 'v1/';
 
         if($command == 'sign') {
@@ -236,6 +235,7 @@ class Bolt_Boltpay_Helper_Api extends Bolt_Boltpay_Helper_Data {
         } else {
             $url .= $object . '/' . $type . '/' . $command;
         }
+        Mage::log(sprintf("Making an API call to %s", $url), null, 'bolt.log');
 
         $ch = curl_init($url);
         $params = "";
