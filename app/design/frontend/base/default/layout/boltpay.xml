@@ -1,0 +1,71 @@
+<?xml version="1.0"?>
+<layout version="0.1.0">
+
+  <default>
+    <reference name="head">
+      <block type="boltpay/checkout_boltpay" name="track_script" as="track_script" template="boltpay/track.phtml" />
+    </reference>
+    <!-- replace javascript moving to the head as it is more reliable across different templates -->
+    <reference name="head">
+      <block type="boltpay/checkout_boltpay" name="replace_script" as="replace_script" template="boltpay/replace.phtml" />
+    </reference>
+  </default>
+
+  <!--<checkout_onepage_progress_payment>-->
+    <!--&lt;!&ndash; Mage_Checkout &ndash;&gt;-->
+    <!--<remove name="right"/>-->
+    <!--<remove name="left"/>-->
+
+    <!--<block type="checkout/onepage_progress" name="root" output="toHtml" template="boltpay/info.phtml">-->
+      <!--<block type="checkout/onepage_payment_info" name="payment_info">-->
+        <!--<action method="setInfoTemplate"><method></method><template></template></action>-->
+      <!--</block>-->
+      <!--<action method="setInfoTemplate"><method></method><template></template></action>-->
+    <!--</block>-->
+  <!--</checkout_onepage_progress_payment>-->
+
+  <checkout_cart_index>
+    <reference name="head">
+      <block type="boltpay/checkout_boltpay" name="prefetch_shipping_quote" as="prefetch_shipping_quote" template="boltpay/prefetch_shipping_quote.phtml" />
+    </reference>
+  </checkout_cart_index>
+
+  <checkout_onepage_index>
+    <reference name="head">
+      <block type="boltpay/checkout_boltpay" name="prefetch_shipping_quote" as="prefetch_shipping_quote" template="boltpay/prefetch_shipping_quote.phtml" />
+    </reference>
+    <reference name="content" >
+      <block type="core/template" name="bolt_js" after="-" as="bolt_js"  template="boltpay/boltjs.phtml" />
+    </reference>
+  </checkout_onepage_index>
+
+
+  <checkout_onepage_review translate="label">
+    <reference name="root">
+      <remove name="button" />
+
+      <block
+          type="boltpay/checkout_boltpay"
+          name="checkout.onepage.review.button"
+          as="button"
+          template="boltpay/payment.phtml">
+        <block
+          type="core/template"
+          name="checkout.onepage.review.button.original"
+          as="button_original"
+          template="checkout/onepage/review/button.phtml"/>
+      </block>
+    </reference>
+  </checkout_onepage_review>
+
+  <!--
+    The following commented code forces customer to enter billing / shipping address
+    during registration.
+  -->
+  <!--<customer_account_create>
+    <reference name="customer_form_register">
+      <action method="setData"><key>show_address_fields</key><value>1</value></action>
+    </reference>
+  </customer_account_create>-->
+
+</layout>

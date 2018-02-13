@@ -6,7 +6,6 @@ Plugin to integrate Bolt with Magento
 + 1.9
 
 ### Releases
-+ [v0.0.15](https://s3-us-west-1.amazonaws.com/bolt-public/magento-integration-release/magento_integration_v0015.zip) (Feb 12, 2018 (including bugsnag update, fix for shipping and tax estimate in firecheckout, fix for long descriptions)
 + [v0.0.14](https://s3-us-west-1.amazonaws.com/bolt-public/magento-integration-release/magento_integration_v0014.zip) (Jan 23, 2018)
 + [v0.0.13](https://s3-us-west-1.amazonaws.com/bolt-public/magento-integration-release/magento_integration_v0013.zip)
 + [v0.0.12](https://s3-us-west-1.amazonaws.com/bolt-public/magento-integration-release/magento_integration_v0012.tar.gz) (Dec 19, 2017)

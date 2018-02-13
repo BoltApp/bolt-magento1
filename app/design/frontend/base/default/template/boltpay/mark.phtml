@@ -1,0 +1,13 @@
+<div style="display:inline-block;">
+    <div><?php echo Mage::helper('core')->quoteEscape(Mage::helper('boltpay/api')->__(Mage::getStoreConfig('payment/boltpay/title'))) ?></div>
+    <img style="width:175px;" src="https://s3-us-west-1.amazonaws.com/bolt-public/magento-integration-release/powered_by_bolt_cards.png" alt="Mark" class="v-middle" />
+</div>
+<?php if (Mage::getStoreConfig('payment/boltpay/hide_on_checkout')) { ?>
+<script>
+    var bolt_payment_method = document.querySelectorAll('#p_method_boltpay');
+    if (bolt_payment_method.length) {
+        //hide the payment method
+        bolt_payment_method[0].parentNode.style.display = 'none';
+    }
+</script>
+<?php } ?>

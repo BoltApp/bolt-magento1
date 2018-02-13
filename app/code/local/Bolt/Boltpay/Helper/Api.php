@@ -235,7 +235,7 @@ class Bolt_Boltpay_Helper_Api extends Bolt_Boltpay_Helper_Data {
         } else {
             $url .= $object . '/' . $type . '/' . $command;
         }
-        Mage::log(sprintf("Making an API call to %s", $url), null, 'bolt.log');
+        //Mage::log(sprintf("Making an API call to %s", $url), null, 'bolt.log');
 
         $ch = curl_init($url);
         $params = "";
@@ -256,14 +256,11 @@ class Bolt_Boltpay_Helper_Api extends Bolt_Boltpay_Helper_Data {
 
         //Mage::log('KEY: ' . Mage::helper('core')->decrypt($key), null, 'bolt.log');
 
-        $version_element =  Mage::getConfig()->getModuleConfig("Bolt_Boltpay")->xpath("version");
-        $plugin_version = (string)$version_element[0];
         curl_setopt($ch, CURLOPT_HTTPHEADER, array(
             'Content-Type: application/json',
             'Content-Length: ' . strlen($params),
             'X-Api-Key: ' . Mage::helper('core')->decrypt($key),
             'X-Nonce: ' . rand(100000000, 999999999),
-            'X-Bolt-Plugin-Version: ' . $plugin_version,
         ));
         curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
         $result = curl_exec($ch);
@@ -437,49 +434,6 @@ class Bolt_Boltpay_Helper_Api extends Bolt_Boltpay_Helper_Data {
         }
         /////////////////////////////////////////////////////////////////////////
 
-        // Billing / shipping address fields that are required when the address data is sent to Bolt.
-        $required_address_fields = array(
-            'first_name',
-            'last_name',
-            'street_address1',
-            'locality',
-            'region',
-            'postal_code',
-            'country_code',
-        );
-
-        ///////////////////////////////////////////
-        // Include billing address info if defined.
-        ///////////////////////////////////////////
-        $billingAddress  = $quote->getBillingAddress();
-
-        if ($billingAddress) {
-
-            $cart_submission_data['billing_address'] = array(
-                'street_address1' => $billingAddress->getStreet1(),
-                'street_address2' => $billingAddress->getStreet2(),
-                'street_address3' => $billingAddress->getStreet3(),
-                'street_address4' => $billingAddress->getStreet4(),
-                'first_name'      => $billingAddress->getFirstname(),
-                'last_name'       => $billingAddress->getLastname(),
-                'locality'        => $billingAddress->getCity(),
-                'region'          => $billingAddress->getRegion(),
-                'postal_code'     => $billingAddress->getPostcode(),
-                'country_code'    => $billingAddress->getCountry(),
-                'phone'           => $billingAddress->getTelephone(),
-                'email'           => $billingAddress->getEmail(),
-                'phone_number'    => $billingAddress->getTelephone(),
-                'email_address'   => $billingAddress->getEmail(),
-            );
-
-            foreach ($required_address_fields as $field) {
-                if (empty($cart_submission_data['billing_address'][$field])) {
-                    unset($cart_submission_data['billing_address']);
-                    break;
-                }
-            }
-        }
-        ///////////////////////////////////////////
 
         if ($multipage) {
             /////////////////////////////////////////////////////////////////////////////////////////
@@ -491,6 +445,50 @@ class Bolt_Boltpay_Helper_Api extends Bolt_Boltpay_Helper_Data {
             $cart_submission_data['total_amount'] += $total_discount;
             /////////////////////////////////////////////////////////////////////////////////////////
         } else {
+            // Billing / shipping address fields that are required when the address data is sent to Bolt.
+            $required_address_fields = array(
+                'first_name',
+                'last_name',
+                'street_address1',
+                'locality',
+                'region',
+                'postal_code',
+                'country_code',
+            );
+
+            ///////////////////////////////////////////
+            // Include billing address info if defined.
+            ///////////////////////////////////////////
+            $billingAddress  = $quote->getBillingAddress();
+
+            if ($billingAddress) {
+
+                $cart_submission_data['billing_address'] = array(
+                    'street_address1' => $billingAddress->getStreet1(),
+                    'street_address2' => $billingAddress->getStreet2(),
+                    'street_address3' => $billingAddress->getStreet3(),
+                    'street_address4' => $billingAddress->getStreet4(),
+                    'first_name'      => $billingAddress->getFirstname(),
+                    'last_name'       => $billingAddress->getLastname(),
+                    'locality'        => $billingAddress->getCity(),
+                    'region'          => $billingAddress->getRegion(),
+                    'postal_code'     => $billingAddress->getPostcode(),
+                    'country_code'    => $billingAddress->getCountry(),
+                    'phone'           => $billingAddress->getTelephone(),
+                    'email'           => $billingAddress->getEmail(),
+                    'phone_number'    => $billingAddress->getTelephone(),
+                    'email_address'   => $billingAddress->getEmail(),
+                );
+
+                foreach ($required_address_fields as $field) {
+                    if (empty($cart_submission_data['billing_address'][$field])) {
+                        unset($cart_submission_data['billing_address']);
+                        break;
+                    }
+                }
+            }
+            ///////////////////////////////////////////
+
             ////////////////////////////////////////////////////////////////////////////////////
             // For one page checkout type include tax and shipment / address data in submission.
             ////////////////////////////////////////////////////////////////////////////////////

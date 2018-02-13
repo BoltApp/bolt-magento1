@@ -1,0 +1,396 @@
+<?php
+/********************************************************************
+ * Bolt replace button JavaScript / CSS that added to every pagge.
+ ********************************************************************/
+
+if(! $this->isBoltActive()) return;
+
+?>
+
+<script>
+
+    window.onload = function(){
+
+        // generic function for making jsonp calls
+        var jsonpRequest = function(parent, element, attributes, params, callback_fn) {
+
+            if (params) {
+
+                var ts  = new Date().getTime();
+                params.push('cachebust' + '=' + encodeURIComponent(ts));
+
+                if (callback_fn) params.push('callback' + '=' + encodeURIComponent(callback_fn));
+
+                params = params.join('&');
+                attributes.src += '?' + params;
+            }
+
+            var el = document.createElement(element);
+
+            if (attributes) {
+                for (var attr in attributes) {
+                    el.setAttribute(attr, attributes[attr]);
+                }
+            }
+
+            var parent = document.getElementsByTagName(parent)[0];
+            parent.appendChild(el);
+        };
+
+        // load connect.js with jsonp request
+        var loadConnectJS = function(key) {
+            jsonpRequest('body', 'script', {"src": "<?= $this->getJsUrl(); ?>", "id":"bolt-connect", "type":"text/javascript", "data-shopping-cart-id":"Magento", "data-publishable-key":key});
+        };
+
+        /****************************************************************************************************
+         * Finds and replaces specified buttons with Bolt checkout buttons. Runs internal function
+         * on every 0.5 seconds up to 20 times. If no button was found for 10 seconds it clears the interlal
+         ****************************************************************************************************/
+        var replaceCheckout = function() {
+
+            var replaceRetries  = 20;
+            var replaceInterval = 500;
+
+
+            // replaceable button selectors and types of Bolt buttons to replace them with
+            var selectors = {
+                ".block-cart .block-content .actions button.button" : "bolt-checkout-button with-cards bolt-multi-step-checkout forward-to-cart <?=$this->getTheme(); ?>"
+            };
+
+            var config_selectors = JSON.parse('<?=$this->getConfigSelectors();?>');
+
+            for (var i = 0, length = config_selectors.length; i < length; i++ ) {
+
+                var selector = config_selectors[i];
+                selectors[selector] = "bolt-checkout-button with-cards bolt-multi-step-checkout " + selector.replace(/^[.#]*/, "").replace(/[.#]*$/, "") + "-<?=$this->getCssSuffix(); ?> <?=$this->getTheme(); ?>";
+            }
+
+            var tryInterval = setInterval(
+
+                function() {
+
+                    replaceRetries -= 1;
+                    if (replaceRetries === 0) clearInterval(tryInterval);
+
+                    var found_elements = false;
+
+                    /*************************************************************
+                     * Try to find all replaceable buttons in every iteration.
+                     * Hide every button found and insert a Bolt button next to it.
+                     *************************************************************/
+                    for (var selector in selectors) {
+
+                        if (selectors.hasOwnProperty(selector)) {
+
+                            var elements = document.querySelectorAll(selector);
+
+                            for (var i = 0, length = elements.length; i < length; i++ ) {
+
+                                var element = elements[i];
+                                found_elements = true;
+
+                                element.style.display = "none";
+
+                                var bolt_button =  document.createElement("div");
+                                bolt_button.setAttribute("class",selectors[selector]);
+
+                                element.parentNode.insertBefore(bolt_button, element);
+
+                                if (element.parentNode.style.display === "") {
+                                    element.parentNode.style.display = "block";
+                                }
+                            }
+                        }
+                    }
+
+                    if (! found_elements) return;
+
+					<?php if ($this->isBoltOnlyPayment()): ?>
+
+                    var lis = document.querySelectorAll('ul.checkout-types li');
+
+                    for (var i = 0, length = lis.length; i < length; i++) {
+                        var li = lis[i];
+
+                        if (li.style.display != "block")  li.style.display = "none";
+                    }
+
+                    var proceed_link = document.querySelectorAll('div.checkout_proceed_link a.button_link.checkout-proceed')[0];
+
+                    if (proceed_link) {
+                        proceed_link.text = proceed_link.text = "<?=$this->__('Proceed to Checkout');?>";
+                    }
+
+					<?php endif; ?>
+
+                    // Bolt buttons were placed on the page
+
+                    // do nut run the replacement routine again
+                    clearInterval(tryInterval);
+
+                    // load Bolt connect javascript
+                    loadConnectJS('<?=$this->getPaymentKey();?>');
+
+                    // On every 50 ms check if the Bolt connect.js javascript is inserted
+                    // by checking the BoltConnect object existence. Clear the interval when
+                    // BoltConnect is found. On products page the Bolt checkout button
+                    // is set up to forward to the cart page. On cart page BoltConnect.process is executed.
+                    var processInterval = setInterval(
+                        function() {
+
+                            if (typeof BoltConnect !== "undefined") {
+
+                                clearInterval(processInterval);
+
+                                // selector that indicates that forward to the cart
+                                // functionality should be implemented, products page.
+                                var forward_button = document.querySelectorAll('.forward-to-cart')[0];
+
+                                if (forward_button) {
+
+                                    var styleEl = document.createElement('style'), styleSheet;
+                                    document.head.appendChild(styleEl);
+                                    styleSheet = styleEl.sheet;
+                                    styleSheet.insertRule("#bolt-modal-background { display:none; }", 0);
+
+                                    forward_button.onclick = function(event){
+                                        event.preventDefault();
+                                        event.stopPropagation();
+                                        location.href = '<?=$this->getCartURL();?>';
+                                    };
+                                } else {
+                                    /*****************************************************************
+                                     * Creating the order at Bolt end, if applicable (cart not empty).
+                                     * Generating BoltConnect.process code.
+                                     *****************************************************************/
+									<?=$this->getCartDataJs(); ?>
+                                }
+                            }
+
+                        }, 50
+                    );
+
+                }, replaceInterval);
+        };
+
+
+        /****************************************************************************************************
+         * Fire Checkout extension
+         ****************************************************************************************************/
+        var fireCheckout = function() {
+
+            if (typeof FireCheckout !== "function") return false;
+
+            FireCheckout.prototype.createBoltOrder = function() {
+
+                if (this.loadWaiting != false) {
+                    return;
+                }
+
+                if (!this.validate()) {
+                    return;
+                }
+
+                var params = this.getFormData ? this.getFormData() : Form.serialize(this.form, true);
+
+                checkout.setLoadWaiting(true);
+
+                new Ajax.Request('<?=$this->getUrl('boltpay/order/firecheckoutcreate');?>', {
+                    method:'post',
+                    parameters:params,
+                    onSuccess: this.setBoltResponse.bind(this),
+                    onFailure: this.ajaxFailure.bind(this)
+                });
+            };
+
+            FireCheckout.prototype.setBoltResponse = function(response){
+
+                checkout.setLoadWaiting(false);
+
+                var responseJSON = response.responseJSON;
+
+                if (responseJSON.cart_data) {
+                    eval(responseJSON.cart_data);
+                    var bolt_button = document.querySelectorAll('.bolt-checkout-button-button')[0];
+                    bolt_button.click();
+                } else {
+                    this.setResponse(response);
+                    window.location.href = "<?=Mage::getURL('checkout/cart');?>";
+                }
+            };
+
+            var i, length;
+
+            var place_order_button = document.querySelectorAll('.button.btn-checkout')[0];
+
+            var bolt_button =  document.createElement("div");
+            bolt_button.setAttribute("class", "bolt-checkout-button with-cards <?=$this->getCssSuffix(); ?> <?=$this->getTheme(); ?>");
+            bolt_button.style.display = "none";
+
+            place_order_button.parentNode.insertBefore(bolt_button, place_order_button);
+
+            loadConnectJS('<?=$this->getPaymentKey(false);?>');
+
+            /**
+             * Click event to payment method radio buttons that toggle
+             * display of the bolt button
+             */
+            var toggleBoltButton = function () {
+                if (this.id == "p_method_boltpay") {
+                    bolt_button.style.display="";
+                    place_order_button.style.display="none";
+                } else {
+                    bolt_button.style.display="none";
+                    place_order_button.style.display="";
+                }
+            };
+
+            /**
+             * Attaches click event to all radio buttons
+             *
+             * @param   An option list passed in by an observer if this function is called in that context
+             *          This can be omitted.
+             */
+            var attachClickEvents = function(mutationList) {
+
+                var payment_radios = document.querySelectorAll('[name="payment[method]"]');
+                for (i = 0, length = payment_radios.length; i < length; i++) {
+
+                    var payment_radio = payment_radios[i];
+
+                    payment_radio.onclick = toggleBoltButton;
+
+                    <?php if ($this->isBoltOnlyPayment()): ?>
+                    if (payment_radio.id == "p_method_boltpay") {
+                        payment_radio.click();
+                    } else {
+                        payment_radio.parentNode.style.display = "none";
+                    }
+                    <?php endif; ?>
+
+                    if (payment_radio.checked) payment_radio.click();
+                }
+
+            }
+
+            attachClickEvents();
+
+            //////////////////////////////////////////////////////////////////////
+            // Watch for changes in the payment methods to re-attach click events
+            //////////////////////////////////////////////////////////////////////
+            var paymentMethodsContainer = document.getElementById('checkout-payment-method-load');
+            var paymentMethodObserver = new MutationObserver(attachClickEvents);
+            paymentMethodObserver.observe(paymentMethodsContainer, { childList: true });
+            //////////////////////////////////////////////////////////////////////
+
+            var setOverlay = function() {
+
+                var replaceRetries  = 10;
+                var replaceInterval = 500;
+
+                var tryInterval = setInterval(
+
+                    function() {
+
+                        replaceRetries -= 1;
+                        if (replaceRetries <= 0) clearInterval(tryInterval);
+
+                        if (typeof BoltConnect === "undefined") {
+                            replaceRetries = 10;
+                            return;
+                        }
+
+                        if (replaceRetries > 5) replaceRetries = 5;
+
+                        BoltConnect.process(
+                            {},
+                            {},
+                            {
+                                check: function() {
+                                    return false;
+                                },
+                                close: function() {
+                                    setOverlay();
+                                },
+                                success: function(transaction, callback) {
+
+                                    var onSuccess = function() {
+                                        setTimeout(function(){location.href = '<?=$this->getSuccessURL();?>';}, 5000);
+                                        callback();
+                                    };
+
+                                    var parameters = 'reference='+transaction.reference;
+
+                                    new Ajax.Request(
+                                        '<?=$this->getSaveOrderURL();?>',
+                                        {
+                                            method:'post',
+                                            onSuccess: onSuccess,
+                                            parameters: parameters
+                                        }
+                                    );
+                                }
+                            }
+                        );
+
+                        var bolt_button_overlay = document.getElementById('bolt_button_overlay');
+
+                        if (bolt_button_overlay) {
+                            clearInterval(tryInterval);
+                            return;
+                        }
+
+                        var bolt_button = document.querySelectorAll('.bolt-checkout-button')[0];
+
+                        if (! bolt_button) return;
+
+                        bolt_button_overlay = document.createElement("div");
+                        bolt_button_overlay.setAttribute("id", "bolt_button_overlay");
+                        bolt_button_overlay.style.cssText = 'cursor:pointer;top:6px;left:0px;position:absolute;width:100%;height:44px;opacity:0.0;z-index:10000;background:#fff;';
+
+                        bolt_button.appendChild(bolt_button_overlay);
+
+                        bolt_button_overlay.onclick = function() {
+
+                            clearInterval(tryInterval);
+
+                            checkout.createBoltOrder();
+                        };
+                    },
+                    replaceInterval
+                );
+            };
+
+            var bolt_checkout_close = setOverlay;
+
+            setOverlay();
+
+            window.onload = function () {
+
+                var shipping_selected = false;
+                var shipping_methods  = document.querySelectorAll('input[name=shipping_method]');
+
+                for (i = 0, length = shipping_methods.length; i < length; i++) {
+                    var shipping_method = shipping_methods[i];
+                    if (shipping_method.checked) {
+                        shipping_selected = true;
+                        shipping_method.click();
+                    }
+                }
+
+                if (!shipping_selected)  document.querySelectorAll('input[name=shipping_method]')[0].click();
+            };
+
+            return true;
+        };
+
+        if (!fireCheckout()) replaceCheckout();
+
+    };
+
+</script>
+
+<style>
+    <?=$this->getSelectorsCSS();?>
+    <?=$this->getAdditionalCSS();?>
+</style>

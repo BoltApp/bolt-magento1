@@ -1,0 +1,244 @@
+<?xml version="1.0"?>
+<config>
+  <sections>
+    <payment>
+      <groups>
+        <boltpay translate="label" module="boltpay">
+          <label>Bolt Pay</label>
+          <frontend_type>text</frontend_type>
+          <sort_order>34</sort_order>
+          <show_in_default>1</show_in_default>
+          <show_in_website>1</show_in_website>
+          <show_in_store>1</show_in_store>
+          <fields>
+            <active translate="label">
+              <label>Enabled</label>
+              <frontend_type>select</frontend_type>
+              <source_model>adminhtml/system_config_source_yesno</source_model>
+              <sort_order>1</sort_order>
+              <show_in_default>1</show_in_default>
+              <show_in_website>1</show_in_website>
+              <show_in_store>0</show_in_store>
+            </active>
+            <hide_on_checkout>
+              <label>Hide On Checkout Page</label>
+              <sort_order>5</sort_order>
+              <frontend_type>select</frontend_type>
+              <source_model>adminhtml/system_config_source_yesno</source_model>
+              <show_in_default>1</show_in_default>
+              <show_in_website>1</show_in_website>
+              <show_in_store>0</show_in_store>
+            </hide_on_checkout>
+            <api_key translate="label">
+              <label>API Key</label>
+              <frontend_type>obscure</frontend_type>
+              <backend_model>adminhtml/system_config_backend_encrypted</backend_model>
+              <sort_order>10</sort_order>
+              <show_in_default>1</show_in_default>
+              <show_in_website>1</show_in_website>
+              <show_in_store>0</show_in_store>
+            </api_key>
+            <publishable_key_onepage translate="label">
+              <label> Publishable Key - One Page Checkout</label>
+              <frontend_type>obscure</frontend_type>
+              <backend_model>adminhtml/system_config_backend_encrypted</backend_model>
+              <sort_order>11</sort_order>
+              <show_in_default>1</show_in_default>
+              <show_in_website>1</show_in_website>
+              <show_in_store>0</show_in_store>
+            </publishable_key_onepage>
+            <publishable_key_multipage translate="label">
+              <label> Publishable Key - Multi-Page Checkout</label>
+              <frontend_type>obscure</frontend_type>
+              <backend_model>adminhtml/system_config_backend_encrypted</backend_model>
+              <sort_order>12</sort_order>
+              <show_in_default>1</show_in_default>
+              <show_in_website>1</show_in_website>
+              <show_in_store>0</show_in_store>
+            </publishable_key_multipage>
+
+            <!--
+                The Bolt Signing Secret Key configuration, used to verify web hook request signature.
+             -->
+            <signing_key translate="label">
+              <label>Signing Secret</label>
+              <frontend_type>obscure</frontend_type>
+              <backend_model>adminhtml/system_config_backend_encrypted</backend_model>
+              <sort_order>13</sort_order>
+              <show_in_default>1</show_in_default>
+              <show_in_website>1</show_in_website>
+              <show_in_store>0</show_in_store>
+            </signing_key>
+
+
+            <title translate="label">
+              <label>Title</label>
+              <frontend_type>text</frontend_type>
+              <sort_order>20</sort_order>
+              <show_in_default>1</show_in_default>
+              <show_in_website>1</show_in_website>
+              <show_in_store>0</show_in_store>
+            </title>
+            <theme translate="label">
+              <label>Button Theme</label>
+              <frontend_type>select</frontend_type>
+              <source_model>boltpay/source_themes</source_model>
+              <sort_order>22</sort_order>
+              <show_in_default>1</show_in_default>
+              <show_in_website>1</show_in_website>
+              <show_in_store>0</show_in_store>
+            </theme>
+
+            <selectors translate="label">
+              <label>Replace Button Selectors</label>
+              <frontend_type>text</frontend_type>
+              <comment>CSS selectors of buttons to be replaced by Bolt.  Selectors are comma delimited, default: .btn-proceed-checkout</comment>
+              <sort_order>35</sort_order>
+              <show_in_default>1</show_in_default>
+              <show_in_website>1</show_in_website>
+              <show_in_store>0</show_in_store>
+            </selectors>
+
+            <selector_styles translate="label">
+              <label>Targeted CSS</label>
+              <frontend_type>textarea</frontend_type>
+              <comment>
+                A `||` delimited list of blocks of CSS associated with a replace button
+                selector added to the pages on which the specified button it is found.
+                An example can be seen in the tooltip for adding css depending on if a
+                specific button is found.
+              </comment>
+              <tooltip>
+                <![CDATA[
+<b>Example of adding styles based on two different selectors:</b>
+<pre>
+  .btn-proceed-checkout {
+    body { max-width: 95%;}
+    li.button-box { float: right; margin: 2px;}
+  }
+  <b>||</b>
+  .btn-quickbuy {
+    li.button-container { float: left; }
+    .btn-quickbuy { width: 10px; }
+  }
+</pre>
+                ]]>
+              </tooltip>
+              <sort_order>36</sort_order>
+              <show_in_default>1</show_in_default>
+              <show_in_website>1</show_in_website>
+              <show_in_store>0</show_in_store>
+            </selector_styles>
+
+            <additional_css translate="label">
+              <label>Global CSS</label>
+              <comment>Any CSS that is to be added to pages when any Bolt button selector is found</comment>
+              <frontend_type>textarea</frontend_type>
+              <sort_order>38</sort_order>
+              <show_in_default>1</show_in_default>
+              <show_in_website>1</show_in_website>
+              <show_in_store>0</show_in_store>
+            </additional_css>
+
+            <successpage translate="label">
+              <label>Success Page Redirect</label>
+              <frontend_type>text</frontend_type>
+              <sort_order>40</sort_order>
+              <show_in_default>1</show_in_default>
+              <show_in_website>1</show_in_website>
+              <show_in_store>0</show_in_store>
+            </successpage>
+
+            <skip_payment translate="label">
+              <label>Skip Payment Method Step</label>
+              <frontend_type>select</frontend_type>
+              <source_model>adminhtml/system_config_source_yesno</source_model>
+              <comment>Makes Bolt the only payment method when available</comment>
+              <sort_order>50</sort_order>
+              <show_in_default>1</show_in_default>
+              <show_in_website>1</show_in_website>
+              <show_in_store>0</show_in_store>
+            </skip_payment>
+            <test translate="label">
+              <label>Sandbox Mode</label>
+              <frontend_type>select</frontend_type>
+              <source_model>adminhtml/system_config_source_yesno</source_model>
+              <sort_order>45</sort_order>
+              <show_in_default>1</show_in_default>
+              <show_in_website>1</show_in_website>
+              <show_in_store>0</show_in_store>
+            </test>
+
+            <disable_complete_authorize translate="label">
+              <label>Disable Complete Authorize</label>
+              <frontend_type>select</frontend_type>
+              <source_model>adminhtml/system_config_source_yesno</source_model>
+              <sort_order>45</sort_order>
+              <show_in_default>1</show_in_default>
+              <show_in_website>1</show_in_website>
+              <show_in_store>0</show_in_store>
+            </disable_complete_authorize>
+
+            <auto_capture translate="label">
+              <label>Automatic Capture Mode</label>
+              <frontend_type>select</frontend_type>
+              <source_model>adminhtml/system_config_source_yesno</source_model>
+              <sort_order>45</sort_order>
+              <show_in_default>1</show_in_default>
+              <show_in_website>1</show_in_website>
+              <show_in_store>0</show_in_store>
+            </auto_capture>
+            <allowspecific translate="label">
+              <label>Payment from Applicable Countries</label>
+              <frontend_type>allowspecific</frontend_type>
+              <sort_order>70</sort_order>
+              <source_model>adminhtml/system_config_source_payment_allspecificcountries</source_model>
+              <show_in_default>1</show_in_default>
+              <show_in_website>1</show_in_website>
+              <show_in_store>0</show_in_store>
+              <depends><skip_payment>0</skip_payment></depends>
+            </allowspecific>
+            <specificcountry translate="label">
+              <label>Payment from Specific Countries</label>
+              <frontend_type>multiselect</frontend_type>
+              <sort_order>80</sort_order>
+              <source_model>adminhtml/system_config_source_country</source_model>
+              <show_in_default>1</show_in_default>
+              <show_in_website>1</show_in_website>
+              <show_in_store>0</show_in_store>
+              <depends><skip_payment>0</skip_payment></depends>
+            </specificcountry>
+            <min_order_total translate="label">
+              <label>Minimum Order Total</label>
+              <frontend_type>text</frontend_type>
+              <sort_order>85</sort_order>
+              <show_in_default>1</show_in_default>
+              <show_in_website>1</show_in_website>
+              <show_in_store>0</show_in_store>
+              <depends><skip_payment>0</skip_payment></depends>
+            </min_order_total>
+            <max_order_total translate="label">
+              <label>Maximum Order Total</label>
+              <frontend_type>text</frontend_type>
+              <sort_order>90</sort_order>
+              <show_in_default>1</show_in_default>
+              <show_in_website>1</show_in_website>
+              <show_in_store>0</show_in_store>
+              <depends><skip_payment>0</skip_payment></depends>
+            </max_order_total>
+            <sort_order translate="label">
+              <label>Sort Order</label>
+              <frontend_type>text</frontend_type>
+              <comment>Influences display order on checkout pages relative to other payment options.  This does not affect any other pages including the shopping cart and product pages.</comment>
+              <sort_order>100</sort_order>
+              <show_in_default>1</show_in_default>
+              <show_in_website>1</show_in_website>
+              <show_in_store>1</show_in_store>
+              <frontend_class>validate-number</frontend_class>
+            </sort_order>
+          </fields>
+        </boltpay>
+      </groups>
+    </payment>
+  </sections>
+</config>
