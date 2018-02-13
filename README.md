@@ -1,4 +1,4 @@
-# MagentoIntegration
+# Magento Integration
 Plugin to integrate Bolt with Magento
 
 ## Supported Magento versions
