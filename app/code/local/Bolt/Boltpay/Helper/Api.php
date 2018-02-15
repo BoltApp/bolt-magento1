@@ -380,20 +380,51 @@ class Bolt_Boltpay_Helper_Api extends Bolt_Boltpay_Helper_Data {
      */
     public function buildCart($quote, $items, $multipage) {
 
+        ///////////////////////////////////////////////////////////////////////////////////
         // Get quote totals
+        ///////////////////////////////////////////////////////////////////////////////////
+
+        /***************************************************
+         * One known Magento error is that sometimes the subtotal and grand totals are doubled
+         * because Magento adds duplicate address totals when it is doing its total aggregation
+         * for customers with multiple shipping addresses
+         * Totals in magento are ultimately attached to addresses, so the solution is to limit
+         * the total number addresses to two maximum (one billing which always exist, and one shipping
+         *
+         * The following commented out code implements this.
+         *
+         * HOWEVER: WE CANNOT PUT THIS INTO GENERAL USE AS IT WOULD DROP SUPPORT FOR ITEMS SHIPPED TO DIFFERENT LOCATIONS
+         ***************************************************/
+        //////////////////////////////////////////////////////////
+        //$addresses = $quote->getAllAddresses();
+        //if (count($addresses) > 2) {
+        //    for($i = 2; $i < count($addresses); $i++) {
+        //        $address = $addresses[$i];
+        //        $address->isDeleted(true);
+        //    }
+        //}
+        ///////////////////////////////////////////////////////////
+        /* Instead we will calculate the cost and use our calculated value to match against magento's calculation
+         * If the totals do not match, then we will try halving the Magento total.  We use Magento's
+         * instead of ours because on the potential complex nature of discounts and virtual products.
+         */
+        /***************************************************/
+        $calculated_total = 0;
         $quote->collectTotals()->save();
         $totals = $quote->getTotals();
-        $productMediaConfig = Mage::getModel('catalog/product_media_config');
+        ///////////////////////////////////////////////////////////////////////////////////
 
         ///////////////////////////////////////////////////////////
         // Generate base cart data, quote, order and items related.
         ///////////////////////////////////////////////////////////
+        $productMediaConfig = Mage::getModel('catalog/product_media_config');
         $cart_submission_data = array(
             'order_reference' => $quote->getId(),
             'display_id'      => $quote->getReservedOrderId(),
-            'items'           => array_map(function ($item) use ($quote, $productMediaConfig) {
+            'items'           => array_map(function ($item) use ($quote, $productMediaConfig, &$calculated_total) {
                 $image_url = $productMediaConfig->getMediaUrl($item->getProduct()->getThumbnail());
                 $product   = Mage::getModel('catalog/product')->load($item->getProductId());
+                $calculated_total += round($item->getPrice() * 100 * $item->getQty());
                 return array(
                     'reference'    => $quote->getId(),
                     'image_url'    => $image_url,
@@ -410,7 +441,7 @@ class Bolt_Boltpay_Helper_Api extends Bolt_Boltpay_Helper_Data {
         ///////////////////////////////////////////////////////////
 
         /////////////////////////////////////////////////////////////////////////
-        // Check for the discount and include it in the submission data if found.
+        // Check for discounts and include them in the submission data if found.
         /////////////////////////////////////////////////////////////////////////
         $total_discount = 0;
 
@@ -432,8 +463,8 @@ class Bolt_Boltpay_Helper_Api extends Bolt_Boltpay_Helper_Data {
                 $total_discount += $discount_amount;
             }
         }
+        $calculated_total += $total_discount;
         /////////////////////////////////////////////////////////////////////////
-
 
         if ($multipage) {
             /////////////////////////////////////////////////////////////////////////////////////////
@@ -496,6 +527,7 @@ class Bolt_Boltpay_Helper_Api extends Bolt_Boltpay_Helper_Data {
 
             if (@$totals['tax']) {
                 $cart_submission_data['tax_amount'] = round($totals['tax']->getValue() * 100);
+                $calculated_total += $cart_submission_data['tax_amount'];
             }
 
             $shippingAddress = $quote->getShippingAddress();
@@ -524,11 +556,13 @@ class Bolt_Boltpay_Helper_Api extends Bolt_Boltpay_Helper_Data {
                 if (@$totals['shipping']) {
                     $cart_submission_data['shipments'] = array(array(
                         'shipping_address' => $shipping_address,
-                        'tax_amount'       => round($quote->getShippingAddress()->getShippingTaxAmount() * 100),
+                        'tax_amount'       => round($shippingAddress->getShippingTaxAmount() * 100),
                         'service'          => $shippingAddress->getShippingDescription(),
                         'carrier'          => $shippingAddress->getShippingMethod(),
                         'cost'             => round($totals['shipping']->getValue() * 100),
                     ));
+
+                    $calculated_total += round($totals['shipping']->getValue() * 100);
                 }
 
                 foreach ($required_address_fields as $field) {
@@ -543,7 +577,45 @@ class Bolt_Boltpay_Helper_Api extends Bolt_Boltpay_Helper_Data {
 
         //Mage::log(var_export($cart_submission_data, true), null, "bolt.log");
 
-        return $cart_submission_data;
+        return $this->getCorrectedTotal( $calculated_total, $cart_submission_data);
+    }
+
+    /**
+     * Utility method that attempts to correct totals if the projected total that was calculated from
+     * all items and the given discount, does not match the $magento calculated total.  The totals may vary
+     * do to an error in the internal Magento code
+     *
+     * @param int $projected_total              total calculated from items, discounts, taxes and shipping
+     * @param int $magento_derived_cart_data    totals returned by magento and formatted for Bolt
+     *
+     * @return array  the corrected Bolt formatted cart data.
+     */
+    private function getCorrectedTotal($projected_total, $magento_derived_cart_data) {
+        // we'll check if we can simply dividing by two corrects the problem
+        if ($projected_total == (int)($magento_derived_cart_data['total_amount']/2)) {
+
+            $magento_derived_cart_data["total_amount"] = (int)($magento_derived_cart_data['total_amount']/2);
+
+            /*  I will defer handling discounts, tax, and shipping until more info is collected
+            /*  The placeholder code is left below to be filled in if and when more cases arise
+
+            if (isset($magento_derived_cart_data["tax_amount"])) {
+                $magento_derived_cart_data["tax_amount"] = (int)($magento_derived_cart_data["tax_amount"]/2);
+            }
+
+            if (isset($magento_derived_cart_data["discounts"])) {
+                $magento_derived_cart_data[""] = (int)($magento_derived_cart_data[""]/2);
+            }
+
+            if (isset($magento_derived_cart_data["shipments"])) {
+                $magento_derived_cart_data[""] = (int)($magento_derived_cart_data[""]/2);
+            }
+            */
+        }
+
+        // otherwise, we have no better thing to do than let the Bolt server do the checking
+        return $magento_derived_cart_data;
+
     }
 
     /**
