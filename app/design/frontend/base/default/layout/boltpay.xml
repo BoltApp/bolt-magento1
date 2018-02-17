@@ -5,10 +5,6 @@
     <reference name="head">
       <block type="boltpay/checkout_boltpay" name="track_script" as="track_script" template="boltpay/track.phtml" />
     </reference>
-    <!-- replace javascript moving to the head as it is more reliable across different templates -->
-    <reference name="head">
-      <block type="boltpay/checkout_boltpay" name="replace_script" as="replace_script" template="boltpay/replace.phtml" />
-    </reference>
   </default>
 
   <!--<checkout_onepage_progress_payment>-->
@@ -27,6 +23,7 @@
   <checkout_cart_index>
     <reference name="head">
       <block type="boltpay/checkout_boltpay" name="prefetch_shipping_quote" as="prefetch_shipping_quote" template="boltpay/prefetch_shipping_quote.phtml" />
+      <block type="boltpay/checkout_boltpay" name="replace_script" as="replace_script" template="boltpay/replace.phtml" />
     </reference>
   </checkout_cart_index>
 

@@ -50,6 +50,13 @@ class Bolt_Boltpay_ShippingController extends Mage_Core_Controller_Front_Action 
                 ->addFieldToFilter('reserved_order_id', $display_id)
                 ->getFirstItem();
 
+            /***********************/
+            # Set session quote to real customer quote
+            $session = Mage::getSingleton('checkout/session');
+            $session->setQuoteId($quote->getId());
+            Mage::register('real_customer_session_id',  $quote->getExtShippingInfo());
+            /**************/
+
             if ($quote->getCustomerId()) {
 
                 $customer = Mage::getModel("customer/customer")->load($quote->getCustomerId());

@@ -93,6 +93,8 @@ class Bolt_Boltpay_Block_Checkout_Boltpay
 
             // Get the session quote/cart
             $quote = $session->getQuote();
+            $quote->setExtShippingInfo(Mage::getSingleton('core/session')->getSessionId());
+            $quote->save();
             // Generate new increment order id and associate it with current quote, if not already assigned
             $quote->reserveOrderId()->save();
 

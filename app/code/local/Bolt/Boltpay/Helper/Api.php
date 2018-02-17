@@ -300,15 +300,15 @@ class Bolt_Boltpay_Helper_Api extends Bolt_Boltpay_Helper_Data {
      */
     private function _handleErrorResponse($response, $url, $request) {
         if (strpos($url, 'v1/merchant/division/oauth') !== false) {
-          // Not log division keys here since it is sensitive.
-          $request = "<deducted>";
+          // Do not log division keys here since they are sensitive.
+          $request = "<redacted>";
         }
 
         if (is_null($response)) {
             $message ="BoltPay Gateway error: No response from Bolt. Please re-try again";
             Mage::throwException($message);
         } elseif (self::isResponseError($response)) {
-            $message = sprintf("BoltPay Gateway error for %s: Request: %s, Response: %s", $url, $request, serialize($response));
+            $message = sprintf("BoltPay Gateway error for %s: Request: %s, Response: %s", $url, $request, var_export($response, true));
             Mage::throwException($message);
         }
         return $response;
@@ -683,7 +683,7 @@ class Bolt_Boltpay_Helper_Api extends Bolt_Boltpay_Helper_Data {
             foreach ($summary as $tax) {
                 $avatax_tax_rate += $tax['rate'];
             }
-            Mage::log('ShippingController.php: summary:'.var_export($summary, true), null, 'shipping_and_tax.log');
+            //Mage::log('ShippingController.php: summary:'.var_export($summary, true), null, 'shipping_and_tax.log');
         }
         //////////////////////////////////////////////////////////////////////////////////
 
