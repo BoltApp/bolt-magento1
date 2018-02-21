@@ -105,9 +105,9 @@ class Bolt_Boltpay_Model_Payment extends Mage_Payment_Model_Method_Abstract {
     public function fetchTransactionInfo(Mage_Payment_Model_Info $payment, $transactionId) {
 
         try {
-            Mage::log(sprintf('Initiating fetch transaction info on payment id: %d', $payment->getId()), null, 'bolt.log');
+            //Mage::log(sprintf('Initiating fetch transaction info on payment id: %d', $payment->getId()), null, 'bolt.log');
             if ($payment->getData('auto_capture')) {
-                Mage::log('Skipping calls for fetch transaction in auto capture mode', null, 'bolt.log');
+                //Mage::log('Skipping calls for fetch transaction in auto capture mode', null, 'bolt.log');
                 return;
             }
 
@@ -126,10 +126,10 @@ class Bolt_Boltpay_Model_Payment extends Mage_Payment_Model_Method_Abstract {
             $transactionStatus = strtolower($response->status);
             $prevTransactionStatus = $payment->getAdditionalInformation('bolt_transaction_status');
             $this->handleTransactionUpdate($payment, $transactionStatus, $prevTransactionStatus);
-            Mage::log(sprintf('Fetch transaction info completed for payment id: %d', $payment->getId()), null, 'bolt.log');
+            //Mage::log(sprintf('Fetch transaction info completed for payment id: %d', $payment->getId()), null, 'bolt.log');
         } catch (Exception $e) {
             $error = array('error' => $e->getMessage());
-            Mage::log($error, null, 'bolt.log');
+            //Mage::log($error, null, 'bolt.log');
             Mage::helper('boltpay/bugsnag')->notifyException($e);
             throw $e;
         }
@@ -158,7 +158,7 @@ class Bolt_Boltpay_Model_Payment extends Mage_Payment_Model_Method_Abstract {
     public function authorize(Varien_Object $payment, $amount) {
 
         try {
-            Mage::log(sprintf('Initiating authorize on payment id: %d', $payment->getId()), null, 'bolt.log');
+            //Mage::log(sprintf('Initiating authorize on payment id: %d', $payment->getId()), null, 'bolt.log');
             // Get the merchant transaction id
             $reference = $payment->getAdditionalInformation('bolt_reference');
             if (empty($reference)) {
@@ -176,11 +176,11 @@ class Bolt_Boltpay_Model_Payment extends Mage_Payment_Model_Method_Abstract {
 
             // Auth transactions need to be kept open to support cancelling/voiding transaction
             $payment->setIsTransactionClosed(false);
-            Mage::log(sprintf('Authorization completed for payment id: %d', $payment->getId()), null, 'bolt.log');
+            //Mage::log(sprintf('Authorization completed for payment id: %d', $payment->getId()), null, 'bolt.log');
             return $this;
         } catch (Exception $e) {
             $error = array('error' => $e->getMessage());
-            Mage::log($error, null, 'bolt.log');
+            //Mage::log($error, null, 'bolt.log');
             Mage::helper('boltpay/bugsnag')->notifyException($e);
             throw $e;
         }
@@ -188,7 +188,7 @@ class Bolt_Boltpay_Model_Payment extends Mage_Payment_Model_Method_Abstract {
 
     public function capture(Varien_Object $payment, $amount) {
         try {
-            Mage::log(sprintf('Initiating capture on payment id: %d', $payment->getId()), null, 'bolt.log');
+            //Mage::log(sprintf('Initiating capture on payment id: %d', $payment->getId()), null, 'bolt.log');
             $boltHelper = Mage::helper('boltpay/api');
             // Get the merchant transaction id
             $merchantTransId = $payment->getAdditionalInformation('bolt_merchant_transaction_id');
@@ -228,11 +228,11 @@ class Bolt_Boltpay_Model_Payment extends Mage_Payment_Model_Method_Abstract {
 
             $payment->setParentTransactionId($reference);
             $payment->setTransactionId(sprintf("%s-capture", $reference));
-            Mage::log(sprintf('Capture completed for payment id: %d', $payment->getId()), null, 'bolt.log');
+            //Mage::log(sprintf('Capture completed for payment id: %d', $payment->getId()), null, 'bolt.log');
             return $this;
         } catch (Exception $e) {
             $error = array('error' => $e->getMessage());
-            Mage::log($error, null, 'bolt.log');
+            //Mage::log($error, null, 'bolt.log');
             Mage::helper('boltpay/bugsnag')->notifyException($e);
             throw $e;
         }
@@ -240,7 +240,7 @@ class Bolt_Boltpay_Model_Payment extends Mage_Payment_Model_Method_Abstract {
 
     public function refund(Varien_Object $payment, $amount) {
         try {
-            Mage::log(sprintf('Initiating refund on payment id: %d', $payment->getId()), null, 'bolt.log');
+            //Mage::log(sprintf('Initiating refund on payment id: %d', $payment->getId()), null, 'bolt.log');
             $boltHelper = Mage::helper('boltpay/api');
             $paymentInfo = $this->getInfoInstance();
             $order = $paymentInfo->getOrder();
@@ -293,11 +293,11 @@ class Bolt_Boltpay_Model_Payment extends Mage_Payment_Model_Method_Abstract {
             $payment->setAdditionalInformation('bolt_refund_merchant_transaction_ids', serialize($refundTransactionIds));
             $payment->setTransactionId(sprintf("%s-refund", $refundReference));
 
-            Mage::log(sprintf('Refund completed for payment id: %d', $payment->getId()), null, 'bolt.log');
+            //Mage::log(sprintf('Refund completed for payment id: %d', $payment->getId()), null, 'bolt.log');
             return $this;
         } catch (Exception $e) {
             $error = array('error' => $e->getMessage());
-            Mage::log($error, null, 'bolt.log');
+            //Mage::log($error, null, 'bolt.log');
             Mage::helper('boltpay/bugsnag')->notifyException($e);
             throw $e;
         }
@@ -305,7 +305,7 @@ class Bolt_Boltpay_Model_Payment extends Mage_Payment_Model_Method_Abstract {
 
     public function void(Varien_Object $payment) {
         try {
-            Mage::log(sprintf('Initiating void on payment id: %d', $payment->getId()), null, 'bolt.log');
+            //Mage::log(sprintf('Initiating void on payment id: %d', $payment->getId()), null, 'bolt.log');
             $boltHelper = Mage::helper('boltpay/api');
             $transId = $payment->getAdditionalInformation('bolt_merchant_transaction_id');
             $reference = $payment->getAdditionalInformation('bolt_reference');
@@ -326,11 +326,11 @@ class Bolt_Boltpay_Model_Payment extends Mage_Payment_Model_Method_Abstract {
             $payment->setParentTransactionId($reference);
             $payment->setTransactionId(sprintf("%s-void", $reference));
 
-            Mage::log(sprintf('Void completed for payment id: %d', $payment->getId()), null, 'bolt.log');
+            //Mage::log(sprintf('Void completed for payment id: %d', $payment->getId()), null, 'bolt.log');
             return $this;
         } catch (Exception $e) {
             $error = array('error' => $e->getMessage());
-            Mage::log($error, null, 'bolt.log');
+            //Mage::log($error, null, 'bolt.log');
             Mage::helper('boltpay/bugsnag')->notifyException($e);
             throw $e;
         }
@@ -357,7 +357,7 @@ class Bolt_Boltpay_Model_Payment extends Mage_Payment_Model_Method_Abstract {
             $this->handleTransactionUpdate($orderPayment, $transactionStatus, null);
         } catch (Exception $e) {
             $error = array('error' => $e->getMessage());
-            Mage::log($error, null, 'bolt.log');
+            //Mage::log($error, null, 'bolt.log');
 
             Mage::helper('boltpay/bugsnag')->addMetaData(
                 array(
@@ -383,7 +383,7 @@ class Bolt_Boltpay_Model_Payment extends Mage_Payment_Model_Method_Abstract {
                 $prevTransactionStatus = strtolower($prevTransactionStatus);
 
                 if ($newTransactionStatus == $prevTransactionStatus) {
-                    Mage::log(sprintf('No new state change. Current transaction status: %s', $newTransactionStatus), null, 'bolt.log');
+                    //Mage::log(sprintf('No new state change. Current transaction status: %s', $newTransactionStatus), null, 'bolt.log');
                     return;
                 }
 
@@ -400,8 +400,7 @@ class Bolt_Boltpay_Model_Payment extends Mage_Payment_Model_Method_Abstract {
                     Mage::throwException($message);
                 }
 
-                Mage::log(
-                    sprintf("Valid next states from %s: %s", $prevTransactionStatus, implode(",",$validNextStatuses)), null, 'bolt.log');
+                //Mage::log(sprintf("Valid next states from %s: %s", $prevTransactionStatus, implode(",",$validNextStatuses)), null, 'bolt.log');
 
                 if (!in_array($newTransactionStatus, $validNextStatuses)) {
                     throw new BoltPayInvalidTransitionException(sprintf("Cannot transition a transaction from %s to %s", $prevTransactionStatus, $newTransactionStatus));
@@ -409,7 +408,7 @@ class Bolt_Boltpay_Model_Payment extends Mage_Payment_Model_Method_Abstract {
             }
 
             if ($newTransactionStatus != $prevTransactionStatus) {
-                Mage::log(sprintf("Transitioning from %s to %s", $prevTransactionStatus, $newTransactionStatus), null, 'bolt.log');
+                //Mage::log(sprintf("Transitioning from %s to %s", $prevTransactionStatus, $newTransactionStatus), null, 'bolt.log');
                 $reference = $payment->getAdditionalInformation('bolt_reference');
 
                 $this->_handleBoltTransactionStatus($payment, $newTransactionStatus);
@@ -481,7 +480,7 @@ class Bolt_Boltpay_Model_Payment extends Mage_Payment_Model_Method_Abstract {
             }
         } catch (Exception $e) {
             $error = array('error' => $e->getMessage());
-            Mage::log($error, null, 'bolt.log');
+            //Mage::log($error, null, 'bolt.log');
 
             Mage::helper('boltpay/bugsnag')->addMetaData(
                 array(

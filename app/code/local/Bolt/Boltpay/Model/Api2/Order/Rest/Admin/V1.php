@@ -49,10 +49,10 @@ class Bolt_Boltpay_Model_Api2_Order_Rest_Admin_V1 extends Bolt_Boltpay_Model_Api
     {
         try {
 
-            Mage::log('Initiating webhook call', null, 'bolt.log');
+            //Mage::log('Initiating webhook call', null, 'bolt.log');
 
             $bodyParams = $this->getRequest()->getBodyParams();
-            Mage::log(trim(json_encode($bodyParams)), null, 'bolt.log');
+            //Mage::log(trim(json_encode($bodyParams)), null, 'bolt.log');
 
             $reference = $bodyParams['reference'];
             $transactionId = $bodyParams['transaction_id'];
@@ -63,17 +63,13 @@ class Bolt_Boltpay_Model_Api2_Order_Rest_Admin_V1 extends Bolt_Boltpay_Model_Api
             $boltHelperBase = Mage::helper('boltpay');
             $boltHelperBase::$from_hooks = true;
 
-            if ($hookType == 'credit') {
-                Mage::log('notification_type is credit. Ignoring it');
-            }
-
             $transaction = $boltHelper->fetchTransaction($reference);
             $display_id = $transaction->order->cart->display_id;
 
             $order = Mage::getModel('sales/order')->loadByIncrementId($display_id);
 
             if (sizeof($order->getData()) > 0) {
-                Mage::log('Order Found. Updating it', null, 'bolt.log');
+                //Mage::log('Order Found. Updating it', null, 'bolt.log');
                 $orderPayment = $order->getPayment();
 
                 $newTransactionStatus = Bolt_Boltpay_Model_Payment::translateHookTypeToTransactionStatus($hookType);
@@ -100,11 +96,11 @@ class Bolt_Boltpay_Model_Api2_Order_Rest_Admin_V1 extends Bolt_Boltpay_Model_Api
                     array(), 'success');
                 $this->getResponse()->setHttpResponseCode(Mage_Api2_Model_Server::HTTP_OK);
                 $this->_render($this->getResponse()->getMessages());
-                Mage::log('Order update was successful', null, 'bolt.log');
+                //Mage::log('Order update was successful', null, 'bolt.log');
                 return;
             }
 
-            Mage::log('Order not found. Creating one', null, 'bolt.log');
+            //Mage::log('Order not found. Creating one', null, 'bolt.log');
 
             $quote = Mage::getModel('sales/quote')
                 ->getCollection()
@@ -114,7 +110,7 @@ class Bolt_Boltpay_Model_Api2_Order_Rest_Admin_V1 extends Bolt_Boltpay_Model_Api
             $quoteId = $bodyParams['quote_id'] ?: $quote->getId();
 
             if (sizeof($quote->getData()) == 0) {
-                Mage::log("Quote not found: $quoteId. Quote must have been already processed.", null, 'bolt.log');
+                //Mage::log("Quote not found: $quoteId. Quote must have been already processed.", null, 'bolt.log');
                 $this->_critical(Mage::helper('boltpay')
                     ->__("Quote not found: $quoteId.  Quote must have been already processed."), Mage_Api2_Model_Server::HTTP_BAD_REQUEST);
             }
@@ -133,14 +129,14 @@ class Bolt_Boltpay_Model_Api2_Order_Rest_Admin_V1 extends Bolt_Boltpay_Model_Api
             $this->getResponse()->addMessage(
                 self::$SUCCESS_ORDER_CREATED['message'], self::$SUCCESS_ORDER_CREATED['http_response_code'],
                 array(), 'success');
-            Mage::log('Order creation was successful', null, 'bolt.log');
+            //Mage::log('Order creation was successful', null, 'bolt.log');
             $this->_render($this->getResponse()->getMessages());
 
         } catch (BoltPayInvalidTransitionException $invalid) {
             // An invalid transition is treated as a late queue event and hence will be ignored
             $error = $invalid->getMessage();
-            Mage::log($error, null, 'bolt.log');
-            Mage::log("Late queue event. Returning as OK", null, 'bolt.log');
+            //Mage::log($error, null, 'bolt.log');
+            //Mage::log("Late queue event. Returning as OK", null, 'bolt.log');
 
 
             Mage::helper('boltpay/bugsnag')->addMetaData(
@@ -156,7 +152,7 @@ class Bolt_Boltpay_Model_Api2_Order_Rest_Admin_V1 extends Bolt_Boltpay_Model_Api
             $this->_critical($error, Mage_Api2_Model_Server::HTTP_OK);
         } catch (Exception $e) {
             $error = $e->getMessage();
-            Mage::log($error, null, 'bolt.log');
+            //Mage::log($error, null, 'bolt.log');
 
             Mage::helper('boltpay/bugsnag')->addMetaData(
                 array(

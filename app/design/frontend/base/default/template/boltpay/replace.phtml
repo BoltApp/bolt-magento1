@@ -4,13 +4,13 @@
  ********************************************************************/
 
 if(! $this->isBoltActive()) return;
+//if ($this->isTestMode() && !Mage::helper('core')->isDevAllowed()) return;
 
 ?>
 
 <script>
 
     window.onload = function(){
-
         // generic function for making jsonp calls
         var jsonpRequest = function(parent, element, attributes, params, callback_fn) {
 

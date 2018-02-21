@@ -27,7 +27,7 @@ class Bolt_Boltpay_Model_Observer {
 
             if ($customer != null && $boltUserId != null) {
                 if ($customer->getBoltUserId() == null || $customer->getBoltUserId() == 0) {
-                    Mage::log("Bolt_Boltpay_Model_Observer.saveOrderAfter: Adding bolt_user_id to the customer from the quote", null, 'bolt.log');
+                    //Mage::log("Bolt_Boltpay_Model_Observer.saveOrderAfter: Adding bolt_user_id to the customer from the quote", null, 'bolt.log');
                     $customer->setBoltUserId($boltUserId);
                     $customer->save();
                 }
@@ -52,6 +52,8 @@ class Bolt_Boltpay_Model_Observer {
 
         $boltHelper = Mage::helper('boltpay/api');
         $quote = $observer->getEvent()->getQuote();
+        $order = $observer->getEvent()->getOrder();
+
         $payment = $quote->getPayment();
         $items = Mage::getSingleton('checkout/session')->getQuote()->getAllVisibleItems();
         $method = $payment->getMethod();
@@ -69,15 +71,12 @@ class Bolt_Boltpay_Model_Observer {
                 'reference' => $reference,
                 'auto_capture' => $authCapture
             );
-            if (Mage::getStoreConfig('payment/boltpay/disable_complete_authorize'))  {
-               Mage::log("Bolt_Boltpay_Model_Observer.saveOrderAfter: Skipping complete authorize", null, 'bolt.log');
-               return;
-            }
 
             try {
-                $boltHelper->transmit('complete_authorize', $complete_authorize_request);
+                if (!Mage::getStoreConfig('payment/boltpay/disable_complete_authorize'))  {
+                    $boltHelper->transmit('complete_authorize', $complete_authorize_request);
+                }
             } catch (Exception $e) {
-                $order = $observer->getEvent()->getOrder();
                 $message = "THERE IS A MISMATCH IN THE ORDER PAID AND ORDER RECORDED.<br>PLEASE COMPARE THE ORDER DETAILS WITH THAT RECORD IN YOUR BOLT MERCHANT ACCOUNT AT: ";
                 $message .= Mage::getStoreConfig('payment/boltpay/test') ? "https://merchant-sandbox.bolt.com" : "https://merchant.bolt.com";
                 $message .= "/transaction/$reference";
@@ -91,6 +90,8 @@ class Bolt_Boltpay_Model_Observer {
                 );
                 Mage::helper('boltpay/bugsnag')->notifyException($e, $metaData);
             }
+
+            $order->sendNewOrderEmail();
         }
     }
 }

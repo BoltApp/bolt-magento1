@@ -271,7 +271,7 @@ class Bolt_Boltpay_Helper_Api extends Bolt_Boltpay_Helper_Data {
 
             $message ="Curl info: " . $curl_info;
 
-            Mage::log($message, null, 'bolt.log');
+            //Mage::log($message, null, 'bolt.log');
 
             Mage::throwException($message);
         }

@@ -30,7 +30,7 @@ class Bolt_Boltpay_OnepageController extends Mage_Checkout_OnepageController {
                             $result['error'] = $e->getMessage();
                             Mage::helper('boltpay/bugsnag')->notifyException($e);
                         } catch (Exception $e) {
-                            Mage::logException($e);
+                            //Mage::logException($e);
                             $result['error'] = $this->__('Unable to set Payment Method.');
                             Mage::helper('boltpay/bugsnag')->notifyException($e);
                         }

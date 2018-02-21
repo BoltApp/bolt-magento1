@@ -37,7 +37,7 @@ class Bolt_Boltpay_Block_Status_View extends Mage_Adminhtml_Block_Template {
           }
         } catch (Exception $e) {
             $error = array('error' => $e->getMessage());
-            Mage::log($error, null, 'bolt.log');
+            //Mage::log($error, null, 'bolt.log');
             Mage::helper('boltpay/bugsnag')->notifyException($e);
           return 'Connection to ' . $boltUrl . ": ERROR. Error: " . $e;
         }
@@ -59,7 +59,7 @@ class Bolt_Boltpay_Block_Status_View extends Mage_Adminhtml_Block_Template {
             $result = $boltApi->transmit('', null, 'merchant', '');
         } catch (Exception $e) {
             $error = array('error' => $e->getMessage());
-            Mage::log($error, null, 'bolt.log');
+            //Mage::log($error, null, 'bolt.log');
             Mage::helper('boltpay/bugsnag')->notifyException($e);
             return 'Bolt call failed. Error has been logged to bolt.log';
         }
@@ -89,7 +89,7 @@ class Bolt_Boltpay_Block_Status_View extends Mage_Adminhtml_Block_Template {
             $result = $boltApi->transmit('ABCD-1234-EFGH', null, 'merchant', 'transactions');
         } catch (Exception $e) {
             $error = array('error' => $e->getMessage());
-            Mage::log($error, null, 'bolt.log');
+            //Mage::log($error, null, 'bolt.log');
             Mage::helper('boltpay/bugsnag')->notifyException($e);
             return 'Bolt call failed. Error has been logged to bolt.log';
         }

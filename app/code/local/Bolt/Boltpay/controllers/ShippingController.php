@@ -159,11 +159,14 @@ class Bolt_Boltpay_ShippingController extends Mage_Core_Controller_Front_Action 
             'postcode' => $request_data->zip_code,
             'country_id' => $request_data->country_code
         );
-
         $quote->getShippingAddress()->addData($address_data);
         $quote->getShippingAddress()->addData($address_data);
 
-        $estimate_response = Mage::helper('boltpay/api')->getShippingAndTaxEstimate($quote);
+        try {
+            $estimate_response = Mage::helper('boltpay/api')->getShippingAndTaxEstimate($quote);
+        } catch (Exception $e) {
+            $estimate_response = null;
+        }
 
         Mage::app()->getCache()->save(serialize($address_data), "quote_location_".$quote->getId());
         Mage::app()->getCache()->save(serialize($estimate_response), "quote_shipping_and_tax_estimate_".$quote->getId());

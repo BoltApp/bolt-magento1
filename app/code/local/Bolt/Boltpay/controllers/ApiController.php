@@ -29,7 +29,7 @@ class Bolt_Boltpay_ApiController extends Mage_Core_Controller_Front_Action {
                 return;
             }
 
-            Mage::log('Initiating webhook call', null, 'bolt.log');
+            //Mage::log('Initiating webhook call', null, 'bolt.log');
 
             $bodyParams = json_decode(file_get_contents('php://input'), true);
 
@@ -43,7 +43,7 @@ class Bolt_Boltpay_ApiController extends Mage_Core_Controller_Front_Action {
             $boltHelperBase::$from_hooks = true;
 
             if ($hookType == 'credit') {
-                Mage::log('notification_type is credit. Ignoring it');
+                //Mage::log('notification_type is credit. Ignoring it');
             }
 
             $transaction = $boltHelper->fetchTransaction($reference);
@@ -52,7 +52,7 @@ class Bolt_Boltpay_ApiController extends Mage_Core_Controller_Front_Action {
             $order = Mage::getModel('sales/order')->loadByIncrementId($display_id);
 
             if (sizeof($order->getData()) > 0) {
-                Mage::log('Order Found. Updating it', null, 'bolt.log');
+                //Mage::log('Order Found. Updating it', null, 'bolt.log');
                 $orderPayment = $order->getPayment();
 
                 $newTransactionStatus = Bolt_Boltpay_Model_Payment::translateHookTypeToTransactionStatus($hookType);
@@ -81,7 +81,7 @@ class Bolt_Boltpay_ApiController extends Mage_Core_Controller_Front_Action {
                 return;
             }
 
-            Mage::log('Order not found. Creating one', null, 'bolt.log');
+            //Mage::log('Order not found. Creating one', null, 'bolt.log');
 
             $quote = Mage::getModel('sales/quote')
                 ->getCollection()
@@ -91,7 +91,7 @@ class Bolt_Boltpay_ApiController extends Mage_Core_Controller_Front_Action {
             $quoteId = $bodyParams['quote_id'] ?: $quote->getId();
 
             if (sizeof($quote->getData()) == 0) {
-                Mage::log("Quote not found: $quoteId. Quote must have been already processed.", null, 'bolt.log');
+                //Mage::log("Quote not found: $quoteId. Quote must have been already processed.", null, 'bolt.log');
                 throw new Exception("Quote not found: $quoteId.  Quote must have been already processed.");
             }
 
@@ -115,8 +115,8 @@ class Bolt_Boltpay_ApiController extends Mage_Core_Controller_Front_Action {
 
             // An invalid transition is treated as a late queue event and hence will be ignored
             $error_message = $boltPayInvalidTransitionException->getMessage();
-            Mage::log($error_message, null, 'bolt.log');
-            Mage::log("Late queue event. Returning as OK", null, 'bolt.log');
+            //Mage::log($error_message, null, 'bolt.log');
+            //Mage::log("Late queue event. Returning as OK", null, 'bolt.log');
             $this->getResponse()->setHttpResponseCode(200);
 
         } catch (Exception $e) {

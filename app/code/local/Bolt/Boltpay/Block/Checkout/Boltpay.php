@@ -199,7 +199,7 @@ class Bolt_Boltpay_Block_Checkout_Boltpay
             //////////////////////////////////////////////////////
 
         } catch (Exception $e) {
-            Mage::log($e->getMessage(), null, 'bolt.log');
+            //Mage::log($e->getMessage(), null, 'bolt.log');
             Mage::helper('boltpay/bugsnag')->notifyException($e);
         }
     }
@@ -275,18 +275,18 @@ class Bolt_Boltpay_Block_Checkout_Boltpay
             $customer = Mage::getModel('customer/customer')->load($session->getId());
 
             if ($customer->getBoltUserId() == 0 || $customer->getBoltUserId() == null) {
-                Mage::log("Creating new user id for logged in user", null, 'bolt.log');
+                //Mage::log("Creating new user id for logged in user", null, 'bolt.log');
 
                 $custId = Mage::getSingleton('eav/config')->getEntityType("customer")->fetchNewIncrementId($quote->getStoreId());
                 $customer->setBoltUserId($custId);
                 $customer->save();
             }
 
-            Mage::log(sprintf("Using Bolt User Id: %s", $customer->getBoltUserId()), null, 'bolt.log');
+            //Mage::log(sprintf("Using Bolt User Id: %s", $customer->getBoltUserId()), null, 'bolt.log');
             return $customer->getBoltUserId();
 
         } else if ($checkoutMethod == Mage_Checkout_Model_Type_Onepage::METHOD_REGISTER) {
-            Mage::log("Creating new user id for Register checkout", null, 'bolt.log');
+            //Mage::log("Creating new user id for Register checkout", null, 'bolt.log');
             $custId = Mage::getSingleton('eav/config')->getEntityType("customer")->fetchNewIncrementId($quote->getStoreId());
             $session->setBoltUserId($custId);
             return $custId;
@@ -462,10 +462,19 @@ class Bolt_Boltpay_Block_Checkout_Boltpay
         $location_info = Mage::getSingleton('core/session')->getLocationInfo();
 
         if (empty($location_info)) {
-            $location_info = file_get_contents("http://freegeoip.net/json/".$this->getIpAddress());
+            $location_info = $this->url_get_contents("http://freegeoip.net/json/".$this->getIpAddress());
             Mage::getSingleton('core/session')->setLocationInfo($location_info);
         }
 
         return $location_info;
+    }
+
+    public function url_get_contents($url) {
+        $ch = curl_init();
+        curl_setopt($ch, CURLOPT_URL, $url);
+        curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+        $output = curl_exec($ch);
+        curl_close($ch);
+        return $output;
     }
 }

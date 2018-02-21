@@ -38,6 +38,7 @@ class Bolt_Boltpay_OrderController extends Mage_Core_Controller_Front_Action {
 
             $session_quote = $checkout_session->getQuote();
 
+            /* @var Mage_Sales_Model_Order $order */
             $order = $boltHelper->createOrder($reference, $session_quote->getId());
 
             $checkout_session->setLastQuoteId($session_quote->getId())
@@ -45,7 +46,6 @@ class Bolt_Boltpay_OrderController extends Mage_Core_Controller_Front_Action {
                 ->clearHelperData();
 
             if ($order) {
-
                 // add order information to the session
                 $checkout_session->setLastOrderId($order->getId())
                     ->setRedirectUrl('')

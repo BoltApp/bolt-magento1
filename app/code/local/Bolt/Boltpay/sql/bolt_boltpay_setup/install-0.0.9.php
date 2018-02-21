@@ -9,7 +9,7 @@ $installer->startSetup();
 
 $setup = new Mage_Eav_Model_Entity_Setup('core_setup');
 
-Mage::log('Installing Bolt 0.0.4 updates', null, 'bolt_install.log');
+Mage::log('Installing Bolt 0.0.9 updates', null, 'bolt_install.log');
 
 $installer->addAttribute("customer", "bolt_user_id",  array(
     "type"       => "varchar",

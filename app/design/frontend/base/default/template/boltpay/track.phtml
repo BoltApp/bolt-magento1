@@ -1,4 +1,6 @@
 <?php
+$version_element =  Mage::getConfig()->getModuleConfig("Bolt_Boltpay")->xpath("version");
+$version = (string)$version_element[0];
 if($this->isBoltActive()) {
     ?>
     <script
@@ -7,5 +9,6 @@ if($this->isBoltActive()) {
             src="<?= $this->getTrackJsUrl(); ?>"
             data-publishable-key="<?= Mage::helper('core')->decrypt(Mage::getStoreConfig('payment/boltpay/publishable_key_multipage')); ?>">
     </script>
+    <script>console.log("Bolt Version: <?=$version?>");</script>
     <?php
 }
