@@ -8,7 +8,7 @@
 class Bolt_Boltpay_OrderController extends Mage_Core_Controller_Front_Action {
 
     /**
-     * Frontend save order action. Called from BoltConnect.process success callback.
+     * Frontend save order action. Called from BoltCheckout.configure success callback.
      * The actual order creation is done in the helper class, for both frontend and backend (API) requests.
      */
     public function saveAction()
@@ -22,7 +22,6 @@ class Bolt_Boltpay_OrderController extends Mage_Core_Controller_Front_Action {
             $boltHelper = Mage::helper('boltpay/api');
 
             $checkout_session = Mage::getSingleton('checkout/session');
-
 
             $reference = $this->getRequest()->getPost('reference');
 

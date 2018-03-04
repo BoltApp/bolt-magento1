@@ -132,13 +132,13 @@ if(! $this->isBoltActive()) return;
                     loadConnectJS('<?=$this->getPaymentKey();?>');
 
                     // On every 50 ms check if the Bolt connect.js javascript is inserted
-                    // by checking the BoltConnect object existence. Clear the interval when
-                    // BoltConnect is found. On products page the Bolt checkout button
-                    // is set up to forward to the cart page. On cart page BoltConnect.process is executed.
+                    // by checking the BoltCheckout object existence. Clear the interval when
+                    // BoltCheckout is found. On products page the Bolt checkout button
+                    // is set up to forward to the cart page. On cart page BoltCheckout.process is executed.
                     var processInterval = setInterval(
                         function() {
 
-                            if (typeof BoltConnect !== "undefined") {
+                            if (typeof BoltCheckout !== "undefined") {
 
                                 clearInterval(processInterval);
 
@@ -161,7 +161,7 @@ if(! $this->isBoltActive()) return;
                                 } else {
                                     /*****************************************************************
                                      * Creating the order at Bolt end, if applicable (cart not empty).
-                                     * Generating BoltConnect.process code.
+                                     * Generating BoltCheckout code.
                                      *****************************************************************/
 									<?=$this->getCartDataJs(); ?>
                                 }
@@ -295,12 +295,13 @@ if(! $this->isBoltActive()) return;
                         replaceRetries -= 1;
                         if (replaceRetries <= 0) clearInterval(tryInterval);
 
-                        if (typeof BoltConnect === "undefined") {
+                        if (typeof BoltCheckout === "undefined") {
                             replaceRetries = 10;
                             return;
                         }
 
                         if (replaceRetries > 5) replaceRetries = 5;
+
 
                         BoltConnect.process(
                             {},

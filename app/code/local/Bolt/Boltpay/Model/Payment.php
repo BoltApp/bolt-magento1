@@ -158,6 +158,9 @@ class Bolt_Boltpay_Model_Payment extends Mage_Payment_Model_Method_Abstract {
     public function authorize(Varien_Object $payment, $amount) {
 
         try {
+
+            $reference = $payment->getAdditionalInformation('bolt_reference');
+
             //Mage::log(sprintf('Initiating authorize on payment id: %d', $payment->getId()), null, 'bolt.log');
             // Get the merchant transaction id
             $reference = $payment->getAdditionalInformation('bolt_reference');
@@ -165,12 +168,16 @@ class Bolt_Boltpay_Model_Payment extends Mage_Payment_Model_Method_Abstract {
                 throw new Exception("Payment missing expected transaction ID.");
             }
 
+            $boltHelper = Mage::helper('boltpay/api');
+            $transaction = $boltHelper->fetchTransaction($reference);
+            $bolt_cart_total = $transaction->amount->currency_symbol. ($transaction->amount->amount/100);
+
             // Set the transaction id
             $payment->setTransactionId($reference);
 
             // Log the payment info
             $msg = sprintf(
-                "Bolt Operation: \"Authorization\". Bolt Reference: \"%s\".", $reference);
+                "BOLT notification: Authorization requested for $bolt_cart_total.  Cart total is {$transaction->amount->currency_symbol}$amount. BOLT Reference: \"%s\".", $reference);
             $payment->getOrder()->setState(Mage_Sales_Model_Order::STATE_PROCESSING, true, $msg);
 
 
@@ -350,7 +357,7 @@ class Bolt_Boltpay_Model_Payment extends Mage_Payment_Model_Method_Abstract {
             $transactionStatus = $orderPayment->getAdditionalInformation('bolt_transaction_status');
             $orderPayment->setTransactionId(sprintf("%s-%d-order", $reference, $order->getId()));
             $orderPayment->addTransaction(
-                Mage_Sales_Model_Order_Payment_Transaction::TYPE_ORDER, null, false, "Order ");
+                Mage_Sales_Model_Order_Payment_Transaction::TYPE_ORDER, null, false, "BOLT notification: Order ");
             $order->save();
 
             $orderPayment->setData('auto_capture', $transactionStatus == self::TRANSACTION_COMPLETED);
@@ -417,11 +424,7 @@ class Bolt_Boltpay_Model_Payment extends Mage_Payment_Model_Method_Abstract {
                 $payment->setShouldCloseParentTransaction(true);
 
                 if ($newTransactionStatus == self::TRANSACTION_AUTHORIZED) {
-                    if ($prevTransactionStatus ==  self::TRANSACTION_PENDING) {
-                        $message = Mage::helper('boltpay')->__('Payment transaction is approved.');
-                    } else {
-                        $message = '';
-                    }
+                    $message = Mage::helper('boltpay')->__('BOLT notification: Payment transaction is approved.');
                     $order = $payment->getOrder();
                     $order->setState(Mage_Sales_Model_Order::STATE_PROCESSING, true, $message);
                     $order->save();
@@ -448,7 +451,7 @@ class Bolt_Boltpay_Model_Payment extends Mage_Payment_Model_Method_Abstract {
                     }
                 } elseif ($newTransactionStatus == self::TRANSACTION_PENDING) {
                     $order = $payment->getOrder();
-                    $message = Mage::helper('boltpay')->__('Payment is under review');
+                    $message = Mage::helper('boltpay')->__('BOLT notification: Payment is under review');
                     $order->setState(Mage_Sales_Model_Order::STATE_PAYMENT_REVIEW, true, $message);
                     $order->save();
                 } elseif ($newTransactionStatus == self::TRANSACTION_CANCELLED) {
@@ -456,7 +459,7 @@ class Bolt_Boltpay_Model_Payment extends Mage_Payment_Model_Method_Abstract {
                     $payment->setParentTransactionId($reference);
                     $payment->setTransactionId(sprintf("%s-void", $reference));
                     $payment->addTransaction(Mage_Sales_Model_Order_Payment_Transaction::TYPE_VOID, null, true);
-                    $message = Mage::helper('boltpay')->__('Transaction authorization has been voided');
+                    $message = Mage::helper('boltpay')->__('BOLT notification: Transaction authorization has been voided');
                     $order->setState(Mage_Sales_Model_Order::STATE_CANCELED, true, $message);
                     $payment->save();
                     $order->save();
@@ -465,13 +468,13 @@ class Bolt_Boltpay_Model_Payment extends Mage_Payment_Model_Method_Abstract {
                     $payment->setParentTransactionId($reference);
                     $payment->setTransactionId(sprintf("%s-rejected", $reference));
                     $payment->addTransaction(Mage_Sales_Model_Order_Payment_Transaction::TYPE_VOID, null, true);
-                    $message = Mage::helper('boltpay')->__(sprintf('Transaction reference "%s" has been permanently rejected by Bolt', $reference));
+                    $message = Mage::helper('boltpay')->__(sprintf('BOLT notification: Transaction reference "%s" has been permanently rejected by Bolt', $reference));
                     $order->setState(Mage_Sales_Model_Order::STATE_CANCELED, true, $message);
                     $payment->save();
                     $order->save();
                 } elseif ($newTransactionStatus == self::TRANSACTION_REJECTED_REVERSIBLE) {
                     $order = $payment->getOrder();
-                    $message = Mage::helper('boltpay')->__(sprintf('Transaction reference "%s" has been rejected by Bolt internal review but is eligible for force approval on Bolt\'s merchant dashboard', $reference));
+                    $message = Mage::helper('boltpay')->__(sprintf('BOLT notification: Transaction reference "%s" has been rejected by Bolt internal review but is eligible for force approval on Bolt\'s merchant dashboard', $reference));
                     $order->setState(self::ORDER_DEFERRED, true, $message);
                     $order->save();
                 }

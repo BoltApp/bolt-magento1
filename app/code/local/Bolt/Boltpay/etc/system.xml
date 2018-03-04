@@ -226,11 +226,120 @@
               <show_in_store>0</show_in_store>
               <depends><skip_payment>0</skip_payment></depends>
             </max_order_total>
+            <check translate="label">
+              <label>Javascript: check</label>
+              <comment>
+                <![CDATA[
+                    <p>
+This function is called just before the checkout form loads.
+This is a hook to determine whether Bolt can actually proceed
+with checkout at this point. This function should return a boolean.
+                    </p>
+                    ]]>
+              </comment>
+              <frontend_type>textarea</frontend_type>
+              <show_in_default>1</show_in_default>
+              <show_in_website>1</show_in_website>
+              <show_in_store>0</show_in_store>
+              <sort_order>100</sort_order>
+            </check>
+            <on_checkout_start translate="label">
+              <label>Javascript: onCheckoutStart</label>
+              <comment>
+                <![CDATA[
+                    <p>
+This function is called after the checkout form is presented to the user.
+                    </p>
+                    ]]>
+              </comment>
+              <frontend_type>textarea</frontend_type>
+              <show_in_default>1</show_in_default>
+              <show_in_website>1</show_in_website>
+              <show_in_store>0</show_in_store>
+              <sort_order>101</sort_order>
+            </on_checkout_start>
+            <on_shipping_details_complete translate="label">
+              <label>Javascript: onShippingDetailsComplete</label>
+              <comment>
+                <![CDATA[
+                    <p>
+This function is called when the user proceeds to the shipping options page.
+This is applicable only to multi-step checkout.
+                    </p>
+                    ]]>
+              </comment>
+              <frontend_type>textarea</frontend_type>
+              <show_in_default>1</show_in_default>
+              <show_in_website>1</show_in_website>
+              <show_in_store>0</show_in_store>
+              <sort_order>102</sort_order>
+            </on_shipping_details_complete>
+            <on_shipping_options_complete translate="label">
+              <label>Javascript: onShippingOptionsComplete</label>
+              <comment>
+                <![CDATA[
+                    <p>
+This function is called when the user proceeds to the payment details page.
+This is applicable only to multi-step checkout.
+                    </p>
+                    ]]>
+              </comment>
+              <frontend_type>textarea</frontend_type>
+              <show_in_default>1</show_in_default>
+              <show_in_website>1</show_in_website>
+              <show_in_store>0</show_in_store>
+              <sort_order>103</sort_order>
+            </on_shipping_options_complete>
+            <on_payment_submit translate="label">
+              <label>onPaymentSubmit</label>
+              <comment>
+                <![CDATA[
+                    <p>
+This function is called after the user clicks the pay button.
+                    </p>
+                    ]]>
+              </comment>
+              <frontend_type>textarea</frontend_type>
+              <show_in_default>1</show_in_default>
+              <show_in_website>1</show_in_website>
+              <show_in_store>0</show_in_store>
+              <sort_order>104</sort_order>
+            </on_payment_submit>
+            <success translate="label">
+              <label>Javascript: success</label>
+              <comment>
+                <![CDATA[
+                    <p>
+This function is called when the Bolt checkout transaction is successful.
+                    </p>
+                    ]]>
+              </comment>
+              <frontend_type>textarea</frontend_type>
+              <show_in_default>1</show_in_default>
+              <show_in_website>1</show_in_website>
+              <show_in_store>0</show_in_store>
+              <sort_order>105</sort_order>
+            </success>
+            <close translate="label">
+              <label>Javascript: close</label>
+              <comment>
+                <![CDATA[
+                    <p>
+This function is called when the Bolt checkout modal is closed.
+                    </p>
+                    ]]>
+              </comment>
+              <frontend_type>textarea</frontend_type>
+              <show_in_default>1</show_in_default>
+              <show_in_website>1</show_in_website>
+              <show_in_store>0</show_in_store>
+              <sort_order>106</sort_order>
+            </close>
             <sort_order translate="label">
               <label>Sort Order</label>
               <frontend_type>text</frontend_type>
               <comment>Influences display order on checkout pages relative to other payment options.  This does not affect any other pages including the shopping cart and product pages.</comment>
-              <sort_order>100</sort_order>
+              <sort_order>130</sort_order>
               <show_in_default>1</show_in_default>
               <show_in_website>1</show_in_website>
               <show_in_store>1</show_in_store>

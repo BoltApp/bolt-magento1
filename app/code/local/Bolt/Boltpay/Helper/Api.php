@@ -35,7 +35,7 @@ class Bolt_Boltpay_Helper_Api extends Bolt_Boltpay_Helper_Data {
      * @param string $reference        Bolt transaction reference
      * @param int $tries
      *
-     * @throws Mage_Core_Exception     thrown if multiple (3) calls fail
+     * @throws Exception     thrown if multiple (3) calls fail
      * @return bool|mixed Transaction info
      */
     public function fetchTransaction($reference, $tries = 3) {
@@ -256,11 +256,15 @@ class Bolt_Boltpay_Helper_Api extends Bolt_Boltpay_Helper_Data {
 
         //Mage::log('KEY: ' . Mage::helper('core')->decrypt($key), null, 'bolt.log');
 
+        $context_info = Mage::helper('boltpay/bugsnag')->getContextInfo();
+
         curl_setopt($ch, CURLOPT_HTTPHEADER, array(
             'Content-Type: application/json',
             'Content-Length: ' . strlen($params),
             'X-Api-Key: ' . Mage::helper('core')->decrypt($key),
             'X-Nonce: ' . rand(100000000, 999999999),
+            'User-Agent: BoltPay/Magento-' . $context_info["Magento-Version"],
+            'X-Bolt-Plugin-Version: ' . $context_info["Bolt-Plugin-Version"]
         ));
         curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
         $result = curl_exec($ch);
@@ -308,7 +312,12 @@ class Bolt_Boltpay_Helper_Api extends Bolt_Boltpay_Helper_Data {
             $message ="BoltPay Gateway error: No response from Bolt. Please re-try again";
             Mage::throwException($message);
         } elseif (self::isResponseError($response)) {
-            $message = sprintf("BoltPay Gateway error for %s: Request: %s, Response: %s", $url, $request, var_export($response, true));
+            if (property_exists($response, 'errors')) {
+                Mage::register("api_error", $response->errors[0]->message);
+            }
+            $message = sprintf("BoltPay Gateway error for %s: Request: %s, Response: %s", $url, $request, json_encode($response, true));
+
+            Mage::helper('boltpay/bugsnag')->notifyException(new Exception($message));
             Mage::throwException($message);
         }
         return $response;
@@ -625,7 +634,7 @@ class Bolt_Boltpay_Helper_Api extends Bolt_Boltpay_Helper_Data {
      * @return bool         true if there is an error, false otherwise
      */
     public function isResponseError($response) {
-        return array_key_exists('errors', $response) || array_key_exists('error_code', $response);
+        return property_exists($response, 'errors') || property_exists($response, 'error_code');
     }
 
     /**

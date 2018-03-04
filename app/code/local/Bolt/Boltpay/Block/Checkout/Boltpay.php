@@ -2,12 +2,12 @@
 /**
  * Class Bolt_Boltpay_Block_Checkout_Boltpay
  *
- * This block is used in boltpay/track.phtml and boltpay/replace.phtml templates which is used on every page
+ * This block is used in boltpay/track.phtml and boltpay/replace.phtml templates
  *
  * This is defined in boltpay.xml config file
  *
  * The purpose is to add the Bolt tracking javascript files to every page, Bolt connect javascript to order and product pages,
- * create the order on Bolt side and set up BoltConnect process with cart and hint data.
+ * create the order on Bolt side and set up the javascript BoltCheckout.configure process with cart and hint data.
  *
  */
 
@@ -76,12 +76,12 @@ class Bolt_Boltpay_Block_Checkout_Boltpay
     }
 
     /**
-     * Initiates the Bolt order creation / token receiving and sets up BoltConnect with generated data.
-     * In BoltConnect.process success callback the order is saved in additional ajax call to
+     * Initiates the Bolt order creation / token receiving and sets up BoltCheckout with generated data.
+     * In BoltCheckout.configure success callback the order is saved in additional ajax call to
      * Bolt_Boltpay_OrderController save action.
      *
      * @param bool $multipage       Is checkout type Multi-Page Checkout, the default is true, set to false for One Page Checkout
-     * @return string               BoltConnect.process javascript
+     * @return string               BoltCheckout javascript
      */
     public function getCartDataJs($multipage = true) {
 
@@ -106,7 +106,6 @@ class Bolt_Boltpay_Block_Checkout_Boltpay
             //////////////////////////////////////////////////////////////
             $hint_data = $this->getAddressHints($customerSession, $quote);
             ///////////////////////////////////////////////////////////////
-
 
             ///////////////////////////////////////////////////////////////////////////////////////
             // Merchant scope: get "bolt_user_id" if the user is logged in or should be registered,
@@ -139,7 +138,12 @@ class Bolt_Boltpay_Block_Checkout_Boltpay
             }
 
             // Call Bolt create order API
-            $orderCreationResponse = $this->createBoltOrder($quote, $multipage);
+            try {
+                $orderCreationResponse = $this->createBoltOrder($quote, $multipage);
+            } catch ( Exception $e ) {
+                $orderCreationResponse = json_decode('{"token" : ""}');
+            }
+
 
             //////////////////////////////////////////////////////////////////////////
             // Generate JSON cart and hints objects for the javascript returned below.
@@ -148,6 +152,10 @@ class Bolt_Boltpay_Block_Checkout_Boltpay
                 'authcapture' => $authCapture,
                 'orderToken' => $orderCreationResponse->token,
             );
+
+            if (Mage::registry("api_error")) {
+                $cart_data['error'] = Mage::registry("api_error");
+            }
 
             $json_cart = json_encode($cart_data);
             $json_hints = '{}';
@@ -161,45 +169,86 @@ class Bolt_Boltpay_Block_Checkout_Boltpay
             $save_order_url = $this->getUrl('boltpay/order/save');
 
             //////////////////////////////////////////////////////
-            // Generate and return BoltConnect.process javascript.
+            // Collect the event Javascripts
+            //////////////////////////////////////////////////////
+            $check = Mage::getStoreConfig('payment/boltpay/check');
+            $on_checkout_start = Mage::getStoreConfig('payment/boltpay/on_checkout_start');
+            $on_shipping_details_complete = Mage::getStoreConfig('payment/boltpay/on_shipping_details_complete');
+            $on_shipping_options_complete = Mage::getStoreConfig('payment/boltpay/on_shipping_options_complete');
+            $on_payment_submit = Mage::getStoreConfig('payment/boltpay/on_payment_submit');
+            $success = Mage::getStoreConfig('payment/boltpay/success');
+            $close = Mage::getStoreConfig('payment/boltpay/close');
+            //////////////////////////////////////////////////////
+
+            //////////////////////////////////////////////////////
+            // Generate and return BoltCheckout javascript.
             //////////////////////////////////////////////////////
             return ("
-                BoltConnect.process(
-                    $json_cart,
+                var json_cart = $json_cart;
+                BoltCheckout.configure(
+                    json_cart,
                     $json_hints,
                     {
-                        check: function() {
-                            var json_cart = $json_cart;
-                            return json_cart.orderToken != '';
-                        },
-                        close: function() {
-                            if (typeof bolt_checkout_close === 'function') bolt_checkout_close();
-                        },
-                        success: function(transaction, callback) {
-
-                            var onSuccess = function() {
-                                setTimeout(function(){location.href = '$success_url';}, 5000);
-                                callback();  
-                            };
-
-                            var parameters = 'reference='+transaction.reference;
-
-                            new Ajax.Request(
-                                '$save_order_url',
-                                {
-                                    method:'post',
-                                    onSuccess: onSuccess,
-                                    parameters: parameters
-                                }
-                            );
+                      check: function() {
+                        if (!json_cart.orderToken) {
+                            alert(json_cart.error);
+                            return false;
                         }
+                        $check
+                        return true;
+                      },
+                      
+                      onCheckoutStart: function() {
+                        // This function is called after the checkout form is presented to the user.
+                        $on_checkout_start
+                      },
+                      
+                      onShippingDetailsComplete: function() {
+                        // This function is called when the user proceeds to the shipping options page.
+                        // This is applicable only to multi-step checkout.
+                        $on_shipping_details_complete
+                      },
+                      
+                      onShippingOptionsComplete: function() {
+                        // This function is called when the user proceeds to the payment details page.
+                        // This is applicable only to multi-step checkout.
+                        $on_shipping_options_complete
+                      },
+                      
+                      onPaymentSubmit: function() {
+                        // This function is called after the user clicks the pay button.
+                        $on_payment_submit
+                      },
+                      
+                      success: function(transaction, callback) {
+                        var onSuccess = function() {
+                            $success
+                            setTimeout(function(){location.href = '$success_url';}, 5000);
+                            callback();  
+                        };
+
+                        var parameters = 'reference='+transaction.reference;
+
+                        new Ajax.Request(
+                            '$save_order_url',
+                            {
+                                method:'post',
+                                onSuccess: onSuccess,
+                                parameters: parameters
+                            }
+                        );
+                      },
+                      
+                      close: function() {
+                         $close
+                         if (typeof bolt_checkout_close === 'function') bolt_checkout_close();
+                      }
                     }
                 );"
             );
             //////////////////////////////////////////////////////
 
         } catch (Exception $e) {
-            //Mage::log($e->getMessage(), null, 'bolt.log');
             Mage::helper('boltpay/bugsnag')->notifyException($e);
         }
     }

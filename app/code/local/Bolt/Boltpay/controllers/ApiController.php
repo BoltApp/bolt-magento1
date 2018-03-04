@@ -40,6 +40,8 @@ class Bolt_Boltpay_ApiController extends Mage_Core_Controller_Front_Action {
             $boltHelper = Mage::helper('boltpay/api');
 
             $boltHelperBase = Mage::helper('boltpay');
+
+            /* Allows this method to be used even if the Bolt plugin is disabled.  This accounts for orders that have already been processed by Bolt */
             $boltHelperBase::$from_hooks = true;
 
             if ($hookType == 'credit') {
