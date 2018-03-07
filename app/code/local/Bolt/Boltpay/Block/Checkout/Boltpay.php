@@ -141,6 +141,7 @@ class Bolt_Boltpay_Block_Checkout_Boltpay
             try {
                 $orderCreationResponse = $this->createBoltOrder($quote, $multipage);
             } catch ( Exception $e ) {
+                Mage::helper('boltpay/bugsnag')->notifyException(new Exception($e));
                 $orderCreationResponse = json_decode('{"token" : ""}');
             }
 
