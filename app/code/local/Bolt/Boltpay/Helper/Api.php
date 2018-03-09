@@ -26,6 +26,7 @@ class Bolt_Boltpay_Helper_Api extends Bolt_Boltpay_Helper_Data {
         'giftvoucher',
         'giftvoucher_after_tax',
         'aw_storecredit',
+        'credit', // magestore-customer-credit
     );
     ///////////////////////////////////////////////////////
 
@@ -269,7 +270,7 @@ class Bolt_Boltpay_Helper_Api extends Bolt_Boltpay_Helper_Data {
         curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
         $result = curl_exec($ch);
         if ($result === false) {
-            $curl_info = var_export(curl_getinfo($ch), true);
+            $curl_info = var_dump(curl_getinfo($ch));
             $curl_err = curl_error($ch);
             curl_close($ch);
 
@@ -460,16 +461,20 @@ class Bolt_Boltpay_Helper_Api extends Bolt_Boltpay_Helper_Data {
 
             if (@$totals[$discount]) {
 
-                $discount_amount = round($totals[$discount]->getValue() * 100);
-
                 preg_match('#\((.*?)\)#', $totals[$discount]->getTitle(), $description);
                 $description = @$description[1] ?: $totals[$discount]->getTitle();
 
+                $discount_amount = round($totals[$discount]->getValue() * 100);
+
+                // Some extensioins keep discount totals as positive values,
+                // others as negative, which is the Magento default
+                if ($discount_amount < 0) $discount_amount *= -1;
+
                 $cart_submission_data['discounts'][] = array(
-                    'amount'      => -1 * $discount_amount,
+                    'amount'      => $discount_amount,
                     'description' => $description,
                 );
-                $total_discount += $discount_amount;
+                $total_discount -= $discount_amount;
             }
         }
         $calculated_total += $total_discount;
