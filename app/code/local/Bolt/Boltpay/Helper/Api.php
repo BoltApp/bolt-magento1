@@ -270,7 +270,7 @@ class Bolt_Boltpay_Helper_Api extends Bolt_Boltpay_Helper_Data {
         curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
         $result = curl_exec($ch);
         if ($result === false) {
-            $curl_info = var_dump(curl_getinfo($ch));
+            $curl_info = var_export(curl_getinfo($ch), true);
             $curl_err = curl_error($ch);
             curl_close($ch);
 
