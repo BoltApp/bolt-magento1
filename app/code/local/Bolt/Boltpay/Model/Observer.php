@@ -91,7 +91,10 @@ class Bolt_Boltpay_Model_Observer {
                 Mage::helper('boltpay/bugsnag')->notifyException($e, $metaData);
             }
 
-            $order->sendNewOrderEmail();
+            $order->sendNewOrderEmail()
+                ->addStatusHistoryComment('Email sent for order ' . $order->getIncrementId())
+                ->setIsCustomerNotified(true)
+                ->save();
         }
     }
 }
