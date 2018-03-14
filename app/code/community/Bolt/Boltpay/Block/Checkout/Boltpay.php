@@ -246,8 +246,7 @@ class Bolt_Boltpay_Block_Checkout_Boltpay
                             // used internally to set overlay in firecheckout
                             bolt_checkout_close();
                          }
-                         if (order_completed) {        
-                            alert('success url: $success_url');        
+                         if (order_completed) {   
                             location.href = '$success_url';
                          }
                       }
