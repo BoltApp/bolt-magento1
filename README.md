@@ -6,6 +6,7 @@ Plugin to integrate Bolt with Magento
 + 1.9
 
 ### Releases
++ [v1.0.2](https://s3-us-west-1.amazonaws.com/bolt-public/magento-integration-release/magento1.0.2.zip) (March 14)
 + [v1.0.0](https://s3-us-west-1.amazonaws.com/bolt-public/magento-integration-release/magento1.0.0.zip) (March 6)
 + [v0.0.18](https://s3-us-west-1.amazonaws.com/bolt-public/magento-integration-release/magento0018.zip) (Feb 21, 2018) (quote creation reduction, merchant defined email)
 + [v0.0.17](https://s3-us-west-1.amazonaws.com/bolt-public/magento-integration-release/magento0017.zip) (Feb 16, 2018) (bugfix for quote creation, removal of OAuth requirement, and fix total mismatch error)
