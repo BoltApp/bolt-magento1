@@ -59,3 +59,7 @@ if($quote->getPayment()->getMethodInstance()->getCode() == 'boltpay'): ?>
 <?php else: ?>
     <?= $this->getChildHtml('button_original') ?>
 <?php endif; ?>
+<style>
+    <?=$this->getSelectorsCSS();?>
+    <?=$this->getAdditionalCSS();?>
+</style>

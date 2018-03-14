@@ -3,7 +3,7 @@
   <modules>
     <Bolt_Boltpay>
       <active>true</active>
-      <codePool>local</codePool>
+      <codePool>community</codePool>
       <depends>
         <Mage_Sales/>
         <Mage_Checkout/>

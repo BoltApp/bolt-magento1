@@ -32,12 +32,14 @@
       </boltpay>
     </helpers>
 
+    <!--
     <rewrite>
       <bolt_boltpay_onepage>
         <from><![CDATA[#^/checkout/onepage/#]]></from>
         <to>/boltpay/onepage/</to>
       </bolt_boltpay_onepage>
     </rewrite>
+    -->
 
     <resources>
       <bolt_boltpay_setup>

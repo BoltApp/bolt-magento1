@@ -466,7 +466,7 @@ class Bolt_Boltpay_Helper_Api extends Bolt_Boltpay_Helper_Data {
 
                 $discount_amount = round($totals[$discount]->getValue() * 100);
 
-                // Some extensioins keep discount totals as positive values,
+                // Some extensions keep discount totals as positive values,
                 // others as negative, which is the Magento default
                 if ($discount_amount < 0) $discount_amount *= -1;
 

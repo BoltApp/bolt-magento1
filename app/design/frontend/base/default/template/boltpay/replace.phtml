@@ -302,38 +302,6 @@ if(! $this->isBoltActive()) return;
 
                         if (replaceRetries > 5) replaceRetries = 5;
 
-
-                        BoltConnect.process(
-                            {},
-                            {},
-                            {
-                                check: function() {
-                                    return false;
-                                },
-                                close: function() {
-                                    setOverlay();
-                                },
-                                success: function(transaction, callback) {
-
-                                    var onSuccess = function() {
-                                        setTimeout(function(){location.href = '<?=$this->getSuccessURL();?>';}, 5000);
-                                        callback();
-                                    };
-
-                                    var parameters = 'reference='+transaction.reference;
-
-                                    new Ajax.Request(
-                                        '<?=$this->getSaveOrderURL();?>',
-                                        {
-                                            method:'post',
-                                            onSuccess: onSuccess,
-                                            parameters: parameters
-                                        }
-                                    );
-                                }
-                            }
-                        );
-
                         var bolt_button_overlay = document.getElementById('bolt_button_overlay');
 
                         if (bolt_button_overlay) {

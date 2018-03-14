@@ -186,6 +186,9 @@ class Bolt_Boltpay_Block_Checkout_Boltpay
             //////////////////////////////////////////////////////
             return ("
                 var json_cart = $json_cart;
+                var quote_id = '{$quote->getId()}';
+                var order_completed = false;
+                
                 BoltCheckout.configure(
                     json_cart,
                     $json_hints,
@@ -222,27 +225,31 @@ class Bolt_Boltpay_Block_Checkout_Boltpay
                       },
                       
                       success: function(transaction, callback) {
-                        var onSuccess = function() {
-                            $success
-                            setTimeout(function(){location.href = '$success_url';}, 5000);
-                            callback();  
-                        };
-
-                        var parameters = 'reference='+transaction.reference;
-
                         new Ajax.Request(
                             '$save_order_url',
                             {
                                 method:'post',
-                                onSuccess: onSuccess,
-                                parameters: parameters
+                                onSuccess: 
+                                    function() {
+                                        $success
+                                        order_completed = true;
+                                        callback();  
+                                    },
+                                parameters: 'reference='+transaction.reference
                             }
                         );
                       },
                       
                       close: function() {
                          $close
-                         if (typeof bolt_checkout_close === 'function') bolt_checkout_close();
+                         if (typeof bolt_checkout_close === 'function') {
+                            // used internally to set overlay in firecheckout
+                            bolt_checkout_close();
+                         }
+                         if (order_completed) {        
+                            alert('success url: $success_url');        
+                            location.href = '$success_url';
+                         }
                       }
                     }
                 );"

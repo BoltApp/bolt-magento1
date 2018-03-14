@@ -54,7 +54,6 @@ class Bolt_Boltpay_ShippingController extends Mage_Core_Controller_Front_Action 
             # Set session quote to real customer quote
             $session = Mage::getSingleton('checkout/session');
             $session->setQuoteId($quote->getId());
-            Mage::register('real_customer_session_id',  $quote->getExtShippingInfo());
             /**************/
 
             if ($quote->getCustomerId()) {
