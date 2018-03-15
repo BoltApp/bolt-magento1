@@ -196,7 +196,7 @@ class Bolt_Boltpay_Helper_Api extends Bolt_Boltpay_Helper_Data {
         $payment->setAdditionalInformation('bolt_merchant_transaction_id', $transaction->id);
         $payment->setTransactionId($transaction->id);
 
-        $quote->collectTotals()->save();
+        $quote->setTotalsCollectedFlag(false)->collectTotals()->save();
 
         // a call to internal Magento service for order creation
         $service = Mage::getModel('sales/service_quote', $quote);
