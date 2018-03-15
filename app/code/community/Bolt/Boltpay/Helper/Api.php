@@ -131,7 +131,7 @@ class Bolt_Boltpay_Helper_Api extends Bolt_Boltpay_Helper_Data {
     public function createOrder($reference, $session_quote_id = null) {
 
         if (empty($reference)) {
-          throw new Exception("Bolt transaction reference is missing in the Magento order creation process.");
+            throw new Exception("Bolt transaction reference is missing in the Magento order creation process.");
         }
 
         // fetch transaction info
@@ -165,6 +165,8 @@ class Bolt_Boltpay_Helper_Api extends Bolt_Boltpay_Helper_Data {
 
         $quote->getShippingAddress()->setShouldIgnoreValidation(true)->save();
         $quote->getBillingAddress()->setShouldIgnoreValidation(true)->save();
+
+        $quote->collectTotals();
 
         /********************************************************************
          * Setting up shipping method by finding the carrier code that matches
@@ -305,8 +307,8 @@ class Bolt_Boltpay_Helper_Api extends Bolt_Boltpay_Helper_Data {
      */
     private function _handleErrorResponse($response, $url, $request) {
         if (strpos($url, 'v1/merchant/division/oauth') !== false) {
-          // Do not log division keys here since they are sensitive.
-          $request = "<redacted>";
+            // Do not log division keys here since they are sensitive.
+            $request = "<redacted>";
         }
 
         if (is_null($response)) {
