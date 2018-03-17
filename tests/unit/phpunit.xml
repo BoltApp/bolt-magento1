@@ -14,7 +14,7 @@
 </testsuite>
 <filter>
     <whitelist>
-        <directory>../../app/code/local</directory>
+        <directory>../../app/code/community</directory>
     </whitelist>
 </filter>
 </phpunit>

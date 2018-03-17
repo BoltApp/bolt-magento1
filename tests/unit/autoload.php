@@ -1,9 +1,9 @@
 <?php
 
 ini_set('include_path', ini_get('include_path') . PATH_SEPARATOR
-    . dirname(__FILE__) . '/../../app' . PATH_SEPARATOR . dirname(__FILE__));
+    . dirname(__FILE__) . '/../../vendor/magento1.9/app' . PATH_SEPARATOR . dirname(__FILE__));
 ini_set('include_path', ini_get('include_path') . PATH_SEPARATOR
-    . dirname(__FILE__) . '/../../app/code/local/Bolt/Boltpay' . PATH_SEPARATOR . dirname(__FILE__));
+    . dirname(__FILE__) . '/../../app/code/community/Bolt/Boltpay' . PATH_SEPARATOR . dirname(__FILE__));
 ini_set('include_path', ini_get('include_path') . PATH_SEPARATOR
     . dirname(__FILE__) . '/testsuite/Bolt/Boltpay');
 
@@ -13,7 +13,7 @@ error_reporting(E_ALL | E_STRICT);
 ini_set('memory_limit', '512M');
 //Include Magento libraries
 require_once 'Mage.php';
-////Start the Magento application
-//Mage::app('default');
+//Start the Magento application
+Mage::app('default');
 //Avoid issues "Headers already send"
 session_start();

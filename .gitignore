@@ -2,3 +2,4 @@
 .idea
 *.zip
 *.tar.gz
+vendor/magento1.9

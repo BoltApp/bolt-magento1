@@ -1,0 +1,22 @@
+version: 2
+jobs:
+    build:
+      docker:
+        - image: circleci/php:5-apache-node-browsers
+      steps:
+        - checkout
+        - run:
+            name: Install magento (dependency for test)
+            command: |
+              mkdir -p vendor/magento1.9
+              git clone --depth 1 https://github.com/OpenMage/magento-mirror.git -b magento-1.9 vendor/magento1.9/.        
+        - run: 
+            name: Run PHPUnit Test
+            command: |
+              mkdir -p ~/output
+              php -v
+              ./bin/phpunit-4.8.36.phar --bootstrap tests/unit/autoload.php tests/unit
+        - store_test_results:
+            path: ~/output
+        - store_artifacts:
+            path: ~/output
