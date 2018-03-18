@@ -6,7 +6,8 @@ Plugin to integrate Bolt with Magento
 + 1.9
 
 ### Releases
-+ [v1.0.2](https://s3-us-west-1.amazonaws.com/bolt-public/magento-integration-release/magento1.0.2.zip) (March 14)
++ [v1.0.3](https://s3-us-west-1.amazonaws.com/bolt-public/magento-integration-release/bolt-magento1_v1.0.3.zip) (March 17)
++ [v1.0.2](https://s3-us-west-1.amazonaws.com/bolt-public/magento-integration-release/magento1.0.2.zip) (March 14) (Move library code to community)
 + [v1.0.0](https://s3-us-west-1.amazonaws.com/bolt-public/magento-integration-release/magento1.0.0.zip) (March 6)
 + [v0.0.18](https://s3-us-west-1.amazonaws.com/bolt-public/magento-integration-release/magento0018.zip) (Feb 21, 2018) (quote creation reduction, merchant defined email)
 + [v0.0.17](https://s3-us-west-1.amazonaws.com/bolt-public/magento-integration-release/magento0017.zip) (Feb 16, 2018) (bugfix for quote creation, removal of OAuth requirement, and fix total mismatch error)
@@ -28,28 +29,22 @@ Plugin to integrate Bolt with Magento
 
 ## Release instructions
 
-1. Bump plugin version in `app/code/local/Bolt/Boltpay/etc/config.xml`
-
-2. Check what is the latest versions
+1. Check what is the latest versions
 
 > aws s3 ls s3://bolt-public/magento-integration-release/
 
-3. Create .tar.gz file and .zip file.
+2. Bump plugin version in `app/code/local/Bolt/Boltpay/etc/config.xml`
+
+3. Create .zip file.
 
 > ./create_release.sh
 
 4. Upload to s3
 
-> aws s3 cp magento.zip s3://bolt-public/magento-integration-release/magento.zip --acl public-read
+> aws s3 cp magento.zip s3://bolt-public/magento-integration-release/bolt-magento1_v1.0.3.zip --acl public-read
 
-> aws s3 cp bolt_magento_plugin.tar.gz s3://bolt-public/magento-integration-release/magento_integration_vxxx.tar.gz --acl public-read
+5. [Update installation guide](https://dash.readme.io/project/bolt/v1/docs/magento-integration-guide) with the latest link
 
-5. Add git tag
-
-```
-git tag magento_v0.xx
-git push origin --tags
-```
 
 ## Run tests
 
