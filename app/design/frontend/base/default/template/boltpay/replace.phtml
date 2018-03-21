@@ -4,8 +4,6 @@
  ********************************************************************/
 
 if(! $this->isBoltActive()) return;
-//if ($this->isTestMode() && !Mage::helper('core')->isDevAllowed()) return;
-
 ?>
 
 <script>
@@ -180,6 +178,14 @@ if(! $this->isBoltActive()) return;
         var fireCheckout = function() {
 
             if (typeof FireCheckout !== "function") return false;
+
+            <?php
+                if (Mage::getStoreConfig('payment/boltpay/hide_on_checkout')) {
+            ?>
+            return false;
+            <?php
+            }
+            ?>
 
             FireCheckout.prototype.createBoltOrder = function() {
 
