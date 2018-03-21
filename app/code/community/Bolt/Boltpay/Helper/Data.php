@@ -38,16 +38,6 @@ class Bolt_Boltpay_Helper_Data extends Mage_Core_Helper_Abstract {
             return true;
         }
 
-        $quoteData = $quote->getData();
-        $grandTotal = $quoteData['grand_total'];
-
-        $min = Mage::getStoreConfig('payment/boltpay/min_order_total');
-        $max = Mage::getStoreConfig('payment/boltpay/max_order_total');
-
-        if (!empty($min) && $grandTotal < $min || !empty($max) && $grandTotal > $max) {
-            return false;
-        }
-
         if (!$this->canUseForCountry($quote->getBillingAddress()->getCountry())) {
             return false;
         }
