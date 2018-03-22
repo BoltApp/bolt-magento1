@@ -30,10 +30,6 @@ class Bolt_Boltpay_Helper_Data extends Mage_Core_Helper_Abstract {
             return false;
         }
 
-        if(count($quote->getAllItems()) == 0) {
-            return false;
-        }
-
         if (Mage::getStoreConfig('payment/boltpay/skip_payment') == 1) {
             return true;
         }
