@@ -79,8 +79,7 @@ class Bolt_Boltpay_Model_Payment extends Mage_Payment_Model_Method_Abstract {
 
     public function getConfigData($field, $storeId = null) {
         if (Mage::getStoreConfig('payment/boltpay/skip_payment') == 1) {
-            if ($field == 'max_order_total' || $field == 'min_order_total' || $field == 'allowspecific' ||
-                $field == 'specificcountry') {
+            if ($field == 'allowspecific' || $field == 'specificcountry') {
                 return null;
             }
         }
@@ -140,8 +139,6 @@ class Bolt_Boltpay_Model_Payment extends Mage_Payment_Model_Method_Abstract {
      */
     public function isAvailable($quote = null) {
         if(!empty($quote)) {
-            $quote->collectTotals();
-
             return Mage::helper('boltpay')->canUseBolt($quote);
         }
 

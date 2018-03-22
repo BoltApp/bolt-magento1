@@ -208,24 +208,6 @@
               <show_in_store>0</show_in_store>
               <depends><skip_payment>0</skip_payment></depends>
             </specificcountry>
-            <min_order_total translate="label">
-              <label>Minimum Order Total</label>
-              <frontend_type>text</frontend_type>
-              <sort_order>85</sort_order>
-              <show_in_default>1</show_in_default>
-              <show_in_website>1</show_in_website>
-              <show_in_store>0</show_in_store>
-              <depends><skip_payment>0</skip_payment></depends>
-            </min_order_total>
-            <max_order_total translate="label">
-              <label>Maximum Order Total</label>
-              <frontend_type>text</frontend_type>
-              <sort_order>90</sort_order>
-              <show_in_default>1</show_in_default>
-              <show_in_website>1</show_in_website>
-              <show_in_store>0</show_in_store>
-              <depends><skip_payment>0</skip_payment></depends>
-            </max_order_total>
             <check translate="label">
               <label>Javascript: check</label>
               <comment>
