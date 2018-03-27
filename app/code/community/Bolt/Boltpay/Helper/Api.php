@@ -27,6 +27,8 @@ class Bolt_Boltpay_Helper_Api extends Bolt_Boltpay_Helper_Data {
         'giftvoucher_after_tax',
         'aw_storecredit',
         'credit', // magestore-customer-credit
+        'amgiftcard', // https://amasty.com/magento-gift-card.html
+        'amstcred', // https://amasty.com/magento-store-credit.html
     );
     ///////////////////////////////////////////////////////
 
@@ -424,6 +426,7 @@ class Bolt_Boltpay_Helper_Api extends Bolt_Boltpay_Helper_Data {
         $calculated_total = 0;
         $quote->collectTotals()->save();
         $totals = $quote->getTotals();
+        //Mage::log(var_export(array_keys($totals), 1), null, 'bolt.log');
         ///////////////////////////////////////////////////////////////////////////////////
 
         ///////////////////////////////////////////////////////////
@@ -461,20 +464,16 @@ class Bolt_Boltpay_Helper_Api extends Bolt_Boltpay_Helper_Data {
 
         foreach ($this->discount_types as $discount) {
 
-            if (@$totals[$discount]) {
-
-                preg_match('#\((.*?)\)#', $totals[$discount]->getTitle(), $description);
-                $description = @$description[1] ?: $totals[$discount]->getTitle();
-
-                $discount_amount = round($totals[$discount]->getValue() * 100);
+            if (@$totals[$discount] && $amount = $totals[$discount]->getValue()) {
 
                 // Some extensions keep discount totals as positive values,
-                // others as negative, which is the Magento default
-                if ($discount_amount < 0) $discount_amount *= -1;
+                // others as negative, which is the Magento default.
+                // Using the absolute value.
+                $discount_amount = abs(round($amount * 100));
 
                 $cart_submission_data['discounts'][] = array(
                     'amount'      => $discount_amount,
-                    'description' => $description,
+                    'description' => $totals[$discount]->getTitle(),
                 );
                 $total_discount -= $discount_amount;
             }
