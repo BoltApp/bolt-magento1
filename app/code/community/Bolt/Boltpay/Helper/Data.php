@@ -30,22 +30,8 @@ class Bolt_Boltpay_Helper_Data extends Mage_Core_Helper_Abstract {
             return false;
         }
 
-        if(count($quote->getAllItems()) == 0) {
-            return false;
-        }
-
         if (Mage::getStoreConfig('payment/boltpay/skip_payment') == 1) {
             return true;
-        }
-
-        $quoteData = $quote->getData();
-        $grandTotal = $quoteData['grand_total'];
-
-        $min = Mage::getStoreConfig('payment/boltpay/min_order_total');
-        $max = Mage::getStoreConfig('payment/boltpay/max_order_total');
-
-        if (!empty($min) && $grandTotal < $min || !empty($max) && $grandTotal > $max) {
-            return false;
         }
 
         if (!$this->canUseForCountry($quote->getBillingAddress()->getCountry())) {
