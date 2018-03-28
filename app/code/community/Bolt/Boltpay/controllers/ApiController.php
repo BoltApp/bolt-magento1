@@ -20,6 +20,8 @@ class Bolt_Boltpay_ApiController extends Mage_Core_Controller_Front_Action {
 
             $boltHelper = Mage::helper('boltpay/api');
 
+            Mage::helper('boltpay/api')->setResponseContextHeaders();
+
             if (!$boltHelper->verify_hook($request_json, $hmac_header)) {
                 $exception = new Exception("Hook request failed validation.");
                 $this->getResponse()->setHttpResponseCode(400);
