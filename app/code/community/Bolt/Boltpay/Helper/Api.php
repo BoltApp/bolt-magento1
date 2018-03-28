@@ -740,4 +740,12 @@ class Bolt_Boltpay_Helper_Api extends Bolt_Boltpay_Helper_Data {
 
         return $response;
     }
+
+    public function setResponseContextHeaders() {
+        $context_info = Mage::helper('boltpay/bugsnag')->getContextInfo();
+
+        Mage::app()->getResponse()
+            ->setHeader('User-Agent', 'BoltPay/Magento-' . $context_info["Magento-Version"], true)
+            ->setHeader('X-Bolt-Plugin-Version', $context_info["Bolt-Plugin-Version"], true);
+    }
 }
