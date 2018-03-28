@@ -15,6 +15,9 @@ class Bolt_Boltpay_Helper_Api extends Bolt_Boltpay_Helper_Data {
     const API_URL_TEST = 'https://api-sandbox.bolt.com/';
     const API_URL_PROD = 'https://api.bolt.com/';
 
+    protected $curlHeaders;
+    protected $curlBody;
+
     ///////////////////////////////////////////////////////
     // Store discount types, internal and 3rd party.
     // Can appear as keys in Quote::getTotals result array.
@@ -272,6 +275,8 @@ class Bolt_Boltpay_Helper_Api extends Bolt_Boltpay_Helper_Data {
             'X-Bolt-Plugin-Version: ' . $context_info["Bolt-Plugin-Version"]
         ));
         curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+        curl_setopt($ch, CURLOPT_HEADER, true);
+
         $result = curl_exec($ch);
         if ($result === false) {
             $curl_info = var_export(curl_getinfo($ch), true);
@@ -285,7 +290,9 @@ class Bolt_Boltpay_Helper_Api extends Bolt_Boltpay_Helper_Data {
             Mage::throwException($message);
         }
 
-        $resultJSON = json_decode($result);
+        $this->setCurlResultWithHeader($ch, $result);
+
+        $resultJSON = $this->getCurlJSONBody();
         $jsonError = $this->handleJSONParseError();
         if ($jsonError != null) {
             curl_close($ch);
@@ -296,6 +303,32 @@ class Bolt_Boltpay_Helper_Api extends Bolt_Boltpay_Helper_Data {
         Mage::getModel('boltpay/payment')->debugData($resultJSON);
 
         return $this->_handleErrorResponse($resultJSON, $url, $params);
+    }
+
+    protected function setCurlResultWithHeader($curlResource, $result) {
+        $curlHeaderSize = curl_getinfo($curlResource, CURLINFO_HEADER_SIZE);
+
+        $this->curlHeaders = substr($result, 0, $curlHeaderSize);
+        $this->curlBody = substr($result, $curlHeaderSize);
+
+        $this->setBoltTraceId();
+    }
+
+    protected function setBoltTraceId() {
+        if(empty($this->curlHeaders)) { return; }
+
+        foreach(explode("\r\n", $this->curlHeaders) as $row) {
+            if(preg_match('/(.*?): (.*)/', $row, $matches)) {
+                if(count($matches) == 3 && $matches[1] == 'X-Bolt-Trace-Id') {
+                    Mage::helper('boltpay/bugsnag')->setBoltTraceId($matches[2]);
+                    break;
+                }
+            }
+        }
+    }
+
+    protected function getCurlJSONBody() {
+        return json_decode($this->curlBody);
     }
 
     /**
@@ -739,5 +772,13 @@ class Bolt_Boltpay_Helper_Api extends Bolt_Boltpay_Helper_Data {
         /*****************************************************************************************/
 
         return $response;
+    }
+
+    public function setResponseContextHeaders() {
+        $context_info = Mage::helper('boltpay/bugsnag')->getContextInfo();
+
+        Mage::app()->getResponse()
+            ->setHeader('User-Agent', 'BoltPay/Magento-' . $context_info["Magento-Version"], true)
+            ->setHeader('X-Bolt-Plugin-Version', $context_info["Bolt-Plugin-Version"], true);
     }
 }

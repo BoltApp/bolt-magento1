@@ -10,6 +10,8 @@ class Bolt_Boltpay_Helper_Bugsnag extends Mage_Core_Helper_Abstract {
 
     private $metaData = array("breadcrumbs_" => array ());
 
+    private $boltTraceId;
+
     public function addMetaData($metaData) {
         $this->metaData['breadcrumbs_'] = array_merge($metaData, $this->metaData['breadcrumbs_']);
     }
@@ -36,8 +38,24 @@ class Bolt_Boltpay_Helper_Bugsnag extends Mage_Core_Helper_Abstract {
     }
 
     public function beforeNotifyFunction($error) {
+        $this->addDefaultMetaData();
+
         if (count($this->metaData['breadcrumbs_'])) {
             $error->setMetaData($this->metaData);
+        }
+    }
+
+    protected function addDefaultMetaData() {
+        $this->addTraceIdMetaData();
+    }
+
+    protected function addTraceIdMetaData() {
+        $traceId = $this->getBoltTraceId();
+
+        if(!empty($traceId) && !array_key_exists('bolt_trace_id', $this->metaData)) {
+            $this->addMetaData(array(
+                "bolt_trace_id" => $traceId
+            ));
         }
     }
 
@@ -76,5 +94,23 @@ class Bolt_Boltpay_Helper_Bugsnag extends Mage_Core_Helper_Abstract {
             $headers[$header] = $value;
         }
         return $headers;
+    }
+
+    public function setBoltTraceId($traceId) {
+        $this->boltTraceId = $traceId;
+    }
+
+    protected function getBoltTraceId() {
+        if(isset($this->boltTraceId)) {
+            return $this->boltTraceId;
+        }
+
+        $traceId = $_SERVER['HTTP_X_BOLT_TRACE_ID'];
+
+        if(!empty($traceId)) {
+            return $traceId;
+        }
+
+        return null;
     }
 }

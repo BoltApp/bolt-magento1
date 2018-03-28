@@ -123,6 +123,8 @@ class Bolt_Boltpay_ShippingController extends Mage_Core_Controller_Front_Action 
                 ->setHeader('Content-type', 'application/json', true)
                 ->setHeader('X-Nonce', rand(100000000, 999999999), true);
 
+            Mage::helper('boltpay/api')->setResponseContextHeaders();
+
             $this->getResponse()->setBody($response);
 
         } catch (Exception $e) {
