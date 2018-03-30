@@ -557,4 +557,13 @@ class Bolt_Boltpay_Block_Checkout_Boltpay
         curl_close($ch);
         return $output;
     }
+
+    /**
+     * Return the current quote used in the session
+     *
+     * @return Mage_Sales_Model_Quote
+     */
+    public function getQuote() {
+        return Mage::getSingleton('checkout/session')->getQuote();
+    }
 }

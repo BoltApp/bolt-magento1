@@ -25,15 +25,10 @@
  */
 
 /********************************************************************
- * Bolt replace button JavaScript / CSS that added to every pagge.
+ * Bolt replace button JavaScript / CSS that added to the shopping cart page
  ********************************************************************/
 
-if(! $this->isBoltActive()) return;
-
-/*
- * Disable for non-USD currency
- */
-if(Mage::app()->getStore()->getCurrentCurrencyCode() && Mage::app()->getStore()->getCurrentCurrencyCode() != 'USD') return;
+if(!Mage::helper('boltpay')->canUseBolt($this->getQuote(), false)) return;
 
 ?>
 
