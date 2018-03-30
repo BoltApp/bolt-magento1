@@ -4,6 +4,12 @@
  ********************************************************************/
 
 if(! $this->isBoltActive()) return;
+
+/*
+ * Disable for non-USD currency
+ */
+if(Mage::app()->getStore()->getCurrentCurrencyCode() && Mage::app()->getStore()->getCurrentCurrencyCode() != 'USD') return;
+
 ?>
 
 <script>
