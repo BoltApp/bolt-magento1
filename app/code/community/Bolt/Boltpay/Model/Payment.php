@@ -24,8 +24,6 @@
  * @license    http://opensource.org/licenses/osl-3.0.php  Open Software License (OSL 3.0)
  */
 
-class BoltPayInvalidTransitionException extends Exception {}
-
 class Bolt_Boltpay_Model_Payment extends Mage_Payment_Model_Method_Abstract {
     const REQUEST_TYPE_AUTH_CAPTURE = 'AUTH_CAPTURE';
     const REQUEST_TYPE_AUTH_ONLY    = 'AUTH_ONLY';
@@ -431,7 +429,7 @@ class Bolt_Boltpay_Model_Payment extends Mage_Payment_Model_Method_Abstract {
                 //Mage::log(sprintf("Valid next states from %s: %s", $prevTransactionStatus, implode(",",$validNextStatuses)), null, 'bolt.log');
 
                 if (!in_array($newTransactionStatus, $validNextStatuses)) {
-                    throw new BoltPayInvalidTransitionException(sprintf("Cannot transition a transaction from %s to %s", $prevTransactionStatus, $newTransactionStatus));
+                    throw new Bolt_Boltpay_InvalidTransitionException(sprintf("Cannot transition a transaction from %s to %s", $prevTransactionStatus, $newTransactionStatus));
                 }
             }
 

@@ -48,7 +48,9 @@ class Bolt_Boltpay_ShippingController extends Mage_Core_Controller_Front_Action 
             //Mage::log('SHIPPING AND TAX REQUEST: ' . json_encode($request_data, JSON_PRETTY_PRINT), null, 'shipping_and_tax.log');
 
             $boltHelper = Mage::helper('boltpay/api');
-            if (!$boltHelper->verify_hook($request_json, $hmac_header)) exit;
+            if (!$boltHelper->verify_hook($request_json, $hmac_header)) {
+                throw new Exception("Failed HMAC Authentication");
+            }
 
             $shipping_address = $request_data->shipping_address;
 

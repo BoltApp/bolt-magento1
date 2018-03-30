@@ -30,6 +30,12 @@
  * @deprecated OAuth will be removed in future versions
  */
 class Bolt_Boltpay_IndexController extends Mage_Adminhtml_Controller_Action {
+
+    protected function _isAllowed()
+    {
+        return Mage::getSingleton('admin/session')->isAllowed('admin');
+    }
+
     public function oauthAction() {
         $this->loadLayout()->renderLayout();
     }

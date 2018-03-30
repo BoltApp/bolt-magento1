@@ -139,7 +139,7 @@ class Bolt_Boltpay_ApiController extends Mage_Core_Controller_Front_Action {
             $this->getResponse()->setBody('Order creation was successful');
             $this->getResponse()->setHttpResponseCode(200);
 
-        } catch (BoltPayInvalidTransitionException $boltPayInvalidTransitionException) {
+        } catch (Bolt_Boltpay_InvalidTransitionException $boltPayInvalidTransitionException) {
 
             // An invalid transition is treated as a late queue event and hence will be ignored
             $error_message = $boltPayInvalidTransitionException->getMessage();
