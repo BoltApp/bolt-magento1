@@ -765,6 +765,10 @@ class Bolt_Boltpay_Helper_Api extends Bolt_Boltpay_Helper_Data {
 
         foreach ($rates as $rate) {
 
+            if ($rate->getErrorMessage()) {
+                throw new Exception("Error getting shipping option for " .  $rate->getCarrierTitle() . ": " . $rate->getErrorMessage());
+            }
+
             $shipping_address->setShippingMethod($rate->getMethod())->save();
 
             $price = $rate->getPrice();
