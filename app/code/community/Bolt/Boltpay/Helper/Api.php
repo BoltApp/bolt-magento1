@@ -713,6 +713,8 @@ class Bolt_Boltpay_Helper_Api extends Bolt_Boltpay_Helper_Data {
             'shipping_options' => array(),
         );
 
+        Mage::getModel('sales/quote')->load($quote->getId())->getShippingAddress()->collectTotals();
+
         /*****************************************************************************************
          * Calculate tax
          *****************************************************************************************/
