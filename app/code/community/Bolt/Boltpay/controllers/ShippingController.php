@@ -166,8 +166,9 @@ class Bolt_Boltpay_ShippingController extends Mage_Core_Controller_Front_Action 
      *        city, region_code, zip_code, country_code
      */
     function prefetchEstimateAction() {
+        /** @var Mage_Sales_Model_Quote $quote */
         $quote = Mage::getSingleton('checkout/session')->getQuote();
-        $cached_quote_location = Mage::app()->getCache()->load("quote_location_".$quote->getId());
+
         ////////////////////////////////////////////////////////////////////////
         // Clear previously set estimates.  This helps if this
         // process fails or is aborted, which will force the actual index action
@@ -187,7 +188,7 @@ class Bolt_Boltpay_ShippingController extends Mage_Core_Controller_Front_Action 
             'country_id' => $request_data->country_code
         );
         $quote->getShippingAddress()->addData($address_data);
-        $quote->getShippingAddress()->addData($address_data);
+        $quote->getBillingAddress()->addData($address_data);
 
         try {
             $estimate_response = Mage::helper('boltpay/api')->getShippingAndTaxEstimate($quote);

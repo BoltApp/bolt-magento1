@@ -300,10 +300,11 @@ class Bolt_Boltpay_Block_Checkout_Boltpay
         ///////////////////////////////////////////////////////////////
         $address = $quote->getShippingAddress();
 
-        if (!$address && $session && $session->isLoggedIn()) {
-
+        if ($session && $session->isLoggedIn()) {
+            /** @var Mage_Customer_Model_Customer $customer */
             $customer = Mage::getModel('customer/customer')->load($session->getId());
-            $address = $customer->getDefaultShippingAddress();
+            $address = $customer->getPrimaryShippingAddress();
+            $email = $customer->getEmail();
         }
         //////////////////////////////////////////////////////////////
 
@@ -311,29 +312,20 @@ class Bolt_Boltpay_Block_Checkout_Boltpay
         // If address exists populate the hints array with existing address data.
         /////////////////////////////////////////////////////////////////////////
         if ($address) {
-
-            $country_id = @$address->getCountryId();
-
-            if ($country_id) {
-                $country      = Mage::getModel('directory/country')->loadByCode($country_id);
-                $country_name = @$country->getName();
-            }
-
-            if (@$address->getEmail())     $hints['email']           = $address->getEmail();
-            if (@$address->getFirstname()) $hints['first_name']      = $address->getFirstname();
-            if (@$address->getLastname())  $hints['last_name']       = $address->getLastname();
-            if (@$address->getStreet1())   $hints['street_address1'] = $address->getStreet1();
-            if (@$address->getStreet2())   $hints['street_address2'] = $address->getStreet2();
-            if (@$address->getCity())      $hints['locality']        = $address->getCity();
-            if (@$address->getRegion())    $hints['region']          = $address->getRegion();
-            if (@$address->getPostcode())  $hints['postal_code']     = $address->getPostcode();
-            if (@$address->getTelephone()) $hints['phone']           = $address->getTelephone();
-            if (@$country_name)            $hints['country_code']    = $country_id;
-            if (@$country_name)            $hints['country']         = $country_name;
+            if (@$email)                   $hints['email']        = $email;
+            if (@$address->getFirstname()) $hints['firstName']    = $address->getFirstname();
+            if (@$address->getLastname())  $hints['lastName']     = $address->getLastname();
+            if (@$address->getStreet1())   $hints['addressLine1'] = $address->getStreet1();
+            if (@$address->getStreet2())   $hints['addressLine2'] = $address->getStreet2();
+            if (@$address->getCity())      $hints['city']         = $address->getCity();
+            if (@$address->getRegion())    $hints['state']        = $address->getRegion();
+            if (@$address->getPostcode())  $hints['zip']          = $address->getPostcode();
+            if (@$address->getTelephone()) $hints['phone']        = $address->getTelephone();
+            if (@$address->getCountryId()) $hints['country']      = $address->getCountryId();
         }
         /////////////////////////////////////////////////////////////////////////
 
-        return $hints;
+        return array( "prefill" => $hints );
     }
 
     /**
