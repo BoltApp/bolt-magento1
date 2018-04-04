@@ -727,41 +727,12 @@ class Bolt_Boltpay_Helper_Api extends Bolt_Boltpay_Helper_Data {
         );
         /*****************************************************************************************/
 
-
-        /*****************************************************************************************
-         * Calculate shipping and shipping tax
-         *****************************************************************************************/
-        $store = Mage::getModel('core/store')->load($quote->getStoreId());
-        $taxCalculationModel = Mage::getSingleton('tax/calculation');
-        $shipping_tax_class_id = Mage::getStoreConfig('tax/classes/shipping_tax_class', $quote->getStoreId());
-        $rate_request = $taxCalculationModel->getRateRequest($quote->getShippingAddress(), $quote->getBillingAddress(), $quote->getCustomerTaxClassId(), $store);
-
         $shipping_address = $quote->getShippingAddress();
         $shipping_address->setCollectShippingRates(true)->collectShippingRates()->save();
 
         $rates = $shipping_address->getAllShippingRates();
 
-        //////////////////////////////////////////////////////////////////////////////////
-        //  Support for Onepica Avatax plugin
-        //////////////////////////////////////////////////////////////////////////////////
-        $onepica_avatax = null;
-        foreach ($shipping_address->getTotalCollector()->getCollectors() as $model) {
-            if (get_class($model) == 'OnePica_AvaTax_Model_Sales_Quote_Address_Total_Tax') {
-                $onepica_avatax = $model;
-            }
-        }
-
-        if ($onepica_avatax) {
-            $avatax_tax_rate = 0;
-            $summary = Mage::getModel('avatax/avatax_estimate')->getSummary($shipping_address->getId());
-
-            foreach ($summary as $tax) {
-                $avatax_tax_rate += $tax['rate'];
-            }
-            //Mage::log('ShippingController.php: summary:'.var_export($summary, true), null, 'shipping_and_tax.log');
-        }
-        //////////////////////////////////////////////////////////////////////////////////
-
+        $shipping_tax_rate = Mage::getModel('boltpay/shippingtaxrateprovider')->getTaxRate($quote);
 
         foreach ($rates as $rate) {
 
@@ -775,11 +746,9 @@ class Bolt_Boltpay_Helper_Api extends Bolt_Boltpay_Helper_Data {
 
             $is_tax_included = Mage::helper('tax')->shippingPriceIncludesTax();
 
-            $tax_rate = @$avatax_tax_rate ? $avatax_tax_rate : $taxCalculationModel->getRate($rate_request->setProductClassId($shipping_tax_class_id));
-
             if ($is_tax_included) {
 
-                $price_excluding_tax = $price / (1 + $tax_rate / 100);
+                $price_excluding_tax = $price / (1 + $shipping_tax_rate / 100);
 
                 $tax_amount = 100 * ($price - $price_excluding_tax);
 
@@ -787,7 +756,7 @@ class Bolt_Boltpay_Helper_Api extends Bolt_Boltpay_Helper_Data {
 
             } else {
 
-                $tax_amount = $price * $tax_rate;
+                $tax_amount = $price * $shipping_tax_rate;
             }
 
             $cost = round(100 * $price);
