@@ -730,7 +730,7 @@ class Bolt_Boltpay_Helper_Api extends Bolt_Boltpay_Helper_Data {
         $shipping_address = $quote->getShippingAddress();
         $shipping_address->setCollectShippingRates(true)->collectShippingRates()->save();
 
-        $rates = $shipping_address->getAllShippingRates();
+        $rates = $this->getSortedShippingRates($shipping_address);
 
         $shipping_tax_rate = Mage::getModel('boltpay/shippingtaxrateprovider')->getTaxRate($quote);
 
@@ -772,6 +772,18 @@ class Bolt_Boltpay_Helper_Api extends Bolt_Boltpay_Helper_Data {
         /*****************************************************************************************/
 
         return $response;
+    }
+
+    protected function getSortedShippingRates($address) {
+        $rates = array();
+
+        foreach($address->getGroupedAllShippingRates() as $code => $carrierRates) {
+            foreach ($carrierRates as $carrierRate) {
+                $rates[] = $carrierRate;
+            }
+        }
+
+        return $rates;
     }
 
     public function setResponseContextHeaders() {
