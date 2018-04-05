@@ -11,5 +11,5 @@ find /tmp/bolt_magento_plugin -name ".DS_Store" -type f -delete
 tar -C /tmp -cvf bolt_magento_plugin.tar.gz bolt_magento_plugin
 current_dir=$(pwd)
 cd /tmp/bolt_magento_plugin
-zip -r magento.zip *
-cp magento.zip $current_dir/.
+zip -r bolt-magento-plugin.zip *
+cp bolt-magento-plugin.zip $current_dir/.

@@ -46,7 +46,7 @@ Plugin to integrate Bolt with Magento
 
 4. Upload to s3
 
-> aws s3 cp magento.zip s3://bolt-public/magento-integration-release/bolt-magento1_v1.0.3.zip --acl public-read
+> aws s3 cp bolt-magento-plugin.zip s3://bolt-public/magento-integration-release/bolt-magento1_v1.0.7.zip --acl public-read
 
 5. [Update installation guide](https://dash.readme.io/project/bolt/v1/docs/magento-integration-guide) with the latest link
 
