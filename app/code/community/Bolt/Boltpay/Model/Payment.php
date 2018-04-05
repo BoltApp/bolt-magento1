@@ -1,6 +1,28 @@
 <?php
-
-class BoltPayInvalidTransitionException extends Exception {}
+/**
+ * Magento
+ *
+ * NOTICE OF LICENSE
+ *
+ * This source file is subject to the Open Software License (OSL 3.0)
+ * that is bundled with this package in the file LICENSE.txt.
+ * It is also available through the world-wide-web at this URL:
+ * http://opensource.org/licenses/osl-3.0.php
+ * If you did not receive a copy of the license and are unable to
+ * obtain it through the world-wide-web, please send an email
+ * to license@magento.com so we can send you a copy immediately.
+ *
+ * DISCLAIMER
+ *
+ * Do not edit or add to this file if you wish to upgrade the Bolt extension
+ * to a newer versions in the future. If you wish to customize this extension
+ * for your needs please refer to http://www.magento.com for more information.
+ *
+ * @category   Bolt
+ * @package    Bolt_Boltpay
+ * @copyright  Copyright (c) 2018 Bolt Financial, Inc (http://www.bolt.com)
+ * @license    http://opensource.org/licenses/osl-3.0.php  Open Software License (OSL 3.0)
+ */
 
 class Bolt_Boltpay_Model_Payment extends Mage_Payment_Model_Method_Abstract {
     const REQUEST_TYPE_AUTH_CAPTURE = 'AUTH_CAPTURE';
@@ -407,7 +429,7 @@ class Bolt_Boltpay_Model_Payment extends Mage_Payment_Model_Method_Abstract {
                 //Mage::log(sprintf("Valid next states from %s: %s", $prevTransactionStatus, implode(",",$validNextStatuses)), null, 'bolt.log');
 
                 if (!in_array($newTransactionStatus, $validNextStatuses)) {
-                    throw new BoltPayInvalidTransitionException(sprintf("Cannot transition a transaction from %s to %s", $prevTransactionStatus, $newTransactionStatus));
+                    throw new Bolt_Boltpay_InvalidTransitionException(sprintf("Cannot transition a transaction from %s to %s", $prevTransactionStatus, $newTransactionStatus));
                 }
             }
 

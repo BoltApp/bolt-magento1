@@ -1,5 +1,30 @@
 <?php
 /**
+ * Magento
+ *
+ * NOTICE OF LICENSE
+ *
+ * This source file is subject to the Open Software License (OSL 3.0)
+ * that is bundled with this package in the file LICENSE.txt.
+ * It is also available through the world-wide-web at this URL:
+ * http://opensource.org/licenses/osl-3.0.php
+ * If you did not receive a copy of the license and are unable to
+ * obtain it through the world-wide-web, please send an email
+ * to license@magento.com so we can send you a copy immediately.
+ *
+ * DISCLAIMER
+ *
+ * Do not edit or add to this file if you wish to upgrade the Bolt extension
+ * to a newer versions in the future. If you wish to customize this extension
+ * for your needs please refer to http://www.magento.com for more information.
+ *
+ * @category   Bolt
+ * @package    Bolt_Boltpay
+ * @copyright  Copyright (c) 2018 Bolt Financial, Inc (http://www.bolt.com)
+ * @license    http://opensource.org/licenses/osl-3.0.php  Open Software License (OSL 3.0)
+ */
+
+/**
  * Class Bolt_Boltpay_Block_Checkout_Boltpay
  *
  * This block is used in boltpay/track.phtml and boltpay/replace.phtml templates
@@ -10,7 +35,6 @@
  * create the order on Bolt side and set up the javascript BoltCheckout.configure process with cart and hint data.
  *
  */
-
 class Bolt_Boltpay_Block_Checkout_Boltpay
     extends Mage_Checkout_Block_Onepage_Review_Info {
 
@@ -276,10 +300,11 @@ class Bolt_Boltpay_Block_Checkout_Boltpay
         ///////////////////////////////////////////////////////////////
         $address = $quote->getShippingAddress();
 
-        if (!$address && $session && $session->isLoggedIn()) {
-
+        if ($session && $session->isLoggedIn()) {
+            /** @var Mage_Customer_Model_Customer $customer */
             $customer = Mage::getModel('customer/customer')->load($session->getId());
-            $address = $customer->getDefaultShippingAddress();
+            $address = $customer->getPrimaryShippingAddress();
+            $email = $customer->getEmail();
         }
         //////////////////////////////////////////////////////////////
 
@@ -287,29 +312,20 @@ class Bolt_Boltpay_Block_Checkout_Boltpay
         // If address exists populate the hints array with existing address data.
         /////////////////////////////////////////////////////////////////////////
         if ($address) {
-
-            $country_id = @$address->getCountryId();
-
-            if ($country_id) {
-                $country      = Mage::getModel('directory/country')->loadByCode($country_id);
-                $country_name = @$country->getName();
-            }
-
-            if (@$address->getEmail())     $hints['email']           = $address->getEmail();
-            if (@$address->getFirstname()) $hints['first_name']      = $address->getFirstname();
-            if (@$address->getLastname())  $hints['last_name']       = $address->getLastname();
-            if (@$address->getStreet1())   $hints['street_address1'] = $address->getStreet1();
-            if (@$address->getStreet2())   $hints['street_address2'] = $address->getStreet2();
-            if (@$address->getCity())      $hints['locality']        = $address->getCity();
-            if (@$address->getRegion())    $hints['region']          = $address->getRegion();
-            if (@$address->getPostcode())  $hints['postal_code']     = $address->getPostcode();
-            if (@$address->getTelephone()) $hints['phone']           = $address->getTelephone();
-            if (@$country_name)            $hints['country_code']    = $country_id;
-            if (@$country_name)            $hints['country']         = $country_name;
+            if (@$email)                   $hints['email']        = $email;
+            if (@$address->getFirstname()) $hints['firstName']    = $address->getFirstname();
+            if (@$address->getLastname())  $hints['lastName']     = $address->getLastname();
+            if (@$address->getStreet1())   $hints['addressLine1'] = $address->getStreet1();
+            if (@$address->getStreet2())   $hints['addressLine2'] = $address->getStreet2();
+            if (@$address->getCity())      $hints['city']         = $address->getCity();
+            if (@$address->getRegion())    $hints['state']        = $address->getRegion();
+            if (@$address->getPostcode())  $hints['zip']          = $address->getPostcode();
+            if (@$address->getTelephone()) $hints['phone']        = $address->getTelephone();
+            if (@$address->getCountryId()) $hints['country']      = $address->getCountryId();
         }
         /////////////////////////////////////////////////////////////////////////
 
-        return $hints;
+        return array( "prefill" => $hints );
     }
 
     /**
@@ -532,5 +548,14 @@ class Bolt_Boltpay_Block_Checkout_Boltpay
         $output = curl_exec($ch);
         curl_close($ch);
         return $output;
+    }
+
+    /**
+     * Return the current quote used in the session
+     *
+     * @return Mage_Sales_Model_Quote
+     */
+    public function getQuote() {
+        return Mage::getSingleton('checkout/session')->getQuote();
     }
 }

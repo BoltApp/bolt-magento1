@@ -1,5 +1,30 @@
 <?php
 /**
+ * Magento
+ *
+ * NOTICE OF LICENSE
+ *
+ * This source file is subject to the Open Software License (OSL 3.0)
+ * that is bundled with this package in the file LICENSE.txt.
+ * It is also available through the world-wide-web at this URL:
+ * http://opensource.org/licenses/osl-3.0.php
+ * If you did not receive a copy of the license and are unable to
+ * obtain it through the world-wide-web, please send an email
+ * to license@magento.com so we can send you a copy immediately.
+ *
+ * DISCLAIMER
+ *
+ * Do not edit or add to this file if you wish to upgrade the Bolt extension
+ * to a newer versions in the future. If you wish to customize this extension
+ * for your needs please refer to http://www.magento.com for more information.
+ *
+ * @category   Bolt
+ * @package    Bolt_Boltpay
+ * @copyright  Copyright (c) 2018 Bolt Financial, Inc (http://www.bolt.com)
+ * @license    http://opensource.org/licenses/osl-3.0.php  Open Software License (OSL 3.0)
+ */
+
+/**
  * Class Bolt_Boltpay_Helper_Api
  *
  * The Magento Helper class that provides utility methods for the following operations:
@@ -688,6 +713,8 @@ class Bolt_Boltpay_Helper_Api extends Bolt_Boltpay_Helper_Data {
             'shipping_options' => array(),
         );
 
+        Mage::getModel('sales/quote')->load($quote->getId())->getShippingAddress()->collectTotals();
+
         /*****************************************************************************************
          * Calculate tax
          *****************************************************************************************/
@@ -700,43 +727,18 @@ class Bolt_Boltpay_Helper_Api extends Bolt_Boltpay_Helper_Data {
         );
         /*****************************************************************************************/
 
-
-        /*****************************************************************************************
-         * Calculate shipping and shipping tax
-         *****************************************************************************************/
-        $store = Mage::getModel('core/store')->load($quote->getStoreId());
-        $taxCalculationModel = Mage::getSingleton('tax/calculation');
-        $shipping_tax_class_id = Mage::getStoreConfig('tax/classes/shipping_tax_class', $quote->getStoreId());
-        $rate_request = $taxCalculationModel->getRateRequest($quote->getShippingAddress(), $quote->getBillingAddress(), $quote->getCustomerTaxClassId(), $store);
-
         $shipping_address = $quote->getShippingAddress();
         $shipping_address->setCollectShippingRates(true)->collectShippingRates()->save();
 
-        $rates = $shipping_address->getAllShippingRates();
+        $rates = $this->getSortedShippingRates($shipping_address);
 
-        //////////////////////////////////////////////////////////////////////////////////
-        //  Support for Onepica Avatax plugin
-        //////////////////////////////////////////////////////////////////////////////////
-        $onepica_avatax = null;
-        foreach ($shipping_address->getTotalCollector()->getCollectors() as $model) {
-            if (get_class($model) == 'OnePica_AvaTax_Model_Sales_Quote_Address_Total_Tax') {
-                $onepica_avatax = $model;
-            }
-        }
-
-        if ($onepica_avatax) {
-            $avatax_tax_rate = 0;
-            $summary = Mage::getModel('avatax/avatax_estimate')->getSummary($shipping_address->getId());
-
-            foreach ($summary as $tax) {
-                $avatax_tax_rate += $tax['rate'];
-            }
-            //Mage::log('ShippingController.php: summary:'.var_export($summary, true), null, 'shipping_and_tax.log');
-        }
-        //////////////////////////////////////////////////////////////////////////////////
-
+        $shipping_tax_rate = Mage::getModel('boltpay/shippingtaxrateprovider')->getTaxRate($quote);
 
         foreach ($rates as $rate) {
+
+            if ($rate->getErrorMessage()) {
+                throw new Exception("Error getting shipping option for " .  $rate->getCarrierTitle() . ": " . $rate->getErrorMessage());
+            }
 
             $shipping_address->setShippingMethod($rate->getMethod())->save();
 
@@ -744,11 +746,9 @@ class Bolt_Boltpay_Helper_Api extends Bolt_Boltpay_Helper_Data {
 
             $is_tax_included = Mage::helper('tax')->shippingPriceIncludesTax();
 
-            $tax_rate = @$avatax_tax_rate ? $avatax_tax_rate : $taxCalculationModel->getRate($rate_request->setProductClassId($shipping_tax_class_id));
-
             if ($is_tax_included) {
 
-                $price_excluding_tax = $price / (1 + $tax_rate / 100);
+                $price_excluding_tax = $price / (1 + $shipping_tax_rate / 100);
 
                 $tax_amount = 100 * ($price - $price_excluding_tax);
 
@@ -756,7 +756,7 @@ class Bolt_Boltpay_Helper_Api extends Bolt_Boltpay_Helper_Data {
 
             } else {
 
-                $tax_amount = $price * $tax_rate;
+                $tax_amount = $price * $shipping_tax_rate;
             }
 
             $cost = round(100 * $price);
@@ -772,6 +772,18 @@ class Bolt_Boltpay_Helper_Api extends Bolt_Boltpay_Helper_Data {
         /*****************************************************************************************/
 
         return $response;
+    }
+
+    protected function getSortedShippingRates($address) {
+        $rates = array();
+
+        foreach($address->getGroupedAllShippingRates() as $code => $carrierRates) {
+            foreach ($carrierRates as $carrierRate) {
+                $rates[] = $carrierRate;
+            }
+        }
+
+        return $rates;
     }
 
     public function setResponseContextHeaders() {

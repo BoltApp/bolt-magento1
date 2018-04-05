@@ -24,15 +24,15 @@
  * @license    http://opensource.org/licenses/osl-3.0.php  Open Software License (OSL 3.0)
  */
 
-if($this->isBoltActive()) {
-    ?>
-    <script>
-        (function () {
-            var xmlhttp = new XMLHttpRequest();
-            xmlhttp.open("POST", "<?=$this->getUrl('boltpay/shipping/prefetchEstimate');?>", true);
-            xmlhttp.setRequestHeader("Content-type", "application/json");
-            xmlhttp.send(JSON.stringify(<?=$this->getLocationEstimate()?>));
-        })();
-    </script>
-    <?php
+class Bolt_Boltpay_Model_Shippingtaxrateprovider_Avatax extends Bolt_Boltpay_Model_Shippingtaxrateprovider_Abstract {
+    public function getRate() {
+        $avataxTaxRate = 0;
+        $summary = Mage::getModel('avatax/avatax_estimate')->getSummary($this->getQuote()->getShippingAddress()->getId());
+
+        foreach ($summary as $tax) {
+            $avataxTaxRate += $tax['rate'];
+        }
+
+        return $avataxTaxRate;
+    }
 }
