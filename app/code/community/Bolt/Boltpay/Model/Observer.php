@@ -87,7 +87,7 @@ class Bolt_Boltpay_Model_Observer {
             }
 
             $reference = $payment->getAdditionalInformation('bolt_reference');
-            $cart_request = $boltHelper->buildCart($quote, $items);
+            $cart_request = $boltHelper->buildCart($quote, $items, false);
             $complete_authorize_request = array(
                 'cart' => $cart_request,
                 'reference' => $reference,
