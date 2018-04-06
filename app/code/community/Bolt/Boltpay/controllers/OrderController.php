@@ -79,8 +79,19 @@ class Bolt_Boltpay_OrderController extends Mage_Core_Controller_Front_Action {
             }
 
         } catch (Exception $e) {
-            Mage::helper('boltpay/bugsnag')->notifyException($e);
-            throw $e;
+            
+            
+            if(strpos($e->getMessage(), 'Not all products are available in the requested quantity') !== false) {
+                $ErrorMessages = array('status' => 'error', 'code' => '1001', 'message' => 'one or more items in cart are out of stock');
+               throw new Exception(json_encode($ErrorMessages));
+               
+            }else{
+                Mage::helper('boltpay/bugsnag')->notifyException($e);
+                 throw $e;
+            }
+
+
+          
         }
     }
 
