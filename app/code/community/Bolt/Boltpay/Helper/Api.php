@@ -450,7 +450,7 @@ class Bolt_Boltpay_Helper_Api extends Bolt_Boltpay_Helper_Data {
      * @param bool $multipage   Is checkout type Multi-Page Checkout, the default is true, set to false for One Page Checkout
      * @return array            The cart data part of the order payload to be sent as to bolt in API call as a PHP array
      */
-    public function buildCart($quote, $items, $multipage = false) {
+    public function buildCart($quote, $items, $multipage) {
 
         ///////////////////////////////////////////////////////////////////////////////////
         // Get quote totals
