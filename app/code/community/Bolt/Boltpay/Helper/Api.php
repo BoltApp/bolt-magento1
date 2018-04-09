@@ -207,7 +207,8 @@ class Bolt_Boltpay_Helper_Api extends Bolt_Boltpay_Helper_Data {
         $rates = $shipping_address->getAllShippingRates();
 
         foreach ($rates as $rate) {
-            if ($rate->getCarrierTitle() . ' - ' . $rate->getMethodTitle() == $service) {
+            if ($rate->getCarrierTitle() . ' - ' . $rate->getMethodTitle() == $service
+                || (!$rate->getMethodTitle() && $rate->getCarrierTitle() == $service)) {
 
                 $shippingMethod = $rate->getCarrier() . '_' . $rate->getMethod();
                 $quote->getShippingAddress()->setShippingMethod($shippingMethod)->save();
@@ -760,9 +761,13 @@ class Bolt_Boltpay_Helper_Api extends Bolt_Boltpay_Helper_Data {
             }
 
             $cost = round(100 * $price);
+            $label = $rate->getCarrierTitle();
+            if ($rate->getMethodTitle()) {
+                $label = $label . ' - ' . $rate->getMethodTitle();
+            }
 
             $option = array(
-                "service" => $rate->getCarrierTitle() . ' - ' . $rate->getMethodTitle(),
+                "service" => $label,
                 "cost" => $cost,
                 "tax_amount" => abs(round($tax_amount))
             );
