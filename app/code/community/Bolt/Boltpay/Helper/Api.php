@@ -164,6 +164,10 @@ class Bolt_Boltpay_Helper_Api extends Bolt_Boltpay_Helper_Data {
             throw new Exception("Bolt transaction reference is missing in the Magento order creation process.");
         }
 
+        if($this->getQuantityCheck()){
+            return false;
+        }
+
         // fetch transaction info
         $transaction = $this->fetchTransaction($reference);
 
@@ -807,5 +811,21 @@ class Bolt_Boltpay_Helper_Api extends Bolt_Boltpay_Helper_Data {
         Mage::app()->getResponse()
             ->setHeader('User-Agent', 'BoltPay/Magento-' . $context_info["Magento-Version"], true)
             ->setHeader('X-Bolt-Plugin-Version', $context_info["Bolt-Plugin-Version"], true);
+    }
+
+    public function getQuantityCheck(){
+
+        $quoteCart = Mage::helper('checkout/cart')->getCart()->getQuote();
+        $QtyFlagCheck = false;
+
+        foreach ($quoteCart->getAllItems() as $item) {
+            $_product = Mage::getModel('catalog/product')->load($item->getProductId());
+            $stock = Mage::getModel('cataloginventory/stock_item')->loadByProduct($_product);
+            if($stock->getQty() < $item->getQty() && $stock->getBackorders() == '0' ){
+                 $QtyFlagCheck = true;
+            }
+
+        }
+         return $QtyFlagCheck;
     }
 }
