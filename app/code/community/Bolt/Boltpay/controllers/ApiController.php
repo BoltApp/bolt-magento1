@@ -103,9 +103,11 @@ class Bolt_Boltpay_ApiController extends Mage_Core_Controller_Front_Action {
                     ->setStore($order->getStoreId())
                     ->handleTransactionUpdate($orderPayment, $newTransactionStatus, $prevTransactionStatus);
 
-                $this->getResponse()->setBody('Updated existing order');
+                $this->getResponse()->setBody(json_encode(array(
+                    'status' => 'success',
+                    'message' => "Updated existing order $display_id."
+                )));
                 $this->getResponse()->setHttpResponseCode(200);
-
                 return;
             }
 

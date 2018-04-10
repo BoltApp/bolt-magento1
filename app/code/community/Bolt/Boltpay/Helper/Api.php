@@ -229,6 +229,16 @@ class Bolt_Boltpay_Helper_Api extends Bolt_Boltpay_Helper_Data {
 
         $quote->setTotalsCollectedFlag(false)->collectTotals()->save();
 
+        $existingOrder = Mage::getModel('sales/order')->loadByIncrementId($display_id);
+        if (sizeof($existingOrder->getData()) > 0) {
+            Mage::app()->getResponse()->setHttpResponseCode(200);
+            Mage::app()->getResponse()->setBody(json_encode(array(
+                'status' => 'success',
+                'message' => "Order increment $display_id already exists."
+            )));
+            return;
+        }
+
         // a call to internal Magento service for order creation
         $service = Mage::getModel('sales/service_quote', $quote);
         $service->submitAll();
