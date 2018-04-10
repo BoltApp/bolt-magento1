@@ -138,7 +138,10 @@ class Bolt_Boltpay_ApiController extends Mage_Core_Controller_Front_Action {
              ********************************************************************/
             $boltHelper->createOrder($reference, $session_quote_id = null);
 
-            $this->getResponse()->setBody('Order creation was successful');
+            $this->getResponse()->setBody(json_encode(array(
+                'status' => 'success',
+                'message' => "Order creation was successful"
+            )));
             $this->getResponse()->setHttpResponseCode(200);
 
         } catch (Bolt_Boltpay_InvalidTransitionException $boltPayInvalidTransitionException) {
