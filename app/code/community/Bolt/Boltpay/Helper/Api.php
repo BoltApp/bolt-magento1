@@ -200,23 +200,26 @@ class Bolt_Boltpay_Helper_Api extends Bolt_Boltpay_Helper_Data {
         $quote->getShippingAddress()->setShouldIgnoreValidation(true)->save();
         $quote->getBillingAddress()->setShouldIgnoreValidation(true)->save();
 
-        $quote->collectTotals();
-
         /********************************************************************
          * Setting up shipping method by finding the carrier code that matches
          * the one set during checkout
          ********************************************************************/
-        $shipping_address = $quote->getShippingAddress();
-        $shipping_address->setCollectShippingRates(true)->collectShippingRates();
-        $rates = $shipping_address->getAllShippingRates();
+        $carriers = Mage::getSingleton('shipping/config')->getActiveCarriers();
 
-        foreach ($rates as $rate) {
-            if ($rate->getCarrierTitle() . ' - ' . $rate->getMethodTitle() == $service
-                || (!$rate->getMethodTitle() && $rate->getCarrierTitle() == $service)) {
+        foreach($carriers as $carrierCode => $carrier) {
+            if($methods = $carrier->getAllowedMethods()) {
+                if(!$carrierTitle = Mage::getStoreConfig("carriers/$carrierCode/title")) {
+                    $carrierTitle = $carrierCode;
+                }
 
-                $shippingMethod = $rate->getCarrier() . '_' . $rate->getMethod();
-                $quote->getShippingAddress()->setShippingMethod($shippingMethod)->save();
-                break;
+                foreach($methods as $methodCode => $methodTitle) {
+                    if ($carrierTitle . ' - ' . $methodTitle == $service) {
+
+                        $shippingMethodCode = $carrierCode . '_' . $methodCode;
+                        $quote->getShippingAddress()->setShippingMethod($shippingMethodCode)->save();
+                        break 2;
+                    }
+                }
             }
         }
 
