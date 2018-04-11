@@ -762,46 +762,25 @@ class Bolt_Boltpay_Helper_Api extends Bolt_Boltpay_Helper_Data {
 
         $rates = $this->getSortedShippingRates($shipping_address);
 
-        $shipping_tax_rate = Mage::getModel('boltpay/shippingtaxrateprovider')->getTaxRate($quote);
-
         foreach ($rates as $rate) {
 
             if ($rate->getErrorMessage()) {
                 throw new Exception("Error getting shipping option for " .  $rate->getCarrierTitle() . ": " . $rate->getErrorMessage());
             }
 
-            $shipping_address->setShippingMethod($rate->getMethod())->save();
+            $quote->getShippingAddress()->setShippingMethod($rate->getCode());
+            $quote->setTotalsCollectedFlag(false)->collectTotals();
 
-            $price = $rate->getPrice();
-
-            $is_tax_included = Mage::helper('tax')->shippingPriceIncludesTax();
-
-            if ($is_tax_included) {
-
-                $price_excluding_tax = $price / (1 + $shipping_tax_rate / 100);
-
-                $tax_amount = 100 * ($price - $price_excluding_tax);
-
-                $price = $price_excluding_tax;
-
-            } else {
-
-                $tax_amount = $price * $shipping_tax_rate;
-            }
-
-            $cost = round(100 * $price);
             $label = $rate->getCarrierTitle();
             if ($rate->getMethodTitle()) {
                 $label = $label . ' - ' . $rate->getMethodTitle();
             }
 
-            $method = $rate->getCarrier() . '_' . $rate->getMethod();
-
             $option = array(
                 "service"   => $label,
-                "reference" => $method,
-                "cost"      => $cost,
-                "tax_amount" => abs(round($tax_amount))
+                "reference" => $rate->getCarrier() . '_' . $rate->getMethod(),
+                "cost" => round($quote->getShippingAddress()->getShippingAmount() * 100),
+                "tax_amount" => abs(round($quote->getShippingAddress()->getShippingTaxAmount() * 100))
             );
 
             $response['shipping_options'][] = $option;
