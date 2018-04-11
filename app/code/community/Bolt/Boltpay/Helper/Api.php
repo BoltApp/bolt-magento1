@@ -173,9 +173,6 @@ class Bolt_Boltpay_Helper_Api extends Bolt_Boltpay_Helper_Data {
 
         $transactionStatus = $transaction->status;
 
-        // shipping carrier set up during checkout
-        $service = $transaction->order->cart->shipments[0]->service;
-
         $quote_id = $transaction->order->cart->order_reference;
 
         // check if the quotes matches, frontend only
@@ -203,28 +200,6 @@ class Bolt_Boltpay_Helper_Api extends Bolt_Boltpay_Helper_Data {
         $quote->collectTotals();
 
         /********************************************************************
-         * Setting up shipping method by finding the carrier code that matches
-         * the one set during checkout
-         ********************************************************************/
-        /*
-         * @deprecated - because now exist new option - $transaction->order->cart->shipments[0]->reference
-         * Please see variable $options at the bottom of the method getShippingAndTaxEstimate()
-         */
-//        $shipping_address = $quote->getShippingAddress();
-//        $shipping_address->setCollectShippingRates(true)->collectShippingRates();
-//        $rates = $shipping_address->getAllShippingRates();
-//
-//        foreach ($rates as $rate) {
-//            if ($rate->getCarrierTitle() . ' - ' . $rate->getMethodTitle() == $service
-//                || (!$rate->getMethodTitle() && $rate->getCarrierTitle() == $service)) {
-//
-//                $shippingMethod = $rate->getCarrier() . '_' . $rate->getMethod();
-//                $quote->getShippingAddress()->setShippingMethod($shippingMethod)->save();
-//                break;
-//            }
-//        }
-
-        /********************************************************************
          * Setting up shipping method by option reference
          * the one set during checkout
          ********************************************************************/
@@ -232,8 +207,32 @@ class Bolt_Boltpay_Helper_Api extends Bolt_Boltpay_Helper_Data {
         if ($referenceShipmentMethod) {
             $quote->getShippingAddress()->setShippingMethod($referenceShipmentMethod)->save();
         } else {
-            $errorMessage = 'The Reference ShippingMethod is empty.';
-            Mage::helper('boltpay/bugsnag')->notifyException($errorMessage);
+            // Legacy transaction does not have shipments reference - fallback to $service field
+            $service = $transaction->order->cart->shipments[0]->service;
+
+            $shipping_address = $quote->getShippingAddress();
+            $shipping_address->setCollectShippingRates(true)->collectShippingRates();
+            $rates = $shipping_address->getAllShippingRates();
+
+            $is_shipping_set = false;
+            foreach ($rates as $rate) {
+                if ($rate->getCarrierTitle() . ' - ' . $rate->getMethodTitle() == $service
+                    || (!$rate->getMethodTitle() && $rate->getCarrierTitle() == $service)) {
+
+                    $shippingMethod = $rate->getCarrier() . '_' . $rate->getMethod();
+                    $quote->getShippingAddress()->setShippingMethod($shippingMethod)->save();
+                    $is_shipping_set = true;
+                    break;
+                }
+            }
+            if (!$is_shipping_set) {
+                $errorMessage = 'Shipping method not found';
+                $metaData = array(
+                    'transaction'   => $transaction,
+                    'rates' => $rates
+                );
+                Mage::helper('boltpay/bugsnag')->notifyException($errorMessage, $metaData);
+            }
         }
 
         // setting Bolt as payment method
