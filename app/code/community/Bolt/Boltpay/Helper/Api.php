@@ -197,8 +197,6 @@ class Bolt_Boltpay_Helper_Api extends Bolt_Boltpay_Helper_Data {
         $quote->getShippingAddress()->setShouldIgnoreValidation(true)->save();
         $quote->getBillingAddress()->setShouldIgnoreValidation(true)->save();
 
-        $quote->collectTotals();
-
         /********************************************************************
          * Setting up shipping method by option reference
          * the one set during checkout
@@ -209,6 +207,8 @@ class Bolt_Boltpay_Helper_Api extends Bolt_Boltpay_Helper_Data {
         } else {
             // Legacy transaction does not have shipments reference - fallback to $service field
             $service = $transaction->order->cart->shipments[0]->service;
+
+            $quote->collectTotals();
 
             $shipping_address = $quote->getShippingAddress();
             $shipping_address->setCollectShippingRates(true)->collectShippingRates();
