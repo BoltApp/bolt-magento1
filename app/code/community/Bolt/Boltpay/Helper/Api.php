@@ -771,8 +771,14 @@ class Bolt_Boltpay_Helper_Api extends Bolt_Boltpay_Helper_Data {
             $quote->getShippingAddress()->setShippingMethod($rate->getCode());
             $quote->setTotalsCollectedFlag(false)->collectTotals();
 
+            $label = $rate->getCarrierTitle();
+            if ($rate->getMethodTitle()) {
+                $label = $label . ' - ' . $rate->getMethodTitle();
+            }
+
             $option = array(
-                "service" => $rate->getCarrierTitle() . ' - ' . $rate->getMethodTitle(),
+                "service"   => $label,
+                "reference" => $rate->getCarrier() . '_' . $rate->getMethod(),
                 "cost" => round($quote->getShippingAddress()->getShippingAmount() * 100),
                 "tax_amount" => abs(round($quote->getShippingAddress()->getShippingTaxAmount() * 100))
             );
