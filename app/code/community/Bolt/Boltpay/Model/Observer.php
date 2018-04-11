@@ -119,4 +119,41 @@ class Bolt_Boltpay_Model_Observer {
                 ->save();
         }
     }
+
+    /**
+     * Event handler called when bolt payment capture.
+     * Add the message Magento Order Id: "xxxxxxxxx" to the standard payment capture message.
+     *
+     * @param $observer
+     */
+    public function addMessageWhenCapture($observer)
+    {
+        /** @var Mage_Sales_Model_Order_Payment $payment */
+        $payment = $observer->getEvent()->getPayment();
+        /** @var Mage_Sales_Model_Order $order */
+        $order = $payment->getOrder();
+
+        $method = $payment->getMethod();
+        if (strtolower($method) == Bolt_Boltpay_Model_Payment::METHOD_CODE) {
+            $message = $this->_addMagentoOrderIdToMessage($order->getIncrementId());
+            if (!empty($message)) {
+                $observer->getEvent()->getPayment()->setPreparedMessage($message);
+            }
+        }
+    }
+
+    /**
+     * Add Magento Order ID to the prepared message.
+     *
+     * @param number|string $incrementId
+     * @return string
+     */
+    protected function _addMagentoOrderIdToMessage($incrementId)
+    {
+        if ($incrementId) {
+            return Mage::helper('sales')->__('Magento Order ID: "%s".', $incrementId);
+        }
+
+        return '';
+    }
 }
