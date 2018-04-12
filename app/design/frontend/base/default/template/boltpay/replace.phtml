@@ -34,7 +34,7 @@ if(!Mage::helper('boltpay')->canUseBolt($this->getQuote(), false)) return;
 ?>
 <script>
 
-    window.onload = function(){
+    var onloadCallback = function(){
 
         /****************************************************************************************************
          * Finds and replaces specified buttons with Bolt checkout buttons. Runs internal function
@@ -116,8 +116,6 @@ if(!Mage::helper('boltpay')->canUseBolt($this->getQuote(), false)) return;
                     }
 
 					<?php endif; ?>
-
-                    // Bolt buttons were placed on the page
 
                     // do nut run the replacement routine again
                     clearInterval(tryInterval);
@@ -331,7 +329,7 @@ if(!Mage::helper('boltpay')->canUseBolt($this->getQuote(), false)) return;
 
             setOverlay();
 
-            window.onload = function () {
+            var autoSelectShipping = function () {
 
                 var shipping_selected = false;
                 var shipping_methods  = document.querySelectorAll('input[name=shipping_method]');
@@ -346,6 +344,13 @@ if(!Mage::helper('boltpay')->canUseBolt($this->getQuote(), false)) return;
 
                 if (!shipping_selected)  document.querySelectorAll('input[name=shipping_method]')[0].click();
             };
+            if (window.addEventListener) {
+                window.addEventListener("load", autoSelectShipping, false);
+            } else if (window.attachEvent) {
+                window.attachEvent("onload", autoSelectShipping);
+            } else {
+                window.onload = autoSelectShipping;
+            }
 
             return true;
         };
@@ -353,6 +358,14 @@ if(!Mage::helper('boltpay')->canUseBolt($this->getQuote(), false)) return;
         if (!fireCheckout()) replaceCheckout();
 
     };
+
+    if (window.addEventListener) {
+        window.addEventListener("load", onloadCallback, false);
+    } else if (window.attachEvent) {
+        window.attachEvent("onload", onloadCallback);
+    } else {
+        window.onload = onloadCallback;
+    }
 
 </script>
 
