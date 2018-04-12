@@ -2,6 +2,7 @@
 ## [v1.0.8](https://s3-us-west-1.amazonaws.com/bolt-public/magento-integration-release/bolt-magento1_v1.0.8.zip) 2018-04-11
  - Refine handling of shipping method selection
  - Tweak message in comment history
+ - Optimize loading of connect.js
 
 ## [v1.0.7](https://s3-us-west-1.amazonaws.com/bolt-public/magento-integration-release/bolt-magento1_v1.0.7.zip) 2018-04-05
  - Updated response format of hook to be JSON
