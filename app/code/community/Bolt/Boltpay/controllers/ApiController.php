@@ -103,9 +103,11 @@ class Bolt_Boltpay_ApiController extends Mage_Core_Controller_Front_Action {
                     ->setStore($order->getStoreId())
                     ->handleTransactionUpdate($orderPayment, $newTransactionStatus, $prevTransactionStatus);
 
-                $this->getResponse()->setBody('Updated existing order');
+                $this->getResponse()->setBody(json_encode(array(
+                    'status' => 'success',
+                    'message' => "Updated existing order $display_id."
+                )));
                 $this->getResponse()->setHttpResponseCode(200);
-
                 return;
             }
 
@@ -136,7 +138,10 @@ class Bolt_Boltpay_ApiController extends Mage_Core_Controller_Front_Action {
              ********************************************************************/
             $boltHelper->createOrder($reference, $session_quote_id = null);
 
-            $this->getResponse()->setBody('Order creation was successful');
+            $this->getResponse()->setBody(json_encode(array(
+                'status' => 'success',
+                'message' => "Order creation was successful"
+            )));
             $this->getResponse()->setHttpResponseCode(200);
 
         } catch (Bolt_Boltpay_InvalidTransitionException $boltPayInvalidTransitionException) {
@@ -148,8 +153,14 @@ class Bolt_Boltpay_ApiController extends Mage_Core_Controller_Front_Action {
             $this->getResponse()->setHttpResponseCode(200);
 
         } catch (Exception $e) {
-            Mage::helper('boltpay/bugsnag')->notifyException($e);
-            throw $e;
+            if(stripos($e->getMessage(), 'Not all products are available in the requested quantity') !== false) {
+                $this->getResponse()->setHttpResponseCode(422);
+                $this->getResponse()->setBody(json_encode(array('status' => 'error', 'code' => '1001', 'message' => 'one or more items in cart are out of stock')));              
+            }else{
+                Mage::helper('boltpay/bugsnag')->notifyException($e);
+                $this->getResponse()->setHttpResponseCode(422);
+                $this->getResponse()->setBody(json_encode(array('status' => 'error', 'code' => '1000', 'message' => $e->getMessage()))); 
+            }
         }
     }
 

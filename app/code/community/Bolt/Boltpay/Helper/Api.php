@@ -164,13 +164,14 @@ class Bolt_Boltpay_Helper_Api extends Bolt_Boltpay_Helper_Data {
             throw new Exception("Bolt transaction reference is missing in the Magento order creation process.");
         }
 
+        if($this->getQuantityCheck()){
+            return false;
+        }
+
         // fetch transaction info
         $transaction = $this->fetchTransaction($reference);
 
         $transactionStatus = $transaction->status;
-
-        // shipping carrier set up during checkout
-        $service = $transaction->order->cart->shipments[0]->service;
 
         $quote_id = $transaction->order->cart->order_reference;
 
@@ -196,22 +197,41 @@ class Bolt_Boltpay_Helper_Api extends Bolt_Boltpay_Helper_Data {
         $quote->getShippingAddress()->setShouldIgnoreValidation(true)->save();
         $quote->getBillingAddress()->setShouldIgnoreValidation(true)->save();
 
-        $quote->collectTotals();
-
         /********************************************************************
-         * Setting up shipping method by finding the carrier code that matches
+         * Setting up shipping method by option reference
          * the one set during checkout
          ********************************************************************/
-        $shipping_address = $quote->getShippingAddress();
-        $shipping_address->setCollectShippingRates(true)->collectShippingRates();
-        $rates = $shipping_address->getAllShippingRates();
+        $referenceShipmentMethod = ($transaction->order->cart->shipments[0]->reference) ?: false;
+        if ($referenceShipmentMethod) {
+            $quote->getShippingAddress()->setShippingMethod($referenceShipmentMethod)->save();
+        } else {
+            // Legacy transaction does not have shipments reference - fallback to $service field
+            $service = $transaction->order->cart->shipments[0]->service;
 
-        foreach ($rates as $rate) {
-            if ($rate->getCarrierTitle() . ' - ' . $rate->getMethodTitle() == $service) {
+            $quote->collectTotals();
 
-                $shippingMethod = $rate->getCarrier() . '_' . $rate->getMethod();
-                $quote->getShippingAddress()->setShippingMethod($shippingMethod)->save();
-                break;
+            $shipping_address = $quote->getShippingAddress();
+            $shipping_address->setCollectShippingRates(true)->collectShippingRates();
+            $rates = $shipping_address->getAllShippingRates();
+
+            $is_shipping_set = false;
+            foreach ($rates as $rate) {
+                if ($rate->getCarrierTitle() . ' - ' . $rate->getMethodTitle() == $service
+                    || (!$rate->getMethodTitle() && $rate->getCarrierTitle() == $service)) {
+
+                    $shippingMethod = $rate->getCarrier() . '_' . $rate->getMethod();
+                    $quote->getShippingAddress()->setShippingMethod($shippingMethod)->save();
+                    $is_shipping_set = true;
+                    break;
+                }
+            }
+            if (!$is_shipping_set) {
+                $errorMessage = 'Shipping method not found';
+                $metaData = array(
+                    'transaction'   => $transaction,
+                    'rates' => $rates
+                );
+                Mage::helper('boltpay/bugsnag')->notifyException($errorMessage, $metaData);
             }
         }
 
@@ -227,6 +247,16 @@ class Bolt_Boltpay_Helper_Api extends Bolt_Boltpay_Helper_Data {
         $payment->setTransactionId($transaction->id);
 
         $quote->setTotalsCollectedFlag(false)->collectTotals()->save();
+
+        $existingOrder = Mage::getModel('sales/order')->loadByIncrementId($display_id);
+        if (sizeof($existingOrder->getData()) > 0) {
+            Mage::app()->getResponse()->setHttpResponseCode(200);
+            Mage::app()->getResponse()->setBody(json_encode(array(
+                'status' => 'success',
+                'message' => "Order increment $display_id already exists."
+            )));
+            return;
+        }
 
         // a call to internal Magento service for order creation
         $service = Mage::getModel('sales/service_quote', $quote);
@@ -732,39 +762,25 @@ class Bolt_Boltpay_Helper_Api extends Bolt_Boltpay_Helper_Data {
 
         $rates = $this->getSortedShippingRates($shipping_address);
 
-        $shipping_tax_rate = Mage::getModel('boltpay/shippingtaxrateprovider')->getTaxRate($quote);
-
         foreach ($rates as $rate) {
 
             if ($rate->getErrorMessage()) {
                 throw new Exception("Error getting shipping option for " .  $rate->getCarrierTitle() . ": " . $rate->getErrorMessage());
             }
 
-            $shipping_address->setShippingMethod($rate->getMethod())->save();
+            $quote->getShippingAddress()->setShippingMethod($rate->getCode());
+            $quote->setTotalsCollectedFlag(false)->collectTotals();
 
-            $price = $rate->getPrice();
-
-            $is_tax_included = Mage::helper('tax')->shippingPriceIncludesTax();
-
-            if ($is_tax_included) {
-
-                $price_excluding_tax = $price / (1 + $shipping_tax_rate / 100);
-
-                $tax_amount = 100 * ($price - $price_excluding_tax);
-
-                $price = $price_excluding_tax;
-
-            } else {
-
-                $tax_amount = $price * $shipping_tax_rate;
+            $label = $rate->getCarrierTitle();
+            if ($rate->getMethodTitle()) {
+                $label = $label . ' - ' . $rate->getMethodTitle();
             }
 
-            $cost = round(100 * $price);
-
             $option = array(
-                "service" => $rate->getCarrierTitle() . ' - ' . $rate->getMethodTitle(),
-                "cost" => $cost,
-                "tax_amount" => abs(round($tax_amount))
+                "service"   => $label,
+                "reference" => $rate->getCarrier() . '_' . $rate->getMethod(),
+                "cost" => round($quote->getShippingAddress()->getShippingAmount() * 100),
+                "tax_amount" => abs(round($quote->getShippingAddress()->getShippingTaxAmount() * 100))
             );
 
             $response['shipping_options'][] = $option;
@@ -792,5 +808,21 @@ class Bolt_Boltpay_Helper_Api extends Bolt_Boltpay_Helper_Data {
         Mage::app()->getResponse()
             ->setHeader('User-Agent', 'BoltPay/Magento-' . $context_info["Magento-Version"], true)
             ->setHeader('X-Bolt-Plugin-Version', $context_info["Bolt-Plugin-Version"], true);
+    }
+
+    public function getQuantityCheck(){
+
+        $quoteCart = Mage::helper('checkout/cart')->getCart()->getQuote();
+        $QtyFlagCheck = false;
+
+        foreach ($quoteCart->getAllItems() as $item) {
+            $_product = Mage::getModel('catalog/product')->load($item->getProductId());
+            $stock = Mage::getModel('cataloginventory/stock_item')->loadByProduct($_product);
+            if($stock->getQty() < $item->getQty() && $stock->getBackorders() == '0' ){
+                 $QtyFlagCheck = true;
+            }
+
+        }
+         return $QtyFlagCheck;
     }
 }

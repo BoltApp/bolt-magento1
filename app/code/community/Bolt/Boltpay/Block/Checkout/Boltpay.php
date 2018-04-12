@@ -558,4 +558,19 @@ class Bolt_Boltpay_Block_Checkout_Boltpay
     public function getQuote() {
         return Mage::getSingleton('checkout/session')->getQuote();
     }
+
+    /**
+     * Get PaymentKey depending the other checkout modules.
+     *
+     * @return string
+     */
+    public function getPaymentKeyDependingTheModule()
+    {
+        $routeName = Mage::app()->getRequest()->getRouteName();
+
+        // If exist 'firecheckout' route we should send false.
+        $param = ($routeName === 'firecheckout') ? false : true;
+
+        return $this->getPaymentKey($param);
+    }
 }

@@ -28,43 +28,13 @@
  * Bolt replace button JavaScript / CSS that added to the shopping cart page
  ********************************************************************/
 
+
 if(!Mage::helper('boltpay')->canUseBolt($this->getQuote(), false)) return;
 
 ?>
-
 <script>
 
-    window.onload = function(){
-        // generic function for making jsonp calls
-        var jsonpRequest = function(parent, element, attributes, params, callback_fn) {
-
-            if (params) {
-
-                var ts  = new Date().getTime();
-                params.push('cachebust' + '=' + encodeURIComponent(ts));
-
-                if (callback_fn) params.push('callback' + '=' + encodeURIComponent(callback_fn));
-
-                params = params.join('&');
-                attributes.src += '?' + params;
-            }
-
-            var el = document.createElement(element);
-
-            if (attributes) {
-                for (var attr in attributes) {
-                    el.setAttribute(attr, attributes[attr]);
-                }
-            }
-
-            var parent = document.getElementsByTagName(parent)[0];
-            parent.appendChild(el);
-        };
-
-        // load connect.js with jsonp request
-        var loadConnectJS = function(key) {
-            jsonpRequest('body', 'script', {"src": "<?= $this->getJsUrl(); ?>", "id":"bolt-connect", "type":"text/javascript", "data-shopping-cart-id":"Magento", "data-publishable-key":key});
-        };
+    var onloadCallback = function(){
 
         /****************************************************************************************************
          * Finds and replaces specified buttons with Bolt checkout buttons. Runs internal function
@@ -147,13 +117,8 @@ if(!Mage::helper('boltpay')->canUseBolt($this->getQuote(), false)) return;
 
 					<?php endif; ?>
 
-                    // Bolt buttons were placed on the page
-
                     // do nut run the replacement routine again
                     clearInterval(tryInterval);
-
-                    // load Bolt connect javascript
-                    loadConnectJS('<?=$this->getPaymentKey();?>');
 
                     // On every 50 ms check if the Bolt connect.js javascript is inserted
                     // by checking the BoltCheckout object existence. Clear the interval when
@@ -261,8 +226,6 @@ if(!Mage::helper('boltpay')->canUseBolt($this->getQuote(), false)) return;
 
             place_order_button.parentNode.insertBefore(bolt_button, place_order_button);
 
-            loadConnectJS('<?=$this->getPaymentKey(false);?>');
-
             /**
              * Click event to payment method radio buttons that toggle
              * display of the bolt button
@@ -366,7 +329,7 @@ if(!Mage::helper('boltpay')->canUseBolt($this->getQuote(), false)) return;
 
             setOverlay();
 
-            window.onload = function () {
+            var autoSelectShipping = function () {
 
                 var shipping_selected = false;
                 var shipping_methods  = document.querySelectorAll('input[name=shipping_method]');
@@ -381,6 +344,13 @@ if(!Mage::helper('boltpay')->canUseBolt($this->getQuote(), false)) return;
 
                 if (!shipping_selected)  document.querySelectorAll('input[name=shipping_method]')[0].click();
             };
+            if (window.addEventListener) {
+                window.addEventListener("load", autoSelectShipping, false);
+            } else if (window.attachEvent) {
+                window.attachEvent("onload", autoSelectShipping);
+            } else {
+                window.onload = autoSelectShipping;
+            }
 
             return true;
         };
@@ -388,6 +358,14 @@ if(!Mage::helper('boltpay')->canUseBolt($this->getQuote(), false)) return;
         if (!fireCheckout()) replaceCheckout();
 
     };
+
+    if (window.addEventListener) {
+        window.addEventListener("load", onloadCallback, false);
+    } else if (window.attachEvent) {
+        window.attachEvent("onload", onloadCallback);
+    } else {
+        window.onload = onloadCallback;
+    }
 
 </script>
 

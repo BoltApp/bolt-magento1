@@ -16,5 +16,6 @@
 !skin/frontend/base/default/boltpay/*
 !tests/*
 !create_release.sh
+!CHANGELOG.md
 !README.md
 !composer.json

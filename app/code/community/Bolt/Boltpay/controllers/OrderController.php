@@ -79,8 +79,10 @@ class Bolt_Boltpay_OrderController extends Mage_Core_Controller_Front_Action {
             }
 
         } catch (Exception $e) {
+                  
             Mage::helper('boltpay/bugsnag')->notifyException($e);
             throw $e;
+                   
         }
     }
 
