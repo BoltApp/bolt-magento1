@@ -28,43 +28,50 @@
  * Bolt replace button JavaScript / CSS that added to the shopping cart page
  ********************************************************************/
 
+
 if(!Mage::helper('boltpay')->canUseBolt($this->getQuote(), false)) return;
 
 ?>
-
 <script>
 
     window.onload = function(){
+        <?php /* ?>
+        //
+        // @deprecated - does not need any more do load script async, mow it is loading in head section.
+        //
+
         // generic function for making jsonp calls
-        var jsonpRequest = function(parent, element, attributes, params, callback_fn) {
+        // var jsonpRequest = function(parent, element, attributes, params, callback_fn) {
+        //
+        //     if (params) {
+        //
+        //         var ts  = new Date().getTime();
+        //         params.push('cachebust' + '=' + encodeURIComponent(ts));
+        //
+        //         if (callback_fn) params.push('callback' + '=' + encodeURIComponent(callback_fn));
+        //
+        //         params = params.join('&');
+        //         attributes.src += '?' + params;
+        //     }
+        //
+        //     var el = document.createElement(element);
+        //
+        //     if (attributes) {
+        //         for (var attr in attributes) {
+        //             el.setAttribute(attr, attributes[attr]);
+        //         }
+        //     }
+        //
+        //     var parent = document.getElementsByTagName(parent)[0];
+        //     parent.appendChild(el);
+        // };
 
-            if (params) {
-
-                var ts  = new Date().getTime();
-                params.push('cachebust' + '=' + encodeURIComponent(ts));
-
-                if (callback_fn) params.push('callback' + '=' + encodeURIComponent(callback_fn));
-
-                params = params.join('&');
-                attributes.src += '?' + params;
-            }
-
-            var el = document.createElement(element);
-
-            if (attributes) {
-                for (var attr in attributes) {
-                    el.setAttribute(attr, attributes[attr]);
-                }
-            }
-
-            var parent = document.getElementsByTagName(parent)[0];
-            parent.appendChild(el);
-        };
-
+        // @deprecated - move it to header section as script tag.
         // load connect.js with jsonp request
-        var loadConnectJS = function(key) {
-            jsonpRequest('body', 'script', {"src": "<?= $this->getJsUrl(); ?>", "id":"bolt-connect", "type":"text/javascript", "data-shopping-cart-id":"Magento", "data-publishable-key":key});
-        };
+        //var loadConnectJS = function(key) {
+        //    jsonpRequest('body', 'script', {"src": "<?//= $this->getJsUrl(); ?>//", "id":"bolt-connect", "type":"text/javascript", "data-shopping-cart-id":"Magento", "data-publishable-key":key});
+        //};
+        <?php */ ?>
 
         /****************************************************************************************************
          * Finds and replaces specified buttons with Bolt checkout buttons. Runs internal function
@@ -152,8 +159,11 @@ if(!Mage::helper('boltpay')->canUseBolt($this->getQuote(), false)) return;
                     // do nut run the replacement routine again
                     clearInterval(tryInterval);
 
+                    <?php /* ?>
+                    // @deprecated - move it to header section as script tag.
                     // load Bolt connect javascript
-                    loadConnectJS('<?=$this->getPaymentKey();?>');
+                    //loadConnectJS('<?php // echo $this->getPaymentKey(); ?>');
+                    <?php */ ?>
 
                     // On every 50 ms check if the Bolt connect.js javascript is inserted
                     // by checking the BoltCheckout object existence. Clear the interval when
@@ -261,7 +271,10 @@ if(!Mage::helper('boltpay')->canUseBolt($this->getQuote(), false)) return;
 
             place_order_button.parentNode.insertBefore(bolt_button, place_order_button);
 
-            loadConnectJS('<?=$this->getPaymentKey(false);?>');
+            <?php /* ?>
+            // @deprecated
+            //loadConnctJS('<?//=$this->getPaymentKey(false);?>//');
+            <?php */ ?>
 
             /**
              * Click event to payment method radio buttons that toggle
