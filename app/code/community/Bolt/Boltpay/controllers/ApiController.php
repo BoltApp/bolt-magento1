@@ -120,6 +120,11 @@ class Bolt_Boltpay_ApiController extends Mage_Core_Controller_Front_Action {
 
             $quoteId = $bodyParams['quote_id'] ?: $quote->getId();
 
+            Mage::helper('boltpay/bugsnag')->addMetaData(array(
+                'reference'  => $reference,
+                'quote_id'   => $quoteId,
+            ));
+
             if (sizeof($quote->getData()) == 0) {
                 //Mage::log("Quote not found: $quoteId. Quote must have been already processed.", null, 'bolt.log');
                 throw new Exception("Quote not found: $quoteId.  Quote must have been already processed.");
