@@ -562,11 +562,11 @@ class Bolt_Boltpay_Helper_Api extends Bolt_Boltpay_Helper_Data {
                 $cart_submission_data['discounts'][] = array(
                     'amount'      => $discount_amount,
                     'description' => $totals[$discount]->getTitle(),
+                    'type'        => 'fixed_amount',
                 );
                 $total_discount -= $discount_amount;
             }
         }
-        $calculated_total += $total_discount;
         /////////////////////////////////////////////////////////////////////////
 
         if ($multipage) {
@@ -653,8 +653,6 @@ class Bolt_Boltpay_Helper_Api extends Bolt_Boltpay_Helper_Data {
                     'phone_number'    => $shippingAddress->getTelephone(),
                     'email_address'   => $shippingAddress->getEmail(),
                 );
-
-                //Mage::log("shipping_address: " . var_export($shipping_address, true), null, "bolt.log");
 
                 if (@$totals['shipping']) {
                     $cart_submission_data['shipments'] = array(array(
