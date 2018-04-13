@@ -567,6 +567,7 @@ class Bolt_Boltpay_Helper_Api extends Bolt_Boltpay_Helper_Data {
                 $total_discount -= $discount_amount;
             }
         }
+        $calculated_total += $total_discount;
         /////////////////////////////////////////////////////////////////////////
 
         if ($multipage) {
