@@ -743,7 +743,7 @@ class Bolt_Boltpay_Helper_Api extends Bolt_Boltpay_Helper_Data {
             'shipping_options' => array(),
         );
 
-        Mage::getModel('sales/quote')->load($quote->getId())->getShippingAddress()->collectTotals();
+        Mage::getModel('sales/quote')->load($quote->getId())->collectTotals();
 
         /*****************************************************************************************
          * Calculate tax
@@ -819,10 +819,10 @@ class Bolt_Boltpay_Helper_Api extends Bolt_Boltpay_Helper_Data {
             $_product = Mage::getModel('catalog/product')->load($item->getProductId());
             $stock = Mage::getModel('cataloginventory/stock_item')->loadByProduct($_product);
             if($stock->getQty() < $item->getQty() && $stock->getBackorders() == '0' ){
-                 $QtyFlagCheck = true;
+                $QtyFlagCheck = true;
             }
 
         }
-         return $QtyFlagCheck;
+        return $QtyFlagCheck;
     }
 }
