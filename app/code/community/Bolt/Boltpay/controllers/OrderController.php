@@ -29,7 +29,8 @@
  *
  * Saves the order in Magento system after successful Bolt transaction processing.
  */
-class Bolt_Boltpay_OrderController extends Mage_Core_Controller_Front_Action {
+class Bolt_Boltpay_OrderController extends Mage_Core_Controller_Front_Action
+{
 
     /**
      * Frontend save order action. Called from BoltCheckout.configure success callback.
@@ -38,7 +39,6 @@ class Bolt_Boltpay_OrderController extends Mage_Core_Controller_Front_Action {
     public function saveAction()
     {
         try {
-
             if (!$this->getRequest()->isAjax()) {
                 Mage::throwException("OrderController::saveAction called with a non AJAX call");
             }
@@ -77,12 +77,9 @@ class Bolt_Boltpay_OrderController extends Mage_Core_Controller_Front_Action {
                     ->setRedirectUrl('')
                     ->setLastRealOrderId($order->getIncrementId());
             }
-
         } catch (Exception $e) {
-                  
             Mage::helper('boltpay/bugsnag')->notifyException($e);
             throw $e;
-                   
         }
     }
 
@@ -90,7 +87,8 @@ class Bolt_Boltpay_OrderController extends Mage_Core_Controller_Front_Action {
      * Locks and unlocks cart.  This is to be called by the Bolt server corresponding to the
      * opening and the closing of the Bolt modal.
      */
-    public function lockcartAction() {
+    public function lockcartAction() 
+    {
         ////////////////////////////////////////////////////////////////////////
         // To be uncommented once the lock cart endpoint has been implemented
         ////////////////////////////////////////////////////////////////////////
@@ -117,10 +115,10 @@ class Bolt_Boltpay_OrderController extends Mage_Core_Controller_Front_Action {
      * Creating the Bolt order and returning Bolt.process javascript.
      * Called from the firecheckout page.
      */
-    public function firecheckoutcreateAction() {
+    public function firecheckoutcreateAction() 
+    {
 
         try {
-
             if (!$this->getRequest()->isAjax()) {
                 Mage::throwException("OrderController::createAction called with a non AJAX call");
             }
@@ -169,7 +167,6 @@ class Bolt_Boltpay_OrderController extends Mage_Core_Controller_Front_Action {
 
             if ((!isset($billing['use_for_shipping']) || !$billing['use_for_shipping'])
                 && !$quote->isVirtual()) {
-
                 $result = $checkout->saveShipping(
                     $this->getRequest()->getPost('shipping', array()),
                     $this->getRequest()->getPost('shipping_address_id', false)
@@ -202,7 +199,6 @@ class Bolt_Boltpay_OrderController extends Mage_Core_Controller_Front_Action {
 
             $this->getResponse()->setHeader('Content-type', 'application/json', true);
             $this->getResponse()->setBody(Mage::helper('core')->jsonEncode($result));
-
         } catch (Exception $e) {
             Mage::helper('boltpay/bugsnag')->notifyException($e);
             throw $e;

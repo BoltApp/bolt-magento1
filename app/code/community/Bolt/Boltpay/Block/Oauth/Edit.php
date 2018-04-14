@@ -29,7 +29,8 @@
  *
  * @deprecated OAuth will no longer be used in future versions
  */
-class Bolt_Boltpay_Block_Oauth_Edit extends Mage_Adminhtml_Block_Widget_Form_Container {
+class Bolt_Boltpay_Block_Oauth_Edit extends Mage_Adminhtml_Block_Widget_Form_Container
+{
 
     /**
      * Bolt_Boltpay_Block_Oauth_Edit constructor.

@@ -26,7 +26,8 @@
 
 require_once(Mage::getBaseDir('lib') . DS .  'Boltpay/Bugsnag/Autoload.php');
 
-class Bolt_Boltpay_Helper_Bugsnag extends Mage_Core_Helper_Abstract {
+class Bolt_Boltpay_Helper_Bugsnag extends Mage_Core_Helper_Abstract
+{
 
     private $apiKey = "811cd1efe8b48df719c5ad0379e3ae75";
 
@@ -36,19 +37,21 @@ class Bolt_Boltpay_Helper_Bugsnag extends Mage_Core_Helper_Abstract {
 
     private $boltTraceId;
 
-    public function addMetaData($metaData) {
+    public function addMetaData($metaData) 
+    {
         $this->metaData['breadcrumbs_'] = array_merge($metaData, $this->metaData['breadcrumbs_']);
     }
 
-    public function test() {
+    public function test() 
+    {
         $this->notifyError('ErrorType', 'Test Error');
         $this->notifyException(new Exception("Test Exception"));
     }
 
-    private function getBugsnag() {
+    private function getBugsnag() 
+    {
 
         if (!$this->bugsnag) {
-
             $bugsnag = new Bugsnag_Client($this->apiKey);
 
             $bugsnag->setErrorReportingLevel(E_ERROR);
@@ -58,10 +61,12 @@ class Bolt_Boltpay_Helper_Bugsnag extends Mage_Core_Helper_Abstract {
 
             $this->bugsnag = $bugsnag;
         }
+
         return $this->bugsnag;
     }
 
-    public function beforeNotifyFunction($error) {
+    public function beforeNotifyFunction($error) 
+    {
         $this->addDefaultMetaData();
 
         if (count($this->metaData['breadcrumbs_'])) {
@@ -69,30 +74,37 @@ class Bolt_Boltpay_Helper_Bugsnag extends Mage_Core_Helper_Abstract {
         }
     }
 
-    protected function addDefaultMetaData() {
+    protected function addDefaultMetaData() 
+    {
         $this->addTraceIdMetaData();
     }
 
-    protected function addTraceIdMetaData() {
+    protected function addTraceIdMetaData() 
+    {
         $traceId = $this->getBoltTraceId();
 
         if(!empty($traceId) && !array_key_exists('bolt_trace_id', $this->metaData)) {
-            $this->addMetaData(array(
+            $this->addMetaData(
+                array(
                 "bolt_trace_id" => $traceId
-            ));
+                )
+            );
         }
     }
 
-    public function notifyException($throwable, array $metaData = array(), $severity = null) {
-        $exception = new Exception($throwable->getMessage()."\n".json_encode(static::getContextInfo()), 0, $throwable );
+    public function notifyException($throwable, array $metaData = array(), $severity = null) 
+    {
+        $exception = new Exception($throwable->getMessage()."\n".json_encode(static::getContextInfo()), 0, $throwable);
         $this->getBugsnag()->notifyException($exception, $metaData, $severity);
     }
 
-    public function notifyError($name, $message, array $metaData = array(), $severity = null) {
-        $this->getBugsnag()->notifyError($name, $message."\n".json_encode(static::getContextInfo()), $this->$metaData, $severity );
+    public function notifyError($name, $message, array $metaData = array(), $severity = null) 
+    {
+        $this->getBugsnag()->notifyError($name, $message."\n".json_encode(static::getContextInfo()), $this->$metaData, $severity);
     }
 
-    public static function getContextInfo() {
+    public static function getContextInfo() 
+    {
 
         $version_element =  Mage::getConfig()->getModuleConfig("Bolt_Boltpay")->xpath("version");
         $version = (string)$version_element[0];
@@ -108,23 +120,28 @@ class Bolt_Boltpay_Helper_Bugsnag extends Mage_Core_Helper_Abstract {
         ) + static::getRequestHeaders();
     }
 
-    private static function getRequestHeaders() {
+    private static function getRequestHeaders() 
+    {
         $headers = array();
         foreach($_SERVER as $key => $value) {
             if (substr($key, 0, 5) <> 'HTTP_') {
                 continue;
             }
+
             $header = str_replace(' ', '-', ucwords(str_replace('_', ' ', strtolower(substr($key, 5)))));
             $headers[$header] = $value;
         }
+
         return $headers;
     }
 
-    public function setBoltTraceId($traceId) {
+    public function setBoltTraceId($traceId) 
+    {
         $this->boltTraceId = $traceId;
     }
 
-    protected function getBoltTraceId() {
+    protected function getBoltTraceId() 
+    {
         if(isset($this->boltTraceId)) {
             return $this->boltTraceId;
         }
