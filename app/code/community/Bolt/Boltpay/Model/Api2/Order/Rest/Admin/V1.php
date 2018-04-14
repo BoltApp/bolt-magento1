@@ -53,7 +53,8 @@ class Bolt_Boltpay_Model_Api2_Order_Rest_Admin_V1 extends Bolt_Boltpay_Model_Api
     /**
      * @inheritdoc
      */
-    public function dispatch() {
+    public function dispatch() 
+    {
         try {
             parent::dispatch();
             $this->getResponse()->clearHeader("Location");
@@ -73,7 +74,6 @@ class Bolt_Boltpay_Model_Api2_Order_Rest_Admin_V1 extends Bolt_Boltpay_Model_Api
     function _create($couponData)
     {
         try {
-
             //Mage::log('Initiating webhook call', null, 'bolt.log');
 
             $bodyParams = $this->getRequest()->getBodyParams();
@@ -105,10 +105,15 @@ class Bolt_Boltpay_Model_Api2_Order_Rest_Admin_V1 extends Bolt_Boltpay_Model_Api
                     $orderPayment->setAdditionalInformation('bolt_merchant_transaction_id', $transactionId);
                     $orderPayment->save();
                 } elseif ($merchantTransactionId != $transactionId) {
-                    $this->_critical(Mage::helper('boltpay')
-                        ->__(sprintf(
-                            'Transaction id mismatch. Expected: %s got: %s', $merchantTransactionId, $transactionId)),
-                            Mage_Api2_Model_Server::HTTP_BAD_REQUEST);
+                    $this->_critical(
+                        Mage::helper('boltpay')
+                        ->__(
+                            sprintf(
+                                'Transaction id mismatch. Expected: %s got: %s', $merchantTransactionId, $transactionId
+                            )
+                        ),
+                        Mage_Api2_Model_Server::HTTP_BAD_REQUEST
+                    );
                 }
 
                 $orderPayment->setData('auto_capture', $newTransactionStatus == 'completed');
@@ -118,7 +123,8 @@ class Bolt_Boltpay_Model_Api2_Order_Rest_Admin_V1 extends Bolt_Boltpay_Model_Api
 
                 $this->getResponse()->addMessage(
                     self::$SUCCESS_ORDER_UPDATED['message'], self::$SUCCESS_ORDER_UPDATED['http_response_code'],
-                    array(), 'success');
+                    array(), 'success'
+                );
                 $this->getResponse()->setHttpResponseCode(Mage_Api2_Model_Server::HTTP_OK);
                 $this->_render($this->getResponse()->getMessages());
                 //Mage::log('Order update was successful', null, 'bolt.log');
@@ -136,13 +142,17 @@ class Bolt_Boltpay_Model_Api2_Order_Rest_Admin_V1 extends Bolt_Boltpay_Model_Api
 
             if (sizeof($quote->getData()) == 0) {
                 //Mage::log("Quote not found: $quoteId. Quote must have been already processed.", null, 'bolt.log');
-                $this->_critical(Mage::helper('boltpay')
-                    ->__("Quote not found: $quoteId.  Quote must have been already processed."), Mage_Api2_Model_Server::HTTP_BAD_REQUEST);
+                $this->_critical(
+                    Mage::helper('boltpay')
+                    ->__("Quote not found: $quoteId.  Quote must have been already processed."), Mage_Api2_Model_Server::HTTP_BAD_REQUEST
+                );
             }
 
             if (empty($reference) || empty($transactionId)) {
-                $this->_critical(Mage::helper('boltpay')
-                    ->__('Reference and/or transaction_id is missing'), Mage_Api2_Model_Server::HTTP_BAD_REQUEST);
+                $this->_critical(
+                    Mage::helper('boltpay')
+                    ->__('Reference and/or transaction_id is missing'), Mage_Api2_Model_Server::HTTP_BAD_REQUEST
+                );
             }
 
             /********************************************************************
@@ -153,10 +163,10 @@ class Bolt_Boltpay_Model_Api2_Order_Rest_Admin_V1 extends Bolt_Boltpay_Model_Api
 
             $this->getResponse()->addMessage(
                 self::$SUCCESS_ORDER_CREATED['message'], self::$SUCCESS_ORDER_CREATED['http_response_code'],
-                array(), 'success');
+                array(), 'success'
+            );
             //Mage::log('Order creation was successful', null, 'bolt.log');
             $this->_render($this->getResponse()->getMessages());
-
         } catch (Bolt_Boltpay_InvalidTransitionException $invalid) {
             // An invalid transition is treated as a late queue event and hence will be ignored
             $error = $invalid->getMessage();

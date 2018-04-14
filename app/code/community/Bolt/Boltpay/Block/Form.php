@@ -30,8 +30,10 @@
  *
  * @deprecated Getting order data is done through the Bolt Fetch API call
  */
-class Bolt_Boltpay_Block_Form extends Mage_Payment_Block_Form_Cc {
-    protected function _construct() {
+class Bolt_Boltpay_Block_Form extends Mage_Payment_Block_Form_Cc
+{
+    protected function _construct() 
+    {
         $mark = Mage::getConfig()->getBlockClassName('core/template');
         $mark = new $mark;
         $mark->setTemplate('boltpay/mark.phtml');

@@ -30,5 +30,6 @@
  * @inheritdoc
  * @deprecated OAuth will no longer be used in future additions
  */
-class Bolt_Boltpay_Model_Api2_Order extends Mage_Api2_Model_Resource {
+class Bolt_Boltpay_Model_Api2_Order extends Mage_Api2_Model_Resource
+{
 }

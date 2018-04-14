@@ -36,7 +36,8 @@ $setup = new Mage_Eav_Model_Entity_Setup('core_setup');
 
 Mage::log('Installing Bolt 0.0.9 updates', null, 'bolt_install.log');
 
-$installer->addAttribute("customer", "bolt_user_id",  array(
+$installer->addAttribute(
+    "customer", "bolt_user_id", array(
     "type"       => "varchar",
     "label"      => "Bolt User Id",
     "input"      => "hidden",
@@ -45,7 +46,8 @@ $installer->addAttribute("customer", "bolt_user_id",  array(
     "unique"     => true,
     "note"       => "Bolt User Id Attribute"
 
-));
+    )
+);
 
 // Required tables
 $statusTable = $installer->getTable('sales/order_status');
