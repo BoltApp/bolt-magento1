@@ -24,9 +24,11 @@
  * @license    http://opensource.org/licenses/osl-3.0.php  Open Software License (OSL 3.0)
  */
 
-class Bolt_Boltpay_Model_Stats extends Mage_Core_Model_Resource_Db_Abstract {
+class Bolt_Boltpay_Model_Stats extends Mage_Core_Model_Resource_Db_Abstract
+{
 
-    protected function _construct() {
+    protected function _construct() 
+    {
         $this->_init('sales/order', 'entity_id');
     }
 
@@ -39,10 +41,12 @@ class Bolt_Boltpay_Model_Stats extends Mage_Core_Model_Resource_Db_Abstract {
             'max_quote_id' => new Zend_Db_Expr('MAX(order.quote_id)'),
             'order_count' => new Zend_Db_Expr('COUNT(order.entity_id)'),
         );
-        $result = $adapter->fetchRow($select->from(array('order'=>$this->getTable('sales/order')), $fields)
+        $result = $adapter->fetchRow(
+            $select->from(array('order'=>$this->getTable('sales/order')), $fields)
             ->where('created_at > ?', '2016-10-01')
             ->where('created_at < ?', '2016-11-01')
-            ->where('state NOT IN (\'canceled\', \'closed\')'));
+            ->where('state NOT IN (\'canceled\', \'closed\')')
+        );
 
         return $result;
     }

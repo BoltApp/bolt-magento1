@@ -31,11 +31,12 @@ require_once 'Mage/Checkout/controllers/OnepageController.php';
  *
  * @deprecated This will be removed after the skip payment option is resolved.
  */
-class Bolt_Boltpay_OnepageController extends Mage_Checkout_OnepageController {
-    public function saveShippingMethodAction() {
+class Bolt_Boltpay_OnepageController extends Mage_Checkout_OnepageController
+{
+    public function saveShippingMethodAction() 
+    {
 
         try {
-
             if ($this->_expireAjax()) {
                 return;
             }
@@ -53,6 +54,7 @@ class Bolt_Boltpay_OnepageController extends Mage_Checkout_OnepageController {
                             if ($e->getFields()) {
                                 $result['fields'] = $e->getFields();
                             }
+
                             $result['error'] = $e->getMessage();
                             Mage::helper('boltpay/bugsnag')->notifyException($e);
                         } catch (Mage_Core_Exception $e) {
@@ -70,7 +72,8 @@ class Bolt_Boltpay_OnepageController extends Mage_Checkout_OnepageController {
                             'checkout_controller_onepage_save_shipping_method',
                             array(
                                 'request' => $this->getRequest(),
-                                'quote' => $this->getOnepage()->getQuote()));
+                            'quote' => $this->getOnepage()->getQuote())
+                        );
                         $this->getOnepage()->getQuote()->collectTotals();
                         $this->getResponse()->setBody(Mage::helper('core')->jsonEncode($result));
                         if (Mage::getStoreConfig('payment/boltpay/skip_payment')) {
@@ -87,10 +90,10 @@ class Bolt_Boltpay_OnepageController extends Mage_Checkout_OnepageController {
                         }
                     }
                 }
+
                 $this->getOnepage()->getQuote()->collectTotals()->save();
                 $this->getResponse()->setBody(Mage::helper('core')->jsonEncode($result));
             }
-
         } catch (Exception $e) {
             Mage::helper('boltpay/bugsnag')->notifyException($e);
             throw $e;
@@ -101,7 +104,8 @@ class Bolt_Boltpay_OnepageController extends Mage_Checkout_OnepageController {
      * @deprecated Order is saved from a Bolt_Boltpay_OrderController::saveAction
      * which in turn calls the helper class Bolt_Boltpay_Helper_Api::createOrder
      */
-    public function saveOrderAction() {
+    public function saveOrderAction() 
+    {
         $payment = $this->getOnepage()->getQuote()->getPayment();
         $method = $payment->getMethod();
 

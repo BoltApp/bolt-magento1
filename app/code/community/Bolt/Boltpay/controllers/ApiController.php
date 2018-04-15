@@ -29,12 +29,14 @@
  *
  * Webhook endpoint.
  */
-class Bolt_Boltpay_ApiController extends Mage_Core_Controller_Front_Action {
+class Bolt_Boltpay_ApiController extends Mage_Core_Controller_Front_Action
+{
 
     /**
      * The starting point for all Api hook request
      */
-    public function hookAction() {
+    public function hookAction() 
+    {
 
         try {
             $hmac_header = $_SERVER['HTTP_X_BOLT_HMAC_SHA256'];
@@ -93,7 +95,7 @@ class Bolt_Boltpay_ApiController extends Mage_Core_Controller_Front_Action {
                 } elseif ($merchantTransactionId != $transactionId) {
                     throw new Exception(
                         sprintf(
-                        'Transaction id mismatch. Expected: %s got: %s', $merchantTransactionId, $transactionId
+                            'Transaction id mismatch. Expected: %s got: %s', $merchantTransactionId, $transactionId
                         )
                     );
                 }
@@ -103,10 +105,14 @@ class Bolt_Boltpay_ApiController extends Mage_Core_Controller_Front_Action {
                     ->setStore($order->getStoreId())
                     ->handleTransactionUpdate($orderPayment, $newTransactionStatus, $prevTransactionStatus);
 
-                $this->getResponse()->setBody(json_encode(array(
-                    'status' => 'success',
-                    'message' => "Updated existing order $display_id."
-                )));
+                $this->getResponse()->setBody(
+                    json_encode(
+                        array(
+                        'status' => 'success',
+                        'message' => "Updated existing order $display_id."
+                        )
+                    )
+                );
                 $this->getResponse()->setHttpResponseCode(200);
                 return;
             }
@@ -120,10 +126,12 @@ class Bolt_Boltpay_ApiController extends Mage_Core_Controller_Front_Action {
 
             $quoteId = $bodyParams['quote_id'] ?: $quote->getId();
 
-            Mage::helper('boltpay/bugsnag')->addMetaData(array(
+            Mage::helper('boltpay/bugsnag')->addMetaData(
+                array(
                 'reference'  => $reference,
                 'quote_id'   => $quoteId,
-            ));
+                )
+            );
 
             if (sizeof($quote->getData()) == 0) {
                 //Mage::log("Quote not found: $quoteId. Quote must have been already processed.", null, 'bolt.log');
@@ -143,20 +151,21 @@ class Bolt_Boltpay_ApiController extends Mage_Core_Controller_Front_Action {
              ********************************************************************/
             $boltHelper->createOrder($reference, $session_quote_id = null);
 
-            $this->getResponse()->setBody(json_encode(array(
-                'status' => 'success',
-                'message' => "Order creation was successful"
-            )));
+            $this->getResponse()->setBody(
+                json_encode(
+                    array(
+                    'status' => 'success',
+                    'message' => "Order creation was successful"
+                    )
+                )
+            );
             $this->getResponse()->setHttpResponseCode(200);
-
         } catch (Bolt_Boltpay_InvalidTransitionException $boltPayInvalidTransitionException) {
-
             // An invalid transition is treated as a late queue event and hence will be ignored
             $error_message = $boltPayInvalidTransitionException->getMessage();
             //Mage::log($error_message, null, 'bolt.log');
             //Mage::log("Late queue event. Returning as OK", null, 'bolt.log');
             $this->getResponse()->setHttpResponseCode(200);
-
         } catch (Exception $e) {
             if(stripos($e->getMessage(), 'Not all products are available in the requested quantity') !== false) {
                 $this->getResponse()->setHttpResponseCode(422);

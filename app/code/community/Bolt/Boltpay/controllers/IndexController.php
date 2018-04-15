@@ -29,24 +29,27 @@
  *
  * @deprecated OAuth will be removed in future versions
  */
-class Bolt_Boltpay_IndexController extends Mage_Adminhtml_Controller_Action {
+class Bolt_Boltpay_IndexController extends Mage_Adminhtml_Controller_Action
+{
 
     protected function _isAllowed()
     {
         return Mage::getSingleton('admin/session')->isAllowed('admin');
     }
 
-    public function oauthAction() {
+    public function oauthAction() 
+    {
         $this->loadLayout()->renderLayout();
     }
 
-    public function statusAction() {
+    public function statusAction() 
+    {
         $this->loadLayout()->renderLayout();
     }
 
-    public function saveAction() {
+    public function saveAction() 
+    {
         try {
-
             $req = $this->getRequest();
             $consumerKey = $req->getParam('consumer_key');
             $consumerToken = $req->getParam('consumer_token');

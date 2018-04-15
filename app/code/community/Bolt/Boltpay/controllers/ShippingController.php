@@ -29,7 +29,8 @@
  *
  * Shipping And Tax endpoint.
  */
-class Bolt_Boltpay_ShippingController extends Mage_Core_Controller_Front_Action {
+class Bolt_Boltpay_ShippingController extends Mage_Core_Controller_Front_Action
+{
 
     /**
      * Receives json formated request from Bolt,
@@ -37,7 +38,8 @@ class Bolt_Boltpay_ShippingController extends Mage_Core_Controller_Front_Action 
      * Responds with available shipping options and calculated taxes
      * for the cart and address specified.
      */
-    public function indexAction() {
+    public function indexAction() 
+    {
 
         try {
             $hmac_header = $_SERVER['HTTP_X_BOLT_HMAC_SHA256'];
@@ -83,7 +85,6 @@ class Bolt_Boltpay_ShippingController extends Mage_Core_Controller_Front_Action 
             /**************/
 
             if ($quote->getCustomerId()) {
-
                 $customer = Mage::getModel("customer/customer")->load($quote->getCustomerId());
                 $address = $customer->getPrimaryShippingAddress();
 
@@ -112,7 +113,8 @@ class Bolt_Boltpay_ShippingController extends Mage_Core_Controller_Front_Action 
 
             $billingAddress = $quote->getBillingAddress();
 
-            $quote->getBillingAddress()->addData(array(
+            $quote->getBillingAddress()->addData(
+                array(
                 'email' => $billingAddress->getEmail() ?: $shipping_address->email,
                 'firstname' => $billingAddress->getFirstname() ?: $shipping_address->first_name,
                 'lastname' => $billingAddress->getLastname() ?: $shipping_address->last_name,
@@ -123,7 +125,8 @@ class Bolt_Boltpay_ShippingController extends Mage_Core_Controller_Front_Action 
                 'postcode' => $billingAddress->getPostcode() ?: $shipping_address->postal_code,
                 'country_id' => $billingAddress->getCountryId() ?: $shipping_address->country_code,
                 'telephone' => $billingAddress->getTelephone() ?: $shipping_address->phone
-            ))->save();
+                )
+            )->save();
 
             ////////////////////////////////////////////////////////////////////////////////////////
             // Check session cache for estimate.  If the shipping city or postcode, and the country code match,
@@ -131,7 +134,7 @@ class Bolt_Boltpay_ShippingController extends Mage_Core_Controller_Front_Action 
             ////////////////////////////////////////////////////////////////////////////////////////
             $cached_address = unserialize(Mage::app()->getCache()->load("quote_location_".$quote->getId()));
 
-            if ( $cached_address && ((strtoupper($cached_address["city"]) == strtoupper($address_data["city"])) || ($cached_address["postcode"] == $address_data["postcode"])) && ($cached_address["country_id"] == $address_data["country_id"])) {
+            if ($cached_address && ((strtoupper($cached_address["city"]) == strtoupper($address_data["city"])) || ($cached_address["postcode"] == $address_data["postcode"])) && ($cached_address["country_id"] == $address_data["country_id"])) {
                 //Mage::log('Using cached address: '.var_export($cached_address, true), null, 'shipping_and_tax.log');
                 $response = unserialize(Mage::app()->getCache()->load("quote_shipping_and_tax_estimate_".$quote->getId()));
             } else {
@@ -139,6 +142,7 @@ class Bolt_Boltpay_ShippingController extends Mage_Core_Controller_Front_Action 
                 //Mage::log('Live address: '.var_export($address_data, true), null, 'shipping_and_tax.log');
                 $response = Mage::helper('boltpay/api')->getShippingAndTaxEstimate($quote);
             }
+
             ////////////////////////////////////////////////////////////////////////////////////////
 
             $response = json_encode($response, JSON_PRETTY_PRINT);
@@ -152,7 +156,6 @@ class Bolt_Boltpay_ShippingController extends Mage_Core_Controller_Front_Action 
             Mage::helper('boltpay/api')->setResponseContextHeaders();
 
             $this->getResponse()->setBody($response);
-
         } catch (Exception $e) {
             Mage::helper('boltpay/bugsnag')->notifyException($e);
             throw $e;
@@ -165,7 +168,8 @@ class Bolt_Boltpay_ShippingController extends Mage_Core_Controller_Front_Action 
      * This expects to receive JSON with the values:
      *        city, region_code, zip_code, country_code
      */
-    function prefetchEstimateAction() {
+    function prefetchEstimateAction() 
+    {
         /** @var Mage_Sales_Model_Quote $quote */
         $quote = Mage::getSingleton('checkout/session')->getQuote();
 

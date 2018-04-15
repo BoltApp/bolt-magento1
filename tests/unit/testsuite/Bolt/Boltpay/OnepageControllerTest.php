@@ -3,13 +3,15 @@
 require_once('TestHelper.php');
 require_once('controllers/OnepageController.php');
 
-class Bolt_Boltpay_OnepageCheckoutIntegrationTest extends PHPUnit_Framework_TestCase {
+class Bolt_Boltpay_OnepageCheckoutIntegrationTest extends PHPUnit_Framework_TestCase
+{
     private $app = null;
     private $testHelper;
     private $controller;
     private $response;
 
-    public function setUp() {
+    public function setUp() 
+    {
         $this->response = new Mage_Core_Controller_Response_Http();
         $this->response->headersSentThrowsException = false;
         $this->testHelper = new Bolt_Boltpay_TestHelper();
@@ -18,12 +20,14 @@ class Bolt_Boltpay_OnepageCheckoutIntegrationTest extends PHPUnit_Framework_Test
         $this->controller = new Bolt_Boltpay_OnepageController($this->app->getRequest(), $this->response);
     }
 
-    public function testCheckoutSaveOrderActionCallbackSuccess() {
+    public function testCheckoutSaveOrderActionCallbackSuccess() 
+    {
         $this->_initCart('boltpay');
         $this->_makeAuthorizeCallbackRequest();
         $this->controller->saveOrderAction();
         $order = Mage::getModel('sales/order')->loadByIncrementId(
-            $this->controller->getOnepage()->getQuote()->getReservedOrderId());
+            $this->controller->getOnepage()->getQuote()->getReservedOrderId()
+        );
         $orderPayment = $order->getPayment();
         $this->assertEquals('flatrate_flatrate', $order->getShippingMethod());
 
@@ -38,18 +42,20 @@ class Bolt_Boltpay_OnepageCheckoutIntegrationTest extends PHPUnit_Framework_Test
             ->addAttributeToFilter('order_id', array('eq' => $order->getEntityId()));
         $orderTransactionId = 'ABCD-1234-EFGH-' . $order->getEntityId() . '-order';
         $this->assertEquals(2, sizeof($transactions));
-        foreach ( $transactions as $t) {
+        foreach ($transactions as $t) {
             $this->assertArrayHasKey($t->getTxnType(), array('order' => 0, 'authorization' => 1));
             $this->assertArrayHasKey($t->getTxnId(), array('ABCD-1234-EFGH' => 0, $orderTransactionId => 0));
             $this->assertEquals(0, $t->getIsClosed());
         }
     }
 
-    public function testCheckoutSaveOrderWhenMethodIsNotBolt() {
+    public function testCheckoutSaveOrderWhenMethodIsNotBolt() 
+    {
         $this->_initCart('checkmo');
         $this->controller->saveOrderAction();
         $order = Mage::getModel('sales/order')->loadByIncrementId(
-            $this->controller->getOnepage()->getQuote()->getReservedOrderId());
+            $this->controller->getOnepage()->getQuote()->getReservedOrderId()
+        );
         $orderPayment = $order->getPayment();
         $this->assertEquals('flatrate_flatrate', $order->getShippingMethod());
 
@@ -66,19 +72,23 @@ class Bolt_Boltpay_OnepageCheckoutIntegrationTest extends PHPUnit_Framework_Test
         $this->assertEquals(0, sizeof($transactions));
     }
 
-    public function testCheckoutSaveOrderWhenStatusIsAuthorize() {
+    public function testCheckoutSaveOrderWhenStatusIsAuthorize() 
+    {
 
     }
 
-    public function testCheckoutSaveOrderWhenStatusIsCapture() {
+    public function testCheckoutSaveOrderWhenStatusIsCapture() 
+    {
 
     }
 
-    public function testCheckoutSaveOrderWithUserLoggedInWhenStatusIsAuthorize() {
+    public function testCheckoutSaveOrderWithUserLoggedInWhenStatusIsAuthorize() 
+    {
 
     }
 
-    private function _initCart($paymentMethod) {
+    private function _initCart($paymentMethod) 
+    {
         $this->testHelper->createCheckout('guest');
         $this->testHelper->addProduct(1, 2);
         $addressData = array(
@@ -96,12 +106,15 @@ class Bolt_Boltpay_OnepageCheckoutIntegrationTest extends PHPUnit_Framework_Test
         $this->testHelper->addPaymentToQuote($paymentMethod);
     }
 
-    private function _makeAuthorizeCallbackRequest() {
+    private function _makeAuthorizeCallbackRequest() 
+    {
         $this->app->getRequest()
-            ->setPost('payment', array(
+            ->setPost(
+                'payment', array(
                 'reference' => 'ABCD-1234-EFGH',
                 'method' => 'boltpay',
                 'transaction_status' => 'authorize'
-            ));
+                )
+            );
     }
 }
