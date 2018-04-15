@@ -157,22 +157,24 @@ class Bolt_Boltpay_Helper_Api extends Bolt_Boltpay_Helper_Data
     }
 
     /**
-     * Processes order creation. Called from both frontend and API.
+     * Processes Magento order creation. Called from both frontend and API.
      *
-     * @param $reference                Bolt transaction reference
-     * @param null $session_quote_id    Session quote id, if triggered from frontend
-     * @return mixed                    Order on successful creation
-     * @throws Exception
+     * @param string    $reference           Bolt transaction reference
+     * @param int       $session_quote_id    Quote id, used if trigger from shopping session context,
+     *                                       This will be null if called from within an API call context
+     *
+     * @return Mage_Sales_Model_Order   The order saved to Magento
+     *
+     * @throws Exception    thrown on order creation failure
      */
     public function createOrder($reference, $session_quote_id = null) 
     {
-
         if (empty($reference)) {
             throw new Exception("Bolt transaction reference is missing in the Magento order creation process.");
         }
 
-        if($this->getQuantityCheck()){
-            return false;
+        if(!$this->storeHasAllCartItems()){
+            throw new Exception("Not all items are available in the requested quantities.");
         }
 
         // fetch transaction info
@@ -184,7 +186,7 @@ class Bolt_Boltpay_Helper_Api extends Bolt_Boltpay_Helper_Data
 
         // check if the quotes matches, frontend only
         if ($session_quote_id && $session_quote_id != $quote_id) {
-            return false;
+            throw new Exception("The Bolt order reference does not match the current cart ID.");
         }
 
         $display_id = $transaction->order->cart->display_id;
@@ -763,7 +765,8 @@ class Bolt_Boltpay_Helper_Api extends Bolt_Boltpay_Helper_Data
      * Gets the shipping and the tax estimate for a quote
      *
      * @param $quote    A quote object with pre-populated addresses
-     * @return array
+     * 
+     * @return array    Bolt shipping and tax response array to be converted to JSON
      */
     public function getShippingAndTaxEstimate( $quote ) 
     {
@@ -832,6 +835,9 @@ class Bolt_Boltpay_Helper_Api extends Bolt_Boltpay_Helper_Data
         return $rates;
     }
 
+    /**
+     * Sets Plugin information in the response headers to callers of the API
+     */
     public function setResponseContextHeaders() 
     {
         $context_info = Mage::helper('boltpay/bugsnag')->getContextInfo();
@@ -841,20 +847,28 @@ class Bolt_Boltpay_Helper_Api extends Bolt_Boltpay_Helper_Data
             ->setHeader('X-Bolt-Plugin-Version', $context_info["Bolt-Plugin-Version"], true);
     }
 
-    public function getQuantityCheck()
+
+    /**
+     * Determines whether the cart has either all items available in the requested quantities,
+     * or, if not, those items are eligible for back order.
+     *
+     * @return bool true if the store can accept an order for all items in the cart,
+     *              otherwise, false
+     */
+    public function storeHasAllCartItems()
     {
+        /* @var Mage_Sales_Model_Quote $cart_quote */
+        $cart_quote = Mage::helper('checkout/cart')->getCart()->getQuote();
 
-        $quoteCart = Mage::helper('checkout/cart')->getCart()->getQuote();
-        $QtyFlagCheck = false;
+        foreach ($cart_quote->getAllItems() as $cart_item) {
+            $_product = Mage::getModel('catalog/product')->load($cart_item->getProductId());
+            $stock_info = Mage::getModel('cataloginventory/stock_item')->loadByProduct($_product);
 
-        foreach ($quoteCart->getAllItems() as $item) {
-            $_product = Mage::getModel('catalog/product')->load($item->getProductId());
-            $stock = Mage::getModel('cataloginventory/stock_item')->loadByProduct($_product);
-            if($stock->getQty() < $item->getQty() && $stock->getBackorders() == '0'){
-                 $QtyFlagCheck = true;
+            if( ($stock_info->getQty() < $cart_item->getQty()) && !$stock_info->getBackorders() ){
+                 return false;
             }
         }
 
-         return $QtyFlagCheck;
+         return true;
     }
 }

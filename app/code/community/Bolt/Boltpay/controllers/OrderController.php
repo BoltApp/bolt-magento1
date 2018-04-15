@@ -71,12 +71,11 @@ class Bolt_Boltpay_OrderController extends Mage_Core_Controller_Front_Action
                 ->setLastQuoteId($session_quote->getId())
                 ->setLastSuccessQuoteId($session_quote->getId());
 
-            if ($order) {
-                // add order information to the session
-                $checkout_session->setLastOrderId($order->getId())
-                    ->setRedirectUrl('')
-                    ->setLastRealOrderId($order->getIncrementId());
-            }
+            // add order information to the session
+            $checkout_session->setLastOrderId($order->getId())
+                ->setRedirectUrl('')
+                ->setLastRealOrderId($order->getIncrementId());
+
         } catch (Exception $e) {
             Mage::helper('boltpay/bugsnag')->notifyException($e);
             throw $e;
