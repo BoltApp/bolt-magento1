@@ -240,7 +240,7 @@ class Bolt_Boltpay_Helper_Api extends Bolt_Boltpay_Helper_Data
                     'transaction'   => $transaction,
                     'rates' => $rates
                 );
-                Mage::helper('boltpay/bugsnag')->notifyException($errorMessage, $metaData);
+                Mage::helper('boltpay/bugsnag')->notifyException(new Exception($errorMessage), $metaData);
             }
         }
 
