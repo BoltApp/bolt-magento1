@@ -664,11 +664,6 @@ class Bolt_Boltpay_Helper_Api extends Bolt_Boltpay_Helper_Data
                 $calculated_total += $cart_submission_data['tax_amount'];
             }
 
-            // Added discount value to the total_amount.
-            if (@$totals['discount']) {
-                $cart_submission_data['total_amount'] += $total_discount;
-            }
-
             $shippingAddress = $quote->getShippingAddress();
 
             if ($shippingAddress) {
