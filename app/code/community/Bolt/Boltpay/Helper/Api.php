@@ -775,7 +775,7 @@ class Bolt_Boltpay_Helper_Api extends Bolt_Boltpay_Helper_Data
             'shipping_options' => array(),
         );
 
-        Mage::getModel('sales/quote')->load($quote->getId())->getShippingAddress()->collectTotals();
+        Mage::getModel('sales/quote')->load($quote->getId())->collectTotals();
 
         /*****************************************************************************************
          * Calculate tax
@@ -870,6 +870,6 @@ class Bolt_Boltpay_Helper_Api extends Bolt_Boltpay_Helper_Data
 			}
         }
 
-         return true;
+        return true;
     }
 }
