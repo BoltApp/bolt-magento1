@@ -849,7 +849,7 @@ class Bolt_Boltpay_Helper_Api extends Bolt_Boltpay_Helper_Data
 
 
     /**
-     * Determines whether the cart has either all items available in the requested quantities,
+     * Determines whether the cart has either all items available if Manage Stock is yes for requested quantities,
      * or, if not, those items are eligible for back order.
      *
      * @return bool true if the store can accept an order for all items in the cart,
@@ -863,10 +863,11 @@ class Bolt_Boltpay_Helper_Api extends Bolt_Boltpay_Helper_Data
         foreach ($cart_quote->getAllItems() as $cart_item) {
             $_product = Mage::getModel('catalog/product')->load($cart_item->getProductId());
             $stock_info = Mage::getModel('cataloginventory/stock_item')->loadByProduct($_product);
-
-            if( ($stock_info->getQty() < $cart_item->getQty()) && !$stock_info->getBackorders() ){
-                 return false;
-            }
+			if($stock_info->getManageStock()){
+				if( ($stock_info->getQty() < $cart_item->getQty()) && !$stock_info->getBackorders() ){
+					 return false;
+				}
+			}
         }
 
          return true;
