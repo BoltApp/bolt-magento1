@@ -796,7 +796,8 @@ class Bolt_Boltpay_Helper_Api extends Bolt_Boltpay_Helper_Data
 
         foreach ($rates as $rate) {
             if ($rate->getErrorMessage()) {
-                throw new Exception("Error getting shipping option for " .  $rate->getCarrierTitle() . ": " . $rate->getErrorMessage());
+                Mage::helper('boltpay/bugsnag')->notifyException( new Exception("Error getting shipping option for " .  $rate->getCarrierTitle() . ": " . $rate->getErrorMessage()) );
+                continue;
             }
 
             $quote->getShippingAddress()->setShippingMethod($rate->getCode());
