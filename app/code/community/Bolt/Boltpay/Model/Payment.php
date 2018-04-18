@@ -31,7 +31,7 @@ class Bolt_Boltpay_Model_Payment extends Mage_Payment_Model_Method_Abstract
     const REQUEST_TYPE_CAPTURE_ONLY = 'CAPTURE_ONLY';
     const METHOD_CODE               = 'boltpay';
     const TITLE                     = "Credit & Debit Card";
-
+    const TITLE_ADMIN               = "Bolt (admin)";
 
     // Order States
     const ORDER_DEFERRED = 'deferred';
@@ -73,7 +73,7 @@ class Bolt_Boltpay_Model_Payment extends Mage_Payment_Model_Method_Abstract
     protected $_canCaptureOnce              = false;
     // TODO: This can be set to true and we could move the handleOrderUpdate method
     protected $_canOrder                    = false;
-    protected $_canUseInternal              = false;
+    protected $_canUseInternal              = true;
     protected $_canUseForMultishipping      = false;
     protected $_canCreateBillingAgreement   = false;
     protected $_isGateway                   = false;
@@ -109,7 +109,11 @@ class Bolt_Boltpay_Model_Payment extends Mage_Payment_Model_Method_Abstract
         }
 
         if ($field == 'title') {
-            return self::TITLE;
+            if (Mage::app()->getStore()->isAdmin()) {
+                return self::TITLE_ADMIN;
+            } else {
+                return self::TITLE;
+            }
         }
 
         return parent::getConfigData($field, $storeId);
@@ -567,5 +571,26 @@ class Bolt_Boltpay_Model_Payment extends Mage_Payment_Model_Method_Abstract
             default:
                 break;
         }
+    }
+
+    /**
+     * @param mixed $data
+     * @return $this|Mage_Payment_Model_Info|void
+     * @throws Mage_Core_Exception
+     * @throws Mage_Core_Model_Store_Exception
+     */
+    public function assignData($data)
+    {
+        if (!Mage::app()->getStore()->isAdmin()) {
+            return;
+        }
+
+        $info = $this->getInfoInstance();
+
+        if ($reference = $data->getBoltReference()) {
+            $info->setAdditionalInformation('bolt_reference', $reference);
+        }
+
+        return $this;
     }
 }
