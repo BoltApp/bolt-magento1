@@ -862,6 +862,10 @@ class Bolt_Boltpay_Helper_Api extends Bolt_Boltpay_Helper_Data
         $cart_quote = Mage::helper('checkout/cart')->getCart()->getQuote();
 
         foreach ($cart_quote->getAllItems() as $cart_item) {
+            if($cart_item->getHasChildren()) {
+                continue;
+            }
+
             $_product = Mage::getModel('catalog/product')->load($cart_item->getProductId());
             $stock_info = Mage::getModel('cataloginventory/stock_item')->loadByProduct($_product);
 			if($stock_info->getManageStock()){
