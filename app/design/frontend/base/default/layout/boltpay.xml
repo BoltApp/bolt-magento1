@@ -35,7 +35,6 @@
 
   <checkout_cart_index>
     <reference name="head">
-      <block type="boltpay/checkout_boltpay" name="prefetch_shipping_quote" as="prefetch_shipping_quote" template="boltpay/prefetch_shipping_quote.phtml" />
       <block type="boltpay/checkout_boltpay" name="connect_js_script" as="connect_js" template="boltpay/connectjs.phtml" />
       <block type="boltpay/checkout_boltpay" name="replace_script" as="replace_script" template="boltpay/replace.phtml" />
     </reference>
