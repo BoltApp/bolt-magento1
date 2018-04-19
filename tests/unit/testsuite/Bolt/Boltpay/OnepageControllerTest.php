@@ -7,6 +7,9 @@ class Bolt_Boltpay_OnepageCheckoutIntegrationTest extends PHPUnit_Framework_Test
 {
     private $app = null;
     private $testHelper;
+    /**
+     * @var Bolt_Boltpay_OnepageController
+     */
     private $controller;
     private $response;
 
@@ -20,15 +23,20 @@ class Bolt_Boltpay_OnepageCheckoutIntegrationTest extends PHPUnit_Framework_Test
         $this->controller = new Bolt_Boltpay_OnepageController($this->app->getRequest(), $this->response);
     }
 
-    public function testCheckoutSaveOrderActionCallbackSuccess() 
+    /**
+     * @deprecated
+     */
+    public function skipTestCheckoutSaveOrderActionCallbackSuccess()
     {
         $this->_initCart('boltpay');
         $this->_makeAuthorizeCallbackRequest();
         $this->controller->saveOrderAction();
+
         $order = Mage::getModel('sales/order')->loadByIncrementId(
             $this->controller->getOnepage()->getQuote()->getReservedOrderId()
         );
         $orderPayment = $order->getPayment();
+
         $this->assertEquals('flatrate_flatrate', $order->getShippingMethod());
 
         // Assert the bolt attributes
@@ -49,7 +57,10 @@ class Bolt_Boltpay_OnepageCheckoutIntegrationTest extends PHPUnit_Framework_Test
         }
     }
 
-    public function testCheckoutSaveOrderWhenMethodIsNotBolt() 
+    /**
+     * @deprecated
+     */
+    public function skipTestCheckoutSaveOrderWhenMethodIsNotBolt()
     {
         $this->_initCart('checkmo');
         $this->controller->saveOrderAction();
@@ -70,21 +81,6 @@ class Bolt_Boltpay_OnepageCheckoutIntegrationTest extends PHPUnit_Framework_Test
             ->getCollection()
             ->addAttributeToFilter('order_id', array('eq' => $order->getEntityId()));
         $this->assertEquals(0, sizeof($transactions));
-    }
-
-    public function testCheckoutSaveOrderWhenStatusIsAuthorize() 
-    {
-
-    }
-
-    public function testCheckoutSaveOrderWhenStatusIsCapture() 
-    {
-
-    }
-
-    public function testCheckoutSaveOrderWithUserLoggedInWhenStatusIsAuthorize() 
-    {
-
     }
 
     private function _initCart($paymentMethod) 

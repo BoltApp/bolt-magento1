@@ -48,5 +48,4 @@ class Bolt_Boltpay_Block_Rewrite_OnepageTest extends PHPUnit_Framework_TestCase
             array_keys($onepageRewrite->getSteps())
         );
     }
-
 }

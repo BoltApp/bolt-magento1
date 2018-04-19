@@ -15,6 +15,14 @@ See [CHANGELOG.md](./CHANGELOG.md) for change history.
 
 ## Run tests
 
-Run the following (Assuming you have MAMP)
+Run the following from root magento folder:
 
-> /Applications/MAMP/bin/php/php5.6.25/bin/php /usr/local/bin/phpunit
+> php tests/unit/phpunit-5.7.9.phar -c tests/unit/phpunit.xml
+
+Run phpunit test with coverage html report:
+
+> php tests/unit/phpunit-5.7.9.phar -c tests/unit/phpunit.xml --coverage-html tests/unit/coverage
+
+If you prefer to run test through PHPStorm, please read:
+
+> http://devdocs.magento.com/guides/v2.2/test/unit/unit_test_execution_phpstorm.html 
