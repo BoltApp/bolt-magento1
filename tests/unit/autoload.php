@@ -2,7 +2,7 @@
 
 ini_set(
     'include_path', ini_get('include_path') . PATH_SEPARATOR
-    . dirname(__FILE__) . '/../../vendor/magento1.9/app' . PATH_SEPARATOR . dirname(__FILE__)
+    . dirname(__FILE__) . '/../../app' . PATH_SEPARATOR . dirname(__FILE__)
 );
 ini_set(
     'include_path', ini_get('include_path') . PATH_SEPARATOR
