@@ -100,10 +100,12 @@ class Bolt_Boltpay_ApiController extends Mage_Core_Controller_Front_Action
                     );
                 }
 
+                $captureAmount = $this->getCaptureAmount($transaction);
+
                 $orderPayment->setData('auto_capture', $newTransactionStatus == 'completed');
                 $orderPayment->getMethodInstance()
                     ->setStore($order->getStoreId())
-                    ->handleTransactionUpdate($orderPayment, $newTransactionStatus, $prevTransactionStatus);
+                    ->handleTransactionUpdate($orderPayment, $newTransactionStatus, $prevTransactionStatus, $captureAmount);
 
                 $this->getResponse()->setBody(
                     json_encode(
@@ -178,4 +180,11 @@ class Bolt_Boltpay_ApiController extends Mage_Core_Controller_Front_Action
         }
     }
 
+    protected function getCaptureAmount($transaction) {
+        if(isset($transaction->capture->amount->amount) && is_numeric($transaction->capture->amount->amount)) {
+            return $transaction->capture->amount->amount/100;
+        }
+
+        return null;
+    }
 }

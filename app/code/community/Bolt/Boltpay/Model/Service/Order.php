@@ -24,26 +24,34 @@
  * @license    http://opensource.org/licenses/osl-3.0.php  Open Software License (OSL 3.0)
  */
 
-/**
- * Class which defines the Magento admin page for publishing Bolt OAuth settings used to call Magento store API
- *
- * @deprecated OAuth will no longer be used in future versions
- */
-class Bolt_Boltpay_Block_Oauth_Edit extends Mage_Adminhtml_Block_Widget_Form_Container
+class Bolt_Boltpay_Model_Service_Order extends Mage_Sales_Model_Service_Order
 {
-
     /**
-     * Bolt_Boltpay_Block_Oauth_Edit constructor.
+     * Prepare order invoice without any items
      *
-     * @inheritdoc
+     * @param $amount
+     * @return Mage_Sales_Model_Order_Invoice
      */
-    public function __construct()
+    public function prepareInvoiceWithoutItems($amount)
     {
-        $this->_controller  = 'oauth';
-        $this->_mode = 'edit';
-        $this->_blockGroup = 'boltpay';
-        $this->_headerText = "Bolt Integration";
-        parent::__construct();
-        $this->_updateButton('save', 'label', Mage::helper('poll')->__('Publish'));
+        try {
+            $invoice = $this->_convertor->toInvoice($this->_order);
+            $invoice->setBaseGrandTotal($amount);
+            $invoice->setSubtotal($amount);
+            $invoice->setBaseSubtotal($amount);
+            $invoice->setGrandTotal($amount);
+
+            $this->_order->getInvoiceCollection()->addItem($invoice);
+        } catch(Exception $e) {
+            $metaData = array(
+                'amount'   => $amount,
+                'order' => var_export($this->_order->debug(), true)
+            );
+
+            Mage::helper('boltpay/bugsnag')->notifyException($e, $metaData);
+            throw $e;
+        }
+
+        return $invoice;
     }
 }

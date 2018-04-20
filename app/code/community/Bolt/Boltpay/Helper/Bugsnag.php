@@ -56,6 +56,7 @@ class Bolt_Boltpay_Helper_Bugsnag extends Mage_Core_Helper_Abstract
 
             $bugsnag->setErrorReportingLevel(E_ERROR);
             $bugsnag->setReleaseStage(Mage::getStoreConfig('payment/boltpay/test') ? 'development' : 'production');
+            $bugsnag->setAppVersion(static::getBoltPluginVersion());
             $bugsnag->setBatchSending(true);
             $bugsnag->setBeforeNotifyFunction(array($this, 'beforeNotifyFunction'));
 
@@ -105,9 +106,7 @@ class Bolt_Boltpay_Helper_Bugsnag extends Mage_Core_Helper_Abstract
 
     public static function getContextInfo() 
     {
-
-        $version_element =  Mage::getConfig()->getModuleConfig("Bolt_Boltpay")->xpath("version");
-        $version = (string)$version_element[0];
+        $version = static::getBoltPluginVersion();
         $request_body = file_get_contents('php://input');
 
         return array(
@@ -118,6 +117,16 @@ class Bolt_Boltpay_Helper_Bugsnag extends Mage_Core_Helper_Abstract
                 "Request-Body" => $request_body,
                 "Time" => date("D M j, Y - G:i:s T")
         ) + static::getRequestHeaders();
+    }
+
+    protected static function getBoltPluginVersion() {
+        $version_element =  Mage::getConfig()->getModuleConfig("Bolt_Boltpay")->xpath("version");
+
+        if(isset($version_element[0])) {
+            return (string)$version_element[0];
+        }
+
+        return null;
     }
 
     private static function getRequestHeaders() 
