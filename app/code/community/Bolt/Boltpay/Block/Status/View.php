@@ -43,7 +43,8 @@ class Bolt_Boltpay_Block_Status_View extends Mage_Adminhtml_Block_Template
     public function getBoltInstallStatus() 
     {
         $connection = Mage::getSingleton('core/resource')->getConnection('core_read');
-        $sql        = "SELECT * FROM core_resource WHERE code = 'bolt_boltpay_setup'";
+		$prefix = Mage::getConfig()->getTablePrefix();
+        $sql        = "SELECT * FROM ".$prefix."core_resource WHERE code = 'bolt_boltpay_setup'";
         $rows       = $connection->fetchAll($sql);
 
         if (empty($rows)) {
