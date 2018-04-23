@@ -423,7 +423,7 @@ class Bolt_Boltpay_Model_Payment extends Mage_Payment_Model_Method_Abstract
         }
     }
 
-    public function handleTransactionUpdate(Mage_Payment_Model_Info $payment, $newTransactionStatus, $prevTransactionStatus) 
+    public function handleTransactionUpdate(Mage_Payment_Model_Info $payment, $newTransactionStatus, $prevTransactionStatus, $captureAmount)
     {
         try {
             $newTransactionStatus = strtolower($newTransactionStatus);
@@ -476,7 +476,12 @@ class Bolt_Boltpay_Model_Payment extends Mage_Payment_Model_Method_Abstract
                     $invoices = $order->getInvoiceCollection()->getItems();
                     $invoice = null;
                     if (empty($invoices)) {
-                        $invoice = $order->prepareInvoice();
+                        /** @var Mage_Sales_Model_Order_Invoice $invoice */
+                        if ($order->getGrandTotal() > $captureAmount) {
+                            $invoice = Mage::getModel('boltpay/service_order', $order)->prepareInvoiceWithoutItems($captureAmount);
+                        } else {
+                            $invoice = $order->prepareInvoice();
+                        }
                         $invoice->setTransactionId($reference);
                         $payment->setParentTransactionId($reference);
                         $invoice->setRequestedCaptureCase(self::CAPTURE_TYPE);
