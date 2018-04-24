@@ -235,10 +235,12 @@ class Bolt_Boltpay_Helper_Api extends Bolt_Boltpay_Helper_Data
             }
 
             if (!$is_shipping_set) {
-                $errorMessage = 'Shipping method not found. $service: ' . $service . ' $shipping_address: ' . var_export($shipping_address->debug(), true);
+                $errorMessage = 'Shipping method not found';
                 $metaData = array(
                     'transaction'   => $transaction,
-                    'rates' => $rates
+                    'rates' => $this->getRatesDebuggingData($rates),
+                    'service' => $service,
+                    'shipping_address' => var_export($shipping_address->debug(), true)
                 );
                 Mage::helper('boltpay/bugsnag')->notifyException(new Exception($errorMessage), $metaData);
             }
@@ -277,13 +279,12 @@ class Bolt_Boltpay_Helper_Api extends Bolt_Boltpay_Helper_Data
         try {
             $service->submitAll();
         } catch (Exception $e) {
-            $errorMessage = 'Error submitting order';
-            $metaData = array(
-                'transaction'   => json_encode((array)$transaction),
-                'quote_address' => var_export($quote->getShippingAddress()->debug(), true)
+            Mage::helper('boltpay/bugsnag')->addMetaData(
+                array(
+                    'transaction'   => json_encode((array)$transaction),
+                    'quote_address' => var_export($quote->getShippingAddress()->debug(), true)
+                )
             );
-            Mage::helper('boltpay/bugsnag')->notifyException(new Exception($errorMessage), $metaData);
-
             throw $e;
         }
 
@@ -299,6 +300,18 @@ class Bolt_Boltpay_Helper_Api extends Bolt_Boltpay_Helper_Data
 
         return $order;
 
+    }
+
+    protected function getRatesDebuggingData($rates) {
+        $rateDebuggingData = '';
+
+        if(isset($rates)) {
+            foreach($rates as $rate) {
+                $rateDebuggingData .= var_export($rate->debug(), true);
+            }
+        }
+
+        return $rateDebuggingData;
     }
 
     /**
