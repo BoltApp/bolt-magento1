@@ -54,7 +54,13 @@ if($this->isBoltActive()) {
                         }
 
                         if (region) {
-                            region.value = _data.region_name || _data.region;
+                            if (region.tagName.toLowerCase() === 'input') {
+                                region.value = _data.region_name;
+                            } else if (region.tagName.toLowerCase() === 'select') {
+                                evt.initEvent('change', true, true);
+                                region.value = _data.region;
+                                country.dispatchEvent(evt);
+                            }
                         }
                     }
                 }
