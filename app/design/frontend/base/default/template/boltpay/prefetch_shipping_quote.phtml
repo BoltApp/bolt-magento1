@@ -29,8 +29,36 @@ if($this->isBoltActive()) {
     <script>
         (function () {
             var xmlhttp = new XMLHttpRequest();
+
             xmlhttp.open("POST", "<?=$this->getUrl('boltpay/shipping/prefetchEstimate');?>", true);
             xmlhttp.setRequestHeader("Content-type", "application/json");
+            xmlhttp.onreadystatechange = function() {
+                if (xmlhttp.readyState == XMLHttpRequest.DONE && xmlhttp.status == 200) {
+                    var result = JSON.parse(xmlhttp.responseText);
+
+                    if (result.address_data && Object.keys(result.address_data).length > 0) {
+                        var evt = document.createEvent('HTMLEvents'),
+                            _data = result.address_data,
+                            postcode = document.getElementById('postcode'),
+                            country = document.getElementById('country'),
+                            region = document.getElementById('region');
+
+                        if (postcode) {
+                            postcode.value = _data.postcode;
+                        }
+
+                        if (country) {
+                            evt.initEvent('change', true, true);
+                            country.value = _data.country_id;
+                            country.dispatchEvent(evt);
+                        }
+
+                        if (region) {
+                            region.value = _data.region_name || _data.region;
+                        }
+                    }
+                }
+            };
             xmlhttp.send(JSON.stringify(<?=$this->getLocationEstimate()?>));
         })();
     </script>

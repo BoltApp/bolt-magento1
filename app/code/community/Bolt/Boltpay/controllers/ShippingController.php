@@ -168,39 +168,50 @@ class Bolt_Boltpay_ShippingController extends Mage_Core_Controller_Front_Action
      * This expects to receive JSON with the values:
      *        city, region_code, zip_code, country_code
      */
-    function prefetchEstimateAction() 
+    function prefetchEstimateAction()
     {
         /** @var Mage_Sales_Model_Quote $quote */
         $quote = Mage::getSingleton('checkout/session')->getQuote();
 
-        ////////////////////////////////////////////////////////////////////////
-        // Clear previously set estimates.  This helps if this
-        // process fails or is aborted, which will force the actual index action
-        // to get fresh data instead of reading from the session cache
-        ////////////////////////////////////////////////////////////////////////
-        Mage::app()->getCache()->remove("quote_location_".$quote->getId());
-        Mage::app()->getCache()->remove("quote_shipping_and_tax_estimate_".$quote->getId());
-        ////////////////////////////////////////////////////////////////////////
+        $shippingAddress = $quote->getShippingAddress();
+        if (empty($shippingAddress->getCountryId()))
+        {
+            ////////////////////////////////////////////////////////////////////////
+            // Clear previously set estimates.  This helps if this
+            // process fails or is aborted, which will force the actual index action
+            // to get fresh data instead of reading from the session cache
+            ////////////////////////////////////////////////////////////////////////
+            Mage::app()->getCache()->remove("quote_location_" . $quote->getId());
+            Mage::app()->getCache()->remove("quote_shipping_and_tax_estimate_" . $quote->getId());
+            ////////////////////////////////////////////////////////////////////////
 
-        $request_json = file_get_contents('php://input');
-        $request_data = json_decode($request_json);
+            $request_json = file_get_contents('php://input');
+            $request_data = json_decode($request_json);
 
-        $address_data = array(
-            'city' => $request_data->city,
-            'region' => $request_data->region_code,
-            'postcode' => $request_data->zip_code,
-            'country_id' => $request_data->country_code
-        );
-        $quote->getShippingAddress()->addData($address_data);
-        $quote->getBillingAddress()->addData($address_data);
+            $address_data = array(
+                'city'          => $request_data->city,
+                'region'        => $request_data->region_code,
+                'region_name'   => $request_data->region_name,
+                'postcode'      => $request_data->zip_code,
+                'country_id'    => $request_data->country_code
+            );
+            $quote->getShippingAddress()->addData($address_data);
+            $quote->getBillingAddress()->addData($address_data);
 
-        try {
-            $estimate_response = Mage::helper('boltpay/api')->getShippingAndTaxEstimate($quote);
-        } catch (Exception $e) {
-            $estimate_response = null;
+            try {
+                $estimate_response = Mage::helper('boltpay/api')->getShippingAndTaxEstimate($quote);
+            } catch (Exception $e) {
+                $estimate_response = null;
+            }
+
+            Mage::app()->getCache()->save(serialize($address_data), "quote_location_" . $quote->getId());
+            Mage::app()->getCache()->save(serialize($estimate_response), "quote_shipping_and_tax_estimate_" . $quote->getId());
+        } else {
+            $address_data = array();
         }
 
-        Mage::app()->getCache()->save(serialize($address_data), "quote_location_".$quote->getId());
-        Mage::app()->getCache()->save(serialize($estimate_response), "quote_shipping_and_tax_estimate_".$quote->getId());
+        $response = Mage::helper('core')->jsonEncode(array('address_data' => $address_data));
+        $this->getResponse()->setHeader('Content-type', 'application/json');
+        $this->getResponse()->setBody($response);
     }
 }
