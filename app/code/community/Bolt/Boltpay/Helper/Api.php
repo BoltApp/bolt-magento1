@@ -167,7 +167,7 @@ class Bolt_Boltpay_Helper_Api extends Bolt_Boltpay_Helper_Data
      *
      * @throws Exception    thrown on order creation failure
      */
-    public function createOrder($reference, $session_quote_id = null) 
+    public function createOrder($reference, $session_quote_id = null)
     {
         if (empty($reference)) {
             throw new Exception("Bolt transaction reference is missing in the Magento order creation process.");
@@ -238,7 +238,9 @@ class Bolt_Boltpay_Helper_Api extends Bolt_Boltpay_Helper_Data
                 $errorMessage = 'Shipping method not found';
                 $metaData = array(
                     'transaction'   => $transaction,
-                    'rates' => $rates
+                    'rates' => $this->getRatesDebuggingData($rates),
+                    'service' => $service,
+                    'shipping_address' => var_export($shipping_address->debug(), true)
                 );
                 Mage::helper('boltpay/bugsnag')->notifyException(new Exception($errorMessage), $metaData);
             }
@@ -273,7 +275,18 @@ class Bolt_Boltpay_Helper_Api extends Bolt_Boltpay_Helper_Data
 
         // a call to internal Magento service for order creation
         $service = Mage::getModel('sales/service_quote', $quote);
-        $service->submitAll();
+
+        try {
+            $service->submitAll();
+        } catch (Exception $e) {
+            Mage::helper('boltpay/bugsnag')->addMetaData(
+                array(
+                    'transaction'   => json_encode((array)$transaction),
+                    'quote_address' => var_export($quote->getShippingAddress()->debug(), true)
+                )
+            );
+            throw $e;
+        }
 
         $order = $service->getOrder();
 
@@ -287,6 +300,18 @@ class Bolt_Boltpay_Helper_Api extends Bolt_Boltpay_Helper_Data
 
         return $order;
 
+    }
+
+    protected function getRatesDebuggingData($rates) {
+        $rateDebuggingData = '';
+
+        if(isset($rates)) {
+            foreach($rates as $rate) {
+                $rateDebuggingData .= var_export($rate->debug(), true);
+            }
+        }
+
+        return $rateDebuggingData;
     }
 
     /**
@@ -768,7 +793,7 @@ class Bolt_Boltpay_Helper_Api extends Bolt_Boltpay_Helper_Data
      * 
      * @return array    Bolt shipping and tax response array to be converted to JSON
      */
-    public function getShippingAndTaxEstimate( $quote ) 
+    public function getShippingAndTaxEstimate( $quote )
     {
 
         $response = array(
@@ -808,9 +833,15 @@ class Bolt_Boltpay_Helper_Api extends Bolt_Boltpay_Helper_Data
                 $label = $label . ' - ' . $rate->getMethodTitle();
             }
 
+            $rateCode = $rate->getCode();
+
+            if(empty($rateCode)) {
+                Mage::helper('boltpay/bugsnag')->notifyException(new Exception('Rate code is empty. ' . var_export($rate->debug(), true)));
+            }
+
             $option = array(
                 "service"   => $label,
-                "reference" => $rate->getCarrier() . '_' . $rate->getMethod(),
+                "reference" => $rateCode,
                 "cost" => round($quote->getShippingAddress()->getShippingAmount() * 100),
                 "tax_amount" => abs(round($quote->getShippingAddress()->getShippingTaxAmount() * 100))
             );
