@@ -185,12 +185,6 @@ class Bolt_Boltpay_ApiController extends Mage_Core_Controller_Front_Action
             return $transaction->capture->amount->amount/100;
         }
 
-        Mage::helper('boltpay/bugsnag')->addMetaData(
-            array(
-                'transaction'  => $transaction,
-            )
-        );
-
-        throw new Exception('Capture amount is invalid');
+        return null;
     }
 }
