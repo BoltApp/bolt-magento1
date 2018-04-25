@@ -161,9 +161,9 @@ class Bolt_Boltpay_Block_Checkout_Boltpay
 
 
             if (Mage::getStoreConfig('payment/boltpay/auto_capture') == self::AUTO_CAPTURE_ENABLED) {
-                $authCapture = 'true';
+                $authCapture = true;
             } else {
-                $authCapture = 'false';
+                $authCapture = false;
             }
 
             // Call Bolt create order API
