@@ -790,7 +790,7 @@ class Bolt_Boltpay_Helper_Api extends Bolt_Boltpay_Helper_Data
      * Gets the shipping and the tax estimate for a quote
      *
      * @param $quote    A quote object with pre-populated addresses
-     * 
+     *
      * @return array    Bolt shipping and tax response array to be converted to JSON
      */
     public function getShippingAndTaxEstimate( $quote )
@@ -861,17 +861,19 @@ class Bolt_Boltpay_Helper_Api extends Bolt_Boltpay_Helper_Data
      * @param Mage_Sales_Model_Quote $quote    Quote which has been updated to use new shipping rate
      * @param string $shippingRateCode    Shipping rate code
      */
-    protected function applyShippingRate($quote, $shippingRateCode) {
+    public function applyShippingRate($quote, $shippingRateCode) {
         $shippingAddress = $quote->getShippingAddress();
 
-        // Unsetting address id is required to force collectTotals to recalculate discounts
-        $shippingAddressId = $shippingAddress->getData('address_id');
-        $shippingAddress->unsetData('address_id');
+        if(!empty($shippingAddress)) {
+            // Unsetting address id is required to force collectTotals to recalculate discounts
+            $shippingAddressId = $shippingAddress->getData('address_id');
+            $shippingAddress->unsetData('address_id');
 
-        $shippingAddress->setShippingMethod($shippingRateCode);
-        $quote->setTotalsCollectedFlag(false)->collectTotals();
+            $shippingAddress->setShippingMethod($shippingRateCode);
+            $quote->setTotalsCollectedFlag(false)->collectTotals();
 
-        $shippingAddress->setData('address_id', $shippingAddressId);
+            $shippingAddress->setData('address_id', $shippingAddressId);
+        }
     }
 
     /**
