@@ -134,12 +134,13 @@ class Bolt_Boltpay_ShippingController extends Mage_Core_Controller_Front_Action
             // Check session cache for estimate.  If the shipping city or postcode, and the country code match,
             // then use the cached version.  Otherwise, we have to do another calculation
             ////////////////////////////////////////////////////////////////////////////////////////
-            $cacheKey = $this->generateCacheKey($quote->getId(), $quote->getShippingAddress(), $quote->getGrandTotal());
-            $cached_address = unserialize(Mage::app()->getCache()->load("quote_location_" . $cacheKey));
+            $cacheKeyLocation = $quote->getId() . '_' . $address_data['country_id'];
+            $prefetchCacheKey = $this->generateCacheKey($quote, $address_data);
+            $cached_address = unserialize(Mage::app()->getCache()->load('quote_location_' . $cacheKeyLocation));
 
             if ($cached_address && ((strtoupper($cached_address["city"]) == strtoupper($address_data["city"])) || ($cached_address["postcode"] == $address_data["postcode"])) && ($cached_address["country_id"] == $address_data["country_id"])) {
                 //Mage::log('Using cached address: '.var_export($cached_address, true), null, 'shipping_and_tax.log');
-                $response = unserialize(Mage::app()->getCache()->load("quote_shipping_and_tax_estimate_" . $cacheKey));
+                $response = unserialize(Mage::app()->getCache()->load($prefetchCacheKey));
             } else {
                 //Mage::log('Generating address from quote', null, 'shipping_and_tax.log');
                 //Mage::log('Live address: '.var_export($address_data, true), null, 'shipping_and_tax.log');
@@ -177,18 +178,8 @@ class Bolt_Boltpay_ShippingController extends Mage_Core_Controller_Front_Action
         $quote = Mage::getSingleton('checkout/session')->getQuote();
 
         $shippingAddress = $quote->getShippingAddress();
-        if (empty($shippingAddress->getCountryId()))
+        if (empty($shippingAddress->getCountryId()) && $quote->getItemsCount())
         {
-            $cacheKey = $this->generateCacheKey($quote->getId(), $shippingAddress, $quote->getGrandTotal());
-            ////////////////////////////////////////////////////////////////////////
-            // Clear previously set estimates.  This helps if this
-            // process fails or is aborted, which will force the actual index action
-            // to get fresh data instead of reading from the session cache
-            ////////////////////////////////////////////////////////////////////////
-            Mage::app()->getCache()->remove("quote_location_" . $cacheKey);
-            Mage::app()->getCache()->remove("quote_shipping_and_tax_estimate_" . $cacheKey);
-            ////////////////////////////////////////////////////////////////////////
-
             $request_json = file_get_contents('php://input');
             $request_data = json_decode($request_json);
 
@@ -199,41 +190,95 @@ class Bolt_Boltpay_ShippingController extends Mage_Core_Controller_Front_Action
                 'postcode'      => $request_data->zip_code,
                 'country_id'    => $request_data->country_code
             );
+
+            /** @var Mage_Directory_Model_Country $countryModel */
+            $countryModel = Mage::getModel('directory/country');
+            $countryObj = $countryModel->load($address_data['country_id']);
+            $isRegionAvailable = ($countryObj->getRegionCollection()->getSize() > 0);
+            if (!$isRegionAvailable) {
+                // If country does not have region options for dropdown.
+                $address_data['region'] = $address_data['region_name'];
+            }
+
+            /** @var Mage_Directory_Model_Region $regionModel */
+            $regionModel = Mage::getModel('directory/region');
+            $regionObj= $regionModel->loadByCode($address_data['region'], $address_data['country_id']);
+            $address_data['region_id'] = ($regionObj) ? $regionObj->getId() : null;
+
+            ////////////////////////////////////////////////////////////////////////
+            // Clear previously set estimates.  This helps if this
+            // process fails or is aborted, which will force the actual index action
+            // to get fresh data instead of reading from the session cache
+            ////////////////////////////////////////////////////////////////////////
+            $cacheKeyLocation = $quote->getId() . '_' . $address_data['country_id'];
+            $prefetchCacheKey = $this->generateCacheKey($quote, $address_data);
+            Mage::app()->getCache()->remove('quote_location_' . $cacheKeyLocation);
+            Mage::app()->getCache()->remove($prefetchCacheKey);
+            ////////////////////////////////////////////////////////////////////////
+
             $quote->getShippingAddress()->addData($address_data);
             $quote->getBillingAddress()->addData($address_data);
-
             try {
                 $estimate_response = Mage::helper('boltpay/api')->getShippingAndTaxEstimate($quote);
             } catch (Exception $e) {
                 $estimate_response = null;
             }
 
-            Mage::app()->getCache()->save(serialize($address_data), "quote_location_" . $cacheKey);
-            Mage::app()->getCache()->save(serialize($estimate_response), "quote_shipping_and_tax_estimate_" . $cacheKey);
+            $lifeTime = 600; //10 minutes
+            Mage::app()->getCache()->save(
+                serialize($address_data),
+                'quote_location_' . $cacheKeyLocation,
+                array('BOLT_QUOTE_LOCATION'),
+                $lifeTime
+            );
+
+            Mage::app()->getCache()->save(
+                serialize($estimate_response),
+                $prefetchCacheKey,
+                array('BOLT_PREFETCH_SHIPPING_AND_TAX'),
+                $lifeTime
+            );
         } else {
             $address_data = array();
         }
 
         $response = Mage::helper('core')->jsonEncode(array('address_data' => $address_data));
         $this->getResponse()->setHeader('Content-type', 'application/json');
+        $this->getResponse()->setHeader('X-Bolt-Cache-Hit', 'HIT');
         $this->getResponse()->setBody($response);
     }
 
     /**
-     * @param $quoteId
-     * @param $_shippingAddress
-     * @param $totalAmount
+     * @param        $quote Mage_Sales_Model_Quote
+     * @param        $addressData
      * @return string
      */
-    public function generateCacheKey($quoteId, $_shippingAddress, $totalAmount)
+    public function generateCacheKey($quote, $addressData)
     {
-        $quoteTotalAmount = round($totalAmount*100);
-        $countryCode = $_shippingAddress->getCountryId();
-        $region = $_shippingAddress->getRegionCode();
-        $postCode = $_shippingAddress->getPostcode();
+        /* @var $shippingAddress Mage_Sales_Model_Quote_Address */
+        $shippingAddress = $quote->getShippingAddress();
+        $itemIDs = $quote->getItemsCollection()->getAllIds();
+        $quoteTotalAmount = round($quote->getGrandTotal()*100);
+        $key = $quote->getId() . '_' . $quoteTotalAmount;
 
-        $key = $quoteId . '_' . $quoteTotalAmount . '_' . $countryCode.$region.$postCode;
+        if (!$shippingAddress->getCountryId() && !$shippingAddress->getPostcode()) {
+            $countryCode = $addressData['country_id'];
+            $region = $addressData['region'];
+            $postCode = str_replace(' ', '', $addressData['postcode']);
+        } else {
+            $countryCode = $shippingAddress->getCountryId();
+            $region = $shippingAddress->getRegionCode();
+            $postCode = str_replace(' ', '', $shippingAddress->getPostcode());
+        }
 
-        return $key;
+        $key .= ($countryCode) ? '_' . $countryCode : '';
+        $key .= ($region) ? '_' . $region : '';
+        $key .= ($postCode) ? '_' . $postCode : '';
+
+        foreach ($itemIDs as $id) {
+            $key .= '_' .$id;
+        }
+
+        return 'BOLT_PREFETCH_' . md5('quote_shipping_and_tax_estimate_' . $key);
     }
 }
