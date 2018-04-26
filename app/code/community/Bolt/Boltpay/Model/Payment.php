@@ -31,7 +31,7 @@ class Bolt_Boltpay_Model_Payment extends Mage_Payment_Model_Method_Abstract
     const REQUEST_TYPE_CAPTURE_ONLY = 'CAPTURE_ONLY';
     const METHOD_CODE               = 'boltpay';
     const TITLE                     = "Credit & Debit Card";
-    const TITLE_ADMIN               = "Bolt (admin)";
+    const TITLE_ADMIN               = "Credit and Debit Card (Powered by Bolt)";
 
     // Order States
     const ORDER_DEFERRED = 'deferred';
@@ -100,6 +100,15 @@ class Bolt_Boltpay_Model_Payment extends Mage_Payment_Model_Method_Abstract
         self::HOOK_TYPE_VOID => self::TRANSACTION_CANCELLED
     );
 
+    /**
+     * @return bool
+     * @throws Mage_Core_Model_Store_Exception
+     */
+    public function isAdminArea()
+    {
+        return (Mage::app()->getStore()->isAdmin() && Mage::getDesign()->getArea() === 'adminhtml');
+    }
+    
     public function getConfigData($field, $storeId = null)
     {
         if (Mage::getStoreConfig('payment/boltpay/skip_payment') == 1) {
@@ -109,7 +118,7 @@ class Bolt_Boltpay_Model_Payment extends Mage_Payment_Model_Method_Abstract
         }
 
         if ($field == 'title') {
-            if (Mage::app()->getStore()->isAdmin()) {
+            if ($this->isAdminArea()) {
                 return self::TITLE_ADMIN;
             } else {
                 return self::TITLE;
