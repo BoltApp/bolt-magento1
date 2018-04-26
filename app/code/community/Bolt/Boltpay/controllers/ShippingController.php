@@ -260,9 +260,9 @@ class Bolt_Boltpay_ShippingController extends Mage_Core_Controller_Front_Action
         $itemIDs = $quote->getItemsCollection()->getAllIds();
         $quoteTotalAmount = round($quote->getGrandTotal()*100);
         $isCustomerGuest = $quote->getCustomerIsGuest();
-        $discount = round(abs($shippingAddress->getDiscountAmount()) * 100);
+        $discountCode = str_replace(' ', '', $shippingAddress->getDiscountDescription());
 
-        $key = $quote->getId() . '_' . $isCustomerGuest . '_' . $discount . '_' .$quoteTotalAmount;
+        $key = $quote->getId() . '_' . $isCustomerGuest . '_' . $discountCode . '_' .$quoteTotalAmount;
 
         if (!$shippingAddress->getCountryId() && !$shippingAddress->getPostcode()) {
             $countryCode = $addressData['country_id'];
