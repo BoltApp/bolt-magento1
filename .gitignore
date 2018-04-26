@@ -1,5 +1,6 @@
 *
 !.circleci/*
+!.travis.yml
 !app/code/community/Bolt/*
 !app/design/adminhtml/default/default/layout/boltpay.xml
 !app/design/adminhtml/default/default/template/boltpay/*
