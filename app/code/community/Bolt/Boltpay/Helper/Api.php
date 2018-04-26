@@ -290,6 +290,8 @@ class Bolt_Boltpay_Helper_Api extends Bolt_Boltpay_Helper_Data
 
         $order = $service->getOrder();
 
+        $this->validateSubmittedOrder($order, $quote);
+
         // deactivate quote
         $quote->setIsActive(false);
         $quote->save();
@@ -312,6 +314,19 @@ class Bolt_Boltpay_Helper_Api extends Bolt_Boltpay_Helper_Data
         }
 
         return $rateDebuggingData;
+    }
+
+    protected function validateSubmittedOrder($order, $quote) {
+        if(empty($order)) {
+            Mage::helper('boltpay/bugsnag')->addMetaData(
+                array(
+                    'quote'  => var_export($quote->debug(), true),
+                    'quote_address'  => var_export($quote->getShippingAddress()->debug(), true),
+                )
+            );
+
+            throw new Exception('Order is empty after call to Sales_Model_Service_Quote->submitAll()');
+        }
     }
 
     /**
