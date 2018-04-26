@@ -178,7 +178,10 @@ class Bolt_Boltpay_ShippingController extends Mage_Core_Controller_Front_Action
         $quote = Mage::getSingleton('checkout/session')->getQuote();
 
         $shippingAddress = $quote->getShippingAddress();
-        if (empty($shippingAddress->getCountryId()) && $quote->getItemsCount())
+
+        $countItems = $quote->getItemsCollection()->getSize();
+        $countryId = $shippingAddress->getCountryId();
+        if ($shippingAddress && empty($countryId) && $countItems)
         {
             $request_json = file_get_contents('php://input');
             $request_data = json_decode($request_json);
