@@ -8,11 +8,12 @@ php:
 env:
   global:
     - CODE_COVERAGE=false
-
-  matrix:
-    - MAGENTO_VERSION=magento-mirror-1.9.3.6
+    - MAGENTO_VERSION="1.9.3.6"
 
 script:
+    - composer require --no-update magento-hackathon/magento-composer-installer
+    - composer config extra.magento-root-dir "./"
+    - composer require --no-update aydin-hassan/magento-core-composer-installer
+    - composer require --no-update magento/core "$MAGENTO_VERSION"
     - composer install
-    - echo "Start the unit tests"
     - php tests/unit/phpunit-5.7.9.phar -c tests/unit/phpunit.xml
