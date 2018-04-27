@@ -141,10 +141,12 @@ class Bolt_Boltpay_ShippingController extends Mage_Core_Controller_Front_Action
             if ($cached_address && ((strtoupper($cached_address["city"]) == strtoupper($address_data["city"])) || ($cached_address["postcode"] == $address_data["postcode"])) && ($cached_address["country_id"] == $address_data["country_id"])) {
                 //Mage::log('Using cached address: '.var_export($cached_address, true), null, 'shipping_and_tax.log');
                 $response = unserialize(Mage::app()->getCache()->load($prefetchCacheKey));
+                $cacheBoltHeader = 'HIT';
             } else {
                 //Mage::log('Generating address from quote', null, 'shipping_and_tax.log');
                 //Mage::log('Live address: '.var_export($address_data, true), null, 'shipping_and_tax.log');
                 $response = Mage::helper('boltpay/api')->getShippingAndTaxEstimate($quote);
+                $cacheBoltHeader = 'MISS';
             }
 
             ////////////////////////////////////////////////////////////////////////////////////////
@@ -156,6 +158,8 @@ class Bolt_Boltpay_ShippingController extends Mage_Core_Controller_Front_Action
             $this->getResponse()->clearHeaders()
                 ->setHeader('Content-type', 'application/json', true)
                 ->setHeader('X-Nonce', rand(100000000, 999999999), true);
+
+            $this->getResponse()->setHeader('X-Bolt-Cache-Hit', $cacheBoltHeader);
 
             Mage::helper('boltpay/api')->setResponseContextHeaders();
 
@@ -247,7 +251,6 @@ class Bolt_Boltpay_ShippingController extends Mage_Core_Controller_Front_Action
 
         $response = Mage::helper('core')->jsonEncode(array('address_data' => $address_data));
         $this->getResponse()->setHeader('Content-type', 'application/json');
-        $this->getResponse()->setHeader('X-Bolt-Cache-Hit', 'HIT');
         $this->getResponse()->setBody($response);
     }
 
