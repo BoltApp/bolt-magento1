@@ -1,19 +1,18 @@
 language: php
 
 php:
-  - 5.4
-  - 5.5
   - 5.6
+
+deploy:
+  skip-cleanup: true
+  github-token: $GITHUB_TOKEN
 
 env:
   global:
     - CODE_COVERAGE=false
-    - MAGENTO_VERSION="1.9.3.6"
+    - MAGENTO_VERSION="^1.9"
 
 script:
-    - composer require --no-update magento-hackathon/magento-composer-installer
-    - composer config extra.magento-root-dir "./"
-    - composer require --no-update aydin-hassan/magento-core-composer-installer
     - composer require --no-update magento/core "$MAGENTO_VERSION"
     - composer install
     - php tests/unit/phpunit-5.7.9.phar -c tests/unit/phpunit.xml
