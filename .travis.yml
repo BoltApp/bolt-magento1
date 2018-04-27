@@ -13,4 +13,6 @@ env:
     - MAGENTO_VERSION=magento-mirror-1.9.3.6
 
 script:
-    - php $HOME/tests/unit/phpunit-5.7.9.phar -c $HOME/tests/unit/phpunit.xml
+    - composer install
+    - echo "Start the unit tests"
+    - php tests/unit/phpunit-5.7.9.phar -c tests/unit/phpunit.xml
