@@ -1,5 +1,8 @@
 <?php
 
+/**
+ * Class Bolt_Boltpay_Model_ObserverTest
+ */
 class Bolt_Boltpay_Model_ObserverTest extends PHPUnit_Framework_TestCase
 {
     const CUSTOMER_ID = 100;
@@ -8,18 +11,33 @@ class Bolt_Boltpay_Model_ObserverTest extends PHPUnit_Framework_TestCase
     const CUSTOMER_EMAIL = 'abc@test.com';
     const CUSTOMER_BOLT_USER_ID = "13456";
 
-    private $checkout = null;
+    /**
+     * @var int|null
+     */
+    private static $productId = null;
+
     /**
      * @var Mage_Sales_Model_Quote
      */
     private $quote = null;
+    /**
+     * @var Mage_Sales_Model_Order
+     */
     private $order = null;
 
     /**
      * @var Mage_Customer_Model_Session
      */
     private $session = null;
+
+    /**
+     * @var Mage_Sales_Model_Quote_Payment
+     */
     private $quotePayment = null;
+
+    /**
+     * @var Mage_Sales_Model_Order_Payment
+     */
     private $orderPayment = null;
 
     /**
@@ -27,7 +45,30 @@ class Bolt_Boltpay_Model_ObserverTest extends PHPUnit_Framework_TestCase
      */
     private $customer = null;
 
-//
+    /**
+     * Generate dummy products for testing purposes
+     * @inheritdoc
+     */
+    public static function setUpBeforeClass()
+    {
+        // Create some dummy product:
+        self::$productId = Bolt_Boltpay_ProductProvider::createDummyProduct('PHPUNIT_TEST_' . 1);
+    }
+
+    /**
+     * Delete dummy products after the test
+     * @inheritdoc
+     */
+    public static function tearDownAfterClass()
+    {
+        Bolt_Boltpay_ProductProvider::deleteDummyProduct(self::$productId);
+    }
+
+    /**
+     * @inheritdoc
+     *
+     * @throws Varien_Exception
+     */
     public function setUp()
     {
         $this->order    = $this->createMock(Mage_Sales_Model_Order::class);
@@ -38,6 +79,9 @@ class Bolt_Boltpay_Model_ObserverTest extends PHPUnit_Framework_TestCase
         $this->customer = Mage::getModel('customer/customer');
     }
 
+    /**
+     * @inheritdoc
+     */
     public function testCheckObserverClass()
     {
         $observer = Mage::getModel('boltpay/Observer');
@@ -45,6 +89,10 @@ class Bolt_Boltpay_Model_ObserverTest extends PHPUnit_Framework_TestCase
         $this->assertInstanceOf('Bolt_Boltpay_Model_Observer', $observer);
     }
 
+    /**
+     * @inheritdoc
+     * @throws Varien_Exception
+     */
     public function testSetBoltUserId()
     {
         $order = null;
@@ -57,6 +105,9 @@ class Bolt_Boltpay_Model_ObserverTest extends PHPUnit_Framework_TestCase
         $this->assertEquals(self::CUSTOMER_BOLT_USER_ID, $this->quote->getCustomer()->getBoltUserId());
     }
 
+    /**
+     * @inheritdoc
+     */
     public function testAddMessageWhenCapture()
     {
         $incrementId = '100000001';
@@ -82,63 +133,15 @@ class Bolt_Boltpay_Model_ObserverTest extends PHPUnit_Framework_TestCase
         $this->assertEquals('Magento Order ID: "'.$incrementId.'".', $orderPayment->getData('prepared_message'));
     }
 
-    // TODO: rewrite it. Transaction behaviour was changed.
-    public function testOrderTransactionIsCreated()
-    {
-        $quote = $this->quote;
-        $this->quotePayment = $this->_createQuotePayment(
-            self::QUOTE_PAYMENT_ID,
-            $quote,
-            Bolt_Boltpay_Model_Payment::METHOD_CODE);
-
-        $this->quote->setPayment($this->quotePayment);
-
-        $this->orderPayment = $this->createPartialMock(Mage_Sales_Model_Order_Payment::class,
-            ['getAdditionalInformation', 'addTransaction', 'getData', 'getPayment']);
-
-        $this->orderPayment->method('getAdditionalInformation')
-            ->with('bolt_reference')
-            ->willReturn('AAA-BBB-CCC');
-
-        $this->orderPayment->method('getAdditionalInformation')
-            ->with('bolt_transaction_status')
-            ->willReturn(Bolt_Boltpay_Model_Payment::TRANSACTION_AUTHORIZED);
-
-        $this->orderPayment->method('addTransaction')
-            ->with(Mage_Sales_Model_Order_Payment_Transaction::TYPE_ORDER, null, false, "Order ");
-
-        $this->orderPayment->method('getData')
-            ->with('method')
-            ->willReturn(Bolt_Boltpay_Model_Payment::METHOD_CODE);
-
-        $this->order->method('getPayment')
-            ->willReturn($this->orderPayment);
-    }
-
-//    public function handleOrderUpdate(Varien_Object $order) {
-//        try {
-//            $orderPayment = $order->getPayment();
-//            $reference = $orderPayment->getAdditionalInformation('bolt_reference');
-//            $transactionStatus = $orderPayment->getAdditionalInformation('bolt_transaction_status');
-//            $orderPayment->setTransactionId(sprintf("%s-%d-order", $reference, $order->getId()));
-//            $orderPayment->addTransaction(
-//                Mage_Sales_Model_Order_Payment_Transaction::TYPE_ORDER, null, false, "Order ");
-//            $order->save();
-//
-//            $orderPayment->setData('auto_capture', $transactionStatus == self::TRANSACTION_COMPLETED);
-//            $this->handleTransactionUpdate($orderPayment, $transactionStatus, null);
-//        } catch (Exception $e) {
-//            $error = array('error' => $e->getMessage());
-//            Mage::log($error, null, 'bolt.log');
-//            throw $e;
-//        }
-//    }
-
+    /**
+     * @inheritdoc
+     * @throws Varien_Exception
+     */
     public function testVerifyOrderContents()
     {
         $observerModel = $this->getMockBuilder(Bolt_Boltpay_Model_Observer::class)
             ->enableOriginalConstructor()
-            ->setMethods(array('proceedTransmit', 'getBoltApiHelper', 'sendOrderEmail'))
+            ->setMethods(array('sendCompleteAuthorizeRequest', 'getBoltApiHelper', 'sendOrderEmail'))
             ->getMock();
 
         $quote = $this->quote;
@@ -153,14 +156,13 @@ class Bolt_Boltpay_Model_ObserverTest extends PHPUnit_Framework_TestCase
             ->method('addStatusHistoryComment')
             ->willReturn($history);
 
-
         $this->quotePayment = $this->_createQuotePayment(
             self::QUOTE_PAYMENT_ID,
             $quote,
             Bolt_Boltpay_Model_Payment::METHOD_CODE);
 
         $this->_createGuestCheckout(
-            1,
+            self::$productId,
             2
         );
 
@@ -175,30 +177,72 @@ class Bolt_Boltpay_Model_ObserverTest extends PHPUnit_Framework_TestCase
 
         $transmitResponse = new stdClass();
         $transmitResponse->is_valid = 1;
-        $observerModel->method('proceedTransmit')
+        $observerModel->method('sendCompleteAuthorizeRequest')
             ->will($this->returnValue($transmitResponse));
 
         $observerModel->verifyOrderContents($observerObject);
 
-        //TODO: does it make sense?
-        $this->assertTrue(true);
-
+        $this->assertEquals($transmitResponse, $observerModel->sendCompleteAuthorizeRequest());
     }
 
     /**
-     * @param $id
-     * @throws Exception
+     * @inheritdoc
      */
-    private function _clearCustomerBoltUserId($id)
+    public function testSendOrderEmail()
     {
-        /** @var Mage_Customer_Model_Customer $existingCustomer */
-        $existingCustomer = Mage::getModel('customer/customer')->load($id);
-        $existingCustomer->setBoltUserId(null);
-        $existingCustomer->save();
+        /** @var Bolt_Boltpay_Model_Observer $observerModel */
+        $observerModel = $this->createPartialMock(Bolt_Boltpay_Model_Observer::class, []);
 
-        $this->assertEquals(null, $existingCustomer->getBoltUserId());
+        $this->order = $this->getMockBuilder(Mage_Sales_Model_Order::class)
+            ->setMethods(array('getIncrementId', 'addStatusHistoryComment', 'addStatusHistory', 'getPayment'))
+            ->getMock()
+        ;
+
+        $incrementId = '100000001';
+        $this->order->method('getIncrementId')
+            ->will($this->returnValue($incrementId));
+
+        $orderPayment = $this->getMockBuilder(Mage_Sales_Model_Order_Payment::class)
+            ->setMethods(['getMethod', 'getOrder'])
+            ->enableOriginalConstructor()
+            ->getMock();
+
+        $orderPayment
+            ->method('getMethod')
+            ->willReturn(Bolt_Boltpay_Model_Payment::METHOD_CODE);
+
+        $orderPayment->method('getOrder')
+            ->willReturn($this->order);
+        $this->order->method('getPayment')
+            ->willReturn($orderPayment);
+
+        $history = $this->getMockBuilder('Mage_Sales_Model_Order_Status_History')
+            ->setMethods(array('getStatus'))
+            ->getMock();
+
+        $history->method('getStatus')
+            ->will($this->returnValue('test_status'));
+
+        $this->order->expects($this->any())
+            ->method('addStatusHistoryComment')
+            ->willReturn($history);
+
+        $observerModel->sendOrderEmail($this->order);
+
+        $this->assertEquals(true, $this->order->getData('email_sent'));
+        $this->assertTrue($history->getIsCustomerNotified());
+        $this->assertEquals('test_status', $history->getStatus());
     }
 
+    /**
+     * @inheritdoc
+     *
+     * @param $quotePaymentId
+     * @param $quote
+     * @param $method
+     * @return false|Mage_Core_Model_Abstract
+     * @throws Varien_Exception
+     */
     private function _createQuotePayment($quotePaymentId, $quote, $method)
     {
         $quotePayment = Mage::getModel('sales/quote_payment');
@@ -210,12 +254,20 @@ class Bolt_Boltpay_Model_ObserverTest extends PHPUnit_Framework_TestCase
         return $quotePayment;
     }
 
+    /**
+     * @inheritdoc
+     *
+     * @param $productId
+     * @param $quantity
+     * @return Mage_Core_Model_Abstract
+     * @throws Varien_Exception
+     */
     private function _createGuestCheckout($productId, $quantity)
     {
         $product = Mage::getModel('catalog/product')->load($productId);
         $cart = Mage::getSingleton('checkout/cart');
         $param = array(
-            'product' => $productId,
+            'product' => self::$productId,
             'qty' => 4
         );
         $cart->addProduct($product, $param);
@@ -269,6 +321,10 @@ class Bolt_Boltpay_Model_ObserverTest extends PHPUnit_Framework_TestCase
         return $cart;
     }
 
+    /**
+     * @inheritdoc
+     * @throws Varien_Exception
+     */
     private function setEmptyQuoteWithCustomer()
     {
         $this->customer->setId(self::CUSTOMER_ID);

@@ -106,7 +106,7 @@ class Bolt_Boltpay_Model_Observer
 
             try {
                 if (!Mage::getStoreConfig('payment/boltpay/disable_complete_authorize'))  {
-                    $this->proceedTransmit($complete_authorize_request);
+                    $this->sendCompleteAuthorizeRequest($complete_authorize_request);
                 }
             } catch (Exception $e) {
                 $message = "THERE IS A MISMATCH IN THE ORDER PAID AND ORDER RECORDED.<br>PLEASE COMPARE THE ORDER DETAILS WITH THAT RECORD IN YOUR BOLT MERCHANT ACCOUNT AT: ";
@@ -125,21 +125,24 @@ class Bolt_Boltpay_Model_Observer
             }
 
             $this->sendOrderEmail($order);
+
+            $order->save();
         }
     }
 
-    public function proceedTransmit($complete_authorize_request)
+    public function sendCompleteAuthorizeRequest($complete_authorize_request)
     {
         return $this->getBoltApiHelper()->transmit('complete_authorize', $complete_authorize_request);
     }
 
+    /**
+     * @param $order Mage_Sales_Model_Order
+     */
     public function sendOrderEmail($order)
     {
         $order->sendNewOrderEmail();
         $history = $order->addStatusHistoryComment('Email sent for order ' . $order->getIncrementId());
         $history->setIsCustomerNotified(true);
-
-        $order->save();
     }
 
     /**
