@@ -1,7 +1,9 @@
 <?php
 
-class Bolt_Boltpay_TestHelper{
-    public function addProduct($productId, $quantity) {
+class Bolt_Boltpay_TestHelper
+{
+    public function addProduct($productId, $quantity) 
+    {
         $product = Mage::getModel('catalog/product')->load($productId);
         $cart = Mage::getSingleton('checkout/cart');
         $param = array(
@@ -25,14 +27,16 @@ class Bolt_Boltpay_TestHelper{
      *     'region_id' => 12, // id from directory_country_region table
      * );
      */
-    public function addTestBillingAddress($addressData) {
+    public function addTestBillingAddress($addressData) 
+    {
         $checkout = Mage::getSingleton('checkout/type_onepage');
         $checkout->getQuote()->getBillingAddress()->addData($addressData);
         $checkout->getQuote()->getBillingAddress()->save();
         return $checkout;
     }
 
-    public function addTestFlatRateShippingAddress($addressData, $paymentMethod) {
+    public function addTestFlatRateShippingAddress($addressData, $paymentMethod) 
+    {
         $checkout = Mage::getSingleton('checkout/type_onepage');
         $shippingAddress = $checkout->getQuote()->getShippingAddress()->addData($addressData);
         $shippingAddress
@@ -44,7 +48,8 @@ class Bolt_Boltpay_TestHelper{
         return $checkout;
     }
 
-    public function createCheckout($checkoutType) {
+    public function createCheckout($checkoutType) 
+    {
         Mage::unregister('_singleton/checkout/type_onepage');
         Mage::unregister('_singleton/checkout/cart');
         $checkout = Mage::getSingleton('checkout/type_onepage');
@@ -55,7 +60,8 @@ class Bolt_Boltpay_TestHelper{
         return $checkout;
     }
 
-    public function addPaymentToQuote($method) {
+    public function addPaymentToQuote($method) 
+    {
         $checkout = Mage::getSingleton('checkout/type_onepage');
         $checkout->getQuote()->getPayment()->importData(array('method' => $method));
         $checkout->getQuote()->getPayment()->save();
@@ -64,14 +70,16 @@ class Bolt_Boltpay_TestHelper{
     }
 
 
-    public function submitCart() {
+    public function submitCart() 
+    {
         $checkout = Mage::getSingleton('checkout/type_onepage');
         $service = Mage::getModel('sales/service_quote', $checkout->getQuote());
         $service->submitAll();
         return $service->getOrder();
     }
 
-    public function resetApp() {
+    public function resetApp() 
+    {
         $_POST = array();
         $_REQUEST = array();
         $_GET = array();

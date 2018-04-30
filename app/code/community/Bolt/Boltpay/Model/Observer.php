@@ -29,7 +29,8 @@
  *
  * This class implements order event behavior
  */
-class Bolt_Boltpay_Model_Observer {
+class Bolt_Boltpay_Model_Observer
+{
 
     /**
      * Event handler called after a save event.
@@ -38,7 +39,8 @@ class Bolt_Boltpay_Model_Observer {
      * @param $observer
      * @throws Exception
      */
-    public function setBoltUserId($observer) {
+    public function setBoltUserId($observer) 
+    {
 
         $quote = $observer->getEvent()->getQuote();
         $session = Mage::getSingleton('customer/session');
@@ -70,7 +72,8 @@ class Bolt_Boltpay_Model_Observer {
      * @param $observer
      * @throws Exception
      */
-    public function verifyOrderContents($observer) {
+    public function verifyOrderContents($observer) 
+    {
 
         $boltHelper = Mage::helper('boltpay/api');
         $quote = $observer->getEvent()->getQuote();

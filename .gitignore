@@ -1,11 +1,6 @@
-# .DS_Store
-# .idea
-# *.zip
-# *.tar.gz
-# vendor/magento1.9
-
 *
 !.circleci/*
+!.travis.yml
 !app/code/community/Bolt/*
 !app/design/adminhtml/default/default/layout/boltpay.xml
 !app/design/adminhtml/default/default/template/boltpay/*

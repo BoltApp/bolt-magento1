@@ -24,23 +24,34 @@
  * @license    http://opensource.org/licenses/osl-3.0.php  Open Software License (OSL 3.0)
  */
 
-/**
- * This sets the hidden Bolt payment form
- * that is used in callback to save the order
- *
- * @deprecated Getting order data is done through the Bolt Fetch API call
- */
-class Bolt_Boltpay_Block_Form extends Mage_Payment_Block_Form_Cc
+class Bolt_Boltpay_Model_Service_Order extends Mage_Sales_Model_Service_Order
 {
-    protected function _construct() 
+    /**
+     * Prepare order invoice without any items
+     *
+     * @param $amount
+     * @return Mage_Sales_Model_Order_Invoice
+     */
+    public function prepareInvoiceWithoutItems($amount)
     {
-        if (!Mage::app()->getStore()->isAdmin()) {
-            $mark = Mage::getConfig()->getBlockClassName('core/template');
-            $mark = new $mark;
-            $mark->setTemplate('boltpay/mark.phtml');
-            $this->setMethodLabelAfterHtml($mark->toHtml());
+        try {
+            $invoice = $this->_convertor->toInvoice($this->_order);
+            $invoice->setBaseGrandTotal($amount);
+            $invoice->setSubtotal($amount);
+            $invoice->setBaseSubtotal($amount);
+            $invoice->setGrandTotal($amount);
+
+            $this->_order->getInvoiceCollection()->addItem($invoice);
+        } catch(Exception $e) {
+            $metaData = array(
+                'amount'   => $amount,
+                'order' => var_export($this->_order->debug(), true)
+            );
+
+            Mage::helper('boltpay/bugsnag')->notifyException($e, $metaData);
+            throw $e;
         }
-        parent::_construct();
-        $this->setTemplate('boltpay/form.phtml')->setMethodTitle('');
+
+        return $invoice;
     }
 }

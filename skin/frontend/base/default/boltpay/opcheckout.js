@@ -24,7 +24,7 @@
  */
 
 (function () {
-    ShippingMethod.prototype.nextStep = function(transport){
+    ShippingMethod.prototype.nextStep = function (transport) {
         if (transport && transport.responseText){
             try{
                 response = eval('(' + transport.responseText + ')');
@@ -52,8 +52,10 @@
                 checkout.reloadProgressBlock('payment');
                 checkout.reloadProgressBlock();
             }
+
             return;
         }
+
         if (response.payment_methods_html) {
             $('checkout-payment-method-load').update(response.payment_methods_html);
         }
@@ -61,7 +63,7 @@
         checkout.setShippingMethod();
     }
 
-    Review.prototype.initialize = function(saveUrl, successUrl, agreementsForm, cartUrl){
+    Review.prototype.initialize = function (saveUrl, successUrl, agreementsForm, cartUrl) {
         this.nextUrl = cartUrl;
         this.saveUrl = saveUrl;
         this.successUrl = successUrl;
@@ -69,12 +71,13 @@
         this.onSave = this.nextStep.bindAsEventListener(this);
     };
 
-    Review.prototype.save = function(callback){
+    Review.prototype.save = function (callback) {
         var params = Form.serialize("co-payment-form");
         this.callback = callback;
         if (this.agreementsForm) {
             params += '&'+Form.serialize(this.agreementsForm);
         }
+
         params.save = true;
         var request = new Ajax.Request(
             this.saveUrl,
@@ -87,13 +90,13 @@
         );
     };
 
-    Review.prototype.redirect = function() {
+    Review.prototype.redirect = function () {
         if(this.nextUrl != false) {
             window.location = this.nextUrl;
         }
     };
 
-    Review.prototype.nextStep = function(transport){
+    Review.prototype.nextStep = function (transport) {
         if (transport && transport.responseText) {
             try{
                 response = eval('(' + transport.responseText + ')');
@@ -101,11 +104,13 @@
             catch (e) {
                 response = {};
             }
+
             if (response.redirect) {
                 this.isSuccess = true;
                 this.nextUrl = response.redirect;
                 return;
             }
+
             if (response.success) {
                 this.isSuccess = true;
                 this.nextUrl=this.successUrl;
@@ -115,6 +120,7 @@
                 if (typeof(msg)=='object') {
                     msg = msg.join("\n");
                 }
+
                 if (msg) {
                     alert(msg);
                 }
@@ -133,7 +139,6 @@
             } else if (this.nextUrl) {
                 window.location=this.nextUrl;
             }
-
         }
     };
 
@@ -154,6 +159,8 @@ if (!lastPrice) {
     var lastPrice = false;
 }
 
-payment.addAfterInitFunction('boltpay', function() {
+payment.addAfterInitFunction(
+    'boltpay', function () {
     jQuery("#p_method_boltpay").trigger('click');
-});
+    }
+);

@@ -35,7 +35,8 @@
  * 4. Makes the calls towards Bolt API.
  * 5. Generates Bolt order submission data.
  */
-class Bolt_Boltpay_Helper_Api extends Bolt_Boltpay_Helper_Data {
+class Bolt_Boltpay_Helper_Api extends Bolt_Boltpay_Helper_Data
+{
 
     const API_URL_TEST = 'https://api-sandbox.bolt.com/';
     const API_URL_PROD = 'https://api.bolt.com/';
@@ -69,7 +70,8 @@ class Bolt_Boltpay_Helper_Api extends Bolt_Boltpay_Helper_Data {
      * @throws Exception     thrown if multiple (3) calls fail
      * @return bool|mixed Transaction info
      */
-    public function fetchTransaction($reference, $tries = 3) {
+    public function fetchTransaction($reference, $tries = 3) 
+    {
         try {
             return $this->transmit($reference, null);
         } catch (Exception $e) {
@@ -78,6 +80,7 @@ class Bolt_Boltpay_Helper_Api extends Bolt_Boltpay_Helper_Data {
                 Mage::helper('boltpay/bugsnag')->notifyException($e);
                 throw $e;
             }
+
             return $this->fetchTransaction($reference, $tries);
         }
     }
@@ -89,7 +92,8 @@ class Bolt_Boltpay_Helper_Api extends Bolt_Boltpay_Helper_Data {
      * @param $hmac_header
      * @return bool
      */
-    private function verify_hook_secret($payload, $hmac_header) {
+    private function verify_hook_secret($payload, $hmac_header) 
+    {
 
         $signing_secret = Mage::helper('core')->decrypt(Mage::getStoreConfig('payment/boltpay/signing_key'));
         $computed_hmac  = trim(base64_encode(hash_hmac('sha256', $payload, $signing_secret, true)));
@@ -105,22 +109,24 @@ class Bolt_Boltpay_Helper_Api extends Bolt_Boltpay_Helper_Data {
      * @return bool
      * @throws Exception
      */
-    private function verify_hook_api($payload, $hmac_header) {
+    private function verify_hook_api($payload, $hmac_header) 
+    {
 
         try {
-
             $url = $this->getApiUrl() . "/v1/merchant/verify_signature";
 
-            $key = Mage::helper('core')->decrypt( Mage::getStoreConfig('payment/boltpay/api_key') );
+            $key = Mage::helper('core')->decrypt(Mage::getStoreConfig('payment/boltpay/api_key'));
 
             $ch = curl_init($url);
 
             curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
-            curl_setopt($ch, CURLOPT_HTTPHEADER, array(
+            curl_setopt(
+                $ch, CURLOPT_HTTPHEADER, array(
                 "X-Api-Key: $key",
                 "X-Bolt-Hmac-Sha256: $hmac_header",
                 "Content-type: application/json",
-            ));
+                )
+            );
 
             curl_setopt($ch, CURLOPT_POST, true);
             curl_setopt($ch, CURLOPT_POSTFIELDS, $payload);
@@ -130,7 +136,6 @@ class Bolt_Boltpay_Helper_Api extends Bolt_Boltpay_Helper_Data {
             $response = curl_getinfo($ch, CURLINFO_HTTP_CODE);
 
             return $response == 200;
-
         } catch (Exception $e) {
             Mage::helper('boltpay/bugsnag')->notifyException($e);
             return false;
@@ -145,27 +150,31 @@ class Bolt_Boltpay_Helper_Api extends Bolt_Boltpay_Helper_Data {
      * @param $hmac_header
      * @return bool
      */
-    public function verify_hook($payload, $hmac_header) {
+    public function verify_hook($payload, $hmac_header) 
+    {
 
         return $this->verify_hook_secret($payload, $hmac_header) || $this->verify_hook_api($payload, $hmac_header);
     }
 
     /**
-     * Processes order creation. Called from both frontend and API.
+     * Processes Magento order creation. Called from both frontend and API.
      *
-     * @param $reference                Bolt transaction reference
-     * @param null $session_quote_id    Session quote id, if triggered from frontend
-     * @return mixed                    Order on successful creation
-     * @throws Exception
+     * @param string    $reference           Bolt transaction reference
+     * @param int       $session_quote_id    Quote id, used if trigger from shopping session context,
+     *                                       This will be null if called from within an API call context
+     *
+     * @return Mage_Sales_Model_Order   The order saved to Magento
+     *
+     * @throws Exception    thrown on order creation failure
      */
-    public function createOrder($reference, $session_quote_id = null) {
-
+    public function createOrder($reference, $session_quote_id = null)
+    {
         if (empty($reference)) {
             throw new Exception("Bolt transaction reference is missing in the Magento order creation process.");
         }
 
-        if($this->getQuantityCheck()){
-            return false;
+        if(!$this->storeHasAllCartItems()){
+            throw new Exception("Not all items are available in the requested quantities.");
         }
 
         // fetch transaction info
@@ -177,7 +186,7 @@ class Bolt_Boltpay_Helper_Api extends Bolt_Boltpay_Helper_Data {
 
         // check if the quotes matches, frontend only
         if ($session_quote_id && $session_quote_id != $quote_id) {
-            return false;
+            throw new Exception("The Bolt order reference does not match the current cart ID.");
         }
 
         $display_id = $transaction->order->cart->display_id;
@@ -218,20 +227,22 @@ class Bolt_Boltpay_Helper_Api extends Bolt_Boltpay_Helper_Data {
             foreach ($rates as $rate) {
                 if ($rate->getCarrierTitle() . ' - ' . $rate->getMethodTitle() == $service
                     || (!$rate->getMethodTitle() && $rate->getCarrierTitle() == $service)) {
-
                     $shippingMethod = $rate->getCarrier() . '_' . $rate->getMethod();
                     $quote->getShippingAddress()->setShippingMethod($shippingMethod)->save();
                     $is_shipping_set = true;
                     break;
                 }
             }
+
             if (!$is_shipping_set) {
                 $errorMessage = 'Shipping method not found';
                 $metaData = array(
                     'transaction'   => $transaction,
-                    'rates' => $rates
+                    'rates' => $this->getRatesDebuggingData($rates),
+                    'service' => $service,
+                    'shipping_address' => var_export($shipping_address->debug(), true)
                 );
-                Mage::helper('boltpay/bugsnag')->notifyException($errorMessage, $metaData);
+                Mage::helper('boltpay/bugsnag')->notifyException(new Exception($errorMessage), $metaData);
             }
         }
 
@@ -251,18 +262,35 @@ class Bolt_Boltpay_Helper_Api extends Bolt_Boltpay_Helper_Data {
         $existingOrder = Mage::getModel('sales/order')->loadByIncrementId($display_id);
         if (sizeof($existingOrder->getData()) > 0) {
             Mage::app()->getResponse()->setHttpResponseCode(200);
-            Mage::app()->getResponse()->setBody(json_encode(array(
-                'status' => 'success',
-                'message' => "Order increment $display_id already exists."
-            )));
+            Mage::app()->getResponse()->setBody(
+                json_encode(
+                    array(
+                    'status' => 'success',
+                    'message' => "Order increment $display_id already exists."
+                    )
+                )
+            );
             return;
         }
 
         // a call to internal Magento service for order creation
         $service = Mage::getModel('sales/service_quote', $quote);
-        $service->submitAll();
+
+        try {
+            $service->submitAll();
+        } catch (Exception $e) {
+            Mage::helper('boltpay/bugsnag')->addMetaData(
+                array(
+                    'transaction'   => json_encode((array)$transaction),
+                    'quote_address' => var_export($quote->getShippingAddress()->debug(), true)
+                )
+            );
+            throw $e;
+        }
 
         $order = $service->getOrder();
+
+        $this->validateSubmittedOrder($order, $quote);
 
         // deactivate quote
         $quote->setIsActive(false);
@@ -276,6 +304,31 @@ class Bolt_Boltpay_Helper_Api extends Bolt_Boltpay_Helper_Data {
 
     }
 
+    protected function getRatesDebuggingData($rates) {
+        $rateDebuggingData = '';
+
+        if(isset($rates)) {
+            foreach($rates as $rate) {
+                $rateDebuggingData .= var_export($rate->debug(), true);
+            }
+        }
+
+        return $rateDebuggingData;
+    }
+
+    protected function validateSubmittedOrder($order, $quote) {
+        if(empty($order)) {
+            Mage::helper('boltpay/bugsnag')->addMetaData(
+                array(
+                    'quote'  => var_export($quote->debug(), true),
+                    'quote_address'  => var_export($quote->getShippingAddress()->debug(), true),
+                )
+            );
+
+            throw new Exception('Order is empty after call to Sales_Model_Service_Quote->submitAll()');
+        }
+    }
+
     /**
      * Calls the Bolt API endpoint.
      *
@@ -286,7 +339,8 @@ class Bolt_Boltpay_Helper_Api extends Bolt_Boltpay_Helper_Data {
      * @throws  Mage_Core_Exception  thrown if an error is detected in a response
      * @return mixed           Object derived from Json got as a response
      */
-    public function transmit($command, $data, $object='merchant', $type='transactions') {
+    public function transmit($command, $data, $object='merchant', $type='transactions') 
+    {
         $url = $this->getApiUrl() . 'v1/';
 
         if($command == 'sign') {
@@ -298,6 +352,7 @@ class Bolt_Boltpay_Helper_Api extends Bolt_Boltpay_Helper_Data {
         } else {
             $url .= $object . '/' . $type . '/' . $command;
         }
+
         //Mage::log(sprintf("Making an API call to %s", $url), null, 'bolt.log');
 
         $ch = curl_init($url);
@@ -321,14 +376,16 @@ class Bolt_Boltpay_Helper_Api extends Bolt_Boltpay_Helper_Data {
 
         $context_info = Mage::helper('boltpay/bugsnag')->getContextInfo();
 
-        curl_setopt($ch, CURLOPT_HTTPHEADER, array(
+        curl_setopt(
+            $ch, CURLOPT_HTTPHEADER, array(
             'Content-Type: application/json',
             'Content-Length: ' . strlen($params),
             'X-Api-Key: ' . Mage::helper('core')->decrypt($key),
             'X-Nonce: ' . rand(100000000, 999999999),
             'User-Agent: BoltPay/Magento-' . $context_info["Magento-Version"],
             'X-Bolt-Plugin-Version: ' . $context_info["Bolt-Plugin-Version"]
-        ));
+            )
+        );
         curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
         curl_setopt($ch, CURLOPT_HEADER, true);
 
@@ -354,13 +411,15 @@ class Bolt_Boltpay_Helper_Api extends Bolt_Boltpay_Helper_Data {
             $message ="JSON Parse Type: " . $jsonError . " Response: " . $result;
             Mage::throwException($message);
         }
+
         curl_close($ch);
         Mage::getModel('boltpay/payment')->debugData($resultJSON);
 
         return $this->_handleErrorResponse($resultJSON, $url, $params);
     }
 
-    protected function setCurlResultWithHeader($curlResource, $result) {
+    protected function setCurlResultWithHeader($curlResource, $result) 
+    {
         $curlHeaderSize = curl_getinfo($curlResource, CURLINFO_HEADER_SIZE);
 
         $this->curlHeaders = substr($result, 0, $curlHeaderSize);
@@ -369,8 +428,10 @@ class Bolt_Boltpay_Helper_Api extends Bolt_Boltpay_Helper_Data {
         $this->setBoltTraceId();
     }
 
-    protected function setBoltTraceId() {
-        if(empty($this->curlHeaders)) { return; }
+    protected function setBoltTraceId() 
+    {
+        if(empty($this->curlHeaders)) { return; 
+        }
 
         foreach(explode("\r\n", $this->curlHeaders) as $row) {
             if(preg_match('/(.*?): (.*)/', $row, $matches)) {
@@ -382,7 +443,8 @@ class Bolt_Boltpay_Helper_Api extends Bolt_Boltpay_Helper_Data {
         }
     }
 
-    protected function getCurlJSONBody() {
+    protected function getCurlJSONBody() 
+    {
         return json_decode($this->curlBody);
     }
 
@@ -395,7 +457,8 @@ class Bolt_Boltpay_Helper_Api extends Bolt_Boltpay_Helper_Data {
      * @throws  Mage_Core_Exception  thrown if an error is detected in a response
      * @return mixed  If there is no error then the response is returned unaltered.
      */
-    private function _handleErrorResponse($response, $url, $request) {
+    private function _handleErrorResponse($response, $url, $request) 
+    {
         if (strpos($url, 'v1/merchant/division/oauth') !== false) {
             // Do not log division keys here since they are sensitive.
             $request = "<redacted>";
@@ -408,11 +471,13 @@ class Bolt_Boltpay_Helper_Api extends Bolt_Boltpay_Helper_Data {
             if (property_exists($response, 'errors')) {
                 Mage::register("api_error", $response->errors[0]->message);
             }
+
             $message = sprintf("BoltPay Gateway error for %s: Request: %s, Response: %s", $url, $request, json_encode($response, true));
 
             Mage::helper('boltpay/bugsnag')->notifyException(new Exception($message));
             Mage::throwException($message);
         }
+
         return $response;
     }
 
@@ -421,7 +486,8 @@ class Bolt_Boltpay_Helper_Api extends Bolt_Boltpay_Helper_Data {
      *
      * @return null|string
      */
-    public function handleJSONParseError() {
+    public function handleJSONParseError() 
+    {
         switch (json_last_error()) {
             case JSON_ERROR_NONE:
                 return null;
@@ -451,7 +517,8 @@ class Bolt_Boltpay_Helper_Api extends Bolt_Boltpay_Helper_Data {
      *
      * @return string  the api url, sandbox or production
      */
-    public function getApiUrl() {
+    public function getApiUrl() 
+    {
         return Mage::getStoreConfig('payment/boltpay/test') ?
             self::API_URL_TEST :
             self::API_URL_PROD;
@@ -465,7 +532,8 @@ class Bolt_Boltpay_Helper_Api extends Bolt_Boltpay_Helper_Data {
      * @param bool $multipage   Is checkout type Multi-Page Checkout, the default is true, set to false for One Page Checkout
      * @return array            The order payload to be sent as to bolt in API call as a PHP array
      */
-    public function buildOrder($quote, $items, $multipage) {
+    public function buildOrder($quote, $items, $multipage) 
+    {
         $cart = $this->buildCart($quote, $items, $multipage);
         return array(
             'cart' => $cart
@@ -480,7 +548,8 @@ class Bolt_Boltpay_Helper_Api extends Bolt_Boltpay_Helper_Data {
      * @param bool $multipage   Is checkout type Multi-Page Checkout, the default is true, set to false for One Page Checkout
      * @return array            The cart data part of the order payload to be sent as to bolt in API call as a PHP array
      */
-    public function buildCart($quote, $items, $multipage) {
+    public function buildCart($quote, $items, $multipage) 
+    {
 
         ///////////////////////////////////////////////////////////////////////////////////
         // Get quote totals
@@ -524,7 +593,8 @@ class Bolt_Boltpay_Helper_Api extends Bolt_Boltpay_Helper_Data {
         $cart_submission_data = array(
             'order_reference' => $quote->getId(),
             'display_id'      => $quote->getReservedOrderId(),
-            'items'           => array_map(function ($item) use ($quote, $productMediaConfig, &$calculated_total) {
+            'items'           => array_map(
+                function ($item) use ($quote, $productMediaConfig, &$calculated_total) {
                 $image_url = $productMediaConfig->getMediaUrl($item->getProduct()->getThumbnail());
                 $product   = Mage::getModel('catalog/product')->load($item->getProductId());
                 $calculated_total += round($item->getPrice() * 100 * $item->getQty());
@@ -538,7 +608,8 @@ class Bolt_Boltpay_Helper_Api extends Bolt_Boltpay_Helper_Data {
                     'unit_price'   => round($item->getCalculationPrice() * 100),
                     'quantity'     => $item->getQty()
                 );
-            }, $items),
+                }, $items
+            ),
             'currency' => $quote->getQuoteCurrencyCode(),
         );
         ///////////////////////////////////////////////////////////
@@ -551,9 +622,7 @@ class Bolt_Boltpay_Helper_Api extends Bolt_Boltpay_Helper_Data {
         $cart_submission_data['discounts'] = array();
 
         foreach ($this->discount_types as $discount) {
-
             if (@$totals[$discount] && $amount = $totals[$discount]->getValue()) {
-
                 // Some extensions keep discount totals as positive values,
                 // others as negative, which is the Magento default.
                 // Using the absolute value.
@@ -562,10 +631,12 @@ class Bolt_Boltpay_Helper_Api extends Bolt_Boltpay_Helper_Data {
                 $cart_submission_data['discounts'][] = array(
                     'amount'      => $discount_amount,
                     'description' => $totals[$discount]->getTitle(),
+                    'type'        => 'fixed_amount',
                 );
                 $total_discount -= $discount_amount;
             }
         }
+
         $calculated_total += $total_discount;
         /////////////////////////////////////////////////////////////////////////
 
@@ -596,7 +667,6 @@ class Bolt_Boltpay_Helper_Api extends Bolt_Boltpay_Helper_Data {
             $billingAddress  = $quote->getBillingAddress();
 
             if ($billingAddress) {
-
                 $cart_submission_data['billing_address'] = array(
                     'street_address1' => $billingAddress->getStreet1(),
                     'street_address2' => $billingAddress->getStreet2(),
@@ -621,6 +691,7 @@ class Bolt_Boltpay_Helper_Api extends Bolt_Boltpay_Helper_Data {
                     }
                 }
             }
+
             ///////////////////////////////////////////
 
             ////////////////////////////////////////////////////////////////////////////////////
@@ -636,7 +707,6 @@ class Bolt_Boltpay_Helper_Api extends Bolt_Boltpay_Helper_Data {
             $shippingAddress = $quote->getShippingAddress();
 
             if ($shippingAddress) {
-
                 $shipping_address = array(
                     'street_address1' => $shippingAddress->getStreet1(),
                     'street_address2' => $shippingAddress->getStreet2(),
@@ -653,8 +723,6 @@ class Bolt_Boltpay_Helper_Api extends Bolt_Boltpay_Helper_Data {
                     'phone_number'    => $shippingAddress->getTelephone(),
                     'email_address'   => $shippingAddress->getEmail(),
                 );
-
-                //Mage::log("shipping_address: " . var_export($shipping_address, true), null, "bolt.log");
 
                 if (@$totals['shipping']) {
                     $cart_submission_data['shipments'] = array(array(
@@ -675,12 +743,13 @@ class Bolt_Boltpay_Helper_Api extends Bolt_Boltpay_Helper_Data {
                     }
                 }
             }
+
             ////////////////////////////////////////////////////////////////////////////////////
         }
 
         //Mage::log(var_export($cart_submission_data, true), null, "bolt.log");
 
-        return $this->getCorrectedTotal( $calculated_total, $cart_submission_data);
+        return $this->getCorrectedTotal($calculated_total, $cart_submission_data);
     }
 
     /**
@@ -693,10 +762,10 @@ class Bolt_Boltpay_Helper_Api extends Bolt_Boltpay_Helper_Data {
      *
      * @return array  the corrected Bolt formatted cart data.
      */
-    private function getCorrectedTotal($projected_total, $magento_derived_cart_data) {
+    private function getCorrectedTotal($projected_total, $magento_derived_cart_data) 
+    {
         // we'll check if we can simply dividing by two corrects the problem
         if ($projected_total == (int)($magento_derived_cart_data['total_amount']/2)) {
-
             $magento_derived_cart_data["total_amount"] = (int)($magento_derived_cart_data['total_amount']/2);
 
             /*  I will defer handling discounts, tax, and shipping until more info is collected
@@ -727,7 +796,8 @@ class Bolt_Boltpay_Helper_Api extends Bolt_Boltpay_Helper_Data {
      * @param $response     Bolt API response
      * @return bool         true if there is an error, false otherwise
      */
-    public function isResponseError($response) {
+    public function isResponseError($response) 
+    {
         return property_exists($response, 'errors') || property_exists($response, 'error_code');
     }
 
@@ -735,15 +805,17 @@ class Bolt_Boltpay_Helper_Api extends Bolt_Boltpay_Helper_Data {
      * Gets the shipping and the tax estimate for a quote
      *
      * @param $quote    A quote object with pre-populated addresses
-     * @return array
+     * 
+     * @return array    Bolt shipping and tax response array to be converted to JSON
      */
-    public function getShippingAndTaxEstimate( $quote ) {
+    public function getShippingAndTaxEstimate( $quote )
+    {
 
         $response = array(
             'shipping_options' => array(),
         );
 
-        Mage::getModel('sales/quote')->load($quote->getId())->getShippingAddress()->collectTotals();
+        Mage::getModel('sales/quote')->load($quote->getId())->collectTotals();
 
         /*****************************************************************************************
          * Calculate tax
@@ -763,9 +835,9 @@ class Bolt_Boltpay_Helper_Api extends Bolt_Boltpay_Helper_Data {
         $rates = $this->getSortedShippingRates($shipping_address);
 
         foreach ($rates as $rate) {
-
             if ($rate->getErrorMessage()) {
-                throw new Exception("Error getting shipping option for " .  $rate->getCarrierTitle() . ": " . $rate->getErrorMessage());
+                Mage::helper('boltpay/bugsnag')->notifyException( new Exception("Error getting shipping option for " .  $rate->getCarrierTitle() . ": " . $rate->getErrorMessage()) );
+                continue;
             }
 
             $quote->getShippingAddress()->setShippingMethod($rate->getCode());
@@ -776,21 +848,29 @@ class Bolt_Boltpay_Helper_Api extends Bolt_Boltpay_Helper_Data {
                 $label = $label . ' - ' . $rate->getMethodTitle();
             }
 
+            $rateCode = $rate->getCode();
+
+            if(empty($rateCode)) {
+                Mage::helper('boltpay/bugsnag')->notifyException(new Exception('Rate code is empty. ' . var_export($rate->debug(), true)));
+            }
+
             $option = array(
                 "service"   => $label,
-                "reference" => $rate->getCarrier() . '_' . $rate->getMethod(),
+                "reference" => $rateCode,
                 "cost" => round($quote->getShippingAddress()->getShippingAmount() * 100),
                 "tax_amount" => abs(round($quote->getShippingAddress()->getShippingTaxAmount() * 100))
             );
 
             $response['shipping_options'][] = $option;
         }
+
         /*****************************************************************************************/
 
         return $response;
     }
 
-    protected function getSortedShippingRates($address) {
+    protected function getSortedShippingRates($address) 
+    {
         $rates = array();
 
         foreach($address->getGroupedAllShippingRates() as $code => $carrierRates) {
@@ -802,7 +882,11 @@ class Bolt_Boltpay_Helper_Api extends Bolt_Boltpay_Helper_Data {
         return $rates;
     }
 
-    public function setResponseContextHeaders() {
+    /**
+     * Sets Plugin information in the response headers to callers of the API
+     */
+    public function setResponseContextHeaders() 
+    {
         $context_info = Mage::helper('boltpay/bugsnag')->getContextInfo();
 
         Mage::app()->getResponse()
@@ -810,19 +894,33 @@ class Bolt_Boltpay_Helper_Api extends Bolt_Boltpay_Helper_Data {
             ->setHeader('X-Bolt-Plugin-Version', $context_info["Bolt-Plugin-Version"], true);
     }
 
-    public function getQuantityCheck(){
 
-        $quoteCart = Mage::helper('checkout/cart')->getCart()->getQuote();
-        $QtyFlagCheck = false;
+    /**
+     * Determines whether the cart has either all items available if Manage Stock is yes for requested quantities,
+     * or, if not, those items are eligible for back order.
+     *
+     * @return bool true if the store can accept an order for all items in the cart,
+     *              otherwise, false
+     */
+    public function storeHasAllCartItems()
+    {
+        /* @var Mage_Sales_Model_Quote $cart_quote */
+        $cart_quote = Mage::helper('checkout/cart')->getCart()->getQuote();
 
-        foreach ($quoteCart->getAllItems() as $item) {
-            $_product = Mage::getModel('catalog/product')->load($item->getProductId());
-            $stock = Mage::getModel('cataloginventory/stock_item')->loadByProduct($_product);
-            if($stock->getQty() < $item->getQty() && $stock->getBackorders() == '0' ){
-                 $QtyFlagCheck = true;
+        foreach ($cart_quote->getAllItems() as $cart_item) {
+            if($cart_item->getHasChildren()) {
+                continue;
             }
 
+            $_product = Mage::getModel('catalog/product')->load($cart_item->getProductId());
+            $stock_info = Mage::getModel('cataloginventory/stock_item')->loadByProduct($_product);
+			if($stock_info->getManageStock()){
+				if( ($stock_info->getQty() < $cart_item->getQty()) && !$stock_info->getBackorders() ){
+					 return false;
+				}
+			}
         }
-         return $QtyFlagCheck;
+
+        return true;
     }
 }

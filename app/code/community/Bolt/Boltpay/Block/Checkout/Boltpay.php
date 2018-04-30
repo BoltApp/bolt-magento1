@@ -36,7 +36,8 @@
  *
  */
 class Bolt_Boltpay_Block_Checkout_Boltpay
-    extends Mage_Checkout_Block_Onepage_Review_Info {
+    extends Mage_Checkout_Block_Onepage_Review_Info
+{
 
     /**
      * @var string The Bolt sandbox url for the javascript
@@ -59,7 +60,8 @@ class Bolt_Boltpay_Block_Checkout_Boltpay
     /**
      * Set the connect javascript url to production or sandbox based on store config settings
      */
-    public function _construct() {
+    public function _construct() 
+    {
         parent::_construct();
         $this->_jsUrl = Mage::getStoreConfig('payment/boltpay/test') ?
             self::JS_URL_TEST . "/connect.js":
@@ -69,7 +71,8 @@ class Bolt_Boltpay_Block_Checkout_Boltpay
     /**
      * Get the track javascript url, production or sandbox, based on store config settings
      */
-    public function getTrackJsUrl() {
+    public function getTrackJsUrl() 
+    {
         return Mage::getStoreConfig('payment/boltpay/test') ?
             self::JS_URL_TEST . "/track.js":
             self::JS_URL_PROD . "/track.js";
@@ -82,13 +85,14 @@ class Bolt_Boltpay_Block_Checkout_Boltpay
      * @param bool $multipage                  Is checkout type Multi-Page Checkout, the default is true, set to false for One Page Checkout
      * @return mixed json based PHP object
      */
-    private function createBoltOrder($quote, $multipage) {
+    private function createBoltOrder($quote, $multipage) 
+    {
 
         // Load the required helper class
         $boltHelper = Mage::helper('boltpay/api');
 
         $items = $this->getItems();
-        if ( empty($items) ) return json_decode('{"token" : ""}');
+        if (empty($items)) return json_decode('{"token" : ""}');
 
         // Generates order data for sending to Bolt create order API.
         $order_request = $boltHelper->buildOrder($quote, $items, $multipage);
@@ -107,10 +111,10 @@ class Bolt_Boltpay_Block_Checkout_Boltpay
      * @param bool $multipage       Is checkout type Multi-Page Checkout, the default is true, set to false for One Page Checkout
      * @return string               BoltCheckout javascript
      */
-    public function getCartDataJs($multipage = true) {
+    public function getCartDataJs($multipage = true) 
+    {
 
         try {
-
             // Get customer and cart session objects
             $customerSession = Mage::getSingleton('customer/session');
             $session = Mage::getSingleton('checkout/session');
@@ -152,19 +156,20 @@ class Bolt_Boltpay_Block_Checkout_Boltpay
                     "nonce" => $signResponse->nonce,
                 );
             }
+
             ///////////////////////////////////////////////////////////////////////////////////////
 
 
             if (Mage::getStoreConfig('payment/boltpay/auto_capture') == self::AUTO_CAPTURE_ENABLED) {
-                $authCapture = 'true';
+                $authCapture = true;
             } else {
-                $authCapture = 'false';
+                $authCapture = false;
             }
 
             // Call Bolt create order API
             try {
                 $orderCreationResponse = $this->createBoltOrder($quote, $multipage);
-            } catch ( Exception $e ) {
+            } catch (Exception $e) {
                 Mage::helper('boltpay/bugsnag')->notifyException(new Exception($e));
                 $orderCreationResponse = json_decode('{"token" : ""}');
             }
@@ -187,6 +192,7 @@ class Bolt_Boltpay_Block_Checkout_Boltpay
             if (sizeof($hint_data) != 0) {
                 $json_hints = json_encode($hint_data);
             }
+
             //////////////////////////////////////////////////////////////////////////
 
             // Format the success and save order urls for the javascript returned below.
@@ -278,7 +284,6 @@ class Bolt_Boltpay_Block_Checkout_Boltpay
                 );"
             );
             //////////////////////////////////////////////////////
-
         } catch (Exception $e) {
             Mage::helper('boltpay/bugsnag')->notifyException($e);
         }
@@ -290,7 +295,8 @@ class Bolt_Boltpay_Block_Checkout_Boltpay
      * @param $session      Customer session
      * @return array        hints data
      */
-    private function getAddressHints($session, $quote) {
+    private function getAddressHints($session, $quote) 
+    {
 
         $hints = array();
 
@@ -306,6 +312,7 @@ class Bolt_Boltpay_Block_Checkout_Boltpay
             $address = $customer->getPrimaryShippingAddress();
             $email = $customer->getEmail();
         }
+
         //////////////////////////////////////////////////////////////
 
         /////////////////////////////////////////////////////////////////////////
@@ -323,6 +330,7 @@ class Bolt_Boltpay_Block_Checkout_Boltpay
             if (@$address->getTelephone()) $hints['phone']        = $address->getTelephone();
             if (@$address->getCountryId()) $hints['country']      = $address->getCountryId();
         }
+
         /////////////////////////////////////////////////////////////////////////
 
         return array( "prefill" => $hints );
@@ -337,7 +345,8 @@ class Bolt_Boltpay_Block_Checkout_Boltpay
      * @param $session      Magento customer/session object
      * @return string|null  the ID used for the Bolt user, or null if the user is not logged in and is not on the onepage checkout page
      */
-    function getReservedUserId($quote, $session) {
+    function getReservedUserId($quote, $session) 
+    {
 
         $checkout = Mage::getSingleton('checkout/type_onepage');
 
@@ -356,7 +365,6 @@ class Bolt_Boltpay_Block_Checkout_Boltpay
 
             //Mage::log(sprintf("Using Bolt User Id: %s", $customer->getBoltUserId()), null, 'bolt.log');
             return $customer->getBoltUserId();
-
         } else if ($checkoutMethod == Mage_Checkout_Model_Type_Onepage::METHOD_REGISTER) {
             //Mage::log("Creating new user id for Register checkout", null, 'bolt.log');
             $custId = Mage::getSingleton('eav/config')->getEntityType("customer")->fetchNewIncrementId($quote->getStoreId());
@@ -369,7 +377,8 @@ class Bolt_Boltpay_Block_Checkout_Boltpay
      * Returns CSS_SUFFIX constant to be added to selector identifiers
      * @return string
      */
-    function getCssSuffix() {
+    function getCssSuffix() 
+    {
         return self::CSS_SUFFIX;
     }
 
@@ -377,7 +386,8 @@ class Bolt_Boltpay_Block_Checkout_Boltpay
      * Reads the Replace Buttons Style config and generates selectors CSS
      * @return string
      */
-    function getSelectorsCSS() {
+    function getSelectorsCSS() 
+    {
 
         $selector_styles = Mage::getStoreConfig('payment/boltpay/selector_styles');
 
@@ -386,7 +396,6 @@ class Bolt_Boltpay_Block_Checkout_Boltpay
         $selectors_css = '';
 
         foreach ($selector_styles as $selector) {
-
             preg_match('/[^{}]+/', $selector, $selector_identifier);
 
             $bolt_selector  = trim($selector_identifier[0]) . "-" . self::CSS_SUFFIX;
@@ -395,14 +404,12 @@ class Bolt_Boltpay_Block_Checkout_Boltpay
 
             foreach ($matches as $match_array) {
                 foreach ($match_array as $match) {
-
                     preg_match('/{[^{}]*}/', $match, $css);
                     $css = $css[0];
 
                     preg_match('/[^{}]+/', $match, $identifiers);
 
                     foreach ($identifiers as $comma_delimited) {
-
                         $comma_delimited = trim($comma_delimited);
                         $single_identifiers = array_map('trim', explode(',', $comma_delimited));
 
@@ -422,7 +429,8 @@ class Bolt_Boltpay_Block_Checkout_Boltpay
      * Returns Additional CSS from configuration.
      * @return string
      */
-    function getAdditionalCSS() {
+    function getAdditionalCSS() 
+    {
         return Mage::getStoreConfig('payment/boltpay/additional_css');
     }
 
@@ -430,7 +438,8 @@ class Bolt_Boltpay_Block_Checkout_Boltpay
      * Returns the Bolt Button Theme from configuration.
      * @return string
      */
-    function getTheme() {
+    function getTheme() 
+    {
         return Mage::getStoreConfig('payment/boltpay/theme');
     }
 
@@ -438,7 +447,8 @@ class Bolt_Boltpay_Block_Checkout_Boltpay
      * Returns the Bolt Sandbox Mode configuration.
      * @return string
      */
-    function isTestMode() {
+    function isTestMode() 
+    {
         return Mage::getStoreConfig('payment/boltpay/test');
     }
 
@@ -446,7 +456,8 @@ class Bolt_Boltpay_Block_Checkout_Boltpay
      * Returns the Replace Button Selectors configuration.
      * @return string
      */
-    function getConfigSelectors() {
+    function getConfigSelectors() 
+    {
         return json_encode(array_filter(explode(',', Mage::getStoreConfig('payment/boltpay/selectors'))));
     }
 
@@ -454,7 +465,8 @@ class Bolt_Boltpay_Block_Checkout_Boltpay
      * Returns the Skip Payment Method Step configuration.
      * @return string
      */
-    function isBoltOnlyPayment() {
+    function isBoltOnlyPayment() 
+    {
         Mage::getStoreConfig('payment/boltpay/skip_payment');
     }
 
@@ -462,7 +474,8 @@ class Bolt_Boltpay_Block_Checkout_Boltpay
      * Returns the Success Page Redirect configuration.
      * @return string
      */
-    function getSuccessURL() {
+    function getSuccessURL() 
+    {
         return $this->getUrl(Mage::getStoreConfig('payment/boltpay/successpage'));
     }
 
@@ -470,7 +483,8 @@ class Bolt_Boltpay_Block_Checkout_Boltpay
      * Returns the Bolt Save Order Url.
      * @return string
      */
-    function getSaveOrderURL() {
+    function getSaveOrderURL() 
+    {
         return $this->getUrl('boltpay/order/save');
     }
 
@@ -478,7 +492,8 @@ class Bolt_Boltpay_Block_Checkout_Boltpay
      * Returns the Cart Url.
      * @return string
      */
-    function getCartURL() {
+    function getCartURL() 
+    {
         return $this->getUrl('checkout/cart');
     }
 
@@ -486,7 +501,8 @@ class Bolt_Boltpay_Block_Checkout_Boltpay
      * Returns the One Page / Multi-Page checkout Publishable key.
      * @return string
      */
-    function getPaymentKey($multipage = true) {
+    function getPaymentKey($multipage = true) 
+    {
         return $multipage
             ? Mage::helper('core')->decrypt(Mage::getStoreConfig('payment/boltpay/publishable_key_multipage'))
             : Mage::helper('core')->decrypt(Mage::getStoreConfig('payment/boltpay/publishable_key_onepage'));
@@ -496,7 +512,8 @@ class Bolt_Boltpay_Block_Checkout_Boltpay
      * Returns the Enabled Bolt configuration option value.
      * @return string
      */
-    function isBoltActive() {
+    function isBoltActive() 
+    {
         return Mage::getStoreConfig('payment/boltpay/active');
     }
 
@@ -506,7 +523,8 @@ class Bolt_Boltpay_Block_Checkout_Boltpay
      *
      * @return string  The IP address of the customer
      */
-    function getIpAddress(){
+    function getIpAddress()
+    {
         foreach (array('HTTP_CLIENT_IP', 'HTTP_X_FORWARDED_FOR', 'HTTP_X_FORWARDED', 'HTTP_X_CLUSTER_CLIENT_IP', 'HTTP_FORWARDED_FOR', 'HTTP_FORWARDED', 'REMOTE_ADDR') as $key){
             if (array_key_exists($key, $_SERVER) === true){
                 foreach (explode(',', $_SERVER[$key]) as $ip){
@@ -530,7 +548,8 @@ class Bolt_Boltpay_Block_Checkout_Boltpay
      *
      * @return bool|string  JSON containing geolocation info of the client, or false if the ip could not be obtained.
      */
-    function getLocationEstimate() {
+    function getLocationEstimate() 
+    {
         $location_info = Mage::getSingleton('core/session')->getLocationInfo();
 
         if (empty($location_info)) {
@@ -541,7 +560,8 @@ class Bolt_Boltpay_Block_Checkout_Boltpay
         return $location_info;
     }
 
-    public function url_get_contents($url) {
+    public function url_get_contents($url) 
+    {
         $ch = curl_init();
         curl_setopt($ch, CURLOPT_URL, $url);
         curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
@@ -555,7 +575,8 @@ class Bolt_Boltpay_Block_Checkout_Boltpay
      *
      * @return Mage_Sales_Model_Quote
      */
-    public function getQuote() {
+    public function getQuote() 
+    {
         return Mage::getSingleton('checkout/session')->getQuote();
     }
 

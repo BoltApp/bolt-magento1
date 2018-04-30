@@ -24,8 +24,10 @@
  * @license    http://opensource.org/licenses/osl-3.0.php  Open Software License (OSL 3.0)
  */
 
-class Bolt_Boltpay_Block_Status_View extends Mage_Adminhtml_Block_Template {
-    public function getBoltUserIdStatus() {
+class Bolt_Boltpay_Block_Status_View extends Mage_Adminhtml_Block_Template
+{
+    public function getBoltUserIdStatus() 
+    {
         $customer = Mage::getModel('customer/customer');
         $eavConfig = Mage::getModel('eav/config');
 
@@ -38,9 +40,11 @@ class Bolt_Boltpay_Block_Status_View extends Mage_Adminhtml_Block_Template {
         }
     }
 
-    public function getBoltInstallStatus() {
+    public function getBoltInstallStatus() 
+    {
         $connection = Mage::getSingleton('core/resource')->getConnection('core_read');
-        $sql        = "SELECT * FROM core_resource WHERE code = 'bolt_boltpay_setup'";
+		$prefix = Mage::getConfig()->getTablePrefix();
+        $sql        = "SELECT * FROM ".$prefix."core_resource WHERE code = 'bolt_boltpay_setup'";
         $rows       = $connection->fetchAll($sql);
 
         if (empty($rows)) {
@@ -50,7 +54,8 @@ class Bolt_Boltpay_Block_Status_View extends Mage_Adminhtml_Block_Template {
         }
     }
 
-    public function getConnectionStatusToBolt() {
+    public function getConnectionStatusToBolt() 
+    {
         $boltUrl = str_replace("https://", "", Mage::helper('boltpay/api')->getApiUrl());
         $boltUrl = str_replace("/", "", $boltUrl);
         try {
@@ -68,7 +73,8 @@ class Bolt_Boltpay_Block_Status_View extends Mage_Adminhtml_Block_Template {
         }
     }
 
-    public function getSSLData() {
+    public function getSSLData() 
+    {
         $ch = curl_init('https://www.howsmyssl.com/a/check');
         curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
         $data = curl_exec($ch);
@@ -78,7 +84,8 @@ class Bolt_Boltpay_Block_Status_View extends Mage_Adminhtml_Block_Template {
         return var_dump($json);
     }
 
-    public function getMerchantCall() {
+    public function getMerchantCall() 
+    {
         $boltApi = Mage::helper('boltpay/api');
         try {
             $result = $boltApi->transmit('', null, 'merchant', '');
@@ -94,21 +101,27 @@ class Bolt_Boltpay_Block_Status_View extends Mage_Adminhtml_Block_Template {
             if (strlen($result->description) != 0) {
                 $resp['name'] = $result->description;
             }
+
             if (strlen($result->public_id) != 0) {
                 $resp['public_id'] = $result->public_id;
             }
+
             if (strlen($result->support_phone) != 0) {
                 $resp['support_phone'] = $result->support_phone;
             }
+
             if (strlen($result->support_email) != 0) {
                 $resp['support_email'] = $result->support_email;
             }
+
             return json_encode($resp, JSON_PRETTY_PRINT);
         }
+
         return "No response from Bolt Backend";
     }
 
-    public function getTransactionsEndpoint() {
+    public function getTransactionsEndpoint() 
+    {
         $boltApi = Mage::helper('boltpay/api');
         try {
             $result = $boltApi->transmit('ABCD-1234-EFGH', null, 'merchant', 'transactions');
@@ -122,17 +135,20 @@ class Bolt_Boltpay_Block_Status_View extends Mage_Adminhtml_Block_Template {
         if ($result != null) {
             return json_encode($result, JSON_PRETTY_PRINT);
         }
+
         return "No response from Bolt Backend";
     }
 
-    public function isCurlEnabled() {
+    public function isCurlEnabled() 
+    {
         if (function_exists('curl_version') > 0) {
             return var_dump(curl_version());
         };
         return "Curl version not found";
     }
 
-    public function testCurl() {
+    public function testCurl() 
+    {
         $boltUrl = Mage::helper('boltpay/api')->getApiUrl() . "v1/merchant";
         $ch = curl_init($boltUrl);
         curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);

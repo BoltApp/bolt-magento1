@@ -225,6 +225,8 @@ if(!Mage::helper('boltpay')->canUseBolt($this->getQuote(), false)) return;
             bolt_button.style.display = "none";
 
             place_order_button.parentNode.insertBefore(bolt_button, place_order_button);
+            // Render Bolt button.
+            BoltCheckout.configure({}, {}, {});
 
             /**
              * Click event to payment method radio buttons that toggle

@@ -20,29 +20,19 @@
  *
  * @category   Bolt
  * @package    Bolt_Boltpay
- * @copyright  Copyright (c) 2018 Bolt Financial, Inc (http://www.bolt.com)
+ * @copyright  Copyright (c) 2019 Bolt Financial, Inc (http://www.bolt.com)
  * @license    http://opensource.org/licenses/osl-3.0.php  Open Software License (OSL 3.0)
  */
-
-/**
- * Class which defines the Magento admin page for publishing Bolt OAuth settings used to call Magento store API
- *
- * @deprecated OAuth will no longer be used in future versions
- */
-class Bolt_Boltpay_Block_Oauth_Edit extends Mage_Adminhtml_Block_Widget_Form_Container {
-
-    /**
-     * Bolt_Boltpay_Block_Oauth_Edit constructor.
-     *
-     * @inheritdoc
-     */
-    public function __construct()
-    {
-        $this->_controller  = 'oauth';
-        $this->_mode = 'edit';
-        $this->_blockGroup = 'boltpay';
-        $this->_headerText = "Bolt Integration";
-        parent::__construct();
-        $this->_updateButton('save', 'label', Mage::helper('poll')->__('Publish'));
-    }
-}
+?>
+<?php
+$_code = $this->getMethodCode();
+$fieldName = Mage::helper('boltpay')->__('Bolt Transaction Reference');
+?>
+<ul id="payment_form_<?php echo $_code ?>" style="display:none">
+    <li>
+        <div class="input-box">
+            <label for="<?php echo $_code ?>_transaction_reference"><?php echo $fieldName ?> <span class="required">*</span></label><br/>
+            <input type="text" title="<?php echo Mage::helper('core')->quoteEscape($fieldName) ?>" class="required-entry input-text" id="<?php echo $_code ?>_bolt_reference" name="payment[bolt_reference]" value="<?php echo $this->getInfoData('bolt_reference') ?>"/>
+        </div>
+    </li>
+</ul>

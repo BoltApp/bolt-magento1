@@ -2,18 +2,21 @@
 
 class Bolt_Boltpay_Model_PaymentTest extends PHPUnit_Framework_TestCase
 {
-    public function setUp() {
+    public function setUp() 
+    {
         /* You'll have to load Magento app in any test classes in this method */
         $app = Mage::app('default');
     }
 
-    public function testPaymentConstants() {
+    public function testPaymentConstants() 
+    {
         $payment = Mage::getModel('boltpay/payment');
         $this->assertEquals('Credit & Debit Card', $payment::TITLE);
         $this->assertEquals('boltpay', $payment->getCode());
     }
 
-    public function testPaymentConfiguration() {
+    public function testPaymentConfiguration() 
+    {
         $payment = Mage::getModel('boltpay/payment');
         // All the features that are enabled
         $this->assertTrue($payment->canAuthorize());

@@ -30,7 +30,8 @@
  * Base Magento Bolt Helper class
  *
  */
-class Bolt_Boltpay_Helper_Data extends Mage_Core_Helper_Abstract {
+class Bolt_Boltpay_Helper_Data extends Mage_Core_Helper_Abstract
+{
 
     /**
      * @var bool    a flag set to true if the class is instantiated from web hook call, otherwise false
@@ -47,7 +48,8 @@ class Bolt_Boltpay_Helper_Data extends Mage_Core_Helper_Abstract {
      *
      * TODO: consider store base currency and possibly add conversion logic
      */
-    public function canUseBolt($quote, $check_country = true) {
+    public function canUseBolt($quote, $check_country = true) 
+    {
         /**
          * If called from hooks always return true
          */
@@ -65,7 +67,8 @@ class Bolt_Boltpay_Helper_Data extends Mage_Core_Helper_Abstract {
      * @param string $country   the country to be compared in check for allowing Bolt as a payment method
      * @return bool   true if Bolt can be used, otherwise false
      */
-    public function canUseForCountry($country) {
+    public function canUseForCountry($country) 
+    {
 
         if(!Mage::getStoreConfig('payment/boltpay/active')) {
             return false;
