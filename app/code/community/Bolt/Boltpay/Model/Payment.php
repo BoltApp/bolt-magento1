@@ -432,7 +432,7 @@ class Bolt_Boltpay_Model_Payment extends Mage_Payment_Model_Method_Abstract
         }
     }
 
-    public function handleTransactionUpdate(Mage_Payment_Model_Info $payment, $newTransactionStatus, $prevTransactionStatus, $captureAmount)
+    public function handleTransactionUpdate(Mage_Payment_Model_Info $payment, $newTransactionStatus, $prevTransactionStatus, $captureAmount = null)
     {
         try {
             $newTransactionStatus = strtolower($newTransactionStatus);
@@ -485,14 +485,8 @@ class Bolt_Boltpay_Model_Payment extends Mage_Payment_Model_Method_Abstract
                     $invoices = $order->getInvoiceCollection()->getItems();
                     $invoice = null;
                     if (empty($invoices)) {
-                        $this->validateCaptureAmount($captureAmount);
+                        $invoice = $this->createInvoice($order, $captureAmount);
 
-                        /** @var Mage_Sales_Model_Order_Invoice $invoice */
-                        if ($order->getGrandTotal() > $captureAmount) {
-                            $invoice = Mage::getModel('boltpay/service_order', $order)->prepareInvoiceWithoutItems($captureAmount);
-                        } else {
-                            $invoice = $order->prepareInvoice();
-                        }
                         $invoice->setTransactionId($reference);
                         $payment->setParentTransactionId($reference);
                         $invoice->setRequestedCaptureCase(self::CAPTURE_TYPE);
@@ -556,6 +550,26 @@ class Bolt_Boltpay_Model_Payment extends Mage_Payment_Model_Method_Abstract
 
             throw $e;
         }
+    }
+
+    /**
+     * Generates either a partial or full invoice for the order.
+     *
+     * @param        $order Mage_Sales_Model_Order
+     * @param        $captureAmount The amount to invoice for
+     *
+     * @return Mage_Sales_Model_Order_Invoice   The order invoice
+     */
+    protected function createInvoice($order, $captureAmount) {
+        if (isset($captureAmount)) {
+            $this->validateCaptureAmount($captureAmount);
+
+            if($order->getGrandTotal() > $captureAmount) {
+                return Mage::getModel('boltpay/service_order', $order)->prepareInvoiceWithoutItems($captureAmount);
+            }
+        }
+
+        return $order->prepareInvoice();
     }
 
     protected function validateCaptureAmount($captureAmount) {
