@@ -190,7 +190,8 @@ class Bolt_Boltpay_Block_Checkout_Boltpay
             $json_cart = json_encode($cart_data);
             $json_hints = '{}';
             if (sizeof($hint_data) != 0) {
-                $json_hints = json_encode($hint_data);
+                // Convert $hint_data to object, because when empty data it consists array not an object
+                $json_hints = json_encode($hint_data, JSON_FORCE_OBJECT);
             }
 
             //////////////////////////////////////////////////////////////////////////

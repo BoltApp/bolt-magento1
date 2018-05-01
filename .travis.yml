@@ -37,4 +37,3 @@ script:
   - cp -r magento/. BoltApp/bolt-magento1/
   - cd BoltApp/bolt-magento1/
   - php tests/unit/phpunit-5.7.9.phar -c tests/unit/phpunit.xml
-
