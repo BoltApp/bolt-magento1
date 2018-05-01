@@ -21,37 +21,34 @@ class Bolt_Boltpay_Block_Rewrite_OnepageTest extends PHPUnit_Framework_TestCase
      */
     public function testStepsWhenSkipPaymentIsTrue()
     {
-//        $this->app->getStore()->setConfig('payment/boltpay/skip_payment', 1);
-//        $onepageRewrite = new $this->onepageRewriteClass;
-//        $this->assertEquals(
-//            array(
-//                'login',
-//                'billing',
-//                'shipping',
-//                'shipping_method',
-//                'review'
-//            ),
-//            array_keys($onepageRewrite->getSteps())
-//        );
-        $this->assertTrue(true);
+        $this->app->getStore()->setConfig('payment/boltpay/skip_payment', 1);
+        $onepageRewrite = new $this->onepageRewriteClass;
+        $this->assertEquals(
+            array(
+                'login',
+                'billing',
+                'shipping',
+                'shipping_method',
+                'review'
+            ),
+            array_keys($onepageRewrite->getSteps())
+        );
     }
 
     public function testStepsWhenSkipPaymentIsFalse() 
     {
-//        $this->app->getStore()->setConfig('payment/boltpay/skip_payment', 0);
-//        $onepageRewrite = new $this->onepageRewriteClass;
-//        $this->assertEquals(
-//            array(
-//                'login',
-//                'billing',
-//                'shipping',
-//                'shipping_method',
-//                'payment',
-//                'review'
-//            ),
-//            array_keys($onepageRewrite->getSteps())
-//        );
-
-        $this->assertTrue(true);
+        $this->app->getStore()->setConfig('payment/boltpay/skip_payment', 0);
+        $onepageRewrite = new $this->onepageRewriteClass;
+        $this->assertEquals(
+            array(
+                'login',
+                'billing',
+                'shipping',
+                'shipping_method',
+                'payment',
+                'review'
+            ),
+            array_keys($onepageRewrite->getSteps())
+        );
     }
 }
