@@ -1,4 +1,4 @@
-# Magento 1 Integration
+# Bolt Magento1 Plugin [![Build Status](https://travis-ci.org/BoltApp/bolt-magento1.svg?branch=develop)](https://travis-ci.org/BoltApp/bolt-magento1)
 Plugin to integrate Bolt with Magento
 
 See [CHANGELOG.md](./CHANGELOG.md) for change history.
