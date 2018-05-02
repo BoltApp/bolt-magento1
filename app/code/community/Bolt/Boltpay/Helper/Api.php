@@ -273,6 +273,10 @@ class Bolt_Boltpay_Helper_Api extends Bolt_Boltpay_Helper_Data
             return;
         }
 
+        if($this->isDiscountRoundingDeltaError($transaction, $quote)) {
+            $this->fixQuoteDiscountAmount($transaction, $quote);
+        }
+
         // a call to internal Magento service for order creation
         $service = Mage::getModel('sales/service_quote', $quote);
 
@@ -314,6 +318,54 @@ class Bolt_Boltpay_Helper_Api extends Bolt_Boltpay_Helper_Data
         }
 
         return $rateDebuggingData;
+    }
+
+    protected function isDiscountRoundingDeltaError($transaction, $quote) {
+        $boltDiscountAmount = $this->getBoltDiscountAmount($transaction);
+        $quoteDiscountAmount = $quote->getShippingAddress()->getDiscountAmount();
+
+        return $this->isOnePennyRoundingError($boltDiscountAmount, $quoteDiscountAmount);
+    }
+
+    protected function getBoltDiscountAmount($transaction) {
+        $boltDiscountAmount = 0;
+
+        if(isset($transaction->order->cart->discounts)) {
+            foreach($transaction->order->cart->discounts as $discount) {
+                if(isset($discount->amount->amount) && is_numeric($discount->amount->amount) && $discount->amount->amount > 0) {
+                    $boltDiscountAmount -= $discount->amount->amount / 100;
+                }
+            }
+        }
+
+        return $boltDiscountAmount;
+    }
+
+    protected function isOnePennyRoundingError($boltDiscountAmount, $quoteDiscountAmount) {
+        if($boltDiscountAmount != $quoteDiscountAmount) {
+            $difference = round(abs($boltDiscountAmount - $quoteDiscountAmount), 2);
+            if($difference <= 0.01) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    protected function fixQuoteDiscountAmount($transaction, $quote) {
+        $quote->setTotalsCollectedFlag(false)->collectTotals()->save();
+
+        if($this->isDiscountRoundingDeltaError($transaction, $quote)) {
+            Mage::helper('boltpay/bugsnag')->addMetaData(
+                array(
+                    'transaction'  => $transaction,
+                    'quote'  => var_export($quote->debug(), true),
+                    'quote_address'  => var_export($quote->getShippingAddress()->debug(), true),
+                )
+            );
+
+            throw new Exception('Failed to fix quote discount amount');
+        }
     }
 
     protected function validateSubmittedOrder($order, $quote) {
