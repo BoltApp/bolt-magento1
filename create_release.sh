@@ -5,6 +5,7 @@ if [ $# -le 0 ]; then
     exit -1
 fi
 
+rm *.zip
 rm -fr /tmp/bolt_magento_plugin
 
 mkdir /tmp/bolt_magento_plugin

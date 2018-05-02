@@ -1,4 +1,13 @@
 # Changelog
+## [v1.0.10](https://s3-us-west-1.amazonaws.com/bolt-public/magento-integration-release/bolt-magento1_v1.0.10.zip) 2018-05-01
+ - Improved shipping and tax prefetch logic
+
+## [v1.0.9](https://s3-us-west-1.amazonaws.com/bolt-public/magento-integration-release/bolt-magento1_v1.0.9.zip) 2018-04-25
+ - Add admin-only option to create order from admin page
+ - Bugfix around inventory check
+ - (Temporarily) disable address prefetch
+ - Add extra logging
+
 ## [v1.0.8](https://s3-us-west-1.amazonaws.com/bolt-public/magento-integration-release/bolt-magento1_v1.0.8.zip) 2018-04-11
  - Refine handling of shipping method selection
  - Tweak message in comment history

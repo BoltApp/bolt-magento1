@@ -1,4 +1,39 @@
 language: php
 
+php:
+  - 5.6
+
+services:
+  - mysql
+
+deploy:
+  skip-cleanup: false
+  github-token: $GITHUB_TOKEN
+
+env:
+  global:
+    - CODE_COVERAGE=false
+    - MAGENTO_VERSION="^1.9"
+    - DB=mysql
+    - DB_NAME="magento_travis"
+
+before_install:
+  - mysql -e 'DROP DATABASE IF EXISTS `$DB_NAME`;'
+  - mysql -e 'CREATE DATABASE IF NOT EXISTS `$DB_NAME`;'
+
+before_script:
+  - composer self-update -q
+  - if [ -n "$GITHUB_TOKEN" ]; then composer config github-oauth.github.com ${GITHUB_TOKEN}; fi;
+  - composer show -i
+
 script:
-    - echo 'no test'
+  - cd /home/travis/build/
+  - curl -O https://files.magerun.net/n98-magerun.phar
+  - chmod +x n98-magerun.phar
+  - php -d memroy_limit=512M n98-magerun.phar install --magentoVersionByName="magento-mirror-1.9.3.6" --installationFolder="./magento" --dbHost=localhost --dbUser=root --dbName="$DB_NAME" --dbPass="" --installSampleData=no --useDefaultConfigParams=yes --baseUrl="http://travis.magento.local/"
+  - php n98-magerun.phar config:set currency/options/base USD --root-dir ./magento/
+  - php n98-magerun.phar config:set currency/options/default USD --root-dir ./magento/
+  - php n98-magerun.phar config:set currency/options/allow USD --root-dir ./magento/
+  - cp -r magento/. BoltApp/bolt-magento1/
+  - cd BoltApp/bolt-magento1/
+  - php tests/unit/phpunit-5.7.9.phar -c tests/unit/phpunit.xml

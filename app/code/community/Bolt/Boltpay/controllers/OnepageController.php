@@ -35,7 +35,6 @@ class Bolt_Boltpay_OnepageController extends Mage_Checkout_OnepageController
 {
     public function saveShippingMethodAction() 
     {
-
         try {
             if ($this->_expireAjax()) {
                 return;
@@ -98,27 +97,5 @@ class Bolt_Boltpay_OnepageController extends Mage_Checkout_OnepageController
             Mage::helper('boltpay/bugsnag')->notifyException($e);
             throw $e;
         }
-    }
-
-    /**
-     * @deprecated Order is saved from a Bolt_Boltpay_OrderController::saveAction
-     * which in turn calls the helper class Bolt_Boltpay_Helper_Api::createOrder
-     */
-    public function saveOrderAction() 
-    {
-        $payment = $this->getOnepage()->getQuote()->getPayment();
-        $method = $payment->getMethod();
-
-        if (strtolower($method) == Bolt_Boltpay_Model_Payment::METHOD_CODE) {
-            $data = $this->getRequest()->getPost('payment', array());
-            $transactionStatus = $data['transaction_status'];
-            $reference = $data['reference'];
-
-            $payment->setAdditionalInformation('bolt_transaction_status', $transactionStatus);
-            $payment->setAdditionalInformation('bolt_reference', $reference);
-            $payment->setTransactionId($reference);
-        }
-
-        parent::saveOrderAction();
     }
 }
