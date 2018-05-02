@@ -29,8 +29,42 @@ if($this->isBoltActive()) {
     <script>
         (function () {
             var xmlhttp = new XMLHttpRequest();
+
             xmlhttp.open("POST", "<?=$this->getUrl('boltpay/shipping/prefetchEstimate');?>", true);
             xmlhttp.setRequestHeader("Content-type", "application/json");
+            xmlhttp.onreadystatechange = function() {
+                if (xmlhttp.readyState == XMLHttpRequest.DONE && xmlhttp.status == 200) {
+                    var result = JSON.parse(xmlhttp.responseText);
+
+                    if (result.address_data && Object.keys(result.address_data).length > 0) {
+                        var evt = document.createEvent('HTMLEvents'),
+                            _data = result.address_data,
+                            postcode = document.getElementById('postcode'),
+                            country = document.getElementById('country'),
+                            region = document.getElementById('region');
+
+                        if (postcode && !postcode.value.length) {
+                            postcode.value = _data.postcode;
+                        }
+
+                        if (country && !country.value.length ) {
+                            evt.initEvent('change', true, true);
+                            country.value = _data.country_id;
+                            country.dispatchEvent(evt);
+                        }
+
+                        if (region && !region.value.length) {
+                            if (region.tagName.toLowerCase() === 'input') {
+                                region.value = _data.region_name;
+                            } else if (region.tagName.toLowerCase() === 'select') {
+                                evt.initEvent('change', true, true);
+                                region.value = _data.region;
+                                region.dispatchEvent(evt);
+                            }
+                        }
+                    }
+                }
+            };
             xmlhttp.send(JSON.stringify(<?=$this->getLocationEstimate()?>));
         })();
     </script>
