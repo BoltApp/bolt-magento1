@@ -31,7 +31,6 @@
  */
 class Bolt_Boltpay_Model_Observer
 {
-
     /**
      * Event handler called after a save event.
      * Adds the Bolt User Id to the newly registered customer.
@@ -64,6 +63,14 @@ class Bolt_Boltpay_Model_Observer
     }
 
     /**
+     * @return Bolt_Boltpay_Helper_Api
+     */
+    private function getBoltApiHelper()
+    {
+        return Mage::helper('boltpay/api');
+    }
+
+    /**
      * Event handler called after a save event.
      * Calls the complete authorize Bolt end point to confirm the order is valid.
      * If the order has been changed between the creation on Bolt end and the save in Magento
@@ -74,14 +81,14 @@ class Bolt_Boltpay_Model_Observer
      */
     public function verifyOrderContents($observer) 
     {
-
-        $boltHelper = Mage::helper('boltpay/api');
+        $boltHelper = $this->getBoltApiHelper();
         $quote = $observer->getEvent()->getQuote();
         $order = $observer->getEvent()->getOrder();
 
         $payment = $quote->getPayment();
         $items = Mage::getSingleton('checkout/session')->getQuote()->getAllVisibleItems();
         $method = $payment->getMethod();
+
         if (strtolower($method) == Bolt_Boltpay_Model_Payment::METHOD_CODE) {
             if (Mage::getStoreConfig('payment/boltpay/auto_capture') == Bolt_Boltpay_Block_Checkout_Boltpay::AUTO_CAPTURE_ENABLED) {
                 $authCapture = true;
@@ -99,13 +106,14 @@ class Bolt_Boltpay_Model_Observer
 
             try {
                 if (!Mage::getStoreConfig('payment/boltpay/disable_complete_authorize'))  {
-                    $boltHelper->transmit('complete_authorize', $complete_authorize_request);
+                    $this->sendCompleteAuthorizeRequest($complete_authorize_request);
                 }
             } catch (Exception $e) {
                 $message = "THERE IS A MISMATCH IN THE ORDER PAID AND ORDER RECORDED.<br>PLEASE COMPARE THE ORDER DETAILS WITH THAT RECORD IN YOUR BOLT MERCHANT ACCOUNT AT: ";
                 $message .= Mage::getStoreConfig('payment/boltpay/test') ? "https://merchant-sandbox.bolt.com" : "https://merchant.bolt.com";
                 $message .= "/transaction/$reference";
-                $order->setState(Mage_Sales_Model_Order::STATE_HOLDED, true, $message)->save();
+                $order->setState(Mage_Sales_Model_Order::STATE_HOLDED, true, $message)
+                    ->save();
 
                 $metaData = array(
                     'endpoint'   => "complete_authorize",
@@ -116,11 +124,25 @@ class Bolt_Boltpay_Model_Observer
                 Mage::helper('boltpay/bugsnag')->notifyException($e, $metaData);
             }
 
-            $order->sendNewOrderEmail()
-                ->addStatusHistoryComment('Email sent for order ' . $order->getIncrementId())
-                ->setIsCustomerNotified(true)
-                ->save();
+            $this->sendOrderEmail($order);
+
+            $order->save();
         }
+    }
+
+    public function sendCompleteAuthorizeRequest($complete_authorize_request)
+    {
+        return $this->getBoltApiHelper()->transmit('complete_authorize', $complete_authorize_request);
+    }
+
+    /**
+     * @param $order Mage_Sales_Model_Order
+     */
+    public function sendOrderEmail($order)
+    {
+        $order->sendNewOrderEmail();
+        $history = $order->addStatusHistoryComment('Email sent for order ' . $order->getIncrementId());
+        $history->setIsCustomerNotified(true);
     }
 
     /**
