@@ -320,6 +320,17 @@ class Bolt_Boltpay_Helper_Api extends Bolt_Boltpay_Helper_Data
         return $rateDebuggingData;
     }
 
+    /**
+     * Determines whether the discount amount from Bolt is off by $0.01 compared to the Magento quote discount amount
+     *
+     * When $quote->collectTotals calls Mage_SalesRule_Model_Validator->process it uses a singleton to instantiate the
+     * validator so when it gets called each time, the  _roundingDeltas variable persists previous data and causes off
+     * by $0.01 rounding errors. Each call to collectTotals either sets it to the correct amount or to an amount that
+     * is off by $0.01. This function detects this problem.
+     *
+     * @param $transaction  Transaction data sent by Bolt
+     * @param Sales_Model_Service_Quote $quote     Quote derived from transaction data
+     */
     protected function isDiscountRoundingDeltaError($transaction, $quote) {
         $boltDiscountAmount = $this->getBoltDiscountAmount($transaction);
         $quoteDiscountAmount = $quote->getShippingAddress()->getDiscountAmount();
@@ -352,6 +363,15 @@ class Bolt_Boltpay_Helper_Api extends Bolt_Boltpay_Helper_Data
         return false;
     }
 
+    /**
+     * Fixes the quote if it is determined that the discount amount meets the criteria in isDiscountRoundingDeltaError.
+     *
+     * The bug that gets detected in isDiscountRoundingDeltaError can be resolved by simply calling collectTotals again.
+     * This function calls it again and throws an exception if the problem is not resolved.
+     *
+     * @param $transaction  Transaction data sent by Bolt
+     * @param Sales_Model_Service_Quote $quote     Quote derived from transaction data
+     */
     protected function fixQuoteDiscountAmount($transaction, $quote) {
         $quote->setTotalsCollectedFlag(false)->collectTotals()->save();
 
