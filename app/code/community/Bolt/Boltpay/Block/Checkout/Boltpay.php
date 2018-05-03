@@ -166,9 +166,11 @@ class Bolt_Boltpay_Block_Checkout_Boltpay
                 $authCapture = false;
             }
 
-            // Resets shipping rate
-            $shippingMethod = $quote->getShippingAddress()->getShippingMethod();
-            $boltHelper->applyShippingRate($quote, null);
+            if($multipage) {
+                // Resets shipping rate
+                $shippingMethod = $quote->getShippingAddress()->getShippingMethod();
+                $boltHelper->applyShippingRate($quote, null);
+            }
 
             // Call Bolt create order API
             try {
@@ -178,7 +180,9 @@ class Bolt_Boltpay_Block_Checkout_Boltpay
                 $orderCreationResponse = json_decode('{"token" : ""}');
             }
 
-            $boltHelper->applyShippingRate($quote, $shippingMethod);
+            if($multipage) {
+                $boltHelper->applyShippingRate($quote, $shippingMethod);
+            }
 
             //////////////////////////////////////////////////////////////////////////
             // Generate JSON cart and hints objects for the javascript returned below.
