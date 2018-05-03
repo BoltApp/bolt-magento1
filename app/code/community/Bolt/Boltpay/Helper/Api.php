@@ -805,7 +805,7 @@ class Bolt_Boltpay_Helper_Api extends Bolt_Boltpay_Helper_Data
      * Gets the shipping and the tax estimate for a quote
      *
      * @param $quote    A quote object with pre-populated addresses
-     * 
+     *
      * @return array    Bolt shipping and tax response array to be converted to JSON
      */
     public function getShippingAndTaxEstimate( $quote )
@@ -813,6 +813,9 @@ class Bolt_Boltpay_Helper_Api extends Bolt_Boltpay_Helper_Data
 
         $response = array(
             'shipping_options' => array(),
+            'tax_result' => array(
+                "amount" => 0
+            ),
         );
 
         Mage::getModel('sales/quote')->load($quote->getId())->collectTotals();
@@ -820,17 +823,14 @@ class Bolt_Boltpay_Helper_Api extends Bolt_Boltpay_Helper_Data
         /*****************************************************************************************
          * Calculate tax
          *****************************************************************************************/
-        $quote->getShippingAddress()->setShippingMethod(null);
-        $quote->collectTotals();
-        $totals = $quote->getTotals();
+        $this->applyShippingRate($quote, null);
 
-        $response['tax_result'] = array(
-            "amount" => @$totals['tax'] ? round($totals['tax']->getValue() * 100) : 0
-        );
         /*****************************************************************************************/
 
         $shipping_address = $quote->getShippingAddress();
         $shipping_address->setCollectShippingRates(true)->collectShippingRates()->save();
+
+        $origTotalWithoutShippingOrTax = $this->getTotalWithoutTaxOrShipping($quote);
 
         $rates = $this->getSortedShippingRates($shipping_address);
 
@@ -840,8 +840,7 @@ class Bolt_Boltpay_Helper_Api extends Bolt_Boltpay_Helper_Data
                 continue;
             }
 
-            $quote->getShippingAddress()->setShippingMethod($rate->getCode());
-            $quote->setTotalsCollectedFlag(false)->collectTotals();
+            $this->applyShippingRate($quote, $rate->getCode());
 
             $label = $rate->getCarrierTitle();
             if ($rate->getMethodTitle()) {
@@ -854,11 +853,13 @@ class Bolt_Boltpay_Helper_Api extends Bolt_Boltpay_Helper_Data
                 Mage::helper('boltpay/bugsnag')->notifyException(new Exception('Rate code is empty. ' . var_export($rate->debug(), true)));
             }
 
+            $shippingDiscountModifier = $this->getShippingDiscountModifier($origTotalWithoutShippingOrTax, $quote);
+
             $option = array(
                 "service"   => $label,
                 "reference" => $rateCode,
-                "cost" => round($quote->getShippingAddress()->getShippingAmount() * 100),
-                "tax_amount" => abs(round($quote->getShippingAddress()->getShippingTaxAmount() * 100))
+                "cost" => round(($quote->getShippingAddress()->getShippingAmount() - $shippingDiscountModifier) * 100),
+                "tax_amount" => abs(round($quote->getShippingAddress()->getTaxAmount() * 100))
             );
 
             $response['shipping_options'][] = $option;
@@ -869,8 +870,41 @@ class Bolt_Boltpay_Helper_Api extends Bolt_Boltpay_Helper_Data
         return $response;
     }
 
-    protected function getSortedShippingRates($address) 
-    {
+    /**
+     * Applies shipping rate to quote. Clears previously calculated discounts by clearing address id.
+     *
+     * @param Mage_Sales_Model_Quote $quote    Quote which has been updated to use new shipping rate
+     * @param string $shippingRateCode    Shipping rate code
+     */
+    public function applyShippingRate($quote, $shippingRateCode) {
+        $shippingAddress = $quote->getShippingAddress();
+
+        if(!empty($shippingAddress)) {
+            // Unsetting address id is required to force collectTotals to recalculate discounts
+            $shippingAddressId = $shippingAddress->getData('address_id');
+            $shippingAddress->unsetData('address_id');
+
+            $shippingAddress->setShippingMethod($shippingRateCode);
+            $quote->setTotalsCollectedFlag(false)->collectTotals();
+
+            $shippingAddress->setData('address_id', $shippingAddressId);
+        }
+    }
+
+    /**
+     * Gets the quote total after tax and shipping costs have been removed
+     *
+     * @param Mage_Sales_Model_Quote $quote    Quote which has been updated to use new shipping rate
+     *
+     * @return float    Grand Total - Taxes - Shipping Cost
+     */
+    protected function getTotalWithoutTaxOrShipping($quote) {
+        $address = $quote->getShippingAddress();
+
+        return $address->getGrandTotal() - $address->getTaxAmount() - $address->getShippingAmount();
+    }
+
+    protected function getSortedShippingRates($address) {
         $rates = array();
 
         foreach($address->getGroupedAllShippingRates() as $code => $carrierRates) {
@@ -880,6 +914,20 @@ class Bolt_Boltpay_Helper_Api extends Bolt_Boltpay_Helper_Data
         }
 
         return $rates;
+    }
+
+    /**
+     * Gets the difference between a previously calculated subtotal and the new subtotal due to changing shipping methods.
+     *
+     * @param float $origTotalWithoutShippingOrTax    Original subtotal
+     * @param Mage_Sales_Model_Quote    $updatedQuote    Quote which has been updated to use new shipping rate
+     *
+     * @return float    Discount modified as a result of the new shipping method
+     */
+    protected function getShippingDiscountModifier($origTotalWithoutShippingOrTax, $updatedQuote) {
+        $newQuoteWithoutShippingOrTax = $this->getTotalWithoutTaxOrShipping($updatedQuote);
+
+        return $origTotalWithoutShippingOrTax - $newQuoteWithoutShippingOrTax;
     }
 
     /**
