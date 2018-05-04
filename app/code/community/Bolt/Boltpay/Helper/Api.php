@@ -332,8 +332,8 @@ class Bolt_Boltpay_Helper_Api extends Bolt_Boltpay_Helper_Data
      * @param Sales_Model_Service_Quote $quote     Quote derived from transaction data
      */
     protected function isDiscountRoundingDeltaError($transaction, $quote) {
-        $boltDiscountAmount = $this->getBoltDiscountAmount($transaction);
-        $quoteDiscountAmount = $quote->getShippingAddress()->getDiscountAmount();
+        $boltDiscountAmount = round($this->getBoltDiscountAmount($transaction), 2);
+        $quoteDiscountAmount = round($quote->getShippingAddress()->getDiscountAmount(), 2);
 
         return $this->isOnePennyRoundingError($boltDiscountAmount, $quoteDiscountAmount);
     }
@@ -384,7 +384,7 @@ class Bolt_Boltpay_Helper_Api extends Bolt_Boltpay_Helper_Data
                 )
             );
 
-            throw new Exception('Failed to fix quote discount amount');
+            Mage::helper('boltpay/bugsnag')->notifyException(new Exception('Failed to fix quote discount amount'));
         }
     }
 
