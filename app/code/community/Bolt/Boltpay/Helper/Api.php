@@ -160,7 +160,7 @@ class Bolt_Boltpay_Helper_Api extends Bolt_Boltpay_Helper_Data
      * Processes Magento order creation. Called from both frontend and API.
      *
      * @param string    $reference           Bolt transaction reference
-     * @param int       $session_quote_id    Quote id, used if trigger from shopping session context,
+     * @param int       $session_quote_id    Quote id, used if triggered from shopping session context,
      *                                       This will be null if called from within an API call context
      *
      * @return Mage_Sales_Model_Order   The order saved to Magento
@@ -189,12 +189,10 @@ class Bolt_Boltpay_Helper_Api extends Bolt_Boltpay_Helper_Data
             throw new Exception("The Bolt order reference does not match the current cart ID.");
         }
 
-        $display_id = $transaction->order->cart->display_id;
+        $order_id = $transaction->order->cart->display_id;
 
-        $quote = Mage::getModel('sales/quote')
-            ->getCollection()
-            ->addFieldToFilter('reserved_order_id', $display_id)
-            ->getFirstItem();
+        /* @var Mage_Sales_Model_Quote $quote */
+        $quote = Mage::getModel('sales/quote')->loadByIdWithoutStore($quote_id);
 
         // adding guest user email to order
         if (!$quote->getCustomerEmail()) {
@@ -259,14 +257,19 @@ class Bolt_Boltpay_Helper_Api extends Bolt_Boltpay_Helper_Data
 
         $quote->setTotalsCollectedFlag(false)->collectTotals()->save();
 
-        $existingOrder = Mage::getModel('sales/order')->loadByIncrementId($display_id);
+        /**
+         * TODO: Investigate if this is a problem.  Logically, it makes no sense that the order
+         *       exists at this point if we assume that the id is permanently reserved.  If the
+         *       id becomes available for use by another quote, this will be a problem.
+         */
+        $existingOrder = Mage::getModel('sales/order')->loadByIncrementId($order_id);
         if (sizeof($existingOrder->getData()) > 0) {
             Mage::app()->getResponse()->setHttpResponseCode(200);
             Mage::app()->getResponse()->setBody(
                 json_encode(
                     array(
                     'status' => 'success',
-                    'message' => "Order increment $display_id already exists."
+                    'message' => "Order increment $order_id already exists."
                     )
                 )
             );
