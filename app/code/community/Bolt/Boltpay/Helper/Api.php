@@ -951,15 +951,18 @@ class Bolt_Boltpay_Helper_Api extends Bolt_Boltpay_Helper_Data
     public function applyShippingRate($quote, $shippingRateCode) {
         $shippingAddress = $quote->getShippingAddress();
 
-        if(!empty($shippingAddress)) {
+        if (!empty($shippingAddress)) {
             // Unsetting address id is required to force collectTotals to recalculate discounts
+            $shippingAddress->isObjectNew(true);
             $shippingAddressId = $shippingAddress->getData('address_id');
-            $shippingAddress->unsetData('address_id');
 
             $shippingAddress->setShippingMethod($shippingRateCode);
+
             $quote->setTotalsCollectedFlag(false)->collectTotals();
 
-            $shippingAddress->setData('address_id', $shippingAddressId);
+            if(!empty($shippingAddressId) && $shippingAddressId != $shippingAddress->getData('address_id')) {
+                $shippingAddress->setData('address_id', $shippingAddressId);
+            }
         }
     }
 
