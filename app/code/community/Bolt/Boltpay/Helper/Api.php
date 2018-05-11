@@ -958,6 +958,12 @@ class Bolt_Boltpay_Helper_Api extends Bolt_Boltpay_Helper_Data
 
             $shippingAddress->setShippingMethod($shippingRateCode);
 
+            $quoteItems = $quote->getAllItems();
+            foreach ($quoteItems as $item) {
+                $item->setData('discount_amount', $item->getOrigData('discount_amount'));
+                $item->setData('base_discount_amount', $item->getOrigData('base_discount_amount'));
+            }
+
             $quote->setTotalsCollectedFlag(false)->collectTotals();
 
             if(!empty($shippingAddressId) && $shippingAddressId != $shippingAddress->getData('address_id')) {
