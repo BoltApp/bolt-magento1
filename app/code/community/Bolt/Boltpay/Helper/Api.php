@@ -952,12 +952,15 @@ class Bolt_Boltpay_Helper_Api extends Bolt_Boltpay_Helper_Data
         $shippingAddress = $quote->getShippingAddress();
 
         if (!empty($shippingAddress)) {
-            // Unsetting address id is required to force collectTotals to recalculate discounts
+            // Flagging address as new is required to force collectTotals to recalculate discounts
             $shippingAddress->isObjectNew(true);
             $shippingAddressId = $shippingAddress->getData('address_id');
 
             $shippingAddress->setShippingMethod($shippingRateCode);
 
+            // When multiple shipping methods apply a discount to the sub-total, collect totals doesn't clear the
+            // previously set discocunt, so the previous discount gets added to each subsequent shipping method that
+            // includes a discount. Here we reset it to the original amount to resolve this bug.
             $quoteItems = $quote->getAllItems();
             foreach ($quoteItems as $item) {
                 $item->setData('discount_amount', $item->getOrigData('discount_amount'));
