@@ -261,6 +261,7 @@ class Bolt_Boltpay_Helper_Api extends Bolt_Boltpay_Helper_Data
          * TODO: Move code to @see Bolt_Boltpay_ApiController::hookAction()
          *******************************************************************/
         /* @var Mage_Sales_Model_Order $existingOrder */
+	$existingOrder = Mage::getModel('sales/order')->loadByIncrementId($reservedOrderId);
         if (!$existingOrder->isEmpty()) {
             Mage::app()->getResponse()->setHttpResponseCode(200);
             Mage::app()->getResponse()->setBody(
