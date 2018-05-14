@@ -189,7 +189,7 @@ class Bolt_Boltpay_Helper_Api extends Bolt_Boltpay_Helper_Data
             throw new Exception("The Bolt order reference does not match the current cart ID.");
         }
 
-        $order_id = $transaction->order->cart->display_id;
+        $reservedOrderId = $transaction->order->cart->display_id;
 
         /* @var Mage_Sales_Model_Quote $quote */
         $quote = Mage::getModel('sales/quote')->loadByIdWithoutStore($quote_id);
@@ -257,24 +257,23 @@ class Bolt_Boltpay_Helper_Api extends Bolt_Boltpay_Helper_Data
 
         $quote->setTotalsCollectedFlag(false)->collectTotals()->save();
 
-        /**
-         * TODO: Investigate if this is a problem.  Logically, it makes no sense that the order
-         *       exists at this point if we assume that the id is permanently reserved.  If the
-         *       id becomes available for use by another quote, this will be a problem.
-         */
-        $existingOrder = Mage::getModel('sales/order')->loadByIncrementId($order_id);
-        if (sizeof($existingOrder->getData()) > 0) {
+        /*******************************************************************
+         * TODO: Move code to @see Bolt_Boltpay_ApiController::hookAction()
+         *******************************************************************/
+        /* @var Mage_Sales_Model_Order $existingOrder */
+        if (!$existingOrder->isEmpty()) {
             Mage::app()->getResponse()->setHttpResponseCode(200);
             Mage::app()->getResponse()->setBody(
                 json_encode(
                     array(
                     'status' => 'success',
-                    'message' => "Order increment $order_id already exists."
+                    'message' => "Order increment $reservedOrderId already exists."
                     )
                 )
             );
             return;
         }
+        /*******************************************************************/
 
         if($this->isDiscountRoundingDeltaError($transaction, $quote)) {
             $this->fixQuoteDiscountAmount($transaction, $quote);
