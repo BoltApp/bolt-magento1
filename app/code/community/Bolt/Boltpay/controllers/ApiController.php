@@ -80,9 +80,29 @@ class Bolt_Boltpay_ApiController extends Mage_Core_Controller_Front_Action
             $orderId = $transaction->order->cart->display_id;
             $quoteId = $transaction->order->cart->order_reference;
 
-            $order = Mage::getModel('sales/order')->loadByIncrementId($orderId);
+            /***************************************************************************
+             * Handle the racing condition of frontend and Bolt Server order creation
+             * The key idea is that we want the front-side order creation to succeed
+             * always before hooks to give the end customer the best user experience.
+             * Therefore, we sleep execution for a short time over a limited number
+             * attempts if the hook cannot find the order.
+             *
+             * We also ignore Bolt aborts so that if a reasonable amount of time has
+             * passed with no results, it is safe to assume the front-end order creation
+             * failed to deliver on user experience and we should go ahead and treat
+             * it as an orphaned transaction and create the order.
+             ***************************************************************************/
+            ignore_user_abort(true);
+            set_time_limit( 60 );
+            $remaining_attempts = 6;
+            do {
+                /* @var Mage_Sales_Model_Order $order */
+                $order = Mage::getModel('sales/order')->loadByIncrementId($orderId);
+                sleep(5 );
+            } while ( $order->isEmpty() && --$remaining_attempts );
+            /***************************************************************************/
 
-            if (!empty($order->getData())) {
+            if (!$order->isEmpty()) {
                 //Mage::log('Order Found. Updating it', null, 'bolt.log');
                 $orderPayment = $order->getPayment();
 

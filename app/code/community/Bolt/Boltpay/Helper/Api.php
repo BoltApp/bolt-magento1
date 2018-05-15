@@ -261,26 +261,7 @@ class Bolt_Boltpay_Helper_Api extends Bolt_Boltpay_Helper_Data
         $payment->setTransactionId($transaction->id);
 
         $quote->setTotalsCollectedFlag(false)->collectTotals()->save();
-
-        /*******************************************************************
-         * TODO: Move code to @see Bolt_Boltpay_ApiController::hookAction()
-         *******************************************************************/
-        /* @var Mage_Sales_Model_Order $existingOrder */
-        $existingOrder = Mage::getModel('sales/order')->loadByIncrementId($reservedOrderId);
-        if (!$existingOrder->isEmpty()) {
-            Mage::app()->getResponse()->setHttpResponseCode(200);
-            Mage::app()->getResponse()->setBody(
-                json_encode(
-                    array(
-                    'status' => 'success',
-                    'message' => "Order increment $reservedOrderId already exists."
-                    )
-                )
-            );
-            return;
-        }
-        /*******************************************************************/
-
+        
         if($this->isDiscountRoundingDeltaError($transaction, $quote)) {
             $this->fixQuoteDiscountAmount($transaction, $quote);
         }
