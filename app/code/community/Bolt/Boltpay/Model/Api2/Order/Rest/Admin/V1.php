@@ -174,7 +174,7 @@ class Bolt_Boltpay_Model_Api2_Order_Rest_Admin_V1 extends Bolt_Boltpay_Model_Api
             //Mage::log("Late queue event. Returning as OK", null, 'bolt.log');
 
 
-            Mage::helper('boltpay/bugsnag')->addMetaData(
+            Mage::helper('boltpay/bugsnag')->addBreadcrumb(
                 array(
                     "API HOOKS late queue event" => array (
                         "message" => $error,
@@ -189,7 +189,7 @@ class Bolt_Boltpay_Model_Api2_Order_Rest_Admin_V1 extends Bolt_Boltpay_Model_Api
             $error = $e->getMessage();
             //Mage::log($error, null, 'bolt.log');
 
-            Mage::helper('boltpay/bugsnag')->addMetaData(
+            Mage::helper('boltpay/bugsnag')->addBreadcrumb(
                 array(
                     "API HOOKS Exception" => array (
                         "message" => $error,
