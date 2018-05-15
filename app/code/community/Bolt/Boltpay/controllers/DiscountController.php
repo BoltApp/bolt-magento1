@@ -54,6 +54,7 @@ class Bolt_Boltpay_DiscountController extends Mage_Core_Controller_Front_Action
 
             $quoteId = $bodyParams['quote_id'];
             $couponCode = $bodyParams['coupon'];
+            $shippingRateCode = $bodyParams['shipping_rate_code'];
 
             $responseData = $this->initSuccessResponseData($couponCode);
 
@@ -64,12 +65,13 @@ class Bolt_Boltpay_DiscountController extends Mage_Core_Controller_Front_Action
                 throw new Exception("Cannot apply coupon on empty shopping cart");
             }
 
-            $quote->getShippingAddress()->setCollectShippingRates(true);
+            $quote->getShippingAddress()->setShippingMethod($shippingRateCode)
+                ->setCollectShippingRates(true);
             $quote->setCouponCode($couponCode)
                 ->collectTotals()
                 ->save();
 
-            if (strlen($couponCode) > 0 && strpos($couponCode, $quote->getCouponCode()) >= 0) {
+            if (strlen($couponCode) > 0 && strpos($couponCode, $quote->getCouponCode()) != false) {
                 $responseData['amount'] = $this->getQuoteDiscountAmount($quote);
             } else {
                 $responseData = $this->setFailureResponseData($responseData, "Invalid coupon code response for '$couponCode'");
