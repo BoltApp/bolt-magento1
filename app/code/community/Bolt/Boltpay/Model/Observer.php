@@ -78,32 +78,24 @@ class Bolt_Boltpay_Model_Observer
      *
      * @param $observer
      * @throws Exception
+     *
+     * TODO: Implement price check logic to make sure the post shipping calculation is as expected.
      */
     public function verifyOrderContents($observer) 
     {
         $boltHelper = $this->getBoltApiHelper();
+        /* @var Mage_Sales_Model_Quote $quote */
         $quote = $observer->getEvent()->getQuote();
         $order = $observer->getEvent()->getOrder();
 
         $payment = $quote->getPayment();
-        $items = Mage::getSingleton('checkout/session')->getQuote()->getAllVisibleItems();
         $method = $payment->getMethod();
 
         if (strtolower($method) == Bolt_Boltpay_Model_Payment::METHOD_CODE) {
-            if (Mage::getStoreConfig('payment/boltpay/auto_capture') == Bolt_Boltpay_Block_Checkout_Boltpay::AUTO_CAPTURE_ENABLED) {
-                $authCapture = true;
-            } else {
-                $authCapture = false;
-            }
 
             $reference = $payment->getAdditionalInformation('bolt_reference');
-            $cart_request = $boltHelper->buildCart($quote, $items, false);
-            $complete_authorize_request = array(
-                'cart' => $cart_request,
-                'reference' => $reference,
-                'auto_capture' => $authCapture
-            );
 
+            /*
             try {
                 if (!Mage::getStoreConfig('payment/boltpay/disable_complete_authorize'))  {
                     $this->sendCompleteAuthorizeRequest($complete_authorize_request);
@@ -123,9 +115,9 @@ class Bolt_Boltpay_Model_Observer
                 );
                 Mage::helper('boltpay/bugsnag')->notifyException($e, $metaData);
             }
+            */
 
             $this->sendOrderEmail($order);
-
             $order->save();
         }
     }

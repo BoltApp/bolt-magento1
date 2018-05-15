@@ -160,14 +160,14 @@ class Bolt_Boltpay_Helper_Api extends Bolt_Boltpay_Helper_Data
      * Processes Magento order creation. Called from both frontend and API.
      *
      * @param string    $reference           Bolt transaction reference
-     * @param int       $session_quote_id    Quote id, used if triggered from shopping session context,
+     * @param int       $sessionQuoteId    Quote id, used if triggered from shopping session context,
      *                                       This will be null if called from within an API call context
      *
      * @return Mage_Sales_Model_Order   The order saved to Magento
      *
      * @throws Exception    thrown on order creation failure
      */
-    public function createOrder($reference, $session_quote_id = null)
+    public function createOrder($reference, $sessionQuoteId = null)
     {
         if (empty($reference)) {
             throw new Exception("Bolt transaction reference is missing in the Magento order creation process.");
@@ -182,17 +182,22 @@ class Bolt_Boltpay_Helper_Api extends Bolt_Boltpay_Helper_Data
 
         $transactionStatus = $transaction->status;
 
-        $quote_id = $transaction->order->cart->order_reference;
+        $quoteId = $transaction->order->cart->order_reference;
+
+        /* @var Mage_Sales_Model_Quote $quote */
+        $quote = Mage::getModel('sales/quote')->loadByIdWithoutStore($quoteId);
+
+        // make sure this quote has not already processed
+        if ($quote->isEmpty()) {
+            throw new Exception("This order has already been processed by Magento.");
+        }
 
         // check if the quotes matches, frontend only
-        if ($session_quote_id && $session_quote_id != $quote_id) {
+        if ( $sessionQuoteId && $sessionQuoteId != $quote->getParentQuoteId() ) {
             throw new Exception("The Bolt order reference does not match the current cart ID.");
         }
 
         $reservedOrderId = $transaction->order->cart->display_id;
-
-        /* @var Mage_Sales_Model_Quote $quote */
-        $quote = Mage::getModel('sales/quote')->loadByIdWithoutStore($quote_id);
 
         // adding guest user email to order
         if (!$quote->getCustomerEmail()) {
@@ -261,6 +266,7 @@ class Bolt_Boltpay_Helper_Api extends Bolt_Boltpay_Helper_Data
          * TODO: Move code to @see Bolt_Boltpay_ApiController::hookAction()
          *******************************************************************/
         /* @var Mage_Sales_Model_Order $existingOrder */
+        $existingOrder = Mage::getModel('sales/order')->loadByIncrementId($reservedOrderId);
         if (!$existingOrder->isEmpty()) {
             Mage::app()->getResponse()->setHttpResponseCode(200);
             Mage::app()->getResponse()->setBody(
@@ -298,13 +304,34 @@ class Bolt_Boltpay_Helper_Api extends Bolt_Boltpay_Helper_Data
 
         $this->validateSubmittedOrder($order, $quote);
 
-        // deactivate quote
-        $quote->setIsActive(false);
-        $quote->save();
-
         Mage::getModel('boltpay/payment')->handleOrderUpdate($order);
 
         Mage::dispatchEvent('bolt_boltpay_save_order_after', array('order'=>$order, 'quote'=>$quote));
+
+        // Close out session by deactivating parent quote and deleting the immutable quote so that it can no
+        // longer be used.
+        /* @var Mage_Sales_Model_Quote $parentQuote */
+        $parentQuote = Mage::getModel('sales/quote')->loadByIdWithoutStore($quote->getParentQuoteId());
+        $parentQuote->setIsActive(false)
+            ->save();
+
+        if ($sessionQuoteId) {
+            $checkout_session = Mage::getSingleton('checkout/session');
+
+            $checkout_session
+                ->clearHelperData();
+
+            $checkout_session
+                ->setLastQuoteId($quote->getId())
+                ->setLastSuccessQuoteId($quote->getId());
+
+            // add order information to the session
+            $checkout_session->setLastOrderId($order->getId())
+                ->setRedirectUrl('')
+                ->setLastRealOrderId($order->getIncrementId());
+        }
+
+        //$quote->delete();
 
         return $order;
 

@@ -119,12 +119,8 @@ class Bolt_Boltpay_Block_Checkout_Boltpay
             $customerSession = Mage::getSingleton('customer/session');
             $session = Mage::getSingleton('checkout/session');
 
-            // Get the session quote/cart
+            /* @var Mage_Sales_Model_Quote $quote */
             $quote = $session->getQuote();
-            $quote->setExtShippingInfo(Mage::getSingleton('core/session')->getSessionId());
-            $quote->save();
-            // Generate new increment order id and associate it with current quote, if not already assigned
-            $quote->reserveOrderId()->save();
 
             // Load the required helper class
             $boltHelper = Mage::helper('boltpay/api');
@@ -174,7 +170,54 @@ class Bolt_Boltpay_Block_Checkout_Boltpay
 
             // Call Bolt create order API
             try {
-                $orderCreationResponse = $this->createBoltOrder($quote, $multipage);
+                /////////////////////////////////////////////////////////////////////////////////
+                // We create a copy of the quote that is immutable by the customer/frontend
+                // Bolt saves this quote to the database at Magento-side order save time.
+                // This assures that the quote saved to Magento matches what is stored on Bolt
+                // Only shipping, tax and discounts can change, and only if the shipping, tax
+                // and discount calculations change on the Magento server
+                ////////////////////////////////////////////////////////////////////////////////
+
+                /*********************************************************/
+                /* Clean up resources that may have previously been saved
+                /* @var Mage_Sales_Model_Quote[] $expired_quotes */
+                $expired_quotes = Mage::getModel('sales/quote')
+                    ->getCollection()
+                    ->addFieldToFilter('parent_quote_id', $quote->getId());
+
+                foreach( $expired_quotes as $expired_quote) {
+                    $expired_quote->delete();
+                }
+                /*********************************************************/
+
+                /* @var Mage_Sales_Model_Quote $immutableQuote */
+                $immutableQuote = Mage::getSingleton('sales/quote');
+
+                if (!$multipage) {
+                    // For the checkout page we want to set the
+                    // billing and shipping, and shipping method at this time.
+                    // For multi-page, we add the addresses during the shipping and tax hook
+                    // and the chosen shipping method at order save time.
+                    $immutableQuote
+                        ->setBillingAddress($quote->getBillingAddress())
+                        ->setShippingAddress($quote->getShippingAddress())
+                        ->getShippingAddress()
+                            ->setShippingMethod($quote->getShippingAddress()->getShippingMethod())
+                            ->save();
+                }
+
+                $immutableQuote
+                    ->setCustomer($quote->getCustomer())
+                    ->merge($quote)
+                    // Generate new increment order id and associate it with current quote, if not already assigned
+                    ->reserveOrderId()
+                    ->setStoreId($quote->getStoreId())
+                    ->setParentQuoteId($quote->getId());
+
+                $orderCreationResponse = $this->createBoltOrder($immutableQuote, $multipage);
+                $immutableQuote->setBoltOrderToken($orderCreationResponse->token)
+                    ->save();
+
             } catch (Exception $e) {
                 Mage::helper('boltpay/bugsnag')->notifyException(new Exception($e));
                 $orderCreationResponse = json_decode('{"token" : ""}');
@@ -226,7 +269,7 @@ class Bolt_Boltpay_Block_Checkout_Boltpay
             //////////////////////////////////////////////////////
             return ("
                 var json_cart = $json_cart;
-                var quote_id = '{$quote->getId()}';
+                var quote_id = '{$immutableQuote->getId()}';
                 var order_completed = false;
                 
                 BoltCheckout.configure(
