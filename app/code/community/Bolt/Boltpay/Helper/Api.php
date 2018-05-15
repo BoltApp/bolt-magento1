@@ -450,17 +450,14 @@ class Bolt_Boltpay_Helper_Api extends Bolt_Boltpay_Helper_Data
         //Mage::log('KEY: ' . Mage::helper('core')->decrypt($key), null, 'bolt.log');
 
         $context_info = Mage::helper('boltpay/bugsnag')->getContextInfo();
-        $header_info = array(
+        curl_setopt($ch, CURLOPT_HTTPHEADER, array(
             'Content-Type: application/json',
             'Content-Length: ' . strlen($params),
             'X-Api-Key: ' . Mage::helper('core')->decrypt($key),
             'X-Nonce: ' . rand(100000000, 999999999),
             'User-Agent: BoltPay/Magento-' . $context_info["Magento-Version"],
             'X-Bolt-Plugin-Version: ' . $context_info["Bolt-Plugin-Version"]
-            );
-        curl_setopt($ch, CURLOPT_HTTPHEADER, $header_info);
-        $apiRequestData = array_merge($header_info,$data);
-        Mage::helper('boltpay/bugsnag')->addMetaData(['BOLT API REQUEST' => $apiRequestData]);
+            ));
         curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
         curl_setopt($ch, CURLOPT_HEADER, true);
 
@@ -480,7 +477,6 @@ class Bolt_Boltpay_Helper_Api extends Bolt_Boltpay_Helper_Data
         $this->setCurlResultWithHeader($ch, $result);
 
         $resultJSON = $this->getCurlJSONBody();
-        Mage::helper('boltpay/bugsnag')->addMetaData(['BOLT API RESPONSE' => $resultJSON]);
         $jsonError = $this->handleJSONParseError();
         if ($jsonError != null) {
             curl_close($ch);
