@@ -37,7 +37,7 @@ class Bolt_Boltpay_Helper_Bugsnag extends Mage_Core_Helper_Abstract
 
     private $boltTraceId;
 
-    public function addMetaData($metaData) 
+    public function addBreadcrumb($metaData) 
     {
         $this->metaData['breadcrumbs_'] = array_merge($metaData, $this->metaData['breadcrumbs_']);
     }
@@ -85,7 +85,7 @@ class Bolt_Boltpay_Helper_Bugsnag extends Mage_Core_Helper_Abstract
         $traceId = $this->getBoltTraceId();
 
         if(!empty($traceId) && !array_key_exists('bolt_trace_id', $this->metaData)) {
-            $this->addMetaData(
+            $this->addBreadcrumb(
                 array(
                 "bolt_trace_id" => $traceId
                 )
@@ -163,4 +163,5 @@ class Bolt_Boltpay_Helper_Bugsnag extends Mage_Core_Helper_Abstract
 
         return null;
     }
+
 }

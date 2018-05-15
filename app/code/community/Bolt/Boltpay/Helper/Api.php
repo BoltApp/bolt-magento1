@@ -286,7 +286,7 @@ class Bolt_Boltpay_Helper_Api extends Bolt_Boltpay_Helper_Data
         try {
             $service->submitAll();
         } catch (Exception $e) {
-            Mage::helper('boltpay/bugsnag')->addMetaData(
+            Mage::helper('boltpay/bugsnag')->addBreadcrumb(
                 array(
                     'transaction'   => json_encode((array)$transaction),
                     'quote_address' => var_export($quote->getShippingAddress()->debug(), true)
@@ -379,7 +379,7 @@ class Bolt_Boltpay_Helper_Api extends Bolt_Boltpay_Helper_Data
         $quote->setTotalsCollectedFlag(false)->collectTotals()->save();
 
         if($this->isDiscountRoundingDeltaError($transaction, $quote)) {
-            Mage::helper('boltpay/bugsnag')->addMetaData(
+            Mage::helper('boltpay/bugsnag')->addBreadcrumb(
                 array(
                     'transaction'  => $transaction,
                     'quote'  => var_export($quote->debug(), true),
@@ -393,7 +393,7 @@ class Bolt_Boltpay_Helper_Api extends Bolt_Boltpay_Helper_Data
 
     protected function validateSubmittedOrder($order, $quote) {
         if(empty($order)) {
-            Mage::helper('boltpay/bugsnag')->addMetaData(
+            Mage::helper('boltpay/bugsnag')->addBreadcrumb(
                 array(
                     'quote'  => var_export($quote->debug(), true),
                     'quote_address'  => var_export($quote->getShippingAddress()->debug(), true),
@@ -450,17 +450,14 @@ class Bolt_Boltpay_Helper_Api extends Bolt_Boltpay_Helper_Data
         //Mage::log('KEY: ' . Mage::helper('core')->decrypt($key), null, 'bolt.log');
 
         $context_info = Mage::helper('boltpay/bugsnag')->getContextInfo();
-
-        curl_setopt(
-            $ch, CURLOPT_HTTPHEADER, array(
+        curl_setopt($ch, CURLOPT_HTTPHEADER, array(
             'Content-Type: application/json',
             'Content-Length: ' . strlen($params),
             'X-Api-Key: ' . Mage::helper('core')->decrypt($key),
             'X-Nonce: ' . rand(100000000, 999999999),
             'User-Agent: BoltPay/Magento-' . $context_info["Magento-Version"],
             'X-Bolt-Plugin-Version: ' . $context_info["Bolt-Plugin-Version"]
-            )
-        );
+            ));
         curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
         curl_setopt($ch, CURLOPT_HEADER, true);
 
