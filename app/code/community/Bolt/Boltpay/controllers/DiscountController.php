@@ -30,6 +30,8 @@
  */
 class Bolt_Boltpay_DiscountController extends Mage_Core_Controller_Front_Action
 {
+    const COUPON_ERROR_INSUFFICIENT_INFO = 6;
+
     /**
      * Apply discount action
      *
@@ -74,7 +76,7 @@ class Bolt_Boltpay_DiscountController extends Mage_Core_Controller_Front_Action
             if (strlen($couponCode) > 0 && strpos($couponCode, $quote->getCouponCode()) != false) {
                 $responseData['amount'] = $this->getQuoteDiscountAmount($quote);
             } else {
-                $responseData = $this->setFailureResponseData($responseData, "Invalid coupon code response for '$couponCode'");
+                $responseData = $this->setFailureResponseData($responseData, "Invalid coupon code response for coupon '$couponCode'");
             }
 
             $this->getResponse()->setHttpResponseCode(200);
@@ -101,7 +103,7 @@ class Bolt_Boltpay_DiscountController extends Mage_Core_Controller_Front_Action
      * @param string $code
      * @return mixed
      */
-    protected function setFailureResponseData($responseData = [], $description = '', $code = '')
+    protected function setFailureResponseData($responseData = [], $description = '', $code = self::COUPON_ERROR_INSUFFICIENT_INFO)
     {
         $responseData['status'] = 'failure';
         $responseData['error'] = [
