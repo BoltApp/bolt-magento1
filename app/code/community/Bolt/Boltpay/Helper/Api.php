@@ -283,7 +283,7 @@ class Bolt_Boltpay_Helper_Api extends Bolt_Boltpay_Helper_Data
         try {
             $service->submitAll();
         } catch (Exception $e) {
-            Mage::helper('boltpay/bugsnag')->addMetaData(
+            Mage::helper('boltpay/bugsnag')->addBreadcrumb(
                 array(
                     'transaction'   => json_encode((array)$transaction),
                     'quote_address' => var_export($quote->getShippingAddress()->debug(), true)
@@ -376,7 +376,7 @@ class Bolt_Boltpay_Helper_Api extends Bolt_Boltpay_Helper_Data
         $quote->setTotalsCollectedFlag(false)->collectTotals()->save();
 
         if($this->isDiscountRoundingDeltaError($transaction, $quote)) {
-            Mage::helper('boltpay/bugsnag')->addMetaData(
+            Mage::helper('boltpay/bugsnag')->addBreadcrumb(
                 array(
                     'transaction'  => $transaction,
                     'quote'  => var_export($quote->debug(), true),
@@ -390,7 +390,7 @@ class Bolt_Boltpay_Helper_Api extends Bolt_Boltpay_Helper_Data
 
     protected function validateSubmittedOrder($order, $quote) {
         if(empty($order)) {
-            Mage::helper('boltpay/bugsnag')->addMetaData(
+            Mage::helper('boltpay/bugsnag')->addBreadcrumb(
                 array(
                     'quote'  => var_export($quote->debug(), true),
                     'quote_address'  => var_export($quote->getShippingAddress()->debug(), true),
@@ -457,7 +457,7 @@ class Bolt_Boltpay_Helper_Api extends Bolt_Boltpay_Helper_Data
             );
         curl_setopt($ch, CURLOPT_HTTPHEADER, $header_info);
         $apiRequestData = array_merge($header_info,$data);
-        Mage::helper('boltpay/bugsnag')->addBoltMetaData(['BOLT API REQUEST' => $apiRequestData]);
+        Mage::helper('boltpay/bugsnag')->addMetaData(['BOLT API REQUEST' => $apiRequestData]);
         curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
         curl_setopt($ch, CURLOPT_HEADER, true);
 
@@ -477,7 +477,7 @@ class Bolt_Boltpay_Helper_Api extends Bolt_Boltpay_Helper_Data
         $this->setCurlResultWithHeader($ch, $result);
 
         $resultJSON = $this->getCurlJSONBody();
-        Mage::helper('boltpay/bugsnag')->addBoltMetaData(['BOLT API RESPONSE' => $resultJSON]);
+        Mage::helper('boltpay/bugsnag')->addMetaData(['BOLT API RESPONSE' => $resultJSON]);
         $jsonError = $this->handleJSONParseError();
         if ($jsonError != null) {
             curl_close($ch);
