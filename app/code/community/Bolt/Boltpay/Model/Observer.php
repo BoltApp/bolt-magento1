@@ -79,14 +79,15 @@ class Bolt_Boltpay_Model_Observer
      * @param $observer
      * @throws Exception
      *
-     * TODO: Implement price check logic to make sure the post shipping calculation is as expected.
      */
     public function verifyOrderContents($observer) 
     {
         $boltHelper = $this->getBoltApiHelper();
         /* @var Mage_Sales_Model_Quote $quote */
         $quote = $observer->getEvent()->getQuote();
+        /* @var Mage_Sales_Model_Order $order */
         $order = $observer->getEvent()->getOrder();
+        $transaction = $observer->getEvent()->getTransaction();
 
         $payment = $quote->getPayment();
         $method = $payment->getMethod();
@@ -95,27 +96,23 @@ class Bolt_Boltpay_Model_Observer
 
             $reference = $payment->getAdditionalInformation('bolt_reference');
 
-            /*
-            try {
-                if (!Mage::getStoreConfig('payment/boltpay/disable_complete_authorize'))  {
-                    $this->sendCompleteAuthorizeRequest($complete_authorize_request);
-                }
-            } catch (Exception $e) {
+            if ( (int)($order->getGrandTotal()*100) !== $transaction->amount->amount)  {
+
                 $message = "THERE IS A MISMATCH IN THE ORDER PAID AND ORDER RECORDED.<br>PLEASE COMPARE THE ORDER DETAILS WITH THAT RECORD IN YOUR BOLT MERCHANT ACCOUNT AT: ";
                 $message .= Mage::getStoreConfig('payment/boltpay/test') ? "https://merchant-sandbox.bolt.com" : "https://merchant.bolt.com";
                 $message .= "/transaction/$reference";
+
                 $order->setState(Mage_Sales_Model_Order::STATE_HOLDED, true, $message)
                     ->save();
 
                 $metaData = array(
-                    'endpoint'   => "complete_authorize",
+                    'process'   => "order verification",
                     'reference'  => $reference,
                     'quote_id'   => $quote->getId(),
-                    'display_id' => $quote->getReservedOrderId(),
+                    'display_id' => $order->getIncrementId(),
                 );
-                Mage::helper('boltpay/bugsnag')->notifyException($e, $metaData);
-            }
-            */
+                Mage::helper('boltpay/bugsnag')->notifyException(new Exception($message), $metaData);
+           }
 
             $this->sendOrderEmail($order);
             $order->save();

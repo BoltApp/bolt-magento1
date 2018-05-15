@@ -306,7 +306,7 @@ class Bolt_Boltpay_Helper_Api extends Bolt_Boltpay_Helper_Data
 
         Mage::getModel('boltpay/payment')->handleOrderUpdate($order);
 
-        Mage::dispatchEvent('bolt_boltpay_save_order_after', array('order'=>$order, 'quote'=>$quote));
+        Mage::dispatchEvent('bolt_boltpay_save_order_after', array('order'=>$order, 'quote'=>$quote, 'transaction' => $transaction));
 
         // Close out session by deactivating parent quote and deleting the immutable quote so that it can no
         // longer be used.
@@ -331,7 +331,7 @@ class Bolt_Boltpay_Helper_Api extends Bolt_Boltpay_Helper_Data
                 ->setLastRealOrderId($order->getIncrementId());
         }
 
-        //$quote->delete();
+        $quote->delete();
 
         return $order;
 
