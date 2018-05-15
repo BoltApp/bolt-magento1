@@ -165,7 +165,7 @@ class Bolt_Boltpay_Helper_Bugsnag extends Mage_Core_Helper_Abstract
     }
 
     
-    public function setMetaData(array $metaData)
+    public function addBoltMetaData(array $metaData)
     {
         $this->metaData = array_merge($this->metaData, $metaData);
     }
