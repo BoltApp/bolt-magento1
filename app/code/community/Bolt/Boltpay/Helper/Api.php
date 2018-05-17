@@ -163,7 +163,7 @@ class Bolt_Boltpay_Helper_Api extends Bolt_Boltpay_Helper_Data
      * Processes Magento order creation. Called from both frontend and API.
      *
      * @param string    $reference           Bolt transaction reference
-     * @param int       $session_quote_id    Quote id, used if trigger from shopping session context,
+     * @param int       $session_quote_id    Quote id, used if triggered from shopping session context,
      *                                       This will be null if called from within an API call context
      *
      * @return Mage_Sales_Model_Order   The order saved to Magento
@@ -192,12 +192,10 @@ class Bolt_Boltpay_Helper_Api extends Bolt_Boltpay_Helper_Data
             throw new Exception("The Bolt order reference does not match the current cart ID.");
         }
 
-        $display_id = $transaction->order->cart->display_id;
+        $reservedOrderId = $transaction->order->cart->display_id;
 
-        $quote = Mage::getModel('sales/quote')
-            ->getCollection()
-            ->addFieldToFilter('reserved_order_id', $display_id)
-            ->getFirstItem();
+        /* @var Mage_Sales_Model_Quote $quote */
+        $quote = Mage::getModel('sales/quote')->loadByIdWithoutStore($quote_id);
 
         // adding guest user email to order
         if (!$quote->getCustomerEmail()) {
@@ -262,19 +260,24 @@ class Bolt_Boltpay_Helper_Api extends Bolt_Boltpay_Helper_Data
 
         $quote->setTotalsCollectedFlag(false)->collectTotals()->save();
 
-        $existingOrder = Mage::getModel('sales/order')->loadByIncrementId($display_id);
-        if (sizeof($existingOrder->getData()) > 0) {
+        /*******************************************************************
+         * TODO: Move code to @see Bolt_Boltpay_ApiController::hookAction()
+         *******************************************************************/
+        /* @var Mage_Sales_Model_Order $existingOrder */
+	$existingOrder = Mage::getModel('sales/order')->loadByIncrementId($reservedOrderId);
+        if (!$existingOrder->isEmpty()) {
             Mage::app()->getResponse()->setHttpResponseCode(200);
             Mage::app()->getResponse()->setBody(
                 json_encode(
                     array(
                     'status' => 'success',
-                    'message' => "Order increment $display_id already exists."
+                    'message' => "Order increment $reservedOrderId already exists."
                     )
                 )
             );
             return;
         }
+        /*******************************************************************/
 
         if($this->isDiscountRoundingDeltaError($transaction, $quote)) {
             $this->fixQuoteDiscountAmount($transaction, $quote);
@@ -460,7 +463,7 @@ class Bolt_Boltpay_Helper_Api extends Bolt_Boltpay_Helper_Data
             );
         curl_setopt($ch, CURLOPT_HTTPHEADER, $header_info);
         Mage::helper('boltpay/bugsnag')->addMetaData(array('BOLT API REQUEST' => array('header'=>$header_info)),true);
-        Mage::helper('boltpay/bugsnag')->addMetaData(array('BOLT API REQUEST' => array('data'=>$data)),true);        
+        Mage::helper('boltpay/bugsnag')->addMetaData(array('BOLT API REQUEST' => array('data'=>$data)),true);   
         curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
         curl_setopt($ch, CURLOPT_HEADER, true);
 
@@ -955,15 +958,27 @@ class Bolt_Boltpay_Helper_Api extends Bolt_Boltpay_Helper_Data
     public function applyShippingRate($quote, $shippingRateCode) {
         $shippingAddress = $quote->getShippingAddress();
 
-        if(!empty($shippingAddress)) {
-            // Unsetting address id is required to force collectTotals to recalculate discounts
+        if (!empty($shippingAddress)) {
+            // Flagging address as new is required to force collectTotals to recalculate discounts
+            $shippingAddress->isObjectNew(true);
             $shippingAddressId = $shippingAddress->getData('address_id');
-            $shippingAddress->unsetData('address_id');
 
             $shippingAddress->setShippingMethod($shippingRateCode);
+
+            // When multiple shipping methods apply a discount to the sub-total, collect totals doesn't clear the
+            // previously set discocunt, so the previous discount gets added to each subsequent shipping method that
+            // includes a discount. Here we reset it to the original amount to resolve this bug.
+            $quoteItems = $quote->getAllItems();
+            foreach ($quoteItems as $item) {
+                $item->setData('discount_amount', $item->getOrigData('discount_amount'));
+                $item->setData('base_discount_amount', $item->getOrigData('base_discount_amount'));
+            }
+
             $quote->setTotalsCollectedFlag(false)->collectTotals();
 
-            $shippingAddress->setData('address_id', $shippingAddressId);
+            if(!empty($shippingAddressId) && $shippingAddressId != $shippingAddress->getData('address_id')) {
+                $shippingAddress->setData('address_id', $shippingAddressId);
+            }
         }
     }
 

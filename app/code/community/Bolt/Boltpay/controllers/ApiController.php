@@ -77,11 +77,12 @@ class Bolt_Boltpay_ApiController extends Mage_Core_Controller_Front_Action
             }
 
             $transaction = $boltHelper->fetchTransaction($reference);
-            $display_id = $transaction->order->cart->display_id;
+            $orderId = $transaction->order->cart->display_id;
+            $quoteId = $transaction->order->cart->order_reference;
 
-            $order = Mage::getModel('sales/order')->loadByIncrementId($display_id);
+            $order = Mage::getModel('sales/order')->loadByIncrementId($orderId);
 
-            if (sizeof($order->getData()) > 0) {
+            if (!empty($order->getData())) {
                 //Mage::log('Order Found. Updating it', null, 'bolt.log');
                 $orderPayment = $order->getPayment();
 
@@ -111,7 +112,7 @@ class Bolt_Boltpay_ApiController extends Mage_Core_Controller_Front_Action
                     json_encode(
                         array(
                         'status' => 'success',
-                        'message' => "Updated existing order $display_id."
+                        'message' => "Updated existing order $orderId."
                         )
                     )
                 );
@@ -120,13 +121,8 @@ class Bolt_Boltpay_ApiController extends Mage_Core_Controller_Front_Action
             }
 
             //Mage::log('Order not found. Creating one', null, 'bolt.log');
-
-            $quote = Mage::getModel('sales/quote')
-                ->getCollection()
-                ->addFieldToFilter('reserved_order_id', $display_id)
-                ->getFirstItem();
-
-            $quoteId = $bodyParams['quote_id'] ?: $quote->getId();
+            /* @var Mage_Sales_Model_Quote $quote */
+            $quote = Mage::getModel('sales/quote')->loadByIdWithoutStore($quoteId);
 
             Mage::helper('boltpay/bugsnag')->addBreadcrumb(
                 array(
@@ -135,7 +131,7 @@ class Bolt_Boltpay_ApiController extends Mage_Core_Controller_Front_Action
                 )
             );
 
-            if (sizeof($quote->getData()) == 0) {
+            if (empty($quote->getData())) {
                 //Mage::log("Quote not found: $quoteId. Quote must have been already processed.", null, 'bolt.log');
                 throw new Exception("Quote not found: $quoteId.  Quote must have been already processed.");
             }
