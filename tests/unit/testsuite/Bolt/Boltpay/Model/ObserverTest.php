@@ -156,6 +156,9 @@ class Bolt_Boltpay_Model_ObserverTest extends PHPUnit_Framework_TestCase
 
         $this->order
             ->expects($this->atLeastOnce())
+            ->method('save');
+
+        $this->order
             ->expects($this->atMost(2))
             ->method('save');
 
