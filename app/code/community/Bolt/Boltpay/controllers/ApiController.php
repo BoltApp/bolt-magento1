@@ -144,7 +144,7 @@ class Bolt_Boltpay_ApiController extends Mage_Core_Controller_Front_Action
             /* @var Mage_Sales_Model_Quote $quote */
             $quote = Mage::getModel('sales/quote')->loadByIdWithoutStore($quoteId);
 
-            Mage::helper('boltpay/bugsnag')->addMetaData(
+            Mage::helper('boltpay/bugsnag')->addBreadcrumb(
                 array(
                 'reference'  => $reference,
                 'quote_id'   => $quoteId,
