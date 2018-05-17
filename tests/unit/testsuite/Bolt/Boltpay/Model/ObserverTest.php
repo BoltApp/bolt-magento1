@@ -155,7 +155,8 @@ class Bolt_Boltpay_Model_ObserverTest extends PHPUnit_Framework_TestCase
             ->willReturn($this->order);
 
         $this->order
-            ->expects($this->once())
+            ->expects($this->atLeastOnce())
+            ->expects($this->atMost(2))
             ->method('save');
 
         $history = $this->createMock('Mage_Sales_Model_Order_Status_History');
