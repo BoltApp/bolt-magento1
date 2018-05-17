@@ -165,9 +165,15 @@ class Bolt_Boltpay_Helper_Bugsnag extends Mage_Core_Helper_Abstract
     }
 
     
-    public function addMetaData(array $metaData)
+    /* add metaData for to create new tab
+    *
+    * @param array $metaData
+    * @param Boolean $merge
+    *
+    */
+    public function addMetaData(array $metaData, $merge = false)
     {
-        $this->metaData = array_merge($this->metaData, $metaData);
+        $this->getBugsnag()->setMetaData($metaData, $merge);
     }
 
 }
