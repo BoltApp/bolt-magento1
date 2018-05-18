@@ -215,7 +215,7 @@ class Bolt_Boltpay_Helper_Api extends Bolt_Boltpay_Helper_Data
             // Legacy transaction does not have shipments reference - fallback to $service field
             $service = $transaction->order->cart->shipments[0]->service;
 
-            $quote->collectTotals();
+            Mage::helper('boltpay')->collectTotals($quote);
 
             $shipping_address = $quote->getShippingAddress();
             $shipping_address->setCollectShippingRates(true)->collectShippingRates();
@@ -255,7 +255,7 @@ class Bolt_Boltpay_Helper_Api extends Bolt_Boltpay_Helper_Data
         $payment->setAdditionalInformation('bolt_merchant_transaction_id', $transaction->id);
         $payment->setTransactionId($transaction->id);
 
-        $quote->setTotalsCollectedFlag(false)->collectTotals()->save();
+        Mage::helper('boltpay')->collectTotals($quote, true)->save();
 
         /*******************************************************************
          * TODO: Move code to @see Bolt_Boltpay_ApiController::hookAction()
@@ -275,10 +275,6 @@ class Bolt_Boltpay_Helper_Api extends Bolt_Boltpay_Helper_Data
             return;
         }
         /*******************************************************************/
-
-        if($this->isDiscountRoundingDeltaError($transaction, $quote)) {
-            $this->fixQuoteDiscountAmount($transaction, $quote);
-        }
 
         // a call to internal Magento service for order creation
         $service = Mage::getModel('sales/service_quote', $quote);
@@ -321,74 +317,6 @@ class Bolt_Boltpay_Helper_Api extends Bolt_Boltpay_Helper_Data
         }
 
         return $rateDebuggingData;
-    }
-
-    /**
-     * Determines whether the discount amount from Bolt is off by $0.01 compared to the Magento quote discount amount
-     *
-     * When $quote->collectTotals calls Mage_SalesRule_Model_Validator->process it uses a singleton to instantiate the
-     * validator so when it gets called each time, the  _roundingDeltas variable persists previous data and causes off
-     * by $0.01 rounding errors. Each call to collectTotals either sets it to the correct amount or to an amount that
-     * is off by $0.01. This function detects this problem.
-     *
-     * @param $transaction  Transaction data sent by Bolt
-     * @param Sales_Model_Service_Quote $quote     Quote derived from transaction data
-     */
-    protected function isDiscountRoundingDeltaError($transaction, $quote) {
-        $boltDiscountAmount = round($this->getBoltDiscountAmount($transaction), 2);
-        $quoteDiscountAmount = round($quote->getShippingAddress()->getDiscountAmount(), 2);
-
-        return $this->isOnePennyRoundingError($boltDiscountAmount, $quoteDiscountAmount);
-    }
-
-    protected function getBoltDiscountAmount($transaction) {
-        $boltDiscountAmount = 0;
-
-        if(isset($transaction->order->cart->discounts)) {
-            foreach($transaction->order->cart->discounts as $discount) {
-                if(isset($discount->amount->amount) && is_numeric($discount->amount->amount) && $discount->amount->amount > 0) {
-                    $boltDiscountAmount -= $discount->amount->amount / 100;
-                }
-            }
-        }
-
-        return $boltDiscountAmount;
-    }
-
-    protected function isOnePennyRoundingError($boltDiscountAmount, $quoteDiscountAmount) {
-        if($boltDiscountAmount != $quoteDiscountAmount) {
-            $difference = round(abs($boltDiscountAmount - $quoteDiscountAmount), 2);
-            if($difference <= 0.01) {
-                return true;
-            }
-        }
-
-        return false;
-    }
-
-    /**
-     * Fixes the quote if it is determined that the discount amount meets the criteria in isDiscountRoundingDeltaError.
-     *
-     * The bug that gets detected in isDiscountRoundingDeltaError can be resolved by simply calling collectTotals again.
-     * This function calls it again and throws an exception if the problem is not resolved.
-     *
-     * @param $transaction  Transaction data sent by Bolt
-     * @param Sales_Model_Service_Quote $quote     Quote derived from transaction data
-     */
-    protected function fixQuoteDiscountAmount($transaction, $quote) {
-        $quote->setTotalsCollectedFlag(false)->collectTotals()->save();
-
-        if($this->isDiscountRoundingDeltaError($transaction, $quote)) {
-            Mage::helper('boltpay/bugsnag')->addBreadcrumb(
-                array(
-                    'transaction'  => $transaction,
-                    'quote'  => var_export($quote->debug(), true),
-                    'quote_address'  => var_export($quote->getShippingAddress()->debug(), true),
-                )
-            );
-
-            Mage::helper('boltpay/bugsnag')->notifyException(new Exception('Failed to fix quote discount amount'));
-        }
     }
 
     protected function validateSubmittedOrder($order, $quote) {
@@ -653,7 +581,7 @@ class Bolt_Boltpay_Helper_Api extends Bolt_Boltpay_Helper_Data
          */
         /***************************************************/
         $calculated_total = 0;
-        $quote->collectTotals()->save();
+        Mage::helper('boltpay')->collectTotals($quote)->save();
         $totals = $quote->getTotals();
         //Mage::log(var_export(array_keys($totals), 1), null, 'bolt.log');
         ///////////////////////////////////////////////////////////////////////////////////
@@ -890,7 +818,7 @@ class Bolt_Boltpay_Helper_Api extends Bolt_Boltpay_Helper_Data
             ),
         );
 
-        Mage::getModel('sales/quote')->load($quote->getId())->collectTotals();
+        Mage::helper('boltpay')->collectTotals(Mage::getModel('sales/quote')->load($quote->getId()));
 
         /*****************************************************************************************
          * Calculate tax
@@ -967,7 +895,7 @@ class Bolt_Boltpay_Helper_Api extends Bolt_Boltpay_Helper_Data
                 $item->setData('base_discount_amount', $item->getOrigData('base_discount_amount'));
             }
 
-            $quote->setTotalsCollectedFlag(false)->collectTotals();
+            Mage::helper('boltpay')->collectTotals($quote, true);
 
             if(!empty($shippingAddressId) && $shippingAddressId != $shippingAddress->getData('address_id')) {
                 $shippingAddress->setData('address_id', $shippingAddressId);

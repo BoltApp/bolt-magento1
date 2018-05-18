@@ -73,7 +73,7 @@ class Bolt_Boltpay_OnepageController extends Mage_Checkout_OnepageController
                                 'request' => $this->getRequest(),
                             'quote' => $this->getOnepage()->getQuote())
                         );
-                        $this->getOnepage()->getQuote()->collectTotals();
+                        Mage::helper('boltpay')->collectTotals($this->getOnepage()->getQuote());
                         $this->getResponse()->setBody(Mage::helper('core')->jsonEncode($result));
                         if (Mage::getStoreConfig('payment/boltpay/skip_payment')) {
                             $this->loadLayout('checkout_onepage_review');
@@ -90,7 +90,7 @@ class Bolt_Boltpay_OnepageController extends Mage_Checkout_OnepageController
                     }
                 }
 
-                $this->getOnepage()->getQuote()->collectTotals()->save();
+                Mage::helper('boltpay')->collectTotals($this->getOnepage()->getQuote())->save();
                 $this->getResponse()->setBody(Mage::helper('core')->jsonEncode($result));
             }
         } catch (Exception $e) {

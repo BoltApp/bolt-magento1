@@ -182,7 +182,7 @@ class Bolt_Boltpay_OrderController extends Mage_Core_Controller_Front_Action
 
             $checkout->registerCustomerIfRequested();
 
-            $quote->collectTotals()->save();
+            Mage::helper('boltpay')->collectTotals($quote)->save();
 
             $block = $this->getLayout()->createBlock('boltpay/checkout_boltpay');
 
