@@ -95,6 +95,9 @@ class Bolt_Boltpay_Helper_Data extends Mage_Core_Helper_Abstract
      * when a percentage discount is applied to a quote
      *
      * @param Mage_Sales_Model_Quote $quote
+     * $param boolean $clearTotalsCollectedFlag Determines whether to set setTotalsCollectedFlag to false
+     *
+     * @return Mage_Sales_Model_Quote
      */
     public function collectTotals($quote, $clearTotalsCollectedFlag = false) {
         Mage::getSingleton('salesrule/validator')->resetRoundingDeltas();
