@@ -120,20 +120,23 @@ class Bolt_Boltpay_Helper_Api extends Bolt_Boltpay_Helper_Data
             $ch = curl_init($url);
 
             curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
-            curl_setopt(
-                $ch, CURLOPT_HTTPHEADER, array(
+            $httpheader = array(
                 "X-Api-Key: $key",
                 "X-Bolt-Hmac-Sha256: $hmac_header",
                 "Content-type: application/json",
-                )
-            );
-
+                );
+            curl_setopt($ch, CURLOPT_HTTPHEADER, $httpheader);
             curl_setopt($ch, CURLOPT_POST, true);
             curl_setopt($ch, CURLOPT_POSTFIELDS, $payload);
-
-            curl_exec($ch);
-
+            Mage::helper('boltpay/bugsnag')->addMetaData(array('BOLT API REQUEST' => array('verify-hook-api-header'=>$httpheader)),true);  
+            Mage::helper('boltpay/bugsnag')->addMetaData(array('BOLT API REQUEST' => array('verify-hook-api-data'=>$payload)),true);  
+            $result = curl_exec($ch);
+            
             $response = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+            $this->setCurlResultWithHeader($ch, $result);
+
+            $resultJSON = $this->getCurlJSONBody();
+            Mage::helper('boltpay/bugsnag')->addMetaData(array('BOLT API RESPONSE' => array('verify-hook-api-response'=>$resultJSON)),true);
 
             return $response == 200;
         } catch (Exception $e) {
@@ -160,7 +163,7 @@ class Bolt_Boltpay_Helper_Api extends Bolt_Boltpay_Helper_Data
      * Processes Magento order creation. Called from both frontend and API.
      *
      * @param string    $reference           Bolt transaction reference
-     * @param int       $session_quote_id    Quote id, used if trigger from shopping session context,
+     * @param int       $session_quote_id    Quote id, used if triggered from shopping session context,
      *                                       This will be null if called from within an API call context
      *
      * @return Mage_Sales_Model_Order   The order saved to Magento
@@ -189,12 +192,10 @@ class Bolt_Boltpay_Helper_Api extends Bolt_Boltpay_Helper_Data
             throw new Exception("The Bolt order reference does not match the current cart ID.");
         }
 
-        $display_id = $transaction->order->cart->display_id;
+        $reservedOrderId = $transaction->order->cart->display_id;
 
-        $quote = Mage::getModel('sales/quote')
-            ->getCollection()
-            ->addFieldToFilter('reserved_order_id', $display_id)
-            ->getFirstItem();
+        /* @var Mage_Sales_Model_Quote $quote */
+        $quote = Mage::getModel('sales/quote')->loadByIdWithoutStore($quote_id);
 
         // adding guest user email to order
         if (!$quote->getCustomerEmail()) {
@@ -259,19 +260,24 @@ class Bolt_Boltpay_Helper_Api extends Bolt_Boltpay_Helper_Data
 
         $quote->setTotalsCollectedFlag(false)->collectTotals()->save();
 
-        $existingOrder = Mage::getModel('sales/order')->loadByIncrementId($display_id);
-        if (sizeof($existingOrder->getData()) > 0) {
+        /*******************************************************************
+         * TODO: Move code to @see Bolt_Boltpay_ApiController::hookAction()
+         *******************************************************************/
+        /* @var Mage_Sales_Model_Order $existingOrder */
+	$existingOrder = Mage::getModel('sales/order')->loadByIncrementId($reservedOrderId);
+        if (!$existingOrder->isEmpty()) {
             Mage::app()->getResponse()->setHttpResponseCode(200);
             Mage::app()->getResponse()->setBody(
                 json_encode(
                     array(
                     'status' => 'success',
-                    'message' => "Order increment $display_id already exists."
+                    'message' => "Order increment $reservedOrderId already exists."
                     )
                 )
             );
             return;
         }
+        /*******************************************************************/
 
         if($this->isDiscountRoundingDeltaError($transaction, $quote)) {
             $this->fixQuoteDiscountAmount($transaction, $quote);
@@ -283,7 +289,7 @@ class Bolt_Boltpay_Helper_Api extends Bolt_Boltpay_Helper_Data
         try {
             $service->submitAll();
         } catch (Exception $e) {
-            Mage::helper('boltpay/bugsnag')->addMetaData(
+            Mage::helper('boltpay/bugsnag')->addBreadcrumb(
                 array(
                     'transaction'   => json_encode((array)$transaction),
                     'quote_address' => var_export($quote->getShippingAddress()->debug(), true)
@@ -332,8 +338,8 @@ class Bolt_Boltpay_Helper_Api extends Bolt_Boltpay_Helper_Data
      * @param Sales_Model_Service_Quote $quote     Quote derived from transaction data
      */
     protected function isDiscountRoundingDeltaError($transaction, $quote) {
-        $boltDiscountAmount = $this->getBoltDiscountAmount($transaction);
-        $quoteDiscountAmount = $quote->getShippingAddress()->getDiscountAmount();
+        $boltDiscountAmount = round($this->getBoltDiscountAmount($transaction), 2);
+        $quoteDiscountAmount = round($quote->getShippingAddress()->getDiscountAmount(), 2);
 
         return $this->isOnePennyRoundingError($boltDiscountAmount, $quoteDiscountAmount);
     }
@@ -376,7 +382,7 @@ class Bolt_Boltpay_Helper_Api extends Bolt_Boltpay_Helper_Data
         $quote->setTotalsCollectedFlag(false)->collectTotals()->save();
 
         if($this->isDiscountRoundingDeltaError($transaction, $quote)) {
-            Mage::helper('boltpay/bugsnag')->addMetaData(
+            Mage::helper('boltpay/bugsnag')->addBreadcrumb(
                 array(
                     'transaction'  => $transaction,
                     'quote'  => var_export($quote->debug(), true),
@@ -384,13 +390,13 @@ class Bolt_Boltpay_Helper_Api extends Bolt_Boltpay_Helper_Data
                 )
             );
 
-            throw new Exception('Failed to fix quote discount amount');
+            Mage::helper('boltpay/bugsnag')->notifyException(new Exception('Failed to fix quote discount amount'));
         }
     }
 
     protected function validateSubmittedOrder($order, $quote) {
         if(empty($order)) {
-            Mage::helper('boltpay/bugsnag')->addMetaData(
+            Mage::helper('boltpay/bugsnag')->addBreadcrumb(
                 array(
                     'quote'  => var_export($quote->debug(), true),
                     'quote_address'  => var_export($quote->getShippingAddress()->debug(), true),
@@ -447,17 +453,17 @@ class Bolt_Boltpay_Helper_Api extends Bolt_Boltpay_Helper_Data
         //Mage::log('KEY: ' . Mage::helper('core')->decrypt($key), null, 'bolt.log');
 
         $context_info = Mage::helper('boltpay/bugsnag')->getContextInfo();
-
-        curl_setopt(
-            $ch, CURLOPT_HTTPHEADER, array(
+        $header_info = array(
             'Content-Type: application/json',
             'Content-Length: ' . strlen($params),
             'X-Api-Key: ' . Mage::helper('core')->decrypt($key),
             'X-Nonce: ' . rand(100000000, 999999999),
             'User-Agent: BoltPay/Magento-' . $context_info["Magento-Version"],
             'X-Bolt-Plugin-Version: ' . $context_info["Bolt-Plugin-Version"]
-            )
-        );
+            );
+        curl_setopt($ch, CURLOPT_HTTPHEADER, $header_info);
+        Mage::helper('boltpay/bugsnag')->addMetaData(array('BOLT API REQUEST' => array('header'=>$header_info)));
+        Mage::helper('boltpay/bugsnag')->addMetaData(array('BOLT API REQUEST' => array('data'=>$data)),true);   
         curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
         curl_setopt($ch, CURLOPT_HEADER, true);
 
@@ -477,6 +483,7 @@ class Bolt_Boltpay_Helper_Api extends Bolt_Boltpay_Helper_Data
         $this->setCurlResultWithHeader($ch, $result);
 
         $resultJSON = $this->getCurlJSONBody();
+        Mage::helper('boltpay/bugsnag')->addMetaData(array('BOLT API RESPONSE' => array('BOLT-RESPONSE'=>$resultJSON)),true);
         $jsonError = $this->handleJSONParseError();
         if ($jsonError != null) {
             curl_close($ch);
@@ -951,15 +958,27 @@ class Bolt_Boltpay_Helper_Api extends Bolt_Boltpay_Helper_Data
     public function applyShippingRate($quote, $shippingRateCode) {
         $shippingAddress = $quote->getShippingAddress();
 
-        if(!empty($shippingAddress)) {
-            // Unsetting address id is required to force collectTotals to recalculate discounts
+        if (!empty($shippingAddress)) {
+            // Flagging address as new is required to force collectTotals to recalculate discounts
+            $shippingAddress->isObjectNew(true);
             $shippingAddressId = $shippingAddress->getData('address_id');
-            $shippingAddress->unsetData('address_id');
 
             $shippingAddress->setShippingMethod($shippingRateCode);
+
+            // When multiple shipping methods apply a discount to the sub-total, collect totals doesn't clear the
+            // previously set discocunt, so the previous discount gets added to each subsequent shipping method that
+            // includes a discount. Here we reset it to the original amount to resolve this bug.
+            $quoteItems = $quote->getAllItems();
+            foreach ($quoteItems as $item) {
+                $item->setData('discount_amount', $item->getOrigData('discount_amount'));
+                $item->setData('base_discount_amount', $item->getOrigData('base_discount_amount'));
+            }
+
             $quote->setTotalsCollectedFlag(false)->collectTotals();
 
-            $shippingAddress->setData('address_id', $shippingAddressId);
+            if(!empty($shippingAddressId) && $shippingAddressId != $shippingAddress->getData('address_id')) {
+                $shippingAddress->setData('address_id', $shippingAddressId);
+            }
         }
     }
 

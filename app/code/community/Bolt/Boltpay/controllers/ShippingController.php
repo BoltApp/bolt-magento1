@@ -78,18 +78,15 @@ class Bolt_Boltpay_ShippingController extends Mage_Core_Controller_Front_Action
                 'telephone' => $shipping_address->phone
             );
 
-            $display_id = $request_data->cart->display_id;
-
+            $quote_id = $request_data->cart->order_reference;
             /** @var Mage_Sales_Model_Quote $quote */
-            $quote = Mage::getModel('sales/quote')
-                ->getCollection()
-                ->addFieldToFilter('reserved_order_id', $display_id)
-                ->getFirstItem();
+            $quote = Mage::getModel('sales/quote')->loadByIdWithoutStore($quote_id);
+
 
             /***********************/
             # Set session quote to real customer quote
             $session = Mage::getSingleton('checkout/session');
-            $session->setQuoteId($quote->getId());
+            $session->setQuoteId($quote_id);
             /**************/
 
             if ($quote->getCustomerId()) {

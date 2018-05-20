@@ -1,4 +1,8 @@
 # Changelog
+## [v1.0.12](https://s3-us-west-1.amazonaws.com/bolt-public/magento-integration-release/bolt-magento1_v1.0.12.zip) 2018-05-20
+ - Fix discount rounding issue
+ - Improve request logging
+
 ## [v1.0.11](https://s3-us-west-1.amazonaws.com/bolt-public/magento-integration-release/bolt-magento1_v1.0.11.zip) 2018-05-03
  - Add workaround for magento's discount rounding issue (#42)
  - Fix issue with paymentonly flow

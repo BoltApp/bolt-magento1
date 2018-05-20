@@ -49,7 +49,7 @@ class Bolt_Boltpay_OrderController extends Mage_Core_Controller_Front_Action
 
             $reference = $this->getRequest()->getPost('reference');
 
-            Mage::helper('boltpay/bugsnag')->addMetaData(
+            Mage::helper('boltpay/bugsnag')->addBreadcrumb(
                 array(
                     "Save Action reference" => array (
                         "reference" => $reference,
