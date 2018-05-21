@@ -418,7 +418,7 @@ class Bolt_Boltpay_Model_Payment extends Mage_Payment_Model_Method_Abstract
             $error = array('error' => $e->getMessage());
             //Mage::log($error, null, 'bolt.log');
 
-            Mage::helper('boltpay/bugsnag')->addMetaData(
+            Mage::helper('boltpay/bugsnag')->addBreadcrumb(
                 array(
                     "handle order update" => array (
                         "message" => $error['error'],
@@ -538,7 +538,7 @@ class Bolt_Boltpay_Model_Payment extends Mage_Payment_Model_Method_Abstract
             $error = array('error' => $e->getMessage());
             //Mage::log($error, null, 'bolt.log');
 
-            Mage::helper('boltpay/bugsnag')->addMetaData(
+            Mage::helper('boltpay/bugsnag')->addBreadcrumb(
                 array(
                     "handle transaction update" => array (
                         "message" => $error['error'],
@@ -574,7 +574,7 @@ class Bolt_Boltpay_Model_Payment extends Mage_Payment_Model_Method_Abstract
 
     protected function validateCaptureAmount($captureAmount) {
         if(!isset($captureAmount) || !is_numeric($captureAmount) || $captureAmount < 0) {
-            Mage::helper('boltpay/bugsnag')->addMetaData(
+            Mage::helper('boltpay/bugsnag')->addBreadcrumb(
                 array(
                     'capture_amount'  => $captureAmount,
                 )
