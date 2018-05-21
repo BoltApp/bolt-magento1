@@ -38,6 +38,11 @@
       <boltpay>
         <class>Bolt_Boltpay_Model</class>
       </boltpay>
+      <salesrule>
+        <rewrite>
+          <validator>Bolt_Boltpay_Model_Validator</validator>
+        </rewrite>
+      </salesrule>
     </models>
 
     <blocks>
