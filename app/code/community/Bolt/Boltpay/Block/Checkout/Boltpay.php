@@ -111,7 +111,7 @@ class Bolt_Boltpay_Block_Checkout_Boltpay
      * @param bool $multipage       Is checkout type Multi-Page Checkout, the default is true, set to false for One Page Checkout
      * @return string               BoltCheckout javascript
      */
-    public function getCartDataJs($multipage = true) 
+    public function getCartDataJs($multipage = true)
     {
 
         try {
@@ -210,7 +210,7 @@ class Bolt_Boltpay_Block_Checkout_Boltpay
                     ->setCustomer($quote->getCustomer())
                     ->merge($quote)
                     // Generate new increment order id and associate it with current quote, if not already assigned
-                    ->reserveOrderId()
+                    ->setReservedOrderId($quote->reserveOrderId()->save()->getReservedOrderId())
                     ->setStoreId($quote->getStoreId())
                     ->setParentQuoteId($quote->getId());
 

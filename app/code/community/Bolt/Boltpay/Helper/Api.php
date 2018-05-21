@@ -201,8 +201,8 @@ class Bolt_Boltpay_Helper_Api extends Bolt_Boltpay_Helper_Data
         }
 
         // check if quote has already been used
-        if (($quote->getBoltOrderToken() !== $transaction->order->token) || !$quote->getIsActive() ) {
-            throw new Exception("The quote has expired.");
+        if ( empty($quote->getBoltOrderToken())  || !$quote->getIsActive() ) {
+            throw new Exception("The quote has expired. Bolt token:".$quote->getBoltOrderToken()." Is active? ".$quote->getIsActive() );
         }
 
         // adding guest user email to order
@@ -616,9 +616,10 @@ class Bolt_Boltpay_Helper_Api extends Bolt_Boltpay_Helper_Data
     /**
      * Generates order data for sending to Bolt.
      *
-     * @param $quote            Magento quote instance
-     * @param array $items      array of Magento products
-     * @param bool $multipage   Is checkout type Multi-Page Checkout, the default is true, set to false for One Page Checkout
+     * @param Mage_Sales_Model_Quote        $quote      Magento quote instance
+     * @param Mage_Sales_Model_Quote_Item[] $items      array of Magento products
+     * @param bool                          $multipage  Is checkout type Multi-Page Checkout, the default is true, set to false for One Page Checkout
+     *
      * @return array            The order payload to be sent as to bolt in API call as a PHP array
      */
     public function buildOrder($quote, $items, $multipage) 
@@ -632,9 +633,10 @@ class Bolt_Boltpay_Helper_Api extends Bolt_Boltpay_Helper_Data
     /**
      * Generates cart submission data for sending to Bolt order cart field.
      *
-     * @param $quote            Magento quote instance
-     * @param $items            array of Magento products
-     * @param bool $multipage   Is checkout type Multi-Page Checkout, the default is true, set to false for One Page Checkout
+     * @param Mage_Sales_Model_Quote        $quote      Magento quote instance
+     * @param Mage_Sales_Model_Quote_Item[] $items      array of Magento products
+     * @param bool                          $multipage  Is checkout type Multi-Page Checkout, the default is true, set to false for One Page Checkout
+     *
      * @return array            The cart data part of the order payload to be sent as to bolt in API call as a PHP array
      */
     public function buildCart($quote, $items, $multipage) 
