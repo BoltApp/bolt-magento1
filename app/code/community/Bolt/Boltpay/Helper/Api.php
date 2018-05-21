@@ -120,20 +120,23 @@ class Bolt_Boltpay_Helper_Api extends Bolt_Boltpay_Helper_Data
             $ch = curl_init($url);
 
             curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
-            curl_setopt(
-                $ch, CURLOPT_HTTPHEADER, array(
+            $httpheader = array(
                 "X-Api-Key: $key",
                 "X-Bolt-Hmac-Sha256: $hmac_header",
                 "Content-type: application/json",
-                )
-            );
-
+                );
+            curl_setopt($ch, CURLOPT_HTTPHEADER, $httpheader);
             curl_setopt($ch, CURLOPT_POST, true);
             curl_setopt($ch, CURLOPT_POSTFIELDS, $payload);
-
-            curl_exec($ch);
-
+            Mage::helper('boltpay/bugsnag')->addMetaData(array('BOLT API REQUEST' => array('verify-hook-api-header'=>$httpheader)),true);  
+            Mage::helper('boltpay/bugsnag')->addMetaData(array('BOLT API REQUEST' => array('verify-hook-api-data'=>$payload)),true);  
+            $result = curl_exec($ch);
+            
             $response = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+            $this->setCurlResultWithHeader($ch, $result);
+
+            $resultJSON = $this->getCurlJSONBody();
+            Mage::helper('boltpay/bugsnag')->addMetaData(array('BOLT API RESPONSE' => array('verify-hook-api-response'=>$resultJSON)),true);
 
             return $response == 200;
         } catch (Exception $e) {
@@ -457,14 +460,17 @@ class Bolt_Boltpay_Helper_Api extends Bolt_Boltpay_Helper_Data
         //Mage::log('KEY: ' . Mage::helper('core')->decrypt($key), null, 'bolt.log');
 
         $context_info = Mage::helper('boltpay/bugsnag')->getContextInfo();
-        curl_setopt($ch, CURLOPT_HTTPHEADER, array(
+        $header_info = array(
             'Content-Type: application/json',
             'Content-Length: ' . strlen($params),
             'X-Api-Key: ' . Mage::helper('core')->decrypt($key),
             'X-Nonce: ' . rand(100000000, 999999999),
             'User-Agent: BoltPay/Magento-' . $context_info["Magento-Version"],
             'X-Bolt-Plugin-Version: ' . $context_info["Bolt-Plugin-Version"]
-            ));
+            );
+        curl_setopt($ch, CURLOPT_HTTPHEADER, $header_info);
+        Mage::helper('boltpay/bugsnag')->addMetaData(array('BOLT API REQUEST' => array('header'=>$header_info)));
+        Mage::helper('boltpay/bugsnag')->addMetaData(array('BOLT API REQUEST' => array('data'=>$data)),true);   
         curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
         curl_setopt($ch, CURLOPT_HEADER, true);
 
@@ -484,6 +490,7 @@ class Bolt_Boltpay_Helper_Api extends Bolt_Boltpay_Helper_Data
         $this->setCurlResultWithHeader($ch, $result);
 
         $resultJSON = $this->getCurlJSONBody();
+        Mage::helper('boltpay/bugsnag')->addMetaData(array('BOLT API RESPONSE' => array('BOLT-RESPONSE'=>$resultJSON)),true);
         $jsonError = $this->handleJSONParseError();
         if ($jsonError != null) {
             curl_close($ch);
@@ -958,15 +965,27 @@ class Bolt_Boltpay_Helper_Api extends Bolt_Boltpay_Helper_Data
     public function applyShippingRate($quote, $shippingRateCode) {
         $shippingAddress = $quote->getShippingAddress();
 
-        if(!empty($shippingAddress)) {
-            // Unsetting address id is required to force collectTotals to recalculate discounts
+        if (!empty($shippingAddress)) {
+            // Flagging address as new is required to force collectTotals to recalculate discounts
+            $shippingAddress->isObjectNew(true);
             $shippingAddressId = $shippingAddress->getData('address_id');
-            $shippingAddress->unsetData('address_id');
 
             $shippingAddress->setShippingMethod($shippingRateCode);
+
+            // When multiple shipping methods apply a discount to the sub-total, collect totals doesn't clear the
+            // previously set discocunt, so the previous discount gets added to each subsequent shipping method that
+            // includes a discount. Here we reset it to the original amount to resolve this bug.
+            $quoteItems = $quote->getAllItems();
+            foreach ($quoteItems as $item) {
+                $item->setData('discount_amount', $item->getOrigData('discount_amount'));
+                $item->setData('base_discount_amount', $item->getOrigData('base_discount_amount'));
+            }
+
             $quote->setTotalsCollectedFlag(false)->collectTotals();
 
-            $shippingAddress->setData('address_id', $shippingAddressId);
+            if(!empty($shippingAddressId) && $shippingAddressId != $shippingAddress->getData('address_id')) {
+                $shippingAddress->setData('address_id', $shippingAddressId);
+            }
         }
     }
 

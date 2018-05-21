@@ -182,7 +182,7 @@
         <hide_on_checkout>0</hide_on_checkout>
         <model>boltpay/payment</model>
         <theme>dark</theme>
-        <title>Bolt Pay</title>
+        <title>Credit card</title>
         <order_status>processing</order_status>
         <payment_action>authorize</payment_action>
         <currency>USD</currency>
