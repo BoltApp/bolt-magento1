@@ -113,7 +113,6 @@ class Bolt_Boltpay_Block_Checkout_Boltpay
      */
     public function getCartDataJs($multipage = true)
     {
-
         try {
             // Get customer and cart session objects
             $customerSession = Mage::getSingleton('customer/session');
@@ -210,9 +209,12 @@ class Bolt_Boltpay_Block_Checkout_Boltpay
                     ->setCustomer($quote->getCustomer())
                     ->merge($quote)
                     // Generate new increment order id and associate it with current quote, if not already assigned
-                    ->setReservedOrderId($quote->reserveOrderId()->save()->getReservedOrderId())
+                    ->setReservedOrderId($reservedOrderId = $quote->reserveOrderId()->save()->getReservedOrderId())
                     ->setStoreId($quote->getStoreId())
                     ->setParentQuoteId($quote->getId());
+
+                // Save the reserved order ID to the session to check order existence at frontend order save time
+                Mage::getSingleton('core/session')->setReservedOrderId($reservedOrderId);
 
                 $orderCreationResponse = $this->createBoltOrder($immutableQuote, $multipage);
                 $immutableQuote->setBoltOrderToken($orderCreationResponse->token)
