@@ -176,10 +176,6 @@ class Bolt_Boltpay_Helper_Api extends Bolt_Boltpay_Helper_Data
             throw new Exception("Bolt transaction reference is missing in the Magento order creation process.");
         }
 
-        if(!$this->storeHasAllCartItems()){
-            throw new Exception("Not all items are available in the requested quantities.");
-        }
-
         // fetch transaction info
         $transaction = $this->fetchTransaction($reference);
 
@@ -195,12 +191,19 @@ class Bolt_Boltpay_Helper_Api extends Bolt_Boltpay_Helper_Data
             throw new Exception("This order has already been processed by Magento.");
         }
 
+        if(!$this->storeHasAllCartItems($quote)){
+            throw new Exception("Not all items are available in the requested quantities.");
+        }
+
         // check if the quotes matches, frontend only
-        if ( $sessionQuoteId && $sessionQuoteId != $quote->getParentQuoteId() ) {
+        if ( $sessionQuoteId && ($sessionQuoteId != $quote->getParentQuoteId()) ) {
             throw new Exception("The Bolt order reference does not match the current cart ID.");
         }
 
-        $reservedOrderId = $transaction->order->cart->display_id;
+        // check if quote has already been used
+        if (($quote->getBoltOrderToken() !== $transaction->order->token) || !$quote->getIsActive() ) {
+            throw new Exception("The quote has expired.");
+        }
 
         // adding guest user email to order
         if (!$quote->getCustomerEmail()) {
@@ -292,13 +295,6 @@ class Bolt_Boltpay_Helper_Api extends Bolt_Boltpay_Helper_Data
 
         Mage::dispatchEvent('bolt_boltpay_save_order_after', array('order'=>$order, 'quote'=>$quote, 'transaction' => $transaction));
 
-        // Close out session by deactivating parent quote and deleting the immutable quote so that it can no
-        // longer be used.
-        /* @var Mage_Sales_Model_Quote $parentQuote */
-        $parentQuote = Mage::getModel('sales/quote')->loadByIdWithoutStore($quote->getParentQuoteId());
-        $parentQuote->setIsActive(false)
-            ->save();
-
         if ($sessionQuoteId) {
             $checkout_session = Mage::getSingleton('checkout/session');
 
@@ -315,7 +311,14 @@ class Bolt_Boltpay_Helper_Api extends Bolt_Boltpay_Helper_Data
                 ->setLastRealOrderId($order->getIncrementId());
         }
 
-        $quote->delete();
+        // Close out session by deleting the parent quote and deactivating the immutable quote so that it can no
+        // longer be used.
+        /* @var Mage_Sales_Model_Quote $parentQuote */
+        $parentQuote = Mage::getModel('sales/quote')->loadByIdWithoutStore($quote->getParentQuoteId());
+        $parentQuote->delete();
+        $quote->setIsActive(false)
+            ->setBoltOrderToken(null)
+            ->save();
 
         return $order;
 
@@ -1045,15 +1048,14 @@ class Bolt_Boltpay_Helper_Api extends Bolt_Boltpay_Helper_Data
      * Determines whether the cart has either all items available if Manage Stock is yes for requested quantities,
      * or, if not, those items are eligible for back order.
      *
+     * @var Mage_Sales_Model_Quote $quote   The quote that defines the cart
+     *
      * @return bool true if the store can accept an order for all items in the cart,
      *              otherwise, false
      */
-    public function storeHasAllCartItems()
+    public function storeHasAllCartItems($quote)
     {
-        /* @var Mage_Sales_Model_Quote $cart_quote */
-        $cart_quote = Mage::helper('checkout/cart')->getCart()->getQuote();
-
-        foreach ($cart_quote->getAllItems() as $cart_item) {
+        foreach ($quote->getAllItems() as $cart_item) {
             if($cart_item->getHasChildren()) {
                 continue;
             }
