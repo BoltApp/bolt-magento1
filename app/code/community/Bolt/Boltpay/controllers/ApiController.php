@@ -82,7 +82,7 @@ class Bolt_Boltpay_ApiController extends Mage_Core_Controller_Front_Action
 
             $order = Mage::getModel('sales/order')->loadByIncrementId($orderId);
 
-            if (!empty($order->getData())) {
+            if (!$order->isEmpty()) {
                 //Mage::log('Order Found. Updating it', null, 'bolt.log');
                 $orderPayment = $order->getPayment();
 
@@ -131,7 +131,7 @@ class Bolt_Boltpay_ApiController extends Mage_Core_Controller_Front_Action
                 )
             );
 
-            if (empty($quote->getData())) {
+            if ($quote->isEmpty()) {
                 //Mage::log("Quote not found: $quoteId. Quote must have been already processed.", null, 'bolt.log');
                 throw new Exception("Quote not found: $quoteId.  Quote must have been already processed.");
             }
