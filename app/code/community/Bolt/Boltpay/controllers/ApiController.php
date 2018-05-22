@@ -39,7 +39,7 @@ class Bolt_Boltpay_ApiController extends Mage_Core_Controller_Front_Action
     {
 
         try {
-            $hmac_header = $_SERVER['HTTP_X_BOLT_HMAC_SHA256'];
+            $hmac_header = @$_SERVER['HTTP_X_BOLT_HMAC_SHA256'];
 
             $request_json = file_get_contents('php://input');
             $request_data = json_decode($request_json);
@@ -133,7 +133,7 @@ class Bolt_Boltpay_ApiController extends Mage_Core_Controller_Front_Action
                 )
             );
 
-            if (empty($quote->getData())) {
+            if ($quote->isEmpty()) {
                 //Mage::log("Quote not found: $quoteId. Quote must have been already processed.", null, 'bolt.log');
                 throw new Exception("Quote not found: $quoteId.  Quote must have been already processed.");
             }
