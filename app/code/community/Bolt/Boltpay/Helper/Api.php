@@ -201,7 +201,7 @@ class Bolt_Boltpay_Helper_Api extends Bolt_Boltpay_Helper_Data
         }
 
         // check if quote has already been used
-        if ( empty($quote->getBoltOrderToken())  || !$quote->getIsActive() ) {
+        if ( !$quote->getBoltOrderToken()  || !$quote->getIsActive() ) {
             throw new Exception("The quote has expired. Bolt token:".$quote->getBoltOrderToken()." Is active? ".$quote->getIsActive() );
         }
 
