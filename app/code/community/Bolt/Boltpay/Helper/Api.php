@@ -86,6 +86,16 @@ class Bolt_Boltpay_Helper_Api extends Bolt_Boltpay_Helper_Data
     }
 
     /**
+     * Return the signing_key from config
+     *
+     * @return string
+     */
+    protected function getSigningKey()
+    {
+        return Mage::getStoreConfig('payment/boltpay/signing_key');
+    }
+
+    /**
      * Verifying Hook Requests using pre-exchanged signing secret key.
      *
      * @param $payload
@@ -94,8 +104,7 @@ class Bolt_Boltpay_Helper_Api extends Bolt_Boltpay_Helper_Data
      */
     private function verify_hook_secret($payload, $hmac_header) 
     {
-
-        $signing_secret = Mage::helper('core')->decrypt(Mage::getStoreConfig('payment/boltpay/signing_key'));
+        $signing_secret = Mage::helper('core')->decrypt($this->getSigningKey());
         $computed_hmac  = trim(base64_encode(hash_hmac('sha256', $payload, $signing_secret, true)));
 
         return $hmac_header == $computed_hmac;
