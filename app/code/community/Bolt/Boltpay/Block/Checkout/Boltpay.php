@@ -211,6 +211,11 @@ class Bolt_Boltpay_Block_Checkout_Boltpay
                         ->save();
                 }
 
+                /*
+                 *  Attempting to reset some of the values already set by merge affects the totals passed to 
+                 *  Bolt in such a way that the grand total becomes 0.  Since we do not need to reset these values
+                 *  we ignore them all.
+                 */
                 $already_set_by_merge = array(
                     'coupon_code',
                     'subtotal',
