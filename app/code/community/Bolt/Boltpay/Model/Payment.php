@@ -211,23 +211,8 @@ class Bolt_Boltpay_Model_Payment extends Mage_Payment_Model_Method_Abstract
             $transaction = $boltHelper->fetchTransaction($reference);
             $bolt_cart_total = $transaction->amount->currency_symbol. ($transaction->amount->amount/100);
 
-            // Set the transaction id
             $payment->setTransactionId($reference);
 
-            // Log the payment info
-            /*
-             *
-             *1) If order is create via AJAX call
-             *   "Bolt: Authorization requested for <amount>. Cart total is <amount>. 
-             *   Bolt transaction: <merchant dashboard url>/transactions/<transaction reference>"
-             *   
-             *2) If order is created via hook (orphan)
-             *  "Bolt: Authorization requested for <amount>. Cart total is <amount>. 
-             *   Bolt transaction: <merchant dashboard url>/transactions/<transaction reference>
-             *   This order was created via webhook (Bolt traceId: <traceID>)"
-             *
-             *
-             */
             is_ajax_request = $payment->getAdditionalInformation('is_ajax_request');
             $bolt_merchant_url = Mage::getStoreConfig('payment/boltpay/test') ? "https://merchant-sandbox.bolt.com" : "https://merchant.bolt.com";
             if(is_ajax_request){ // order is create via AJAX call
@@ -243,7 +228,6 @@ class Bolt_Boltpay_Model_Payment extends Mage_Payment_Model_Method_Abstract
             }
             
             $payment->getOrder()->setState(Mage_Sales_Model_Order::STATE_PROCESSING, true, $msg);
-
 
             // Auth transactions need to be kept open to support cancelling/voiding transaction
             $payment->setIsTransactionClosed(false);
