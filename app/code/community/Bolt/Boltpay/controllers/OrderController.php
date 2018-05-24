@@ -74,7 +74,6 @@ class Bolt_Boltpay_OrderController extends Mage_Core_Controller_Front_Action
                 $session_quote = $checkout_session->getQuote();
                 $boltHelper->createOrder($reference, $session_quote->getId());
             }
-            /////////////////////////////////////////////////////////
 
         } catch (Exception $e) {
             Mage::helper('boltpay/bugsnag')->notifyException($e);
