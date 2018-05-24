@@ -62,8 +62,8 @@ class Bolt_Boltpay_ApiController extends Mage_Core_Controller_Front_Action
             $bodyParams = json_decode(file_get_contents('php://input'), true);
 
             $reference = $bodyParams['reference'];
-            $transactionId = $bodyParams['transaction_id'];
-            $hookType = $bodyParams['notification_type'];
+            $transactionId = @$bodyParams['transaction_id'] ?: $bodyParams['id'];
+            $hookType = @$bodyParams['notification_type'] ?: $bodyParams['type'];  
 
             $boltHelper = Mage::helper('boltpay/api');
 
@@ -146,10 +146,7 @@ class Bolt_Boltpay_ApiController extends Mage_Core_Controller_Front_Action
                 return;
             }
 
-            /********************************************************************
-             * Order creation is moved to helper API
-             ********************************************************************/
-            $boltHelper->createOrder($reference, $session_quote_id = null);
+            $boltHelper->createOrder($reference, $sessionQuoteId = null);
 
             $this->getResponse()->setBody(
                 json_encode(

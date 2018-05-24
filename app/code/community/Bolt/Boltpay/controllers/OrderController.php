@@ -72,7 +72,7 @@ class Bolt_Boltpay_OrderController extends Mage_Core_Controller_Front_Action
 
             if ($order->isEmpty()) {
                 $session_quote = $checkout_session->getQuote();
-                $boltHelper->createOrder($reference, $session_quote->getId());
+                $boltHelper->createOrder($reference, $session_quote->getId(), true);
             }
 
         } catch (Exception $e) {
