@@ -155,7 +155,7 @@ class Bolt_Boltpay_Helper_Bugsnag extends Mage_Core_Helper_Abstract
             return $this->boltTraceId;
         }
 
-        $traceId = $_SERVER['HTTP_X_BOLT_TRACE_ID'];
+        $traceId = @$_SERVER['HTTP_X_BOLT_TRACE_ID'];
 
         if(!empty($traceId)) {
             return $traceId;

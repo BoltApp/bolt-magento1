@@ -53,9 +53,7 @@ class Bolt_Boltpay_ShippingController extends Mage_Core_Controller_Front_Action
             $request_json = file_get_contents('php://input');
             $request_data = json_decode($request_json);
 
-            //Mage::log('SHIPPING AND TAX REQUEST: ' . json_encode($request_data, JSON_PRETTY_PRINT), null, 'shipping_and_tax.log');
-
-            /** @var Bolt_Boltpay_Helper_Api $boltHelper */
+            /* @var Bolt_Boltpay_Helper_Api $boltHelper */
             $boltHelper = Mage::helper('boltpay/api');
             if (!$boltHelper->verify_hook($request_json, $hmac_header)) {
                 throw new Exception("Failed HMAC Authentication");
@@ -78,15 +76,15 @@ class Bolt_Boltpay_ShippingController extends Mage_Core_Controller_Front_Action
                 'telephone' => $shipping_address->phone
             );
 
-            $quote_id = $request_data->cart->order_reference;
-            /** @var Mage_Sales_Model_Quote $quote */
-            $quote = Mage::getModel('sales/quote')->loadByIdWithoutStore($quote_id);
+            $quoteId = $request_data->cart->order_reference;
+            /* @var Mage_Sales_Model_Quote $quote */
+            $quote = Mage::getModel('sales/quote')->loadByIdWithoutStore($quoteId);
 
 
             /***********************/
-            # Set session quote to real customer quote
+            // Set session quote to real customer quote
             $session = Mage::getSingleton('checkout/session');
-            $session->setQuoteId($quote_id);
+            $session->setQuoteId($quoteId);
             /**************/
 
             if ($quote->getCustomerId()) {

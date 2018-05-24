@@ -39,7 +39,7 @@ class Bolt_Boltpay_ApiController extends Mage_Core_Controller_Front_Action
     {
 
         try {
-            $hmac_header = $_SERVER['HTTP_X_BOLT_HMAC_SHA256'];
+            $hmac_header = @$_SERVER['HTTP_X_BOLT_HMAC_SHA256'];
 
             $request_json = file_get_contents('php://input');
             $request_data = json_decode($request_json);
@@ -80,7 +80,9 @@ class Bolt_Boltpay_ApiController extends Mage_Core_Controller_Front_Action
             $orderId = $transaction->order->cart->display_id;
             $quoteId = $transaction->order->cart->order_reference;
 
+            /* @var Mage_Sales_Model_Order $order */
             $order = Mage::getModel('sales/order')->loadByIncrementId($orderId);
+            /***************************************************************************/
 
             if (!$order->isEmpty()) {
                 //Mage::log('Order Found. Updating it', null, 'bolt.log');
@@ -144,9 +146,6 @@ class Bolt_Boltpay_ApiController extends Mage_Core_Controller_Front_Action
                 return;
             }
 
-            /********************************************************************
-             * Order creation is moved to helper API
-             ********************************************************************/
             $boltHelper->createOrder($reference, $session_quote_id = null);
 
             $this->getResponse()->setBody(
