@@ -201,8 +201,8 @@ class Bolt_Boltpay_Helper_Api extends Bolt_Boltpay_Helper_Data
         }
 
         // check if quote has already been used
-        if ( !$immutableQuote->getBoltOrderToken()  || !$immutableQuote->getIsActive() ) {
-            throw new Exception("The quote has expired. Bolt token:".$immutableQuote->getBoltOrderToken()." Is active? ".$immutableQuote->getIsActive() );
+        if ( !$immutableQuote->getIsActive() ) {
+            throw new Exception("The quote has expired." );
         }
 
         // adding guest user email to order

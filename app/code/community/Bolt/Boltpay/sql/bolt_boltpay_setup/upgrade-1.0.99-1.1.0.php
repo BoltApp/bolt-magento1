@@ -34,18 +34,6 @@ $installer->startSetup();
 Mage::log('Installing Bolt 1.1.0 updates', null, 'bolt_install.log');
 
 $installer->addAttribute(
-    "quote", "bolt_order_token", array(
-        "type"       => "varchar",
-        "label"      => "Bolt Order Token",
-        "input"      => "hidden",
-        "visible"    => false,
-        "required"   => false,
-        "unique"     => true,
-        "note"       => "Unique Bolt order token created for this quote"
-    )
-);
-
-$installer->addAttribute(
     "quote", "parent_quote_id", array(
         "type"       => "int",
         "label"      => "Original Quote ID",
@@ -57,6 +45,6 @@ $installer->addAttribute(
     )
 );
 
-Mage::log('Bolt 1.1.- update installation completed', null, 'bolt_install.log');
+Mage::log('Bolt 1.1.0 updates installation completed', null, 'bolt_install.log');
 
 $installer->endSetup();

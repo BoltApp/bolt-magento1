@@ -261,7 +261,6 @@ class Bolt_Boltpay_Block_Checkout_Boltpay
                     ->setReservedOrderId($reservedOrderId)
                     ->setStoreId($sessionQuote->getStoreId())
                     ->setParentQuoteId($sessionQuote->getId())
-                    ->setBoltOrderToken($orderCreationResponse->token)
                     ->save();
 
             } catch (Exception $e) {
