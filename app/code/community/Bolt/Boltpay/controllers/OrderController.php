@@ -62,7 +62,7 @@ class Bolt_Boltpay_OrderController extends Mage_Core_Controller_Front_Action
             $session_quote = $checkout_session->getQuote();
 
             /* @var Mage_Sales_Model_Order $order */
-            $order = $boltHelper->createOrder($reference, $session_quote->getId());
+            $order = $boltHelper->createOrder($reference, $session_quote->getId(), true);
 
             $checkout_session
                 ->clearHelperData();

@@ -215,9 +215,33 @@ class Bolt_Boltpay_Model_Payment extends Mage_Payment_Model_Method_Abstract
             $payment->setTransactionId($reference);
 
             // Log the payment info
-            $msg = sprintf(
-                "BOLT notification: Authorization requested for $bolt_cart_total.  Cart total is {$transaction->amount->currency_symbol}$amount. BOLT Reference: \"%s\".", $reference
-            );
+            /*
+             *
+             *1) If order is create via AJAX call
+             *   "Bolt: Authorization requested for <amount>. Cart total is <amount>. 
+             *   Bolt transaction: <merchant dashboard url>/transactions/<transaction reference>"
+             *   
+             *2) If order is created via hook (orphan)
+             *  "Bolt: Authorization requested for <amount>. Cart total is <amount>. 
+             *   Bolt transaction: <merchant dashboard url>/transactions/<transaction reference>
+             *   This order was created via webhook (Bolt traceId: <traceID>)"
+             *
+             *
+             */
+            $ajax_request = $payment->getAdditionalInformation('ajax_request');
+            $bolt_merchant_url = Mage::getStoreConfig('payment/boltpay/test') ? "https://merchant-sandbox.bolt.com" : "https://merchant.bolt.com";
+            if($ajax_request){ // order is create via AJAX call
+                $msg = sprintf(
+                    "BOLT notification: Authorization requested for $bolt_cart_total.  Cart total is {$transaction->amount->currency_symbol}$amount. Bolt transaction: %s/transaction/%s.", $bolt_merchant_url, $reference
+                ); 
+            }
+            else{ // order is created via hook (orphan)
+                $bolt_trace_id = Mage::helper('boltpay/bugsnag')->getBoltTraceId();
+                $msg = sprintf(
+                    "BOLT notification: Authorization requested for $bolt_cart_total.  Cart total is {$transaction->amount->currency_symbol}$amount. Bolt transaction: %s/transaction/%s. This order was created via webhook (Bolt traceId: <%s>)", $bolt_merchant_url, $reference, $bolt_trace_id
+                ); 
+            }
+            
             $payment->getOrder()->setState(Mage_Sales_Model_Order::STATE_PROCESSING, true, $msg);
 
 
