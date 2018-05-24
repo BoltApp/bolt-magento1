@@ -213,9 +213,9 @@ class Bolt_Boltpay_Model_Payment extends Mage_Payment_Model_Method_Abstract
 
             $payment->setTransactionId($reference);
 
-            is_ajax_request = $payment->getAdditionalInformation('is_ajax_request');
+            $isAjaxRequest = $payment->getAdditionalInformation('is_ajax_request');
             $bolt_merchant_url = Mage::getStoreConfig('payment/boltpay/test') ? "https://merchant-sandbox.bolt.com" : "https://merchant.bolt.com";
-            if(is_ajax_request){ // order is create via AJAX call
+            if($isAjaxRequest){ // order is create via AJAX call
                 $msg = sprintf(
                     "BOLT notification: Authorization requested for $bolt_cart_total.  Cart total is {$transaction->amount->currency_symbol}$amount. Bolt transaction: %s/transaction/%s.", $bolt_merchant_url, $reference
                 ); 
