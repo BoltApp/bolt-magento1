@@ -45,7 +45,7 @@ class Bolt_Boltpay_OrderController extends Mage_Core_Controller_Front_Action
 
             $boltHelper = Mage::helper('boltpay/api');
 
-            $checkout_session = Mage::getSingleton('checkout/session');
+            $checkoutSession = Mage::getSingleton('checkout/session');
 
             $reference = $this->getRequest()->getPost('reference');
 
@@ -71,8 +71,8 @@ class Bolt_Boltpay_OrderController extends Mage_Core_Controller_Front_Action
             $order = Mage::getModel('sales/order')->loadByIncrementId($reservedOrderId);
 
             if ($order->isEmpty()) {
-                $session_quote = $checkout_session->getQuote();
-                $boltHelper->createOrder($reference, $session_quote->getId(), true);
+                $sessionQuote = $checkoutSession->getQuote();
+                $boltHelper->createOrder($reference, $sessionQuote->getId(), true);
             }
 
         } catch (Exception $e) {

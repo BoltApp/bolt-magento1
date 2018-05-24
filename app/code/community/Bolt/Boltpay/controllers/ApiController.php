@@ -39,16 +39,15 @@ class Bolt_Boltpay_ApiController extends Mage_Core_Controller_Front_Action
     {
 
         try {
-            $hmac_header = @$_SERVER['HTTP_X_BOLT_HMAC_SHA256'];
+            $hmacHeader = @$_SERVER['HTTP_X_BOLT_HMAC_SHA256'];
 
-            $request_json = file_get_contents('php://input');
-            $request_data = json_decode($request_json);
+            $requestJson = file_get_contents('php://input');
 
             $boltHelper = Mage::helper('boltpay/api');
 
             Mage::helper('boltpay/api')->setResponseContextHeaders();
 
-            if (!$boltHelper->verify_hook($request_json, $hmac_header)) {
+            if (!$boltHelper->verify_hook($requestJson, $hmacHeader)) {
                 $exception = new Exception("Hook request failed validation.");
                 $this->getResponse()->setHttpResponseCode(400);
                 $this->getResponse()->setBody($exception->getMessage());
