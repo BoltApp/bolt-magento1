@@ -881,8 +881,8 @@ class Bolt_Boltpay_Helper_Api extends Bolt_Boltpay_Helper_Data
     /**
      * Checks if the Bolt API response indicates an error.
      *
-     * @param $response     Bolt API response
-     * @return bool         true if there is an error, false otherwise
+     * @param $response - Bolt API response
+     * @return bool     - true if there is an error, false otherwise
      */
     public function isResponseError($response) 
     {
@@ -1035,11 +1035,20 @@ class Bolt_Boltpay_Helper_Api extends Bolt_Boltpay_Helper_Data
      */
     public function setResponseContextHeaders() 
     {
-        $context_info = Mage::helper('boltpay/bugsnag')->getContextInfo();
+        $contextInfo = $this->getBoltContextInfo();
 
         Mage::app()->getResponse()
-            ->setHeader('User-Agent', 'BoltPay/Magento-' . $context_info["Magento-Version"], true)
-            ->setHeader('X-Bolt-Plugin-Version', $context_info["Bolt-Plugin-Version"], true);
+            ->setHeader('User-Agent', 'BoltPay/Magento-' . $contextInfo['Magento-Version'], true)
+            ->setHeader('X-Bolt-Plugin-Version', $contextInfo['Bolt-Plugin-Version'], true)
+        ;
+    }
+
+    /**
+     * @return mixed
+     */
+    private function getBoltContextInfo()
+    {
+        return Mage::helper('boltpay/bugsnag')->getContextInfo();
     }
 
 
