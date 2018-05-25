@@ -411,7 +411,7 @@ class Bolt_Boltpay_Helper_Api extends Bolt_Boltpay_Helper_Data
      * Calls the Bolt API endpoint.
      *
      * @param string $command  The endpoint to be called
-     * @param string $data     an object to be encoded to JSON as the value passed to the endpoint
+     * @param array $data     an object to be encoded to JSON as the value passed to the endpoint
      * @param string $object   defines part of endpoint url which is normally/always??? set to merchant
      * @param string $type     Defines the endpoint type (i.e. order|transactions|sign) that is used as part of the url
      * @throws  Mage_Core_Exception  thrown if an error is detected in a response
@@ -606,10 +606,10 @@ class Bolt_Boltpay_Helper_Api extends Bolt_Boltpay_Helper_Data
     /**
      * Generates order data for sending to Bolt.
      *
-     * @param $quote            Magento quote instance
-     * @param array $items      array of Magento products
-     * @param bool $multipage   Is checkout type Multi-Page Checkout, the default is true, set to false for One Page Checkout
-     * @return array            The order payload to be sent as to bolt in API call as a PHP array
+     * @param $quote            - Magento quote instance
+     * @param array $items      - array of Magento products
+     * @param bool $multipage   - Is checkout type Multi-Page Checkout, the default is true, set to false for One Page Checkout
+     * @return array            - The order payload to be sent as to bolt in API call as a PHP array
      */
     public function buildOrder($quote, $items, $multipage) 
     {

@@ -32,6 +32,15 @@
  */
 class Bolt_Boltpay_Helper_Data extends Mage_Core_Helper_Abstract
 {
+    /**
+     * @var string The Bolt sandbox url for the javascript
+     */
+    const JS_URL_TEST = 'https://connect-sandbox.bolt.com';
+
+    /**
+     * @var string The Bolt production url for the javascript
+     */
+    const JS_URL_PROD = 'https://connect.bolt.com';
 
     /**
      * @var bool    a flag set to true if the class is instantiated from web hook call, otherwise false
@@ -88,5 +97,39 @@ class Bolt_Boltpay_Helper_Data extends Mage_Core_Helper_Abstract
         }
 
         return true;
+    }
+
+    /**
+     * Get config value
+     *
+     * @return bool
+     */
+    public function isNeedAddButtonToTopCart()
+    {
+        return Mage::getStoreConfigFlag('payment/boltpay/add_button_to_minicart');
+    }
+
+    /**
+     * @param bool $decrypt
+     * @return string
+     */
+    public function getPublishableKeyMultiPageKey($decrypt = false)
+    {
+        $key = Mage::getStoreConfig('payment/boltpay/publishable_key_multipage');
+        if ($decrypt) {
+            return Mage::helper('core')->decrypt($key);
+        }
+
+        return $key;
+    }
+
+    /**
+     * @return string
+     */
+    public function getConnectJsUrl()
+    {
+        return Mage::getStoreConfigFlag('payment/boltpay/test') ?
+            self::JS_URL_TEST . "/connect.js":
+            self::JS_URL_PROD . "/connect.js";
     }
 }

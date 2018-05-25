@@ -114,7 +114,7 @@ class Bolt_Boltpay_OrderController extends Mage_Core_Controller_Front_Action
      * Creating the Bolt order and returning Bolt.process javascript.
      * Called from the firecheckout page.
      */
-    public function firecheckoutcreateAction() 
+    public function firecheckoutcreateAction()
     {
 
         try {
@@ -202,5 +202,24 @@ class Bolt_Boltpay_OrderController extends Mage_Core_Controller_Front_Action
             Mage::helper('boltpay/bugsnag')->notifyException($e);
             throw $e;
         }
+    }
+
+    public function miniCartUpdateAction()
+    {
+        /** @var Bolt_Boltpay_Model_Checkout_Cart $cartModel */
+        $cartModel = Mage::getModel('boltpay/checkout_cart');
+
+        $result = array();
+
+        $result['cart_data'] = $cartModel->getCartData(true);
+
+        if (!$result['cart_data']) {
+            $result['success'] = false;
+            $result['error']   = true;
+            $result['error_messages'] = "Your shopping cart is empty.  Your session may have expired.";
+        }
+
+        $this->getResponse()->setHeader('Content-type', 'application/json', true);
+        $this->getResponse()->setBody(Mage::helper('core')->jsonEncode($result, JSON_FORCE_OBJECT));
     }
 }

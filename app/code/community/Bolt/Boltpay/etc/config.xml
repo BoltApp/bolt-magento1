@@ -206,6 +206,7 @@
         <successpage>checkout/onepage/success</successpage>
         <skip_payment>0</skip_payment>
         <skip_confirm>1</skip_confirm>
+        <add_button_to_minicart>0</add_button_to_minicart>
         <sort_order>0</sort_order>
       </boltpay>
     </payment>
