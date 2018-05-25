@@ -155,11 +155,7 @@ class Bolt_Boltpay_Model_Api2_Order_Rest_Admin_V1 extends Bolt_Boltpay_Model_Api
                 );
             }
 
-            /********************************************************************
-             * Order creation is moved to helper API
-             ********************************************************************/
-
-            $boltHelper->createOrder($reference, $session_quote_id = null);
+            $boltHelper->createOrder($reference, $sessionQuoteId = null);
 
             $this->getResponse()->addMessage(
                 self::$SUCCESS_ORDER_CREATED['message'], self::$SUCCESS_ORDER_CREATED['http_response_code'],
