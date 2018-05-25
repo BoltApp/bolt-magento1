@@ -554,7 +554,7 @@ class Bolt_Boltpay_Block_Checkout_Boltpay
      * Returns the One Page / Multi-Page checkout Publishable key.
      * @return string
      */
-    function getPaymentKey($multipage = true) 
+    function getPublishableKey($multipage = true)
     {
         return $multipage
             ? Mage::helper('core')->decrypt(Mage::getStoreConfig('payment/boltpay/publishable_key_multipage'))
@@ -634,17 +634,19 @@ class Bolt_Boltpay_Block_Checkout_Boltpay
     }
 
     /**
-     * Get PaymentKey depending the other checkout modules.
+     * Gets Publishable Key depending the other checkout type.
+     * -  shopping cart uses multi-step publishable keys
+     * -  firecheckout and onepage checkout uses a payment only publishable key
      *
      * @return string
      */
-    public function getPaymentKeyDependingTheModule()
+    public function getPublishableKeyForThisContext()
     {
         $routeName = Mage::app()->getRequest()->getRouteName();
+        $controllerName = Mage::app()->getRequest()->getControllerName();
 
-        // If exist 'firecheckout' route we should send false.
-        $param = ($routeName === 'firecheckout') ? false : true;
+        $isForMultiPage = !($routeName === 'firecheckout') && !($routeName === 'checkout' && $controllerName !== 'cart');
 
-        return $this->getPaymentKey($param);
+        return $this->getPublishableKey($isForMultiPage);
     }
 }
