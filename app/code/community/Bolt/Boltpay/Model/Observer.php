@@ -120,9 +120,9 @@ class Bolt_Boltpay_Model_Observer
         }
     }
 
-    public function sendCompleteAuthorizeRequest($complete_authorize_request)
+    public function sendCompleteAuthorizeRequest($request)
     {
-        return $this->getBoltApiHelper()->transmit('complete_authorize', $complete_authorize_request);
+        return $this->getBoltApiHelper()->transmit('complete_authorize', $request);
     }
 
     /**

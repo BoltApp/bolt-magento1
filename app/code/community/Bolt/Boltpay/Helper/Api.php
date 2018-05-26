@@ -737,9 +737,9 @@ class Bolt_Boltpay_Helper_Api extends Bolt_Boltpay_Helper_Data
             /////////////////////////////////////////////////////////////////////////////////////////
             // For multi-page checkout type send only subtotal, do not include shipping and tax info.
             /////////////////////////////////////////////////////////////////////////////////////////
-            $total_key = @$totals['subtotal'] ? 'subtotal' : 'grand_total';
+            $totalKey = @$totals['subtotal'] ? 'subtotal' : 'grand_total';
 
-            $cartSubmissionData['total_amount'] = round($totals[$total_key]->getValue() * 100);
+            $cartSubmissionData['total_amount'] = round($totals[$totalKey]->getValue() * 100);
             $cartSubmissionData['total_amount'] += $totalDiscount;
             /////////////////////////////////////////////////////////////////////////////////////////
         } else {
@@ -800,7 +800,7 @@ class Bolt_Boltpay_Helper_Api extends Bolt_Boltpay_Helper_Data
             $shippingAddress = $quote->getShippingAddress();
 
             if ($shippingAddress) {
-                $shipping_address = array(
+                $cartShippingAddress = array(
                     'street_address1' => $shippingAddress->getStreet1(),
                     'street_address2' => $shippingAddress->getStreet2(),
                     'street_address3' => $shippingAddress->getStreet3(),
@@ -819,7 +819,7 @@ class Bolt_Boltpay_Helper_Api extends Bolt_Boltpay_Helper_Data
 
                 if (@$totals['shipping']) {
                     $cartSubmissionData['shipments'] = array(array(
-                        'shipping_address' => $shipping_address,
+                        'shipping_address' => $cartShippingAddress,
                         'tax_amount'       => round($shippingAddress->getShippingTaxAmount() * 100),
                         'service'          => $shippingAddress->getShippingDescription(),
                         'carrier'          => $shippingAddress->getShippingMethod(),
@@ -830,7 +830,7 @@ class Bolt_Boltpay_Helper_Api extends Bolt_Boltpay_Helper_Data
                 }
 
                 foreach ($requiredAddressFields as $field) {
-                    if (empty($shipping_address[$field])) {
+                    if (empty($cartShippingAddress[$field])) {
                         unset($cartSubmissionData['shipments']);
                         break;
                     }
@@ -850,15 +850,15 @@ class Bolt_Boltpay_Helper_Api extends Bolt_Boltpay_Helper_Data
      * all items and the given discount, does not match the $magento calculated total.  The totals may vary
      * do to an error in the internal Magento code
      *
-     * @param int $projected_total              total calculated from items, discounts, taxes and shipping
+     * @param int $projectedTotal              total calculated from items, discounts, taxes and shipping
      * @param int $magentoDerivedCartData    totals returned by magento and formatted for Bolt
      *
      * @return array  the corrected Bolt formatted cart data.
      */
-    private function getCorrectedTotal($projected_total, $magentoDerivedCartData)
+    private function getCorrectedTotal($projectedTotal, $magentoDerivedCartData)
     {
         // we'll check if we can simply dividing by two corrects the problem
-        if ($projected_total == (int)($magentoDerivedCartData['total_amount']/2)) {
+        if ($projectedTotal == (int)($magentoDerivedCartData['total_amount']/2)) {
             $magentoDerivedCartData["total_amount"] = (int)($magentoDerivedCartData['total_amount']/2);
 
             /*  I will defer handling discounts, tax, and shipping until more info is collected
@@ -1040,11 +1040,11 @@ class Bolt_Boltpay_Helper_Api extends Bolt_Boltpay_Helper_Data
      */
     public function setResponseContextHeaders()
     {
-        $context_info = Mage::helper('boltpay/bugsnag')->getContextInfo();
+        $contextInfo = Mage::helper('boltpay/bugsnag')->getContextInfo();
 
         Mage::app()->getResponse()
-            ->setHeader('User-Agent', 'BoltPay/Magento-' . $context_info["Magento-Version"], true)
-            ->setHeader('X-Bolt-Plugin-Version', $context_info["Bolt-Plugin-Version"], true);
+            ->setHeader('User-Agent', 'BoltPay/Magento-' . $contextInfo["Magento-Version"], true)
+            ->setHeader('X-Bolt-Plugin-Version', $contextInfo["Bolt-Plugin-Version"], true);
     }
 
 
@@ -1059,15 +1059,15 @@ class Bolt_Boltpay_Helper_Api extends Bolt_Boltpay_Helper_Data
      */
     public function storeHasAllCartItems($quote)
     {
-        foreach ($quote->getAllItems() as $cart_item) {
-            if($cart_item->getHasChildren()) {
+        foreach ($quote->getAllItems() as $cartItem) {
+            if($cartItem->getHasChildren()) {
                 continue;
             }
 
-            $_product = Mage::getModel('catalog/product')->load($cart_item->getProductId());
+            $_product = Mage::getModel('catalog/product')->load($cartItem->getProductId());
             $stockInfo = Mage::getModel('cataloginventory/stock_item')->loadByProduct($_product);
             if($stockInfo->getManageStock()){
-                if( ($stockInfo->getQty() < $cart_item->getQty()) && !$stockInfo->getBackorders() ){
+                if( ($stockInfo->getQty() < $cartItem->getQty()) && !$stockInfo->getBackorders() ){
                     return false;
                 }
             }

@@ -127,7 +127,7 @@ class Bolt_Boltpay_Block_Checkout_Boltpay
             ///////////////////////////////////////////////////////////////
             // Populate hints data from quote or customer shipping address.
             //////////////////////////////////////////////////////////////
-            $hint_data = $this->getAddressHints($customerSession, $sessionQuote);
+            $hintData = $this->getAddressHints($customerSession, $sessionQuote);
             ///////////////////////////////////////////////////////////////
 
             ///////////////////////////////////////////////////////////////////////////////////////
@@ -145,7 +145,7 @@ class Bolt_Boltpay_Block_Checkout_Boltpay
             }
 
             if ($signResponse != null) {
-                $hint_data['signed_merchant_user_id'] = array(
+                $hintData['signed_merchant_user_id'] = array(
                     "merchant_user_id" => $signResponse->merchant_user_id,
                     "signature" => $signResponse->signature,
                     "nonce" => $signResponse->nonce,
@@ -291,9 +291,9 @@ class Bolt_Boltpay_Block_Checkout_Boltpay
 
             $jsonCart = json_encode($cartData);
             $jsonHints = '{}';
-            if (sizeof($hint_data) != 0) {
+            if (sizeof($hintData) != 0) {
                 // Convert $hint_data to object, because when empty data it consists array not an object
-                $jsonHints = json_encode($hint_data, JSON_FORCE_OBJECT);
+                $jsonHints = json_encode($hintData, JSON_FORCE_OBJECT);
             }
 
             //////////////////////////////////////////////////////////////////////////
@@ -491,36 +491,36 @@ class Bolt_Boltpay_Block_Checkout_Boltpay
 
         $selectorStyles = array_map('trim', explode('||', trim($selectorStyles)));
 
-        $selectors_css = '';
+        $selectorsCss = '';
 
         foreach ($selectorStyles as $selector) {
-            preg_match('/[^{}]+/', $selector, $selector_identifier);
+            preg_match('/[^{}]+/', $selector, $selectorIdentifier);
 
-            $bolt_selector  = trim($selector_identifier[0]) . "-" . self::CSS_SUFFIX;
+            $boltSelector  = trim($selectorIdentifier[0]) . "-" . self::CSS_SUFFIX;
 
             preg_match_all('/[^{}]+{[^{}]*}/', $selector, $matches);
 
-            foreach ($matches as $match_array) {
-                foreach ($match_array as $match) {
+            foreach ($matches as $matchArray) {
+                foreach ($matchArray as $match) {
                     preg_match('/{[^{}]*}/', $match, $css);
                     $css = $css[0];
 
                     preg_match('/[^{}]+/', $match, $identifiers);
 
-                    foreach ($identifiers as $comma_delimited) {
-                        $comma_delimited = trim($comma_delimited);
-                        $single_identifiers = array_map('trim', explode(',', $comma_delimited));
+                    foreach ($identifiers as $commaDelimited) {
+                        $commaDelimited = trim($commaDelimited);
+                        $singleIdentifiers = array_map('trim', explode(',', $commaDelimited));
 
-                        foreach ($single_identifiers as $identifier) {
-                            $selectors_css .= $identifier . $bolt_selector . $css;
-                            $selectors_css .= $bolt_selector . " " . $identifier . $css;
+                        foreach ($singleIdentifiers as $identifier) {
+                            $selectorsCss .= $identifier . $boltSelector . $css;
+                            $selectorsCss .= $boltSelector . " " . $identifier . $css;
                         }
                     }
                 }
             }
         }
 
-        return $selectors_css;
+        return $selectorsCss;
     }
 
     /**
