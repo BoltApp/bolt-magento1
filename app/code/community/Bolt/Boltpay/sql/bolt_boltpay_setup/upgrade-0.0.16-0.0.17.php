@@ -24,16 +24,26 @@
  * @license    http://opensource.org/licenses/osl-3.0.php  Open Software License (OSL 3.0)
  */
 
-$versionElm =  Mage::getConfig()->getModuleConfig("Bolt_Boltpay")->xpath("version");
-$version = (string)$versionElm[0];
-if($this->isBoltActive()) {
-    ?>
-    <script
-            id="bolt-track"
-            type="text/javascript"
-            src="<?= $this->getTrackJsUrl(); ?>"
-            data-publishable-key="<?= Mage::helper('core')->decrypt(Mage::getStoreConfig('payment/boltpay/publishable_key_multipage')); ?>">
-    </script>
-    <script>console.log("Bolt Version: <?=$version?>");</script>
-    <?php
-}
+/**
+ * This installer adds user session id data to quote table
+ */
+$installer = Mage::getResourceModel('sales/setup', 'sales_setup');
+$installer->startSetup();
+
+Mage::log('Installing Bolt 0.0.17 updates', null, 'bolt_install.log');
+
+$installer->addAttribute(
+    "quote", "user_session_id", array(
+    "type"       => "varchar",
+    "label"      => "User Session ID",
+    "input"      => "hidden",
+    "visible"    => false,
+    "required"   => false,
+    "unique"     => false,
+    "note"       => "User Session ID for the quote"
+    )
+);
+
+Mage::log('Bolt 0.0.17 update installation completed', null, 'bolt_install.log');
+
+$installer->endSetup();

@@ -141,7 +141,7 @@ class Bolt_Boltpay_Model_ObserverTest extends PHPUnit_Framework_TestCase
     {
         $observerModel = $this->getMockBuilder(Bolt_Boltpay_Model_Observer::class)
             ->enableOriginalConstructor()
-            ->setMethods(array('sendCompleteAuthorizeRequest', 'getBoltApiHelper', 'sendOrderEmail'))
+            ->setMethods(array('getBoltApiHelper', 'sendOrderEmail'))
             ->getMock();
 
         $quote = $this->quote;
@@ -149,6 +149,18 @@ class Bolt_Boltpay_Model_ObserverTest extends PHPUnit_Framework_TestCase
             ->enableOriginalConstructor()
             ->getMock()
         ;
+
+        $this->order
+            ->method('setState')
+            ->willReturn($this->order);
+
+        $this->order
+            ->expects($this->atLeastOnce())
+            ->method('save');
+
+        $this->order
+            ->expects($this->atMost(2))
+            ->method('save');
 
         $history = $this->createMock('Mage_Sales_Model_Order_Status_History');
 
@@ -175,14 +187,8 @@ class Bolt_Boltpay_Model_ObserverTest extends PHPUnit_Framework_TestCase
             'order' => $this->order
         ));
 
-        $transmitResponse = new stdClass();
-        $transmitResponse->is_valid = 1;
-        $observerModel->method('sendCompleteAuthorizeRequest')
-            ->will($this->returnValue($transmitResponse));
-
         $observerModel->verifyOrderContents($observerObject);
 
-        $this->assertEquals($transmitResponse, $observerModel->sendCompleteAuthorizeRequest());
     }
 
     /**
