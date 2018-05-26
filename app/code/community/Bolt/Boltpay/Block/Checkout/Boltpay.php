@@ -151,7 +151,6 @@ class Bolt_Boltpay_Block_Checkout_Boltpay
                     "nonce" => $signResponse->nonce,
                 );
             }
-
             ///////////////////////////////////////////////////////////////////////////////////////
 
 
@@ -260,13 +259,14 @@ class Bolt_Boltpay_Block_Checkout_Boltpay
                 $reservedOrderId = $sessionQuote->reserveOrderId()->save()->getReservedOrderId();
                 Mage::getSingleton('core/session')->setReservedOrderId($reservedOrderId);
 
-                $orderCreationResponse = $this->createBoltOrder($immutableQuote, $multipage);
                 $immutableQuote
                     ->setCustomer($sessionQuote->getCustomer())
                     ->setReservedOrderId($reservedOrderId)
                     ->setStoreId($sessionQuote->getStoreId())
                     ->setParentQuoteId($sessionQuote->getId())
                     ->save();
+
+                $orderCreationResponse = $this->createBoltOrder($immutableQuote, $multipage);
 
             } catch (Exception $e) {
                 Mage::helper('boltpay/bugsnag')->notifyException(new Exception($e));

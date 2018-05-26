@@ -319,9 +319,9 @@ class Bolt_Boltpay_Helper_Api extends Bolt_Boltpay_Helper_Data
         // Close out session by deleting the parent quote and deactivating the immutable quote so that it can no
         // longer be used.
         /* @var Mage_Sales_Model_Quote $parentQuote */
-        $immutableQuote->delete();
-        $parentQuote->setIsActive(false)
+        $immutableQuote->setIsActive(false)
             ->save();
+        $parentQuote->delete();
 
         return $order;
 
