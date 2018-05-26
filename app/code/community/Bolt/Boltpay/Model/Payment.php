@@ -221,9 +221,9 @@ class Bolt_Boltpay_Model_Payment extends Mage_Payment_Model_Method_Abstract
                 ); 
             }
             else{ // order is created via hook (orphan)
-                $bolt_trace_id = Mage::helper('boltpay/bugsnag')->getBoltTraceId();
+                $boltTraceId = Mage::helper('boltpay/bugsnag')->getBoltTraceId();
                 $msg = sprintf(
-                    "BOLT notification: Authorization requested for $boltCartTotal.  Cart total is {$transaction->amount->currency_symbol}$amount. Bolt transaction: https://%s/transaction/%s. This order was created via webhook (Bolt traceId: <%s>)", $hostname, $reference, $bolt_trace_id
+                    "BOLT notification: Authorization requested for $boltCartTotal.  Cart total is {$transaction->amount->currency_symbol}$amount. Bolt transaction: https://%s/transaction/%s. This order was created via webhook (Bolt traceId: <%s>)", $hostname, $reference, $boltTraceId
                 ); 
             }
             
