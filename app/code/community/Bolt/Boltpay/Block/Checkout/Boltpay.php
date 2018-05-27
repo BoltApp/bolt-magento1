@@ -135,21 +135,19 @@ class Bolt_Boltpay_Block_Checkout_Boltpay
             // sign it and add to hints.
             ///////////////////////////////////////////////////////////////////////////////////////
             $reservedUserId = $this->getReservedUserId($sessionQuote, $customerSession);
-            $signResponse = null;
-
             if ($reservedUserId) {
                 $signRequest = array(
                     'merchant_user_id' => $reservedUserId,
                 );
                 $signResponse = $boltHelper->transmit('sign', $signRequest);
-            }
 
-            if ($signResponse != null) {
-                $hintData['signed_merchant_user_id'] = array(
-                    "merchant_user_id" => $signResponse->merchant_user_id,
-                    "signature" => $signResponse->signature,
-                    "nonce" => $signResponse->nonce,
-                );
+                if ($signResponse != null) {
+                    $hintData['signed_merchant_user_id'] = array(
+                        "merchant_user_id" => $signResponse->merchant_user_id,
+                        "signature" => $signResponse->signature,
+                        "nonce" => $signResponse->nonce,
+                    );
+                }
             }
             ///////////////////////////////////////////////////////////////////////////////////////
 
