@@ -37,17 +37,14 @@
  */
 class Bolt_Boltpay_Helper_Api extends Bolt_Boltpay_Helper_Data
 {
-
     const API_URL_TEST = 'https://api-sandbox.bolt.com/';
     const API_URL_PROD = 'https://api.bolt.com/';
 
     protected $curlHeaders;
     protected $curlBody;
 
-    ///////////////////////////////////////////////////////
     // Store discount types, internal and 3rd party.
     // Can appear as keys in Quote::getTotals result array.
-    ///////////////////////////////////////////////////////
     private $discountTypes = array(
         'discount',
         'giftcardcredit',
@@ -59,7 +56,6 @@ class Bolt_Boltpay_Helper_Api extends Bolt_Boltpay_Helper_Data
         'amgiftcard', // https://amasty.com/magento-gift-card.html
         'amstcred', // https://amasty.com/magento-store-credit.html
     );
-    ///////////////////////////////////////////////////////
 
     /**
      * A call to Fetch Bolt API endpoint. Gets the transaction info.
@@ -94,7 +90,6 @@ class Bolt_Boltpay_Helper_Api extends Bolt_Boltpay_Helper_Data
      */
     private function verify_hook_secret($payload, $hmacHeader)
     {
-
         $signingSecret = Mage::helper('core')->decrypt(Mage::getStoreConfig('payment/boltpay/signing_key'));
         $computedHmac  = trim(base64_encode(hash_hmac('sha256', $payload, $signingSecret, true)));
 
@@ -106,12 +101,10 @@ class Bolt_Boltpay_Helper_Api extends Bolt_Boltpay_Helper_Data
      *
      * @param $payload
      * @param $hmacHeader
-     * @return bool
-     * @throws Exception
+     * @return bool if signature is verified
      */
     private function verify_hook_api($payload, $hmacHeader)
     {
-
         try {
             $url = $this->getApiUrl() . "/v1/merchant/verify_signature";
 
@@ -155,7 +148,6 @@ class Bolt_Boltpay_Helper_Api extends Bolt_Boltpay_Helper_Data
      */
     public function verify_hook($payload, $hmacHeader)
     {
-
         return $this->verify_hook_secret($payload, $hmacHeader) || $this->verify_hook_api($payload, $hmacHeader);
     }
 
@@ -177,7 +169,6 @@ class Bolt_Boltpay_Helper_Api extends Bolt_Boltpay_Helper_Data
             throw new Exception("Bolt transaction reference is missing in the Magento order creation process.");
         }
 
-        // fetch transaction info
         $transaction = $this->fetchTransaction($reference);
 
         $transactionStatus = $transaction->status;
@@ -349,6 +340,7 @@ class Bolt_Boltpay_Helper_Api extends Bolt_Boltpay_Helper_Data
      *
      * @param $transaction  Transaction data sent by Bolt
      * @param Sales_Model_Service_Quote $quote     Quote derived from transaction data
+     * @return bool whether the discount amount from Bolt is off by $0.01 compared to the Magento quote discount amount
      */
     protected function isDiscountRoundingDeltaError($transaction, $quote) {
         $boltDiscountAmount = round($this->getBoltDiscountAmount($transaction), 2);
@@ -434,12 +426,10 @@ class Bolt_Boltpay_Helper_Api extends Bolt_Boltpay_Helper_Data
     {
         $url = $this->getApiUrl() . 'v1/';
 
-        if($command == 'sign') {
+        if($command == 'sign' || $command == 'orders') {
             $url .= $object . '/' . $command;
         } elseif ($command == null || $command == '') {
             $url .= $object;
-        } elseif ($command == 'orders') {
-            $url .= $object . '/' . $command;
         } else {
             $url .= $object . '/' . $type . '/' . $command;
         }
@@ -457,8 +447,6 @@ class Bolt_Boltpay_Helper_Api extends Bolt_Boltpay_Helper_Data
             $key = Mage::getStoreConfig('payment/boltpay/publishable_key_multipage');
         } elseif ($command == '' && $type == '' && $object == 'merchant') {
             $key = Mage::getStoreConfig('payment/boltpay/publishable_key_multipage');
-        } elseif ($command == 'sign') {
-            $key = Mage::getStoreConfig('payment/boltpay/api_key');
         } else {
             $key = Mage::getStoreConfig('payment/boltpay/api_key');
         }
@@ -486,8 +474,6 @@ class Bolt_Boltpay_Helper_Api extends Bolt_Boltpay_Helper_Data
             curl_close($ch);
 
             $message ="Curl info: " . $curlInfo;
-
-            //Mage::log($message, null, 'bolt.log');
 
             Mage::throwException($message);
         }
