@@ -443,9 +443,7 @@ class Bolt_Boltpay_Helper_Api extends Bolt_Boltpay_Helper_Data
             curl_setopt($ch, CURLOPT_POSTFIELDS, $params);
         }
 
-        if ($command == 'oauth' && $type == 'division') {
-            $key = Mage::getStoreConfig('payment/boltpay/publishable_key_multipage');
-        } elseif ($command == '' && $type == '' && $object == 'merchant') {
+        if ($command == '' && $type == '' && $object == 'merchant') {
             $key = Mage::getStoreConfig('payment/boltpay/publishable_key_multipage');
         } else {
             $key = Mage::getStoreConfig('payment/boltpay/api_key');
@@ -536,11 +534,6 @@ class Bolt_Boltpay_Helper_Api extends Bolt_Boltpay_Helper_Data
      */
     private function _handleErrorResponse($response, $url, $request)
     {
-        if (strpos($url, 'v1/merchant/division/oauth') !== false) {
-            // Do not log division keys here since they are sensitive.
-            $request = "<redacted>";
-        }
-
         if (is_null($response)) {
             $message ="BoltPay Gateway error: No response from Bolt. Please re-try again";
             Mage::throwException($message);
