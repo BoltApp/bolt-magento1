@@ -903,7 +903,6 @@ class Bolt_Boltpay_Helper_Api extends Bolt_Boltpay_Helper_Data
      */
     public function getShippingAndTaxEstimate( $quote )
     {
-
         $response = array(
             'shipping_options' => array(),
             'tax_result' => array(
@@ -922,58 +921,52 @@ class Bolt_Boltpay_Helper_Api extends Bolt_Boltpay_Helper_Data
                 "cost" => 0,
                 "tax_amount" => abs(round($quote->getBillingAddress()->getTaxAmount() * 100))
             );
-
             $response['shipping_options'][] = $option;
             $quote->setTotalsCollectedFlag(true);
+            return $response;
         }
-        else{
-            /*****************************************************************************************
-             * Calculate tax
-             *****************************************************************************************/
-            $this->applyShippingRate($quote, null);
-    
-            /*****************************************************************************************/
-    
-            $shippingAddress = $quote->getShippingAddress();
-            $shippingAddress->setCollectShippingRates(true)->collectShippingRates()->save();
-    
-            $origTotalWithoutShippingOrTax = $this->getTotalWithoutTaxOrShipping($quote);
-    
-            $rates = $this->getSortedShippingRates($shippingAddress);
-    
-            foreach ($rates as $rate) {
-                if ($rate->getErrorMessage()) {
-                    Mage::helper('boltpay/bugsnag')->notifyException( new Exception("Error getting shipping option for " .  $rate->getCarrierTitle() . ": " . $rate->getErrorMessage()) );
-                    continue;
-                }
-    
-                $this->applyShippingRate($quote, $rate->getCode());
-    
-                $label = $rate->getCarrierTitle();
-                if ($rate->getMethodTitle()) {
-                    $label = $label . ' - ' . $rate->getMethodTitle();
-                }
-    
-                $rateCode = $rate->getCode();
-    
-                if(empty($rateCode)) {
-                    Mage::helper('boltpay/bugsnag')->notifyException(new Exception('Rate code is empty. ' . var_export($rate->debug(), true)));
-                }
-    
-                $shippingDiscountModifier = $this->getShippingDiscountModifier($origTotalWithoutShippingOrTax, $quote);
-    
-                $option = array(
-                    "service"   => $label,
-                    "reference" => $rateCode,
-                    "cost" => round(($quote->getShippingAddress()->getShippingAmount() - $shippingDiscountModifier) * 100),
-                    "tax_amount" => abs(round($quote->getShippingAddress()->getTaxAmount() * 100))
-                );
-    
-                $response['shipping_options'][] = $option;
+
+        /*****************************************************************************************
+         * Calculate tax
+         *****************************************************************************************/
+        $this->applyShippingRate($quote, null);
+
+        $shippingAddress = $quote->getShippingAddress();
+        $shippingAddress->setCollectShippingRates(true)->collectShippingRates()->save();
+
+        $origTotalWithoutShippingOrTax = $this->getTotalWithoutTaxOrShipping($quote);
+
+        $rates = $this->getSortedShippingRates($shippingAddress);
+
+        foreach ($rates as $rate) {
+            if ($rate->getErrorMessage()) {
+                Mage::helper('boltpay/bugsnag')->notifyException(new Exception("Error getting shipping option for " . $rate->getCarrierTitle() . ": " . $rate->getErrorMessage()));
+                continue;
             }
-    
-            /*****************************************************************************************/
-                
+
+            $this->applyShippingRate($quote, $rate->getCode());
+
+            $label = $rate->getCarrierTitle();
+            if ($rate->getMethodTitle()) {
+                $label = $label . ' - ' . $rate->getMethodTitle();
+            }
+
+            $rateCode = $rate->getCode();
+
+            if (empty($rateCode)) {
+                Mage::helper('boltpay/bugsnag')->notifyException(new Exception('Rate code is empty. ' . var_export($rate->debug(), true)));
+            }
+
+            $shippingDiscountModifier = $this->getShippingDiscountModifier($origTotalWithoutShippingOrTax, $quote);
+
+            $option = array(
+                "service" => $label,
+                "reference" => $rateCode,
+                "cost" => round(($quote->getShippingAddress()->getShippingAmount() - $shippingDiscountModifier) * 100),
+                "tax_amount" => abs(round($quote->getShippingAddress()->getTaxAmount() * 100))
+            );
+
+            $response['shipping_options'][] = $option;
         }
 
         return $response;
