@@ -88,17 +88,9 @@ class Bolt_Boltpay_Model_Checkout_Cart extends Mage_Core_Model_Abstract
     public function getCartData($multipage = true)
     {
         try {
-            // Get customer and cart session objects
-//            $customerSession = $this->getCustomerSession();
-//            $session = $this->getCheckoutSession();
-
             // Get the session quote/cart
             /** @var Mage_Sales_Model_Quote $quote */
             $quote = $this->getQuote();
-            $quote->setExtShippingInfo(Mage::getSingleton('core/session')->getSessionId());
-            $quote->save();
-            // Generate new increment order id and associate it with current quote, if not already assigned
-            $quote->reserveOrderId()->save();
 
 ///////////////////////////////////////////////////////////////
             // Populate hints data from quote or customer shipping address.
@@ -106,7 +98,6 @@ class Bolt_Boltpay_Model_Checkout_Cart extends Mage_Core_Model_Abstract
 //            $hint_data = $this->getAddressHints($customerSession, $quote);
             $hintData = $this->getHintsData($quote);
             ///////////////////////////////////////////////////////////////
-
 
             $authCapture = $this->isAuthCapture();
 
@@ -306,6 +297,8 @@ class Bolt_Boltpay_Model_Checkout_Cart extends Mage_Core_Model_Abstract
                 "nonce" => $signResponse->nonce,
             );
         }
+
+        return $hint_data;
     }
 
     /**
