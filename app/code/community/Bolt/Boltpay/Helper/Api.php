@@ -204,9 +204,9 @@ class Bolt_Boltpay_Helper_Api extends Bolt_Boltpay_Helper_Data
             $immutableQuote->save();
         }
         // explicitly set quote belong to guest if customer id does not exist
-        if (!$quote->getCustomerId()) {
-            $quote->setCustomerIsGuest(true);
-            $quote->save();
+        if (!$immutableQuote->getCustomerId()) {
+            $immutableQuote->setCustomerIsGuest(true);
+            $immutableQuote->save();
         }
 
         $immutableQuote->getShippingAddress()->setShouldIgnoreValidation(true)->save();
