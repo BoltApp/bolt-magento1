@@ -34,19 +34,23 @@ var Bolt_MiniCart = {
     },
     _insertConnectScript: function() {
         console.log('# _insertConnectScript method.');
-        let scriptTag = document.getElementById('bolt-connect-mini-cart'),
+        let scriptTag = document.getElementById('bolt-connect'),
             publishableKey = this.options.publishableKey,
             self = this;
 
         this.enableLoader();
 
         setTimeout(function() {
+            console.log('### _insertConnectScript');
 
-            console.log(scriptTag);
+            self.hideDefaultCheckoutButtons();
+
             if (scriptTag) {
                 // scriptTag.setAttribute('data-publishable-key', publishableKey);
                 self.disableLoader();
                 self.hideDefaultCheckoutButtons();
+
+                console.log('### _insertConnectScript - script was FOUND!!!');
 
                 return;
             }
@@ -55,13 +59,13 @@ var Bolt_MiniCart = {
                 scriptTag.setAttribute('type', 'text/javascript');
                 scriptTag.setAttribute('async', '');
                 scriptTag.setAttribute('src', self.options.connectScript);
-                scriptTag.setAttribute('id', 'bolt-connect-mini-cart');
+                scriptTag.setAttribute('id', 'bolt-connect');
                 scriptTag.setAttribute('data-publishable-key', publishableKey);
                 scriptTag.onload = self.refresh();
 
                 document.head.appendChild(scriptTag);
             }
-        }, 3000);
+        }, 1000);
     },
     _destroy: function() {
 
@@ -102,11 +106,13 @@ var Bolt_MiniCart = {
     hideDefaultCheckoutButtons: function() {
         let replacementSelectors = this.options.replacementButtonSelectors;
 
+        console.log('# hideDefaultCheckoutButtons method');
         if (replacementSelectors.length) {
             replacementSelectors.map(function(currentValue, index) {
                 let elm = document.querySelector(currentValue);
 
                 if (elm) {
+                    console.log(elm);
                     elm.style.display = 'none';
                 }
             });
@@ -132,7 +138,6 @@ var Bolt_MiniCart = {
                             self.isCartDataLoaded = true;
 
                             self.configureBoltButton();
-                            self.hideDefaultCheckoutButtons();
 
                             self.disableLoader();
                         }
