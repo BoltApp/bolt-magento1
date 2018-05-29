@@ -683,7 +683,7 @@ class Bolt_Boltpay_Block_Checkout_Boltpay
      *
      * @return string
      */
-    public function getPublishableKeyForThisContext()
+    public function getPublishableKeyForRoute()
     {
         $routeName = Mage::app()->getRequest()->getRouteName();
         $controllerName = Mage::app()->getRequest()->getControllerName();
