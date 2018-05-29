@@ -1,7 +1,6 @@
 
 var Bolt_MiniCart = {
     options: {
-        value: 0,
         wrapperID: '',
         loaderClass: 'bolt-minicart-loading',
         publishableKey: '',
@@ -9,48 +8,39 @@ var Bolt_MiniCart = {
         checkoutCartActionUrl: '',
     },
     boltCart: {
-        'orderToken' : '',
+        'orderToken': '',
         'authcapture': false
     },
     _loader: '',
     _wrapper: '',
     isCartDataLoaded: false,
     initialize: function (params) {
-        console.log('>>> Initialize the Bolt_MiniCart <<<');
 
         this.options = Object.assign(this.options, params);
 
         this._create();
 
     },
-    _create: function() {
-        console.log('# _create method.');
-        this.options.value = 50;
-
+    _create: function () {
         this._loader = document.getElementById(this.options.loaderClass);
         this._wrapper = document.getElementById(this.options.wrapperID);
 
         this._insertConnectScript();
     },
-    _insertConnectScript: function() {
-        console.log('# _insertConnectScript method.');
+    _insertConnectScript: function () {
         let scriptTag = document.getElementById('bolt-connect'),
             publishableKey = this.options.publishableKey,
             self = this;
 
         this.enableLoader();
 
-        setTimeout(function() {
-            console.log('### _insertConnectScript');
-
+        setTimeout(function () {
             self.hideDefaultCheckoutButtons();
 
             if (scriptTag) {
                 // scriptTag.setAttribute('data-publishable-key', publishableKey);
                 self.disableLoader();
                 self.hideDefaultCheckoutButtons();
-
-                console.log('### _insertConnectScript - script was FOUND!!!');
 
                 return;
             }
@@ -67,52 +57,51 @@ var Bolt_MiniCart = {
             }
         }, 1000);
     },
-    _destroy: function() {
-
+    _destroy: function () {
     },
-    refresh: function() {
-        console.log('# refresh method.');
+    refresh: function () {
         this.getBoltCartResponse();
     },
-    enableLoader: function() {
+    enableLoader: function () {
         this._loader.classList.remove('bolt-loader-disabled');
     },
-    disableLoader: function() {
+    disableLoader: function () {
         this._loader.classList.add('bolt-loader-disabled');
     },
-    configureBoltButton: function() {
+    getBoltCallbacksConfig: function () {
+        let self = this;
+
+        return {
+            check: function () {
+                return !!self.boltCart.orderToken;
+            },
+            success: function (transaction, callback) {
+                // This function is called when the Bolt checkout transaction is successful.
+
+                // **IMPORTANT** callback must be executed at the end of this function if `success`
+                // is defined.
+                callback();
+            },
+            close: function () {
+                // This function is called when the Bolt checkout modal is closed.
+            }
+        };
+    },
+    configureBoltButton: function () {
         let self = this,
             hints = {},
-            callbacks = {
-                check: function() {
-                    console.log('### Check before open Modal');
-                    return !!self.boltCart.orderToken;
-                },
-                success: function(transaction, callback) {
-                    // This function is called when the Bolt checkout transaction is successful.
-                    console.log('# configureBoltButton:success callback method');
-                    // **IMPORTANT** callback must be executed at the end of this function if `success`
-                    // is defined.
-                    callback();
-                },
-
-                close: function() {
-                    // This function is called when the Bolt checkout modal is closed.
-                }
-            };
+            callbacks = this.getBoltCallbacksConfig();
 
         BoltCheckout.configure(this.boltCart, hints, callbacks);
     },
-    hideDefaultCheckoutButtons: function() {
+    hideDefaultCheckoutButtons: function () {
         let replacementSelectors = this.options.replacementButtonSelectors;
 
-        console.log('# hideDefaultCheckoutButtons method');
         if (replacementSelectors.length) {
-            replacementSelectors.map(function(currentValue, index) {
+            replacementSelectors.map(function (currentValue, index) {
                 let elm = document.querySelector(currentValue);
 
                 if (elm) {
-                    console.log(elm);
                     elm.style.display = 'none';
                 }
             });
@@ -126,22 +115,19 @@ var Bolt_MiniCart = {
         new Ajax.Request(
             self.options.checkoutCartActionUrl,
             {
-                method:'post',
-                onSuccess:
-                    function(response) {
+                method: 'post',
+                onSuccess: function (response) {
+                    if (response.status === 200) {
+                        let result = response.responseJSON;
 
-                        if (response.status === 200) {
-                            let result = response.responseJSON;
+                        Object.assign(self.boltCart, result.cart_data.boltCart);
 
-                            Object.assign(self.boltCart, result.cart_data.boltCart);
+                        self.isCartDataLoaded = true;
+                        self.configureBoltButton();
 
-                            self.isCartDataLoaded = true;
-
-                            self.configureBoltButton();
-
-                            self.disableLoader();
-                        }
-                    },
+                        self.disableLoader();
+                    }
+                },
             }
         );
     }
