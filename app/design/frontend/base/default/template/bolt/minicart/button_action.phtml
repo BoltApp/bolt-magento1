@@ -1,0 +1,32 @@
+<?php /* @var $this Bolt_Boltpay_Block_Checkout_Minicart_Button */ ?>
+<?php
+$canShowButton = $this->canShowBoltButton();
+?>
+<?php if ($canShowButton): ?>
+
+    <?php $isRequireLiTag = $this->isRequireWrapperTag(); ?>
+    <?php if ($isRequireLiTag): ?>
+    <li>
+    <?php endif; ?>
+        <div id="boltpay-minicart-button-wrapper">
+            <div id="bolt-minicart-loading" class="bolt-loader-disabled">
+                <img src="data:image/svg+xml;base64,PD94bWwgdmVyc2lvbj0iMS4wIiBlbmNvZGluZz0idXRmLTgiPz4NCjwhLS0gR2VuZXJhdG9yOiBBZG9iZSBJbGx1c3RyYXRvciAxOS4wLjEsIFNWRyBFeHBvcnQgUGx1Zy1JbiAuIFNWRyBWZXJzaW9uOiA2LjAwIEJ1aWxkIDApICAtLT4NCjxzdmcgdmVyc2lvbj0iMS4xIiBpZD0i0KHQu9C+0LlfMSIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIiB4bWxuczp4bGluaz0iaHR0cDovL3d3dy53My5vcmcvMTk5OS94bGluayIgeD0iMHB4IiB5PSIwcHgiDQoJIHZpZXdCb3g9IjggMCAxOCAzNSIgd2lkdGg9IjUwcHgiIGhlaWdodD0iNTBweCIgIHN0eWxlPSJlbmFibGUtYmFja2dyb3VuZDpuZXcgOCAwIDE4IDM1OyIgeG1sOnNwYWNlPSJwcmVzZXJ2ZSI+DQo8c3R5bGUgdHlwZT0idGV4dC9jc3MiPg0KCS5zdDB7ZGlzcGxheTpub25lO30NCgkuc3Qxe2Rpc3BsYXk6aW5saW5lO30NCgkuc3Qye2ZvbnQtZmFtaWx5OidNeXJpYWRQcm8tUmVndWxhcic7fQ0KCS5zdDN7Zm9udC1zaXplOjEycHg7fQ0KCS5zdDR7ZmlsbDojMDEwMjAyO2ZpbGwtb3BhY2l0eTowLjE3O30NCgkuc3Q1e2ZpbGw6IzM4NkVCNTt9DQoJLnN0NntmaWxsOnVybCgjcGF0aDFfZmlsbF8zXyk7fQ0KPC9zdHlsZT4NCjx0ZXh0IHRyYW5zZm9ybT0ibWF0cml4KDEgMCAwIDEgLTk4IC04NikiIGNsYXNzPSJzdDAiPjx0c3BhbiB4PSIwIiB5PSIwIiBjbGFzcz0ic3QxIHN0MiBzdDMiPiNib2x0LW1pbmljYXJ0LWxvYWRpbmcgezwvdHNwYW4+PHRzcGFuIHg9IjAiIHk9IjE0LjQiIGNsYXNzPSJzdDEgc3QyIHN0MyI+ICAgIGFuaW1hdGlvbjogbG9hZGluZ0JvbHQgMnMgaW5maW5pdGUgbGluZWFyOzwvdHNwYW4+PHRzcGFuIHg9IjAiIHk9IjI4LjgiIGNsYXNzPSJzdDEgc3QyIHN0MyI+fTwvdHNwYW4+PHRzcGFuIHg9IjAiIHk9IjQzLjIiIGNsYXNzPSJzdDEgc3QyIHN0MyI+QGtleWZyYW1lcyBsb2FkaW5nQm9sdCB7PC90c3Bhbj48dHNwYW4geD0iMCIgeT0iNTcuNiIgY2xhc3M9InN0MSBzdDIgc3QzIj4gICAgMCUgezwvdHNwYW4+PHRzcGFuIHg9IjAiIHk9IjcyIiBjbGFzcz0ic3QxIHN0MiBzdDMiPiAgICAgICAgb3BhY2l0eTogMC4zOzwvdHNwYW4+PHRzcGFuIHg9IjAiIHk9Ijg2LjQiIGNsYXNzPSJzdDEgc3QyIHN0MyI+ICAgIH08L3RzcGFuPjx0c3BhbiB4PSIwIiB5PSIxMDAuOCIgY2xhc3M9InN0MSBzdDIgc3QzIj4gICAgNTAlIHs8L3RzcGFuPjx0c3BhbiB4PSIwIiB5PSIxMTUuMiIgY2xhc3M9InN0MSBzdDIgc3QzIj4gICAgICAgIG9wYWNpdHk6IDE7PC90c3Bhbj48dHNwYW4geD0iMCIgeT0iMTI5LjYiIGNsYXNzPSJzdDEgc3QyIHN0MyI+ICAgIH08L3RzcGFuPjx0c3BhbiB4PSIwIiB5PSIxNDQiIGNsYXNzPSJzdDEgc3QyIHN0MyI+ICAgIDEwMCUgezwvdHNwYW4+PHRzcGFuIHg9IjAiIHk9IjE1OC40IiBjbGFzcz0ic3QxIHN0MiBzdDMiPiAgICAgICAgb3BhY2l0eTogMC4zOzwvdHNwYW4+PHRzcGFuIHg9IjAiIHk9IjE4Ny4yIiBjbGFzcz0ic3QxIHN0MiBzdDMiPiAgICB9PC90c3Bhbj48dHNwYW4geD0iMCIgeT0iMjAxLjYiIGNsYXNzPSJzdDEgc3QyIHN0MyI+fTwvdHNwYW4+PC90ZXh0Pg0KPGcgdHJhbnNmb3JtPSJ0cmFuc2xhdGUoOC45IDguNzUpIj4NCgk8cGF0aCBpZD0icGF0aDFfZmlsbCIgY2xhc3M9InN0NCIgZD0iTTAuMSwxNS4xaDEwLjZsLTAuNCw2LjdsNy4zLTExLjJINy4xbDAuNC02LjhMMC4xLDE1LjF6Ii8+DQo8L2c+DQo8ZyB0cmFuc2Zvcm09InRyYW5zbGF0ZSg4LjkgNSkiPg0KCTxnPg0KCQk8cGF0aCBpZD0icGF0aDFfZmlsbF8xXyIgY2xhc3M9InN0NSIgZD0iTTAuMSwxMS40aDEwLjZsLTAuNCw2LjdsNy4zLTExLjJINy4xbDAuNC02LjhMMC4xLDExLjR6Ii8+DQoJPC9nPg0KCTxnPg0KCQkNCgkJCTxsaW5lYXJHcmFkaWVudCBpZD0icGF0aDFfZmlsbF8zXyIgZ3JhZGllbnRVbml0cz0idXNlclNwYWNlT25Vc2UiIHgxPSItMjYuOTM2MSIgeTE9IjQ2LjA0NDQiIHgyPSItMjUuOTM2MSIgeTI9IjQ2LjA0NDQiIGdyYWRpZW50VHJhbnNmb3JtPSJtYXRyaXgoMTcuMzI4OSAxNy43NTYyIDE3LjMyODkgLTE3Ljc1NjIgLTMzMC43NzY2IDEyOTYuMjA1OSkiPg0KCQkJPHN0b3AgIG9mZnNldD0iMCIgc3R5bGU9InN0b3AtY29sb3I6I0ZGRkZGRjtzdG9wLW9wYWNpdHk6MC41Ii8+DQoJCQk8c3RvcCAgb2Zmc2V0PSIxIiBzdHlsZT0ic3RvcC1jb2xvcjojRkZGRkZGO3N0b3Atb3BhY2l0eToxLjAwMDAwMGUtMDAyIi8+DQoJCTwvbGluZWFyR3JhZGllbnQ+DQoJCTxwYXRoIGlkPSJwYXRoMV9maWxsXzJfIiBjbGFzcz0ic3Q2IiBkPSJNMC4xLDExLjRoMTAuNmwtMC40LDYuN2w3LjMtMTEuMkg3LjFsMC40LTYuOEwwLjEsMTEuNHoiLz4NCgk8L2c+DQo8L2c+DQo8L3N2Zz4NCg==" />
+            </div>
+            <div class="bolt-checkout-button"></div>
+        </div>
+
+        <script type="text/javascript">
+            let params = {
+                    wrapperID:   'boltpay-minicart-button-wrapper',
+                    publishableKey: '<?php echo $this->getPublishableKeyMultiPageKey(); ?>',
+                    connectScript:  '<?php echo $this->getConnectJsUrl(); ?>',
+                    checkoutCartActionUrl:      '<?php echo $this->getUpdateUrl(); ?>',
+                    replacementButtonSelectors: <?php echo $this->getReplaceButtonSelectors(); ?>
+                };
+            Bolt_MiniCart.initialize(params);
+        </script>
+    <?php if ($isRequireLiTag): ?>
+    </li>
+    <?php endif; ?>
+
+<?php endif; ?>

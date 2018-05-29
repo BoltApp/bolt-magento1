@@ -42,7 +42,15 @@ class Bolt_Boltpay_Block_Checkout_Minicart_Button extends Mage_Core_Block_Templa
         /** @var Bolt_Boltpay_Helper_Data $hlp */
         $hlp = $this->getBoltHelper();
 
-        return $hlp->isNeedAddButtonToTopCart();
+        return $hlp->isNeedAddButtonToMiniCart();
+    }
+
+    /**
+     * @return string
+     */
+    public function getUpdateUrl()
+    {
+        return Mage::getUrl('boltpay/order/miniCartUpdate');
     }
 
     /**
@@ -66,5 +74,29 @@ class Bolt_Boltpay_Block_Checkout_Minicart_Button extends Mage_Core_Block_Templa
         $decryptedKey = $hlp->getPublishableKeyMultiPageKey(true);
 
         return  $decryptedKey;
+    }
+
+    /**
+     * @return string|array
+     */
+    public function getReplaceButtonSelectors()
+    {
+        /** @var Bolt_Boltpay_Helper_Data $hlp */
+        $hlp = $this->getBoltHelper();
+
+        return json_encode($hlp->getReplacementButtonSelectorsInMiniCart());
+    }
+
+    /**
+     * @return bool
+     */
+    public function isRequireWrapperTag()
+    {
+        /** @var Bolt_Boltpay_Helper_Data $hlp */
+        $hlp = $this->getBoltHelper();
+
+        $isRequireLiTag = $hlp->isRequireWrapperTagForTemplate();
+
+        return $isRequireLiTag;
     }
 }

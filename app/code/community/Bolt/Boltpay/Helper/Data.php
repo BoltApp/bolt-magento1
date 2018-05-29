@@ -104,7 +104,7 @@ class Bolt_Boltpay_Helper_Data extends Mage_Core_Helper_Abstract
      *
      * @return bool
      */
-    public function isNeedAddButtonToTopCart()
+    public function isNeedAddButtonToMiniCart()
     {
         return Mage::getStoreConfigFlag('payment/boltpay/add_button_to_minicart');
     }
@@ -124,6 +124,22 @@ class Bolt_Boltpay_Helper_Data extends Mage_Core_Helper_Abstract
     }
 
     /**
+     * @return array
+     */
+    public function getReplacementButtonSelectorsInMiniCart()
+    {
+        if (!$this->isNeedAddButtonToMiniCart()) {
+            return array();
+        }
+
+        $selectors = Mage::getStoreConfig('payment/boltpay/replace_minicart_button_selectors');
+
+        $data = array_map('trim', explode(',', $selectors));
+
+        return $data;
+    }
+
+    /**
      * @return string
      */
     public function getConnectJsUrl()
@@ -131,5 +147,15 @@ class Bolt_Boltpay_Helper_Data extends Mage_Core_Helper_Abstract
         return Mage::getStoreConfigFlag('payment/boltpay/test') ?
             self::JS_URL_TEST . "/connect.js":
             self::JS_URL_PROD . "/connect.js";
+    }
+
+    /**
+     * @return bool
+     */
+    public function isRequireWrapperTagForTemplate()
+    {
+        $isRequireWrapper = Mage::getStoreConfigFlag('payment/boltpay/is_require_wrapper_tag');
+
+        return ($this->isNeedAddButtonToMiniCart() && $isRequireWrapper);
     }
 }

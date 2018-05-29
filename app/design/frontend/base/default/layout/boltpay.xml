@@ -30,6 +30,11 @@
   <default>
     <reference name="head">
       <block type="boltpay/checkout_boltpay" name="track_script" as="track_script" template="boltpay/track.phtml" />
+      <action method="addItem" ifconfig="payment/boltpay/add_button_to_minicart"><type>skin_js</type><name>boltpay/minicart/button.js</name><params/></action>
+      <action method="addCss" ifconfig="payment/boltpay/add_button_to_minicart"><type>skin_css</type><name>boltpay/minicart.css</name><params/></action>
+    </reference>
+    <reference name="cart_sidebar.extra_actions">
+      <block type="boltpay/checkout_minicart_button" name="bolt.topcart.action" ifconfig="payment/boltpay/add_button_to_minicart" template="bolt/minicart/button_action.phtml" />
     </reference>
   </default>
 

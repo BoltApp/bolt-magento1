@@ -352,11 +352,32 @@ This function is called when the Bolt checkout modal is closed.
               <show_in_website>1</show_in_website>
               <show_in_store>0</show_in_store>
             </add_button_to_minicart>
+            <replace_minicart_button_selectors>
+              <label>Replace MiniCart Button Selectors</label>
+              <frontend_type>text</frontend_type>
+              <comment>CSS selectors of MiniCart button to be replaced by Bolt. Selectors are comma delimited. By default: .minicart-actions .button.checkout-button</comment>
+              <show_in_default>1</show_in_default>
+              <show_in_website>1</show_in_website>
+              <show_in_store>0</show_in_store>
+              <sort_order>125</sort_order>
+              <depends><add_button_to_minicart>1</add_button_to_minicart></depends>
+            </replace_minicart_button_selectors>
+            <is_require_wrapper_tag>
+              <label>Is Require Wrapper Tag</label>
+              <frontend_type>select</frontend_type>
+              <comment>By default: It will be wrapped in LI tag</comment>
+              <source_model>adminhtml/system_config_source_yesno</source_model>
+              <show_in_default>1</show_in_default>
+              <show_in_website>1</show_in_website>
+              <show_in_store>0</show_in_store>
+              <sort_order>130</sort_order>
+              <depends><add_button_to_minicart>1</add_button_to_minicart></depends>
+            </is_require_wrapper_tag>
             <sort_order translate="label">
               <label>Sort Order</label>
               <frontend_type>text</frontend_type>
               <comment>Influences display order on checkout pages relative to other payment options.  This does not affect any other pages including the shopping cart and product pages.</comment>
-              <sort_order>130</sort_order>
+              <sort_order>140</sort_order>
               <show_in_default>1</show_in_default>
               <show_in_website>1</show_in_website>
               <show_in_store>1</show_in_store>

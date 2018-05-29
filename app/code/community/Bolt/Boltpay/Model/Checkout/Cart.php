@@ -278,7 +278,7 @@ class Bolt_Boltpay_Model_Checkout_Cart extends Mage_Core_Model_Abstract
 
     /**
      * @param $quote
-     * @throws Mage_Core_Exception
+     * @throws Exception
      */
     public function getHintsData($quote)
     {
