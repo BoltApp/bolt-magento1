@@ -86,12 +86,12 @@ class Bolt_Boltpay_Model_Api2_Order_Rest_Admin_V1 extends Bolt_Boltpay_Model_Api
             $boltHelper = Mage::helper('boltpay/api');
 
             $boltHelperBase = Mage::helper('boltpay');
-            $boltHelperBase::$from_hooks = true;
+            $boltHelperBase::$fromHooks = true;
 
             $transaction = $boltHelper->fetchTransaction($reference);
-            $display_id = $transaction->order->cart->display_id;
+            $displayId = $transaction->order->cart->display_id;
 
-            $order = Mage::getModel('sales/order')->loadByIncrementId($display_id);
+            $order = Mage::getModel('sales/order')->loadByIncrementId($displayId);
 
             if (sizeof($order->getData()) > 0) {
                 //Mage::log('Order Found. Updating it', null, 'bolt.log');
@@ -135,7 +135,7 @@ class Bolt_Boltpay_Model_Api2_Order_Rest_Admin_V1 extends Bolt_Boltpay_Model_Api
 
             $quote = Mage::getModel('sales/quote')
                 ->getCollection()
-                ->addFieldToFilter('reserved_order_id', $display_id)
+                ->addFieldToFilter('reserved_order_id', $displayId)
                 ->getFirstItem();
 
             $quoteId = $bodyParams['quote_id'] ?: $quote->getId();
@@ -155,11 +155,7 @@ class Bolt_Boltpay_Model_Api2_Order_Rest_Admin_V1 extends Bolt_Boltpay_Model_Api
                 );
             }
 
-            /********************************************************************
-             * Order creation is moved to helper API
-             ********************************************************************/
-
-            $boltHelper->createOrder($reference, $session_quote_id = null);
+            $boltHelper->createOrder($reference, $sessionQuoteId = null);
 
             $this->getResponse()->addMessage(
                 self::$SUCCESS_ORDER_CREATED['message'], self::$SUCCESS_ORDER_CREATED['http_response_code'],

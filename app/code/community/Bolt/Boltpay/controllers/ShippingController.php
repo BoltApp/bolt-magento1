@@ -48,35 +48,35 @@ class Bolt_Boltpay_ShippingController extends Mage_Core_Controller_Front_Action
     public function indexAction() 
     {
         try {
-            $hmac_header = $_SERVER['HTTP_X_BOLT_HMAC_SHA256'];
+            $hmacHeader = $_SERVER['HTTP_X_BOLT_HMAC_SHA256'];
 
-            $request_json = file_get_contents('php://input');
-            $request_data = json_decode($request_json);
+            $requestJson = file_get_contents('php://input');
+            $requestData = json_decode($requestJson);
 
             /* @var Bolt_Boltpay_Helper_Api $boltHelper */
             $boltHelper = Mage::helper('boltpay/api');
-            if (!$boltHelper->verify_hook($request_json, $hmac_header)) {
+            if (!$boltHelper->verify_hook($requestJson, $hmacHeader)) {
                 throw new Exception("Failed HMAC Authentication");
             }
 
-            $shipping_address = $request_data->shipping_address;
+            $shippingAddress = $requestData->shipping_address;
 
-            $region = Mage::getModel('directory/region')->loadByName($shipping_address->region, $shipping_address->country_code)->getCode();
+            $region = Mage::getModel('directory/region')->loadByName($shippingAddress->region, $shippingAddress->country_code)->getCode();
 
-            $address_data = array(
-                'email' => $shipping_address->email,
-                'firstname' => $shipping_address->first_name,
-                'lastname' => $shipping_address->last_name,
-                'street' => $shipping_address->street_address1 . ($shipping_address->street_address2 ? "\n" . $shipping_address->street_address2 : ''),
-                'company' => $shipping_address->company,
-                'city' => $shipping_address->locality,
+            $addressData = array(
+                'email' => $shippingAddress->email,
+                'firstname' => $shippingAddress->first_name,
+                'lastname' => $shippingAddress->last_name,
+                'street' => $shippingAddress->street_address1 . ($shippingAddress->street_address2 ? "\n" . $shippingAddress->street_address2 : ''),
+                'company' => $shippingAddress->company,
+                'city' => $shippingAddress->locality,
                 'region' => $region,
-                'postcode' => $shipping_address->postal_code,
-                'country_id' => $shipping_address->country_code,
-                'telephone' => $shipping_address->phone
+                'postcode' => $shippingAddress->postal_code,
+                'country_id' => $shippingAddress->country_code,
+                'telephone' => $shippingAddress->phone
             );
 
-            $quoteId = $request_data->cart->order_reference;
+            $quoteId = $requestData->cart->order_reference;
             /* @var Mage_Sales_Model_Quote $quote */
             $quote = Mage::getModel('sales/quote')->loadByIdWithoutStore($quoteId);
 
@@ -101,7 +101,7 @@ class Bolt_Boltpay_ShippingController extends Mage_Core_Controller_Front_Action
                         ->save();
 
 
-                    $address->addData($address_data);
+                    $address->addData($addressData);
                     $address->save();
 
                     $customer->addAddress($address)
@@ -111,22 +111,22 @@ class Bolt_Boltpay_ShippingController extends Mage_Core_Controller_Front_Action
             }
             $quote->removeAllAddresses();
             $quote->save();
-            $quote->getShippingAddress()->addData($address_data)->save();
+            $quote->getShippingAddress()->addData($addressData)->save();
 
             $billingAddress = $quote->getBillingAddress();
 
             $quote->getBillingAddress()->addData(
                 array(
-                'email' => $billingAddress->getEmail() ?: $shipping_address->email,
-                'firstname' => $billingAddress->getFirstname() ?: $shipping_address->first_name,
-                'lastname' => $billingAddress->getLastname() ?: $shipping_address->last_name,
-                'street' => implode("\n", $billingAddress->getStreet()) ?: $shipping_address->street_address1 . ($shipping_address->street_address2 ? "\n" . $shipping_address->street_address2 : ''),
-                'company' => $billingAddress->getCompany() ?: $shipping_address->company,
-                'city' => $billingAddress->getCity() ?: $shipping_address->locality,
+                'email' => $billingAddress->getEmail() ?: $shippingAddress->email,
+                'firstname' => $billingAddress->getFirstname() ?: $shippingAddress->first_name,
+                'lastname' => $billingAddress->getLastname() ?: $shippingAddress->last_name,
+                'street' => implode("\n", $billingAddress->getStreet()) ?: $shippingAddress->street_address1 . ($shippingAddress->street_address2 ? "\n" . $shippingAddress->street_address2 : ''),
+                'company' => $billingAddress->getCompany() ?: $shippingAddress->company,
+                'city' => $billingAddress->getCity() ?: $shippingAddress->locality,
                 'region' => $billingAddress->getRegion() ?: $region,
-                'postcode' => $billingAddress->getPostcode() ?: $shipping_address->postal_code,
-                'country_id' => $billingAddress->getCountryId() ?: $shipping_address->country_code,
-                'telephone' => $billingAddress->getTelephone() ?: $shipping_address->phone
+                'postcode' => $billingAddress->getPostcode() ?: $shippingAddress->postal_code,
+                'country_id' => $billingAddress->getCountryId() ?: $shippingAddress->country_code,
+                'telephone' => $billingAddress->getTelephone() ?: $shippingAddress->phone
                 )
             )->save();
 
@@ -135,15 +135,15 @@ class Bolt_Boltpay_ShippingController extends Mage_Core_Controller_Front_Action
             // then use the cached version.  Otherwise, we have to do another calculation
             ////////////////////////////////////////////////////////////////////////////////////////
             $this->_cache = Mage::app()->getCache();
-            $cachedIdentifier = $this->getPrefetchCacheIdentifier($quote, $address_data);
+            $cachedIdentifier = $this->getPrefetchCacheIdentifier($quote, $addressData);
             $addressCacheKey  = $this->getAddressCacheKey($cachedIdentifier);
             $prefetchCacheKey = $this->getEstimateCacheKey($cachedIdentifier);
 
-            $cached_address = unserialize($this->_cache->load($addressCacheKey));
+            $cachedAddress = unserialize($this->_cache->load($addressCacheKey));
 
-            if ($cached_address &&
-                ($cached_address['postcode'] == $address_data['postcode']) &&
-                ($cached_address['country_id'] == $address_data['country_id'])
+            if ($cachedAddress &&
+                ($cachedAddress['postcode'] == $addressData['postcode']) &&
+                ($cachedAddress['country_id'] == $addressData['country_id'])
             ) {
                 //Mage::log('Using cached address: '.var_export($cached_address, true), null, 'shipping_and_tax.log');
                 $response = unserialize($this->_cache->load($prefetchCacheKey));
@@ -219,11 +219,11 @@ class Bolt_Boltpay_ShippingController extends Mage_Core_Controller_Front_Action
             try {
                 /** @var Bolt_Boltpay_Helper_Api $helper */
                 $helper = Mage::helper('boltpay/api');
-                $estimate_response = $helper->getShippingAndTaxEstimate($quote);
+                $estimateResponse = $helper->getShippingAndTaxEstimate($quote);
 
-                $this->cacheShippingAndTaxEstimate($estimate_response, $cacheIdentifier);
+                $this->cacheShippingAndTaxEstimate($estimateResponse, $cacheIdentifier);
             } catch (Exception $e) {
-                $estimate_response = null;
+                $estimateResponse = null;
             }
         }
 
@@ -306,15 +306,15 @@ class Bolt_Boltpay_ShippingController extends Mage_Core_Controller_Front_Action
      */
     public function getGeoIpAddress()
     {
-        $request_json = file_get_contents('php://input');
-        $request_data = json_decode($request_json);
+        $requestJson = file_get_contents('php://input');
+        $requestData = json_decode($requestJson);
 
         $addressData = array(
-            'city'          => $request_data->city,
-            'region'        => $request_data->region_code,
-            'region_name'   => $request_data->region_name,
-            'postcode'      => $request_data->zip_code,
-            'country_id'    => $request_data->country_code
+            'city'          => $requestData->city,
+            'region'        => $requestData->region_code,
+            'region_name'   => $requestData->region_name,
+            'postcode'      => $requestData->zip_code,
+            'country_id'    => $requestData->country_code
         );
 
         /** @var Mage_Directory_Model_Country $countryObj */

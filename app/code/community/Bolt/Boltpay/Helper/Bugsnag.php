@@ -107,23 +107,23 @@ class Bolt_Boltpay_Helper_Bugsnag extends Mage_Core_Helper_Abstract
     public static function getContextInfo() 
     {
         $version = static::getBoltPluginVersion();
-        $request_body = file_get_contents('php://input');
+        $requestBody = file_get_contents('php://input');
 
         return array(
                 "Requested-URL" => $_SERVER["HTTP_HOST"] . $_SERVER['REQUEST_URI'],
                 "Magento-Version" => Mage::getVersion(),
                 "Bolt-Plugin-Version" => $version,
                 "Request-Method" => $_SERVER['REQUEST_METHOD'],
-                "Request-Body" => $request_body,
+                "Request-Body" => $requestBody,
                 "Time" => date("D M j, Y - G:i:s T")
         ) + static::getRequestHeaders();
     }
 
     protected static function getBoltPluginVersion() {
-        $version_element =  Mage::getConfig()->getModuleConfig("Bolt_Boltpay")->xpath("version");
+        $versionElm =  Mage::getConfig()->getModuleConfig("Bolt_Boltpay")->xpath("version");
 
-        if(isset($version_element[0])) {
-            return (string)$version_element[0];
+        if(isset($versionElm[0])) {
+            return (string)$versionElm[0];
         }
 
         return null;
@@ -149,13 +149,13 @@ class Bolt_Boltpay_Helper_Bugsnag extends Mage_Core_Helper_Abstract
         $this->boltTraceId = $traceId;
     }
 
-    protected function getBoltTraceId() 
+    public function getBoltTraceId() 
     {
         if(isset($this->boltTraceId)) {
             return $this->boltTraceId;
         }
 
-        $traceId = $_SERVER['HTTP_X_BOLT_TRACE_ID'];
+        $traceId = @$_SERVER['HTTP_X_BOLT_TRACE_ID'];
 
         if(!empty($traceId)) {
             return $traceId;

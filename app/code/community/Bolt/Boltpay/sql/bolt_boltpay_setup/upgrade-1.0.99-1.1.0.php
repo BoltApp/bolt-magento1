@@ -24,16 +24,27 @@
  * @license    http://opensource.org/licenses/osl-3.0.php  Open Software License (OSL 3.0)
  */
 
-$versionElm =  Mage::getConfig()->getModuleConfig("Bolt_Boltpay")->xpath("version");
-$version = (string)$versionElm[0];
-if($this->isBoltActive()) {
-    ?>
-    <script
-            id="bolt-track"
-            type="text/javascript"
-            src="<?= $this->getTrackJsUrl(); ?>"
-            data-publishable-key="<?= Mage::helper('core')->decrypt(Mage::getStoreConfig('payment/boltpay/publishable_key_multipage')); ?>">
-    </script>
-    <script>console.log("Bolt Version: <?=$version?>");</script>
-    <?php
-}
+/**
+ * This installer adds the Bolt order token and parent quote id for bolt order tracking.
+ */
+/* @var Mage_Sales_Model_Resource_Setup $installer */
+$installer = Mage::getResourceModel('sales/setup', 'sales_setup');
+$installer->startSetup();
+
+Mage::log('Installing Bolt 1.1.0 updates', null, 'bolt_install.log');
+
+$installer->addAttribute(
+    "quote", "parent_quote_id", array(
+        "type"       => "int",
+        "label"      => "Original Quote ID",
+        "input"      => "hidden",
+        "visible"    => false,
+        "required"   => false,
+        "unique"     => false,
+        "note"       => "Original Quote ID"
+    )
+);
+
+Mage::log('Bolt 1.1.0 updates installation completed', null, 'bolt_install.log');
+
+$installer->endSetup();
