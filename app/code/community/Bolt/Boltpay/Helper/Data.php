@@ -158,4 +158,15 @@ class Bolt_Boltpay_Helper_Data extends Mage_Core_Helper_Abstract
 
         return ($this->isNeedAddButtonToMiniCart() && $isRequireWrapper);
     }
+
+    /**
+     * Returns Extra CSS from configuration.
+     * @return string
+     */
+    function getMiniCartExtraCSS()
+    {
+        $configValue = trim(Mage::getStoreConfig('payment/boltpay/minicart_extra_css'));
+
+        return ($this->isNeedAddButtonToMiniCart() && $configValue) ? $configValue : '';
+    }
 }

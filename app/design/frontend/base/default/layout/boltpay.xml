@@ -32,9 +32,10 @@
       <block type="boltpay/checkout_boltpay" name="track_script" as="track_script" template="boltpay/track.phtml" />
       <action method="addItem" ifconfig="payment/boltpay/add_button_to_minicart"><type>skin_js</type><name>boltpay/minicart/button.js</name><params/></action>
       <action method="addItem" ifconfig="payment/boltpay/add_button_to_minicart"><type>skin_css</type><name>css/boltpay/minicart.css</name><params/></action>
+      <block type="core/template" name="bolt.extra.minicart-styles" as="extra-minicart-styles" template="boltpay/minicart/styles.phtml" />
     </reference>
     <reference name="cart_sidebar.extra_actions">
-      <block type="boltpay/checkout_minicart_button" name="bolt.topcart.action" ifconfig="payment/boltpay/add_button_to_minicart" template="bolt/minicart/button_action.phtml" />
+      <block type="boltpay/checkout_minicart_button" name="bolt.topcart.action" ifconfig="payment/boltpay/add_button_to_minicart" template="boltpay/minicart/button_action.phtml" />
     </reference>
   </default>
 

@@ -88,9 +88,17 @@ class Bolt_Boltpay_Model_Checkout_Cart extends Mage_Core_Model_Abstract
     public function getCartData($multipage = true)
     {
         try {
+            // Get customer and cart session objects
+//            $customerSession = $this->getCustomerSession();
+//            $session = $this->getCheckoutSession();
+
             // Get the session quote/cart
             /** @var Mage_Sales_Model_Quote $quote */
             $quote = $this->getQuote();
+//            $quote->setExtShippingInfo(Mage::getSingleton('core/session')->getSessionId());
+//            $quote->save();
+            // Generate new increment order id and associate it with current quote, if not already assigned
+//            $quote->reserveOrderId()->save();
 
 ///////////////////////////////////////////////////////////////
             // Populate hints data from quote or customer shipping address.
@@ -98,6 +106,7 @@ class Bolt_Boltpay_Model_Checkout_Cart extends Mage_Core_Model_Abstract
 //            $hint_data = $this->getAddressHints($customerSession, $quote);
             $hintData = $this->getHintsData($quote);
             ///////////////////////////////////////////////////////////////
+
 
             $authCapture = $this->isAuthCapture();
 
@@ -131,8 +140,6 @@ class Bolt_Boltpay_Model_Checkout_Cart extends Mage_Core_Model_Abstract
             if (Mage::registry("api_error")) {
                 $cartData['error'] = Mage::registry("api_error");
             }
-
-
 
             //////////////////////////////////////////////////////
             // Generate and return BoltCheckout javascript.
@@ -269,6 +276,7 @@ class Bolt_Boltpay_Model_Checkout_Cart extends Mage_Core_Model_Abstract
 
     /**
      * @param $quote
+     * @return array
      * @throws Exception
      */
     public function getHintsData($quote)
@@ -282,6 +290,7 @@ class Bolt_Boltpay_Model_Checkout_Cart extends Mage_Core_Model_Abstract
         ///////////////////////////////////////////////////////////////////////////////////////
         $reservedUserId = $this->getReservedUserId($quoteStoreID, $customerSession);
         $signResponse = null;
+        $hintData = array('prefill' => array());
 
         if ($reservedUserId) {
             $signRequest = array(
@@ -291,14 +300,14 @@ class Bolt_Boltpay_Model_Checkout_Cart extends Mage_Core_Model_Abstract
         }
 
         if ($signResponse != null) {
-            $hint_data['signed_merchant_user_id'] = array(
+            $hintData['signed_merchant_user_id'] = array(
                 "merchant_user_id" => $signResponse->merchant_user_id,
                 "signature" => $signResponse->signature,
                 "nonce" => $signResponse->nonce,
             );
         }
 
-        return $hint_data;
+        return $hintData;
     }
 
     /**
