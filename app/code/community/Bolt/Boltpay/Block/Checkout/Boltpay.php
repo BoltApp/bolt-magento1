@@ -95,12 +95,12 @@ class Bolt_Boltpay_Block_Checkout_Boltpay
         if (empty($items)) return json_decode('{"token" : ""}');
 
         // Generates order data for sending to Bolt create order API.
-        $order_request = $boltHelper->buildOrder($quote, $items, $multipage);
+        $orderRequest = $boltHelper->buildOrder($quote, $items, $multipage);
 
         //Mage::log("order_request: ". var_export($order_request, true), null,"bolt.log");
 
         // Calls Bolt create order API
-        return $boltHelper->transmit('orders', $order_request);
+        return $boltHelper->transmit('orders', $orderRequest);
     }
 
     /**
@@ -127,7 +127,7 @@ class Bolt_Boltpay_Block_Checkout_Boltpay
             ///////////////////////////////////////////////////////////////
             // Populate hints data from quote or customer shipping address.
             //////////////////////////////////////////////////////////////
-            $hint_data = $this->getAddressHints($customerSession, $sessionQuote);
+            $hintData = $this->getAddressHints($customerSession, $sessionQuote);
             ///////////////////////////////////////////////////////////////
 
             ///////////////////////////////////////////////////////////////////////////////////////
@@ -135,23 +135,20 @@ class Bolt_Boltpay_Block_Checkout_Boltpay
             // sign it and add to hints.
             ///////////////////////////////////////////////////////////////////////////////////////
             $reservedUserId = $this->getReservedUserId($sessionQuote, $customerSession);
-            $signResponse = null;
-
-            if ($reservedUserId) {
+            if ($reservedUserId && $this->isEnableMerchantScopedAccount()) {
                 $signRequest = array(
                     'merchant_user_id' => $reservedUserId,
                 );
                 $signResponse = $boltHelper->transmit('sign', $signRequest);
-            }
 
-            if ($signResponse != null) {
-                $hint_data['signed_merchant_user_id'] = array(
-                    "merchant_user_id" => $signResponse->merchant_user_id,
-                    "signature" => $signResponse->signature,
-                    "nonce" => $signResponse->nonce,
-                );
+                if ($signResponse != null) {
+                    $hintData['signed_merchant_user_id'] = array(
+                        "merchant_user_id" => $signResponse->merchant_user_id,
+                        "signature" => $signResponse->signature,
+                        "nonce" => $signResponse->nonce,
+                    );
+                }
             }
-
             ///////////////////////////////////////////////////////////////////////////////////////
 
 
@@ -179,13 +176,13 @@ class Bolt_Boltpay_Block_Checkout_Boltpay
 
                 /*********************************************************/
                 /* Clean up resources that may have previously been saved
-                /* @var Mage_Sales_Model_Quote[] $expired_quotes */
-                $expired_quotes = Mage::getModel('sales/quote')
+                /* @var Mage_Sales_Model_Quote[] $expiredQuotes */
+                $expiredQuotes = Mage::getModel('sales/quote')
                     ->getCollection()
                     ->addFieldToFilter('parent_quote_id', $sessionQuote->getId());
 
-                foreach( $expired_quotes as $expired_quote) {
-                    $expired_quote->delete();
+                foreach( $expiredQuotes as $expiredQuote) {
+                    $expiredQuote->delete();
                 }
                 /*********************************************************/
 
@@ -216,7 +213,7 @@ class Bolt_Boltpay_Block_Checkout_Boltpay
                  *  Bolt in such a way that the grand total becomes 0.  Since we do not need to reset these values
                  *  we ignore them all.
                  */
-                $already_set_by_merge = array(
+                $fieldsSetByMerge = array(
                     'coupon_code',
                     'subtotal',
                     'base_subtotal',
@@ -248,7 +245,7 @@ class Bolt_Boltpay_Block_Checkout_Boltpay
 
                 // Add all previously saved data that may have been added by other plugins
                 foreach($sessionQuote->getData() as $key => $value ) {
-                    if (!in_array($key, $already_set_by_merge)) {
+                    if (!in_array($key, $fieldsSetByMerge)) {
                         $immutableQuote->setData($key, $value);
                     }
                 }
@@ -260,13 +257,14 @@ class Bolt_Boltpay_Block_Checkout_Boltpay
                 $reservedOrderId = $sessionQuote->reserveOrderId()->save()->getReservedOrderId();
                 Mage::getSingleton('core/session')->setReservedOrderId($reservedOrderId);
 
-                $orderCreationResponse = $this->createBoltOrder($immutableQuote, $multipage);
                 $immutableQuote
                     ->setCustomer($sessionQuote->getCustomer())
                     ->setReservedOrderId($reservedOrderId)
                     ->setStoreId($sessionQuote->getStoreId())
                     ->setParentQuoteId($sessionQuote->getId())
                     ->save();
+
+                $orderCreationResponse = $this->createBoltOrder($immutableQuote, $multipage);
 
             } catch (Exception $e) {
                 Mage::helper('boltpay/bugsnag')->notifyException(new Exception($e));
@@ -280,35 +278,35 @@ class Bolt_Boltpay_Block_Checkout_Boltpay
             //////////////////////////////////////////////////////////////////////////
             // Generate JSON cart and hints objects for the javascript returned below.
             //////////////////////////////////////////////////////////////////////////
-            $cart_data = array(
+            $cartData = array(
                 'authcapture' => $authCapture,
                 'orderToken' => $orderCreationResponse->token,
             );
 
             if (Mage::registry("api_error")) {
-                $cart_data['error'] = Mage::registry("api_error");
+                $cartData['error'] = Mage::registry("api_error");
             }
 
-            $json_cart = json_encode($cart_data);
-            $json_hints = '{}';
-            if (sizeof($hint_data) != 0) {
+            $jsonCart = json_encode($cartData);
+            $jsonHints = '{}';
+            if (sizeof($hintData) != 0) {
                 // Convert $hint_data to object, because when empty data it consists array not an object
-                $json_hints = json_encode($hint_data, JSON_FORCE_OBJECT);
+                $jsonHints = json_encode($hintData, JSON_FORCE_OBJECT);
             }
 
             //////////////////////////////////////////////////////////////////////////
             // Format the success and save order urls for the javascript returned below.
-            $success_url    = $this->getUrl(Mage::getStoreConfig('payment/boltpay/successpage'));
-            $save_order_url = $this->getUrl('boltpay/order/save');
+            $successUrl    = $this->getUrl(Mage::getStoreConfig('payment/boltpay/successpage'));
+            $saveOrderUrl = $this->getUrl('boltpay/order/save');
 
             //////////////////////////////////////////////////////
             // Collect the event Javascripts
             //////////////////////////////////////////////////////
             $check = Mage::getStoreConfig('payment/boltpay/check');
-            $on_checkout_start = Mage::getStoreConfig('payment/boltpay/on_checkout_start');
-            $on_shipping_details_complete = Mage::getStoreConfig('payment/boltpay/on_shipping_details_complete');
-            $on_shipping_options_complete = Mage::getStoreConfig('payment/boltpay/on_shipping_options_complete');
-            $on_payment_submit = Mage::getStoreConfig('payment/boltpay/on_payment_submit');
+            $onCheckoutStart = Mage::getStoreConfig('payment/boltpay/on_checkout_start');
+            $onShippingDetailsComplete = Mage::getStoreConfig('payment/boltpay/on_shipping_details_complete');
+            $onShippingOptionsComplete = Mage::getStoreConfig('payment/boltpay/on_shipping_options_complete');
+            $onPaymentSubmit = Mage::getStoreConfig('payment/boltpay/on_payment_submit');
             $success = Mage::getStoreConfig('payment/boltpay/success');
             $close = Mage::getStoreConfig('payment/boltpay/close');
 
@@ -317,13 +315,13 @@ class Bolt_Boltpay_Block_Checkout_Boltpay
             // Generate and return BoltCheckout javascript.
             //////////////////////////////////////////////////////
             return ("
-                var json_cart = $json_cart;
+                var json_cart = $jsonCart;
                 var quote_id = '{$immutableQuote->getId()}';
                 var order_completed = false;
                 
                 BoltCheckout.configure(
                     json_cart,
-                    $json_hints,
+                    $jsonHints,
                     {
                       check: function() {
                         if (!json_cart.orderToken) {
@@ -336,29 +334,29 @@ class Bolt_Boltpay_Block_Checkout_Boltpay
                       
                       onCheckoutStart: function() {
                         // This function is called after the checkout form is presented to the user.
-                        $on_checkout_start
+                        $onCheckoutStart
                       },
                       
                       onShippingDetailsComplete: function() {
                         // This function is called when the user proceeds to the shipping options page.
                         // This is applicable only to multi-step checkout.
-                        $on_shipping_details_complete
+                        $onShippingDetailsComplete
                       },
                       
                       onShippingOptionsComplete: function() {
                         // This function is called when the user proceeds to the payment details page.
                         // This is applicable only to multi-step checkout.
-                        $on_shipping_options_complete
+                        $onShippingOptionsComplete
                       },
                       
                       onPaymentSubmit: function() {
                         // This function is called after the user clicks the pay button.
-                        $on_payment_submit
+                        $onPaymentSubmit
                       },
                       
                       success: function(transaction, callback) {
                         new Ajax.Request(
-                            '$save_order_url',
+                            '$saveOrderUrl',
                             {
                                 method:'post',
                                 onSuccess: 
@@ -379,7 +377,7 @@ class Bolt_Boltpay_Block_Checkout_Boltpay
                             bolt_checkout_close();
                          }
                          if (order_completed) {   
-                            location.href = '$success_url';
+                            location.href = '$successUrl';
                          }
                       }
                     }
@@ -487,40 +485,40 @@ class Bolt_Boltpay_Block_Checkout_Boltpay
     function getSelectorsCSS()
     {
 
-        $selector_styles = Mage::getStoreConfig('payment/boltpay/selector_styles');
+        $selectorStyles = Mage::getStoreConfig('payment/boltpay/selector_styles');
 
-        $selector_styles = array_map('trim', explode('||', trim($selector_styles)));
+        $selectorStyles = array_map('trim', explode('||', trim($selectorStyles)));
 
-        $selectors_css = '';
+        $selectorsCss = '';
 
-        foreach ($selector_styles as $selector) {
-            preg_match('/[^{}]+/', $selector, $selector_identifier);
+        foreach ($selectorStyles as $selector) {
+            preg_match('/[^{}]+/', $selector, $selectorIdentifier);
 
-            $bolt_selector  = trim($selector_identifier[0]) . "-" . self::CSS_SUFFIX;
+            $boltSelector  = trim($selectorIdentifier[0]) . "-" . self::CSS_SUFFIX;
 
             preg_match_all('/[^{}]+{[^{}]*}/', $selector, $matches);
 
-            foreach ($matches as $match_array) {
-                foreach ($match_array as $match) {
+            foreach ($matches as $matchArray) {
+                foreach ($matchArray as $match) {
                     preg_match('/{[^{}]*}/', $match, $css);
                     $css = $css[0];
 
                     preg_match('/[^{}]+/', $match, $identifiers);
 
-                    foreach ($identifiers as $comma_delimited) {
-                        $comma_delimited = trim($comma_delimited);
-                        $single_identifiers = array_map('trim', explode(',', $comma_delimited));
+                    foreach ($identifiers as $commaDelimited) {
+                        $commaDelimited = trim($commaDelimited);
+                        $singleIdentifiers = array_map('trim', explode(',', $commaDelimited));
 
-                        foreach ($single_identifiers as $identifier) {
-                            $selectors_css .= $identifier . $bolt_selector . $css;
-                            $selectors_css .= $bolt_selector . " " . $identifier . $css;
+                        foreach ($singleIdentifiers as $identifier) {
+                            $selectorsCss .= $identifier . $boltSelector . $css;
+                            $selectorsCss .= $boltSelector . " " . $identifier . $css;
                         }
                     }
                 }
             }
         }
 
-        return $selectors_css;
+        return $selectorsCss;
     }
 
     /**
@@ -565,7 +563,16 @@ class Bolt_Boltpay_Block_Checkout_Boltpay
      */
     function isBoltOnlyPayment()
     {
-        Mage::getStoreConfig('payment/boltpay/skip_payment');
+        return Mage::getStoreConfig('payment/boltpay/skip_payment');
+    }
+    
+    /**
+     * Returns whether enable merchant scoped account.
+     * @return string
+     */
+    function isEnableMerchantScopedAccount()
+    {
+        return Mage::getStoreConfig('payment/boltpay/enable_merchant_scoped_account');
     }
 
     /**
@@ -599,7 +606,7 @@ class Bolt_Boltpay_Block_Checkout_Boltpay
      * Returns the One Page / Multi-Page checkout Publishable key.
      * @return string
      */
-    function getPaymentKey($multipage = true)
+    function getPublishableKey($multipage = true)
     {
         return $multipage
             ? Mage::helper('core')->decrypt(Mage::getStoreConfig('payment/boltpay/publishable_key_multipage'))
@@ -648,14 +655,14 @@ class Bolt_Boltpay_Block_Checkout_Boltpay
      */
     function getLocationEstimate()
     {
-        $location_info = Mage::getSingleton('core/session')->getLocationInfo();
+        $locationInfo = Mage::getSingleton('core/session')->getLocationInfo();
 
-        if (empty($location_info)) {
-            $location_info = $this->url_get_contents("http://freegeoip.net/json/".$this->getIpAddress());
-            Mage::getSingleton('core/session')->setLocationInfo($location_info);
+        if (empty($locationInfo)) {
+            $locationInfo = $this->url_get_contents("http://freegeoip.net/json/".$this->getIpAddress());
+            Mage::getSingleton('core/session')->setLocationInfo($locationInfo);
         }
 
-        return $location_info;
+        return $locationInfo;
     }
 
     public function url_get_contents($url)
@@ -679,17 +686,19 @@ class Bolt_Boltpay_Block_Checkout_Boltpay
     }
 
     /**
-     * Get PaymentKey depending the other checkout modules.
+     * Gets Publishable Key depending the other checkout type.
+     * -  shopping cart uses multi-step publishable keys
+     * -  firecheckout and onepage checkout uses a payment only publishable key
      *
      * @return string
      */
-    public function getPaymentKeyDependingTheModule()
+    public function getPublishableKeyForRoute()
     {
         $routeName = Mage::app()->getRequest()->getRouteName();
+        $controllerName = Mage::app()->getRequest()->getControllerName();
 
-        // If exist 'firecheckout' route we should send false.
-        $param = ($routeName === 'firecheckout') ? false : true;
+        $isForMultiPage = !($routeName === 'firecheckout') && !($routeName === 'checkout' && $controllerName !== 'cart');
 
-        return $this->getPaymentKey($param);
+        return $this->getPublishableKey($isForMultiPage);
     }
 }

@@ -39,16 +39,15 @@ class Bolt_Boltpay_ApiController extends Mage_Core_Controller_Front_Action
     {
 
         try {
-            $hmac_header = @$_SERVER['HTTP_X_BOLT_HMAC_SHA256'];
+            $hmacHeader = @$_SERVER['HTTP_X_BOLT_HMAC_SHA256'];
 
-            $request_json = file_get_contents('php://input');
-            $request_data = json_decode($request_json);
+            $requestJson = file_get_contents('php://input');
 
             $boltHelper = Mage::helper('boltpay/api');
 
             Mage::helper('boltpay/api')->setResponseContextHeaders();
 
-            if (!$boltHelper->verify_hook($request_json, $hmac_header)) {
+            if (!$boltHelper->verify_hook($requestJson, $hmacHeader)) {
                 $exception = new Exception("Hook request failed validation.");
                 $this->getResponse()->setHttpResponseCode(400);
                 $this->getResponse()->setBody($exception->getMessage());
@@ -70,7 +69,7 @@ class Bolt_Boltpay_ApiController extends Mage_Core_Controller_Front_Action
             $boltHelperBase = Mage::helper('boltpay');
 
             /* Allows this method to be used even if the Bolt plugin is disabled.  This accounts for orders that have already been processed by Bolt */
-            $boltHelperBase::$from_hooks = true;
+            $boltHelperBase::$fromHooks = true;
 
             if ($hookType == 'credit') {
                 //Mage::log('notification_type is credit. Ignoring it');
@@ -159,8 +158,8 @@ class Bolt_Boltpay_ApiController extends Mage_Core_Controller_Front_Action
             $this->getResponse()->setHttpResponseCode(200);
         } catch (Bolt_Boltpay_InvalidTransitionException $boltPayInvalidTransitionException) {
             // An invalid transition is treated as a late queue event and hence will be ignored
-            $error_message = $boltPayInvalidTransitionException->getMessage();
-            //Mage::log($error_message, null, 'bolt.log');
+            $errorMessage = $boltPayInvalidTransitionException->getMessage();
+            //Mage::log($errorMessage, null, 'bolt.log');
             //Mage::log("Late queue event. Returning as OK", null, 'bolt.log');
             $this->getResponse()->setHttpResponseCode(200);
         } catch (Exception $e) {
