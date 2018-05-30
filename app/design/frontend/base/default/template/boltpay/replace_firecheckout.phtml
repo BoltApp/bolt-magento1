@@ -28,8 +28,7 @@
  * Bolt replace button JavaScript / CSS that's added to the shopping cart page
  ********************************************************************/
 
-
-if(!Mage::helper('boltpay')->canUseBolt($this->getQuote(), false)) return;
+if(!Mage::helper('boltpay')->canUseBolt($this->getQuote(), false) || Mage::getStoreConfig('payment/boltpay/hide_on_checkout') ) return;
 
 ?>
 <script>
@@ -42,14 +41,6 @@ if(!Mage::helper('boltpay')->canUseBolt($this->getQuote(), false)) return;
         var fireCheckout = function() {
 
             if (typeof FireCheckout !== "function") return false;
-
-            <?php
-                if (Mage::getStoreConfig('payment/boltpay/hide_on_checkout')) {
-            ?>
-            return false;
-            <?php
-            }
-            ?>
 
             FireCheckout.prototype.createBoltOrder = function() {
 
