@@ -186,6 +186,7 @@
         <order_status>processing</order_status>
         <payment_action>authorize</payment_action>
         <currency>USD</currency>
+        <enable_merchant_scoped_account>0</enable_merchant_scoped_account>
         <selectors>.btn-proceed-checkout</selectors>
 
         <selector_styles>.btn-proceed-checkout {

@@ -135,7 +135,7 @@ class Bolt_Boltpay_Block_Checkout_Boltpay
             // sign it and add to hints.
             ///////////////////////////////////////////////////////////////////////////////////////
             $reservedUserId = $this->getReservedUserId($sessionQuote, $customerSession);
-            if ($reservedUserId) {
+            if ($reservedUserId && $this->isEnableMerchantScopedAccount()) {
                 $signRequest = array(
                     'merchant_user_id' => $reservedUserId,
                 );
@@ -563,7 +563,16 @@ class Bolt_Boltpay_Block_Checkout_Boltpay
      */
     function isBoltOnlyPayment()
     {
-        Mage::getStoreConfig('payment/boltpay/skip_payment');
+        return Mage::getStoreConfig('payment/boltpay/skip_payment');
+    }
+    
+    /**
+     * Returns whether enable merchant scoped account.
+     * @return string
+     */
+    function isEnableMerchantScopedAccount()
+    {
+        return Mage::getStoreConfig('payment/boltpay/enable_merchant_scoped_account');
     }
 
     /**
