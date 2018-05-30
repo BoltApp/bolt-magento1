@@ -13,8 +13,8 @@
     left: 0;
     right: 0;
     background: #fff;
-    padding: 9% 0 4px;
-    opacity: .9;
+    padding: 7% 0 4px;
+    opacity: .93;
 }
 @keyframes loadingBolt {
     0% {
@@ -29,7 +29,7 @@
     }
 }
 #bolt-minicart-loading img {
-    width: 30px;
+    width: 35px;
     display: inline-block;
     animation: loadingBolt 2s infinite linear;
 }

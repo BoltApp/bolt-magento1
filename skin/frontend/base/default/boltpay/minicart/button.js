@@ -6,6 +6,7 @@ var Bolt_MiniCart = {
         publishableKey: '',
         connectScript: '',
         checkoutCartActionUrl: '',
+        successOrderUrl: ''
     },
     boltCart: {
         'orderToken': '',
@@ -14,6 +15,7 @@ var Bolt_MiniCart = {
     _loader: '',
     _wrapper: '',
     isCartDataLoaded: false,
+    isOrderCompleted: false,
     initialize: function (params) {
 
         this.options = Object.assign(this.options, params);
@@ -68,31 +70,46 @@ var Bolt_MiniCart = {
     disableLoader: function () {
         this._loader.classList.add('bolt-loader-disabled');
     },
-    getBoltCallbacksConfig: function () {
+    getBoltCallbacksConfig: function (cartData) {
         let self = this;
 
+        debugger;
         return {
             check: function () {
+                if (cartData.callbacks.hasOwnProperty('check')) {
+                    cartData.callbacks.check();
+                }
                 return !!self.boltCart.orderToken;
             },
             success: function (transaction, callback) {
                 // This function is called when the Bolt checkout transaction is successful.
 
+                self.isOrderCompleted = true;
                 // **IMPORTANT** callback must be executed at the end of this function if `success`
                 // is defined.
                 callback();
             },
             close: function () {
                 // This function is called when the Bolt checkout modal is closed.
+                // debugger;
+                // if (typeof bolt_checkout_close === 'function') {
+                    // used internally to set overlay in firecheckout
+                    // bolt_checkout_close();
+                // }
+                if (self.isOrderCompleted) {
+                    location.href = self.options.successOrderUrl;
+                }
             }
         };
     },
-    configureBoltButton: function () {
-        let self = this,
-            hints = {},
-            callbacks = this.getBoltCallbacksConfig();
+    configureBoltButton: function (cartData) {
+        let self = this
+            // hints = {},
+            // callbacks = this.getBoltCallbacksConfig(cartData)
+        ;
 
-        BoltCheckout.configure(this.boltCart, hints, callbacks);
+        debugger;
+        BoltCheckout.configure(cartData.boltCart, cartData.hintData, cartData.callbacks);
     },
     hideDefaultCheckoutButtons: function () {
         let replacementSelectors = this.options.replacementButtonSelectors;
@@ -118,12 +135,21 @@ var Bolt_MiniCart = {
                 method: 'post',
                 onSuccess: function (response) {
                     if (response.status === 200) {
-                        let result = response.responseJSON;
+                        let result = response.responseText,
+                            resultParse = JSON.parse(result);
 
-                        Object.assign(self.boltCart, result.cart_data.boltCart);
+                        // Object.assign(self.boltCart, result.cart_data.boltCart);
 
                         self.isCartDataLoaded = true;
-                        self.configureBoltButton();
+
+                        let callbacks = resultParse.cart_data.callbacks;
+                        // console.log(response);
+                        // console.log(result);
+                        console.log(callbacks);
+                        console.log(JSON.parse(callbacks.check));
+                        // console.log(response.responseText);
+
+                        // self.configureBoltButton(result.cart_data);
 
                         self.disableLoader();
                     }

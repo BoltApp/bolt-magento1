@@ -29,21 +29,22 @@
 
   <default>
     <reference name="head">
-      <block type="boltpay/checkout_boltpay" name="track_script" as="track_script" template="boltpay/track.phtml" />
-      <action method="addItem" ifconfig="payment/boltpay/add_button_to_minicart"><type>skin_js</type><name>boltpay/minicart/button.js</name><params/></action>
       <action method="addItem" ifconfig="payment/boltpay/add_button_to_minicart"><type>skin_css</type><name>css/boltpay/minicart.css</name><params/></action>
+      <block type="boltpay/checkout_boltpay" name="track_script" as="track_script" template="boltpay/track.phtml" />
+      <block type="boltpay/checkout_boltpay" name="connect_js_script" as="connect_js" template="boltpay/connectjs.phtml" />
+      <block type="boltpay/checkout_boltpay" name="replace_script" as="replace_script" template="boltpay/replace.phtml" />
       <block type="core/template" name="bolt.extra.minicart-styles" as="extra-minicart-styles" template="boltpay/minicart/styles.phtml" />
     </reference>
-    <reference name="cart_sidebar.extra_actions">
-      <block type="boltpay/checkout_minicart_button" name="bolt.topcart.action" ifconfig="payment/boltpay/add_button_to_minicart" template="boltpay/minicart/button_action.phtml" />
-    </reference>
+    <!--<reference name="cart_sidebar.extra_actions">-->
+      <!--<block type="boltpay/checkout_minicart_button" name="bolt.topcart.action" ifconfig="payment/boltpay/add_button_to_minicart" template="boltpay/minicart/button_action.phtml" />-->
+    <!--</reference>-->
   </default>
 
   <checkout_cart_index>
     <reference name="head">
       <block type="boltpay/checkout_boltpay" name="prefetch_shipping_quote" as="prefetch_shipping_quote" template="boltpay/prefetch_shipping_quote.phtml" />
       <block type="boltpay/checkout_boltpay" name="connect_js_script" as="connect_js" template="boltpay/connectjs.phtml" />
-      <block type="boltpay/checkout_boltpay" name="replace_script" as="replace_script" template="boltpay/replace.phtml" />
+      <!--<block type="boltpay/checkout_boltpay" name="replace_script" as="replace_script" template="boltpay/replace.phtml" />-->
     </reference>
   </checkout_cart_index>
 
