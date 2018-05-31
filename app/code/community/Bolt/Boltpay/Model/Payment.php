@@ -69,7 +69,7 @@ class Bolt_Boltpay_Model_Payment extends Mage_Payment_Model_Method_Abstract
     protected $_canFetchTransactionInfo     = true;
 
     protected $_canManageRecurringProfiles  = false;
-    protected $_canCapturePartial           = false;
+    protected $_canCapturePartial           = true;
     protected $_canCaptureOnce              = false;
     // TODO: This can be set to true and we could move the handleOrderUpdate method
     protected $_canOrder                    = false;
@@ -264,6 +264,8 @@ class Bolt_Boltpay_Model_Payment extends Mage_Payment_Model_Method_Abstract
             if ($transactionStatus == self::TRANSACTION_AUTHORIZED) {
                 $captureRequest = array(
                     'transaction_id' => $merchantTransId,
+                    'amount' => $amount * 100,
+                    'currency' => $payment->getOrder()->getOrderCurrencyCode()
                 );
                 $response = $boltHelper->transmit('capture', $captureRequest);
                 if (strlen($response->status) == 0) {
