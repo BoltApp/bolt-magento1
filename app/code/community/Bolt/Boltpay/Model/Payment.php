@@ -209,17 +209,25 @@ class Bolt_Boltpay_Model_Payment extends Mage_Payment_Model_Method_Abstract
 
             $boltHelper = Mage::helper('boltpay/api');
             $transaction = $boltHelper->fetchTransaction($reference);
-            $bolt_cart_total = $transaction->amount->currency_symbol. ($transaction->amount->amount/100);
+            $boltCartTotal = $transaction->amount->currency_symbol. ($transaction->amount->amount/100);
 
-            // Set the transaction id
             $payment->setTransactionId($reference);
 
-            // Log the payment info
-            $msg = sprintf(
-                "BOLT notification: Authorization requested for $bolt_cart_total.  Cart total is {$transaction->amount->currency_symbol}$amount. BOLT Reference: \"%s\".", $reference
-            );
+            $isAjaxRequest = $payment->getAdditionalInformation('is_ajax_request');
+            $hostname = Mage::getStoreConfig('payment/boltpay/test') ? "merchant-sandbox.bolt.com" : "merchant.bolt.com";
+            if($isAjaxRequest){ // order is create via AJAX call
+                $msg = sprintf(
+                    "BOLT notification: Authorization requested for $boltCartTotal.  Cart total is {$transaction->amount->currency_symbol}$amount. Bolt transaction: https://%s/transaction/%s.", $hostname, $reference
+                ); 
+            }
+            else{ // order is created via hook (orphan)
+                $boltTraceId = Mage::helper('boltpay/bugsnag')->getBoltTraceId();
+                $msg = sprintf(
+                    "BOLT notification: Authorization requested for $boltCartTotal.  Cart total is {$transaction->amount->currency_symbol}$amount. Bolt transaction: https://%s/transaction/%s. This order was created via webhook (Bolt traceId: <%s>)", $hostname, $reference, $boltTraceId
+                ); 
+            }
+            
             $payment->getOrder()->setState(Mage_Sales_Model_Order::STATE_PROCESSING, true, $msg);
-
 
             // Auth transactions need to be kept open to support cancelling/voiding transaction
             $payment->setIsTransactionClosed(false);
