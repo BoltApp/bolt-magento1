@@ -208,9 +208,7 @@
         <skip_payment>0</skip_payment>
         <skip_confirm>1</skip_confirm>
         <add_button_to_minicart>0</add_button_to_minicart>
-        <replace_minicart_button_selectors>.minicart-actions .button.checkout-button</replace_minicart_button_selectors>
-        <minicart_extra_css></minicart_extra_css>
-        <is_require_wrapper_tag>0</is_require_wrapper_tag>
+        <minicart_extra_css><![CDATA[]]></minicart_extra_css>
         <sort_order>0</sort_order>
       </boltpay>
     </payment>

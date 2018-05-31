@@ -124,22 +124,6 @@ class Bolt_Boltpay_Helper_Data extends Mage_Core_Helper_Abstract
     }
 
     /**
-     * @return array
-     */
-    public function getReplacementButtonSelectorsInMiniCart()
-    {
-        if (!$this->isNeedAddButtonToMiniCart()) {
-            return array();
-        }
-
-        $selectors = Mage::getStoreConfig('payment/boltpay/replace_minicart_button_selectors');
-
-        $data = array_map('trim', explode(',', $selectors));
-
-        return $data;
-    }
-
-    /**
      * @return string
      */
     public function getConnectJsUrl()

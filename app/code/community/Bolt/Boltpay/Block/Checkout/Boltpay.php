@@ -545,7 +545,7 @@ class Bolt_Boltpay_Block_Checkout_Boltpay
      */
     function isTestMode()
     {
-        return Mage::getStoreConfig('payment/boltpay/test');
+        return Mage::getStoreConfigFlag('payment/boltpay/test');
     }
 
     /**
