@@ -218,7 +218,7 @@ class Bolt_Boltpay_Helper_Api extends Bolt_Boltpay_Helper_Data
             // Legacy transaction does not have shipments reference - fallback to $service field
             $service = $transaction->order->cart->shipments[0]->service;
 
-            Mage::helper('boltpay')->collectTotals($immutableQuote->collectTotals());
+            Mage::helper('boltpay')->collectTotals($immutableQuote);
 
             $shippingAddress = $immutableQuote->getShippingAddress();
             $shippingAddress->setCollectShippingRates(true)->collectShippingRates();
@@ -822,7 +822,7 @@ class Bolt_Boltpay_Helper_Api extends Bolt_Boltpay_Helper_Data
 
         //we should first determine if the cart is virtual
         if($quote->isVirtual()){
-            $quote->setTotalsCollectedFlag(false)->collectTotals();
+            Mage::helper('boltpay')->collectTotals($quote, true);
             $option = array(
                 "service"   => 'No Shipping Required',
                 "reference" => 'noshipping',
