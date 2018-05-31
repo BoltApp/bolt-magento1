@@ -81,6 +81,14 @@
     </resources>
 
     <events>
+      <sales_order_save_after>
+        <observers>
+          <bolt_boltpay_update_bolt_transaction_status>
+            <class>Bolt_Boltpay_Model_Observer</class>
+            <method>updateBoltTransactionStatus</method>
+          </bolt_boltpay_update_bolt_transaction_status>
+        </observers>
+      </sales_order_save_after>
       <!-- Call after order has been saved -->
       <bolt_boltpay_save_order_after>
         <observers>

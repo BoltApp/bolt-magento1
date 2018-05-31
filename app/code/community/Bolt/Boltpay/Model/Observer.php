@@ -158,6 +158,55 @@ class Bolt_Boltpay_Model_Observer
     }
 
     /**
+     * Updates the Bolt transaction status on order status change.
+     *
+     * @param $observer
+     */
+    public function updateBoltTransactionStatus($observer)
+    {
+        /* @var Mage_Sales_Model_Order $order */
+        $order = $observer->getOrder();
+
+        /** @var Mage_Sales_Model_Order_Payment $payment */
+        $payment = $order->getPayment();
+
+        $method = $payment->getMethod();
+        if (strtolower($method) == Bolt_Boltpay_Model_Payment::METHOD_CODE) {
+
+            switch ($order->getState()) {
+                case Mage_Sales_Model_Order::STATE_COMPLETE:
+                case Mage_Sales_Model_Order::STATE_CLOSED:
+                    $payment->setAdditionalInformation('bolt_transaction_status', Bolt_Boltpay_Model_Payment::TRANSACTION_COMPLETED);
+                    break;
+                case Mage_Sales_Model_Order::STATE_PROCESSING:
+                    if ($order->getTotalPaid() >= .01) {
+                        $payment->setAdditionalInformation('bolt_transaction_status', Bolt_Boltpay_Model_Payment::TRANSACTION_COMPLETED);
+                    } else {
+                        $payment->setAdditionalInformation('bolt_transaction_status', Bolt_Boltpay_Model_Payment::TRANSACTION_AUTHORIZED);
+                    }
+                    break;
+                case Mage_Sales_Model_Order::STATE_PAYMENT_REVIEW:
+                    $payment->setAdditionalInformation('bolt_transaction_status', Bolt_Boltpay_Model_Payment::TRANSACTION_PENDING);
+                    break;
+                case Mage_Sales_Model_Order::STATE_HOLDED:
+                    $payment->setAdditionalInformation('bolt_transaction_status', Bolt_Boltpay_Model_Payment::TRANSACTION_ON_HOLD);
+                    break;
+                case Mage_Sales_Model_Order::STATE_CANCELED:
+                    $payment->setAdditionalInformation('bolt_transaction_status', Bolt_Boltpay_Model_Payment::TRANSACTION_CANCELLED);
+                    break;
+                case Mage_Sales_Model_Order::STATE_PENDING_PAYMENT:
+                case Mage_Sales_Model_Order::STATE_NEW:
+                    $payment->setAdditionalInformation('bolt_transaction_status', Bolt_Boltpay_Model_Payment::TRANSACTION_PENDING);
+                    break;
+                case Bolt_Boltpay_Model_Payment::ORDER_DEFERRED:
+                    $payment->setAdditionalInformation('bolt_transaction_status', Bolt_Boltpay_Model_Payment::TRANSACTION_REJECTED_REVERSIBLE);
+                    break;
+            }
+            $payment->save();
+        }
+    }
+
+    /**
      * Add Magento Order ID to the prepared message.
      *
      * @param number|string $incrementId
