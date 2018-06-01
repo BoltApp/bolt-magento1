@@ -96,9 +96,11 @@ class Bolt_Boltpay_Helper_Data extends Mage_Core_Helper_Abstract
      * @param Mage_Sales_Model_Quote $quote
      * $param boolean $clearTotalsCollectedFlag Determines whether to set setTotalsCollectedFlag to false
      *
+     * @param bool                   $clearTotalsCollectedFlag
      * @return Mage_Sales_Model_Quote
      */
-    public function collectTotals($quote, $clearTotalsCollectedFlag = false) {
+    public function collectTotals($quote, $clearTotalsCollectedFlag = false)
+    {
         Mage::getSingleton('salesrule/validator')->resetRoundingDeltas();
 
         if($clearTotalsCollectedFlag) {
@@ -147,6 +149,7 @@ class Bolt_Boltpay_Helper_Data extends Mage_Core_Helper_Abstract
     /**
      * Check config and show the template or not.
      *
+     * @param $path
      * @return bool
      */
     public function canShowOnCheckoutCart($path)
@@ -159,5 +162,23 @@ class Bolt_Boltpay_Helper_Data extends Mage_Core_Helper_Abstract
         }
 
         return (!$isEverywhere) ? $path : '';
+    }
+
+    /**
+     * Check config and show the template or not.
+     *
+     * @param $path
+     * @return bool
+     */
+    public function canShowEverywhere($path)
+    {
+        $active = Mage::getStoreConfigFlag('payment/boltpay/active');
+        $isEverywhere = $this->isNeedAddButtonEverywhere();
+
+        if (!$active) {
+            return false;
+        }
+
+        return ($isEverywhere) ? $path : '';
     }
 }
