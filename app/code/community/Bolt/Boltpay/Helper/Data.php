@@ -33,16 +33,6 @@
 class Bolt_Boltpay_Helper_Data extends Mage_Core_Helper_Abstract
 {
     /**
-     * @var string The Bolt sandbox url for the javascript
-     */
-    const JS_URL_TEST = 'https://connect-sandbox.bolt.com';
-
-    /**
-     * @var string The Bolt production url for the javascript
-     */
-    const JS_URL_PROD = 'https://connect.bolt.com';
-
-    /**
      * @var bool    a flag set to true if the class is instantiated from web hook call, otherwise false
      */
     static $fromHooks = false;
@@ -104,9 +94,9 @@ class Bolt_Boltpay_Helper_Data extends Mage_Core_Helper_Abstract
      *
      * @return bool
      */
-    public function isNeedAddButtonToMiniCart()
+    public function isNeedAddButtonEverywhere()
     {
-        return Mage::getStoreConfigFlag('payment/boltpay/add_button_to_minicart');
+        return Mage::getStoreConfigFlag('payment/boltpay/add_button_everywhere');
     }
 
     /**
@@ -129,28 +119,41 @@ class Bolt_Boltpay_Helper_Data extends Mage_Core_Helper_Abstract
     public function getConnectJsUrl()
     {
         return Mage::getStoreConfigFlag('payment/boltpay/test') ?
-            self::JS_URL_TEST . "/connect.js":
-            self::JS_URL_PROD . "/connect.js";
+            Bolt_Boltpay_Block_Checkout_Boltpay::JS_URL_TEST . "/connect.js":
+            Bolt_Boltpay_Block_Checkout_Boltpay::JS_URL_PROD . "/connect.js";
     }
 
     /**
+     * Check config and show the template or not.
+     *
      * @return bool
      */
-    public function isRequireWrapperTagForTemplate()
+    public function canShowOnCheckoutCart($path)
     {
-        $isRequireWrapper = Mage::getStoreConfigFlag('payment/boltpay/is_require_wrapper_tag');
+        $active = Mage::getStoreConfigFlag('payment/boltpay/active');
+        $isEverywhere = $this->isNeedAddButtonEverywhere();
 
-        return ($this->isNeedAddButtonToMiniCart() && $isRequireWrapper);
+        if (!$active) {
+            return '';
+        }
+
+        return (!$isEverywhere) ? $path : '';
     }
 
     /**
-     * Returns Extra CSS from configuration.
-     * @return string
+     * Check config and show the template or not.
+     *
+     * @return bool
      */
-    function getMiniCartExtraCSS()
+    public function canShowEverywhere($path)
     {
-        $configValue = trim(Mage::getStoreConfig('payment/boltpay/minicart_extra_css'));
+        $active = Mage::getStoreConfigFlag('payment/boltpay/active');
+        $isEverywhere = $this->isNeedAddButtonEverywhere();
 
-        return ($this->isNeedAddButtonToMiniCart() && $configValue) ? $configValue : '';
+        if (!$active) {
+            return false;
+        }
+
+        return ($isEverywhere) ? $path : '';
     }
 }
