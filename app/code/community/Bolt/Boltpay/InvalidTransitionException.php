@@ -24,16 +24,7 @@
  * @license    http://opensource.org/licenses/osl-3.0.php  Open Software License (OSL 3.0)
  */
 
-$versionElm =  Mage::getConfig()->getModuleConfig("Bolt_Boltpay")->xpath("version");
-$version = (string)$versionElm[0];
-if($this->isBoltActive()) {
-    ?>
-    <script
-            id="bolt-track"
-            type="text/javascript"
-            src="<?= $this->getTrackJsUrl(); ?>"
-            data-publishable-key="<?= Mage::helper('core')->decrypt(Mage::getStoreConfig('payment/boltpay/publishable_key_multipage')); ?>">
-    </script>
-    <script>console.log("Bolt Version: <?=$version?>");</script>
-    <?php
+class Bolt_Boltpay_InvalidTransitionException extends Exception
+{
+
 }

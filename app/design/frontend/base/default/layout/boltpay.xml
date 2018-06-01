@@ -44,7 +44,7 @@
   <firecheckout_index_index>
     <reference name="head">
       <block type="boltpay/checkout_boltpay" name="connect_js_script" as="connect_js" template="boltpay/connectjs.phtml" />
-      <block type="boltpay/checkout_boltpay" name="replace_script" as="replace_script" template="boltpay/replace.phtml" />
+      <block type="boltpay/checkout_boltpay" name="replace_script" as="replace_script" template="boltpay/replace_firecheckout.phtml" />
     </reference>
   </firecheckout_index_index>
 

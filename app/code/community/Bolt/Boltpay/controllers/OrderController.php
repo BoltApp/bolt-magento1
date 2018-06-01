@@ -45,7 +45,7 @@ class Bolt_Boltpay_OrderController extends Mage_Core_Controller_Front_Action
 
             $boltHelper = Mage::helper('boltpay/api');
 
-            $checkout_session = Mage::getSingleton('checkout/session');
+            $checkoutSession = Mage::getSingleton('checkout/session');
 
             $reference = $this->getRequest()->getPost('reference');
 
@@ -59,22 +59,21 @@ class Bolt_Boltpay_OrderController extends Mage_Core_Controller_Front_Action
                 )
             );
 
-            $session_quote = $checkout_session->getQuote();
+            //////////////////////////////////////////////////////////
+            // Check for existing order with reserved ID in
+            // case webhooks beat this to the punch.  If the webhooks
+            // have already created the order, we don't need to do anything
+            // besides returning 200 OK, which happens automatically
+            /////////////////////////////////////////////////////////
+            $reservedOrderId = Mage::getSingleton('core/session')->getReservedOrderId();
 
             /* @var Mage_Sales_Model_Order $order */
-            $order = $boltHelper->createOrder($reference, $session_quote->getId());
+            $order = Mage::getModel('sales/order')->loadByIncrementId($reservedOrderId);
 
-            $checkout_session
-                ->clearHelperData();
-
-            $checkout_session
-                ->setLastQuoteId($session_quote->getId())
-                ->setLastSuccessQuoteId($session_quote->getId());
-
-            // add order information to the session
-            $checkout_session->setLastOrderId($order->getId())
-                ->setRedirectUrl('')
-                ->setLastRealOrderId($order->getIncrementId());
+            if ($order->isEmpty()) {
+                $sessionQuote = $checkoutSession->getQuote();
+                $boltHelper->createOrder($reference, $sessionQuote->getId(), true);
+            }
 
         } catch (Exception $e) {
             Mage::helper('boltpay/bugsnag')->notifyException($e);
@@ -182,7 +181,7 @@ class Bolt_Boltpay_OrderController extends Mage_Core_Controller_Front_Action
 
             $checkout->registerCustomerIfRequested();
 
-            $quote->collectTotals()->save();
+            Mage::helper('boltpay')->collectTotals($quote)->save();
 
             $block = $this->getLayout()->createBlock('boltpay/checkout_boltpay');
 

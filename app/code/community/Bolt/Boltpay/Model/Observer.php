@@ -78,61 +78,51 @@ class Bolt_Boltpay_Model_Observer
      *
      * @param $observer
      * @throws Exception
+     *
      */
     public function verifyOrderContents($observer) 
     {
         $boltHelper = $this->getBoltApiHelper();
+        /* @var Mage_Sales_Model_Quote $quote */
         $quote = $observer->getEvent()->getQuote();
+        /* @var Mage_Sales_Model_Order $order */
         $order = $observer->getEvent()->getOrder();
+        $transaction = $observer->getEvent()->getTransaction();
 
         $payment = $quote->getPayment();
-        $items = Mage::getSingleton('checkout/session')->getQuote()->getAllVisibleItems();
         $method = $payment->getMethod();
 
         if (strtolower($method) == Bolt_Boltpay_Model_Payment::METHOD_CODE) {
-            if (Mage::getStoreConfig('payment/boltpay/auto_capture') == Bolt_Boltpay_Block_Checkout_Boltpay::AUTO_CAPTURE_ENABLED) {
-                $authCapture = true;
-            } else {
-                $authCapture = false;
-            }
 
             $reference = $payment->getAdditionalInformation('bolt_reference');
-            $cart_request = $boltHelper->buildCart($quote, $items, false);
-            $complete_authorize_request = array(
-                'cart' => $cart_request,
-                'reference' => $reference,
-                'auto_capture' => $authCapture
-            );
 
-            try {
-                if (!Mage::getStoreConfig('payment/boltpay/disable_complete_authorize'))  {
-                    $this->sendCompleteAuthorizeRequest($complete_authorize_request);
-                }
-            } catch (Exception $e) {
+            if ( (int)($order->getGrandTotal()*100) !== $transaction->amount->amount)  {
+
                 $message = "THERE IS A MISMATCH IN THE ORDER PAID AND ORDER RECORDED.<br>PLEASE COMPARE THE ORDER DETAILS WITH THAT RECORD IN YOUR BOLT MERCHANT ACCOUNT AT: ";
                 $message .= Mage::getStoreConfig('payment/boltpay/test') ? "https://merchant-sandbox.bolt.com" : "https://merchant.bolt.com";
                 $message .= "/transaction/$reference";
+                $message .= "<br/>Bolt reports ".($transaction->amount->amount/100).'. Magento expects '.$order->getGrandTotal();
+
                 $order->setState(Mage_Sales_Model_Order::STATE_HOLDED, true, $message)
                     ->save();
 
                 $metaData = array(
-                    'endpoint'   => "complete_authorize",
+                    'process'   => "order verification",
                     'reference'  => $reference,
                     'quote_id'   => $quote->getId(),
-                    'display_id' => $quote->getReservedOrderId(),
+                    'display_id' => $order->getIncrementId(),
                 );
-                Mage::helper('boltpay/bugsnag')->notifyException($e, $metaData);
-            }
+                Mage::helper('boltpay/bugsnag')->notifyException(new Exception($message), $metaData);
+           }
 
             $this->sendOrderEmail($order);
-
             $order->save();
         }
     }
 
-    public function sendCompleteAuthorizeRequest($complete_authorize_request)
+    public function sendCompleteAuthorizeRequest($request)
     {
-        return $this->getBoltApiHelper()->transmit('complete_authorize', $complete_authorize_request);
+        return $this->getBoltApiHelper()->transmit('complete_authorize', $request);
     }
 
     /**

@@ -36,28 +36,28 @@ class Bolt_Boltpay_Helper_Data extends Mage_Core_Helper_Abstract
     /**
      * @var bool    a flag set to true if the class is instantiated from web hook call, otherwise false
      */
-    static $from_hooks = false;
+    static $fromHooks = false;
 
     /**
      * Determines if the Bolt payment method can be used in the system
      *
      * @param Mage_Sales_Model_Quote $quote         Magento quote object
-     * @param bool                   $check_country Set to true if the billing country should be checked, otherwise false
+     * @param bool                   $checkCountry Set to true if the billing country should be checked, otherwise false
      *
      * @return bool     true if Bolt can be used, false otherwise
      *
      * TODO: consider store base currency and possibly add conversion logic
      * @throws Mage_Core_Model_Store_Exception
      */
-    public function canUseBolt($quote, $check_country = true) 
+    public function canUseBolt($quote, $checkCountry = true)
     {
         /**
          * If called from hooks always return true
          */
-        if (self::$from_hooks) return true;
+        if (self::$fromHooks) return true;
 
         return Mage::getStoreConfigFlag('payment/boltpay/active')
-            && (!$check_country || ($check_country && $this->canUseForCountry($quote->getBillingAddress()->getCountry())))
+            && (!$checkCountry || ($checkCountry && $this->canUseForCountry($quote->getBillingAddress()->getCountry())))
             && (Mage::app()->getStore()->getCurrentCurrencyCode() == 'USD')
             && (Mage::app()->getStore()->getBaseCurrencyCode() == 'USD');
     }
@@ -88,5 +88,26 @@ class Bolt_Boltpay_Helper_Data extends Mage_Core_Helper_Abstract
         }
 
         return true;
+    }
+
+    /**
+     * Resets rounding deltas before calling collect totals which fixes bug in collectTotals that causes rounding errors
+     * when a percentage discount is applied to a quote
+     *
+     * @param Mage_Sales_Model_Quote $quote
+     * $param boolean $clearTotalsCollectedFlag Determines whether to set setTotalsCollectedFlag to false
+     *
+     * @return Mage_Sales_Model_Quote
+     */
+    public function collectTotals($quote, $clearTotalsCollectedFlag = false) {
+        Mage::getSingleton('salesrule/validator')->resetRoundingDeltas();
+
+        if($clearTotalsCollectedFlag) {
+            $quote->setTotalsCollectedFlag(false);
+        }
+
+        $quote->collectTotals();
+
+        return $quote;
     }
 }

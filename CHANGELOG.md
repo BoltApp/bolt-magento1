@@ -1,4 +1,9 @@
 # Changelog
+## [v1.1.0](https://s3-us-west-1.amazonaws.com/bolt-public/magento-integration-release/bolt-magento1_v1.1.0.zip) 2018-05-31
+ - Do not load JavaScript when not needed
+ - Handling for virtual cart
+ - Update way to handle quote to disallow mutating quote after checkout is opened
+
 ## [v1.0.12](https://s3-us-west-1.amazonaws.com/bolt-public/magento-integration-release/bolt-magento1_v1.0.12.zip) 2018-05-20
  - Fix discount rounding issue
  - Improve request logging

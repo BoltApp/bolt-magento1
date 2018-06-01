@@ -24,16 +24,17 @@
  * @license    http://opensource.org/licenses/osl-3.0.php  Open Software License (OSL 3.0)
  */
 
-$versionElm =  Mage::getConfig()->getModuleConfig("Bolt_Boltpay")->xpath("version");
-$version = (string)$versionElm[0];
-if($this->isBoltActive()) {
-    ?>
-    <script
-            id="bolt-track"
-            type="text/javascript"
-            src="<?= $this->getTrackJsUrl(); ?>"
-            data-publishable-key="<?= Mage::helper('core')->decrypt(Mage::getStoreConfig('payment/boltpay/publishable_key_multipage')); ?>">
-    </script>
-    <script>console.log("Bolt Version: <?=$version?>");</script>
-    <?php
+class Bolt_Boltpay_Model_Validator extends Mage_SalesRule_Model_Validator
+{
+    /**
+     * Method for resetting rounding delta. Rounding deltas cause percentage discounts applied to an order to often get
+     * off by $0.01 rounding errors because the validator used is a singleton. So every time collectTotals is called
+     * it reuses the previous rounding deltas and causes rounding problems. Since Mage_SalesRule_Model_Validator doesn't
+     * provide a method for resetting these before calling collectTotals, we created one.
+     */
+    public function resetRoundingDeltas()
+    {
+       $this->_roundingDeltas = [];
+    }
+
 }
