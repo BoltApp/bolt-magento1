@@ -282,6 +282,14 @@ class Bolt_Boltpay_Model_Payment extends Mage_Payment_Model_Method_Abstract
             } elseif ($transactionStatus != self::TRANSACTION_COMPLETED) {
                 $message = sprintf('Capture attempted denied. Transaction status: %s', $transactionStatus);
                 Mage::throwException($message);
+            } elseif ($transactionStatus == self::TRANSACTION_COMPLETED) {
+                $order = $payment->getOrder();
+
+                $invoices = $order->getInvoiceCollection()->getItems();
+
+                if (sizeof($invoices) > 1) {
+                    Mage::throwException('Invoice capture attempt denied for order ' . $order->getIncrementId() . '. The Bolt payment method only allows a single capture for each order.');
+                }
             }
 
             $payment->setParentTransactionId($reference);
