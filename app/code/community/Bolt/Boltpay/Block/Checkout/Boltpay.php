@@ -259,6 +259,7 @@ class Bolt_Boltpay_Block_Checkout_Boltpay
 
                 $immutableQuote
                     ->setCustomer($sessionQuote->getCustomer())
+                    ->setCustomerIsGuest( (($sessionQuote->getCustomerId()) ? false : true) )
                     ->setReservedOrderId($reservedOrderId)
                     ->setStoreId($sessionQuote->getStoreId())
                     ->setParentQuoteId($sessionQuote->getId())
@@ -437,11 +438,12 @@ class Bolt_Boltpay_Block_Checkout_Boltpay
      * fetching new Magento customer auto increment ID for the store.
      * Applies to logged in users or the users in the process of registration during the the checkout (checkout type is "register").
      *
-     * @param $quote        Magento quote object
-     * @param $session      Magento customer/session object
+     * @param $quote   - Magento quote object
+     * @param $session - Magento customer/session object
      * @return string|null  the ID used for the Bolt user, or null if the user is not logged in and is not on the onepage checkout page
+     * @throws Exception
      */
-    function getReservedUserId($quote, $session)
+    public function getReservedUserId($quote, $session)
     {
 
         $checkout = Mage::getSingleton('checkout/type_onepage');
