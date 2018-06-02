@@ -558,17 +558,7 @@ class Bolt_Boltpay_Block_Checkout_Boltpay
      *
      * @return bool|string  JSON containing geolocation info of the client, or false if the ip could not be obtained.
      */
-    function getLocationEstimate()
-    {
-        $locationResponse  = $this->getLocationFromAPI();
-
-        return @$locationResponse['output'];
-    }
-
-    /**
-     * Get location from API
-     */
-    public function getLocationFromAPI()
+    function getLocationEstimate() 
     {
         $location_info = Mage::getSingleton('core/session')->getLocationInfo();
 
@@ -580,30 +570,14 @@ class Bolt_Boltpay_Block_Checkout_Boltpay
         return $location_info;
     }
 
-    /**
-     * Check whether prefetch estimate can be called
-     * @return bool
-     */
-    public function isPrefetchable()
-    {
-        $locationInfo = $this->getLocationFromAPI();
-
-        return $locationInfo['code'] == 200;
-    }
-
-    public function url_get_contents($url)
+    public function url_get_contents($url) 
     {
         $ch = curl_init();
         curl_setopt($ch, CURLOPT_URL, $url);
         curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
         $output = curl_exec($ch);
-        $responseCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
         curl_close($ch);
-
-        return [
-            'code' => $responseCode,
-            'output' => $output
-        ];
+        return $output;
     }
 
     /**
