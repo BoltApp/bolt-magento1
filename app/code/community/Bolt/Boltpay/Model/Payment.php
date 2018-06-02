@@ -70,7 +70,7 @@ class Bolt_Boltpay_Model_Payment extends Mage_Payment_Model_Method_Abstract
 
     protected $_canManageRecurringProfiles  = false;
     protected $_canCapturePartial           = true;
-    protected $_canCaptureOnce              = false;
+    protected $_canCaptureOnce              = true;
     // TODO: This can be set to true and we could move the handleOrderUpdate method
     protected $_canOrder                    = false;
     protected $_canUseInternal              = true;
@@ -287,7 +287,7 @@ class Bolt_Boltpay_Model_Payment extends Mage_Payment_Model_Method_Abstract
 
                 $invoices = $order->getInvoiceCollection()->getItems();
 
-                if (sizeof($invoices) > 1) {
+                if ($this->_canCaptureOnce && sizeof($invoices) > 1) {
                     Mage::throwException('Invoice capture attempt denied for order ' . $order->getIncrementId() . '. The Bolt payment method only allows a single capture for each order.');
                 }
             }
