@@ -259,6 +259,7 @@ class Bolt_Boltpay_Block_Checkout_Boltpay
 
                 $immutableQuote
                     ->setCustomer($sessionQuote->getCustomer())
+                    ->setCustomerIsGuest( (($sessionQuote->getCustomerId()) ? false : true) )
                     ->setReservedOrderId($reservedOrderId)
                     ->setStoreId($sessionQuote->getStoreId())
                     ->setParentQuoteId($sessionQuote->getId())

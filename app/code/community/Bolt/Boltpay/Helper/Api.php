@@ -194,11 +194,12 @@ class Bolt_Boltpay_Helper_Api extends Bolt_Boltpay_Helper_Data
                 throw new Exception("The Bolt order reference does not match the current cart ID. Cart ID: [$sessionQuoteId]"." Bolt Reference: [".$immutableQuote->getParentQuoteId()."]");
             }
 
+
             // check if quote has already been used
             if ( !$immutableQuote->getIsActive() ) {
                 throw new Exception("The quote has expired." );
             }
-
+          
             // check if this order is currently being proccessed.  If so, throw exception
             /* @var Mage_Sales_Model_Quote $parentQuote */
             $parentQuote = Mage::getModel('sales/quote')->loadByIdWithoutStore($immutableQuote->getParentQuoteId());
@@ -206,7 +207,7 @@ class Bolt_Boltpay_Helper_Api extends Bolt_Boltpay_Helper_Data
                 throw new Exception("The quote is currently being processed.");
             } else {
                 $parentQuote->setIsActive(false);
-            }
+            }          
 
             // adding guest user email to order
             if (!$immutableQuote->getCustomerEmail()) {
@@ -214,6 +215,11 @@ class Bolt_Boltpay_Helper_Api extends Bolt_Boltpay_Helper_Data
                 $immutableQuote->setCustomerEmail($email);
                 $immutableQuote->save();
             }
+        
+            // explicitly set quote belong to guest if customer id does not exist
+            $immutableQuote
+               ->setCustomerIsGuest( (($parentQuote->getCustomerId()) ? false : true) )
+               ->save();
 
             $immutableQuote->getShippingAddress()->setShouldIgnoreValidation(true)->save();
             $immutableQuote->getBillingAddress()->setShouldIgnoreValidation(true)->save();
