@@ -907,6 +907,11 @@ class Bolt_Boltpay_Helper_Api extends Bolt_Boltpay_Helper_Data
         /*****************************************************************************************/
 
         $shipping_address = $quote->getShippingAddress();
+
+        if(!$shipping_address->getPostcode()) {
+            return $response;
+        }
+
         $shipping_address->setCollectShippingRates(true)->collectShippingRates()->save();
 
         $origTotalWithoutShippingOrTax = $this->getTotalWithoutTaxOrShipping($quote);
