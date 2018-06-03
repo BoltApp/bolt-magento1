@@ -69,8 +69,8 @@ class Bolt_Boltpay_Model_Payment extends Mage_Payment_Model_Method_Abstract
     protected $_canFetchTransactionInfo     = true;
 
     protected $_canManageRecurringProfiles  = false;
-    protected $_canCapturePartial           = false;
-    protected $_canCaptureOnce              = false;
+    protected $_canCapturePartial           = true;
+    protected $_canCaptureOnce              = true;
     // TODO: This can be set to true and we could move the handleOrderUpdate method
     protected $_canOrder                    = false;
     protected $_canUseInternal              = true;
@@ -264,6 +264,8 @@ class Bolt_Boltpay_Model_Payment extends Mage_Payment_Model_Method_Abstract
             if ($transactionStatus == self::TRANSACTION_AUTHORIZED) {
                 $captureRequest = array(
                     'transaction_id' => $merchantTransId,
+                    'amount' => $amount * 100,
+                    'currency' => $payment->getOrder()->getOrderCurrencyCode()
                 );
                 $response = $boltHelper->transmit('capture', $captureRequest);
                 if (strlen($response->status) == 0) {
@@ -280,6 +282,14 @@ class Bolt_Boltpay_Model_Payment extends Mage_Payment_Model_Method_Abstract
             } elseif ($transactionStatus != self::TRANSACTION_COMPLETED) {
                 $message = sprintf('Capture attempted denied. Transaction status: %s', $transactionStatus);
                 Mage::throwException($message);
+            } elseif ($transactionStatus == self::TRANSACTION_COMPLETED) {
+                $order = $payment->getOrder();
+
+                $invoices = $order->getInvoiceCollection()->getItems();
+
+                if ($this->_canCaptureOnce && sizeof($invoices) > 1) {
+                    Mage::throwException('Invoice capture attempt denied for order ' . $order->getIncrementId() . '. The Bolt payment method only allows a single capture for each order.');
+                }
             }
 
             $payment->setParentTransactionId($reference);
