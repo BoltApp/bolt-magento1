@@ -279,9 +279,6 @@ class Bolt_Boltpay_Model_Payment extends Mage_Payment_Model_Method_Abstract
                 $payment->setAdditionalInformation('bolt_transaction_status', $responseStatus);
 
                 $payment->save();
-            } elseif ($transactionStatus != self::TRANSACTION_COMPLETED) {
-                $message = sprintf('Capture attempted denied. Transaction status: %s', $transactionStatus);
-                Mage::throwException($message);
             } elseif ($transactionStatus == self::TRANSACTION_COMPLETED) {
                 $order = $payment->getOrder();
 
@@ -290,15 +287,16 @@ class Bolt_Boltpay_Model_Payment extends Mage_Payment_Model_Method_Abstract
                 if ($this->_canCaptureOnce && sizeof($invoices) > 1) {
                     Mage::throwException('Invoice capture attempt denied for order ' . $order->getIncrementId() . '. The Bolt payment method only allows a single capture for each order.');
                 }
+            } else {
+                $message = sprintf('Capture attempted denied. Transaction status: %s', $transactionStatus);
+                Mage::throwException($message);
             }
 
             $payment->setParentTransactionId($reference);
             $payment->setTransactionId(sprintf("%s-capture", $reference));
-            //Mage::log(sprintf('Capture completed for payment id: %d', $payment->getId()), null, 'bolt.log');
             return $this;
         } catch (Exception $e) {
             $error = array('error' => $e->getMessage());
-            //Mage::log($error, null, 'bolt.log');
             Mage::helper('boltpay/bugsnag')->notifyException($e);
             throw $e;
         }
