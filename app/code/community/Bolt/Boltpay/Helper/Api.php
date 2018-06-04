@@ -828,7 +828,7 @@ class Bolt_Boltpay_Helper_Api extends Bolt_Boltpay_Helper_Data
     /**
      * Gets the shipping and the tax estimate for a quote
      *
-     * @param $quote    A quote object with pre-populated addresses
+     * @param Mage_Sales_Model_Quote  $quote    A quote object with pre-populated addresses
      *
      * @return array    Bolt shipping and tax response array to be converted to JSON
      */
@@ -865,7 +865,7 @@ class Bolt_Boltpay_Helper_Api extends Bolt_Boltpay_Helper_Data
         $shippingAddress = $quote->getShippingAddress();
         $shippingAddress->setCollectShippingRates(true)->collectShippingRates()->save();
 
-        $origTotalWithoutShippingOrTax = $this->getTotalWithoutTaxOrShipping($quote);
+        $original_discounted_price = $quote->getSubtotalWithDiscount();
 
         $rates = $this->getSortedShippingRates($shippingAddress);
 
@@ -888,12 +888,12 @@ class Bolt_Boltpay_Helper_Api extends Bolt_Boltpay_Helper_Data
                 Mage::helper('boltpay/bugsnag')->notifyException(new Exception('Rate code is empty. ' . var_export($rate->debug(), true)));
             }
 
-            $shippingDiscountModifier = $this->getShippingDiscountModifier($origTotalWithoutShippingOrTax, $quote);
+            $new_discounted_price = $quote->getSubtotalWithDiscount();
 
             $option = array(
                 "service" => $label,
                 "reference" => $rateCode,
-                "cost" => round(($quote->getShippingAddress()->getShippingAmount() - $shippingDiscountModifier) * 100),
+                "cost" => round(($quote->getShippingAddress()->getShippingAmount() + ($original_discounted_price - $new_discounted_price)) * 100),
                 "tax_amount" => abs(round($quote->getShippingAddress()->getTaxAmount() * 100))
             );
 
@@ -920,7 +920,7 @@ class Bolt_Boltpay_Helper_Api extends Bolt_Boltpay_Helper_Data
             $shippingAddress->setShippingMethod($shippingRateCode);
 
             // When multiple shipping methods apply a discount to the sub-total, collect totals doesn't clear the
-            // previously set discocunt, so the previous discount gets added to each subsequent shipping method that
+            // previously set discount, so the previous discount gets added to each subsequent shipping method that
             // includes a discount. Here we reset it to the original amount to resolve this bug.
             $quoteItems = $quote->getAllItems();
             foreach ($quoteItems as $item) {
