@@ -311,6 +311,11 @@ class Bolt_Boltpay_Block_Checkout_Boltpay
             $success = Mage::getStoreConfig('payment/boltpay/success');
             $close = Mage::getStoreConfig('payment/boltpay/close');
 
+            /*
+             * If we enable the config option "Add Bolt Button everywhere" - we should check the quote items
+             * before Bolt Popup open.
+             */
+            $isEmptyQuote = (!($sessionQuote->getItemsCollection()->count())) ? 'true' : 'false';
 
             //////////////////////////////////////////////////////
             // Generate and return BoltCheckout javascript.
@@ -319,12 +324,17 @@ class Bolt_Boltpay_Block_Checkout_Boltpay
                 var json_cart = $jsonCart;
                 var quote_id = '{$immutableQuote->getId()}';
                 var order_completed = false;
+                var isEmptyQuote = '{$isEmptyQuote}';
                 
                 BoltCheckout.configure(
                     json_cart,
                     $jsonHints,
                     {
                       check: function() {
+                        if (isEmptyQuote) {
+                            alert('{$boltHelper->__('Please add some product to cart')}');
+                            return false;
+                        }
                         if (!json_cart.orderToken) {
                             alert(json_cart.error);
                             return false;
