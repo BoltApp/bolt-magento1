@@ -88,6 +88,8 @@ class Bolt_Boltpay_ShippingController extends Mage_Core_Controller_Front_Action
             /**************/
 
             if ($quote->getCustomerId()) {
+                $customerSession = Mage::getSingleton('customer/session');
+                $customerSession->setCustomerGroupId($quote->getCustomerGroupId());
                 $customer = Mage::getModel("customer/customer")->load($quote->getCustomerId());
                 $address = $customer->getPrimaryShippingAddress();
 
