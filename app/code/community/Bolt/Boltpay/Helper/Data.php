@@ -94,8 +94,6 @@ class Bolt_Boltpay_Helper_Data extends Mage_Core_Helper_Abstract
      * when a percentage discount is applied to a quote
      *
      * @param Mage_Sales_Model_Quote $quote
-     * $param boolean $clearTotalsCollectedFlag Determines whether to set setTotalsCollectedFlag to false
-     *
      * @param bool                   $clearTotalsCollectedFlag
      * @return Mage_Sales_Model_Quote
      */
@@ -117,7 +115,7 @@ class Bolt_Boltpay_Helper_Data extends Mage_Core_Helper_Abstract
      *
      * @return bool
      */
-    public function isNeedAddButtonEverywhere()
+    public function shouldAddButtonEverywhere()
     {
         return Mage::getStoreConfigFlag('payment/boltpay/add_button_everywhere');
     }
@@ -155,7 +153,7 @@ class Bolt_Boltpay_Helper_Data extends Mage_Core_Helper_Abstract
     public function canShowOnCheckoutCart($path)
     {
         $active = Mage::getStoreConfigFlag('payment/boltpay/active');
-        $isEverywhere = $this->isNeedAddButtonEverywhere();
+        $isEverywhere = $this->shouldAddButtonEverywhere();
 
         if (!$active) {
             return '';
@@ -168,17 +166,13 @@ class Bolt_Boltpay_Helper_Data extends Mage_Core_Helper_Abstract
      * Check config and show the template or not.
      *
      * @param $path
-     * @return bool
+     * @return string
      */
     public function canShowEverywhere($path)
     {
         $active = Mage::getStoreConfigFlag('payment/boltpay/active');
-        $isEverywhere = $this->isNeedAddButtonEverywhere();
+        $isEverywhere = $this->shouldAddButtonEverywhere();
 
-        if (!$active) {
-            return false;
-        }
-
-        return ($isEverywhere) ? $path : '';
+        return ($active && $isEverywhere) ? $path : '';
     }
 }
