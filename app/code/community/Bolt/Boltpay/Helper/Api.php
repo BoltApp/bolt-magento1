@@ -890,12 +890,7 @@ class Bolt_Boltpay_Helper_Api extends Bolt_Boltpay_Helper_Data
     public function getShippingAndTaxEstimate( $quote )
     {
 
-        $response = array(
-            'shipping_options' => array(),
-            'tax_result' => array(
-                "amount" => 0
-            ),
-        );
+        $response = $this->getDefaultShippingAndTaxResponse();
 
         Mage::getModel('sales/quote')->load($quote->getId())->collectTotals();
 
@@ -907,11 +902,6 @@ class Bolt_Boltpay_Helper_Api extends Bolt_Boltpay_Helper_Data
         /*****************************************************************************************/
 
         $shipping_address = $quote->getShippingAddress();
-
-        if(!$shipping_address->getPostcode()) {
-            return $response;
-        }
-
         $shipping_address->setCollectShippingRates(true)->collectShippingRates()->save();
 
         $origTotalWithoutShippingOrTax = $this->getTotalWithoutTaxOrShipping($quote);
@@ -952,6 +942,15 @@ class Bolt_Boltpay_Helper_Api extends Bolt_Boltpay_Helper_Data
         /*****************************************************************************************/
 
         return $response;
+    }
+
+    public function getDefaultShippingAndTaxResponse() {
+        return array(
+            'shipping_options' => array(),
+            'tax_result' => array(
+                "amount" => 0
+            ),
+        );
     }
 
     /**
