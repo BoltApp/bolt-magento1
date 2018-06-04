@@ -817,7 +817,12 @@ class Bolt_Boltpay_Helper_Api extends Bolt_Boltpay_Helper_Data
      */
     public function getShippingAndTaxEstimate( $quote )
     {
-        $response = $this->getDefaultShippingAndTaxResponse();
+        $response = array(
+            'shipping_options' => array(),
+            'tax_result' => array(
+                "amount" => 0
+            ),
+        );
 
         Mage::helper('boltpay')->collectTotals(Mage::getModel('sales/quote')->load($quote->getId()));
 
@@ -879,18 +884,6 @@ class Bolt_Boltpay_Helper_Api extends Bolt_Boltpay_Helper_Data
         }
 
         return $response;
-    }
-
-    /**
-     * Returns default shipping and tax response.
-     */
-    public function getDefaultShippingAndTaxResponse() {
-        return array(
-            'shipping_options' => array(),
-            'tax_result' => array(
-                "amount" => 0
-            ),
-        );
     }
 
     /**
