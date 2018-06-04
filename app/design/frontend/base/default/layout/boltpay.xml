@@ -30,47 +30,14 @@
   <default>
     <reference name="head">
       <block type="boltpay/checkout_boltpay" name="track_script" as="track_script" template="boltpay/track.phtml" />
-      <block type="boltpay/checkout_boltpay" name="connect_js_script" as="connect_js" />
-      <block type="boltpay/checkout_boltpay" name="replace_script" as="replace_script" />
-
-      <reference name="connect_js_script">
-        <action method="setTemplate">
-          <template helper="boltpay/data/canShowEverywhere">
-            <path>boltpay/connectjs.phtml</path>
-          </template>
-        </action>
-      </reference>
-      <reference name="replace_script">
-        <action method="setTemplate">
-          <template helper="boltpay/data/canShowEverywhere">
-            <path>boltpay/replace.phtml</path>
-          </template>
-        </action>
-      </reference>
+      <block type="boltpay/checkout_boltpay" name="connect_js_script" as="connect_js" template="boltpay/connectjs.phtml"/>
+      <block type="boltpay/checkout_boltpay" name="replace_script" as="replace_script" template="boltpay/replace.phtml"/>
     </reference>
   </default>
 
   <checkout_cart_index>
     <reference name="head">
       <block type="boltpay/checkout_boltpay" name="prefetch_shipping_quote" as="prefetch_shipping_quote" template="boltpay/prefetch_shipping_quote.phtml" />
-
-      <block type="boltpay/checkout_boltpay" name="connect_js_script.cart" as="connect_js.cart" />
-      <block type="boltpay/checkout_boltpay" name="replace_script.cart" as="replace_script.cart" />
-
-      <reference name="connect_js_script.cart">
-        <action method="setTemplate">
-          <template helper="boltpay/data/canShowOnCheckoutCart">
-            <path>boltpay/connectjs.phtml</path>
-          </template>
-        </action>
-      </reference>
-      <reference name="replace_script.cart">
-        <action method="setTemplate">
-          <template helper="boltpay/data/canShowOnCheckoutCart">
-            <path>boltpay/replace.phtml</path>
-          </template>
-        </action>
-      </reference>
     </reference>
   </checkout_cart_index>
 

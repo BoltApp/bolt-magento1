@@ -688,19 +688,90 @@ class Bolt_Boltpay_Block_Checkout_Boltpay
     }
 
     /**
+     * Check quote can use bolt.
+     *
+     * @return bool
+     * @throws Mage_Core_Model_Store_Exception
+     */
+    public function canUseBolt()
+    {
+        /** @var Bolt_Boltpay_Helper_Data $hlp */
+        $hlp = $this->helper('boltpay');
+
+        return $hlp->canUseBolt($this->getQuote(), false);
+    }
+
+    /**
+     * Checking if allows to insert connectjs or replace by route name
+     *
+     * @return bool
+     * @throws Exception
+     */
+    private function isAllowedOnCurrentPageByRoute()
+    {
+        $routeName = $this->getRequest()->getRouteName();
+        $controllerName = $this->getRequest()->getControllerName();
+
+        $isAllowed = ($routeName === 'checkout' && $controllerName === 'cart');
+
+        return $isAllowed;
+    }
+
+    /**
      * Gets Publishable Key depending the other checkout type.
      * -  shopping cart uses multi-step publishable keys
      * -  firecheckout and onepage checkout uses a payment only publishable key
      *
      * @return string
+     * @throws Exception
      */
     public function getPublishableKeyForRoute()
     {
-        $routeName = Mage::app()->getRequest()->getRouteName();
-        $controllerName = Mage::app()->getRequest()->getControllerName();
+        $routeName = $this->getRequest()->getRouteName();
+        $controllerName = $this->getRequest()->getControllerName();
 
         $isForMultiPage = !($routeName === 'firecheckout') && !($routeName === 'checkout' && $controllerName !== 'cart');
 
         return $this->getPublishableKey($isForMultiPage);
+    }
+
+    /**
+     * Checking config setting and is allow the connectjs script
+     *
+     * @return bool
+     * @throws Exception
+     */
+    public function isAllowedConnectJsOnCurrentPage()
+    {
+        /** @var Bolt_Boltpay_Helper_Data $hlp */
+        $hlp = $this->helper('boltpay');
+        $canAddEverywhere = $hlp->canUseEverywhere();
+
+        $isAllowedOnCurrentPage = $this->isAllowedOnCurrentPageByRoute();
+
+        return ($canAddEverywhere || $isAllowedOnCurrentPage);
+    }
+
+    /**
+     * Checking if allow the replace script.
+     *
+     * @return bool
+     * @throws Exception
+     */
+    public function isAllowedReplaceScriptOnCurrentPage()
+    {
+        /** @var Bolt_Boltpay_Helper_Data $hlp */
+        $hlp = $this->helper('boltpay');
+        $canAddEverywhere = $hlp->canUseEverywhere();
+
+        $isFireCheckoutPage = ($this->getRequest()->getRouteName() === 'firecheckout');
+
+        if ($isFireCheckoutPage) {
+            return false;
+        }
+
+        $isAllowedOnCurrentPage = $this->isAllowedOnCurrentPageByRoute();
+
+        return ($canAddEverywhere || $isAllowedOnCurrentPage);
     }
 }

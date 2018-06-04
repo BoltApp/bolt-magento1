@@ -55,10 +55,18 @@ class Bolt_Boltpay_Helper_Data extends Mage_Core_Helper_Abstract
          */
         if (self::$fromHooks) return true;
 
-        return Mage::getStoreConfigFlag('payment/boltpay/active')
+        return $this->isBoltPayActive()
             && (!$checkCountry || ($checkCountry && $this->canUseForCountry($quote->getBillingAddress()->getCountry())))
             && (Mage::app()->getStore()->getCurrentCurrencyCode() == 'USD')
             && (Mage::app()->getStore()->getBaseCurrencyCode() == 'USD');
+    }
+
+    /**
+     * @return bool
+     */
+    public function isBoltPayActive()
+    {
+        return Mage::getStoreConfigFlag('payment/boltpay/active');
     }
 
     /**
@@ -70,7 +78,7 @@ class Bolt_Boltpay_Helper_Data extends Mage_Core_Helper_Abstract
     public function canUseForCountry($country)
     {
 
-        if(!Mage::getStoreConfig('payment/boltpay/active')) {
+        if(!$this->isBoltPayActive()) {
             return false;
         }
 
@@ -145,34 +153,15 @@ class Bolt_Boltpay_Helper_Data extends Mage_Core_Helper_Abstract
     }
 
     /**
-     * Check config and show the template or not.
+     * Checking the config
      *
-     * @param $path
      * @return bool
      */
-    public function canShowOnCheckoutCart($path)
+    public function canUseEverywhere()
     {
-        $active = Mage::getStoreConfigFlag('payment/boltpay/active');
+        $active = $this->isBoltPayActive();
         $isEverywhere = $this->shouldAddButtonEverywhere();
 
-        if (!$active) {
-            return '';
-        }
-
-        return (!$isEverywhere) ? $path : '';
-    }
-
-    /**
-     * Check config and show the template or not.
-     *
-     * @param $path
-     * @return string
-     */
-    public function canShowEverywhere($path)
-    {
-        $active = Mage::getStoreConfigFlag('payment/boltpay/active');
-        $isEverywhere = $this->shouldAddButtonEverywhere();
-
-        return ($active && $isEverywhere) ? $path : '';
+        return ($active && $isEverywhere);
     }
 }
