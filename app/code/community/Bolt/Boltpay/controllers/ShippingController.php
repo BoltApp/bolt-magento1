@@ -221,7 +221,12 @@ class Bolt_Boltpay_ShippingController extends Mage_Core_Controller_Front_Action
             try {
                 /** @var Bolt_Boltpay_Helper_Api $helper */
                 $helper = Mage::helper('boltpay/api');
-                $estimateResponse = $helper->getShippingAndTaxEstimate($quote);
+
+                if (@$addressData['postcode']) {
+                    $estimateResponse = $helper->getShippingAndTaxEstimate($quote);
+                } else {
+                    $estimateResponse = $helper->getDefaultShippingAndTaxResponse();
+                }
 
                 $this->cacheShippingAndTaxEstimate($estimateResponse, $cacheIdentifier);
             } catch (Exception $e) {
