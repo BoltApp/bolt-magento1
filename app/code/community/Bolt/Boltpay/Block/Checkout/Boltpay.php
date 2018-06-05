@@ -129,6 +129,10 @@ class Bolt_Boltpay_Block_Checkout_Boltpay extends Mage_Checkout_Block_Onepage_Re
             $hintData = $this->getAddressHints($customerSession, $sessionQuote);
             ///////////////////////////////////////////////////////////////
 
+            $orderCreationResponse = '';
+            /* @var Mage_Sales_Model_Quote $immutableQuote */
+            $immutableQuote = Mage::getSingleton('sales/quote');
+
             /*
             * If we enable the config option "Add Bolt Button everywhere" - we should check the quote items
             * before Bolt Popup open.
@@ -163,7 +167,6 @@ class Bolt_Boltpay_Block_Checkout_Boltpay extends Mage_Checkout_Block_Onepage_Re
                     $boltHelper->applyShippingRate($sessionQuote, null);
                 }
 
-
                 // Call Bolt create order API
                 try {
                     /////////////////////////////////////////////////////////////////////////////////
@@ -185,9 +188,6 @@ class Bolt_Boltpay_Block_Checkout_Boltpay extends Mage_Checkout_Block_Onepage_Re
                         $expiredQuote->delete();
                     }
                     /*********************************************************/
-
-                    /* @var Mage_Sales_Model_Quote $immutableQuote */
-                    $immutableQuote = Mage::getSingleton('sales/quote');
 
                     try {
                         $immutableQuote->merge($sessionQuote);
