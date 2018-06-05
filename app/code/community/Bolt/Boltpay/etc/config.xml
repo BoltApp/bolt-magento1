@@ -182,7 +182,7 @@
         <payment_action>authorize</payment_action>
         <currency>USD</currency>
         <enable_merchant_scoped_account>0</enable_merchant_scoped_account>
-        <selectors>.btn-proceed-checkout</selectors>
+        <selectors><![CDATA[.btn-proceed-checkout, .minicart-actions .checkout-button]]></selectors>
 
         <selector_styles>.btn-proceed-checkout {
   .bolt-checkout-button.with-cards {
@@ -202,6 +202,7 @@
         <successpage>checkout/onepage/success</successpage>
         <skip_payment>0</skip_payment>
         <skip_confirm>1</skip_confirm>
+        <add_button_everywhere>0</add_button_everywhere>
         <sort_order>0</sort_order>
       </boltpay>
     </payment>

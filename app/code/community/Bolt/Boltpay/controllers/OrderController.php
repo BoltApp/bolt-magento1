@@ -113,7 +113,7 @@ class Bolt_Boltpay_OrderController extends Mage_Core_Controller_Front_Action
      * Creating the Bolt order and returning Bolt.process javascript.
      * Called from the firecheckout page.
      */
-    public function firecheckoutcreateAction() 
+    public function firecheckoutcreateAction()
     {
 
         try {
