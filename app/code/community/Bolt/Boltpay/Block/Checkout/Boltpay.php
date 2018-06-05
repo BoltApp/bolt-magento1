@@ -318,7 +318,7 @@ class Bolt_Boltpay_Block_Checkout_Boltpay extends Mage_Checkout_Block_Onepage_Re
             //////////////////////////////////////////////////////
             // Generate and return BoltCheckout javascript.
             //////////////////////////////////////////////////////
-            $immutableQuoteId = ($immutableQuote) ? $immutableQuote->getId() : '';
+            $immutableQuoteId = $immutableQuote->getId();
 
             return ("
                 var json_cart = $jsonCart;
