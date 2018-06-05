@@ -35,8 +35,7 @@
  * create the order on Bolt side and set up the javascript BoltCheckout.configure process with cart and hint data.
  *
  */
-class Bolt_Boltpay_Block_Checkout_Boltpay
-    extends Mage_Checkout_Block_Onepage_Review_Info
+class Bolt_Boltpay_Block_Checkout_Boltpay extends Mage_Checkout_Block_Onepage_Review_Info
 {
 
     /**
@@ -617,22 +616,27 @@ class Bolt_Boltpay_Block_Checkout_Boltpay
 
     /**
      * Returns the One Page / Multi-Page checkout Publishable key.
+     *
+     * @param bool $multipage
      * @return string
      */
     function getPublishableKey($multipage = true)
     {
+        /** @var Bolt_Boltpay_Helper_Data $hlp */
+        $hlp = $this->helper('boltpay');
+
         return $multipage
-            ? Mage::helper('core')->decrypt(Mage::getStoreConfig('payment/boltpay/publishable_key_multipage'))
-            : Mage::helper('core')->decrypt(Mage::getStoreConfig('payment/boltpay/publishable_key_onepage'));
+            ? $hlp->getPublishableKeyMultiPageKey(true)
+            : $hlp->getPublishableKeyOnePageKey(true);
     }
 
     /**
      * Returns the Enabled Bolt configuration option value.
-     * @return string
+     * @return bool
      */
-    function isBoltActive()
+    public function isBoltActive()
     {
-        return Mage::getStoreConfig('payment/boltpay/active');
+        return $this->helper('boltpay')->isBoltPayActive();
     }
 
     /**
@@ -771,18 +775,8 @@ class Bolt_Boltpay_Block_Checkout_Boltpay
      */
     public function isAllowedReplaceScriptOnCurrentPage()
     {
-        /** @var Bolt_Boltpay_Helper_Data $hlp */
-        $hlp = $this->helper('boltpay');
-        $canAddEverywhere = $hlp->canUseEverywhere();
-
         $isFireCheckoutPage = ($this->getRequest()->getRouteName() === 'firecheckout');
 
-        if ($isFireCheckoutPage) {
-            return false;
-        }
-
-        $isAllowedOnCurrentPage = $this->isAllowedOnCurrentPageByRoute();
-
-        return ($canAddEverywhere || $isAllowedOnCurrentPage);
+        return (!$isFireCheckoutPage && $this->isAllowedConnectJsOnCurrentPage());
     }
 }

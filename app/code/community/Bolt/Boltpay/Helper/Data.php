@@ -129,6 +129,19 @@ class Bolt_Boltpay_Helper_Data extends Mage_Core_Helper_Abstract
     }
 
     /**
+     * Decrypt key
+     *
+     * @param $key
+     * @return string
+     */
+    private function decryptKey($key)
+    {
+        return Mage::helper('core')->decrypt($key);
+    }
+
+    /**
+     * Get MultiPage key
+     *
      * @param bool $decrypt
      * @return string
      */
@@ -136,7 +149,23 @@ class Bolt_Boltpay_Helper_Data extends Mage_Core_Helper_Abstract
     {
         $key = Mage::getStoreConfig('payment/boltpay/publishable_key_multipage');
         if ($decrypt) {
-            return Mage::helper('core')->decrypt($key);
+            return $this->decryptKey($key);
+        }
+
+        return $key;
+    }
+
+    /**
+     * Get OnePage Key
+     *
+     * @param bool $decrypt
+     * @return string
+     */
+    public function getPublishableKeyOnePageKey($decrypt = false)
+    {
+        $key = Mage::getStoreConfig('payment/boltpay/publishable_key_onepage');
+        if ($decrypt) {
+            return $this->decryptKey($key);
         }
 
         return $key;
