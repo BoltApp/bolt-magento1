@@ -1,4 +1,8 @@
 # Changelog
+## [v1.1.1](https://s3-us-west-1.amazonaws.com/bolt-public/magento-integration-release/bolt-magento1_v1.1.1.zip) 2018-06-04
+ - Support partial capture
+ - Bugfix around customer group based tax
+
 ## [v1.1.0](https://s3-us-west-1.amazonaws.com/bolt-public/magento-integration-release/bolt-magento1_v1.1.0.zip) 2018-05-31
  - Do not load JavaScript when not needed
  - Handling for virtual cart
