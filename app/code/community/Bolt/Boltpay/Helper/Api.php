@@ -928,8 +928,11 @@ class Bolt_Boltpay_Helper_Api extends Bolt_Boltpay_Helper_Data
      */
     protected function getTotalWithoutTaxOrShipping($quote) {
         $address = $quote->getShippingAddress();
-
-        return $address->getGrandTotal() - $address->getTaxAmount() - $address->getShippingAmount();
+        $totalWithoutTaxOrShipping = $address->getGrandTotal() - $address->getTaxAmount() - $address->getShippingAmount();
+        if($totalWithoutTaxOrShipping < 0){
+            $totalWithoutTaxOrShipping = 0;
+        }
+        return $totalWithoutTaxOrShipping;
     }
 
     protected function getSortedShippingRates($address) {
