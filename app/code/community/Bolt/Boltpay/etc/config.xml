@@ -130,16 +130,6 @@
 
   </global>
 
-  <adminhtml>
-    <layout>
-      <updates>
-        <boltpayadmin>
-          <file>boltpay.xml</file>
-        </boltpayadmin>
-      </updates>
-    </layout>
-  </adminhtml>
-
   <admin>
     <routers>
       <boltpayadmin>
