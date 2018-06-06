@@ -865,7 +865,7 @@ class Bolt_Boltpay_Helper_Api extends Bolt_Boltpay_Helper_Data
         $shippingAddress = $quote->getShippingAddress();
         $shippingAddress->setCollectShippingRates(true)->collectShippingRates()->save();
 
-        $original_discounted_price = $quote->getSubtotalWithDiscount();
+        $originalDiscountedPrice = $quote->getSubtotalWithDiscount();
 
         $rates = $this->getSortedShippingRates($shippingAddress);
 
@@ -888,12 +888,12 @@ class Bolt_Boltpay_Helper_Api extends Bolt_Boltpay_Helper_Data
                 Mage::helper('boltpay/bugsnag')->notifyException(new Exception('Rate code is empty. ' . var_export($rate->debug(), true)));
             }
 
-            $new_discounted_price = $quote->getSubtotalWithDiscount();
+            $newDiscountedPrice = $quote->getSubtotalWithDiscount();
 
             $option = array(
                 "service" => $label,
                 "reference" => $rateCode,
-                "cost" => round(($quote->getShippingAddress()->getShippingAmount() + ($original_discounted_price - $new_discounted_price)) * 100),
+                "cost" => round(($quote->getShippingAddress()->getShippingAmount() + ($originalDiscountedPrice - $newDiscountedPrice)) * 100),
                 "tax_amount" => abs(round($quote->getShippingAddress()->getTaxAmount() * 100))
             );
 
