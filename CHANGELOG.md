@@ -1,4 +1,9 @@
 # Changelog
+## [v1.1.2](https://s3-us-west-1.amazonaws.com/bolt-public/magento-integration-release/bolt-magento1_v1.1.2.zip) 2018-06-06
+ - Support for mini-cart
+ - Remove legacy status page in admin
+ - Fix shipping and tax prefetch when IP-address cannot resolve address
+
 ## [v1.1.1](https://s3-us-west-1.amazonaws.com/bolt-public/magento-integration-release/bolt-magento1_v1.1.1.zip) 2018-06-04
  - Support partial capture
  - Bugfix around customer group based tax
