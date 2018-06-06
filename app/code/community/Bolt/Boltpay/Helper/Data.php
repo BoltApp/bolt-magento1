@@ -32,7 +32,6 @@
  */
 class Bolt_Boltpay_Helper_Data extends Mage_Core_Helper_Abstract
 {
-
     /**
      * @var bool    a flag set to true if the class is instantiated from web hook call, otherwise false
      */
@@ -56,10 +55,18 @@ class Bolt_Boltpay_Helper_Data extends Mage_Core_Helper_Abstract
          */
         if (self::$fromHooks) return true;
 
-        return Mage::getStoreConfigFlag('payment/boltpay/active')
+        return $this->isBoltPayActive()
             && (!$checkCountry || ($checkCountry && $this->canUseForCountry($quote->getBillingAddress()->getCountry())))
             && (Mage::app()->getStore()->getCurrentCurrencyCode() == 'USD')
             && (Mage::app()->getStore()->getBaseCurrencyCode() == 'USD');
+    }
+
+    /**
+     * @return bool
+     */
+    public function isBoltPayActive()
+    {
+        return Mage::getStoreConfigFlag('payment/boltpay/active');
     }
 
     /**
@@ -68,10 +75,10 @@ class Bolt_Boltpay_Helper_Data extends Mage_Core_Helper_Abstract
      * @param string $country   the country to be compared in check for allowing Bolt as a payment method
      * @return bool   true if Bolt can be used, otherwise false
      */
-    public function canUseForCountry($country) 
+    public function canUseForCountry($country)
     {
 
-        if(!Mage::getStoreConfig('payment/boltpay/active')) {
+        if(!$this->isBoltPayActive()) {
             return false;
         }
 
@@ -95,11 +102,11 @@ class Bolt_Boltpay_Helper_Data extends Mage_Core_Helper_Abstract
      * when a percentage discount is applied to a quote
      *
      * @param Mage_Sales_Model_Quote $quote
-     * $param boolean $clearTotalsCollectedFlag Determines whether to set setTotalsCollectedFlag to false
-     *
+     * @param bool                   $clearTotalsCollectedFlag
      * @return Mage_Sales_Model_Quote
      */
-    public function collectTotals($quote, $clearTotalsCollectedFlag = false) {
+    public function collectTotals($quote, $clearTotalsCollectedFlag = false)
+    {
         Mage::getSingleton('salesrule/validator')->resetRoundingDeltas();
 
         if($clearTotalsCollectedFlag) {
@@ -109,5 +116,81 @@ class Bolt_Boltpay_Helper_Data extends Mage_Core_Helper_Abstract
         $quote->collectTotals();
 
         return $quote;
+    }
+
+    /**
+     * Get config value
+     *
+     * @return bool
+     */
+    public function shouldAddButtonEverywhere()
+    {
+        return Mage::getStoreConfigFlag('payment/boltpay/add_button_everywhere');
+    }
+
+    /**
+     * Decrypt key
+     *
+     * @param $key
+     * @return string
+     */
+    private function decryptKey($key)
+    {
+        return Mage::helper('core')->decrypt($key);
+    }
+
+    /**
+     * Get MultiPage key
+     *
+     * @param bool $decrypt
+     * @return string
+     */
+    public function getPublishableKeyMultiPageKey($decrypt = false)
+    {
+        $key = Mage::getStoreConfig('payment/boltpay/publishable_key_multipage');
+        if ($decrypt) {
+            return $this->decryptKey($key);
+        }
+
+        return $key;
+    }
+
+    /**
+     * Get OnePage Key
+     *
+     * @param bool $decrypt
+     * @return string
+     */
+    public function getPublishableKeyOnePageKey($decrypt = false)
+    {
+        $key = Mage::getStoreConfig('payment/boltpay/publishable_key_onepage');
+        if ($decrypt) {
+            return $this->decryptKey($key);
+        }
+
+        return $key;
+    }
+
+    /**
+     * @return string
+     */
+    public function getConnectJsUrl()
+    {
+        return Mage::getStoreConfigFlag('payment/boltpay/test') ?
+            Bolt_Boltpay_Block_Checkout_Boltpay::JS_URL_TEST . "/connect.js":
+            Bolt_Boltpay_Block_Checkout_Boltpay::JS_URL_PROD . "/connect.js";
+    }
+
+    /**
+     * Checking the config
+     *
+     * @return bool
+     */
+    public function canUseEverywhere()
+    {
+        $active = $this->isBoltPayActive();
+        $isEverywhere = $this->shouldAddButtonEverywhere();
+
+        return ($active && $isEverywhere);
     }
 }

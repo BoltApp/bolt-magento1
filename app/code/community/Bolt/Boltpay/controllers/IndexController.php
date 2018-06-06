@@ -36,9 +36,4 @@ class Bolt_Boltpay_IndexController extends Mage_Adminhtml_Controller_Action
     {
         return Mage::getSingleton('admin/session')->isAllowed('admin');
     }
-
-    public function statusAction() 
-    {
-        $this->loadLayout()->renderLayout();
-    }
 }

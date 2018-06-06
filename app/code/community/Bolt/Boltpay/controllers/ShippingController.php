@@ -212,20 +212,22 @@ class Bolt_Boltpay_ShippingController extends Mage_Core_Controller_Front_Action
 
             $addressData = $this->mergeAddressData($geoLocationAddress, $shippingAddress);
 
-            $cacheIdentifier = $this->getPrefetchCacheIdentifier($quote, $addressData);
-            $this->saveAddressCache($addressData, $cacheIdentifier);
+            if (@$addressData['postcode']) {
+                $cacheIdentifier = $this->getPrefetchCacheIdentifier($quote, $addressData);
+                $this->saveAddressCache($addressData, $cacheIdentifier);
 
-            $quote->getShippingAddress()->addData($addressData);
-            $quote->getBillingAddress()->addData($addressData);
+                $quote->getShippingAddress()->addData($addressData);
+                $quote->getBillingAddress()->addData($addressData);
 
-            try {
-                /** @var Bolt_Boltpay_Helper_Api $helper */
-                $helper = Mage::helper('boltpay/api');
-                $estimateResponse = $helper->getShippingAndTaxEstimate($quote);
+                try {
+                    /** @var Bolt_Boltpay_Helper_Api $helper */
+                    $helper = Mage::helper('boltpay/api');
+                    $estimateResponse = $helper->getShippingAndTaxEstimate($quote);
 
-                $this->cacheShippingAndTaxEstimate($estimateResponse, $cacheIdentifier);
-            } catch (Exception $e) {
-                $estimateResponse = null;
+                    $this->cacheShippingAndTaxEstimate($estimateResponse, $cacheIdentifier);
+                } catch (Exception $e) {
+                    $estimateResponse = null;
+                }
             }
         }
 
