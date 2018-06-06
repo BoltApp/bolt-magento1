@@ -206,7 +206,7 @@ class Bolt_Boltpay_Helper_Api extends Bolt_Boltpay_Helper_Data
             if ($parentQuote->isEmpty() || !$parentQuote->getIsActive()) {
                 throw new Exception("The quote is currently being processed.");
             } else {
-                $parentQuote->setIsActive(false);
+                $parentQuote->setIsActive(false)->save();
             }          
 
             // adding guest user email to order
@@ -297,7 +297,7 @@ class Bolt_Boltpay_Helper_Api extends Bolt_Boltpay_Helper_Data
         } catch ( Exception $e ) {
             // Order creation failed, so mark the parent quote as active so webhooks can retry it
             if ($parentQuote) {
-                $parentQuote->setIsActive(true);
+                $parentQuote->setIsActive(true)->save();
             }
 
             throw $e;
