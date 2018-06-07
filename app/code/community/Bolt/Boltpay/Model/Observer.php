@@ -95,14 +95,14 @@ class Bolt_Boltpay_Model_Observer
         if (strtolower($method) == Bolt_Boltpay_Model_Payment::METHOD_CODE) {
 
             $reference = $payment->getAdditionalInformation('bolt_reference');
-            $magento_total = Mage::getStoreConfig('tax/sales_display/grandtotal', $order->getStoreId()) ? (int)($order->getGrandTotal()*100) : (int)(($order->getGrandTotal()+$order->getTaxAmount())*100);
+            $magentoTotal = Mage::getStoreConfig('tax/sales_display/grandtotal', $order->getStoreId()) ? (int)($order->getGrandTotal()*100) : (int)(($order->getGrandTotal()+$order->getTaxAmount())*100);
 
-            if ( $magento_total !== $transaction->amount->amount)  {
+            if ( $magentoTotal !== $transaction->amount->amount)  {
 
                 $message = "THERE IS A MISMATCH IN THE ORDER PAID AND ORDER RECORDED.<br>PLEASE COMPARE THE ORDER DETAILS WITH THAT RECORD IN YOUR BOLT MERCHANT ACCOUNT AT: ";
                 $message .= Mage::getStoreConfig('payment/boltpay/test') ? "https://merchant-sandbox.bolt.com" : "https://merchant.bolt.com";
                 $message .= "/transaction/$reference";
-                $message .= "<br/>Bolt reports ".($transaction->amount->amount/100).'. Magento expects '.$magento_total/100;
+                $message .= "<br/>Bolt reports ".($transaction->amount->amount/100).'. Magento expects '.$magentoTotal/100;
 
                 $order->setState(Mage_Sales_Model_Order::STATE_HOLDED, true, $message)
                     ->save();
@@ -159,7 +159,9 @@ class Bolt_Boltpay_Model_Observer
     }
 
     /**
-     * Updates the Bolt transaction status on order status change.
+     * Updates the Magento's interpretation of the Bolt transaction status on order status change.
+     * Note: this transaction status is not necessarily same as order status on the Bolt server.
+     * bolt_transaction_status field keeps track of payment status only from the magento plugin's perspective.
      *
      * @param $observer
      */

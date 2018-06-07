@@ -155,7 +155,7 @@ class Bolt_Boltpay_Helper_Api extends Bolt_Boltpay_Helper_Data
      * Processes Magento order creation. Called from both frontend and API.
      *
      * @param string    $reference           Bolt transaction reference
-     * @param int       $sessionQuoteId    Quote id, used if triggered from shopping session context,
+     * @param int       $sessionQuoteId      Quote id, used if triggered from shopping session context,
      *                                       This will be null if called from within an API call context
      * @param boolean   $isAjaxRequest       If called by ajax request. default to false.
      *
@@ -204,9 +204,9 @@ class Bolt_Boltpay_Helper_Api extends Bolt_Boltpay_Helper_Data
             /* @var Mage_Sales_Model_Quote $parentQuote */
             $parentQuote = Mage::getModel('sales/quote')->loadByIdWithoutStore($immutableQuote->getParentQuoteId());
             if ($parentQuote->isEmpty() || !$parentQuote->getIsActive()) {
-                throw new Exception("The quote is currently being processed.");
+                throw new Exception("The quote ". $immutableQuote->getParentQuoteId() ." is currently being processed or has been processed.");
             } else {
-                $parentQuote->setIsActive(false);
+                $parentQuote->setIsActive(false)->save();
             }          
 
             // adding guest user email to order
@@ -297,7 +297,7 @@ class Bolt_Boltpay_Helper_Api extends Bolt_Boltpay_Helper_Data
         } catch ( Exception $e ) {
             // Order creation failed, so mark the parent quote as active so webhooks can retry it
             if ($parentQuote) {
-                $parentQuote->setIsActive(true);
+                $parentQuote->setIsActive(true)->save();
             }
 
             throw $e;
@@ -865,7 +865,7 @@ class Bolt_Boltpay_Helper_Api extends Bolt_Boltpay_Helper_Data
         $shippingAddress = $quote->getShippingAddress();
         $shippingAddress->setCollectShippingRates(true)->collectShippingRates()->save();
 
-        $original_discounted_price = $quote->getSubtotalWithDiscount();
+        $originalDiscountedPrice = $quote->getSubtotalWithDiscount();
 
         $rates = $this->getSortedShippingRates($shippingAddress);
 
@@ -888,12 +888,12 @@ class Bolt_Boltpay_Helper_Api extends Bolt_Boltpay_Helper_Data
                 Mage::helper('boltpay/bugsnag')->notifyException(new Exception('Rate code is empty. ' . var_export($rate->debug(), true)));
             }
 
-            $new_discounted_price = $quote->getSubtotalWithDiscount();
+            $newDiscountedPrice = $quote->getSubtotalWithDiscount();
 
             $option = array(
                 "service" => $label,
                 "reference" => $rateCode,
-                "cost" => round(($quote->getShippingAddress()->getShippingAmount() + ($original_discounted_price - $new_discounted_price)) * 100),
+                "cost" => round(($quote->getShippingAddress()->getShippingAmount() + ($originalDiscountedPrice - $newDiscountedPrice)) * 100),
                 "tax_amount" => abs(round($quote->getShippingAddress()->getTaxAmount() * 100))
             );
 
