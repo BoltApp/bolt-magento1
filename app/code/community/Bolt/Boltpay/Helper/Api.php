@@ -756,6 +756,11 @@ class Bolt_Boltpay_Helper_Api extends Bolt_Boltpay_Helper_Data
 
         //Mage::log(var_export($cart_submission_data, true), null, "bolt.log");
 
+        // In some cases discount amount can cause total_amount to be negative. In this case we need to set it to 0.
+        if($cartSubmissionData['total_amount'] < 0) {
+            $cartSubmissionData['total_amount'] = 0;
+        }
+
         return $this->getCorrectedTotal($calculatedTotal, $cartSubmissionData);
     }
 
