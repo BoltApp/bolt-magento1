@@ -150,6 +150,10 @@ class Bolt_Boltpay_ShippingController extends Mage_Core_Controller_Front_Action
                 //Mage::log('Using cached address: '.var_export($cached_address, true), null, 'shipping_and_tax.log');
                 $response = unserialize($this->_cache->load($prefetchCacheKey));
                 $cacheBoltHeader = 'HIT';
+                if (!$response) {
+                    $response = Mage::helper('boltpay/api')->getShippingAndTaxEstimate($quote);
+                    $cacheBoltHeader = 'MISS';
+                }
             } else {
                 //Mage::log('Generating address from quote', null, 'shipping_and_tax.log');
                 //Mage::log('Live address: '.var_export($address_data, true), null, 'shipping_and_tax.log');
