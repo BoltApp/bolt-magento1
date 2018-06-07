@@ -150,6 +150,10 @@ class Bolt_Boltpay_ShippingController extends Mage_Core_Controller_Front_Action
                 //Mage::log('Using cached address: '.var_export($cached_address, true), null, 'shipping_and_tax.log');
                 $response = unserialize($this->_cache->load($prefetchCacheKey));
                 $cacheBoltHeader = 'HIT';
+                if (!$response) {
+                    $response = Mage::helper('boltpay/api')->getShippingAndTaxEstimate($quote);
+                    $cacheBoltHeader = 'MISS';
+                }
             } else {
                 //Mage::log('Generating address from quote', null, 'shipping_and_tax.log');
                 //Mage::log('Live address: '.var_export($address_data, true), null, 'shipping_and_tax.log');
@@ -212,20 +216,22 @@ class Bolt_Boltpay_ShippingController extends Mage_Core_Controller_Front_Action
 
             $addressData = $this->mergeAddressData($geoLocationAddress, $shippingAddress);
 
-            $cacheIdentifier = $this->getPrefetchCacheIdentifier($quote, $addressData);
-            $this->saveAddressCache($addressData, $cacheIdentifier);
+            if (@$addressData['postcode']) {
+                $cacheIdentifier = $this->getPrefetchCacheIdentifier($quote, $addressData);
+                $this->saveAddressCache($addressData, $cacheIdentifier);
 
-            $quote->getShippingAddress()->addData($addressData);
-            $quote->getBillingAddress()->addData($addressData);
+                $quote->getShippingAddress()->addData($addressData);
+                $quote->getBillingAddress()->addData($addressData);
 
-            try {
-                /** @var Bolt_Boltpay_Helper_Api $helper */
-                $helper = Mage::helper('boltpay/api');
-                $estimateResponse = $helper->getShippingAndTaxEstimate($quote);
+                try {
+                    /** @var Bolt_Boltpay_Helper_Api $helper */
+                    $helper = Mage::helper('boltpay/api');
+                    $estimateResponse = $helper->getShippingAndTaxEstimate($quote);
 
-                $this->cacheShippingAndTaxEstimate($estimateResponse, $cacheIdentifier);
-            } catch (Exception $e) {
-                $estimateResponse = null;
+                    $this->cacheShippingAndTaxEstimate($estimateResponse, $cacheIdentifier);
+                } catch (Exception $e) {
+                    $estimateResponse = null;
+                }
             }
         }
 

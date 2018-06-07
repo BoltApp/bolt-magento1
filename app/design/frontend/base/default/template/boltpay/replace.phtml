@@ -27,9 +27,11 @@
 /********************************************************************
  * Bolt replace button JavaScript / CSS that's added to the shopping cart page
  ********************************************************************/
+?>
+<?php /* @var $this Bolt_Boltpay_Block_Checkout_Boltpay */?>
+<?php
 
-
-if(!Mage::helper('boltpay')->canUseBolt($this->getQuote(), false)) return;
+if(!$this->isAllowedReplaceScriptOnCurrentPage() || !$this->canUseBolt() ) return;
 
 ?>
 <script>
@@ -42,9 +44,8 @@ if(!Mage::helper('boltpay')->canUseBolt($this->getQuote(), false)) return;
          ****************************************************************************************************/
         var replaceCheckout = function() {
 
-            var replaceRetries  = 20;
-            var replaceInterval = 500;
-
+            var replaceRetries  = 20,
+                replaceInterval = 500;
 
             // replaceable button selectors and types of Bolt buttons to replace them with
             var selectors = {
@@ -54,7 +55,6 @@ if(!Mage::helper('boltpay')->canUseBolt($this->getQuote(), false)) return;
             var config_selectors = JSON.parse('<?=$this->getConfigSelectors();?>');
 
             for (var i = 0, length = config_selectors.length; i < length; i++ ) {
-
                 var selector = config_selectors[i];
                 selectors[selector] = "bolt-checkout-button with-cards bolt-multi-step-checkout " + selector.replace(/^[.#]*/, "").replace(/[.#]*$/, "") + "-<?=$this->getCssSuffix(); ?> <?=$this->getTheme(); ?>";
             }
@@ -76,9 +76,10 @@ if(!Mage::helper('boltpay')->canUseBolt($this->getQuote(), false)) return;
 
                         if (selectors.hasOwnProperty(selector)) {
 
-                            var elements = document.querySelectorAll(selector);
+                            var elements = document.querySelectorAll(selector),
+                                elmLength = elements.length;
 
-                            for (var i = 0, length = elements.length; i < length; i++ ) {
+                            for (var i = 0; i < elmLength; i++ ) {
 
                                 var element = elements[i];
                                 found_elements = true;
