@@ -155,7 +155,7 @@ class Bolt_Boltpay_Helper_Api extends Bolt_Boltpay_Helper_Data
      * Processes Magento order creation. Called from both frontend and API.
      *
      * @param string    $reference           Bolt transaction reference
-     * @param int       $sessionQuoteId    Quote id, used if triggered from shopping session context,
+     * @param int       $sessionQuoteId      Quote id, used if triggered from shopping session context,
      *                                       This will be null if called from within an API call context
      * @param boolean   $isAjaxRequest       If called by ajax request. default to false.
      *
@@ -204,7 +204,7 @@ class Bolt_Boltpay_Helper_Api extends Bolt_Boltpay_Helper_Data
             /* @var Mage_Sales_Model_Quote $parentQuote */
             $parentQuote = Mage::getModel('sales/quote')->loadByIdWithoutStore($immutableQuote->getParentQuoteId());
             if ($parentQuote->isEmpty() || !$parentQuote->getIsActive()) {
-                throw new Exception("The quote is currently being processed.");
+                throw new Exception("The quote ". $immutableQuote->getParentQuoteId() ." is currently being processed or has been processed.");
             } else {
                 $parentQuote->setIsActive(false)->save();
             }          

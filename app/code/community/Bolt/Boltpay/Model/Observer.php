@@ -159,7 +159,9 @@ class Bolt_Boltpay_Model_Observer
     }
 
     /**
-     * Updates the Bolt transaction status on order status change.
+     * Updates the Magento's interpretation of the Bolt transaction status on order status change.
+     * Note: this transaction status is not necessarily same as order status on the Bolt server.
+     * bolt_transaction_status field keeps track of payment status only from the magento plugin's perspective.
      *
      * @param $observer
      */
