@@ -296,7 +296,7 @@ class Bolt_Boltpay_Helper_Api extends Bolt_Boltpay_Helper_Data
 
         } catch ( Exception $e ) {
             // Order creation failed, so mark the parent quote as active so webhooks can retry it
-            if ($parentQuote) {
+            if (@$parentQuote) {
                 $parentQuote->setIsActive(true)->save();
             }
 
