@@ -180,11 +180,11 @@ class Bolt_Boltpay_ApiController extends Mage_Core_Controller_Front_Action
         } catch (Exception $e) {
             if(stripos($e->getMessage(), 'Not all products are available in the requested quantity') !== false) {
                 $this->getResponse()->setHttpResponseCode(409)
-                    ->setBody(json_encode(array('status' => 'failure', 'error' => array('code' => '6003', 'message' => $exception->getMessage()))));
+                    ->setBody(json_encode(array('status' => 'failure', 'error' => array('code' => '6003', 'message' => $e->getMessage()))));
             }else{
                 Mage::helper('boltpay/bugsnag')->notifyException($e);
                 $this->getResponse()->setHttpResponseCode(422)
-                    ->setBody(json_encode(array('status' => 'failure', 'error' => array('code' => '6009', 'message' => $exception->getMessage()))));
+                    ->setBody(json_encode(array('status' => 'failure', 'error' => array('code' => '6009', 'message' => $e->getMessage()))));
             }
         }
     }
