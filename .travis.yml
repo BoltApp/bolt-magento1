@@ -16,6 +16,7 @@ env:
     - MAGENTO_VERSION="^1.9"
     - DB=mysql
     - DB_NAME="magento_travis"
+    - PHPUNIT_ENVIRONMENT=true
 
 before_install:
   - mysql -e 'DROP DATABASE IF EXISTS `$DB_NAME`;'
@@ -36,4 +37,5 @@ script:
   - php n98-magerun.phar config:set currency/options/allow USD --root-dir ./magento/
   - cp -r magento/. BoltApp/bolt-magento1/
   - cd BoltApp/bolt-magento1/
+  - export PHPUNIT_ENVIRONMENT=$PHPUNIT_ENVIRONMENT
   - php tests/unit/phpunit-5.7.9.phar -c tests/unit/phpunit.xml
