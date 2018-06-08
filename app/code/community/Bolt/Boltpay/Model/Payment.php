@@ -110,7 +110,7 @@ class Bolt_Boltpay_Model_Payment extends Mage_Payment_Model_Method_Abstract
     {
         return (Mage::app()->getStore()->isAdmin() && Mage::getDesign()->getArea() === 'adminhtml');
     }
-    
+
     public function getConfigData($field, $storeId = null)
     {
         if (Mage::getStoreConfig('payment/boltpay/skip_payment') == 1) {
@@ -220,15 +220,15 @@ class Bolt_Boltpay_Model_Payment extends Mage_Payment_Model_Method_Abstract
             if($isAjaxRequest){ // order is create via AJAX call
                 $msg = sprintf(
                     "BOLT notification: Authorization requested for $boltCartTotal.  Cart total is {$transaction->amount->currency_symbol}$amount. Bolt transaction: https://%s/transaction/%s.", $hostname, $reference
-                ); 
+                );
             }
             else{ // order is created via hook (orphan)
                 $boltTraceId = Mage::helper('boltpay/bugsnag')->getBoltTraceId();
                 $msg = sprintf(
                     "BOLT notification: Authorization requested for $boltCartTotal.  Cart total is {$transaction->amount->currency_symbol}$amount. Bolt transaction: https://%s/transaction/%s. This order was created via webhook (Bolt traceId: <%s>)", $hostname, $reference, $boltTraceId
-                ); 
+                );
             }
-            
+
             $payment->getOrder()->setState(Mage_Sales_Model_Order::STATE_PROCESSING, true, $msg);
 
             // Auth transactions need to be kept open to support cancelling/voiding transaction
@@ -494,9 +494,9 @@ class Bolt_Boltpay_Model_Payment extends Mage_Payment_Model_Method_Abstract
                 $payment->setShouldCloseParentTransaction(true);
 
                 if ($newTransactionStatus == self::TRANSACTION_AUTHORIZED) {
-                    $message = Mage::helper('boltpay')->__('BOLT notification: Payment transaction is approved.');
+                    $message = Mage::helper('boltpay')->__('BOLT notification: Payment transaction is authorized.');
                     $order = $payment->getOrder();
-                    $order->setState(Mage_Sales_Model_Order::STATE_PROCESSING, true, $message);
+                    $order->setState(Mage_Sales_Model_Order::STATE_PENDING_PAYMENT, true, $message);
                     $order->save();
                 } elseif ($newTransactionStatus == self::TRANSACTION_COMPLETED) {
                     $order = $payment->getOrder();
