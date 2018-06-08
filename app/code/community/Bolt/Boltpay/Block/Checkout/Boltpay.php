@@ -133,10 +133,7 @@ class Bolt_Boltpay_Block_Checkout_Boltpay extends Mage_Checkout_Block_Onepage_Re
             /* @var Mage_Sales_Model_Quote $immutableQuote */
             $immutableQuote = Mage::getSingleton('sales/quote');
 
-            /*
-            * If we enable the config option "Add Bolt Button everywhere" - we should check the quote items
-            * before Bolt Popup open.
-            */
+            // Check if cart contains at least one item.
             $isEmptyQuote = (!($sessionQuote->getItemsCollection()->count())) ? true : false;
 
             if (!$isEmptyQuote) {
@@ -259,6 +256,7 @@ class Bolt_Boltpay_Block_Checkout_Boltpay extends Mage_Checkout_Block_Onepage_Re
 
                     $immutableQuote
                         ->setCustomer($sessionQuote->getCustomer())
+                        ->setCustomerGroupId($sessionQuote->getCustomerGroupId())
                         ->setCustomerIsGuest((($sessionQuote->getCustomerId()) ? false : true))
                         ->setReservedOrderId($reservedOrderId)
                         ->setStoreId($sessionQuote->getStoreId())
