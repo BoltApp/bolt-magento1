@@ -34,7 +34,6 @@ if(($quote->getPayment()->getMethodInstance()->getCode() == 'boltpay') && $publi
     <?php $theme = Mage::getStoreConfig('payment/boltpay/theme'); ?>
     <div class="bolt-checkout-button with-cards <?= $theme; ?>"></div>
     <script type="text/javascript">
-
         (function() {
 
             var jsonpRequest = function(parent, element, attributes, params, callback_fn) {

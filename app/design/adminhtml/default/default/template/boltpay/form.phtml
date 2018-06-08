@@ -24,15 +24,42 @@
  * @license    http://opensource.org/licenses/osl-3.0.php  Open Software License (OSL 3.0)
  */
 ?>
+<?php /* @var $this Bolt_Boltpay_Block_Checkout_Boltpay */?>
 <?php
+$quote = Mage::getSingleton('checkout/session')->getQuote();
+$publishableKey = $this->getPublishableKey(false);
+$theme = Mage::getStoreConfig('payment/boltpay/theme');
 $_code = $this->getMethodCode();
-$fieldName = Mage::helper('boltpay')->__('Bolt Transaction Reference');
+$fieldName = Mage::helper('boltpay')->__('Process Order Through Bolt');
 ?>
 <ul id="payment_form_<?php echo $_code ?>" style="display:none">
     <li>
         <div class="input-box">
-            <label for="<?php echo $_code ?>_transaction_reference"><?php echo $fieldName ?> <span class="required">*</span></label><br/>
-            <input type="text" title="<?php echo Mage::helper('core')->quoteEscape($fieldName) ?>" class="required-entry input-text" id="<?php echo $_code ?>_bolt_reference" name="payment[bolt_reference]" value="<?php echo $this->getInfoData('bolt_reference') ?>"/>
+            <label for="<?php echo $_code ?>_payment_button"><?php echo $fieldName ?> <span class="required">*</span></label><br/>
+            <input type="button" title="<?php echo Mage::helper('core')->quoteEscape($fieldName) ?>" class="required-entry bolt-checkout-button with-cards <?= $theme; ?>" id="<?php echo $_code ?>_payment_button" name="payment[bolt_reference]" value="<?php echo $this->getInfoData('bolt_reference') ?>"/>
+            <!--<input type="text" title="<?php echo Mage::helper('core')->quoteEscape($fieldName) ?>" class="required-entry input-text" id="<?php echo $_code ?>_payment_button" name="payment[bolt_reference]" value="<?php echo $this->getInfoData('bolt_reference') ?>"/>-->
         </div>
     </li>
 </ul>
+
+<script src="<?=Mage::helper('boltpay')->getConnectJsUrl()?>" id="bolt-connect"
+        type="text/javascript" data-shopping-cart-id="Magento"
+        data-publishable-key="<?=Mage::helper('boltpay')->getPublishableKeyOnePageKey()?>"></script>
+<script type="text/javascript">
+    (function() {
+
+        var retries = 50;
+
+        var interval = setInterval(
+            function() {
+
+                if (--retries <= 0) clearInterval(interval);
+
+                if (typeof BoltConnect !== "undefined") {
+                    clearInterval(interval);
+                    <?=$this->getCartDataJs(false); ?>
+                }
+            }, 200);
+
+    })();
+</script>

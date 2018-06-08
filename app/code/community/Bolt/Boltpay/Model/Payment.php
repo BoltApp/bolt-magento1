@@ -194,8 +194,10 @@ class Bolt_Boltpay_Model_Payment extends Mage_Payment_Model_Method_Abstract
      * 2. Keeps the authorization transaction record open
      * 3. Moves the transaction to either pending or non pending state based on the response
      */
-    public function authorize(Varien_Object $payment, $amount)
+    public function authorize(Mage_Sales_Model_Order_Payment $payment, $amount)
     {
+
+Mage::helper('boltpay/bugsnag')->notifyException(new Exception($amount));
 
         try {
             $reference = $payment->getAdditionalInformation('bolt_reference');
