@@ -81,7 +81,7 @@ class Bolt_Boltpay_Model_Payment extends Mage_Payment_Model_Method_Abstract
     protected $_isInitializeNeeded          = false;
 
     protected $_validStateTransitions = array(
-        self::TRANSACTION_AUTHORIZED => array(self::TRANSACTION_COMPLETED, self::TRANSACTION_CANCELLED),
+        self::TRANSACTION_AUTHORIZED => array(self::TRANSACTION_COMPLETED, self::TRANSACTION_CANCELLED, self::TRANSACTION_REJECTED_REVERSIBLE, self::TRANSACTION_REJECTED_IRREVERSIBLE, self::TRANSACTION_PENDING),
         self::TRANSACTION_COMPLETED => array(self::TRANSACTION_NO_NEW_STATE),
         self::TRANSACTION_PENDING => array(self::TRANSACTION_AUTHORIZED, self::TRANSACTION_CANCELLED, self::TRANSACTION_REJECTED_REVERSIBLE, self::TRANSACTION_REJECTED_IRREVERSIBLE, self::TRANSACTION_COMPLETED),
         self::TRANSACTION_ON_HOLD => array(self::TRANSACTION_CANCELLED, self::TRANSACTION_REJECTED_REVERSIBLE, self::TRANSACTION_REJECTED_IRREVERSIBLE),
@@ -229,7 +229,7 @@ class Bolt_Boltpay_Model_Payment extends Mage_Payment_Model_Method_Abstract
                 );
             }
 
-            $payment->getOrder()->setState(Mage_Sales_Model_Order::STATE_PENDING_PAYMENT, true, $msg);
+            $payment->getOrder()->setState(Mage_Sales_Model_Order::STATE_NEW, true, $msg);
 
             // Auth transactions need to be kept open to support cancelling/voiding transaction
             $payment->setIsTransactionClosed(false);
@@ -496,7 +496,7 @@ class Bolt_Boltpay_Model_Payment extends Mage_Payment_Model_Method_Abstract
                 if ($newTransactionStatus == self::TRANSACTION_AUTHORIZED) {
                     $message = Mage::helper('boltpay')->__('BOLT notification: Payment transaction is authorized.');
                     $order = $payment->getOrder();
-                    $order->setState(Mage_Sales_Model_Order::STATE_PENDING_PAYMENT, true, $message);
+                    $order->setState( Mage_Sales_Model_Order::STATE_PROCESSING, true, $message );
                     $order->save();
                 } elseif ($newTransactionStatus == self::TRANSACTION_COMPLETED) {
                     $order = $payment->getOrder();
@@ -520,6 +520,7 @@ class Bolt_Boltpay_Model_Payment extends Mage_Payment_Model_Method_Abstract
                         $message = 'Found multiple invoices';
                         Mage::throwException($message);
                     }
+                    $order->save();
                 } elseif ($newTransactionStatus == self::TRANSACTION_PENDING) {
                     $order = $payment->getOrder();
                     $message = Mage::helper('boltpay')->__('BOLT notification: Payment is under review');
