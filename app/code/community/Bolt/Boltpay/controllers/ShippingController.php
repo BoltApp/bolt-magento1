@@ -62,7 +62,7 @@ class Bolt_Boltpay_ShippingController extends Mage_Core_Controller_Front_Action
             $shippingAddress = $requestData->shipping_address;
 
             if (!$this->isPOBoxAllowed() && $this->doesAddressContainPOBox($shippingAddress->street_address1, $shippingAddress->street_address2)) {
-                return $this->getResponse()
+                return $this->getResponse()->setHttpResponseCode(403)
                     ->setBody(json_encode(['status' => 'failure','error' => ['code' => '6101','message' => Mage::helper('boltpay')->__('Address with P.O. Box is not allowed.')]]));
             }
 
