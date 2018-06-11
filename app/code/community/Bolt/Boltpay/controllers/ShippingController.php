@@ -61,6 +61,11 @@ class Bolt_Boltpay_ShippingController extends Mage_Core_Controller_Front_Action
 
             $shippingAddress = $requestData->shipping_address;
 
+            if (!$this->isPOBoxAllowed() && $this->doesAddressContainPOBox($shippingAddress->street_address1, $shippingAddress->street_address2)) {
+                return $this->getResponse()
+                    ->setBody(json_encode(['status' => 'failure','error' => ['code' => '6101','message' => Mage::helper('boltpay')->__('Address with P.O. Box is not allowed.')]]));
+            }
+
             $region = Mage::getModel('directory/region')->loadByName($shippingAddress->region, $shippingAddress->country_code)->getCode();
 
             $addressData = array(
@@ -382,5 +387,29 @@ class Bolt_Boltpay_ShippingController extends Mage_Core_Controller_Front_Action
         }
 
         return md5($cacheIdentifier);
+    }
+
+    /**
+     * @return mixed
+     */
+    protected function isPOBoxAllowed()
+    {
+        return Mage::getStoreConfig('payment/boltpay/allow_po_box');
+    }
+
+    /**
+     * @param $address1
+     * @param $address2
+     * @return mixed
+     */
+    protected function doesAddressContainPOBox($address1, $address2)
+    {
+        $poBoxRegex = '/^\s*((P(OST)?.?\s*(O(FF(ICE)?)?)?.?\s+(B(IN|OX))?)|B(IN|OX))/i';
+
+        if (preg_match($poBoxRegex, $address1) || preg_match($poBoxRegex, $address2)) {
+            return true;
+        }
+
+        return false;
     }
 }
