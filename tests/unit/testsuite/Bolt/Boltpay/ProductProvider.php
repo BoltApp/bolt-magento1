@@ -43,6 +43,21 @@ class Bolt_Boltpay_ProductProvider
                 self::$websiteIds[] = $website->getId();
             }
         }
+
+        /** @var Mage_Catalog_Model_Resource_Product_Collection $collection */
+        $collection = Mage::getResourceModel('catalog/product_collection')
+            ->addAttributeToSelect(array('entity_id', 'sku'))
+            ->addAttributeToFilter('sku', array('eq' => $sku))
+        ;
+
+        if ($collection->getSize() > 0) {
+            $id = $collection->getFirstItem()->getId();
+
+            return $id;
+        } else {
+            unset($collection);
+        }
+
         $product = Mage::getModel('catalog/product');
         $productData = array(
             'sku' => $sku,

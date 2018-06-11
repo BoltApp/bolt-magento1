@@ -84,7 +84,7 @@ class Bolt_Boltpay_ApiController extends Mage_Core_Controller_Front_Action
             $order = Mage::getModel('sales/order')->loadByIncrementId($orderId);
             /***************************************************************************/
 
-            if (!$order->isEmpty()) {
+            if (!$order->isObjectNew()) {
                 //Mage::log('Order Found. Updating it', null, 'bolt.log');
                 $orderPayment = $order->getPayment();
 
@@ -122,9 +122,9 @@ class Bolt_Boltpay_ApiController extends Mage_Core_Controller_Front_Action
                 return;
             }
 
-            //Mage::log('Order not found. Creating one', null, 'bolt.log');
-            /* @var Mage_Sales_Model_Quote $quote */
-            $quote = Mage::getModel('sales/quote')->loadByIdWithoutStore($quoteId);
+            /////////////////////////////////////////////////////
+            /// Order was not found.  We will create it.
+            /////////////////////////////////////////////////////
 
             Mage::helper('boltpay/bugsnag')->addBreadcrumb(
                 array(
@@ -132,16 +132,6 @@ class Bolt_Boltpay_ApiController extends Mage_Core_Controller_Front_Action
                 'quote_id'   => $quoteId,
                 )
             );
-
-            if ($quote->isEmpty()) {
-                //Mage::log("Quote not found: $quoteId. Quote must have been already processed.", null, 'bolt.log');
-                $exception = new Exception("Quote not found: $quoteId.  Quote must have been already processed.");
-                $this->getResponse()->setHttpResponseCode(404)
-                    ->setBody(json_encode(array('status' => 'failure', 'error' => array('code' => '6012', 'message' => $exception->getMessage()))));
-
-                Mage::helper('boltpay/bugsnag')->notifyException($exception);
-                return;
-            }
 
             if (empty($reference) || empty($transactionId)) {
                 $exception = new Exception('Reference and/or transaction_id is missing');

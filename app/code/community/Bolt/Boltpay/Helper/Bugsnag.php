@@ -55,7 +55,12 @@ class Bolt_Boltpay_Helper_Bugsnag extends Mage_Core_Helper_Abstract
             $bugsnag = new Bugsnag_Client($this->apiKey);
 
             $bugsnag->setErrorReportingLevel(E_ERROR);
-            $bugsnag->setReleaseStage(Mage::getStoreConfig('payment/boltpay/test') ? 'development' : 'production');
+
+            if (isset($_SERVER['PHPUNIT_ENVIRONMENT']) && $_SERVER['PHPUNIT_ENVIRONMENT']) {
+                $bugsnag->setReleaseStage('test');
+            } else {
+                $bugsnag->setReleaseStage(Mage::getStoreConfig('payment/boltpay/test') ? 'development' : 'production');
+            }
             $bugsnag->setAppVersion(static::getBoltPluginVersion());
             $bugsnag->setBatchSending(true);
             $bugsnag->setBeforeNotifyFunction(array($this, 'beforeNotifyFunction'));
