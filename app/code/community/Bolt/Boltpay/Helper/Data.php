@@ -188,12 +188,12 @@ class Bolt_Boltpay_Helper_Data extends Mage_Core_Helper_Abstract
      * In BoltCheckout.configure success callback the order is saved in additional ajax call to
      * Bolt_Boltpay_OrderController save action.
      *
-     * @param bool $multipage       Is checkout type Multi-Page Checkout, the default is true, set to false for One Page Checkout
+     * @param string $checkoutType  'multi-page' | 'one-page' | 'admin'
      * @return string               BoltCheckout javascript
      */
-    public function getCartDataJs($multipage = true)
+    public function getCartDataJs($checkoutType = 'multi-page')
     {
-        return $this->getLayout()->createBlock('boltpay/checkout_boltpay')->getCartDataJs($multipage);
+        return Mage::app()->getLayout()->createBlock('boltpay/checkout_boltpay')->getCartDataJs($checkoutType);
     }
 
     /**

@@ -657,6 +657,7 @@ class Bolt_Boltpay_Helper_Api extends Bolt_Boltpay_Helper_Data
             $cartSubmissionData['total_amount'] += $totalDiscount;
             /////////////////////////////////////////////////////////////////////////////////////////
         } else {
+
             // Billing / shipping address fields that are required when the address data is sent to Bolt.
             $requiredAddressFields = array(
                 'first_name',
@@ -737,11 +738,23 @@ class Bolt_Boltpay_Helper_Api extends Bolt_Boltpay_Helper_Data
                         'tax_amount'       => round($shippingAddress->getShippingTaxAmount() * 100),
                         'service'          => $shippingAddress->getShippingDescription(),
                         'carrier'          => $shippingAddress->getShippingMethod(),
-                        'cost'             => round($totals['shipping']->getValue() * 100),
+                        'cost'             => (int) round($totals['shipping']->getValue() * 100),
                     ));
 
                     $calculatedTotal += round($totals['shipping']->getValue() * 100);
-                }
+                } /*else if (Mage::app()->getStore()->isAdmin()) {
+                    /* @var Mage_Adminhtml_Block_Sales_Order_Create_Shipping_Method_Form $shipping_info_block * /
+                    $shipping_info_block =  Mage::app()->getLayout()->createBlock("adminhtml/sales_order_create_shipping_method_form");
+                    $shipping_rate = $shipping_info_block->getActiveMethodRate();
+                    $cartSubmissionData['shipments'] = array(array(
+                        'shipping_address' => $cartShippingAddress,
+                        'tax_amount'       => 0,
+                        'service'          => $shipping_rate->getMethodTitle(),
+                        'carrier'          => $shipping_rate->getCarrierTitle(),
+                        'cost'             => (int) round($shipping_rate->getPrice() * 100),
+                    ));
+                    $calculatedTotal += round($shipping_rate->getPrice() * 100);
+                }*/
 
                 foreach ($requiredAddressFields as $field) {
                     if (empty($cartShippingAddress[$field])) {

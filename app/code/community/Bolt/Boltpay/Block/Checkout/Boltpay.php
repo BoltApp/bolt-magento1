@@ -86,11 +86,11 @@ class Bolt_Boltpay_Block_Checkout_Boltpay extends Mage_Checkout_Block_Onepage_Re
      */
     private function createBoltOrder($quote, $multipage)
     {
-
         // Load the required helper class
         $boltHelper = Mage::helper('boltpay/api');
 
-        $items = $this->getItems();
+        $items = $quote->getAllVisibleItems();
+
         if (empty($items)) return json_decode('{"token" : ""}');
 
         // Generates order data for sending to Bolt create order API.
@@ -107,18 +107,18 @@ class Bolt_Boltpay_Block_Checkout_Boltpay extends Mage_Checkout_Block_Onepage_Re
      * In BoltCheckout.configure success callback the order is saved in additional ajax call to
      * Bolt_Boltpay_OrderController save action.
      *
-     * @param bool $multipage       Is checkout type Multi-Page Checkout, the default is true, set to false for One Page Checkout
+     * @param string $checkoutType  'multi-page' | 'one-page' | 'admin'
      * @return string               BoltCheckout javascript
      */
-    public function getCartDataJs($multipage = true)
+    public function getCartDataJs($checkoutType = 'multi-page')
     {
         try {
             // Get customer and cart session objects
             $customerSession = Mage::getSingleton('customer/session');
-            $session = Mage::getSingleton('checkout/session');
+            $session = ($checkoutType === 'admin') ? Mage::getSingleton('adminhtml/session_quote') : Mage::getSingleton('checkout/session');
 
             /* @var Mage_Sales_Model_Quote $sessionQuote */
-            $sessionQuote = $session->getQuote();
+            $sessionQuote =  $session->getQuote();
 
             // Load the required helper class
             $boltHelper = Mage::helper('boltpay/api');
@@ -158,7 +158,7 @@ class Bolt_Boltpay_Block_Checkout_Boltpay extends Mage_Checkout_Block_Onepage_Re
                 }
                 ///////////////////////////////////////////////////////////////////////////////////////
 
-                if($multipage) {
+                if($checkoutType === 'multi-page') {
                     // Resets shipping rate
                     $shippingMethod = $sessionQuote->getShippingAddress()->getShippingMethod();
                     $boltHelper->applyShippingRate($sessionQuote, null);
@@ -192,7 +192,7 @@ class Bolt_Boltpay_Block_Checkout_Boltpay extends Mage_Checkout_Block_Onepage_Re
                         Mage::helper('boltpay/bugsnag')->notifyException($e);
                     }
 
-                    if (!$multipage) {
+                    if (!($checkoutType !== 'multi-page')) {
                         // For the checkout page we want to set the
                         // billing and shipping, and shipping method at this time.
                         // For multi-page, we add the addresses during the shipping and tax hook
@@ -263,14 +263,13 @@ class Bolt_Boltpay_Block_Checkout_Boltpay extends Mage_Checkout_Block_Onepage_Re
                         ->setParentQuoteId($sessionQuote->getId())
                         ->save();
 
-                    $orderCreationResponse = $this->createBoltOrder($immutableQuote, $multipage);
-
+                    $orderCreationResponse = $this->createBoltOrder($immutableQuote, $checkoutType === 'multi-page');
                 } catch (Exception $e) {
                     Mage::helper('boltpay/bugsnag')->notifyException(new Exception($e));
                     $orderCreationResponse = json_decode('{"token" : ""}');
                 }
 
-                if ($multipage) {
+                if ($checkoutType === 'multi-page') {
                     $boltHelper->applyShippingRate($sessionQuote, $shippingMethod);
                 }
 
@@ -328,16 +327,28 @@ class Bolt_Boltpay_Block_Checkout_Boltpay extends Mage_Checkout_Block_Onepage_Re
                     json_cart,
                     $jsonHints,
                     {
-                      check: function() {
+                      check: function() {           
+                        $check
+                        if (editForm && editForm.validate) {
+                            var bolt_hidden = document.getElementById('boltpay_payment_button');
+                            bolt_hidden.classList.remove('required-entry');
+                            
+                            if (!editForm.validate()) {
+                                console.log(editForm);
+                                return false;
+                            } else {
+                            }
+                        
+                            bolt_hidden.classList.add('required-entry');                     
+                        }
                         if (isEmptyQuote) {
-                            alert('{$boltHelper->__('Please add some product to cart')}');
+                            alert('{$boltHelper->__('Your shopping cart is empty. Please add products to the cart.')}');
                             return false;
                         }
                         if (!json_cart.orderToken) {
                             alert(json_cart.error);
                             return false;
                         }
-                        $check
                         return true;
                       },
                       

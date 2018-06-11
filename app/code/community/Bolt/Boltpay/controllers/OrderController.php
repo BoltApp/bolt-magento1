@@ -187,7 +187,7 @@ class Bolt_Boltpay_OrderController extends Mage_Core_Controller_Front_Action
 
             $result = array();
 
-            $result['cart_data'] = $block->getCartDataJs(false);
+            $result['cart_data'] = $block->getCartDataJs('one-page');
 
             if (!$result['cart_data']) {
                 $result['success'] = false;

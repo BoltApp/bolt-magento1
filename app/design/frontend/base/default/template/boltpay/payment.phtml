@@ -76,7 +76,7 @@ if(($quote->getPayment()->getMethodInstance()->getCode() == 'boltpay') && $publi
 
                     if (typeof BoltConnect !== "undefined") {
                         clearInterval(interval);
-                        <?=$this->getCartDataJs(false); ?>
+                        <?=$this->getCartDataJs('one-page'); ?>
                     }
                 }, 200);
 

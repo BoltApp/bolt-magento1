@@ -139,6 +139,13 @@
           <frontName>boltpay</frontName>
         </args>
       </boltpayadmin>
+      <adminhtml>
+        <args>
+          <modules>
+            <Bolt_Boltpay before="Mage_Adminhtml">Bolt_Boltpay_Adminhtml</Bolt_Boltpay>
+          </modules>
+        </args>
+      </adminhtml>
     </routers>
   </admin>
 
