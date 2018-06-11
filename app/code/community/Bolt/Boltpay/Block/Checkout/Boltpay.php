@@ -174,18 +174,6 @@ class Bolt_Boltpay_Block_Checkout_Boltpay extends Mage_Checkout_Block_Onepage_Re
                     // and discount calculations change on the Magento server
                     ////////////////////////////////////////////////////////////////////////////////
 
-                    /*********************************************************/
-                    /* Clean up resources that may have previously been saved
-                    /* @var Mage_Sales_Model_Quote[] $expiredQuotes */
-                    $expiredQuotes = Mage::getModel('sales/quote')
-                        ->getCollection()
-                        ->addFieldToFilter('parent_quote_id', $sessionQuote->getId());
-
-                    foreach ($expiredQuotes as $expiredQuote) {
-                        $expiredQuote->delete();
-                    }
-                    /*********************************************************/
-
                     try {
                         $immutableQuote->merge($sessionQuote);
                     } catch (Exception $e) {

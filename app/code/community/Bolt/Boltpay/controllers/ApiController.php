@@ -121,9 +121,9 @@ class Bolt_Boltpay_ApiController extends Mage_Core_Controller_Front_Action
                 return;
             }
 
-            //Mage::log('Order not found. Creating one', null, 'bolt.log');
-            /* @var Mage_Sales_Model_Quote $quote */
-            $quote = Mage::getModel('sales/quote')->loadByIdWithoutStore($quoteId);
+            /////////////////////////////////////////////////////
+            /// Order was not found.  We will create it.
+            /////////////////////////////////////////////////////
 
             Mage::helper('boltpay/bugsnag')->addBreadcrumb(
                 array(
@@ -131,11 +131,6 @@ class Bolt_Boltpay_ApiController extends Mage_Core_Controller_Front_Action
                 'quote_id'   => $quoteId,
                 )
             );
-
-            if ($quote->isEmpty()) {
-                //Mage::log("Quote not found: $quoteId. Quote must have been already processed.", null, 'bolt.log');
-                throw new Exception("Quote not found: $quoteId.  Quote must have been already processed.");
-            }
 
             if (empty($reference) || empty($transactionId)) {
                 $exception = new Exception('Reference and/or transaction_id is missing');

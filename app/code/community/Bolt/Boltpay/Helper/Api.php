@@ -178,9 +178,9 @@ class Bolt_Boltpay_Helper_Api extends Bolt_Boltpay_Helper_Data
         /* @var Mage_Sales_Model_Quote $immutableQuote */
         $immutableQuote = Mage::getModel('sales/quote')->loadByIdWithoutStore($immutableQuoteId);
 
-        // make sure this quote has not already processed
+        // make sure a quote for this session has not already been processed
         if ($immutableQuote->isEmpty()) {
-            throw new Exception("This order has already been processed by Magento.");
+            throw new Exception("The order #".$immutableQuote->getReservedOrderId()." has already been processed.  This order request is deemed a duplicate and will not be processed.");
         }
 
         if(!$this->storeHasAllCartItems($immutableQuote)){
@@ -194,7 +194,7 @@ class Bolt_Boltpay_Helper_Api extends Bolt_Boltpay_Helper_Data
 
         // check if quote has already been used
         if ( !$immutableQuote->getIsActive() ) {
-            throw new Exception("The quote has expired." );
+            throw new Exception("The order #".$immutableQuote->getReservedOrderId()." has already been processed for this quote." );
         }
 
         // adding guest user email to order
@@ -309,12 +309,23 @@ class Bolt_Boltpay_Helper_Api extends Bolt_Boltpay_Helper_Data
                 ->setLastRealOrderId($order->getIncrementId());
         }
 
-        // Close out session by deleting the parent quote and deactivating the immutable quote so that it can no
-        // longer be used.
+        ///////////////////////////////////////////////////////////
+        // Close out session by deleting the parent quote,
+        // deactivating the immutable quote so that it can no
+        // longer be used, as well as deleting all related clones
         /* @var Mage_Sales_Model_Quote $parentQuote */
         $immutableQuote->setIsActive(false)
             ->save();
+        /* @var Mage_Sales_Model_Quote[] $expiredSiblingQuotes */
+        $expiredSiblingQuotes = Mage::getModel('sales/quote')
+            ->getCollection()
+            ->addFieldToFilter('parent_quote_id', $parentQuote->getId());
+
+        foreach ($expiredSiblingQuotes as $expiredQuote) {
+            $expiredQuote->delete();
+        }
         $parentQuote->delete();
+        ///////////////////////////////////////////////////////////
 
         return $order;
 
