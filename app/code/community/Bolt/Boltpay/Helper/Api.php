@@ -756,6 +756,11 @@ class Bolt_Boltpay_Helper_Api extends Bolt_Boltpay_Helper_Data
 
         //Mage::log(var_export($cart_submission_data, true), null, "bolt.log");
 
+        // In some cases discount amount can cause total_amount to be negative. In this case we need to set it to 0.
+        if($cartSubmissionData['total_amount'] < 0) {
+            $cartSubmissionData['total_amount'] = 0;
+        }
+
         return $this->getCorrectedTotal($calculatedTotal, $cartSubmissionData);
     }
 
@@ -903,7 +908,7 @@ class Bolt_Boltpay_Helper_Api extends Bolt_Boltpay_Helper_Data
             $shippingAddress->setShippingMethod($shippingRateCode);
 
             // When multiple shipping methods apply a discount to the sub-total, collect totals doesn't clear the
-            // previously set discocunt, so the previous discount gets added to each subsequent shipping method that
+            // previously set discount, so the previous discount gets added to each subsequent shipping method that
             // includes a discount. Here we reset it to the original amount to resolve this bug.
             $quoteItems = $quote->getAllItems();
             foreach ($quoteItems as $item) {

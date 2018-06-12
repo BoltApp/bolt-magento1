@@ -256,6 +256,7 @@ class Bolt_Boltpay_Block_Checkout_Boltpay extends Mage_Checkout_Block_Onepage_Re
 
                     $immutableQuote
                         ->setCustomer($sessionQuote->getCustomer())
+                        ->setCustomerGroupId($sessionQuote->getCustomerGroupId())
                         ->setCustomerIsGuest((($sessionQuote->getCustomerId()) ? false : true))
                         ->setReservedOrderId($reservedOrderId)
                         ->setStoreId($sessionQuote->getStoreId())
