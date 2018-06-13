@@ -149,6 +149,16 @@
     </routers>
   </admin>
 
+  <adminhtml>
+    <layout>
+      <updates>
+        <boltpay>
+          <file>boltpay.xml</file>
+        </boltpay>
+      </updates>
+    </layout>
+  </adminhtml>
+
   <frontend>
     <routers>
       <boltpay>

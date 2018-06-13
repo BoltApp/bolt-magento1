@@ -298,7 +298,7 @@ class Bolt_Boltpay_Block_Checkout_Boltpay extends Mage_Checkout_Block_Onepage_Re
 
             //////////////////////////////////////////////////////////////////////////
             // Format the success and save order urls for the javascript returned below.
-            $successUrl    = $this->getUrl(Mage::getStoreConfig('payment/boltpay/successpage'));
+            $successUrl   = $this->getUrl(Mage::getStoreConfig('payment/boltpay/successpage'));
             $saveOrderUrl = $this->getUrl('boltpay/order/save');
 
             //////////////////////////////////////////////////////
@@ -374,7 +374,12 @@ class Bolt_Boltpay_Block_Checkout_Boltpay extends Mage_Checkout_Block_Onepage_Re
                         $onPaymentSubmit
                       },
                       
-                      success: function(transaction, callback) {
+                      success: function(transaction, callback) { 
+                        // order and order.submit will exist for admin
+                        if (order && order.submit) {
+                            callback();
+                            return;
+                        }
                         new Ajax.Request(
                             '$saveOrderUrl',
                             {
@@ -392,6 +397,12 @@ class Bolt_Boltpay_Block_Checkout_Boltpay extends Mage_Checkout_Block_Onepage_Re
                       
                       close: function() {
                          $close
+                         // order and order.submit will exist for admin
+                         if (order && order.submit) {
+                            var bolt_hidden = document.getElementById('boltpay_payment_button');
+                            bolt_hidden.classList.remove('required-entry');
+                            order.submit();
+                         }
                          if (typeof bolt_checkout_close === 'function') {
                             // used internally to set overlay in firecheckout
                             bolt_checkout_close();

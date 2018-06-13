@@ -45,6 +45,10 @@ $fieldName = Mage::helper('boltpay')->__('Process Order Through Bolt');
 <script type="text/javascript">
     (function() {
 
+        //////////////////////////////////////////////////
+        //  JSONP function to reliable load connect.js
+        //  after ajax reloads of this block's template
+        //////////////////////////////////////////////////
         var jsonpRequest = function(parent, element, attributes, params, callback_fn) {
 
             if (params) {
@@ -75,14 +79,18 @@ $fieldName = Mage::helper('boltpay')->__('Process Order Through Bolt');
         };
 
         loadConnectJS('<?=Mage::helper('boltpay')->getPublishableKeyOnePageKey(true)?>');
-        var retries = 50;
+        //////////////////////////////////////////////////
 
+        //////////////////////////////////////////////////
+        //  BoltCheckout JS is loaded after connect.js
+        //////////////////////////////////////////////////
+        var retries = 50;
         var interval = setInterval(
             function() {
 
                 if (--retries <= 0) clearInterval(interval);
 
-                if (typeof BoltConnect !== "undefined") {
+                if (typeof BoltCheckout !== "undefined") {
                     clearInterval(interval);
                     <?=Mage::helper('boltpay')->getCartDataJs('admin'); ?>
                 }
