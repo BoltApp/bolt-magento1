@@ -113,10 +113,11 @@ class Bolt_Boltpay_Block_Checkout_Boltpay extends Mage_Checkout_Block_Onepage_Re
     public function getCartDataJs($checkoutType = 'multi-page')
     {
         $isMultipage = $checkoutType === 'multi-page';
+        $isAdmin = $checkoutType === 'admin';
         try {
             // Get customer and cart session objects
             $customerSession = Mage::getSingleton('customer/session');
-            $session = ($checkoutType === 'admin') ? Mage::getSingleton('adminhtml/session_quote') : Mage::getSingleton('checkout/session');
+            $session = $isAdmin ? Mage::getSingleton('adminhtml/session_quote') : Mage::getSingleton('checkout/session');
 
             /* @var Mage_Sales_Model_Quote $sessionQuote */
             $sessionQuote = $session->getQuote();
@@ -323,14 +324,15 @@ class Bolt_Boltpay_Block_Checkout_Boltpay extends Mage_Checkout_Block_Onepage_Re
                 var quote_id = '{$immutableQuoteId}';
                 var order_completed = false;
                 var isEmptyQuote = '".$isEmptyQuote."';
-                
+                var isAdmin = '".$isAdmin."';
+
                 BoltCheckout.configure(
                     json_cart,
                     $jsonHints,
                     {
                       check: function() {           
                         $check
-                        if (editForm && editForm.validate) {
+                        if (isAdmin && editForm && editForm.validate) {
                             var bolt_hidden = document.getElementById('boltpay_payment_button');
                             bolt_hidden.classList.remove('required-entry');
                             
@@ -375,8 +377,7 @@ class Bolt_Boltpay_Block_Checkout_Boltpay extends Mage_Checkout_Block_Onepage_Re
                       },
                       
                       success: function(transaction, callback) { 
-                        // order and order.submit will exist for admin
-                        if (order && order.submit) {
+                        if (isAdmin && order && order.submit) {
                             callback();
                             return;
                         }
@@ -398,7 +399,7 @@ class Bolt_Boltpay_Block_Checkout_Boltpay extends Mage_Checkout_Block_Onepage_Re
                       close: function() {
                          $close
                          // order and order.submit will exist for admin
-                         if (order && order.submit) {
+                         if (isAdmin && order && order.submit) {
                             var bolt_hidden = document.getElementById('boltpay_payment_button');
                             bolt_hidden.classList.remove('required-entry');
                             order.submit();
