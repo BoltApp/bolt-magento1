@@ -198,45 +198,45 @@ class Bolt_Boltpay_Model_Payment extends Mage_Payment_Model_Method_Abstract
     {
 
         try {
-
             if (Mage::app()->getStore()->isAdmin()) {
-                $msg = "Admin created order.";
-            } else {
-                $reference = $payment->getAdditionalInformation('bolt_reference');
-
-                //Mage::log(sprintf('Initiating authorize on payment id: %d', $payment->getId()), null, 'bolt.log');
-                // Get the merchant transaction id
-                $reference = $payment->getAdditionalInformation('bolt_reference');
-                if (empty($reference)) {
-                    throw new Exception("Payment missing expected transaction ID.");
-                }
-
-                $boltHelper = Mage::helper('boltpay/api');
-                $transaction = $boltHelper->fetchTransaction($reference);
-                $boltCartTotal = $transaction->amount->currency_symbol. ($transaction->amount->amount/100);
-
-                $payment->setTransactionId($reference);
-
-                $isAjaxRequest = $payment->getAdditionalInformation('is_ajax_request');
-                $hostname = Mage::getStoreConfig('payment/boltpay/test') ? "merchant-sandbox.bolt.com" : "merchant.bolt.com";
-                if($isAjaxRequest){ // order is create via AJAX call
-                    $msg = sprintf(
-                        "BOLT notification: Authorization requested for $boltCartTotal.  Cart total is {$transaction->amount->currency_symbol}$amount. Bolt transaction: https://%s/transaction/%s.", $hostname, $reference
-                    );
-                }
-                else{ // order is created via hook (orphan)
-                    $boltTraceId = Mage::helper('boltpay/bugsnag')->getBoltTraceId();
-                    $msg = sprintf(
-                        "BOLT notification: Authorization requested for $boltCartTotal.  Cart total is {$transaction->amount->currency_symbol}$amount. Bolt transaction: https://%s/transaction/%s. This order was created via webhook (Bolt traceId: <%s>)", $hostname, $reference, $boltTraceId
-                    );
-                }
+                $payment->getOrder()->setState(Mage_Sales_Model_Order::STATE_NEW, true, "order is created via admin view");
+                // Auth transactions need to be kept open to support cancelling/voiding transaction
+                $payment->setIsTransactionClosed(false);
+                return $this;
             }
 
-            $payment->getOrder()->setState(Mage_Sales_Model_Order::STATE_PROCESSING, true, $msg);
+            $reference = $payment->getAdditionalInformation('bolt_reference');
 
+            //Mage::log(sprintf('Initiating authorize on payment id: %d', $payment->getId()), null, 'bolt.log');
+            // Get the merchant transaction id
+            $reference = $payment->getAdditionalInformation('bolt_reference');
+            if (empty($reference)) {
+                throw new Exception("Payment missing expected transaction ID.");
+            }
+
+            $boltHelper = Mage::helper('boltpay/api');
+            $transaction = $boltHelper->fetchTransaction($reference);
+            $boltCartTotal = $transaction->amount->currency_symbol. ($transaction->amount->amount/100);
+
+            $payment->setTransactionId($reference);
+
+            $isAjaxRequest = $payment->getAdditionalInformation('is_ajax_request');
+            $hostname = Mage::getStoreConfig('payment/boltpay/test') ? "merchant-sandbox.bolt.com" : "merchant.bolt.com";
+            if($isAjaxRequest){ // order is create via AJAX call
+                $msg = sprintf(
+                    "BOLT notification: Authorization requested for $boltCartTotal.  Cart total is {$transaction->amount->currency_symbol}$amount. Bolt transaction: https://%s/transaction/%s.", $hostname, $reference
+                );
+            }
+            else{ // order is created via hook (orphan)
+                $boltTraceId = Mage::helper('boltpay/bugsnag')->getBoltTraceId();
+                $msg = sprintf(
+                    "BOLT notification: Authorization requested for $boltCartTotal.  Cart total is {$transaction->amount->currency_symbol}$amount. Bolt transaction: https://%s/transaction/%s. This order was created via webhook (Bolt traceId: <%s>)", $hostname, $reference, $boltTraceId
+                );
+            }
+
+            $payment->getOrder()->setState(Mage_Sales_Model_Order::STATE_NEW, true, $msg);
             // Auth transactions need to be kept open to support cancelling/voiding transaction
             $payment->setIsTransactionClosed(false);
-            //Mage::log(sprintf('Authorization completed for payment id: %d', $payment->getId()), null, 'bolt.log');
             return $this;
         } catch (Exception $e) {
             $error = array('error' => $e->getMessage());

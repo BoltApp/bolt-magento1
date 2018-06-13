@@ -119,7 +119,7 @@ class Bolt_Boltpay_Block_Checkout_Boltpay extends Mage_Checkout_Block_Onepage_Re
             $session = ($checkoutType === 'admin') ? Mage::getSingleton('adminhtml/session_quote') : Mage::getSingleton('checkout/session');
 
             /* @var Mage_Sales_Model_Quote $sessionQuote */
-            $sessionQuote =  $session->getQuote();
+            $sessionQuote = $session->getQuote();
 
             // Load the required helper class
             $boltHelper = Mage::helper('boltpay/api');
