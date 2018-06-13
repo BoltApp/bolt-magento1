@@ -38,6 +38,14 @@ AdminOrder.prototype.prepareParams =
                 params[form_element.name] = form_element.value;
             });
         }
+        var email = document.getElementById('email');
+
+        if (email) {
+            params['order[account][email]'] = email.value;
+        } else {
+            params['order[account][email]'] = '';
+        }
+
         return params;
     }
 ;

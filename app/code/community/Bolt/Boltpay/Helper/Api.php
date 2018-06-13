@@ -699,7 +699,6 @@ class Bolt_Boltpay_Helper_Api extends Bolt_Boltpay_Helper_Data
                     }
                 }
             }
-
             ///////////////////////////////////////////
 
             ////////////////////////////////////////////////////////////////////////////////////
@@ -744,16 +743,17 @@ class Bolt_Boltpay_Helper_Api extends Bolt_Boltpay_Helper_Data
                     $calculatedTotal += round($totals['shipping']->getValue() * 100);
 
                 } else if (Mage::app()->getStore()->isAdmin()) {
-
                     $cartShippingAddress = Mage::getSingleton('admin/session')->getOrderShippingAddress();
-                    $cartShippingAddress['email'] = $cartShippingAddress['email_address'] = ($quote->getCustomerEmail() ?: "integration@bolt.com");
+
+                    if (empty($cartShippingAddress['email'])) {
+                        $cartShippingAddress['email'] = $cartShippingAddress['email_address'] = ($quote->getCustomerEmail() ?: "integration@bolt.com");
+                    }
 
                     /* @var Mage_Adminhtml_Block_Sales_Order_Create_Shipping_Method_Form $shippingMethodBlock */
                     $shippingMethodBlock =  Mage::app()->getLayout()->createBlock("adminhtml/sales_order_create_shipping_method_form");
                     $shipping_rate = $shippingMethodBlock->getActiveMethodRate();
 
                     if ($shipping_rate) {
-
                         /* @var Mage_Adminhtml_Block_Sales_Order_Create_Totals $totalsBlock */
                         $totalsBlock =  Mage::app()->getLayout()->createBlock("adminhtml/sales_order_create_totals_shipping");
 
@@ -769,13 +769,13 @@ class Bolt_Boltpay_Helper_Api extends Bolt_Boltpay_Helper_Data
                             'tax_amount'       => 0,
                             'service'          => $shipping_rate->getMethodTitle(),
                             'carrier'          => $shipping_rate->getCarrierTitle(),
-                            'cost'             => (int) round($shippingTotal->getValue() * 100),
+                            'cost'             => $shippingTotal ? (int) round($shippingTotal->getValue() * 100) : 0,
                         ));
+
                         $calculatedTotal += round($shippingTotal->getValue() * 100);
 
                         $cartSubmissionData['total_amount'] = (int) round($grandTotal->getValue() * 100);
-                        $cartSubmissionData['tax_amount'] = (int) round($taxTotal->getValue() * 100);
-
+                        $cartSubmissionData['tax_amount'] = $taxTotal ? (int) round($taxTotal->getValue() * 100) : 0;
                     }
 
                 }
@@ -787,12 +787,10 @@ class Bolt_Boltpay_Helper_Api extends Bolt_Boltpay_Helper_Data
                     }
                 }
             }
-
             ////////////////////////////////////////////////////////////////////////////////////
         }
 
         //Mage::log(var_export($cart_submission_data, true), null, "bolt.log");
-
         // In some cases discount amount can cause total_amount to be negative. In this case we need to set it to 0.
         if($cartSubmissionData['total_amount'] < 0) {
             $cartSubmissionData['total_amount'] = 0;
