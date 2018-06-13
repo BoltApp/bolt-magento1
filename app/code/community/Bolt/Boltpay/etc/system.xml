@@ -93,6 +93,15 @@
               <show_in_website>1</show_in_website>
               <show_in_store>0</show_in_store>
             </publishable_key_multipage>
+            <publishable_key_admin translate="label">
+              <label> Publishable Key - Backoffice</label>
+              <frontend_type>obscure</frontend_type>
+              <backend_model>adminhtml/system_config_backend_encrypted</backend_model>
+              <sort_order>13</sort_order>
+              <show_in_default>1</show_in_default>
+              <show_in_website>1</show_in_website>
+              <show_in_store>0</show_in_store>
+            </publishable_key_admin>
             <!--
                 The Bolt Signing Secret Key configuration, used to verify web hook request signature.
              -->
@@ -100,7 +109,7 @@
               <label>Signing Secret</label>
               <frontend_type>obscure</frontend_type>
               <backend_model>adminhtml/system_config_backend_encrypted</backend_model>
-              <sort_order>13</sort_order>
+              <sort_order>15</sort_order>
               <show_in_default>1</show_in_default>
               <show_in_website>1</show_in_website>
               <show_in_store>0</show_in_store>

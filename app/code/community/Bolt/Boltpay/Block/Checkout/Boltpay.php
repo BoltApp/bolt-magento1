@@ -635,19 +635,25 @@ class Bolt_Boltpay_Block_Checkout_Boltpay extends Mage_Checkout_Block_Onepage_Re
     }
 
     /**
-     * Returns the One Page / Multi-Page checkout Publishable key.
+     * Returns the checkout Publishable key with given type.
      *
-     * @param bool $multipage
+     * @param string $checkoutType  'multi-page' | 'one-page' | 'admin'
      * @return string
      */
-    function getPublishableKey($multipage = true)
+    function getPublishableKey($checkoutType = 'multi-page')
     {
+        $isMultipage = $checkoutType === 'multi-page';
         /** @var Bolt_Boltpay_Helper_Data $hlp */
         $hlp = $this->helper('boltpay');
-
-        return $multipage
-            ? $hlp->getPublishableKeyMultiPage()
-            : $hlp->getPublishableKeyOnePage();
+        switch ($checkoutType) {
+            case 'multi-page':
+                return $hlp->getPublishableKeyMultiPage();
+            case 'one-page':
+                return $hlp->getPublishableKeyOnePage();
+            case 'admin':
+                return $hlp->getPublishableKeyBackOffice();
+        }
+        return $hlp->getPublishableKeyMultiPage();
     }
 
     /**
@@ -767,7 +773,7 @@ class Bolt_Boltpay_Block_Checkout_Boltpay extends Mage_Checkout_Block_Onepage_Re
 
         $isForMultiPage = !($routeName === 'firecheckout') && !($routeName === 'checkout' && $controllerName !== 'cart');
 
-        return $this->getPublishableKey($isForMultiPage);
+        return $this->getPublishableKey($isForMultiPage ? 'multi-page' : 'one-page');
     }
 
     /**

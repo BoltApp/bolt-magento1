@@ -27,7 +27,6 @@
 <?php /* @var $this Bolt_Boltpay_Block_Checkout_Boltpay */?>
 <?php
 $quote = Mage::getSingleton('checkout/session')->getQuote();
-$publishableKey = $this->getPublishableKey(false);
 $theme = Mage::getStoreConfig('payment/boltpay/theme');
 $_code = $this->getMethodCode();
 $fieldName = Mage::helper('boltpay')->__('Process Order Through Bolt');
@@ -78,7 +77,7 @@ $fieldName = Mage::helper('boltpay')->__('Process Order Through Bolt');
             jsonpRequest('body', 'script', {"src": "<?=Mage::helper('boltpay')->getConnectJsUrl()?>", "id":"bolt-connect", "type":"text/javascript", "data-shopping-cart-id":"Magento", "data-publishable-key":key});
         };
 
-        loadConnectJS('<?=Mage::helper('boltpay')->getPublishableKeyOnePageKey(true)?>');
+        loadConnectJS('<?=Mage::helper('boltpay')->getPublishableKeyBackOffice()?>');
         //////////////////////////////////////////////////
 
         //////////////////////////////////////////////////

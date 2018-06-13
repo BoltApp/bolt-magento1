@@ -34,7 +34,7 @@ $version = (string)$versionElm[0];
             id="bolt-track"
             type="text/javascript"
             src="<?= $this->getTrackJsUrl(); ?>"
-            data-publishable-key="<?=$this->getPublishableKey(); ?>">
+            data-publishable-key="<?=$this->getPublishableKey('multi-page'); ?>">
     </script>
     <script>console.log("Bolt Version: <?=$version?>");</script>
 <?php endif; ?>
