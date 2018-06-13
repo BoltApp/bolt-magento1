@@ -797,7 +797,7 @@ class Bolt_Boltpay_Helper_Api extends Bolt_Boltpay_Helper_Data
         if($cartSubmissionData['total_amount'] < 0) {
             $cartSubmissionData['total_amount'] = 0;
         }
-//var_dump($cartShippingAddress, json_encode($cartSubmissionData, JSON_PRETTY_PRINT));exit;
+
         return $this->getCorrectedTotal($calculatedTotal, $cartSubmissionData);
     }
 
