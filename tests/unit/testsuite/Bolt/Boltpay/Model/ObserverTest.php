@@ -200,7 +200,7 @@ class Bolt_Boltpay_Model_ObserverTest extends PHPUnit_Framework_TestCase
         $observerModel = $this->createPartialMock(Bolt_Boltpay_Model_Observer::class, []);
 
         $this->order = $this->getMockBuilder(Mage_Sales_Model_Order::class)
-            ->setMethods(array('getIncrementId', 'addStatusHistoryComment', 'addStatusHistory', 'getPayment'))
+            ->setMethods(array('getIncrementId', 'addStatusHistoryComment', 'addStatusHistory', 'getPayment', 'sendNewOrderEmail'))
             ->getMock()
         ;
 
@@ -233,9 +233,12 @@ class Bolt_Boltpay_Model_ObserverTest extends PHPUnit_Framework_TestCase
             ->method('addStatusHistoryComment')
             ->willReturn($history);
 
+        $this->order
+            ->method('sendNewOrderEmail')
+            ->willReturnSelf();
+
         $observerModel->sendOrderEmail($this->order);
 
-        $this->assertEquals(true, $this->order->getData('email_sent'));
         $this->assertTrue($history->getIsCustomerNotified());
         $this->assertEquals('test_status', $history->getStatus());
     }

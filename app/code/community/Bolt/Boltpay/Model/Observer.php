@@ -103,8 +103,10 @@ class Bolt_Boltpay_Model_Observer
                 $message .= "/transaction/$reference";
                 $message .= "<br/>Bolt reports ".($transaction->amount->amount/100).'. Magento expects '.$order->getGrandTotal();
 
-                $order->setState(Mage_Sales_Model_Order::STATE_HOLDED, true, $message)
-                    ->save();
+                // TOD properly adjust amount
+                if (abs((int)($order->getGrandTotal()*100) - $transaction->amount->amount) > 1) {
+                    $order->setState(Mage_Sales_Model_Order::STATE_HOLDED, true, $message)->save();
+                }
 
                 $metaData = array(
                     'process'   => "order verification",

@@ -736,7 +736,7 @@ class Bolt_Boltpay_Helper_Api extends Bolt_Boltpay_Helper_Data
 
                     $cartSubmissionData['shipments'] = array(array(
                         'shipping_address' => $cartShippingAddress,
-                        'tax_amount'       => round($shippingAddress->getShippingTaxAmount() * 100),
+                        'tax_amount'       => (int) round($shippingAddress->getShippingTaxAmount() * 100),
                         'service'          => $shippingAddress->getShippingDescription(),
                         'carrier'          => $shippingAddress->getShippingMethod(),
                         'cost'             => (int) round($totals['shipping']->getValue() * 100),
@@ -945,7 +945,7 @@ class Bolt_Boltpay_Helper_Api extends Bolt_Boltpay_Helper_Data
             $shippingAddress->setShippingMethod($shippingRateCode);
 
             // When multiple shipping methods apply a discount to the sub-total, collect totals doesn't clear the
-            // previously set discocunt, so the previous discount gets added to each subsequent shipping method that
+            // previously set discount, so the previous discount gets added to each subsequent shipping method that
             // includes a discount. Here we reset it to the original amount to resolve this bug.
             $quoteItems = $quote->getAllItems();
             foreach ($quoteItems as $item) {

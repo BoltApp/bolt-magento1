@@ -70,7 +70,7 @@ class Bolt_Boltpay_OrderController extends Mage_Core_Controller_Front_Action
             /* @var Mage_Sales_Model_Order $order */
             $order = Mage::getModel('sales/order')->loadByIncrementId($reservedOrderId);
 
-            if ($order->isEmpty()) {
+            if ($order->isObjectNew()) {
                 $sessionQuote = $checkoutSession->getQuote();
                 $boltHelper->createOrder($reference, $sessionQuote->getId(), true);
             }
