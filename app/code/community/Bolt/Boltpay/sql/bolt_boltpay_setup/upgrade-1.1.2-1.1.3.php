@@ -23,21 +23,31 @@
  * @copyright  Copyright (c) 2018 Bolt Financial, Inc (http://www.bolt.com)
  * @license    http://opensource.org/licenses/osl-3.0.php  Open Software License (OSL 3.0)
  */
-?>
-<div style="display:inline-block;">
-    <div><?php echo Mage::helper('core')->quoteEscape(Mage::helper('boltpay/api')->__(Mage::getStoreConfig('payment/boltpay/title'))) ?></div>
-    <img style="width:175px;" src="https://s3-us-west-1.amazonaws.com/bolt-public/magento-integration-release/powered_by_bolt_cards.png" alt="Mark" class="v-middle" />
-</div>
-<?php
-$publishableKey = $this->getPublishableKey(false);
-if (Mage::getStoreConfig('payment/boltpay/hide_on_checkout') || !$publishableKey) {
-    ?>
-<script>
-    var bolt_payment_method = document.querySelectorAll('#p_method_boltpay');
-    if (bolt_payment_method.length) {
-        //hide the payment method
-        bolt_payment_method[0].parentNode.style.display = 'none';
-        bolt_payment_method[0].checked = false;
-    }
-</script>
-<?php } ?>
+/**
+ * This installer adds an index for sales_flat_quote->parent_quote_id
+ *
+/** @var Mage_Core_Model_Resource_Setup $installer */
+$installer = $this;
+$installer->startSetup();
+
+$setup = new Mage_Eav_Model_Entity_Setup('core_setup');
+
+Mage::log('Installing Bolt 1.1.3 updates', null, 'bolt_install.log');
+
+$quoteTable = $installer->getTable('sales/quote');
+
+if ($installer->getConnection()->isTableExists($quoteTable)) {
+    $table = $installer->getConnection();
+    $table->addIndex(
+        $quoteTable,
+        $installer->getIdxName(
+            'sales/quote',
+            'parent_quote_id'
+        ),
+        'parent_quote_id'
+    );
+}
+
+Mage::log('Bolt 1.1.3 updates installation completed', null, 'bolt_install.log');
+
+$installer->endSetup();

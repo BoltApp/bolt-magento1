@@ -1,6 +1,6 @@
 <?php
 
-require('TestHelper.php');
+require_once('TestHelper.php');
 
 class Bolt_Boltpay_Helper_DataTest extends PHPUnit_Framework_TestCase
 {

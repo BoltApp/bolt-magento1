@@ -83,7 +83,7 @@ class Bolt_Boltpay_ApiController extends Mage_Core_Controller_Front_Action
             $order = Mage::getModel('sales/order')->loadByIncrementId($orderId);
             /***************************************************************************/
 
-            if (!$order->isEmpty()) {
+            if (!$order->isObjectNew()) {
                 //Mage::log('Order Found. Updating it', null, 'bolt.log');
                 $orderPayment = $order->getPayment();
 

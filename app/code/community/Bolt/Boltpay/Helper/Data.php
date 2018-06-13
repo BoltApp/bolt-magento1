@@ -140,35 +140,36 @@ class Bolt_Boltpay_Helper_Data extends Mage_Core_Helper_Abstract
     }
 
     /**
-     * Get MultiPage key
+     * Get publishable key used in cart page.
      *
-     * @param bool $decrypt
      * @return string
      */
-    public function getPublishableKeyMultiPageKey($decrypt = false)
+    public function getPublishableKeyMultiPage()
     {
         $key = Mage::getStoreConfig('payment/boltpay/publishable_key_multipage');
-        if ($decrypt) {
-            return $this->decryptKey($key);
-        }
-
-        return $key;
+        return $this->decryptKey($key);
     }
 
     /**
-     * Get OnePage Key
+     * Get publishable key used in checkout page.
      *
-     * @param bool $decrypt
      * @return string
      */
-    public function getPublishableKeyOnePageKey($decrypt = false)
+    public function getPublishableKeyOnePage()
     {
         $key = Mage::getStoreConfig('payment/boltpay/publishable_key_onepage');
-        if ($decrypt) {
-            return $this->decryptKey($key);
-        }
+        return $this->decryptKey($key);
+    }
 
-        return $key;
+    /**
+     * Get publishable key used in magento admin.
+     *
+     * @return string
+     */
+    public function getPublishableKeyBackOffice()
+    {
+        $key = Mage::getStoreConfig('payment/boltpay/publishable_key_admin');
+        return $this->decryptKey($key);
     }
 
     /**

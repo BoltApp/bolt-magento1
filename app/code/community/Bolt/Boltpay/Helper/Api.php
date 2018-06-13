@@ -687,9 +687,9 @@ class Bolt_Boltpay_Helper_Api extends Bolt_Boltpay_Helper_Data
                     'postal_code'     => $billingAddress->getPostcode(),
                     'country_code'    => $billingAddress->getCountry(),
                     'phone'           => $billingAddress->getTelephone(),
-                    'email'           => $billingAddress->getEmail(),
+                    'email'           => ($billingAddress->getEmail() ?: $quote->getCustomerEmail()) ?: "integration@bolt.com",
                     'phone_number'    => $billingAddress->getTelephone(),
-                    'email_address'   => $billingAddress->getEmail(),
+                    'email_address'   => ($billingAddress->getEmail() ?: $quote->getCustomerEmail()) ?: "integration@bolt.com",
                 );
 
                 foreach ($requiredAddressFields as $field) {
@@ -727,16 +727,16 @@ class Bolt_Boltpay_Helper_Api extends Bolt_Boltpay_Helper_Data
                     'postal_code'     => $shippingAddress->getPostcode(),
                     'country_code'    => $shippingAddress->getCountry(),
                     'phone'           => $shippingAddress->getTelephone(),
-                    'email'           => $shippingAddress->getEmail(),
+                    'email'           => ($shippingAddress->getEmail() ?: $quote->getCustomerEmail()) ?: "integration@bolt.com",
                     'phone_number'    => $shippingAddress->getTelephone(),
-                    'email_address'   => $shippingAddress->getEmail(),
+                    'email_address'   => ($shippingAddress->getEmail() ?: $quote->getCustomerEmail()) ?: "integration@bolt.com",
                 );
 
                 if (@$totals['shipping']) {
 
                     $cartSubmissionData['shipments'] = array(array(
                         'shipping_address' => $cartShippingAddress,
-                        'tax_amount'       => round($shippingAddress->getShippingTaxAmount() * 100),
+                        'tax_amount'       => (int) round($shippingAddress->getShippingTaxAmount() * 100),
                         'service'          => $shippingAddress->getShippingDescription(),
                         'carrier'          => $shippingAddress->getShippingMethod(),
                         'cost'             => (int) round($totals['shipping']->getValue() * 100),
@@ -746,7 +746,7 @@ class Bolt_Boltpay_Helper_Api extends Bolt_Boltpay_Helper_Data
                 } else if (Mage::app()->getStore()->isAdmin()) {
 
                     $cartShippingAddress = Mage::getSingleton('admin/session')->getOrderShippingAddress();
-                    $cartShippingAddress['email'] = $cartShippingAddress['email_address'] = $quote->getCustomerEmail();
+                    $cartShippingAddress['email'] = $cartShippingAddress['email_address'] = ($quote->getCustomerEmail() ?: "integration@bolt.com");
 
                     /* @var Mage_Adminhtml_Block_Sales_Order_Create_Shipping_Method_Form $shippingMethodBlock */
                     $shippingMethodBlock =  Mage::app()->getLayout()->createBlock("adminhtml/sales_order_create_shipping_method_form");
@@ -797,7 +797,7 @@ class Bolt_Boltpay_Helper_Api extends Bolt_Boltpay_Helper_Data
         if($cartSubmissionData['total_amount'] < 0) {
             $cartSubmissionData['total_amount'] = 0;
         }
-//var_dump($cartShippingAddress, json_encode($cartSubmissionData, JSON_PRETTY_PRINT));exit;
+
         return $this->getCorrectedTotal($calculatedTotal, $cartSubmissionData);
     }
 
@@ -945,7 +945,7 @@ class Bolt_Boltpay_Helper_Api extends Bolt_Boltpay_Helper_Data
             $shippingAddress->setShippingMethod($shippingRateCode);
 
             // When multiple shipping methods apply a discount to the sub-total, collect totals doesn't clear the
-            // previously set discocunt, so the previous discount gets added to each subsequent shipping method that
+            // previously set discount, so the previous discount gets added to each subsequent shipping method that
             // includes a discount. Here we reset it to the original amount to resolve this bug.
             $quoteItems = $quote->getAllItems();
             foreach ($quoteItems as $item) {
