@@ -734,10 +734,10 @@ class Bolt_Boltpay_Helper_Api extends Bolt_Boltpay_Helper_Data
                 if (@$totals['shipping']) {
                     $cartSubmissionData['shipments'] = array(array(
                         'shipping_address' => $cartShippingAddress,
-                        'tax_amount'       => round($shippingAddress->getShippingTaxAmount() * 100),
+                        'tax_amount'       => (int) round($shippingAddress->getShippingTaxAmount() * 100),
                         'service'          => $shippingAddress->getShippingDescription(),
                         'carrier'          => $shippingAddress->getShippingMethod(),
-                        'cost'             => round($totals['shipping']->getValue() * 100),
+                        'cost'             => (int) round($totals['shipping']->getValue() * 100),
                     ));
 
                     $calculatedTotal += round($totals['shipping']->getValue() * 100);
