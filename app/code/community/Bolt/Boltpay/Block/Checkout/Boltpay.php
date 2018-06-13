@@ -337,7 +337,6 @@ class Bolt_Boltpay_Block_Checkout_Boltpay extends Mage_Checkout_Block_Onepage_Re
                             if (!editForm.validate()) {
                                 console.log(editForm);
                                 return false;
-                            } else {
                             }
                         
                             bolt_hidden.classList.add('required-entry');                     
