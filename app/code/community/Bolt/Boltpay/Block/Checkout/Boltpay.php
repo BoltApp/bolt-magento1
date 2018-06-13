@@ -333,13 +333,20 @@ class Bolt_Boltpay_Block_Checkout_Boltpay extends Mage_Checkout_Block_Onepage_Re
                             var bolt_hidden = document.getElementById('boltpay_payment_button');
                             bolt_hidden.classList.remove('required-entry');
                             
+                            var is_valid = true;
+                            
                             if (!editForm.validate()) {
-                                console.log(editForm);
-                                return false;
-                            } else {
+                                is_valid = false;
+                            } else {        
+                                var shipping_method = $$('input:checked[type=\"radio\"][name=\"order[shipping_method]\"]')[0];
+                                if (typeof shipping_method === 'undefined') {
+                                    alert('Please select a shipping method.');
+                                    is_valid = false;
+                                }
                             }
                         
-                            bolt_hidden.classList.add('required-entry');                     
+                            bolt_hidden.classList.add('required-entry');  
+                            return is_valid;   
                         }
                         if (isEmptyQuote) {
                             alert('{$boltHelper->__('Your shopping cart is empty. Please add products to the cart.')}');
@@ -377,6 +384,7 @@ class Bolt_Boltpay_Block_Checkout_Boltpay extends Mage_Checkout_Block_Onepage_Re
                       success: function(transaction, callback) { 
                         // order and order.submit will exist for admin
                         if (order && order.submit) {
+                            order_completed = true;
                             callback();
                             return;
                         }
@@ -397,12 +405,19 @@ class Bolt_Boltpay_Block_Checkout_Boltpay extends Mage_Checkout_Block_Onepage_Re
                       
                       close: function() {
                          $close
-                         // order and order.submit will exist for admin
-                         if (order && order.submit) {
+                         //////////////////
+                         // admin logic
+                         //////////////////
+                         if (order_completed && order && order.submit) {
                             var bolt_hidden = document.getElementById('boltpay_payment_button');
                             bolt_hidden.classList.remove('required-entry');
                             order.submit();
+                            return;
                          }
+                         
+                         //////////////////
+                         // frontend logic
+                         //////////////////
                          if (typeof bolt_checkout_close === 'function') {
                             // used internally to set overlay in firecheckout
                             bolt_checkout_close();

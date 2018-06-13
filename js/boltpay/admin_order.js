@@ -26,10 +26,16 @@ AdminOrder.prototype.prepareParams =
                 params[value[0]] = value[1];
             });
         }
-        var address_data = this.serializeData(this.shippingAddressContainer);
+
+        /*
+         *  this.serializeData Magento implemented approach, (i.e. prototype), is not reliably
+         *  serializing this.shippingAddressContainer, so we will do it the more straight-forward,
+         *  robust way.
+         */
+        var address_data = $(this.shippingAddressContainer).select('input', 'select', 'textarea');
         if (address_data) {
-            address_data.each(function(value) {
-                params[value[0]] = value[1];
+            address_data.each(function(form_element) {
+                params[form_element.name] = form_element.value;
             });
         }
         return params;
