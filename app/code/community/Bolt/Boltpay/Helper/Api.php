@@ -687,9 +687,9 @@ class Bolt_Boltpay_Helper_Api extends Bolt_Boltpay_Helper_Data
                     'postal_code'     => $billingAddress->getPostcode(),
                     'country_code'    => $billingAddress->getCountry(),
                     'phone'           => $billingAddress->getTelephone(),
-                    'email'           => $billingAddress->getEmail(),
+                    'email'           => ($billingAddress->getEmail() ?: $quote->getCustomerEmail()) ?: "integration@bolt.com",
                     'phone_number'    => $billingAddress->getTelephone(),
-                    'email_address'   => $billingAddress->getEmail(),
+                    'email_address'   => ($billingAddress->getEmail() ?: $quote->getCustomerEmail()) ?: "integration@bolt.com",
                 );
 
                 foreach ($requiredAddressFields as $field) {
@@ -727,9 +727,9 @@ class Bolt_Boltpay_Helper_Api extends Bolt_Boltpay_Helper_Data
                     'postal_code'     => $shippingAddress->getPostcode(),
                     'country_code'    => $shippingAddress->getCountry(),
                     'phone'           => $shippingAddress->getTelephone(),
-                    'email'           => $shippingAddress->getEmail(),
+                    'email'           => ($shippingAddress->getEmail() ?: $quote->getCustomerEmail()) ?: "integration@bolt.com",
                     'phone_number'    => $shippingAddress->getTelephone(),
-                    'email_address'   => $shippingAddress->getEmail(),
+                    'email_address'   => ($shippingAddress->getEmail() ?: $quote->getCustomerEmail()) ?: "integration@bolt.com",
                 );
 
                 if (@$totals['shipping']) {
@@ -746,7 +746,7 @@ class Bolt_Boltpay_Helper_Api extends Bolt_Boltpay_Helper_Data
                 } else if (Mage::app()->getStore()->isAdmin()) {
 
                     $cartShippingAddress = Mage::getSingleton('admin/session')->getOrderShippingAddress();
-                    $cartShippingAddress['email'] = $cartShippingAddress['email_address'] = $quote->getCustomerEmail();
+                    $cartShippingAddress['email'] = $cartShippingAddress['email_address'] = ($quote->getCustomerEmail() ?: "integration@bolt.com");
 
                     /* @var Mage_Adminhtml_Block_Sales_Order_Create_Shipping_Method_Form $shippingMethodBlock */
                     $shippingMethodBlock =  Mage::app()->getLayout()->createBlock("adminhtml/sales_order_create_shipping_method_form");
