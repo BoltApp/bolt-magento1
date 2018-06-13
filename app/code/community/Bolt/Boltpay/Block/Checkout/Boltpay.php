@@ -112,6 +112,7 @@ class Bolt_Boltpay_Block_Checkout_Boltpay extends Mage_Checkout_Block_Onepage_Re
      */
     public function getCartDataJs($checkoutType = 'multi-page')
     {
+        $isMultipage = $checkoutType === 'multi-page';
         try {
             // Get customer and cart session objects
             $customerSession = Mage::getSingleton('customer/session');
@@ -158,7 +159,7 @@ class Bolt_Boltpay_Block_Checkout_Boltpay extends Mage_Checkout_Block_Onepage_Re
                 }
                 ///////////////////////////////////////////////////////////////////////////////////////
 
-                if($checkoutType === 'multi-page') {
+                if($isMultipage) {
                     // Resets shipping rate
                     $shippingMethod = $sessionQuote->getShippingAddress()->getShippingMethod();
                     $boltHelper->applyShippingRate($sessionQuote, null);
@@ -192,7 +193,7 @@ class Bolt_Boltpay_Block_Checkout_Boltpay extends Mage_Checkout_Block_Onepage_Re
                         Mage::helper('boltpay/bugsnag')->notifyException($e);
                     }
 
-                    if (!($checkoutType !== 'multi-page')) {
+                    if (!$isMultipage) {
                         // For the checkout page we want to set the
                         // billing and shipping, and shipping method at this time.
                         // For multi-page, we add the addresses during the shipping and tax hook
@@ -263,13 +264,13 @@ class Bolt_Boltpay_Block_Checkout_Boltpay extends Mage_Checkout_Block_Onepage_Re
                         ->setParentQuoteId($sessionQuote->getId())
                         ->save();
 
-                    $orderCreationResponse = $this->createBoltOrder($immutableQuote, $checkoutType === 'multi-page');
+                    $orderCreationResponse = $this->createBoltOrder($immutableQuote, $isMultipage);
                 } catch (Exception $e) {
                     Mage::helper('boltpay/bugsnag')->notifyException(new Exception($e));
                     $orderCreationResponse = json_decode('{"token" : ""}');
                 }
 
-                if ($checkoutType === 'multi-page') {
+                if ($isMultipage) {
                     $boltHelper->applyShippingRate($sessionQuote, $shippingMethod);
                 }
 
