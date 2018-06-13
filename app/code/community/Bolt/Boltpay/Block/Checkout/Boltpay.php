@@ -624,8 +624,8 @@ class Bolt_Boltpay_Block_Checkout_Boltpay extends Mage_Checkout_Block_Onepage_Re
         $hlp = $this->helper('boltpay');
 
         return $multipage
-            ? $hlp->getPublishableKeyMultiPageKey(true)
-            : $hlp->getPublishableKeyOnePageKey(true);
+            ? $hlp->getPublishableKeyMultiPage()
+            : $hlp->getPublishableKeyOnePage();
     }
 
     /**
