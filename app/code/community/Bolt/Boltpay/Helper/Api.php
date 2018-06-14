@@ -280,7 +280,7 @@ class Bolt_Boltpay_Helper_Api extends Bolt_Boltpay_Helper_Data
         }
 
         $order = $service->getOrder();
-        $this->setInitialOrderStatus($order, $reference, $isAjaxRequest);
+        $this->setInitialOrderStatus($order, $transaction, $isAjaxRequest);
 
         $this->validateSubmittedOrder($order, $immutableQuote);
 
