@@ -47,26 +47,31 @@ class Bolt_Boltpay_Adminhtml_Sales_Order_CreateController extends Mage_Adminhtml
         $quote = $this->_getQuote();
         $postData = $this->getRequest()->getPost('order');
         $shippingAddress = $postData['shipping_address'];
-        $email =  $postData['account']['email'];
 
-        Mage::getSingleton('admin/session')->setOrderShippingAddress(
-            array(
-                'street_address1' => $shippingAddress['street'][0],
-                'street_address2' => $shippingAddress['street'][1],
-                'street_address3' => null,
-                'street_address4' => null,
-                'first_name'      => $shippingAddress['firstname'],
-                'last_name'       => $shippingAddress['lastname'],
-                'locality'        => $shippingAddress['city'],
-                'region'          => Mage::getModel('directory/region')->load($shippingAddress['region_id'])->getCode(),
-                'postal_code'     => $shippingAddress['postcode'],
-                'country_code'    => $shippingAddress['country_id'],
-                'phone'           => $shippingAddress['telephone'],
-                'phone_number'    => $shippingAddress['telephone'],
-                'email'           => $email,
-                'email_address'   => $email
-            )
+        if ($postData['account']) {
+            $email = @$postData['account']['email'];
+        }
+
+        $addressData = array(
+            'street_address1' => $shippingAddress['street'][0],
+            'street_address2' => $shippingAddress['street'][1],
+            'street_address3' => null,
+            'street_address4' => null,
+            'first_name'      => $shippingAddress['firstname'],
+            'last_name'       => $shippingAddress['lastname'],
+            'locality'        => $shippingAddress['city'],
+            'region'          => Mage::getModel('directory/region')->load($shippingAddress['region_id'])->getCode(),
+            'postal_code'     => $shippingAddress['postcode'],
+            'country_code'    => $shippingAddress['country_id'],
+            'phone'           => $shippingAddress['telephone'],
+            'phone_number'    => $shippingAddress['telephone'],
         );
+
+        if ($email) {
+            $addressData['email'] = $addressData['email_address'] = $email;
+        }
+
+        Mage::getSingleton('admin/session')->setOrderShippingAddress($addressData);
 
         parent::loadBlockAction();
     }

@@ -39,8 +39,10 @@ AdminOrder.prototype.prepareParams =
             });
         }
         var email = document.getElementById('email');
+        // temporarily add require email to force its input  TODO: remove with server side solution
+        email.classList.add('required-entry');
 
-        if (email) {
+        if ((typeof email != 'undefined') && email.value) {
             params['order[account][email]'] = email.value;
         } else {
             params['order[account][email]'] = '';

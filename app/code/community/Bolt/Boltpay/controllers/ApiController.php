@@ -87,17 +87,37 @@ class Bolt_Boltpay_ApiController extends Mage_Core_Controller_Front_Action
                 //Mage::log('Order Found. Updating it', null, 'bolt.log');
                 $orderPayment = $order->getPayment();
 
+                // set meta payment data
+                if (in_array($hookType, array('pending','payment','auth','capture'))) {
+                    if ( !$orderPayment->getAdditionalInformation('bolt_reference')) {
+                        $orderPayment
+                            ->setAdditionalInformation('bolt_transaction_status', $bodyParams['status'])
+                            ->setAdditionalInformation('bolt_reference', $reference)
+                            ->setAdditionalInformation('bolt_merchant_transaction_id', $transaction->id)
+                            ->setTransactionId($transaction->id)
+                            ->save();
+                    }
+                }
+
                 $newTransactionStatus = Bolt_Boltpay_Model_Payment::translateHookTypeToTransactionStatus($hookType);
 
                 $prevTransactionStatus = $orderPayment->getAdditionalInformation('bolt_transaction_status');
+
+                /******************************************************************************************************
+                 * TODO: Check the validity of this code.  It has been known to get out of sync and
+                 * is not strictly necessary.  In fact, it is redundant with one-to-one quote to bolt order mapping
+                 * Therefore, throwing errors will be disabled until fully reviewed.
+                 ********************************************************************************************************/
                 $merchantTransactionId = $orderPayment->getAdditionalInformation('bolt_merchant_transaction_id');
                 if ($merchantTransactionId == null || $merchantTransactionId == '') {
                     $orderPayment->setAdditionalInformation('bolt_merchant_transaction_id', $transactionId);
                     $orderPayment->save();
                 } elseif ($merchantTransactionId != $transactionId) {
-                    throw new Exception(
-                        sprintf(
-                            'Transaction id mismatch. Expected: %s got: %s', $merchantTransactionId, $transactionId
+                    Mage::helper('boltpay/bugsnag')->notifyException(
+                        new Exception(
+                            sprintf(
+                                'Transaction id mismatch. Expected: %s got: %s', $merchantTransactionId, $transactionId
+                            )
                         )
                     );
                 }

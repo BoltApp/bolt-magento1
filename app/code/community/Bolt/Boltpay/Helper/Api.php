@@ -171,8 +171,6 @@ class Bolt_Boltpay_Helper_Api extends Bolt_Boltpay_Helper_Data
 
         $transaction = $this->fetchTransaction($reference);
 
-        $transactionStatus = $transaction->status;
-
         $immutableQuoteId = $transaction->order->cart->order_reference;
 
         /* @var Mage_Sales_Model_Quote $immutableQuote */
@@ -257,14 +255,12 @@ class Bolt_Boltpay_Helper_Api extends Bolt_Boltpay_Helper_Data
         $immutableQuote->getShippingAddress()->setPaymentMethod(Bolt_Boltpay_Model_Payment::METHOD_CODE)->save();
         $payment = $immutableQuote->getPayment();
         $payment->setMethod(Bolt_Boltpay_Model_Payment::METHOD_CODE);
-
-        // adding transaction data to payment instance
-        $payment->setAdditionalInformation('bolt_transaction_status', $transactionStatus);
-        $payment->setAdditionalInformation('bolt_reference', $reference);
-        $payment->setAdditionalInformation('bolt_merchant_transaction_id', $transaction->id);
-        //add if called by ajax request, this info would be used for log
-        $payment->setAdditionalInformation('is_ajax_request', $isAjaxRequest);
-        $payment->setTransactionId($transaction->id);
+        $payment
+            ->setAdditionalInformation('bolt_transaction_status', $transaction->status)
+            ->setAdditionalInformation('bolt_reference', $reference)
+            ->setAdditionalInformation('bolt_merchant_transaction_id', $transaction->id)
+            ->setTransactionId($transaction->id)
+            ->save();
 
         Mage::helper('boltpay')->collectTotals($immutableQuote, true)->save();
       
@@ -284,6 +280,7 @@ class Bolt_Boltpay_Helper_Api extends Bolt_Boltpay_Helper_Data
         }
 
         $order = $service->getOrder();
+        $this->markOrderAsNew($order, $reference, $isAjaxRequest);
 
         $this->validateSubmittedOrder($order, $immutableQuote);
 
@@ -317,8 +314,37 @@ class Bolt_Boltpay_Helper_Api extends Bolt_Boltpay_Helper_Data
         $parentQuote->delete();
 
         return $order;
+    }
+
+    /**
+     * Sets the order to being in the new state and annotates it with creation meta data
+     *
+     * @param Mage_Sales_Model_Order    $order          the newly created order
+     * @param string                    $reference      the Bolt transaction reference
+     * @param bool                      $wasCreatedByFrontend  true if order was created via ajax, false if via webhook
+     */
+    private function markOrderAsNew($order, $reference, $wasCreatedByFrontend) {
+
+        $boltHelper = Mage::helper('boltpay/api');
+        $transaction = $boltHelper->fetchTransaction($reference);
+        $boltCartTotal = $transaction->amount->currency_symbol. ($transaction->amount->amount/100);
+
+        $hostname = Mage::getStoreConfig('payment/boltpay/test') ? "merchant-sandbox.bolt.com" : "merchant.bolt.com";
+        if($wasCreatedByFrontend){ // order is create via AJAX call
+            $msg = sprintf(
+                "BOLT notification: Authorization requested for $boltCartTotal.  Cart total is {$transaction->amount->currency_symbol}$amount. Bolt transaction: https://%s/transaction/%s.", $hostname, $reference
+            );
+        }
+        else{ // order is created via hook (orphan)
+            $boltTraceId = Mage::helper('boltpay/bugsnag')->getBoltTraceId();
+            $msg = sprintf(
+                "BOLT notification: Authorization requested for $boltCartTotal.  Cart total is {$transaction->amount->currency_symbol}$amount. Bolt transaction: https://%s/transaction/%s. This order was created via webhook (Bolt traceId: <%s>)", $hostname, $reference, $boltTraceId
+            );
+        }
+        $order->setState(Mage_Sales_Model_Order::STATE_NEW, true, $msg);
 
     }
+
 
     protected function getRatesDebuggingData($rates) {
         $rateDebuggingData = '';

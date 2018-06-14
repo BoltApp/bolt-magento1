@@ -192,8 +192,8 @@ class Bolt_Boltpay_Block_Checkout_Boltpay extends Mage_Checkout_Block_Onepage_Re
                         Mage::helper('boltpay/bugsnag')->notifyException($e);
                     }
 
-                    if (!($checkoutType !== 'multi-page')) {
-                        // For the checkout page we want to set the
+                    if ($checkoutType === 'one-page') {
+                        // For one-page checkout page we want to set the
                         // billing and shipping, and shipping method at this time.
                         // For multi-page, we add the addresses during the shipping and tax hook
                         // and the chosen shipping method at order save time.
@@ -329,7 +329,7 @@ class Bolt_Boltpay_Block_Checkout_Boltpay extends Mage_Checkout_Block_Onepage_Re
                     {
                       check: function() {           
                         $check
-                        if (editForm && editForm.validate) {
+                        if ((typeof editForm !== 'undefined') && (typeof editForm.validate === 'function')) {
                             var bolt_hidden = document.getElementById('boltpay_payment_button');
                             bolt_hidden.classList.remove('required-entry');
                             
@@ -383,7 +383,7 @@ class Bolt_Boltpay_Block_Checkout_Boltpay extends Mage_Checkout_Block_Onepage_Re
                       
                       success: function(transaction, callback) { 
                         // order and order.submit will exist for admin
-                        if (order && order.submit) {
+                        if ((typeof order !== 'undefined' ) && (typeof order.submit === 'function')) {
                             order_completed = true;
                             callback();
                             return;
@@ -408,7 +408,7 @@ class Bolt_Boltpay_Block_Checkout_Boltpay extends Mage_Checkout_Block_Onepage_Re
                          //////////////////
                          // admin logic
                          //////////////////
-                         if (order_completed && order && order.submit) {
+                         if (order_completed && (typeof order !== 'undefined' ) && (typeof order.submit === 'function')) {
                             var bolt_hidden = document.getElementById('boltpay_payment_button');
                             bolt_hidden.classList.remove('required-entry');
                             order.submit();
@@ -652,17 +652,28 @@ class Bolt_Boltpay_Block_Checkout_Boltpay extends Mage_Checkout_Block_Onepage_Re
     /**
      * Returns the One Page / Multi-Page checkout Publishable key.
      *
-     * @param bool $multipage
-     * @return string
+     * @param  string $checkoutType  'multi-page' | 'one-page' | 'admin'
+     *
+     * @return string the publishable key associated with the type of checkout requested
      */
-    function getPublishableKey($multipage = true)
+    function getPublishableKey($checkoutType = 'multi-page')
     {
         /** @var Bolt_Boltpay_Helper_Data $hlp */
         $hlp = $this->helper('boltpay');
 
-        return $multipage
-            ? $hlp->getPublishableKeyMultiPageKey(true)
-            : $hlp->getPublishableKeyOnePageKey(true);
+        switch ($checkoutType) {
+            case 'multi-page':
+            case 'multipage':
+                return $hlp->getPublishableKeyMultiPage();
+            case 'back-office':
+            case 'backoffice':
+            case 'admin':
+                return $hlp->getPublishableKeyBackOffice();
+            case 'one-page':
+            case 'onepage':
+            default:
+                return $hlp->getPublishableKeyOnePage();
+        }
     }
 
     /**
