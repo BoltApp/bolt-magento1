@@ -618,4 +618,36 @@ class Bolt_Boltpay_Model_Payment extends Mage_Payment_Model_Method_Abstract
 
         return $this;
     }
+
+    /**
+     * Converts a Bolt Transaction Status to a Magento order status
+     *
+     * @param string $transactionStatus A Bolt transaction status
+     * @return string The Magento order status mapped to the Bolt Status
+     */
+    public static function transactionStatusToOrderStatus( $transactionStatus ) {
+        $new_order_status = Mage_Sales_Model_Order::STATE_NEW;
+        switch ($transactionStatus) {
+            case Bolt_Boltpay_Model_Payment::TRANSACTION_AUTHORIZED:
+                $new_order_status = Mage_Sales_Model_Order::STATE_PROCESSING;
+                break;
+            case Bolt_Boltpay_Model_Payment::TRANSACTION_PENDING:
+                $new_order_status = Mage_Sales_Model_Order::STATE_PAYMENT_REVIEW;
+                break;
+            case Bolt_Boltpay_Model_Payment::TRANSACTION_COMPLETED:
+                $new_order_status = Mage_Sales_Model_Order::STATE_PROCESSING;
+                break;
+            case Bolt_Boltpay_Model_Payment::TRANSACTION_REJECTED_REVERSIBLE:
+                $new_order_status = Bolt_Boltpay_Model_Payment::ORDER_DEFERRED;
+                break;
+            case Bolt_Boltpay_Model_Payment::TRANSACTION_CANCELLED:
+            case Bolt_Boltpay_Model_Payment::TRANSACTION_REJECTED_IRREVERSIBLE:
+                $new_order_status = Mage_Sales_Model_Order::STATE_CANCELED;
+                break;
+            default:
+                Mage::helper('boltpay/bugsnag')->notifyException(new Exception("'$transactionStatus' is not a recognized order status.  $new_order_status is being set instead."));
+        }
+
+        return $new_order_status;
+    }
 }
