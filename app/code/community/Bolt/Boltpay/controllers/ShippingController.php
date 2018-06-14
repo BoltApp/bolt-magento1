@@ -404,7 +404,7 @@ class Bolt_Boltpay_ShippingController extends Mage_Core_Controller_Front_Action
      */
     public function doesAddressContainPOBox($address1, $address2 = null)
     {
-        $poBoxRegex = '/^\s*((P(OST)?.?\s*(O(FF(ICE)?)?)?.?\s+(B(IN|OX))?)|B(IN|OX))/i';
+        $poBoxRegex = '/^\s*((P(OST)?.?\s*(O(FF(ICE)?)?|B(IN|OX))+.?\s+(B(IN|OX))?)|B(IN|OX))/i';
 
         if (preg_match($poBoxRegex, $address1) || preg_match($poBoxRegex, $address2)) {
             return true;
