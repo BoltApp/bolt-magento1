@@ -40,6 +40,7 @@ class Bolt_Boltpay_Model_Payment extends Mage_Payment_Model_Method_Abstract
     const TRANSACTION_AUTHORIZED = 'authorized';
     const TRANSACTION_CANCELLED = 'cancelled';
     const TRANSACTION_COMPLETED = 'completed';
+    const TRANSACTION_FAILED = 'failed';
     const TRANSACTION_PENDING = 'pending';
     const TRANSACTION_REJECTED_REVERSIBLE = 'rejected_reversible';
     const TRANSACTION_REJECTED_IRREVERSIBLE = 'rejected_irreversible';
@@ -52,6 +53,7 @@ class Bolt_Boltpay_Model_Payment extends Mage_Payment_Model_Method_Abstract
     const HOOK_TYPE_PAYMENT = 'payment';
     const HOOK_TYPE_PENDING = 'pending';
     const HOOK_TYPE_VOID = 'void';
+    const HOOK_TYPE_FAILED = 'failed';
 
     const CAPTURE_TYPE = 'online';
 
@@ -82,10 +84,11 @@ class Bolt_Boltpay_Model_Payment extends Mage_Payment_Model_Method_Abstract
     protected $_validStateTransitions = array(
         self::TRANSACTION_AUTHORIZED => array(self::TRANSACTION_COMPLETED, self::TRANSACTION_CANCELLED, self::TRANSACTION_REJECTED_REVERSIBLE, self::TRANSACTION_REJECTED_IRREVERSIBLE),
         self::TRANSACTION_COMPLETED => array(self::TRANSACTION_NO_NEW_STATE),
-        self::TRANSACTION_PENDING => array(self::TRANSACTION_AUTHORIZED, self::TRANSACTION_CANCELLED, self::TRANSACTION_REJECTED_REVERSIBLE, self::TRANSACTION_REJECTED_IRREVERSIBLE, self::TRANSACTION_COMPLETED),
+        self::TRANSACTION_PENDING => array(self::TRANSACTION_AUTHORIZED, self::TRANSACTION_CANCELLED, self::TRANSACTION_FAILED, self::TRANSACTION_REJECTED_REVERSIBLE, self::TRANSACTION_REJECTED_IRREVERSIBLE, self::TRANSACTION_COMPLETED),
         self::TRANSACTION_REJECTED_IRREVERSIBLE => array(self::TRANSACTION_NO_NEW_STATE),
         self::TRANSACTION_REJECTED_REVERSIBLE => array(self::TRANSACTION_AUTHORIZED, self::TRANSACTION_CANCELLED, self::TRANSACTION_REJECTED_IRREVERSIBLE, self::TRANSACTION_COMPLETED),
-        self::TRANSACTION_CANCELLED => array(self::TRANSACTION_NO_NEW_STATE)
+        self::TRANSACTION_CANCELLED => array(self::TRANSACTION_NO_NEW_STATE),
+        self::TRANSACTION_FAILED => array(self::TRANSACTION_NO_NEW_STATE)
     );
 
     // We will ignore "credit" type for now
@@ -97,7 +100,8 @@ class Bolt_Boltpay_Model_Payment extends Mage_Payment_Model_Method_Abstract
         self::HOOK_TYPE_PENDING => self::TRANSACTION_PENDING,
         self::HOOK_TYPE_REJECTED_REVERSIBLE => self::TRANSACTION_REJECTED_REVERSIBLE,
         self::HOOK_TYPE_REJECTED_IRREVERSIBLE => self::TRANSACTION_REJECTED_IRREVERSIBLE,
-        self::HOOK_TYPE_VOID => self::TRANSACTION_CANCELLED
+        self::HOOK_TYPE_VOID => self::TRANSACTION_CANCELLED,
+        self::HOOK_TYPE_FAILED => self::TRANSACTION_FAILED
     );
 
     /**
@@ -194,44 +198,11 @@ class Bolt_Boltpay_Model_Payment extends Mage_Payment_Model_Method_Abstract
      * 2. Keeps the authorization transaction record open
      * 3. Moves the transaction to either pending or non pending state based on the response
      */
-    public function authorize(Varien_Object $payment, $amount)
+    public function authorize(Mage_Sales_Model_Order_Payment $payment, $amount)
     {
-
         try {
-            $reference = $payment->getAdditionalInformation('bolt_reference');
-
-            //Mage::log(sprintf('Initiating authorize on payment id: %d', $payment->getId()), null, 'bolt.log');
-            // Get the merchant transaction id
-            $reference = $payment->getAdditionalInformation('bolt_reference');
-            if (empty($reference)) {
-                throw new Exception("Payment missing expected transaction ID.");
-            }
-
-            $boltHelper = Mage::helper('boltpay/api');
-            $transaction = $boltHelper->fetchTransaction($reference);
-            $boltCartTotal = $transaction->amount->currency_symbol. ($transaction->amount->amount/100);
-
-            $payment->setTransactionId($reference);
-
-            $isAjaxRequest = $payment->getAdditionalInformation('is_ajax_request');
-            $hostname = Mage::getStoreConfig('payment/boltpay/test') ? "merchant-sandbox.bolt.com" : "merchant.bolt.com";
-            if($isAjaxRequest){ // order is create via AJAX call
-                $msg = sprintf(
-                    "BOLT notification: Authorization requested for $boltCartTotal.  Cart total is {$transaction->amount->currency_symbol}$amount. Bolt transaction: https://%s/transaction/%s.", $hostname, $reference
-                ); 
-            }
-            else{ // order is created via hook (orphan)
-                $boltTraceId = Mage::helper('boltpay/bugsnag')->getBoltTraceId();
-                $msg = sprintf(
-                    "BOLT notification: Authorization requested for $boltCartTotal.  Cart total is {$transaction->amount->currency_symbol}$amount. Bolt transaction: https://%s/transaction/%s. This order was created via webhook (Bolt traceId: <%s>)", $hostname, $reference, $boltTraceId
-                ); 
-            }
-            
-            $payment->getOrder()->setState(Mage_Sales_Model_Order::STATE_NEW, true, $msg);
-
             // Auth transactions need to be kept open to support cancelling/voiding transaction
             $payment->setIsTransactionClosed(false);
-            //Mage::log(sprintf('Authorization completed for payment id: %d', $payment->getId()), null, 'bolt.log');
             return $this;
         } catch (Exception $e) {
             $error = array('error' => $e->getMessage());
@@ -546,6 +517,11 @@ class Bolt_Boltpay_Model_Payment extends Mage_Payment_Model_Method_Abstract
                     $message = Mage::helper('boltpay')->__(sprintf('BOLT notification: Transaction reference "%s" has been rejected by Bolt internal review but is eligible for force approval on Bolt\'s merchant dashboard', $reference));
                     $order->setState(self::ORDER_DEFERRED, true, $message);
                     $order->save();
+                } elseif ($newTransactionStatus == self::TRANSACTION_FAILED) {
+                    $order = $payment->getOrder();
+                    $message = Mage::helper('boltpay')->__(sprintf('BOLT notification: Transaction reference "%s" has failed on Bolt', $reference));
+                    $order->setState(Mage_Sales_Model_Order::STATE_CANCELED, true, $message);
+                    $order->save();
                 }
             } else {
                 $payment->setShouldCloseParentTransaction(true);
@@ -650,5 +626,35 @@ class Bolt_Boltpay_Model_Payment extends Mage_Payment_Model_Method_Abstract
         }
 
         return $this;
+    }
+
+    /**
+     * Converts a Bolt Transaction Status to a Magento order status
+     *
+     * @param string $transactionStatus A Bolt transaction status
+     * @return string The Magento order status mapped to the Bolt Status
+     */
+    public static function transactionStatusToOrderStatus( $transactionStatus ) {
+        $new_order_status = Mage_Sales_Model_Order::STATE_NEW;
+        switch ($transactionStatus) {
+            case Bolt_Boltpay_Model_Payment::TRANSACTION_AUTHORIZED:
+                $new_order_status = Mage_Sales_Model_Order::STATE_PENDING_PAYMENT;
+                break;
+            case Bolt_Boltpay_Model_Payment::TRANSACTION_PENDING:
+                $new_order_status = Mage_Sales_Model_Order::STATE_PAYMENT_REVIEW;
+                break;
+            case Bolt_Boltpay_Model_Payment::TRANSACTION_COMPLETED:
+                $new_order_status = Mage_Sales_Model_Order::STATE_PROCESSING;
+                break;
+            case Bolt_Boltpay_Model_Payment::TRANSACTION_REJECTED_REVERSIBLE:
+                $new_order_status = Bolt_Boltpay_Model_Payment::ORDER_DEFERRED;
+                break;
+            case Bolt_Boltpay_Model_Payment::TRANSACTION_CANCELLED:
+            case Bolt_Boltpay_Model_Payment::TRANSACTION_FAILED:
+            case Bolt_Boltpay_Model_Payment::TRANSACTION_REJECTED_IRREVERSIBLE:
+                $new_order_status = Mage_Sales_Model_Order::STATE_CANCELED;
+        }
+
+        return $new_order_status;
     }
 }

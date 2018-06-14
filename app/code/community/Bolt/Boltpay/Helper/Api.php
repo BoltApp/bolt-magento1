@@ -171,8 +171,6 @@ class Bolt_Boltpay_Helper_Api extends Bolt_Boltpay_Helper_Data
 
         $transaction = $this->fetchTransaction($reference);
 
-        $transactionStatus = $transaction->status;
-
         $immutableQuoteId = $transaction->order->cart->order_reference;
 
         /* @var Mage_Sales_Model_Quote $immutableQuote */
@@ -257,14 +255,12 @@ class Bolt_Boltpay_Helper_Api extends Bolt_Boltpay_Helper_Data
         $immutableQuote->getShippingAddress()->setPaymentMethod(Bolt_Boltpay_Model_Payment::METHOD_CODE)->save();
         $payment = $immutableQuote->getPayment();
         $payment->setMethod(Bolt_Boltpay_Model_Payment::METHOD_CODE);
-
-        // adding transaction data to payment instance
-        $payment->setAdditionalInformation('bolt_transaction_status', $transactionStatus);
-        $payment->setAdditionalInformation('bolt_reference', $reference);
-        $payment->setAdditionalInformation('bolt_merchant_transaction_id', $transaction->id);
-        //add if called by ajax request, this info would be used for log
-        $payment->setAdditionalInformation('is_ajax_request', $isAjaxRequest);
-        $payment->setTransactionId($transaction->id);
+        $payment
+            ->setAdditionalInformation('bolt_transaction_status', $transaction->status)
+            ->setAdditionalInformation('bolt_reference', $reference)
+            ->setAdditionalInformation('bolt_merchant_transaction_id', $transaction->id)
+            ->setTransactionId($transaction->id)
+            ->save();
 
         Mage::helper('boltpay')->collectTotals($immutableQuote, true)->save();
       
@@ -284,6 +280,7 @@ class Bolt_Boltpay_Helper_Api extends Bolt_Boltpay_Helper_Data
         }
 
         $order = $service->getOrder();
+        $this->setInitialOrderStatus($order, $reference, $isAjaxRequest);
 
         $this->validateSubmittedOrder($order, $immutableQuote);
 
@@ -317,8 +314,36 @@ class Bolt_Boltpay_Helper_Api extends Bolt_Boltpay_Helper_Data
         $parentQuote->delete();
 
         return $order;
-
     }
+
+    /**
+     * Sets the order's initial status according to Bolt and annotates it with creation meta data
+     *
+     * @param Mage_Sales_Model_Order    $order                  the newly created order
+     * @param object                    $transaction            the Bolt transaction data
+     * @param bool                      $wasCreatedByFrontend   true if order was created via ajax, false if via webhook
+     */
+    private function setInitialOrderStatus($order, $transaction, $wasCreatedByFrontend) {
+
+        $boltCartTotal = $transaction->amount->currency_symbol. ($transaction->amount->amount/100);
+
+        $hostname = Mage::getStoreConfig('payment/boltpay/test') ? "merchant-sandbox.bolt.com" : "merchant.bolt.com";
+        if($wasCreatedByFrontend){ // order is create via AJAX call
+            $msg = sprintf(
+                "BOLT notification: Authorization requested for $boltCartTotal.  Cart total is {$transaction->amount->currency_symbol}$amount. Bolt transaction: https://%s/transaction/%s.", $hostname, $reference
+            );
+        }
+        else{ // order is created via hook (orphan)
+            $boltTraceId = Mage::helper('boltpay/bugsnag')->getBoltTraceId();
+            $msg = sprintf(
+                "BOLT notification: Authorization requested for $boltCartTotal.  Cart total is {$transaction->amount->currency_symbol}$amount. Bolt transaction: https://%s/transaction/%s. This order was created via webhook (Bolt traceId: <%s>)", $hostname, $reference, $boltTraceId
+            );
+        }
+
+        $order->setState(Bolt_Boltpay_Model_Payment::transactionStatusToOrderStatus($transaction->status), true, $msg)
+            ->save();
+    }
+
 
     protected function getRatesDebuggingData($rates) {
         $rateDebuggingData = '';
@@ -657,6 +682,7 @@ class Bolt_Boltpay_Helper_Api extends Bolt_Boltpay_Helper_Data
             $cartSubmissionData['total_amount'] += $totalDiscount;
             /////////////////////////////////////////////////////////////////////////////////////////
         } else {
+
             // Billing / shipping address fields that are required when the address data is sent to Bolt.
             $requiredAddressFields = array(
                 'first_name',
@@ -686,9 +712,9 @@ class Bolt_Boltpay_Helper_Api extends Bolt_Boltpay_Helper_Data
                     'postal_code'     => $billingAddress->getPostcode(),
                     'country_code'    => $billingAddress->getCountry(),
                     'phone'           => $billingAddress->getTelephone(),
-                    'email'           => $billingAddress->getEmail(),
+                    'email'           => ($billingAddress->getEmail() ?: $quote->getCustomerEmail()) ?: "integration@bolt.com",
                     'phone_number'    => $billingAddress->getTelephone(),
-                    'email_address'   => $billingAddress->getEmail(),
+                    'email_address'   => ($billingAddress->getEmail() ?: $quote->getCustomerEmail()) ?: "integration@bolt.com",
                 );
 
                 foreach ($requiredAddressFields as $field) {
@@ -698,7 +724,6 @@ class Bolt_Boltpay_Helper_Api extends Bolt_Boltpay_Helper_Data
                     }
                 }
             }
-
             ///////////////////////////////////////////
 
             ////////////////////////////////////////////////////////////////////////////////////
@@ -726,12 +751,13 @@ class Bolt_Boltpay_Helper_Api extends Bolt_Boltpay_Helper_Data
                     'postal_code'     => $shippingAddress->getPostcode(),
                     'country_code'    => $shippingAddress->getCountry(),
                     'phone'           => $shippingAddress->getTelephone(),
-                    'email'           => $shippingAddress->getEmail(),
+                    'email'           => ($shippingAddress->getEmail() ?: $quote->getCustomerEmail()) ?: "integration@bolt.com",
                     'phone_number'    => $shippingAddress->getTelephone(),
-                    'email_address'   => $shippingAddress->getEmail(),
+                    'email_address'   => ($shippingAddress->getEmail() ?: $quote->getCustomerEmail()) ?: "integration@bolt.com",
                 );
 
                 if (@$totals['shipping']) {
+
                     $cartSubmissionData['shipments'] = array(array(
                         'shipping_address' => $cartShippingAddress,
                         'tax_amount'       => (int) round($shippingAddress->getShippingTaxAmount() * 100),
@@ -739,8 +765,44 @@ class Bolt_Boltpay_Helper_Api extends Bolt_Boltpay_Helper_Data
                         'carrier'          => $shippingAddress->getShippingMethod(),
                         'cost'             => (int) round($totals['shipping']->getValue() * 100),
                     ));
-
                     $calculatedTotal += round($totals['shipping']->getValue() * 100);
+
+                } else if (Mage::app()->getStore()->isAdmin()) {
+                    $cartShippingAddress = Mage::getSingleton('admin/session')->getOrderShippingAddress();
+
+                    if (empty($cartShippingAddress['email'])) {
+                        $cartShippingAddress['email'] = $cartShippingAddress['email_address'] = ($quote->getCustomerEmail() ?: "integration@bolt.com");
+                    }
+
+                    /* @var Mage_Adminhtml_Block_Sales_Order_Create_Shipping_Method_Form $shippingMethodBlock */
+                    $shippingMethodBlock =  Mage::app()->getLayout()->createBlock("adminhtml/sales_order_create_shipping_method_form");
+                    $shipping_rate = $shippingMethodBlock->getActiveMethodRate();
+
+                    if ($shipping_rate) {
+                        /* @var Mage_Adminhtml_Block_Sales_Order_Create_Totals $totalsBlock */
+                        $totalsBlock =  Mage::app()->getLayout()->createBlock("adminhtml/sales_order_create_totals_shipping");
+
+                        /* @var Mage_Sales_Model_Quote_Address_Total $grandTotal */
+                        $grandTotal = $totalsBlock->getTotals()['grand_total'];
+                        /* @var Mage_Sales_Model_Quote_Address_Total $taxTotal */
+                        $taxTotal = $totalsBlock->getTotals()['tax'];
+                        /* @var Mage_Sales_Model_Quote_Address_Total $shippingTotal */
+                        $shippingTotal = $totalsBlock->getTotals()['shipping'];
+
+                        $cartSubmissionData['shipments'] = array(array(
+                            'shipping_address' => $cartShippingAddress,
+                            'tax_amount'       => 0,
+                            'service'          => $shipping_rate->getMethodTitle(),
+                            'carrier'          => $shipping_rate->getCarrierTitle(),
+                            'cost'             => $shippingTotal ? (int) round($shippingTotal->getValue() * 100) : 0,
+                        ));
+
+                        $calculatedTotal += round($shippingTotal->getValue() * 100);
+
+                        $cartSubmissionData['total_amount'] = (int) round($grandTotal->getValue() * 100);
+                        $cartSubmissionData['tax_amount'] = $taxTotal ? (int) round($taxTotal->getValue() * 100) : 0;
+                    }
+
                 }
 
                 foreach ($requiredAddressFields as $field) {
@@ -750,12 +812,10 @@ class Bolt_Boltpay_Helper_Api extends Bolt_Boltpay_Helper_Data
                     }
                 }
             }
-
             ////////////////////////////////////////////////////////////////////////////////////
         }
 
         //Mage::log(var_export($cart_submission_data, true), null, "bolt.log");
-
         // In some cases discount amount can cause total_amount to be negative. In this case we need to set it to 0.
         if($cartSubmissionData['total_amount'] < 0) {
             $cartSubmissionData['total_amount'] = 0;

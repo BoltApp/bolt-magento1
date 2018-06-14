@@ -140,7 +140,7 @@ class Bolt_Boltpay_Helper_Data extends Mage_Core_Helper_Abstract
     }
 
     /**
-     * Get MultiPage key
+     * Get publishable key used in cart page.
      *
      * @return string
      */
@@ -151,9 +151,8 @@ class Bolt_Boltpay_Helper_Data extends Mage_Core_Helper_Abstract
     }
 
     /**
-     * Get OnePage Key
+     * Get publishable key used in checkout page.
      *
-     * @param bool $decrypt
      * @return string
      */
     public function getPublishableKeyOnePage()
@@ -163,13 +162,39 @@ class Bolt_Boltpay_Helper_Data extends Mage_Core_Helper_Abstract
     }
 
     /**
+     * Get publishable key used in magento admin.
+     *
      * @return string
+     */
+    public function getPublishableKeyBackOffice()
+    {
+        $key = Mage::getStoreConfig('payment/boltpay/publishable_key_admin');
+        return $this->decryptKey($key);
+    }
+
+    /**
+     * Gets the connect.js url depending on the sandbox state of the application
+     *
+     * @return string  Sandbox connect.js URL for Sanbox mode, otherwise production
      */
     public function getConnectJsUrl()
     {
         return Mage::getStoreConfigFlag('payment/boltpay/test') ?
             Bolt_Boltpay_Block_Checkout_Boltpay::JS_URL_TEST . "/connect.js":
             Bolt_Boltpay_Block_Checkout_Boltpay::JS_URL_PROD . "/connect.js";
+    }
+
+    /**
+     * Initiates the Bolt order creation / token receiving and sets up BoltCheckout with generated data.
+     * In BoltCheckout.configure success callback the order is saved in additional ajax call to
+     * Bolt_Boltpay_OrderController save action.
+     *
+     * @param string $checkoutType  'multi-page' | 'one-page' | 'admin'
+     * @return string               BoltCheckout javascript
+     */
+    public function getCartDataJs($checkoutType = 'multi-page')
+    {
+        return Mage::app()->getLayout()->createBlock('boltpay/checkout_boltpay')->getCartDataJs($checkoutType);
     }
 
     /**

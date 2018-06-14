@@ -27,14 +27,13 @@
 <?php /* @var $this Bolt_Boltpay_Block_Checkout_Boltpay */?>
 <?php
 $quote = Mage::getSingleton('checkout/session')->getQuote();
-$publishableKey = $this->getPublishableKey(false);
+$publishableKey = Mage::helper('boltpay')->getPublishableKeyOnePage();
 
 if(($quote->getPayment()->getMethodInstance()->getCode() == 'boltpay') && $publishableKey): ?>
 
     <?php $theme = Mage::getStoreConfig('payment/boltpay/theme'); ?>
     <div class="bolt-checkout-button with-cards <?= $theme; ?>"></div>
     <script type="text/javascript">
-
         (function() {
 
             var jsonpRequest = function(parent, element, attributes, params, callback_fn) {
@@ -77,7 +76,7 @@ if(($quote->getPayment()->getMethodInstance()->getCode() == 'boltpay') && $publi
 
                     if (typeof BoltConnect !== "undefined") {
                         clearInterval(interval);
-                        <?=$this->getCartDataJs(false); ?>
+                        <?=$this->getCartDataJs('one-page'); ?>
                     }
                 }, 200);
 
