@@ -280,7 +280,7 @@ class Bolt_Boltpay_Helper_Api extends Bolt_Boltpay_Helper_Data
         }
 
         $order = $service->getOrder();
-        $this->markOrderAsNew($order, $reference, $isAjaxRequest);
+        $this->setInitialOrderStatus($order, $reference, $isAjaxRequest);
 
         $this->validateSubmittedOrder($order, $immutableQuote);
 
@@ -317,16 +317,14 @@ class Bolt_Boltpay_Helper_Api extends Bolt_Boltpay_Helper_Data
     }
 
     /**
-     * Sets the order to being in the new state and annotates it with creation meta data
+     * Sets the order's initial status according to Bolt and annotates it with creation meta data
      *
-     * @param Mage_Sales_Model_Order    $order          the newly created order
-     * @param string                    $reference      the Bolt transaction reference
-     * @param bool                      $wasCreatedByFrontend  true if order was created via ajax, false if via webhook
+     * @param Mage_Sales_Model_Order    $order                  the newly created order
+     * @param object                    $transaction            the Bolt transaction data
+     * @param bool                      $wasCreatedByFrontend   true if order was created via ajax, false if via webhook
      */
-    private function markOrderAsNew($order, $reference, $wasCreatedByFrontend) {
+    private function setInitialOrderStatus($order, $transaction, $wasCreatedByFrontend) {
 
-        $boltHelper = Mage::helper('boltpay/api');
-        $transaction = $boltHelper->fetchTransaction($reference);
         $boltCartTotal = $transaction->amount->currency_symbol. ($transaction->amount->amount/100);
 
         $hostname = Mage::getStoreConfig('payment/boltpay/test') ? "merchant-sandbox.bolt.com" : "merchant.bolt.com";
@@ -341,8 +339,9 @@ class Bolt_Boltpay_Helper_Api extends Bolt_Boltpay_Helper_Data
                 "BOLT notification: Authorization requested for $boltCartTotal.  Cart total is {$transaction->amount->currency_symbol}$amount. Bolt transaction: https://%s/transaction/%s. This order was created via webhook (Bolt traceId: <%s>)", $hostname, $reference, $boltTraceId
             );
         }
-        $order->setState(Mage_Sales_Model_Order::STATE_NEW, true, $msg);
 
+        $order->setState(Bolt_Boltpay_Model_Payment::transactionStatusToOrderStatus($transaction->status), true, $msg)
+            ->save();
     }
 
 
