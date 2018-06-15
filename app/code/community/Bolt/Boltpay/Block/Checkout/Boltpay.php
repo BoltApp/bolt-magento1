@@ -303,6 +303,9 @@ class Bolt_Boltpay_Block_Checkout_Boltpay extends Mage_Checkout_Block_Onepage_Re
 
             //////////////////////////////////////////////////////
             // Collect the event Javascripts
+            // We execute these events as early as possible, typically
+            // before Bolt defined event JS to give merchants the
+            // opportunity to do full overrides
             //////////////////////////////////////////////////////
             $check = Mage::getStoreConfig('payment/boltpay/check');
             $onCheckoutStart = Mage::getStoreConfig('payment/boltpay/on_checkout_start');
@@ -329,25 +332,34 @@ class Bolt_Boltpay_Block_Checkout_Boltpay extends Mage_Checkout_Block_Onepage_Re
                     {
                       check: function() {           
                         $check
-                        if ((typeof editForm !== 'undefined') && (typeof editForm.validate === 'function')) {
-                            var bolt_hidden = document.getElementById('boltpay_payment_button');
-                            bolt_hidden.classList.remove('required-entry');
-                            
-                            var is_valid = true;
-                            
-                            if (!editForm.validate()) {
-                                is_valid = false;
-                            } else {        
-                                var shipping_method = $$('input:checked[type=\"radio\"][name=\"order[shipping_method]\"]')[0];
-                                if (typeof shipping_method === 'undefined') {
-                                    alert('Please select a shipping method.');
-                                    is_valid = false;
-                                }
-                            }
-                        
-                            bolt_hidden.classList.add('required-entry');  
-                            return is_valid;   
-                        }
+                        "
+                        .
+                        (($checkoutType === 'admin')
+                            ?
+                                "if ((typeof editForm !== 'undefined') && (typeof editForm.validate === 'function')) {
+                                    var bolt_hidden = document.getElementById('boltpay_payment_button');
+                                    bolt_hidden.classList.remove('required-entry');
+                                    
+                                    var is_valid = true;
+                                    
+                                    if (!editForm.validate()) {
+                                        is_valid = false;
+                                    } else {        
+                                        var shipping_method = $$('input:checked[type=\"radio\"][name=\"order[shipping_method]\"]')[0];
+                                        if (typeof shipping_method === 'undefined') {
+                                            alert('Please select a shipping method.');
+                                            is_valid = false;
+                                        }
+                                    }
+                                
+                                    bolt_hidden.classList.add('required-entry');  
+                                    return is_valid;   
+                                }"
+                            :
+                                ""
+                        )
+                        .
+                        "
                         if (isEmptyQuote) {
                             alert('{$boltHelper->__('Your shopping cart is empty. Please add products to the cart.')}');
                             return false;
@@ -381,50 +393,64 @@ class Bolt_Boltpay_Block_Checkout_Boltpay extends Mage_Checkout_Block_Onepage_Re
                         $onPaymentSubmit
                       },
                       
-                      success: function(transaction, callback) { 
-                        // order and order.submit will exist for admin
-                        if ((typeof order !== 'undefined' ) && (typeof order.submit === 'function')) {
-                            order_completed = true;
-                            callback();
-                            return;
-                        }
-                        new Ajax.Request(
-                            '$saveOrderUrl',
-                            {
-                                method:'post',
-                                onSuccess: 
-                                    function() {
-                                        $success
-                                        order_completed = true;
-                                        callback();  
-                                    },
-                                parameters: 'reference='+transaction.reference
-                            }
-                        );
+                      success: function(transaction, callback) {
+                      "
+                      .
+                      (($checkoutType === 'admin')
+                        ?
+                            "// order and order.submit will exist for admin
+                            if ((typeof order !== 'undefined' ) && (typeof order.submit === 'function')) {
+                                order_completed = true;
+                                callback();
+                            }"
+                        :
+                            "new Ajax.Request(
+                                '$saveOrderUrl',
+                                {
+                                    method:'post',
+                                    onSuccess: 
+                                        function() {
+                                            $success
+                                            order_completed = true;
+                                            callback();  
+                                        },
+                                    parameters: 'reference='+transaction.reference
+                                }
+                            );"
+                      )
+                      .
+                      "
                       },
                       
                       close: function() {
                          $close
-                         //////////////////
-                         // admin logic
-                         //////////////////
-                         if (order_completed && (typeof order !== 'undefined' ) && (typeof order.submit === 'function')) {
-                            var bolt_hidden = document.getElementById('boltpay_payment_button');
-                            bolt_hidden.classList.remove('required-entry');
-                            order.submit();
-                            return;
-                         }
+                         "
+                         .
+                         (($checkoutType === 'admin')
+                            ?
+                                "//////////////////
+                                 // admin logic
+                                 //////////////////
+                                 if (order_completed && (typeof order !== 'undefined' ) && (typeof order.submit === 'function')) {
+                                    var bolt_hidden = document.getElementById('boltpay_payment_button');
+                                    bolt_hidden.classList.remove('required-entry');
+                                    order.submit();
+                                 }"
+                            :
                          
-                         //////////////////
-                         // frontend logic
-                         //////////////////
-                         if (typeof bolt_checkout_close === 'function') {
-                            // used internally to set overlay in firecheckout
-                            bolt_checkout_close();
-                         }
-                         if (order_completed) {   
-                            location.href = '$successUrl';
-                         }
+                                "//////////////////
+                                 // frontend logic
+                                 //////////////////
+                                 if (typeof bolt_checkout_close === 'function') {
+                                    // used internally to set overlay in firecheckout
+                                    bolt_checkout_close();
+                                 }
+                                 if (order_completed) {   
+                                    location.href = '$successUrl';
+                                 }"
+                         )
+                         .
+                         "
                       }
                     }
                 );"

@@ -254,12 +254,7 @@ class Bolt_Boltpay_Helper_Api extends Bolt_Boltpay_Helper_Data
         // setting Bolt as payment method
         $immutableQuote->getShippingAddress()->setPaymentMethod(Bolt_Boltpay_Model_Payment::METHOD_CODE)->save();
         $payment = $immutableQuote->getPayment();
-        $payment->setMethod(Bolt_Boltpay_Model_Payment::METHOD_CODE);
-        $payment
-            ->setAdditionalInformation('bolt_transaction_status', $transaction->status)
-            ->setAdditionalInformation('bolt_reference', $reference)
-            ->setAdditionalInformation('bolt_merchant_transaction_id', $transaction->id)
-            ->setTransactionId($transaction->id)
+        $payment->setMethod(Bolt_Boltpay_Model_Payment::METHOD_CODE)
             ->save();
 
         Mage::helper('boltpay')->collectTotals($immutableQuote, true)->save();
@@ -280,7 +275,7 @@ class Bolt_Boltpay_Helper_Api extends Bolt_Boltpay_Helper_Data
         }
 
         $order = $service->getOrder();
-        $this->setInitialOrderStatus($order, $reference, $isAjaxRequest);
+        $this->setInitialOrderStatus($order, $transaction, $isAjaxRequest);
 
         $this->validateSubmittedOrder($order, $immutableQuote);
 
@@ -317,7 +312,7 @@ class Bolt_Boltpay_Helper_Api extends Bolt_Boltpay_Helper_Data
     }
 
     /**
-     * Sets the order's initial status according to Bolt and annotates it with creation meta data
+     * Sets the order's initial status according to Bolt and annotates it with creation and payment meta data
      *
      * @param Mage_Sales_Model_Order    $order                  the newly created order
      * @param object                    $transaction            the Bolt transaction data
@@ -326,21 +321,29 @@ class Bolt_Boltpay_Helper_Api extends Bolt_Boltpay_Helper_Data
     private function setInitialOrderStatus($order, $transaction, $wasCreatedByFrontend) {
 
         $boltCartTotal = $transaction->amount->currency_symbol. ($transaction->amount->amount/100);
+        $orderTotal = $order->getGrandTotal();
 
         $hostname = Mage::getStoreConfig('payment/boltpay/test') ? "merchant-sandbox.bolt.com" : "merchant.bolt.com";
         if($wasCreatedByFrontend){ // order is create via AJAX call
             $msg = sprintf(
-                "BOLT notification: Authorization requested for $boltCartTotal.  Cart total is {$transaction->amount->currency_symbol}$amount. Bolt transaction: https://%s/transaction/%s.", $hostname, $reference
+                "BOLT notification: Authorization requested for $boltCartTotal.  Order total is {$transaction->amount->currency_symbol}$orderTotal. Bolt transaction: https://%s/transaction/%s.", $hostname, $transaction->reference
             );
         }
         else{ // order is created via hook (orphan)
             $boltTraceId = Mage::helper('boltpay/bugsnag')->getBoltTraceId();
             $msg = sprintf(
-                "BOLT notification: Authorization requested for $boltCartTotal.  Cart total is {$transaction->amount->currency_symbol}$amount. Bolt transaction: https://%s/transaction/%s. This order was created via webhook (Bolt traceId: <%s>)", $hostname, $reference, $boltTraceId
+                "BOLT notification: Authorization requested for $boltCartTotal.  Order total is {$transaction->amount->currency_symbol}$orderTotal. Bolt transaction: https://%s/transaction/%s. This order was created via webhook (Bolt traceId: <%s>)", $hostname, $transaction->reference, $boltTraceId
             );
         }
 
         $order->setState(Bolt_Boltpay_Model_Payment::transactionStatusToOrderStatus($transaction->status), true, $msg)
+            ->save();
+
+        $order->getPayment()
+            ->setAdditionalInformation('bolt_transaction_status', $transaction->status)
+            ->setAdditionalInformation('bolt_reference', $transaction->reference)
+            ->setAdditionalInformation('bolt_merchant_transaction_id', $transaction->id)
+            ->setTransactionId($transaction->id)
             ->save();
     }
 
@@ -712,9 +715,9 @@ class Bolt_Boltpay_Helper_Api extends Bolt_Boltpay_Helper_Data
                     'postal_code'     => $billingAddress->getPostcode(),
                     'country_code'    => $billingAddress->getCountry(),
                     'phone'           => $billingAddress->getTelephone(),
-                    'email'           => ($billingAddress->getEmail() ?: $quote->getCustomerEmail()) ?: "integration@bolt.com",
+                    'email'           => $billingAddress->getEmail() ?: $quote->getCustomerEmail(),
                     'phone_number'    => $billingAddress->getTelephone(),
-                    'email_address'   => ($billingAddress->getEmail() ?: $quote->getCustomerEmail()) ?: "integration@bolt.com",
+                    'email_address'   => $billingAddress->getEmail() ?: $quote->getCustomerEmail(),
                 );
 
                 foreach ($requiredAddressFields as $field) {
@@ -751,9 +754,9 @@ class Bolt_Boltpay_Helper_Api extends Bolt_Boltpay_Helper_Data
                     'postal_code'     => $shippingAddress->getPostcode(),
                     'country_code'    => $shippingAddress->getCountry(),
                     'phone'           => $shippingAddress->getTelephone(),
-                    'email'           => ($shippingAddress->getEmail() ?: $quote->getCustomerEmail()) ?: "integration@bolt.com",
+                    'email'           => $shippingAddress->getEmail() ?: $quote->getCustomerEmail(),
                     'phone_number'    => $shippingAddress->getTelephone(),
-                    'email_address'   => ($shippingAddress->getEmail() ?: $quote->getCustomerEmail()) ?: "integration@bolt.com",
+                    'email_address'   => $shippingAddress->getEmail() ?: $quote->getCustomerEmail(),
                 );
 
                 if (@$totals['shipping']) {

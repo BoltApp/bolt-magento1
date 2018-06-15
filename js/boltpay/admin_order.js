@@ -39,16 +39,27 @@ AdminOrder.prototype.prepareParams =
             });
         }
         var email = document.getElementById('email');
-        // temporarily add require email to force its input  TODO: remove with server side solution
-        email.classList.add('required-entry');
 
-        if ((typeof email != 'undefined') && email.value) {
+
+        if ((typeof email !== 'undefined') && email.value) {
             params['order[account][email]'] = email.value;
-        } else {
-            params['order[account][email]'] = '';
         }
 
         return params;
     }
 ;
 //////////////////////////////////////////////////
+
+// Require email in admin
+var intervalId = setInterval(
+    function() {
+        var email = document.getElementById('email')
+        if (typeof email !== 'undefined') {
+            email.classList.add('required-entry');
+            clearInterval(intervalId);
+        }
+    },500
+);
+
+
+
