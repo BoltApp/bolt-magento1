@@ -581,6 +581,7 @@ class Bolt_Boltpay_Model_Payment extends Mage_Payment_Model_Method_Abstract
                     
                     $service = Mage::getModel('sales/service_order', $order);
                     $invoiceIds = $order->getInvoiceCollection()->getAllIds();
+                    $isPartialRefund = false;
                     // full refund
                     if($baseTotalPaid == $baseAvailableRefund && $captureAmount == $baseAvailableRefund){
                         //actually for order with bolt payment, there is only one invoice can refund
@@ -606,6 +607,7 @@ class Bolt_Boltpay_Model_Payment extends Mage_Payment_Model_Method_Abstract
                         }
                     }
                     else{ // partial refund
+                        $isPartialRefund = true;
                         $isShippingInclTax = Mage::getSingleton('tax/config')->displaySalesShippingInclTax($order->getStoreId());
                         //actually for order with bolt payment, there is only one invoice can refund
                         foreach($invoiceIds as $k=>$invoiceId){
@@ -664,10 +666,36 @@ class Bolt_Boltpay_Model_Payment extends Mage_Payment_Model_Method_Abstract
                                 $baseTotalPaid
                             );
                     }
+
                     if($baseAvailableRefund < 0.01){
+                        //for partial refund, after all the paid amount is refuned
+                        //we need to restore the items in cart separately
+                        if($isPartialRefund){
+                            foreach($invoiceIds as $k=>$invoiceId){
+                                $invoice = Mage::getModel('sales/order_invoice')
+                                            ->load($invoiceId)
+                                            ->setOrder($order);
+                                $qtys = array();
+                                foreach($order->getAllItems() as $item) {
+                                    $qtys[$item->getId()] = $item->getData('qty_ordered');
+                                }   
+                        
+                                $data = array(
+                                    'qtys' => $qtys
+                                );
+                                $creditmemo = $service->prepareInvoiceCreditmemo($invoice, $data);
+                                $creditmemo->setSubtotal(0);
+                                $creditmemo->setShippingAmount(0);
+                                $creditmemo->setBaseGrandTotal(0);
+                                $creditmemo->setGrandTotal(0);
+                                $creditmemo->setRefundRequested(false);
+                                $creditmemo->setOfflineRequested(false);
+                                $creditmemo->setPaymentRefundDisallowed(true);
+                                $creditmemo->register()->save();
+                            }
+                        }
                         $payment->setIsTransactionClosed(true);
-                        $payment->setShouldCloseParentTransaction(true);                        
-                        $order->setState(Mage_Sales_Model_Order::STATE_CLOSED);
+                        $payment->setShouldCloseParentTransaction(true);          
                         $order->save();
                     }
                 }
