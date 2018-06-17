@@ -774,7 +774,7 @@ class Bolt_Boltpay_Helper_Api extends Bolt_Boltpay_Helper_Data
                     $cartShippingAddress = Mage::getSingleton('admin/session')->getOrderShippingAddress();
 
                     if (empty($cartShippingAddress['email'])) {
-                        $cartShippingAddress['email'] = $cartShippingAddress['email_address'] = ($quote->getCustomerEmail() ?: "integration@bolt.com");
+                        $cartShippingAddress['email'] = $cartShippingAddress['email_address'] = $quote->getCustomerEmail();
                     }
 
                     /* @var Mage_Adminhtml_Block_Sales_Order_Create_Shipping_Method_Form $shippingMethodBlock */
