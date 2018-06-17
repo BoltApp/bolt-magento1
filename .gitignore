@@ -7,6 +7,7 @@
 !app/design/frontend/base/default/layout/boltpay.xml
 !app/design/frontend/base/default/template/boltpay/*
 !app/etc/modules/Bolt_Boltpay.xml
+!js/boltpay/*
 !lib/Boltpay/*
 !skin/frontend/base/default/boltpay/*
 !tests/*
