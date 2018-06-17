@@ -88,16 +88,27 @@ class Bolt_Boltpay_ApiController extends Mage_Core_Controller_Front_Action
                 $orderPayment = $order->getPayment();
 
                 $newTransactionStatus = Bolt_Boltpay_Model_Payment::translateHookTypeToTransactionStatus($hookType);
-
                 $prevTransactionStatus = $orderPayment->getAdditionalInformation('bolt_transaction_status');
+
+                // Update the transaction id as it may change, particularly with refunds
+                $orderPayment
+                    ->setAdditionalInformation('bolt_merchant_transaction_id', $transaction->id)
+                    ->setTransactionId($transaction->id);
+
+                /******************************************************************************************************
+                 * TODO: Check the validity of this code.  It has been known to get out of sync and
+                 * is not strictly necessary.  In fact, it is redundant with one-to-one quote to bolt order mapping
+                 * Therefore, throwing errors will be disabled until fully reviewed.
+                 ********************************************************************************************************/
                 $merchantTransactionId = $orderPayment->getAdditionalInformation('bolt_merchant_transaction_id');
                 if ($merchantTransactionId == null || $merchantTransactionId == '') {
                     $orderPayment->setAdditionalInformation('bolt_merchant_transaction_id', $transactionId);
-                    $orderPayment->save();
                 } elseif ($merchantTransactionId != $transactionId) {
-                    throw new Exception(
-                        sprintf(
-                            'Transaction id mismatch. Expected: %s got: %s', $merchantTransactionId, $transactionId
+                    Mage::helper('boltpay/bugsnag')->notifyException(
+                        new Exception(
+                            sprintf(
+                                'Transaction id mismatch. Expected: %s got: %s', $merchantTransactionId, $transactionId
+                            )
                         )
                     );
                 }
@@ -105,6 +116,7 @@ class Bolt_Boltpay_ApiController extends Mage_Core_Controller_Front_Action
                 $captureAmount = $this->getCaptureAmount($transaction);
 
                 $orderPayment->setData('auto_capture', $newTransactionStatus == 'completed');
+                $orderPayment->save();
                 $orderPayment->getMethodInstance()
                     ->setStore($order->getStoreId())
                     ->handleTransactionUpdate($orderPayment, $newTransactionStatus, $prevTransactionStatus, $captureAmount);

@@ -29,7 +29,7 @@
 
   <modules>
     <Bolt_Boltpay>
-      <version>1.1.3</version> <!-- version number should be incremented appropriately  -->
+      <version>1.1.4</version> <!-- version number should be incremented appropriately  -->
     </Bolt_Boltpay>
   </modules>
 
@@ -139,8 +139,25 @@
           <frontName>boltpay</frontName>
         </args>
       </boltpayadmin>
+      <adminhtml>
+        <args>
+          <modules>
+            <Bolt_Boltpay before="Mage_Adminhtml">Bolt_Boltpay_Adminhtml</Bolt_Boltpay>
+          </modules>
+        </args>
+      </adminhtml>
     </routers>
   </admin>
+
+  <adminhtml>
+    <layout>
+      <updates>
+        <boltpay>
+          <file>boltpay.xml</file>
+        </boltpay>
+      </updates>
+    </layout>
+  </adminhtml>
 
   <frontend>
     <routers>
@@ -200,6 +217,7 @@
 }       </additional_css>
 
         <successpage>checkout/onepage/success</successpage>
+        <allow_po_box>1</allow_po_box>
         <skip_payment>0</skip_payment>
         <skip_confirm>1</skip_confirm>
         <add_button_everywhere>0</add_button_everywhere>
