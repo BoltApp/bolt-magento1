@@ -320,6 +320,66 @@ class Bolt_Boltpay_Block_Checkout_Boltpay extends Mage_Checkout_Block_Onepage_Re
             //////////////////////////////////////////////////////
             $immutableQuoteId = $immutableQuote->getId();
 
+            $checkForAdmin = '';
+            $onSuccessCallback = '';
+            $onClose = '';
+            if ($checkoutType === 'admin') {
+                $checkForAdmin = "if ((typeof editForm !== 'undefined') && (typeof editForm.validate === 'function')) {
+                    var bolt_hidden = document.getElementById('boltpay_payment_button');
+                    bolt_hidden.classList.remove('required-entry');
+
+                    var is_valid = true;
+
+                    if (!editForm.validate()) {
+                        is_valid = false;
+                    } else {
+                        var shipping_method = $$('input:checked[type=\"radio\"][name=\"order[shipping_method]\"]')[0];
+                        if (typeof shipping_method === 'undefined') {
+                            alert('Please select a shipping method.');
+                            is_valid = false;
+                        }
+                    }
+
+                    bolt_hidden.classList.add('required-entry');
+                    return is_valid;
+                }";
+                $onSuccessCallback = "function(transaction, callback) {
+                    // order and order.submit will exist for admin
+                    if ((typeof order !== 'undefined' ) && (typeof order.submit === 'function')) {
+                        order_completed = true;
+                        callback();
+                    }
+                }";
+                $onClose = "if (order_completed && (typeof order !== 'undefined' ) && (typeof order.submit === 'function')) {
+                    var bolt_hidden = document.getElementById('boltpay_payment_button');
+                    bolt_hidden.classList.remove('required-entry');
+                    order.submit();
+                 }";
+            } else {
+                $onSuccessCallback = "function(transaction, callback) {
+                    new Ajax.Request(
+                        '$saveOrderUrl',
+                        {
+                            method:'post',
+                            onSuccess:
+                                function() {
+                                    $success
+                                    order_completed = true;
+                                    callback();
+                                },
+                            parameters: 'reference='+transaction.reference
+                        }
+                    );
+                }";
+                $onClose = "if (typeof bolt_checkout_close === 'function') {
+                    // used internally to set overlay in firecheckout
+                    bolt_checkout_close();
+                 }
+                 if (order_completed) {
+                    location.href = '$successUrl';
+                 }";
+            }
+
             return ("
                 var json_cart = $jsonCart;
                 var quote_id = '{$immutableQuoteId}';
@@ -332,34 +392,7 @@ class Bolt_Boltpay_Block_Checkout_Boltpay extends Mage_Checkout_Block_Onepage_Re
                     {
                       check: function() {           
                         $check
-                        "
-                        .
-                        (($checkoutType === 'admin')
-                            ?
-                                "if ((typeof editForm !== 'undefined') && (typeof editForm.validate === 'function')) {
-                                    var bolt_hidden = document.getElementById('boltpay_payment_button');
-                                    bolt_hidden.classList.remove('required-entry');
-                                    
-                                    var is_valid = true;
-                                    
-                                    if (!editForm.validate()) {
-                                        is_valid = false;
-                                    } else {        
-                                        var shipping_method = $$('input:checked[type=\"radio\"][name=\"order[shipping_method]\"]')[0];
-                                        if (typeof shipping_method === 'undefined') {
-                                            alert('Please select a shipping method.');
-                                            is_valid = false;
-                                        }
-                                    }
-                                
-                                    bolt_hidden.classList.add('required-entry');  
-                                    return is_valid;   
-                                }"
-                            :
-                                ""
-                        )
-                        .
-                        "
+                        $checkForAdmin
                         if (isEmptyQuote) {
                             alert('{$boltHelper->__('Your shopping cart is empty. Please add products to the cart.')}');
                             return false;
@@ -393,64 +426,11 @@ class Bolt_Boltpay_Block_Checkout_Boltpay extends Mage_Checkout_Block_Onepage_Re
                         $onPaymentSubmit
                       },
                       
-                      success: function(transaction, callback) {
-                      "
-                      .
-                      (($checkoutType === 'admin')
-                        ?
-                            "// order and order.submit will exist for admin
-                            if ((typeof order !== 'undefined' ) && (typeof order.submit === 'function')) {
-                                order_completed = true;
-                                callback();
-                            }"
-                        :
-                            "new Ajax.Request(
-                                '$saveOrderUrl',
-                                {
-                                    method:'post',
-                                    onSuccess: 
-                                        function() {
-                                            $success
-                                            order_completed = true;
-                                            callback();  
-                                        },
-                                    parameters: 'reference='+transaction.reference
-                                }
-                            );"
-                      )
-                      .
-                      "
-                      },
-                      
+                      success: $onSuccessCallback,
+
                       close: function() {
                          $close
-                         "
-                         .
-                         (($checkoutType === 'admin')
-                            ?
-                                "//////////////////
-                                 // admin logic
-                                 //////////////////
-                                 if (order_completed && (typeof order !== 'undefined' ) && (typeof order.submit === 'function')) {
-                                    var bolt_hidden = document.getElementById('boltpay_payment_button');
-                                    bolt_hidden.classList.remove('required-entry');
-                                    order.submit();
-                                 }"
-                            :
-                         
-                                "//////////////////
-                                 // frontend logic
-                                 //////////////////
-                                 if (typeof bolt_checkout_close === 'function') {
-                                    // used internally to set overlay in firecheckout
-                                    bolt_checkout_close();
-                                 }
-                                 if (order_completed) {   
-                                    location.href = '$successUrl';
-                                 }"
-                         )
-                         .
-                         "
+                         $onClose
                       }
                     }
                 );"
