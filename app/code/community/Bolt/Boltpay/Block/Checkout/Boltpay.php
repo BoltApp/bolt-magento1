@@ -419,14 +419,14 @@ class Bolt_Boltpay_Block_Checkout_Boltpay extends Mage_Checkout_Block_Onepage_Re
             /** @var Mage_Customer_Model_Customer $customer */
             $customer = Mage::getModel('customer/customer')->load($session->getId());
             $address = $customer->getPrimaryShippingAddress();
-            $email = $customer->getEmail();
+            $hints['email'] = $customer->getEmail();
         }
 
         /////////////////////////////////////////////////////////////////////////
         // If address exists populate the hints array with existing address data.
         /////////////////////////////////////////////////////////////////////////
         if ($address) {
-            if (@$email)                   $hints['email']        = $email;
+            if (@$address->getEmail())     $hints['email']        = $address->getEmail();
             if (@$address->getFirstname()) $hints['firstName']    = $address->getFirstname();
             if (@$address->getLastname())  $hints['lastName']     = $address->getLastname();
             if (@$address->getStreet1())   $hints['addressLine1'] = $address->getStreet1();
