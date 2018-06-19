@@ -124,7 +124,7 @@ if(!$this->isAllowedReplaceScriptOnCurrentPage() || !$this->canUseBolt() ) retur
                     // On every 50 ms check if the Bolt connect.js javascript is inserted
                     // by checking the BoltCheckout object existence. Clear the interval when
                     // BoltCheckout is found. On products page the Bolt checkout button
-                    // is set up to forward to the cart page. On cart page BoltCheckout.process is executed.
+                    // is set up to forward to the cart page. On cart page BoltCheckout.configure is executed.
                     var processInterval = setInterval(
                         function() {
 
