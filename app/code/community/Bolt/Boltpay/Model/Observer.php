@@ -178,9 +178,6 @@ class Bolt_Boltpay_Model_Observer
      * Sets the order's initial status according to Bolt and annotates it with creation and payment meta data
      *
      * @param Varien_Event_Observer $observer   the observer object which contains the order
-     * @param Mage_Sales_Model_Order    $order                  the newly created order
-     * @param object                    $transaction            the Bolt transaction data
-     * @param bool                      $wasCreatedByFrontend   true if order was created via ajax, false if via webhook
      */
     public function setInitialOrderStatusAndDetails(Varien_Event_Observer $observer) {
 
@@ -200,7 +197,7 @@ class Bolt_Boltpay_Model_Observer
         $orderTotal = $order->getGrandTotal();
 
         $hostname = Mage::getStoreConfig('payment/boltpay/test') ? "merchant-sandbox.bolt.com" : "merchant.bolt.com";
-        if(Mage::getSingleton('core/session')->getWasCreatedByFrontend()){ // order is create via AJAX call
+        if(Mage::getSingleton('core/session')->getWasCreatedByMagento()){ // order is create via AJAX call
             $msg = sprintf(
                 "BOLT notification: Authorization requested for $boltCartTotal.  Order total is {$transaction->amount->currency_symbol}$orderTotal. Bolt transaction: https://%s/transaction/%s.", $hostname, $transaction->reference
             );

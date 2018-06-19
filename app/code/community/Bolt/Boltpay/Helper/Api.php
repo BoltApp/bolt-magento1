@@ -269,7 +269,7 @@ class Bolt_Boltpay_Helper_Api extends Bolt_Boltpay_Helper_Data
             ///////////////////////////////////////////////////////
             Mage::getSingleton('core/session')->setBoltTransaction($transaction);
             Mage::getSingleton('core/session')->setBoltReference($reference);
-            Mage::getSingleton('core/session')->setWasCreatedByFrontend($isAjaxRequest);
+            Mage::getSingleton('core/session')->setWasCreatedByMagento($isAjaxRequest);
             ///////////////////////////////////////////////////////
 
             $service->submitAll();
@@ -279,7 +279,7 @@ class Bolt_Boltpay_Helper_Api extends Bolt_Boltpay_Helper_Data
             ///////////////////////////////////////////////////////
             Mage::getSingleton('core/session')->unsBoltTransaction();
             Mage::getSingleton('core/session')->unsBoltReference();
-            Mage::getSingleton('core/session')->unsWasCreatedByFrontend();
+            Mage::getSingleton('core/session')->unsWasCreatedByMagento();
             ///////////////////////////////////////////////////////
 
             Mage::helper('boltpay/bugsnag')->addBreadcrumb(

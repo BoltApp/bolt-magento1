@@ -79,6 +79,7 @@ class Bolt_Boltpay_Adminhtml_Sales_Order_CreateController extends Mage_Adminhtml
     {
         $boltReference = $this->getRequest()->getPost('bolt_reference');
         Mage::getSingleton('core/session')->setBoltReference($boltReference);
+        Mage::getSingleton('core/session')->setWasCreatedByMagento(true);
 
         parent::saveAction();
     }
