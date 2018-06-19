@@ -71,4 +71,15 @@ class Bolt_Boltpay_Adminhtml_Sales_Order_CreateController extends Mage_Adminhtml
 
         parent::loadBlockAction();
     }
+
+    /**
+     * Saving quote and create order.  We add the Bolt reference to the session
+     */
+    public function saveAction()
+    {
+        $boltReference = $this->getRequest()->getPost('bolt_reference');
+        Mage::getSingleton('core/session')->setBoltReference($boltReference);
+
+        parent::saveAction();
+    }
 }

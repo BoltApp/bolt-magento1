@@ -154,19 +154,14 @@ class Bolt_Boltpay_Helper_Bugsnag extends Mage_Core_Helper_Abstract
         $this->boltTraceId = $traceId;
     }
 
+    /**
+     * The Bolt TraceID set in the header file
+     *
+     * @return string|null  it will be a string if it is set, otherwise null
+     */
     public function getBoltTraceId() 
     {
-        if(isset($this->boltTraceId)) {
-            return $this->boltTraceId;
-        }
-
-        $traceId = @$_SERVER['HTTP_X_BOLT_TRACE_ID'];
-
-        if(!empty($traceId)) {
-            return $traceId;
-        }
-
-        return null;
+        return $this->boltTraceId ?: @$_SERVER['HTTP_X_BOLT_TRACE_ID'];
     }
 
    /* add metaData for to create new tab
