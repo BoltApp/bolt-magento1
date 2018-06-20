@@ -34,7 +34,7 @@ class Bolt_Boltpay_Model_Validator extends Mage_SalesRule_Model_Validator
      */
     public function resetRoundingDeltas()
     {
-       $this->_roundingDeltas = [];
+       $this->_roundingDeltas = array();
     }
 
 }
