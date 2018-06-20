@@ -1,10 +1,5 @@
 language: php
 
-php:
-  - 5.4
-  - 5.5
-  - 5.6
-
 services:
   - mysql
 
@@ -19,6 +14,13 @@ env:
     - DB=mysql
     - DB_NAME="magento_travis"
     - PHPUNIT_ENVIRONMENT=true
+
+matrix:
+  include:
+    - php: 5.5
+      env: PHPUNIT_PHAR=tests/unit/phpunit-4.8.36.phar
+    - php: 5.6
+      env: PHPUNIT_PHAR=tests/unit/phpunit-5.7.9.phar
 
 before_install:
   - mysql -e 'DROP DATABASE IF EXISTS `$DB_NAME`;'
@@ -40,4 +42,5 @@ script:
   - cp -r magento/. BoltApp/bolt-magento1/
   - cd BoltApp/bolt-magento1/
   - export PHPUNIT_ENVIRONMENT=$PHPUNIT_ENVIRONMENT
-  - php tests/unit/phpunit-5.7.9.phar -c tests/unit/phpunit.xml
+  - ls -la
+  - php ${PHPUNIT_PHAR} -c tests/unit/phpunit.xml
