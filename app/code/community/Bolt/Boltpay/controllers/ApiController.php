@@ -99,16 +99,16 @@ class Bolt_Boltpay_ApiController extends Mage_Core_Controller_Front_Action
                 }
                 
                 if($hookType == 'credit'){
-                    $captureAmount = $bodyParams['amount']/100;
+                    $transactionAmount = $bodyParams['amount']/100;
                 }
                 else{
-                    $captureAmount = $this->getCaptureAmount($transaction);
+                    $transactionAmount = $this->getCaptureAmount($transaction);
                 }
 
                 $orderPayment->setData('auto_capture', $newTransactionStatus == 'completed');
                 $orderPayment->getMethodInstance()
                     ->setStore($order->getStoreId())
-                    ->handleTransactionUpdate($orderPayment, $newTransactionStatus, $prevTransactionStatus, $captureAmount);
+                    ->handleTransactionUpdate($orderPayment, $newTransactionStatus, $prevTransactionStatus, $transactionAmount);
 
                 $this->getResponse()->setBody(
                     json_encode(
