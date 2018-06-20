@@ -71,7 +71,7 @@ class Bolt_Boltpay_Model_ObserverTest extends PHPUnit_Framework_TestCase
      */
     public function setUp()
     {
-        $this->order = $this->getMockBuilder(Mage_Sales_Model_Order::class)
+        $this->order = $this->getMockBuilder('Mage_Sales_Model_Order')
             ->disableOriginalConstructor()
             ->disableOriginalClone()
             ->disableArgumentCloning()
@@ -80,7 +80,7 @@ class Bolt_Boltpay_Model_ObserverTest extends PHPUnit_Framework_TestCase
         $this->session  = Mage::getSingleton('customer/session');
         $this->quote    = Mage::getSingleton('checkout/session')->getQuote();
 
-        $this->orderPayment = $this->getMockBuilder(Mage_Sales_Model_Order_Payment::class)
+        $this->orderPayment = $this->getMockBuilder('Mage_Sales_Model_Order_Payment')
             ->disableOriginalConstructor()
             ->disableOriginalClone()
             ->disableArgumentCloning()
@@ -121,7 +121,7 @@ class Bolt_Boltpay_Model_ObserverTest extends PHPUnit_Framework_TestCase
     public function testAddMessageWhenCapture()
     {
         $incrementId = '100000001';
-        $order = $this->getMockBuilder(Mage_Sales_Model_Order::class)
+        $order = $this->getMockBuilder('Mage_Sales_Model_Order')
             ->disableOriginalConstructor()
             ->disableOriginalClone()
             ->disableArgumentCloning()
@@ -131,7 +131,7 @@ class Bolt_Boltpay_Model_ObserverTest extends PHPUnit_Framework_TestCase
         $order->method('getIncrementId')
             ->will($this->returnValue($incrementId));
 
-        $orderPayment = $this->getMockBuilder(Mage_Sales_Model_Order_Payment::class)
+        $orderPayment = $this->getMockBuilder('Mage_Sales_Model_Order_Payment')
             ->setMethods(['getMethod', 'getOrder'])
             ->enableOriginalConstructor()
             ->getMock();
@@ -154,13 +154,13 @@ class Bolt_Boltpay_Model_ObserverTest extends PHPUnit_Framework_TestCase
      */
     public function testVerifyOrderContents()
     {
-        $observerModel = $this->getMockBuilder(Bolt_Boltpay_Model_Observer::class)
+        $observerModel = $this->getMockBuilder('Bolt_Boltpay_Model_Observer')
             ->enableOriginalConstructor()
             ->setMethods(array('getBoltApiHelper', 'sendOrderEmail'))
             ->getMock();
 
         $quote = $this->quote;
-        $this->order = $this->getMockBuilder(Mage_Sales_Model_Order::class)
+        $this->order = $this->getMockBuilder('Mage_Sales_Model_Order')
             ->enableOriginalConstructor()
             ->getMock()
         ;
@@ -177,7 +177,7 @@ class Bolt_Boltpay_Model_ObserverTest extends PHPUnit_Framework_TestCase
             ->expects($this->atMost(2))
             ->method('save');
 
-        $history = $this->getMockBuilder(Mage_Sales_Model_Order_Status_History::class)
+        $history = $this->getMockBuilder('Mage_Sales_Model_Order_Status_History')
             ->disableOriginalConstructor()
             ->disableOriginalClone()
             ->disableArgumentCloning()
@@ -217,14 +217,14 @@ class Bolt_Boltpay_Model_ObserverTest extends PHPUnit_Framework_TestCase
     {
         /** @var Bolt_Boltpay_Model_Observer $observerModel */
         $methods = [];
-        $observerModel = $this->getMockBuilder(Bolt_Boltpay_Model_Observer::class)
+        $observerModel = $this->getMockBuilder('Bolt_Boltpay_Model_Observer')
             ->disableOriginalConstructor()
             ->disableOriginalClone()
             ->disableArgumentCloning()
             ->setMethods(empty($methods) ? null : $methods)
             ->getMock();
 
-        $this->order = $this->getMockBuilder(Mage_Sales_Model_Order::class)
+        $this->order = $this->getMockBuilder('Mage_Sales_Model_Order')
             ->setMethods(array('getIncrementId', 'addStatusHistoryComment', 'addStatusHistory', 'getPayment', 'sendNewOrderEmail'))
             ->getMock()
         ;
@@ -233,7 +233,7 @@ class Bolt_Boltpay_Model_ObserverTest extends PHPUnit_Framework_TestCase
         $this->order->method('getIncrementId')
             ->will($this->returnValue($incrementId));
 
-        $orderPayment = $this->getMockBuilder(Mage_Sales_Model_Order_Payment::class)
+        $orderPayment = $this->getMockBuilder('Mage_Sales_Model_Order_Payment')
             ->setMethods(['getMethod', 'getOrder'])
             ->enableOriginalConstructor()
             ->getMock();
