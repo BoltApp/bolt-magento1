@@ -99,7 +99,7 @@ class Bolt_Boltpay_Model_Observer
             if ( (int)($order->getGrandTotal()*100) !== $transaction->amount->amount)  {
 
                 $message = "THERE IS A MISMATCH IN THE ORDER PAID AND ORDER RECORDED.<br>PLEASE COMPARE THE ORDER DETAILS WITH THAT RECORD IN YOUR BOLT MERCHANT ACCOUNT AT: ";
-                $message .= Mage::getStoreConfig('payment/boltpay/test') ? "https://merchant-sandbox.bolt.com" : "https://merchant.bolt.com";
+                $message .= $this->_getMerchantDashboardUrl();
                 $message .= "/transaction/$reference";
                 $message .= "<br/>Bolt reports ".($transaction->amount->amount/100).'. Magento expects '.$order->getGrandTotal();
 
@@ -196,17 +196,12 @@ class Bolt_Boltpay_Model_Observer
         $boltCartTotal = $transaction->amount->currency_symbol. ($transaction->amount->amount/100);
         $orderTotal = $order->getGrandTotal();
 
-        $hostname = Mage::getStoreConfig('payment/boltpay/test') ? "merchant-sandbox.bolt.com" : "merchant.bolt.com";
-        if(Mage::getSingleton('core/session')->getWasCreatedByMagento()){ // order is create via AJAX call
-            $msg = sprintf(
-                "BOLT notification: Authorization requested for $boltCartTotal.  Order total is {$transaction->amount->currency_symbol}$orderTotal. Bolt transaction: https://%s/transaction/%s.", $hostname, $transaction->reference
-            );
-        }
-        else{ // order is created via hook (orphan)
-            $boltTraceId = Mage::helper('boltpay/bugsnag')->getBoltTraceId();
-            $msg = sprintf(
-                "BOLT notification: Authorization requested for $boltCartTotal.  Order total is {$transaction->amount->currency_symbol}$orderTotal. Bolt transaction: https://%s/transaction/%s. This order was created via webhook (Bolt traceId: <%s>)", $hostname, $transaction->reference, $boltTraceId
-            );
+        $msg = sprintf(
+            "BOLT notification: Authorization requested for $boltCartTotal.  Order total is {$transaction->amount->currency_symbol}$orderTotal. Bolt transaction: %s/transaction/%s.", $this->_getMerchantDashboardUrl(), $transaction->reference
+        );
+
+        if(Mage::getSingleton('core/session')->getWasCreatedByHook()){ // order is create via AJAX call
+            $msg .= "  This order was created via webhook (Bolt traceId: <".Mage::helper('boltpay/bugsnag')->getBoltTraceId().">)";
         }
 
         $order->setState(Bolt_Boltpay_Model_Payment::transactionStatusToOrderStatus($transaction->status), true, $msg)
@@ -218,5 +213,14 @@ class Bolt_Boltpay_Model_Observer
             ->setAdditionalInformation('bolt_merchant_transaction_id', $transaction->id)
             ->setTransactionId($transaction->id)
             ->save();
+    }
+
+    /**
+     * Return the Bolt Merchant Dashboard URL
+     *
+     * @return string   The 'https://' prefixed merchant dashboard URL.  Sandbox if in testing, otherwise production
+     */
+    private function _getMerchantDashboardUrl() {
+        return Mage::getStoreConfig('payment/boltpay/test') ? Bolt_Boltpay_Model_Payment::URL_MERCHANT_SANDBOX : Bolt_Boltpay_Model_Payment::URL_MERCHANT_PRODUCTION;
     }
 }
