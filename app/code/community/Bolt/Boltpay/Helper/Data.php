@@ -182,15 +182,15 @@ class Bolt_Boltpay_Helper_Data extends Mage_Core_Helper_Abstract
     }
 
     /**
-     * Creates a copy of a quote including items, addresses, customer details,
-     * and shipping and tax options
+     * Creates a clone of a quote including items, addresses, customer details,
+     * and shipping and tax options when
      *
      * @param Mage_Sales_Model_Quote $sourceQuote   The quote to be cloned
-     * @param bool $is_for_multipage    Determines if the quote is for payment only, (i.e. with address and shipping data), or multi-page, (i.e. without address and shipping data)
+     * @param bool $isForMultipage    Determines if the quote is for payment only, (i.e. with address and shipping data), or multi-page, (i.e. without address and shipping data)
      *
      * @return Mage_Sales_Model_Quote  The cloned copy of the source quote
      */
-    public function cloneQuote(Mage_Sales_Model_Quote $sourceQuote, $is_for_multipage = false ) {
+    public function cloneQuote(Mage_Sales_Model_Quote $sourceQuote, $isForMultipage = false ) {
 
         /* @var Mage_Sales_Model_Quote $clonedQuote */
         $clonedQuote = Mage::getSingleton('sales/quote');
@@ -203,7 +203,7 @@ class Bolt_Boltpay_Helper_Data extends Mage_Core_Helper_Abstract
             Mage::helper('boltpay/bugsnag')->notifyException($e);
         }
 
-        if (!$is_for_multipage) {
+        if (!$isForMultipage) {
             // For the checkout page we want to set the
             // billing and shipping, and shipping method at this time.
             // For multi-page, we add the addresses during the shipping and tax hook
@@ -216,11 +216,11 @@ class Bolt_Boltpay_Helper_Data extends Mage_Core_Helper_Abstract
                 ->save();
         }
 
-        /*
-         *  Attempting to reset some of the values already set by merge affects the totals passed to
-         *  Bolt in such a way that the grand total becomes 0.  Since we do not need to reset these values
-         *  we ignore them all.
-         */
+        //////////////////////////////////////////////////////////////////////////////////////////////////
+        // Attempting to reset some of the values already set by merge affects the totals passed to
+        // Bolt in such a way that the grand total becomes 0.  Since we do not need to reset these values
+        // we ignore them all.
+        //////////////////////////////////////////////////////////////////////////////////////////////////
         $fieldsSetByMerge = array(
             'coupon_code',
             'subtotal',

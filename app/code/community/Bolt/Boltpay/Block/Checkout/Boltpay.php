@@ -161,6 +161,7 @@ class Bolt_Boltpay_Block_Checkout_Boltpay extends Mage_Checkout_Block_Onepage_Re
                 }
 
                 // Call Bolt create order API
+                $orderCreationResponse = json_decode('{"token" : ""}');
                 try {
                     /////////////////////////////////////////////////////////////////////////////////
                     // We create a copy of the quote that is immutable by the customer/frontend
@@ -174,7 +175,6 @@ class Bolt_Boltpay_Block_Checkout_Boltpay extends Mage_Checkout_Block_Onepage_Re
 
                 } catch (Exception $e) {
                     Mage::helper('boltpay/bugsnag')->notifyException(new Exception($e));
-                    $orderCreationResponse = json_decode('{"token" : ""}');
                 }
 
                 if ($multipage) {
