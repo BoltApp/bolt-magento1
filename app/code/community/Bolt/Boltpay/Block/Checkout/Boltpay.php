@@ -120,7 +120,7 @@ class Bolt_Boltpay_Block_Checkout_Boltpay extends Mage_Checkout_Block_Onepage_Re
             /* @var Mage_Sales_Model_Quote $sessionQuote */
             $sessionQuote = $session->getQuote();
 
-            // Load the required helper class
+            /* @var Bolt_Boltpay_Helper_Api $boltHelper */
             $boltHelper = Mage::helper('boltpay/api');
 
             ///////////////////////////////////////////////////////////////
@@ -128,10 +128,6 @@ class Bolt_Boltpay_Block_Checkout_Boltpay extends Mage_Checkout_Block_Onepage_Re
             //////////////////////////////////////////////////////////////
             $hintData = $this->getAddressHints($customerSession, $sessionQuote);
             ///////////////////////////////////////////////////////////////
-
-            $orderCreationResponse = '';
-            /* @var Mage_Sales_Model_Quote $immutableQuote */
-            $immutableQuote = Mage::getSingleton('sales/quote');
 
             // Check if cart contains at least one item.
             $isEmptyQuote = (!($sessionQuote->getItemsCollection()->count())) ? true : false;
@@ -165,6 +161,7 @@ class Bolt_Boltpay_Block_Checkout_Boltpay extends Mage_Checkout_Block_Onepage_Re
                 }
 
                 // Call Bolt create order API
+                $orderCreationResponse = json_decode('{"token" : ""}');
                 try {
                     /////////////////////////////////////////////////////////////////////////////////
                     // We create a copy of the quote that is immutable by the customer/frontend
@@ -173,89 +170,11 @@ class Bolt_Boltpay_Block_Checkout_Boltpay extends Mage_Checkout_Block_Onepage_Re
                     // Only shipping, tax and discounts can change, and only if the shipping, tax
                     // and discount calculations change on the Magento server
                     ////////////////////////////////////////////////////////////////////////////////
-
-                    try {
-                        $immutableQuote->merge($sessionQuote);
-                    } catch (Exception $e) {
-                        Mage::helper('boltpay/bugsnag')->notifyException($e);
-                    }
-
-                    if (!$multipage) {
-                        // For the checkout page we want to set the
-                        // billing and shipping, and shipping method at this time.
-                        // For multi-page, we add the addresses during the shipping and tax hook
-                        // and the chosen shipping method at order save time.
-                        $immutableQuote
-                            ->setBillingAddress($sessionQuote->getBillingAddress())
-                            ->setShippingAddress($sessionQuote->getShippingAddress())
-                            ->getShippingAddress()
-                            ->setShippingMethod($sessionQuote->getShippingAddress()->getShippingMethod())
-                            ->save();
-                    }
-
-                    /*
-                     *  Attempting to reset some of the values already set by merge affects the totals passed to
-                     *  Bolt in such a way that the grand total becomes 0.  Since we do not need to reset these values
-                     *  we ignore them all.
-                     */
-                    $fieldsSetByMerge = array(
-                        'coupon_code',
-                        'subtotal',
-                        'base_subtotal',
-                        'subtotal_with_discount',
-                        'base_subtotal_with_discount',
-                        'grand_total',
-                        'base_grand_total',
-                        'auctaneapi_discounts',
-                        'applied_rule_ids',
-                        'items_count',
-                        'items_qty',
-                        'virtual_items_qty',
-                        'trigger_recollect',
-                        'can_apply_msrp',
-                        'totals_collected_flag',
-                        'global_currency_code',
-                        'base_currency_code',
-                        'store_currency_code',
-                        'quote_currency_code',
-                        'store_to_base_rate',
-                        'store_to_quote_rate',
-                        'base_to_global_rate',
-                        'base_to_quote_rate',
-                        'is_changed',
-                        'created_at',
-                        'updated_at',
-                        'entity_id'
-                    );
-
-                    // Add all previously saved data that may have been added by other plugins
-                    foreach ($sessionQuote->getData() as $key => $value) {
-                        if (!in_array($key, $fieldsSetByMerge)) {
-                            $immutableQuote->setData($key, $value);
-                        }
-                    }
-
-                    /////////////////////////////////////////////////////////////////
-                    // Generate new increment order id and associate it with current quote, if not already assigned
-                    // Save the reserved order ID to the session to check order existence at frontend order save time
-                    /////////////////////////////////////////////////////////////////
-                    $reservedOrderId = $sessionQuote->reserveOrderId()->save()->getReservedOrderId();
-                    Mage::getSingleton('core/session')->setReservedOrderId($reservedOrderId);
-
-                    $immutableQuote
-                        ->setCustomer($sessionQuote->getCustomer())
-                        ->setCustomerGroupId($sessionQuote->getCustomerGroupId())
-                        ->setCustomerIsGuest((($sessionQuote->getCustomerId()) ? false : true))
-                        ->setReservedOrderId($reservedOrderId)
-                        ->setStoreId($sessionQuote->getStoreId())
-                        ->setParentQuoteId($sessionQuote->getId())
-                        ->save();
-
+                    $immutableQuote = $boltHelper->cloneQuote($sessionQuote, $multipage);
                     $orderCreationResponse = $this->createBoltOrder($immutableQuote, $multipage);
 
                 } catch (Exception $e) {
                     Mage::helper('boltpay/bugsnag')->notifyException(new Exception($e));
-                    $orderCreationResponse = json_decode('{"token" : ""}');
                 }
 
                 if ($multipage) {
