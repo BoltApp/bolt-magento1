@@ -44,6 +44,9 @@ class Bolt_Boltpay_Model_Payment extends Mage_Payment_Model_Method_Abstract
     const HOOK_TYPE_PENDING = 'pending';
     const HOOK_TYPE_VOID = 'void';
 
+    const URL_MERCHANT_SANDBOX = 'https://merchant-sandbox.bolt.com';
+    const URL_MERCHANT_PRODUCTION = 'https://merchant.bolt.com';
+
     const CAPTURE_TYPE = 'online';
 
     protected $_code               = self::METHOD_CODE;

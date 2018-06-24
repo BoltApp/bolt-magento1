@@ -99,6 +99,15 @@
           </boltpay_payment_capture_add_message>
         </observers>
       </sales_order_payment_capture>
+      <sales_order_place_after>
+        <observers>
+          <set_initial_order_status_and_details>
+            <class>Bolt_Boltpay_Model_Observer</class>
+            <method>setInitialOrderStatusAndDetails</method>
+            <type>singleton</type>
+          </set_initial_order_status_and_details>
+        </observers>
+      </sales_order_place_after>
     </events>
 
     <sales>
@@ -211,6 +220,7 @@
         <allow_po_box>1</allow_po_box>
         <skip_payment>0</skip_payment>
         <skip_confirm>1</skip_confirm>
+        <use_javascript_in_admin>0</use_javascript_in_admin>
         <add_button_everywhere>0</add_button_everywhere>
         <sort_order>0</sort_order>
       </boltpay>

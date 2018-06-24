@@ -298,13 +298,23 @@ class Bolt_Boltpay_Block_Checkout_Boltpay extends Mage_Checkout_Block_Onepage_Re
             // before Bolt defined event JS to give merchants the
             // opportunity to do full overrides
             //////////////////////////////////////////////////////
-            $check = Mage::getStoreConfig('payment/boltpay/check');
-            $onCheckoutStart = Mage::getStoreConfig('payment/boltpay/on_checkout_start');
-            $onShippingDetailsComplete = Mage::getStoreConfig('payment/boltpay/on_shipping_details_complete');
-            $onShippingOptionsComplete = Mage::getStoreConfig('payment/boltpay/on_shipping_options_complete');
-            $onPaymentSubmit = Mage::getStoreConfig('payment/boltpay/on_payment_submit');
-            $success = Mage::getStoreConfig('payment/boltpay/success');
-            $close = Mage::getStoreConfig('payment/boltpay/close');
+            if (($checkoutType === 'admin') && !Mage::getStoreConfig('payment/boltpay/use_javascript_in_admin')) {
+                $check = '';
+                $onCheckoutStart = '';
+                $onShippingDetailsComplete = '';
+                $onShippingOptionsComplete = '';
+                $onPaymentSubmit = '';
+                $success = '';
+                $close = '';
+            } else {
+                $check = Mage::getStoreConfig('payment/boltpay/check');
+                $onCheckoutStart = Mage::getStoreConfig('payment/boltpay/on_checkout_start');
+                $onShippingDetailsComplete = Mage::getStoreConfig('payment/boltpay/on_shipping_details_complete');
+                $onShippingOptionsComplete = Mage::getStoreConfig('payment/boltpay/on_shipping_options_complete');
+                $onPaymentSubmit = Mage::getStoreConfig('payment/boltpay/on_payment_submit');
+                $success = Mage::getStoreConfig('payment/boltpay/success');
+                $close = Mage::getStoreConfig('payment/boltpay/close');
+            }
 
             //////////////////////////////////////////////////////
             // Generate and return BoltCheckout javascript.
@@ -335,13 +345,22 @@ class Bolt_Boltpay_Block_Checkout_Boltpay extends Mage_Checkout_Block_Onepage_Re
                     return is_valid;
                 }";
                 $onSuccessCallback = "function(transaction, callback) {
-                    // order and order.submit will exist for admin
+                    $success
+                    
+                    var input = document.createElement('input');
+                    input.setAttribute('type', 'hidden');
+                    input.setAttribute('name', 'bolt_reference');
+                    input.setAttribute('value', transaction.reference);
+                    document.getElementById('edit_form').appendChild(input);
+                    
+                    // order and order.submit should exist for admin            
                     if ((typeof order !== 'undefined' ) && (typeof order.submit === 'function')) {
                         order_completed = true;
                         callback();
                     }
                 }";
                 $onClose = "if (order_completed && (typeof order !== 'undefined' ) && (typeof order.submit === 'function')) {
+                    $close
                     var bolt_hidden = document.getElementById('boltpay_payment_button');
                     bolt_hidden.classList.remove('required-entry');
                     order.submit();
