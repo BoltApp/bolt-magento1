@@ -459,19 +459,18 @@ class Bolt_Boltpay_Block_Checkout_Boltpay extends Mage_Checkout_Block_Onepage_Re
             }
         }
 
-        // If address exists populate the hints array with existing address data.
-        if ($address) {
-            if (@$address->getEmail())     $hints['email']        = $address->getEmail();
-            if (@$address->getFirstname()) $hints['firstName']    = $address->getFirstname();
-            if (@$address->getLastname())  $hints['lastName']     = $address->getLastname();
-            if (@$address->getStreet1())   $hints['addressLine1'] = $address->getStreet1();
-            if (@$address->getStreet2())   $hints['addressLine2'] = $address->getStreet2();
-            if (@$address->getCity())      $hints['city']         = $address->getCity();
-            if (@$address->getRegion())    $hints['state']        = $address->getRegion();
-            if (@$address->getPostcode())  $hints['zip']          = $address->getPostcode();
-            if (@$address->getTelephone()) $hints['phone']        = $address->getTelephone();
-            if (@$address->getCountryId()) $hints['country']      = $address->getCountryId();
-        }
+        // If address value exists populate the hints array with existing address data.
+        if ($address->getEmail())     $hints['email']        = $address->getEmail();
+        if ($address->getFirstname()) $hints['firstName']    = $address->getFirstname();
+        if ($address->getLastname())  $hints['lastName']     = $address->getLastname();
+        if ($address->getStreet1())   $hints['addressLine1'] = $address->getStreet1();
+        if ($address->getStreet2())   $hints['addressLine2'] = $address->getStreet2();
+        if ($address->getCity())      $hints['city']         = $address->getCity();
+        if ($address->getRegion())    $hints['state']        = $address->getRegion();
+        if ($address->getPostcode())  $hints['zip']          = $address->getPostcode();
+        if ($address->getTelephone()) $hints['phone']        = $address->getTelephone();
+        if ($address->getCountryId()) $hints['country']      = $address->getCountryId();
+
 
         if ($checkoutType === 'admin') {
             $hints['email'] = Mage::getSingleton('admin/session')->getOrderShippingAddress()['email'];
