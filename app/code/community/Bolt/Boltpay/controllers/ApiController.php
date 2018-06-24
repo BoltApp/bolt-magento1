@@ -91,11 +91,13 @@ class Bolt_Boltpay_ApiController extends Mage_Core_Controller_Front_Action
                     $orderPayment->setAdditionalInformation('bolt_merchant_transaction_id', $transactionId);
                     $orderPayment->save();
                 } elseif ($merchantTransactionId != $transactionId && $hookType != 'credit') {
-                    throw new Exception(
-                        sprintf(
-                            'Transaction id mismatch. Expected: %s got: %s', $merchantTransactionId, $transactionId
-                        )
-                    );
+                    Mage::helper('boltpay/bugsnag')->notifyException(
++                        new Exception(
++                            sprintf(
++                                'Transaction id mismatch. Expected: %s got: %s', $merchantTransactionId, $transactionId
++                            )
+                         )
+                     );
                 }
                 
                 if($hookType == 'credit'){
