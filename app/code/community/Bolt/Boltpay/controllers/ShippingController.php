@@ -1,6 +1,6 @@
 <?php
 /**
- * Magento
+ * Bolt magento plugin
  *
  * NOTICE OF LICENSE
  *
@@ -8,19 +8,10 @@
  * that is bundled with this package in the file LICENSE.txt.
  * It is also available through the world-wide-web at this URL:
  * http://opensource.org/licenses/osl-3.0.php
- * If you did not receive a copy of the license and are unable to
- * obtain it through the world-wide-web, please send an email
- * to license@magento.com so we can send you a copy immediately.
- *
- * DISCLAIMER
- *
- * Do not edit or add to this file if you wish to upgrade the Bolt extension
- * to a newer versions in the future. If you wish to customize this extension
- * for your needs please refer to http://www.magento.com for more information.
  *
  * @category   Bolt
  * @package    Bolt_Boltpay
- * @copyright  Copyright (c) 2018 Bolt Financial, Inc (http://www.bolt.com)
+ * @copyright  Copyright (c) 2018 Bolt Financial, Inc (https://www.bolt.com)
  * @license    http://opensource.org/licenses/osl-3.0.php  Open Software License (OSL 3.0)
  */
 
@@ -62,8 +53,9 @@ class Bolt_Boltpay_ShippingController extends Mage_Core_Controller_Front_Action
             $shippingAddress = $requestData->shipping_address;
 
             if (!$this->isPOBoxAllowed() && $this->doesAddressContainPOBox($shippingAddress->street_address1, $shippingAddress->street_address2)) {
+                $errorDetails = array('code' => '6101', 'message' => Mage::helper('boltpay')->__('Address with P.O. Box is not allowed.'));
                 return $this->getResponse()->setHttpResponseCode(403)
-                    ->setBody(json_encode(['status' => 'failure','error' => ['code' => '6101','message' => Mage::helper('boltpay')->__('Address with P.O. Box is not allowed.')]]));
+                    ->setBody(json_encode(array('status' => 'failure','error' => $errorDetails)));
             }
 
             $region = Mage::getModel('directory/region')->loadByName($shippingAddress->region, $shippingAddress->country_code)->getCode();
@@ -210,13 +202,13 @@ class Bolt_Boltpay_ShippingController extends Mage_Core_Controller_Front_Action
             $geoLocationAddress = $this->cleanEmptyAddressField($geoLocationAddress);
 
             // ----------^_^----------- //
-            $shippingAddress = [
+            $shippingAddress = array(
                 'city'       => @$shippingAddressOriginal['city'],
                 'region'     => @$shippingAddressOriginal['region'],
                 'region_id'  => @$shippingAddressOriginal['region_id'] ? $shippingAddressOriginal['region_id'] : null,
                 'postcode'   => @$shippingAddressOriginal['postcode'],
                 'country_id' => @$shippingAddressOriginal['country_id'],
-            ];
+            );
             unset($shippingAddressOriginal);
 
             $addressData = $this->mergeAddressData($geoLocationAddress, $shippingAddress);
