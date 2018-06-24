@@ -45,6 +45,7 @@ class Bolt_Boltpay_Model_Payment extends Mage_Payment_Model_Method_Abstract
     const TRANSACTION_REJECTED_REVERSIBLE = 'rejected_reversible';
     const TRANSACTION_REJECTED_IRREVERSIBLE = 'rejected_irreversible';
     const TRANSACTION_NO_NEW_STATE = 'no_new_state';
+    const TRANSACTION_ALL_STATES = 'all_states';
 
     const HOOK_TYPE_AUTH = 'auth';
     const HOOK_TYPE_CAPTURE = 'capture';
@@ -84,7 +85,7 @@ class Bolt_Boltpay_Model_Payment extends Mage_Payment_Model_Method_Abstract
         self::TRANSACTION_AUTHORIZED => array(self::TRANSACTION_COMPLETED, self::TRANSACTION_CANCELLED, self::TRANSACTION_REJECTED_REVERSIBLE, self::TRANSACTION_REJECTED_IRREVERSIBLE, self::TRANSACTION_PENDING),
         self::TRANSACTION_COMPLETED => array(self::TRANSACTION_NO_NEW_STATE),
         self::TRANSACTION_PENDING => array(self::TRANSACTION_AUTHORIZED, self::TRANSACTION_CANCELLED, self::TRANSACTION_REJECTED_REVERSIBLE, self::TRANSACTION_REJECTED_IRREVERSIBLE, self::TRANSACTION_COMPLETED),
-        self::TRANSACTION_ON_HOLD => array(self::TRANSACTION_CANCELLED, self::TRANSACTION_REJECTED_REVERSIBLE, self::TRANSACTION_REJECTED_IRREVERSIBLE, self::TRANSACTION_COMPLETED, self::TRANSACTION_PENDING, self::TRANSACTION_AUTHORIZED),
+        self::TRANSACTION_ON_HOLD => array(self::TRANSACTION_CANCELLED, self::TRANSACTION_REJECTED_REVERSIBLE, self::TRANSACTION_REJECTED_IRREVERSIBLE),
         self::TRANSACTION_REJECTED_IRREVERSIBLE => array(self::TRANSACTION_NO_NEW_STATE),
         self::TRANSACTION_REJECTED_REVERSIBLE => array(self::TRANSACTION_AUTHORIZED, self::TRANSACTION_CANCELLED, self::TRANSACTION_REJECTED_IRREVERSIBLE, self::TRANSACTION_COMPLETED),
         self::TRANSACTION_CANCELLED => array(self::TRANSACTION_NO_NEW_STATE)
@@ -101,6 +102,19 @@ class Bolt_Boltpay_Model_Payment extends Mage_Payment_Model_Method_Abstract
         self::HOOK_TYPE_REJECTED_IRREVERSIBLE => self::TRANSACTION_REJECTED_IRREVERSIBLE,
         self::HOOK_TYPE_VOID => self::TRANSACTION_CANCELLED
     );
+
+
+    /**
+     * Bolt_Boltpay_Model_Payment constructor.
+     *
+     * Allows transitions from on-hold from the non-webhook context
+     */
+    public function __construct()
+    {
+        if (!Bolt_Boltpay_Helper_Api::$fromHooks) {
+            $this->_validStateTransitions[self::TRANSACTION_ON_HOLD] = array(self::TRANSACTION_ALL_STATES);
+        }
+    }
 
     /**
      * @return bool
@@ -478,8 +492,9 @@ class Bolt_Boltpay_Model_Payment extends Mage_Payment_Model_Method_Abstract
                 }
 
                 //Mage::log(sprintf("Valid next states from %s: %s", $prevTransactionStatus, implode(",",$validNextStatuses)), null, 'bolt.log');
+                $requested_state_or_all = array($newTransactionStatus, self::TRANSACTION_ALL_STATES);
 
-                if (!in_array($newTransactionStatus, $validNextStatuses)) {
+                if (!array_intersect($requested_state_or_all, $this->_validStateTransitions)) {
                     throw new Bolt_Boltpay_InvalidTransitionException($prevTransactionStatus, $newTransactionStatus, sprintf("Cannot transition a transaction from %s to %s", $prevTransactionStatus, $newTransactionStatus));
                 }
             }
