@@ -2,6 +2,7 @@
 
 class Bolt_Boltpay_Model_PaymentTest extends PHPUnit_Framework_TestCase
 {
+
     public function setUp() 
     {
         /* You'll have to load Magento app in any test classes in this method */
@@ -43,5 +44,51 @@ class Bolt_Boltpay_Model_PaymentTest extends PHPUnit_Framework_TestCase
         $this->assertFalse($payment->isInitializeNeeded());
         $this->assertFalse($payment->canManageRecurringProfiles());
         $this->assertFalse($payment->canOrder());
+    }
+
+    public function testAssignDataIfNotAdminArea()
+    {
+        $data = new Varien_Object(array('bolt_reference' => '123456890'));
+
+        $currentMock = $this->getMockBuilder('Bolt_Boltpay_Model_Payment')
+            ->setMethods(array('isAdminArea'))
+            ->enableOriginalConstructor()
+            ->getMock();
+
+        $currentMock->expects($this->once())
+            ->method('isAdminArea')
+            ->will($this->returnValue(false));
+
+        $result = $currentMock->assignData($data);
+
+        $this->assertEquals($currentMock, $result);
+    }
+
+    public function testAssignData()
+    {
+        $data = new Varien_Object(array('bolt_reference' => '123456890'));
+
+        $currentMock = $this->getMockBuilder('Bolt_Boltpay_Model_Payment')
+            ->setMethods(array('isAdminArea', 'getInfoInstance'))
+            ->enableOriginalConstructor()
+            ->getMock();
+
+        $currentMock->expects($this->once())
+            ->method('isAdminArea')
+            ->will($this->returnValue(true));
+
+        $mockPaymentInfo = $this->getMockBuilder('Mage_Payment_Model_Info')
+            ->setMethods(array('setAdditionalInformation'))
+            ->disableOriginalConstructor()
+            ->disableOriginalClone()
+            ->getMock();
+
+        $currentMock->expects($this->once())
+            ->method('getInfoInstance')
+            ->will($this->returnValue($mockPaymentInfo));
+
+        $result = $currentMock->assignData($data);
+
+        $this->assertEquals($currentMock, $result);
     }
 }
