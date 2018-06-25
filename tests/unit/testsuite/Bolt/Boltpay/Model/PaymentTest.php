@@ -2,11 +2,12 @@
 
 class Bolt_Boltpay_Model_PaymentTest extends PHPUnit_Framework_TestCase
 {
+    private $app;
 
     public function setUp() 
     {
         /* You'll have to load Magento app in any test classes in this method */
-        $app = Mage::app('default');
+        $this->app = Mage::app('default');
     }
 
     public function testPaymentConstants() 
@@ -90,5 +91,85 @@ class Bolt_Boltpay_Model_PaymentTest extends PHPUnit_Framework_TestCase
         $result = $currentMock->assignData($data);
 
         $this->assertEquals($currentMock, $result);
+    }
+
+    public function testGetConfigDataIfSkipPaymentEnableAndAllowSpecific()
+    {
+        $this->app->getStore()->setConfig('payment/boltpay/skip_payment', 1);
+
+        $currentMock = $this->getMockBuilder('Bolt_Boltpay_Model_Payment')
+            ->setMethods(array('isAdminArea'))
+            ->disableOriginalConstructor()
+            ->disableOriginalClone()
+            ->getMock();
+
+        $currentMock
+            ->method('isAdminArea')
+            ->will($this->returnValue(false));
+
+        $field = 'allowspecific';
+        $result = $currentMock->getConfigData($field);
+
+        $this->assertNull($result);
+    }
+
+    public function testGetConfigDataIfSkipPaymentEnableAndSpecificCountry()
+    {
+        $this->app->getStore()->setConfig('payment/boltpay/skip_payment', 1);
+
+        $currentMock = $this->getMockBuilder('Bolt_Boltpay_Model_Payment')
+            ->setMethods(array('isAdminArea'))
+            ->disableOriginalConstructor()
+            ->disableOriginalClone()
+            ->getMock();
+
+        $currentMock
+            ->method('isAdminArea')
+            ->will($this->returnValue(false));
+
+        $field = 'specificcountry';
+        $result = $currentMock->getConfigData($field);
+
+        $this->assertNull($result);
+    }
+
+    public function testGetConfigDataAdminAreaWithFieldTitle()
+    {
+        $this->app->getStore()->setConfig('payment/boltpay/skip_payment', 0);
+
+        $currentMock = $this->getMockBuilder('Bolt_Boltpay_Model_Payment')
+            ->setMethods(array('isAdminArea'))
+            ->disableOriginalConstructor()
+            ->disableOriginalClone()
+            ->getMock();
+
+        $currentMock->expects($this->once())
+            ->method('isAdminArea')
+            ->will($this->returnValue(true));
+
+        $field = 'title';
+        $result = $currentMock->getConfigData($field);
+
+        $this->assertEquals(Bolt_Boltpay_Model_Payment::TITLE_ADMIN, $result, 'ADMIN_TITLE field does not match');
+    }
+
+    public function testGetConfigDataNotAdminAreaWithFieldTitle()
+    {
+        $this->app->getStore()->setConfig('payment/boltpay/skip_payment', 0);
+
+        $currentMock = $this->getMockBuilder('Bolt_Boltpay_Model_Payment')
+            ->setMethods(array('isAdminArea'))
+            ->disableOriginalConstructor()
+            ->disableOriginalClone()
+            ->getMock();
+
+        $currentMock->expects($this->once())
+            ->method('isAdminArea')
+            ->will($this->returnValue(false));
+
+        $field = 'title';
+        $result = $currentMock->getConfigData($field);
+
+        $this->assertEquals(Bolt_Boltpay_Model_Payment::TITLE, $result, 'TITLE field does not match');
     }
 }
