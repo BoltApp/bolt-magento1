@@ -804,7 +804,7 @@ class Bolt_Boltpay_Block_Checkout_Boltpay extends Mage_Checkout_Block_Onepage_Re
         $routeName = $this->getRequest()->getRouteName();
         $controllerName = $this->getRequest()->getControllerName();
 
-        $isAllowed = ($routeName === 'checkout' && $controllerName === 'cart');
+        $isAllowed = ($routeName === 'checkout' && $controllerName === 'cart') || $routeName == 'firecheckout';
 
         return $isAllowed;
     }
