@@ -15,7 +15,7 @@
  * @license    http://opensource.org/licenses/osl-3.0.php  Open Software License (OSL 3.0)
  */
 /**
- * This installer adds an index for sales_flat_quote->parent_quote_id
+ * This installer unencrypt publishable key
  *
 /** @var Mage_Core_Model_Resource_Setup $installer */
 $installer = $this;
