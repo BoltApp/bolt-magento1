@@ -216,7 +216,7 @@ class Bolt_Boltpay_ShippingController extends Mage_Core_Controller_Front_Action
 
             $addressData = $this->mergeAddressData($geoLocationAddress, $shippingAddress);
 
-            if (@$addressData['postcode']) {
+            if($quote->getId() && $quote->getItemsCount() && @addressData['postcode']) {
                 $cacheIdentifier = $this->getPrefetchCacheIdentifier($quote, $addressData);
                 $this->saveAddressCache($addressData, $cacheIdentifier);
 

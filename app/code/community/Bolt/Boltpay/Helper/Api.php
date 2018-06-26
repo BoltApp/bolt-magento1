@@ -829,10 +829,6 @@ class Bolt_Boltpay_Helper_Api extends Bolt_Boltpay_Helper_Data
             ),
         );
 
-        if(!$quote->getId() || !$quote->getItemsCount()) {
-            return $response;
-        }
-
         Mage::helper('boltpay')->collectTotals(Mage::getModel('sales/quote')->load($quote->getId()));
 
         //we should first determine if the cart is virtual
