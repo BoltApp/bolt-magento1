@@ -74,9 +74,9 @@ class Bolt_Boltpay_ShippingController extends Mage_Core_Controller_Front_Action
             );
 
             $quoteId = $requestData->cart->order_reference;
+
             /* @var Mage_Sales_Model_Quote $quote */
             $quote = Mage::getModel('sales/quote')->loadByIdWithoutStore($quoteId);
-
 
             /***********************/
             // Set session quote to real customer quote
@@ -174,7 +174,12 @@ class Bolt_Boltpay_ShippingController extends Mage_Core_Controller_Front_Action
 
             $this->getResponse()->setBody($response);
         } catch (Exception $e) {
-            Mage::helper('boltpay/bugsnag')->notifyException($e);
+            $metaData = array();
+            if (isset($quote)){
+                $metaData['quote'] = var_export($quote->debug(), true);
+            }
+
+            Mage::helper('boltpay/bugsnag')->notifyException($e, $metaData);
             throw $e;
         }
     }
