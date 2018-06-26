@@ -260,7 +260,7 @@ class Bolt_Boltpay_Block_Checkout_Boltpay extends Mage_Checkout_Block_Onepage_Re
                     // BoltCheckout.configure will be made because a shipping address is required
                     // under these conditions in order to make that call
                     ///////////////////////////////////////////////////////////////////////////////
-                    if ($checkoutType === 'one-page' && !$immutableQuote->isVirtual() && !$immutableQuote->getShippingAddress()->getShippingMethod() ) {
+                    if ($checkoutType !== 'multi-page' && !$immutableQuote->isVirtual() && !$immutableQuote->getShippingAddress()->getShippingMethod() ) {
                         return '"needs_shipping";';
                     }
                     ///////////////////////////////////////////////////////////////////////////////
