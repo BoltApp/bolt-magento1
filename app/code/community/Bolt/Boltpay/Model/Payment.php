@@ -308,8 +308,8 @@ class Bolt_Boltpay_Model_Payment extends Mage_Payment_Model_Method_Abstract
     public function refund(Varien_Object $payment, $amount)
     {
         try {
-            $bolt_transaction_was_refunded_by_webhook = $payment->getAdditionalInformation('bolt_transaction_was_refunded_by_webhook');
-            if(!empty($bolt_transaction_was_refunded_by_webhook)){
+            $boltTransactionWasRefundedByWebhook = $payment->getAdditionalInformation('bolt_transaction_was_refunded_by_webhook');
+            if(!empty($boltTransactionWasRefundedByWebhook)){
                 return $this;
             }            
             //Mage::log(sprintf('Initiating refund on payment id: %d', $payment->getId()), null, 'bolt.log');
@@ -318,7 +318,8 @@ class Bolt_Boltpay_Model_Payment extends Mage_Payment_Model_Method_Abstract
             $order = $paymentInfo->getOrder();
 
             if (!$order->canCreditmemo() || !($payment->getCreditmemo()->getInvoice()->canRefund())) {
-                return $this;
+                $message = 'Impossible to issue a refund transaction on this invoice';
+                Mage::throwException($message);
             }
             $transId = $payment->getAdditionalInformation('bolt_merchant_transaction_id');
             if ($transId == null) {
