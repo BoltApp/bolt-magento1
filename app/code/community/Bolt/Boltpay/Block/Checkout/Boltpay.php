@@ -171,6 +171,17 @@ class Bolt_Boltpay_Block_Checkout_Boltpay extends Mage_Checkout_Block_Onepage_Re
                     // and discount calculations change on the Magento server
                     ////////////////////////////////////////////////////////////////////////////////
                     $immutableQuote = $boltHelper->cloneQuote($sessionQuote, $multipage);
+
+                    ///////////////////////////////////////////////////////////////////////////////
+                    // if we are missing a shipping method in one-page for a non-virtual cart
+                    // then, we will return a '"needs_shipping";' string meaning that no call to
+                    // BoltCheckout.configure will be made because a shipping address is required
+                    // under these conditions in order to make that call
+                    ///////////////////////////////////////////////////////////////////////////////
+                    if (!$multipage && !$immutableQuote->isVirtual() && !$immutableQuote->getShippingAddress()->getShippingMethod() ) {
+                        return '"needs_shipping";';
+                    }
+
                     $orderCreationResponse = $this->createBoltOrder($immutableQuote, $multipage);
 
                 } catch (Exception $e) {
