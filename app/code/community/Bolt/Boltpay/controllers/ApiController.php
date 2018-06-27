@@ -171,7 +171,7 @@ class Bolt_Boltpay_ApiController extends Mage_Core_Controller_Front_Action
         } catch (Exception $e) {
             if(stripos($e->getMessage(), 'Not all products are available in the requested quantity') !== false) {
                 $this->getResponse()->setHttpResponseCode(422);
-                $this->getResponse()->setBody(json_encode(array('status' => 'error', 'code' => '1001', 'message' => 'one or more items in cart are out of stock')));
+                $this->getResponse()->setBody(json_encode(array('status' => 'error', 'code' => 1001, 'message' => 'one or more items in cart are out of stock')));
             }else{
 
                 $metaData = array();
@@ -181,7 +181,7 @@ class Bolt_Boltpay_ApiController extends Mage_Core_Controller_Front_Action
 
                 Mage::helper('boltpay/bugsnag')->notifyException($e, $metaData);
                 $this->getResponse()->setHttpResponseCode(422);
-                $this->getResponse()->setBody(json_encode(array('status' => 'error', 'code' => '1000', 'message' => $e->getMessage()))); 
+                $this->getResponse()->setBody(json_encode(array('status' => 'error', 'code' => 1000, 'message' => $e->getMessage()))); 
             }
         }
     }
