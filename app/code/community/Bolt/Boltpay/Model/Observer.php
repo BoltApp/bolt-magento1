@@ -95,9 +95,7 @@ class Bolt_Boltpay_Model_Observer
         if (strtolower($method) == Bolt_Boltpay_Model_Payment::METHOD_CODE) {
 
             $reference = $payment->getAdditionalInformation('bolt_reference');
-            $magentoTotal = Mage::getStoreConfig('tax/sales_display/grandtotal', $order->getStoreId()) ?
-                (int)(round($order->getGrandTotal() * 100)) :
-                (int)(round(($order->getGrandTotal() + $order->getTaxAmount()) * 100));
+            $magentoTotal = (int)(round($order->getGrandTotal() * 100));
 
             if ( $magentoTotal !== $transaction->amount->amount)  {
 
