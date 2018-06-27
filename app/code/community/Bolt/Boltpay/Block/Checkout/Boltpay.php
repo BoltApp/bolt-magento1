@@ -493,6 +493,7 @@ class Bolt_Boltpay_Block_Checkout_Boltpay extends Mage_Checkout_Block_Onepage_Re
 
         if ($checkoutType === 'admin') {
             $hints['email'] = Mage::getSingleton('admin/session')->getOrderShippingAddress()['email'];
+            $hints['virtual_terminal_mode'] = true;
         }
 
         return array( "prefill" => $hints );
