@@ -48,6 +48,12 @@ class Bolt_Boltpay_Block_Checkout_Boltpay extends Mage_Checkout_Block_Onepage_Re
     const CSS_SUFFIX = 'bolt-css-suffix';
 
     /**
+     * Javascript compatible string to signify the cart needs a shipping address before
+     * Bolt Cart JS can be generated.
+     */
+    const NEEDS_SHIPPING_JS = '"needs_shipping";';
+
+    /**
      * Set the connect javascript url to production or sandbox based on store config settings
      */
     public function _construct()
@@ -261,7 +267,7 @@ class Bolt_Boltpay_Block_Checkout_Boltpay extends Mage_Checkout_Block_Onepage_Re
                     // under these conditions in order to make that call
                     ///////////////////////////////////////////////////////////////////////////////
                     if ($checkoutType !== 'multi-page' && !$immutableQuote->isVirtual() && !$immutableQuote->getShippingAddress()->getShippingMethod() ) {
-                        return '"needs_shipping";';
+                        return self::NEEDS_SHIPPING_JS;
                     }
                     ///////////////////////////////////////////////////////////////////////////////
 
