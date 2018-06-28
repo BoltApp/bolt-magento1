@@ -42,12 +42,12 @@ if (count($resultData)) {
         if ($decryptedKey && $configId) {
             $connection->query("UPDATE $configTable SET value=? WHERE config_id=?", array($decryptedKey, $configId));
         } else {
-            Mage::log('Something happened with config', null, 'bolt_install.log');
+            Mage::log("Unexpected $configTable entry.  config_id[$configId] and publishable_key[$decryptedKey]", null, 'bolt_install.log');
             Mage::log($row, null, 'bolt_install.log');
         }
     }
 } else {
-    Mage::log('Bolt 1.1.4.9: does not find any publishable keys', null, 'bolt_install.log');
+    Mage::log('Bolt 1.1.4.9: did not find any publishable keys', null, 'bolt_install.log');
 }
 
 Mage::log('Bolt 1.1.4.9 updates installation completed', null, 'bolt_install.log');
