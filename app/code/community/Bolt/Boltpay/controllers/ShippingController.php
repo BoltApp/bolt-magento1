@@ -58,7 +58,9 @@ class Bolt_Boltpay_ShippingController extends Mage_Core_Controller_Front_Action
                     ->setBody(json_encode(array('status' => 'failure','error' => $errorDetails)));
             }
 
-            $region = Mage::getModel('directory/region')->loadByName($shippingAddress->region, $shippingAddress->country_code)->getCode();
+            $directory = Mage::getModel('directory/region')->loadByName($shippingAddress->region, $shippingAddress->country_code);
+            $region = $directory->getName(); // For region field should be the name not a code.
+            $regionId = $directory->getRegionId(); // This is require field for calculation: shipping, shopping price rules and etc.
 
             $addressData = array(
                 'email' => $shippingAddress->email,
@@ -68,6 +70,7 @@ class Bolt_Boltpay_ShippingController extends Mage_Core_Controller_Front_Action
                 'company' => $shippingAddress->company,
                 'city' => $shippingAddress->locality,
                 'region' => $region,
+                'region_id' => $regionId,
                 'postcode' => $shippingAddress->postal_code,
                 'country_id' => $shippingAddress->country_code,
                 'telephone' => $shippingAddress->phone
