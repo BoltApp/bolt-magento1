@@ -1,6 +1,6 @@
 <?php
 /**
- * Magento
+ * Bolt magento plugin
  *
  * NOTICE OF LICENSE
  *
@@ -8,19 +8,10 @@
  * that is bundled with this package in the file LICENSE.txt.
  * It is also available through the world-wide-web at this URL:
  * http://opensource.org/licenses/osl-3.0.php
- * If you did not receive a copy of the license and are unable to
- * obtain it through the world-wide-web, please send an email
- * to license@magento.com so we can send you a copy immediately.
- *
- * DISCLAIMER
- *
- * Do not edit or add to this file if you wish to upgrade the Bolt extension
- * to a newer versions in the future. If you wish to customize this extension
- * for your needs please refer to http://www.magento.com for more information.
  *
  * @category   Bolt
  * @package    Bolt_Boltpay
- * @copyright  Copyright (c) 2018 Bolt Financial, Inc (http://www.bolt.com)
+ * @copyright  Copyright (c) 2018 Bolt Financial, Inc (https://www.bolt.com)
  * @license    http://opensource.org/licenses/osl-3.0.php  Open Software License (OSL 3.0)
  */
 
@@ -172,7 +163,6 @@ class Bolt_Boltpay_Helper_Api extends Bolt_Boltpay_Helper_Data
             }
 
             $transaction = $this->fetchTransaction($reference);
-
             $transactionStatus = $transaction->status;
 
             $immutableQuoteId = $transaction->order->cart->order_reference;
@@ -268,6 +258,7 @@ class Bolt_Boltpay_Helper_Api extends Bolt_Boltpay_Helper_Data
                 }
             }
 
+
             // setting Bolt as payment method
             $immutableQuote->getShippingAddress()->setPaymentMethod(Bolt_Boltpay_Model_Payment::METHOD_CODE)->save();
             $payment = $immutableQuote->getPayment();
@@ -308,7 +299,6 @@ class Bolt_Boltpay_Helper_Api extends Bolt_Boltpay_Helper_Data
         }
 
         $order = $service->getOrder();
-
         $this->validateSubmittedOrder($order, $immutableQuote);
 
         Mage::getModel('boltpay/payment')->handleOrderUpdate($order);
@@ -351,6 +341,7 @@ class Bolt_Boltpay_Helper_Api extends Bolt_Boltpay_Helper_Data
 
         return $order;
     }
+
 
     protected function getRatesDebuggingData($rates) {
         $rateDebuggingData = '';
@@ -689,6 +680,7 @@ class Bolt_Boltpay_Helper_Api extends Bolt_Boltpay_Helper_Data
             $cartSubmissionData['total_amount'] += $totalDiscount;
             /////////////////////////////////////////////////////////////////////////////////////////
         } else {
+
             // Billing / shipping address fields that are required when the address data is sent to Bolt.
             $requiredAddressFields = array(
                 'first_name',
@@ -718,9 +710,9 @@ class Bolt_Boltpay_Helper_Api extends Bolt_Boltpay_Helper_Data
                     'postal_code'     => $billingAddress->getPostcode(),
                     'country_code'    => $billingAddress->getCountry(),
                     'phone'           => $billingAddress->getTelephone(),
-                    'email'           => $billingAddress->getEmail(),
+                    'email'           => $billingAddress->getEmail() ?: $quote->getCustomerEmail(),
                     'phone_number'    => $billingAddress->getTelephone(),
-                    'email_address'   => $billingAddress->getEmail(),
+                    'email_address'   => $billingAddress->getEmail() ?: $quote->getCustomerEmail(),
                 );
 
                 foreach ($requiredAddressFields as $field) {
@@ -730,7 +722,6 @@ class Bolt_Boltpay_Helper_Api extends Bolt_Boltpay_Helper_Data
                     }
                 }
             }
-
             ///////////////////////////////////////////
 
             ////////////////////////////////////////////////////////////////////////////////////
@@ -758,21 +749,58 @@ class Bolt_Boltpay_Helper_Api extends Bolt_Boltpay_Helper_Data
                     'postal_code'     => $shippingAddress->getPostcode(),
                     'country_code'    => $shippingAddress->getCountry(),
                     'phone'           => $shippingAddress->getTelephone(),
-                    'email'           => $shippingAddress->getEmail(),
+                    'email'           => $shippingAddress->getEmail() ?: $quote->getCustomerEmail(),
                     'phone_number'    => $shippingAddress->getTelephone(),
-                    'email_address'   => $shippingAddress->getEmail(),
+                    'email_address'   => $shippingAddress->getEmail() ?: $quote->getCustomerEmail(),
                 );
 
                 if (@$totals['shipping']) {
+
                     $cartSubmissionData['shipments'] = array(array(
                         'shipping_address' => $cartShippingAddress,
-                        'tax_amount'       => round($shippingAddress->getShippingTaxAmount() * 100),
+                        'tax_amount'       => (int) round($shippingAddress->getShippingTaxAmount() * 100),
                         'service'          => $shippingAddress->getShippingDescription(),
                         'carrier'          => $shippingAddress->getShippingMethod(),
-                        'cost'             => round($totals['shipping']->getValue() * 100),
+                        'cost'             => (int) round($totals['shipping']->getValue() * 100),
                     ));
-
                     $calculatedTotal += round($totals['shipping']->getValue() * 100);
+
+                } else if (Mage::app()->getStore()->isAdmin()) {
+                    $cartShippingAddress = Mage::getSingleton('admin/session')->getOrderShippingAddress();
+
+                    if (empty($cartShippingAddress['email'])) {
+                        $cartShippingAddress['email'] = $cartShippingAddress['email_address'] = $quote->getCustomerEmail();
+                    }
+
+                    /* @var Mage_Adminhtml_Block_Sales_Order_Create_Shipping_Method_Form $shippingMethodBlock */
+                    $shippingMethodBlock =  Mage::app()->getLayout()->createBlock("adminhtml/sales_order_create_shipping_method_form");
+                    $shipping_rate = $shippingMethodBlock->getActiveMethodRate();
+
+                    if ($shipping_rate) {
+                        /* @var Mage_Adminhtml_Block_Sales_Order_Create_Totals $totalsBlock */
+                        $totalsBlock =  Mage::app()->getLayout()->createBlock("adminhtml/sales_order_create_totals_shipping");
+
+                        /* @var Mage_Sales_Model_Quote_Address_Total $grandTotal */
+                        $grandTotal = $totalsBlock->getTotals()['grand_total'];
+                        /* @var Mage_Sales_Model_Quote_Address_Total $taxTotal */
+                        $taxTotal = $totalsBlock->getTotals()['tax'];
+                        /* @var Mage_Sales_Model_Quote_Address_Total $shippingTotal */
+                        $shippingTotal = $totalsBlock->getTotals()['shipping'];
+
+                        $cartSubmissionData['shipments'] = array(array(
+                            'shipping_address' => $cartShippingAddress,
+                            'tax_amount'       => 0,
+                            'service'          => $shipping_rate->getMethodTitle(),
+                            'carrier'          => $shipping_rate->getCarrierTitle(),
+                            'cost'             => $shippingTotal ? (int) round($shippingTotal->getValue() * 100) : 0,
+                        ));
+
+                        $calculatedTotal += round($shippingTotal->getValue() * 100);
+
+                        $cartSubmissionData['total_amount'] = (int) round($grandTotal->getValue() * 100);
+                        $cartSubmissionData['tax_amount'] = $taxTotal ? (int) round($taxTotal->getValue() * 100) : 0;
+                    }
+
                 }
 
                 foreach ($requiredAddressFields as $field) {
@@ -782,12 +810,10 @@ class Bolt_Boltpay_Helper_Api extends Bolt_Boltpay_Helper_Data
                     }
                 }
             }
-
             ////////////////////////////////////////////////////////////////////////////////////
         }
 
         //Mage::log(var_export($cart_submission_data, true), null, "bolt.log");
-
         // In some cases discount amount can cause total_amount to be negative. In this case we need to set it to 0.
         if($cartSubmissionData['total_amount'] < 0) {
             $cartSubmissionData['total_amount'] = 0;
@@ -890,8 +916,13 @@ class Bolt_Boltpay_Helper_Api extends Bolt_Boltpay_Helper_Data
         $rates = $this->getSortedShippingRates($shippingAddress);
 
         foreach ($rates as $rate) {
+
             if ($rate->getErrorMessage()) {
-                Mage::helper('boltpay/bugsnag')->notifyException(new Exception("Error getting shipping option for " . $rate->getCarrierTitle() . ": " . $rate->getErrorMessage()));
+                $metaData = array('quote' => var_export($quote->debug(), true));
+                Mage::helper('boltpay/bugsnag')->notifyException(
+                    new Exception("Error getting shipping option for " . $rate->getCarrierTitle() . ": " . $rate->getErrorMessage()),
+                    $metaData
+                );
                 continue;
             }
 
@@ -905,7 +936,12 @@ class Bolt_Boltpay_Helper_Api extends Bolt_Boltpay_Helper_Data
             $rateCode = $rate->getCode();
 
             if (empty($rateCode)) {
-                Mage::helper('boltpay/bugsnag')->notifyException(new Exception('Rate code is empty. ' . var_export($rate->debug(), true)));
+                $metaData = array('quote' => var_export($quote->debug(), true));
+
+                Mage::helper('boltpay/bugsnag')->notifyException(
+                    new Exception('Rate code is empty. ' . var_export($rate->debug(), true)),
+                    $metaData
+                );
             }
 
             $newDiscountedPrice = $quote->getSubtotalWithDiscount();

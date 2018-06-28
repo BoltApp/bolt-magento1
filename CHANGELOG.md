@@ -1,4 +1,12 @@
 # Changelog
+## [v1.1.4](https://s3-us-west-1.amazonaws.com/bolt-public/magento-integration-release/bolt-magento1_v1.1.4.zip) 2018-06-17
+ - Support order creation from magento admin
+ - Add option to disallow shipment to POBox
+
+## [v1.1.3](https://s3-us-west-1.amazonaws.com/bolt-public/magento-integration-release/bolt-magento1_v1.1.3.zip) 2018-06-12
+ - Add index to fix performance issue
+ - Minor fix around transaction states
+
 ## [v1.1.2](https://s3-us-west-1.amazonaws.com/bolt-public/magento-integration-release/bolt-magento1_v1.1.2.zip) 2018-06-06
  - Support for mini-cart
  - Remove legacy status page in admin

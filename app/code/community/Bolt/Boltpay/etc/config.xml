@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!--
 /**
- * Magento
+ * Bolt magento plugin
  *
  * NOTICE OF LICENSE
  *
@@ -9,19 +9,10 @@
  * that is bundled with this package in the file LICENSE.txt.
  * It is also available through the world-wide-web at this URL:
  * http://opensource.org/licenses/osl-3.0.php
- * If you did not receive a copy of the license and are unable to
- * obtain it through the world-wide-web, please send an email
- * to license@magento.com so we can send you a copy immediately.
- *
- * DISCLAIMER
- *
- * Do not edit or add to this file if you wish to upgrade the Bolt extension
- * to a newer versions in the future. If you wish to customize this extension
- * for your needs please refer to http://www.magento.com for more information.
  *
  * @category   Bolt
  * @package    Bolt_Boltpay
- * @copyright  Copyright (c) 2018 Bolt Financial, Inc (http://www.bolt.com)
+ * @copyright  Copyright (c) 2018 Bolt Financial, Inc (https://www.bolt.com)
  * @license    http://opensource.org/licenses/osl-3.0.php  Open Software License (OSL 3.0)
  */
 -->
@@ -29,7 +20,7 @@
 
   <modules>
     <Bolt_Boltpay>
-      <version>1.1.3</version> <!-- version number should be incremented appropriately  -->
+      <version>1.1.4</version> <!-- version number should be incremented appropriately  -->
     </Bolt_Boltpay>
   </modules>
 
@@ -116,6 +107,15 @@
           </boltpay_payment_capture_add_message>
         </observers>
       </sales_order_payment_capture>
+      <sales_order_place_after>
+        <observers>
+          <set_initial_order_status_and_details>
+            <class>Bolt_Boltpay_Model_Observer</class>
+            <method>setInitialOrderStatusAndDetails</method>
+            <type>singleton</type>
+          </set_initial_order_status_and_details>
+        </observers>
+      </sales_order_place_after>
     </events>
 
     <sales>
@@ -173,8 +173,25 @@
           <frontName>boltpay</frontName>
         </args>
       </boltpayadmin>
+      <adminhtml>
+        <args>
+          <modules>
+            <Bolt_Boltpay before="Mage_Adminhtml">Bolt_Boltpay_Adminhtml</Bolt_Boltpay>
+          </modules>
+        </args>
+      </adminhtml>
     </routers>
   </admin>
+
+  <adminhtml>
+    <layout>
+      <updates>
+        <boltpay>
+          <file>boltpay.xml</file>
+        </boltpay>
+      </updates>
+    </layout>
+  </adminhtml>
 
   <frontend>
     <routers>
@@ -234,8 +251,10 @@
 }       </additional_css>
 
         <successpage>checkout/onepage/success</successpage>
+        <allow_po_box>1</allow_po_box>
         <skip_payment>0</skip_payment>
         <skip_confirm>1</skip_confirm>
+        <use_javascript_in_admin>0</use_javascript_in_admin>
         <add_button_everywhere>0</add_button_everywhere>
         <sort_order>0</sort_order>
       </boltpay>
