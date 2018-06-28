@@ -1,6 +1,6 @@
 <?php
 /**
- * Magento
+ * Bolt magento plugin
  *
  * NOTICE OF LICENSE
  *
@@ -8,19 +8,10 @@
  * that is bundled with this package in the file LICENSE.txt.
  * It is also available through the world-wide-web at this URL:
  * http://opensource.org/licenses/osl-3.0.php
- * If you did not receive a copy of the license and are unable to
- * obtain it through the world-wide-web, please send an email
- * to license@magento.com so we can send you a copy immediately.
- *
- * DISCLAIMER
- *
- * Do not edit or add to this file if you wish to upgrade the Bolt extension
- * to a newer versions in the future. If you wish to customize this extension
- * for your needs please refer to http://www.magento.com for more information.
  *
  * @category   Bolt
  * @package    Bolt_Boltpay
- * @copyright  Copyright (c) 2018 Bolt Financial, Inc (http://www.bolt.com)
+ * @copyright  Copyright (c) 2018 Bolt Financial, Inc (https://www.bolt.com)
  * @license    http://opensource.org/licenses/osl-3.0.php  Open Software License (OSL 3.0)
  */
 
@@ -55,6 +46,12 @@ class Bolt_Boltpay_Block_Checkout_Boltpay extends Mage_Checkout_Block_Onepage_Re
 
 
     const CSS_SUFFIX = 'bolt-css-suffix';
+
+    /**
+     * Javascript compatible string to signify the cart needs a shipping address before
+     * Bolt Cart JS can be generated.
+     */
+    const NEEDS_SHIPPING_JS = '"needs_shipping";';
 
     /**
      * Set the connect javascript url to production or sandbox based on store config settings
@@ -126,7 +123,7 @@ class Bolt_Boltpay_Block_Checkout_Boltpay extends Mage_Checkout_Block_Onepage_Re
             ///////////////////////////////////////////////////////////////
             // Populate hints data from quote or customer shipping address.
             //////////////////////////////////////////////////////////////
-            $hintData = $this->getAddressHints($customerSession, $sessionQuote);
+            $hintData = $this->getAddressHints($customerSession, $sessionQuote, $checkoutType);
             ///////////////////////////////////////////////////////////////
 
             $orderCreationResponse = '';
@@ -263,6 +260,17 @@ class Bolt_Boltpay_Block_Checkout_Boltpay extends Mage_Checkout_Block_Onepage_Re
                         ->setParentQuoteId($sessionQuote->getId())
                         ->save();
 
+                    ///////////////////////////////////////////////////////////////////////////////
+                    // if we are missing a shipping method in one-page for a non-virtual cart
+                    // then, we will return a '"needs_shipping";' string meaning that no call to
+                    // BoltCheckout.configure will be made because a shipping address is required
+                    // under these conditions in order to make that call
+                    ///////////////////////////////////////////////////////////////////////////////
+                    if ($checkoutType !== 'multi-page' && !$immutableQuote->isVirtual() && !$immutableQuote->getShippingAddress()->getShippingMethod() ) {
+                        return self::NEEDS_SHIPPING_JS;
+                    }
+                    ///////////////////////////////////////////////////////////////////////////////
+
                     $orderCreationResponse = $this->createBoltOrder($immutableQuote, $checkoutType === 'multi-page');
                 } catch (Exception $e) {
                     Mage::helper('boltpay/bugsnag')->notifyException(new Exception($e));
@@ -307,13 +315,23 @@ class Bolt_Boltpay_Block_Checkout_Boltpay extends Mage_Checkout_Block_Onepage_Re
             // before Bolt defined event JS to give merchants the
             // opportunity to do full overrides
             //////////////////////////////////////////////////////
-            $check = Mage::getStoreConfig('payment/boltpay/check');
-            $onCheckoutStart = Mage::getStoreConfig('payment/boltpay/on_checkout_start');
-            $onShippingDetailsComplete = Mage::getStoreConfig('payment/boltpay/on_shipping_details_complete');
-            $onShippingOptionsComplete = Mage::getStoreConfig('payment/boltpay/on_shipping_options_complete');
-            $onPaymentSubmit = Mage::getStoreConfig('payment/boltpay/on_payment_submit');
-            $success = Mage::getStoreConfig('payment/boltpay/success');
-            $close = Mage::getStoreConfig('payment/boltpay/close');
+            if (($checkoutType === 'admin') && !Mage::getStoreConfig('payment/boltpay/use_javascript_in_admin')) {
+                $check = '';
+                $onCheckoutStart = '';
+                $onShippingDetailsComplete = '';
+                $onShippingOptionsComplete = '';
+                $onPaymentSubmit = '';
+                $success = '';
+                $close = '';
+            } else {
+                $check = Mage::getStoreConfig('payment/boltpay/check');
+                $onCheckoutStart = Mage::getStoreConfig('payment/boltpay/on_checkout_start');
+                $onShippingDetailsComplete = Mage::getStoreConfig('payment/boltpay/on_shipping_details_complete');
+                $onShippingOptionsComplete = Mage::getStoreConfig('payment/boltpay/on_shipping_options_complete');
+                $onPaymentSubmit = Mage::getStoreConfig('payment/boltpay/on_payment_submit');
+                $success = Mage::getStoreConfig('payment/boltpay/success');
+                $close = Mage::getStoreConfig('payment/boltpay/close');
+            }
 
             //////////////////////////////////////////////////////
             // Generate and return BoltCheckout javascript.
@@ -344,13 +362,22 @@ class Bolt_Boltpay_Block_Checkout_Boltpay extends Mage_Checkout_Block_Onepage_Re
                     return is_valid;
                 }";
                 $onSuccessCallback = "function(transaction, callback) {
-                    // order and order.submit will exist for admin
+                    $success
+                    
+                    var input = document.createElement('input');
+                    input.setAttribute('type', 'hidden');
+                    input.setAttribute('name', 'bolt_reference');
+                    input.setAttribute('value', transaction.reference);
+                    document.getElementById('edit_form').appendChild(input);
+                    
+                    // order and order.submit should exist for admin            
                     if ((typeof order !== 'undefined' ) && (typeof order.submit === 'function')) {
                         order_completed = true;
                         callback();
                     }
                 }";
                 $onClose = "if (order_completed && (typeof order !== 'undefined' ) && (typeof order.submit === 'function')) {
+                    $close
                     var bolt_hidden = document.getElementById('boltpay_payment_button');
                     bolt_hidden.classList.remove('required-entry');
                     order.submit();
@@ -390,7 +417,7 @@ class Bolt_Boltpay_Block_Checkout_Boltpay extends Mage_Checkout_Block_Onepage_Re
                     json_cart,
                     $jsonHints,
                     {
-                      check: function() {           
+                      check: function() {
                         $check
                         $checkForAdmin
                         if (isEmptyQuote) {
@@ -445,40 +472,45 @@ class Bolt_Boltpay_Block_Checkout_Boltpay extends Mage_Checkout_Block_Onepage_Re
      * Get address data for sending as hints.
      *
      * @param $session      Customer session
+     * @param string $checkoutType  'multi-page' | 'one-page' | 'admin'
+     *
      * @return array        hints data
      */
-    private function getAddressHints($session, $quote)
+    private function getAddressHints($session, $quote, $checkoutType)
     {
 
         $hints = array();
 
-        ///////////////////////////////////////////////////////////////
+        /////////////////////////////////////////////////////////////////////////
         // Check if the quote shipping address is set,
         // otherwise use customer shipping address for logged in users.
-        ///////////////////////////////////////////////////////////////
+        /////////////////////////////////////////////////////////////////////////
         $address = $quote->getShippingAddress();
-
-        if ($session && $session->isLoggedIn()) {
-            /** @var Mage_Customer_Model_Customer $customer */
-            $customer = Mage::getModel('customer/customer')->load($session->getId());
-            $address = $customer->getPrimaryShippingAddress();
-            $hints['email'] = $customer->getEmail();
+        if (!$address->getStreet1()) {
+            if ( $session && $session->isLoggedIn()) {
+                /** @var Mage_Customer_Model_Customer $customer */
+                $customer = Mage::getModel('customer/customer')->load($session->getId());
+                $address = $customer->getPrimaryShippingAddress();
+                $hints['email'] = $customer->getEmail();
+            }
         }
 
-        /////////////////////////////////////////////////////////////////////////
-        // If address exists populate the hints array with existing address data.
-        /////////////////////////////////////////////////////////////////////////
-        if ($address) {
-            if (@$address->getEmail())     $hints['email']        = $address->getEmail();
-            if (@$address->getFirstname()) $hints['firstName']    = $address->getFirstname();
-            if (@$address->getLastname())  $hints['lastName']     = $address->getLastname();
-            if (@$address->getStreet1())   $hints['addressLine1'] = $address->getStreet1();
-            if (@$address->getStreet2())   $hints['addressLine2'] = $address->getStreet2();
-            if (@$address->getCity())      $hints['city']         = $address->getCity();
-            if (@$address->getRegion())    $hints['state']        = $address->getRegion();
-            if (@$address->getPostcode())  $hints['zip']          = $address->getPostcode();
-            if (@$address->getTelephone()) $hints['phone']        = $address->getTelephone();
-            if (@$address->getCountryId()) $hints['country']      = $address->getCountryId();
+        // If address value exists populate the hints array with existing address data.
+        if ($address->getEmail())     $hints['email']        = $address->getEmail();
+        if ($address->getFirstname()) $hints['firstName']    = $address->getFirstname();
+        if ($address->getLastname())  $hints['lastName']     = $address->getLastname();
+        if ($address->getStreet1())   $hints['addressLine1'] = $address->getStreet1();
+        if ($address->getStreet2())   $hints['addressLine2'] = $address->getStreet2();
+        if ($address->getCity())      $hints['city']         = $address->getCity();
+        if ($address->getRegion())    $hints['state']        = $address->getRegion();
+        if ($address->getPostcode())  $hints['zip']          = $address->getPostcode();
+        if ($address->getTelephone()) $hints['phone']        = $address->getTelephone();
+        if ($address->getCountryId()) $hints['country']      = $address->getCountryId();
+
+
+        if ($checkoutType === 'admin') {
+            $hints['email'] = Mage::getSingleton('admin/session')->getOrderShippingAddress()['email'];
+            $hints['virtual_terminal_mode'] = true;
         }
 
         return array( "prefill" => $hints );
@@ -779,7 +811,7 @@ class Bolt_Boltpay_Block_Checkout_Boltpay extends Mage_Checkout_Block_Onepage_Re
         $routeName = $this->getRequest()->getRouteName();
         $controllerName = $this->getRequest()->getControllerName();
 
-        $isAllowed = ($routeName === 'checkout' && $controllerName === 'cart');
+        $isAllowed = ($routeName === 'checkout' && $controllerName === 'cart') || $routeName == 'firecheckout';
 
         return $isAllowed;
     }

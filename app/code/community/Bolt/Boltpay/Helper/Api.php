@@ -1,6 +1,6 @@
 <?php
 /**
- * Magento
+ * Bolt magento plugin
  *
  * NOTICE OF LICENSE
  *
@@ -8,19 +8,10 @@
  * that is bundled with this package in the file LICENSE.txt.
  * It is also available through the world-wide-web at this URL:
  * http://opensource.org/licenses/osl-3.0.php
- * If you did not receive a copy of the license and are unable to
- * obtain it through the world-wide-web, please send an email
- * to license@magento.com so we can send you a copy immediately.
- *
- * DISCLAIMER
- *
- * Do not edit or add to this file if you wish to upgrade the Bolt extension
- * to a newer versions in the future. If you wish to customize this extension
- * for your needs please refer to http://www.magento.com for more information.
  *
  * @category   Bolt
  * @package    Bolt_Boltpay
- * @copyright  Copyright (c) 2018 Bolt Financial, Inc (http://www.bolt.com)
+ * @copyright  Copyright (c) 2018 Bolt Financial, Inc (https://www.bolt.com)
  * @license    http://opensource.org/licenses/osl-3.0.php  Open Software License (OSL 3.0)
  */
 
@@ -245,7 +236,8 @@ class Bolt_Boltpay_Helper_Api extends Bolt_Boltpay_Helper_Data
                     'transaction'   => $transaction,
                     'rates' => $this->getRatesDebuggingData($rates),
                     'service' => $service,
-                    'shipping_address' => var_export($shippingAddress->debug(), true)
+                    'shipping_address' => var_export($shippingAddress->debug(), true),
+                    'quote' => var_export($immutableQuote->debug(), true)
                 );
                 Mage::helper('boltpay/bugsnag')->notifyException(new Exception($errorMessage), $metaData);
             }
@@ -263,8 +255,25 @@ class Bolt_Boltpay_Helper_Api extends Bolt_Boltpay_Helper_Data
         $service = Mage::getModel('sales/service_quote', $immutableQuote);
 
         try {
+            ///////////////////////////////////////////////////////
+            /// These values are used in the observer after successful
+            /// order creation
+            ///////////////////////////////////////////////////////
+            Mage::getSingleton('core/session')->setBoltTransaction($transaction);
+            Mage::getSingleton('core/session')->setBoltReference($reference);
+            Mage::getSingleton('core/session')->setWasCreatedByHook(!$isAjaxRequest);
+            ///////////////////////////////////////////////////////
+
             $service->submitAll();
         } catch (Exception $e) {
+            ///////////////////////////////////////////////////////
+            /// Unset session values set above
+            ///////////////////////////////////////////////////////
+            Mage::getSingleton('core/session')->unsBoltTransaction();
+            Mage::getSingleton('core/session')->unsBoltReference();
+            Mage::getSingleton('core/session')->unsWasCreatedByHook();
+            ///////////////////////////////////////////////////////
+
             Mage::helper('boltpay/bugsnag')->addBreadcrumb(
                 array(
                     'transaction'   => json_encode((array)$transaction),
@@ -275,8 +284,6 @@ class Bolt_Boltpay_Helper_Api extends Bolt_Boltpay_Helper_Data
         }
 
         $order = $service->getOrder();
-        $this->setInitialOrderStatus($order, $transaction, $isAjaxRequest);
-
         $this->validateSubmittedOrder($order, $immutableQuote);
 
         Mage::getModel('boltpay/payment')->handleOrderUpdate($order);
@@ -311,41 +318,7 @@ class Bolt_Boltpay_Helper_Api extends Bolt_Boltpay_Helper_Data
         return $order;
     }
 
-    /**
-     * Sets the order's initial status according to Bolt and annotates it with creation and payment meta data
-     *
-     * @param Mage_Sales_Model_Order    $order                  the newly created order
-     * @param object                    $transaction            the Bolt transaction data
-     * @param bool                      $wasCreatedByFrontend   true if order was created via ajax, false if via webhook
-     */
-    private function setInitialOrderStatus($order, $transaction, $wasCreatedByFrontend) {
 
-        $boltCartTotal = $transaction->amount->currency_symbol. ($transaction->amount->amount/100);
-        $orderTotal = $order->getGrandTotal();
-
-        $hostname = Mage::getStoreConfig('payment/boltpay/test') ? "merchant-sandbox.bolt.com" : "merchant.bolt.com";
-        if($wasCreatedByFrontend){ // order is create via AJAX call
-            $msg = sprintf(
-                "BOLT notification: Authorization requested for $boltCartTotal.  Order total is {$transaction->amount->currency_symbol}$orderTotal. Bolt transaction: https://%s/transaction/%s.", $hostname, $transaction->reference
-            );
-        }
-        else{ // order is created via hook (orphan)
-            $boltTraceId = Mage::helper('boltpay/bugsnag')->getBoltTraceId();
-            $msg = sprintf(
-                "BOLT notification: Authorization requested for $boltCartTotal.  Order total is {$transaction->amount->currency_symbol}$orderTotal. Bolt transaction: https://%s/transaction/%s. This order was created via webhook (Bolt traceId: <%s>)", $hostname, $transaction->reference, $boltTraceId
-            );
-        }
-
-        $order->setState(Bolt_Boltpay_Model_Payment::transactionStatusToOrderStatus($transaction->status), true, $msg)
-            ->save();
-
-        $order->getPayment()
-            ->setAdditionalInformation('bolt_transaction_status', $transaction->status)
-            ->setAdditionalInformation('bolt_reference', $transaction->reference)
-            ->setAdditionalInformation('bolt_merchant_transaction_id', $transaction->id)
-            ->setTransactionId($transaction->id)
-            ->save();
-    }
 
 
     protected function getRatesDebuggingData($rates) {
@@ -921,8 +894,13 @@ class Bolt_Boltpay_Helper_Api extends Bolt_Boltpay_Helper_Data
         $rates = $this->getSortedShippingRates($shippingAddress);
 
         foreach ($rates as $rate) {
+
             if ($rate->getErrorMessage()) {
-                Mage::helper('boltpay/bugsnag')->notifyException(new Exception("Error getting shipping option for " . $rate->getCarrierTitle() . ": " . $rate->getErrorMessage()));
+                $metaData = array('quote' => var_export($quote->debug(), true));
+                Mage::helper('boltpay/bugsnag')->notifyException(
+                    new Exception("Error getting shipping option for " . $rate->getCarrierTitle() . ": " . $rate->getErrorMessage()),
+                    $metaData
+                );
                 continue;
             }
 
@@ -936,7 +914,12 @@ class Bolt_Boltpay_Helper_Api extends Bolt_Boltpay_Helper_Data
             $rateCode = $rate->getCode();
 
             if (empty($rateCode)) {
-                Mage::helper('boltpay/bugsnag')->notifyException(new Exception('Rate code is empty. ' . var_export($rate->debug(), true)));
+                $metaData = array('quote' => var_export($quote->debug(), true));
+
+                Mage::helper('boltpay/bugsnag')->notifyException(
+                    new Exception('Rate code is empty. ' . var_export($rate->debug(), true)),
+                    $metaData
+                );
             }
 
             $shippingDiscountModifier = $this->getShippingDiscountModifier($origTotalWithoutShippingOrTax, $quote);
