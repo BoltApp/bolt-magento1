@@ -264,22 +264,32 @@ class Bolt_Boltpay_Helper_Api extends Bolt_Boltpay_Helper_Data
             $payment = $immutableQuote->getPayment();
             $payment->setMethod(Bolt_Boltpay_Model_Payment::METHOD_CODE);
 
-            // adding transaction data to payment instance
-            $payment->setAdditionalInformation('bolt_transaction_status', $transactionStatus);
-            $payment->setAdditionalInformation('bolt_reference', $reference);
-            $payment->setAdditionalInformation('bolt_merchant_transaction_id', $transaction->id);
-            //add if called by ajax request, this info would be used for log
-            $payment->setAdditionalInformation('is_ajax_request', $isAjaxRequest);
-            $payment->setTransactionId($transaction->id);
-
             Mage::helper('boltpay')->collectTotals($immutableQuote, true)->save();
 
             // a call to internal Magento service for order creation
             $service = Mage::getModel('sales/service_quote', $immutableQuote);
 
             try {
+                ///////////////////////////////////////////////////////
+                /// These values are used in the observer after successful
+                /// order creation
+                ///////////////////////////////////////////////////////
+                Mage::getSingleton('core/session')->setBoltTransaction($transaction);
+                Mage::getSingleton('core/session')->setBoltReference($reference);
+                Mage::getSingleton('core/session')->setWasCreatedByHook(!$isAjaxRequest);
+                ///////////////////////////////////////////////////////
+
                 $service->submitAll();
             } catch (Exception $e) {
+
+                ///////////////////////////////////////////////////////
+                /// Unset session values set above
+                ///////////////////////////////////////////////////////
+                Mage::getSingleton('core/session')->unsBoltTransaction();
+                Mage::getSingleton('core/session')->unsBoltReference();
+                Mage::getSingleton('core/session')->unsWasCreatedByHook();
+                ///////////////////////////////////////////////////////
+
                 Mage::helper('boltpay/bugsnag')->addBreadcrumb(
                     array(
                         'transaction'   => json_encode((array)$transaction),
@@ -305,39 +315,25 @@ class Bolt_Boltpay_Helper_Api extends Bolt_Boltpay_Helper_Data
 
         Mage::dispatchEvent('bolt_boltpay_save_order_after', array('order'=>$order, 'quote'=>$immutableQuote, 'transaction' => $transaction));
 
+        $parentQuote = Mage::getModel('sales/quote')->loadByIdWithoutStore($immutableQuote->getParentQuoteId());
         if ($sessionQuoteId) {
             $checkoutSession = Mage::getSingleton('checkout/session');
-
             $checkoutSession
                 ->clearHelperData();
-
             $checkoutSession
                 ->setLastQuoteId($parentQuote->getId())
                 ->setLastSuccessQuoteId($parentQuote->getId());
-
             // add order information to the session
             $checkoutSession->setLastOrderId($order->getId())
                 ->setRedirectUrl('')
                 ->setLastRealOrderId($order->getIncrementId());
         }
-
-        ///////////////////////////////////////////////////////////
-        // Close out session by deleting the parent quote,
-        // deactivating the immutable quote so that it can no
-        // longer be used, as well as deleting all related clones
+        // Close out session by deleting the parent quote and deactivating the immutable quote so that it can no
+        // longer be used.
         /* @var Mage_Sales_Model_Quote $parentQuote */
         $immutableQuote->setIsActive(false)
             ->save();
-        /* @var Mage_Sales_Model_Quote[] $expiredSiblingQuotes */
-        $expiredSiblingQuotes = Mage::getModel('sales/quote')
-            ->getCollection()
-            ->addFieldToFilter('parent_quote_id', $parentQuote->getId());
-
-        foreach ($expiredSiblingQuotes as $expiredQuote) {
-            $expiredQuote->delete();
-        }
         $parentQuote->delete();
-        ///////////////////////////////////////////////////////////
 
         return $order;
     }
