@@ -68,8 +68,7 @@
             </api_key>
             <publishable_key_onepage translate="label">
               <label> Publishable Key - One Page Checkout</label>
-              <frontend_type>obscure</frontend_type>
-              <backend_model>adminhtml/system_config_backend_encrypted</backend_model>
+              <frontend_type>text</frontend_type>
               <sort_order>11</sort_order>
               <show_in_default>1</show_in_default>
               <show_in_website>1</show_in_website>
@@ -77,8 +76,7 @@
             </publishable_key_onepage>
             <publishable_key_multipage translate="label">
               <label> Publishable Key - Multi-Page Checkout</label>
-              <frontend_type>obscure</frontend_type>
-              <backend_model>adminhtml/system_config_backend_encrypted</backend_model>
+              <frontend_type>text</frontend_type>
               <sort_order>12</sort_order>
               <show_in_default>1</show_in_default>
               <show_in_website>1</show_in_website>
@@ -86,8 +84,7 @@
             </publishable_key_multipage>
             <publishable_key_admin translate="label">
               <label> Publishable Key - Backoffice</label>
-              <frontend_type>obscure</frontend_type>
-              <backend_model>adminhtml/system_config_backend_encrypted</backend_model>
+              <frontend_type>text</frontend_type>
               <sort_order>13</sort_order>
               <show_in_default>1</show_in_default>
               <show_in_website>1</show_in_website>

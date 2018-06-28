@@ -120,17 +120,6 @@ class Bolt_Boltpay_Helper_Data extends Mage_Core_Helper_Abstract
     }
 
     /**
-     * Decrypt key
-     *
-     * @param $key
-     * @return string
-     */
-    private function decryptKey($key)
-    {
-        return Mage::helper('core')->decrypt($key);
-    }
-
-    /**
      * Get publishable key used in cart page.
      *
      * @return string
@@ -138,7 +127,7 @@ class Bolt_Boltpay_Helper_Data extends Mage_Core_Helper_Abstract
     public function getPublishableKeyMultiPage()
     {
         $key = Mage::getStoreConfig('payment/boltpay/publishable_key_multipage');
-        return $this->decryptKey($key);
+        return $key;
     }
 
     /**
@@ -149,7 +138,7 @@ class Bolt_Boltpay_Helper_Data extends Mage_Core_Helper_Abstract
     public function getPublishableKeyOnePage()
     {
         $key = Mage::getStoreConfig('payment/boltpay/publishable_key_onepage');
-        return $this->decryptKey($key);
+        return $key;
     }
 
     /**
@@ -160,7 +149,7 @@ class Bolt_Boltpay_Helper_Data extends Mage_Core_Helper_Abstract
     public function getPublishableKeyBackOffice()
     {
         $key = Mage::getStoreConfig('payment/boltpay/publishable_key_admin');
-        return $this->decryptKey($key);
+        return $key;
     }
 
     /**
