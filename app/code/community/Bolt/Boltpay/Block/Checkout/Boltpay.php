@@ -126,6 +126,8 @@ class Bolt_Boltpay_Block_Checkout_Boltpay extends Mage_Checkout_Block_Onepage_Re
             $hintData = $this->getAddressHints($customerSession, $sessionQuote, $checkoutType);
             ///////////////////////////////////////////////////////////////
 
+            $orderCreationResponse = json_decode('{"token" : ""}');
+
             // Check if cart contains at least one item.
             $isEmptyQuote = (!($sessionQuote->getItemsCollection()->count())) ? true : false;
 
@@ -160,7 +162,6 @@ class Bolt_Boltpay_Block_Checkout_Boltpay extends Mage_Checkout_Block_Onepage_Re
                 }
 
                 // Call Bolt create order API
-                $orderCreationResponse = json_decode('{"token" : ""}');
                 try {
                     $isMultiPage = $checkoutType === 'multi-page';
 
@@ -192,8 +193,6 @@ class Bolt_Boltpay_Block_Checkout_Boltpay extends Mage_Checkout_Block_Onepage_Re
                     $boltHelper->applyShippingRate($sessionQuote, $shippingMethod);
                 }
 
-            } else {
-                return '';
             }
 
             $authCapture = (Mage::getStoreConfig('payment/boltpay/auto_capture') == self::AUTO_CAPTURE_ENABLED);
