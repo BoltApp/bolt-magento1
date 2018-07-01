@@ -83,6 +83,13 @@ class Bolt_Boltpay_Block_Checkout_Boltpay extends Mage_Checkout_Block_Onepage_Re
 
         $items = $quote->getAllVisibleItems();
 
+        $has_admin_shipping = false;
+        if (Mage::app()->getStore()->isAdmin()) {
+            /* @var Mage_Adminhtml_Block_Sales_Order_Create_Shipping_Method_Form $shippingMethodBlock */
+            $shippingMethodBlock = Mage::app()->getLayout()->createBlock("adminhtml/sales_order_create_shipping_method_form");
+            $has_admin_shipping = $shippingMethodBlock->getActiveMethodRate();
+        }
+
         if (empty($items)) {
 
             return json_decode('{"token" : "", "error": "Your shopping cart is empty. Please add products to the cart."}');
@@ -91,6 +98,7 @@ class Bolt_Boltpay_Block_Checkout_Boltpay extends Mage_Checkout_Block_Onepage_Re
             !$isMultiPage
             && !$quote->isVirtual()
             && !$quote->getShippingAddress()->getShippingMethod()
+            && !$has_admin_shipping
         ) {
 
             return json_decode('{"token" : "", "error": "A valid shipping method must be selected.  Please check your address data and that you have selected a shipping method, then, refresh to try again."}');
@@ -251,7 +259,7 @@ class Bolt_Boltpay_Block_Checkout_Boltpay extends Mage_Checkout_Block_Onepage_Re
                     if (!editForm.validate()) {
                         is_valid = false;
                     } else {
-                        var shipping_method = $$('input:checked[type=\"radio\"][name=\"order[shipping_method]\"]')[0];
+                        var shipping_method = $$('input:checked[type=\"radio\"][name=\"order[shipping_method]\"]')[0] || $$('input:checked[type=\"radio\"][name=\"shipping_method\"]')[0];
                         if (typeof shipping_method === 'undefined') {
                             alert('Please select a shipping method.');
                             is_valid = false;
