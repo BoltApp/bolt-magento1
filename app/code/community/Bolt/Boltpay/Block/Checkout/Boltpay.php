@@ -48,12 +48,6 @@ class Bolt_Boltpay_Block_Checkout_Boltpay extends Mage_Checkout_Block_Onepage_Re
     const CSS_SUFFIX = 'bolt-css-suffix';
 
     /**
-     * Javascript compatible string to signify the cart needs a shipping address before
-     * Bolt Cart JS can be generated.
-     */
-    const NEEDS_SHIPPING_JS = '"needs_shipping";';
-
-    /**
      * Set the connect javascript url to production or sandbox based on store config settings
      */
     public function _construct()
@@ -77,23 +71,34 @@ class Bolt_Boltpay_Block_Checkout_Boltpay extends Mage_Checkout_Block_Onepage_Re
     /**
      * Creates an order on Bolt end
      *
-     * @param Mage_Sales_Model_Quote $quote    Magento quote object which represents order/cart data
-     * @param bool $multipage                  Is checkout type Multi-Page Checkout, the default is true, set to false for One Page Checkout
+     * @param Mage_Sales_Model_Quote $quote         Magento quote object which represents order/cart data
+     * @param string                 $checkoutType  'multi-page' | 'one-page' | 'admin'
+     *
      * @return mixed json based PHP object
      */
-    private function createBoltOrder($quote, $multipage)
+    private function _createBoltOrder($quote, $checkoutType)
     {
-        // Load the required helper class
         $boltHelper = Mage::helper('boltpay/api');
+        $isMultiPage = $checkoutType === 'multi-page';
 
         $items = $quote->getAllVisibleItems();
 
-        if (empty($items)) return json_decode('{"token" : ""}');
+        if (empty($items)) {
+
+            return json_decode('{"token" : "", "error": "Your shopping cart is empty. Please add products to the cart."}');
+
+        } else if (
+            !$isMultiPage
+            && !$quote->isVirtual()
+            && !$quote->getShippingAddress()->getShippingMethod()
+        ) {
+
+            return json_decode('{"token" : "", "error": "A valid shipping method must be selected.  Please check your address data and that you have selected a shipping method, then, refresh to try again."}');
+
+        }
 
         // Generates order data for sending to Bolt create order API.
-        $orderRequest = $boltHelper->buildOrder($quote, $items, $multipage);
-
-        //Mage::log("order_request: ". var_export($order_request, true), null,"bolt.log");
+        $orderRequest = $boltHelper->buildOrder($quote, $items, $isMultiPage);
 
         // Calls Bolt create order API
         return $boltHelper->transmit('orders', $orderRequest);
@@ -110,8 +115,7 @@ class Bolt_Boltpay_Block_Checkout_Boltpay extends Mage_Checkout_Block_Onepage_Re
     public function getCartDataJs($checkoutType = 'multi-page')
     {
         try {
-            // Get customer and cart session objects
-            $customerSession = Mage::getSingleton('customer/session');
+            // Admin and Store front use different session objects.  We get the appropriate one here.
             $session = ($checkoutType === 'admin') ? Mage::getSingleton('adminhtml/session_quote') : Mage::getSingleton('checkout/session');
 
             /* @var Mage_Sales_Model_Quote $sessionQuote */
@@ -120,81 +124,62 @@ class Bolt_Boltpay_Block_Checkout_Boltpay extends Mage_Checkout_Block_Onepage_Re
             /* @var Bolt_Boltpay_Helper_Api $boltHelper */
             $boltHelper = Mage::helper('boltpay/api');
 
-            ///////////////////////////////////////////////////////////////
-            // Populate hints data from quote or customer shipping address.
-            //////////////////////////////////////////////////////////////
-            $hintData = $this->getAddressHints($customerSession, $sessionQuote, $checkoutType);
-            ///////////////////////////////////////////////////////////////
+            $hintData = $this->getAddressHints($sessionQuote, $checkoutType);
 
-            $orderCreationResponse = json_decode('{"token" : ""}');
+            $orderCreationResponse = json_decode('{"token" : "", "error": "Unexpected error.  Please contact support for assistance."}');
 
-            // Check if cart contains at least one item.
-            $isEmptyQuote = (!($sessionQuote->getItemsCollection()->count())) ? true : false;
+            // For multi-page, remove shipping that may have been added by Magento shipping and tax estimate interface
+            if ($checkoutType === 'multi-page') {
+                // Resets shipping rate
+                $shippingMethod = $sessionQuote->getShippingAddress()->getShippingMethod();
+                $boltHelper->applyShippingRate($sessionQuote, null);
+            }
 
-            if (!$isEmptyQuote) {
+            // Call Bolt create order API
+            try {
+                $isMultiPage = $checkoutType === 'multi-page';
 
-                ///////////////////////////////////////////////////////////////////////////////////////
-                // Merchant scope: get "bolt_user_id" if the user is logged in or should be registered,
-                // sign it and add to hints.
-                ///////////////////////////////////////////////////////////////////////////////////////
-                $reservedUserId = $this->getReservedUserId($sessionQuote, $customerSession);
-                if ($reservedUserId && $this->isEnableMerchantScopedAccount()) {
-                    $signRequest = array(
-                        'merchant_user_id' => $reservedUserId,
-                    );
+                /////////////////////////////////////////////////////////////////////////////////
+                // We create a copy of the quote that is immutable by the customer/frontend
+                // Bolt saves this quote to the database at Magento-side order save time.
+                // This assures that the quote saved to Magento matches what is stored on Bolt
+                // Only shipping, tax and discounts can change, and only if the shipping, tax
+                // and discount calculations change on the Magento server
+                ////////////////////////////////////////////////////////////////////////////////
+                $immutableQuote = $boltHelper->cloneQuote($sessionQuote, $isMultiPage);
+                $orderCreationResponse = $this->_createBoltOrder($immutableQuote, $isMultiPage);
+                ////////////////////////////////////////////////////////////////////////////////
 
-                    $signResponse = $boltHelper->transmit('sign', $signRequest);
-
-                    if ($signResponse != null) {
-                        $hintData['signed_merchant_user_id'] = array(
-                            "merchant_user_id" => $signResponse->merchant_user_id,
-                            "signature" => $signResponse->signature,
-                            "nonce" => $signResponse->nonce,
+                if (@!$orderCreationResponse->error) {
+                    ///////////////////////////////////////////////////////////////////////////////////////
+                    // Merchant scope: get "bolt_user_id" if the user is logged in or should be registered,
+                    // sign it and add to hints.
+                    ///////////////////////////////////////////////////////////////////////////////////////
+                    $reservedUserId = $this->getReservedUserId($sessionQuote);
+                    if ($reservedUserId && $this->isEnableMerchantScopedAccount()) {
+                        $signRequest = array(
+                            'merchant_user_id' => $reservedUserId,
                         );
+
+                        $signResponse = $boltHelper->transmit('sign', $signRequest);
+
+                        if ($signResponse != null) {
+                            $hintData['signed_merchant_user_id'] = array(
+                                "merchant_user_id" => $signResponse->merchant_user_id,
+                                "signature" => $signResponse->signature,
+                                "nonce" => $signResponse->nonce,
+                            );
+                        }
                     }
+                    ///////////////////////////////////////////////////////////////////////////////////////
                 }
-                ///////////////////////////////////////////////////////////////////////////////////////
+            } catch (Exception $e) {
+                Mage::helper('boltpay/bugsnag')->notifyException(new Exception($e));
+            }
 
-                if($checkoutType === 'multi-page') {
-                    // Resets shipping rate
-                    $shippingMethod = $sessionQuote->getShippingAddress()->getShippingMethod();
-                    $boltHelper->applyShippingRate($sessionQuote, null);
-                }
-
-                // Call Bolt create order API
-                try {
-                    $isMultiPage = $checkoutType === 'multi-page';
-
-                    /////////////////////////////////////////////////////////////////////////////////
-                    // We create a copy of the quote that is immutable by the customer/frontend
-                    // Bolt saves this quote to the database at Magento-side order save time.
-                    // This assures that the quote saved to Magento matches what is stored on Bolt
-                    // Only shipping, tax and discounts can change, and only if the shipping, tax
-                    // and discount calculations change on the Magento server
-                    ////////////////////////////////////////////////////////////////////////////////
-                    $immutableQuote = $boltHelper->cloneQuote($sessionQuote, $isMultiPage);
-
-                    ///////////////////////////////////////////////////////////////////////////////
-                    // if we are missing a shipping method in one-page for a non-virtual cart
-                    // then, we will return a '"needs_shipping";' string meaning that no call to
-                    // BoltCheckout.configure will be made because a shipping address is required
-                    // under these conditions in order to make that call
-                    ///////////////////////////////////////////////////////////////////////////////
-                    if (!$isMultiPage && !$immutableQuote->isVirtual() && !$immutableQuote->getShippingAddress()->getShippingMethod() ) {
-                        return self::NEEDS_SHIPPING_JS;
-                    }
-
-                    $orderCreationResponse = $this->createBoltOrder($immutableQuote, $isMultiPage);
-                } catch (Exception $e) {
-                    Mage::helper('boltpay/bugsnag')->notifyException(new Exception($e));
-                }
-
-                if ($checkoutType === 'multi-page') {
-                    $boltHelper->applyShippingRate($sessionQuote, $shippingMethod);
-                }
-
-            } else {
-                return '';
+            // For multi-page, reapply shipping to quote that may be used for shipping and tax estimate
+            if ($checkoutType === 'multi-page') {
+                $boltHelper->applyShippingRate($sessionQuote, $shippingMethod);
             }
 
             $authCapture = (Mage::getStoreConfig('payment/boltpay/auto_capture') == self::AUTO_CAPTURE_ENABLED);
@@ -207,6 +192,7 @@ class Bolt_Boltpay_Block_Checkout_Boltpay extends Mage_Checkout_Block_Onepage_Re
                 'orderToken' => ($orderCreationResponse) ? $orderCreationResponse->token: '',
             );
 
+            // If there was an unexpected API error, then it was stored in the registry
             if (Mage::registry("api_error")) {
                 $cartData['error'] = Mage::registry("api_error");
             }
@@ -250,7 +236,7 @@ class Bolt_Boltpay_Block_Checkout_Boltpay extends Mage_Checkout_Block_Onepage_Re
             //////////////////////////////////////////////////////
             // Generate and return BoltCheckout javascript.
             //////////////////////////////////////////////////////
-            $immutableQuoteId = $immutableQuote->getId();
+            $immutableQuoteId = ($immutableQuote) ? $immutableQuote->getId() : -1;
 
             $checkForAdmin = '';
             $onSuccessCallback = '';
@@ -325,7 +311,6 @@ class Bolt_Boltpay_Block_Checkout_Boltpay extends Mage_Checkout_Block_Onepage_Re
                 var json_cart = $jsonCart;
                 var quote_id = '{$immutableQuoteId}';
                 var order_completed = false;
-                var isEmptyQuote = '".$isEmptyQuote."';
                 
                 BoltCheckout.configure(
                     json_cart,
@@ -334,10 +319,6 @@ class Bolt_Boltpay_Block_Checkout_Boltpay extends Mage_Checkout_Block_Onepage_Re
                       check: function() {
                         $check
                         $checkForAdmin
-                        if (isEmptyQuote) {
-                            alert('{$boltHelper->__('Your shopping cart is empty. Please add products to the cart.')}');
-                            return false;
-                        }
                         if (!json_cart.orderToken) {
                             alert(json_cart.error);
                             return false;
@@ -383,16 +364,18 @@ class Bolt_Boltpay_Block_Checkout_Boltpay extends Mage_Checkout_Block_Onepage_Re
     }
 
     /**
-     * Get address data for sending as hints.
+     * Get address data formatted as hints from the current quote or, if not set in quote, the
+     * current customer's data.
      *
-     * @param $session      Customer session
-     * @param string $checkoutType  'multi-page' | 'one-page' | 'admin'
+     * @param Mage_Sales_Model_Quote    $quote         Quote used to get customer data
+     * @param string                    $checkoutType  'multi-page' | 'one-page' | 'admin'
      *
      * @return array        hints data
      */
-    private function getAddressHints($session, $quote, $checkoutType)
+    private function getAddressHints($quote, $checkoutType)
     {
 
+        $session =  Mage::getSingleton('customer/session');
         $hints = array();
 
         /////////////////////////////////////////////////////////////////////////
@@ -435,14 +418,14 @@ class Bolt_Boltpay_Block_Checkout_Boltpay extends Mage_Checkout_Block_Onepage_Re
      * fetching new Magento customer auto increment ID for the store.
      * Applies to logged in users or the users in the process of registration during the the checkout (checkout type is "register").
      *
-     * @param $quote   - Magento quote object
-     * @param $session - Magento customer/session object
+     * @param Mage_Sales_Model_Quote  $quote   current Magento quote
+     *
      * @return string|null  the ID used for the Bolt user, or null if the user is not logged in and is not on the onepage checkout page
-     * @throws Exception
      */
-    public function getReservedUserId($quote, $session)
+    public function getReservedUserId($quote)
     {
 
+        $session = Mage::getSingleton('customer/session');
         $checkout = Mage::getSingleton('checkout/type_onepage');
 
         $checkoutMethod = $checkout->getCheckoutMethod();
