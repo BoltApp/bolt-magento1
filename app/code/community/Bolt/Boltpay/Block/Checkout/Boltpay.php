@@ -193,6 +193,8 @@ class Bolt_Boltpay_Block_Checkout_Boltpay extends Mage_Checkout_Block_Onepage_Re
                     $boltHelper->applyShippingRate($sessionQuote, $shippingMethod);
                 }
 
+            } else {
+                return '';
             }
 
             $authCapture = (Mage::getStoreConfig('payment/boltpay/auto_capture') == self::AUTO_CAPTURE_ENABLED);

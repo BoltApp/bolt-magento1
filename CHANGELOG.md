@@ -1,4 +1,10 @@
 # Changelog
+## [v1.1.5](https://s3-us-west-1.amazonaws.com/bolt-public/magento-integration-release/bolt-magento1_v1.1.5.zip) 2018-06-28
+ - Minor bugfixes around payment from magento admin
+ - Enhancement of bugsnag report
+ - Bugfix around shipping rules
+ - Make publishable keys unencrypted
+
 ## [v1.1.4](https://s3-us-west-1.amazonaws.com/bolt-public/magento-integration-release/bolt-magento1_v1.1.4.zip) 2018-06-17
  - Support order creation from magento admin
  - Add option to disallow shipment to POBox
