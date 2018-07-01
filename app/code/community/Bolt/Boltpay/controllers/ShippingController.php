@@ -36,7 +36,7 @@ class Bolt_Boltpay_ShippingController extends Mage_Core_Controller_Front_Action
      * Responds with available shipping options and calculated taxes
      * for the cart and address specified.
      */
-    public function indexAction() 
+    public function indexAction()
     {
         try {
             $hmacHeader = $_SERVER['HTTP_X_BOLT_HMAC_SHA256'];
@@ -58,7 +58,9 @@ class Bolt_Boltpay_ShippingController extends Mage_Core_Controller_Front_Action
                     ->setBody(json_encode(array('status' => 'failure','error' => $errorDetails)));
             }
 
-            $region = Mage::getModel('directory/region')->loadByName($shippingAddress->region, $shippingAddress->country_code)->getCode();
+            $directory = Mage::getModel('directory/region')->loadByName($shippingAddress->region, $shippingAddress->country_code);
+            $region = $directory->getName(); // For region field should be the name not a code.
+            $regionId = $directory->getRegionId(); // This is require field for calculation: shipping, shopping price rules and etc.
 
             $addressData = array(
                 'email' => $shippingAddress->email,
@@ -68,6 +70,7 @@ class Bolt_Boltpay_ShippingController extends Mage_Core_Controller_Front_Action
                 'company' => $shippingAddress->company,
                 'city' => $shippingAddress->locality,
                 'region' => $region,
+                'region_id' => $regionId,
                 'postcode' => $shippingAddress->postal_code,
                 'country_id' => $shippingAddress->country_code,
                 'telephone' => $shippingAddress->phone
@@ -195,6 +198,12 @@ class Bolt_Boltpay_ShippingController extends Mage_Core_Controller_Front_Action
         /** @var Mage_Sales_Model_Quote $quote */
         $quote = Mage::getSingleton('checkout/session')->getQuote();
 
+        if(!$quote->getId() || !$quote->getItemsCount()){
+            $this->getResponse()->setHeader('Content-type', 'application/json');
+            $this->getResponse()->setBody("{}");
+            return;
+        }
+
         $shippingAddressOriginal = $quote->getShippingAddress()->getData();
 
         $cacheIdentifier = $this->getPrefetchCacheIdentifier($quote, $shippingAddressOriginal);
@@ -218,7 +227,7 @@ class Bolt_Boltpay_ShippingController extends Mage_Core_Controller_Front_Action
 
             $addressData = $this->mergeAddressData($geoLocationAddress, $shippingAddress);
 
-            if (@$addressData['postcode']) {
+            if(@$addressData['postcode']) {
                 $cacheIdentifier = $this->getPrefetchCacheIdentifier($quote, $addressData);
                 $this->saveAddressCache($addressData, $cacheIdentifier);
 

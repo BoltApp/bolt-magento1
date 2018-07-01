@@ -200,6 +200,10 @@ class Bolt_Boltpay_Model_Payment extends Mage_Payment_Model_Method_Abstract
     /**
      * Bolt Authorize is a dummy authorize method since authorization is done by Bolt's checkout iframe
      * This authorize method merely keeps the authorization transaction record open
+     * @param Varien_Object $payment
+     * @param $amount
+     * @return Bolt_Boltpay_Model_Payment
+     * @throws Exception
      */
     public function authorize(Varien_Object $payment, $amount)
     {
