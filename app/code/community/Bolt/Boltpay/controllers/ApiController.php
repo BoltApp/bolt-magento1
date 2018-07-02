@@ -63,10 +63,6 @@ class Bolt_Boltpay_ApiController extends Mage_Core_Controller_Front_Action
             /* Allows this method to be used even if the Bolt plugin is disabled.  This accounts for orders that have already been processed by Bolt */
             $boltHelperBase::$fromHooks = true;
 
-            if ($hookType == 'credit') {
-                //Mage::log('notification_type is credit. Ignoring it');
-            }
-
             $transaction = $boltHelper->fetchTransaction($reference);
             $orderId = $transaction->order->cart->display_id;
             $quoteId = $transaction->order->cart->order_reference;
@@ -95,23 +91,29 @@ class Bolt_Boltpay_ApiController extends Mage_Core_Controller_Front_Action
                 $merchantTransactionId = $orderPayment->getAdditionalInformation('bolt_merchant_transaction_id');
                 if ($merchantTransactionId == null || $merchantTransactionId == '') {
                     $orderPayment->setAdditionalInformation('bolt_merchant_transaction_id', $transactionId);
-                } elseif ($merchantTransactionId != $transactionId) {
+                    $orderPayment->save();
+                } elseif ($merchantTransactionId != $transactionId && $hookType != 'credit') {
                     Mage::helper('boltpay/bugsnag')->notifyException(
                         new Exception(
                             sprintf(
                                 'Transaction id mismatch. Expected: %s got: %s', $merchantTransactionId, $transactionId
                             )
-                        )
-                    );
+                         )
+                     );
                 }
-
-                $captureAmount = $this->getCaptureAmount($transaction);
+                
+                if($hookType == 'credit'){
+                    $transactionAmount = $bodyParams['amount']/100;
+                }
+                else{
+                    $transactionAmount = $this->getCaptureAmount($transaction);
+                }
 
                 $orderPayment->setData('auto_capture', $newTransactionStatus == 'completed');
                 $orderPayment->save();
                 $orderPayment->getMethodInstance()
                     ->setStore($order->getStoreId())
-                    ->handleTransactionUpdate($orderPayment, $newTransactionStatus, $prevTransactionStatus, $captureAmount);
+                    ->handleTransactionUpdate($orderPayment, $newTransactionStatus, $prevTransactionStatus, $transactionAmount);
 
                 $this->getResponse()->setBody(
                     json_encode(
