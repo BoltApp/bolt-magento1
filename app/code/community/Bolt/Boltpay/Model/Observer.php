@@ -88,6 +88,7 @@ class Bolt_Boltpay_Model_Observer
                 $message .= $this->_getMerchantDashboardUrl();
                 $message .= "/transaction/$reference";
                 $message .= "<br/>Bolt reports ".($transaction->amount->amount/100).'. Magento expects '.$magentoTotal/100;
+
                 # Adjust amount if it is off by only one cent, likely due to rounding
                 $difference = $transaction->amount->amount - $magentoTotal;
                 if ( abs($difference) == 1) {
@@ -150,6 +151,57 @@ class Bolt_Boltpay_Model_Observer
             if (!empty($message)) {
                 $observer->getEvent()->getPayment()->setPreparedMessage($message);
             }
+        }
+    }
+
+    /**
+     * Updates the Magento's interpretation of the Bolt transaction status on order status change.
+     * Note: this transaction status is not necessarily same as order status on the Bolt server.
+     * bolt_transaction_status field keeps track of payment status only from the magento plugin's perspective.
+     *
+     * @param $observer
+     */
+    public function updateBoltTransactionStatus($observer)
+    {
+        /* @var Mage_Sales_Model_Order $order */
+        $order = $observer->getOrder();
+
+        /** @var Mage_Sales_Model_Order_Payment $payment */
+        $payment = $order->getPayment();
+
+        $method = $payment->getMethod();
+        if (strtolower($method) == Bolt_Boltpay_Model_Payment::METHOD_CODE) {
+
+            switch ($order->getState()) {
+                case Mage_Sales_Model_Order::STATE_COMPLETE:
+                case Mage_Sales_Model_Order::STATE_CLOSED:
+                    $payment->setAdditionalInformation('bolt_transaction_status', Bolt_Boltpay_Model_Payment::TRANSACTION_COMPLETED);
+                    break;
+                case Mage_Sales_Model_Order::STATE_PROCESSING:
+                    if ($order->getTotalPaid() >= .01) {
+                        $payment->setAdditionalInformation('bolt_transaction_status', Bolt_Boltpay_Model_Payment::TRANSACTION_COMPLETED);
+                    } else {
+                        $payment->setAdditionalInformation('bolt_transaction_status', Bolt_Boltpay_Model_Payment::TRANSACTION_AUTHORIZED);
+                    }
+                    break;
+                case Mage_Sales_Model_Order::STATE_PAYMENT_REVIEW:
+                    $payment->setAdditionalInformation('bolt_transaction_status', Bolt_Boltpay_Model_Payment::TRANSACTION_PENDING);
+                    break;
+                case Mage_Sales_Model_Order::STATE_HOLDED:
+                    $payment->setAdditionalInformation('bolt_transaction_status', Bolt_Boltpay_Model_Payment::TRANSACTION_ON_HOLD);
+                    break;
+                case Mage_Sales_Model_Order::STATE_CANCELED:
+                    $payment->setAdditionalInformation('bolt_transaction_status', Bolt_Boltpay_Model_Payment::TRANSACTION_CANCELLED);
+                    break;
+                case Mage_Sales_Model_Order::STATE_PENDING_PAYMENT:
+                case Mage_Sales_Model_Order::STATE_NEW:
+                    $payment->setAdditionalInformation('bolt_transaction_status', Bolt_Boltpay_Model_Payment::TRANSACTION_PENDING);
+                    break;
+                case Bolt_Boltpay_Model_Payment::ORDER_DEFERRED:
+                    $payment->setAdditionalInformation('bolt_transaction_status', Bolt_Boltpay_Model_Payment::TRANSACTION_REJECTED_REVERSIBLE);
+                    break;
+            }
+            $payment->save();
         }
     }
 

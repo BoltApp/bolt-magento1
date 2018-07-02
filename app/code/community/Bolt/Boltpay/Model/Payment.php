@@ -32,10 +32,12 @@ class Bolt_Boltpay_Model_Payment extends Mage_Payment_Model_Method_Abstract
     const TRANSACTION_CANCELLED = 'cancelled';
     const TRANSACTION_COMPLETED = 'completed';
     const TRANSACTION_PENDING = 'pending';
+    const TRANSACTION_ON_HOLD = 'on-hold';
     const TRANSACTION_REJECTED_REVERSIBLE = 'rejected_reversible';
     const TRANSACTION_REJECTED_IRREVERSIBLE = 'rejected_irreversible';
-    const TRANSACTION_NO_NEW_STATE = 'no_new_state';
     const TRANSACTION_REFUND = 'credit';
+    const TRANSACTION_NO_NEW_STATE = 'no_new_state';
+    const TRANSACTION_ALL_STATES = 'all_states';
 
     const HOOK_TYPE_AUTH = 'auth';
     const HOOK_TYPE_CAPTURE = 'capture';
@@ -76,9 +78,10 @@ class Bolt_Boltpay_Model_Payment extends Mage_Payment_Model_Method_Abstract
     protected $_isInitializeNeeded          = false;
 
     protected $_validStateTransitions = array(
-        self::TRANSACTION_AUTHORIZED => array(self::TRANSACTION_COMPLETED, self::TRANSACTION_CANCELLED, self::TRANSACTION_REJECTED_REVERSIBLE, self::TRANSACTION_REJECTED_IRREVERSIBLE),
+        self::TRANSACTION_AUTHORIZED => array(self::TRANSACTION_COMPLETED, self::TRANSACTION_CANCELLED, self::TRANSACTION_REJECTED_REVERSIBLE, self::TRANSACTION_REJECTED_IRREVERSIBLE, self::TRANSACTION_PENDING),
         self::TRANSACTION_COMPLETED => array(self::TRANSACTION_REFUND, self::TRANSACTION_NO_NEW_STATE),
         self::TRANSACTION_PENDING => array(self::TRANSACTION_AUTHORIZED, self::TRANSACTION_CANCELLED, self::TRANSACTION_REJECTED_REVERSIBLE, self::TRANSACTION_REJECTED_IRREVERSIBLE, self::TRANSACTION_COMPLETED),
+        self::TRANSACTION_ON_HOLD => array(self::TRANSACTION_CANCELLED, self::TRANSACTION_REJECTED_REVERSIBLE, self::TRANSACTION_REJECTED_IRREVERSIBLE),
         self::TRANSACTION_REJECTED_IRREVERSIBLE => array(self::TRANSACTION_NO_NEW_STATE),
         self::TRANSACTION_REJECTED_REVERSIBLE => array(self::TRANSACTION_AUTHORIZED, self::TRANSACTION_CANCELLED, self::TRANSACTION_REJECTED_IRREVERSIBLE, self::TRANSACTION_COMPLETED),
         self::TRANSACTION_CANCELLED => array(self::TRANSACTION_NO_NEW_STATE),
@@ -97,6 +100,19 @@ class Bolt_Boltpay_Model_Payment extends Mage_Payment_Model_Method_Abstract
         self::HOOK_TYPE_REFUND => self::TRANSACTION_REFUND
     );
 
+
+    /**
+     * Bolt_Boltpay_Model_Payment constructor.
+     *
+     * Allows transitions from on-hold from the non-webhook context
+     */
+    public function __construct()
+    {
+        if (!Bolt_Boltpay_Helper_Api::$fromHooks) {
+            $this->_validStateTransitions[self::TRANSACTION_ON_HOLD] = array(self::TRANSACTION_ALL_STATES);
+        }
+    }
+
     /**
      * @return bool
      * @throws Mage_Core_Model_Store_Exception
@@ -105,7 +121,7 @@ class Bolt_Boltpay_Model_Payment extends Mage_Payment_Model_Method_Abstract
     {
         return (Mage::app()->getStore()->isAdmin() && Mage::getDesign()->getArea() === 'adminhtml');
     }
-    
+
     public function getConfigData($field, $storeId = null)
     {
         if (Mage::getStoreConfig('payment/boltpay/skip_payment') == 1) {
@@ -449,10 +465,11 @@ class Bolt_Boltpay_Model_Payment extends Mage_Payment_Model_Method_Abstract
                 }
 
                 //Mage::log(sprintf("Valid next states from %s: %s", $prevTransactionStatus, implode(",",$validNextStatuses)), null, 'bolt.log');
+                $requestedStateOrAll = array($newTransactionStatus, self::TRANSACTION_ALL_STATES);
 
-                if (!in_array($newTransactionStatus, $validNextStatuses)) {
+                if (!array_intersect($requestedStateOrAll, $this->_validStateTransitions)) {
                     throw new Bolt_Boltpay_InvalidTransitionException(
-                        $prevTransactionStatus, $newTransactionStatus, sprintf("Cannot transition a transaction from %s to %s", $prevTransactionStatus, $newTransactionStatus));
+                      $prevTransactionStatus, $newTransactionStatus, sprintf("Cannot transition a transaction from %s to %s", $prevTransactionStatus, $newTransactionStatus));
                 }
             }
 
@@ -466,9 +483,9 @@ class Bolt_Boltpay_Model_Payment extends Mage_Payment_Model_Method_Abstract
                 $payment->setShouldCloseParentTransaction(true);
 
                 if ($newTransactionStatus == self::TRANSACTION_AUTHORIZED) {
-                    $message = Mage::helper('boltpay')->__('BOLT notification: Payment transaction is approved.');
+                    $message = Mage::helper('boltpay')->__('BOLT notification: Payment transaction is authorized.');
                     $order = $payment->getOrder();
-                    $order->setState(Mage_Sales_Model_Order::STATE_PROCESSING, true, $message);
+                    $order->setState( Mage_Sales_Model_Order::STATE_PROCESSING, true, $message );
                     $order->save();
                 } elseif ($newTransactionStatus == self::TRANSACTION_COMPLETED) {
                     $order = $payment->getOrder();
@@ -492,6 +509,7 @@ class Bolt_Boltpay_Model_Payment extends Mage_Payment_Model_Method_Abstract
                         $message = 'Found multiple invoices';
                         Mage::throwException($message);
                     }
+                    $order->save();
                 } elseif ($newTransactionStatus == self::TRANSACTION_PENDING) {
                     $order = $payment->getOrder();
                     $message = Mage::helper('boltpay')->__('BOLT notification: Payment is under review');

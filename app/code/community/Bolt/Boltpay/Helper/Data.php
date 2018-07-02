@@ -161,22 +161,26 @@ class Bolt_Boltpay_Helper_Data extends Mage_Core_Helper_Abstract
      *
      * @return Mage_Sales_Model_Quote  The cloned copy of the source quote
      */
-    public function cloneQuote(Mage_Sales_Model_Quote $sourceQuote, $isForMultipage = false ) {
+    public function cloneQuote(Mage_Sales_Model_Quote $sourceQuote, $isForMultipage = false )
+    {
+
         /* @var Mage_Sales_Model_Quote $clonedQuote */
-        $immutableQuote = Mage::getSingleton('sales/quote');
+        $clonedQuote = Mage::getSingleton('sales/quote');
 
         try {
-            $immutableQuote->merge($sourceQuote);
+            // overridden quote classes may throw exceptions in post merge events.  We report
+            // these in bugsnag, but these are non-fatal exceptions, so, we continue processing
+            $clonedQuote->merge($sourceQuote);
         } catch (Exception $e) {
             Mage::helper('boltpay/bugsnag')->notifyException($e);
         }
 
         if (!$isForMultipage) {
-            // For one-page checkout page we want to set the
+            // For the checkout page we want to set the
             // billing and shipping, and shipping method at this time.
             // For multi-page, we add the addresses during the shipping and tax hook
             // and the chosen shipping method at order save time.
-            $immutableQuote
+            $clonedQuote
                 ->setBillingAddress($sourceQuote->getBillingAddress())
                 ->setShippingAddress($sourceQuote->getShippingAddress())
                 ->getShippingAddress()
@@ -184,9 +188,11 @@ class Bolt_Boltpay_Helper_Data extends Mage_Core_Helper_Abstract
                 ->save();
         }
 
+        //////////////////////////////////////////////////////////////////////////////////////////////////
         // Attempting to reset some of the values already set by merge affects the totals passed to
         // Bolt in such a way that the grand total becomes 0.  Since we do not need to reset these values
         // we ignore them all.
+        //////////////////////////////////////////////////////////////////////////////////////////////////
         $fieldsSetByMerge = array(
             'coupon_code',
             'subtotal',
@@ -220,7 +226,7 @@ class Bolt_Boltpay_Helper_Data extends Mage_Core_Helper_Abstract
         // Add all previously saved data that may have been added by other plugins
         foreach ($sourceQuote->getData() as $key => $value) {
             if (!in_array($key, $fieldsSetByMerge)) {
-                $immutableQuote->setData($key, $value);
+                $clonedQuote->setData($key, $value);
             }
         }
 
@@ -231,7 +237,7 @@ class Bolt_Boltpay_Helper_Data extends Mage_Core_Helper_Abstract
         $reservedOrderId = $sourceQuote->reserveOrderId()->save()->getReservedOrderId();
         Mage::getSingleton('core/session')->setReservedOrderId($reservedOrderId);
 
-        $immutableQuote
+        $clonedQuote
             ->setCustomer($sourceQuote->getCustomer())
             ->setCustomerGroupId($sourceQuote->getCustomerGroupId())
             ->setCustomerIsGuest((($sourceQuote->getCustomerId()) ? false : true))
@@ -240,7 +246,7 @@ class Bolt_Boltpay_Helper_Data extends Mage_Core_Helper_Abstract
             ->setParentQuoteId($sourceQuote->getId())
             ->save();
 
-        return $immutableQuote;
+        return $clonedQuote;
     }
 
     /**
