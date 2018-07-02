@@ -94,11 +94,21 @@ class Bolt_Boltpay_Model_Observer
                 $message .= "/transaction/$reference";
                 $message .= "<br/>Bolt reports ".($transaction->amount->amount/100).'. Magento expects '.$magentoTotal/100;
 
-                // TODO: Properly adjust amount if it is off by only one cent
-                $order->setHoldBeforeState($order->getState());
-                $order->setHoldBeforeStatus($order->getStatus());
-                $order->setState(Mage_Sales_Model_Order::STATE_HOLDED, true, $message)
-                    ->save();
+                # Adjust amount if it is off by only one cent, likely due to rounding
+                $difference = $transaction->amount->amount - $magentoTotal;
+                if ( abs($difference) == 1) {
+                    $order->setTaxAmount($order->getTaxAmount() + ($difference/100))
+                        ->setBaseTaxAmount($order->getBaseTaxAmount() + ($difference/100))
+                        ->setGrandTotal($order->getGrandTotal() + ($difference/100))
+                        ->setBaseGrandTotal($order->getBaseGrandTotal() + ($difference/100))
+                        ->save();
+                } else {
+                    # Total differs by more than one cent, so we put the order on hold.
+                    $order->setHoldBeforeState($order->getState());
+                    $order->setHoldBeforeStatus($order->getStatus());
+                    $order->setState(Mage_Sales_Model_Order::STATE_HOLDED, true, $message)
+                        ->save();
+                }
 
                 $metaData = array(
                     'process'   => "order verification",
