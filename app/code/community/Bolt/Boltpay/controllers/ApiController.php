@@ -1,6 +1,6 @@
 <?php
 /**
- * Magento
+ * Bolt magento plugin
  *
  * NOTICE OF LICENSE
  *
@@ -8,19 +8,10 @@
  * that is bundled with this package in the file LICENSE.txt.
  * It is also available through the world-wide-web at this URL:
  * http://opensource.org/licenses/osl-3.0.php
- * If you did not receive a copy of the license and are unable to
- * obtain it through the world-wide-web, please send an email
- * to license@magento.com so we can send you a copy immediately.
- *
- * DISCLAIMER
- *
- * Do not edit or add to this file if you wish to upgrade the Bolt extension
- * to a newer versions in the future. If you wish to customize this extension
- * for your needs please refer to http://www.magento.com for more information.
  *
  * @category   Bolt
  * @package    Bolt_Boltpay
- * @copyright  Copyright (c) 2018 Bolt Financial, Inc (http://www.bolt.com)
+ * @copyright  Copyright (c) 2018 Bolt Financial, Inc (https://www.bolt.com)
  * @license    http://opensource.org/licenses/osl-3.0.php  Open Software License (OSL 3.0)
  */
 
@@ -84,8 +75,18 @@ class Bolt_Boltpay_ApiController extends Mage_Core_Controller_Front_Action
                 $orderPayment = $order->getPayment();
 
                 $newTransactionStatus = Bolt_Boltpay_Model_Payment::translateHookTypeToTransactionStatus($hookType);
-
                 $prevTransactionStatus = $orderPayment->getAdditionalInformation('bolt_transaction_status');
+
+                // Update the transaction id as it may change, particularly with refunds
+                $orderPayment
+                    ->setAdditionalInformation('bolt_merchant_transaction_id', $transaction->id)
+                    ->setTransactionId($transaction->id);
+
+                /******************************************************************************************************
+                 * TODO: Check the validity of this code.  It has been known to get out of sync and
+                 * is not strictly necessary.  In fact, it is redundant with one-to-one quote to bolt order mapping
+                 * Therefore, throwing errors will be disabled until fully reviewed.
+                 ********************************************************************************************************/
                 $merchantTransactionId = $orderPayment->getAdditionalInformation('bolt_merchant_transaction_id');
                 if ($merchantTransactionId == null || $merchantTransactionId == '') {
                     $orderPayment->setAdditionalInformation('bolt_merchant_transaction_id', $transactionId);
@@ -108,6 +109,7 @@ class Bolt_Boltpay_ApiController extends Mage_Core_Controller_Front_Action
                 }
 
                 $orderPayment->setData('auto_capture', $newTransactionStatus == 'completed');
+                $orderPayment->save();
                 $orderPayment->getMethodInstance()
                     ->setStore($order->getStoreId())
                     ->handleTransactionUpdate($orderPayment, $newTransactionStatus, $prevTransactionStatus, $transactionAmount);
@@ -144,7 +146,10 @@ class Bolt_Boltpay_ApiController extends Mage_Core_Controller_Front_Action
                 $exception = new Exception('Reference and/or transaction_id is missing');
                 $this->getResponse()->setHttpResponseCode(400);
                 $this->getResponse()->setException($exception);
-                Mage::helper('boltpay/bugsnag')->notifyException($exception);
+
+                $metaData = array('quote' => var_export($quote->debug(), true));
+
+                Mage::helper('boltpay/bugsnag')->notifyException($exception, $metaData);
                 return;
             }
 
@@ -168,11 +173,17 @@ class Bolt_Boltpay_ApiController extends Mage_Core_Controller_Front_Action
         } catch (Exception $e) {
             if(stripos($e->getMessage(), 'Not all products are available in the requested quantity') !== false) {
                 $this->getResponse()->setHttpResponseCode(422);
-                $this->getResponse()->setBody(json_encode(array('status' => 'error', 'code' => '1001', 'message' => 'one or more items in cart are out of stock')));              
+                $this->getResponse()->setBody(json_encode(array('status' => 'error', 'code' => 1001, 'message' => 'one or more items in cart are out of stock')));
             }else{
-                Mage::helper('boltpay/bugsnag')->notifyException($e);
+
+                $metaData = array();
+                if (isset($quote)){
+                    $metaData['quote'] = var_export($quote->debug(), true);
+                }
+
+                Mage::helper('boltpay/bugsnag')->notifyException($e, $metaData);
                 $this->getResponse()->setHttpResponseCode(422);
-                $this->getResponse()->setBody(json_encode(array('status' => 'error', 'code' => '1000', 'message' => $e->getMessage()))); 
+                $this->getResponse()->setBody(json_encode(array('status' => 'error', 'code' => 1000, 'message' => $e->getMessage()))); 
             }
         }
     }

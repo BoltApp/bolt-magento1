@@ -1,6 +1,6 @@
 <?php
 /**
- * Magento
+ * Bolt magento plugin
  *
  * NOTICE OF LICENSE
  *
@@ -8,19 +8,10 @@
  * that is bundled with this package in the file LICENSE.txt.
  * It is also available through the world-wide-web at this URL:
  * http://opensource.org/licenses/osl-3.0.php
- * If you did not receive a copy of the license and are unable to
- * obtain it through the world-wide-web, please send an email
- * to license@magento.com so we can send you a copy immediately.
- *
- * DISCLAIMER
- *
- * Do not edit or add to this file if you wish to upgrade the Bolt extension
- * to a newer versions in the future. If you wish to customize this extension
- * for your needs please refer to http://www.magento.com for more information.
  *
  * @category   Bolt
  * @package    Bolt_Boltpay
- * @copyright  Copyright (c) 2018 Bolt Financial, Inc (http://www.bolt.com)
+ * @copyright  Copyright (c) 2018 Bolt Financial, Inc (https://www.bolt.com)
  * @license    http://opensource.org/licenses/osl-3.0.php  Open Software License (OSL 3.0)
  */
 
@@ -96,10 +87,10 @@ class Bolt_Boltpay_Model_Observer
 
             $reference = $payment->getAdditionalInformation('bolt_reference');
 
-            if ( (int)($order->getGrandTotal()*100) !== $transaction->amount->amount)  {
+            if ( (int)(round($order->getGrandTotal()*100)) !== $transaction->amount->amount)  {
 
                 $message = "THERE IS A MISMATCH IN THE ORDER PAID AND ORDER RECORDED.<br>PLEASE COMPARE THE ORDER DETAILS WITH THAT RECORD IN YOUR BOLT MERCHANT ACCOUNT AT: ";
-                $message .= Mage::getStoreConfig('payment/boltpay/test') ? "https://merchant-sandbox.bolt.com" : "https://merchant.bolt.com";
+                $message .= $this->_getMerchantDashboardUrl();
                 $message .= "/transaction/$reference";
                 $message .= "<br/>Bolt reports ".($transaction->amount->amount/100).'. Magento expects '.$order->getGrandTotal();
 
@@ -172,5 +163,55 @@ class Bolt_Boltpay_Model_Observer
         }
 
         return '';
+    }
+
+    /**
+     * Sets the order's initial status according to Bolt and annotates it with creation and payment meta data
+     *
+     * @param Varien_Event_Observer $observer   the observer object which contains the order
+     */
+    public function setInitialOrderStatusAndDetails(Varien_Event_Observer $observer) {
+
+        /** @var Mage_Sales_Model_Order $order */
+        $order = $observer->getEvent()->getOrder();
+        $payment = $order->getPayment();
+
+        $paymentMethod = $payment->getMethod();
+        if (strtolower($paymentMethod) !== Bolt_Boltpay_Model_Payment::METHOD_CODE) {
+            return;
+        }
+
+        $reference = Mage::getSingleton('core/session')->getBoltReference();
+        $transaction = Mage::getSingleton('core/session')->getBoltTransaction() ?: Mage::helper('boltpay/api')->fetchTransaction($reference);
+
+        $boltCartTotal = $transaction->amount->currency_symbol. ($transaction->amount->amount/100);
+        $orderTotal = $order->getGrandTotal();
+
+        $msg = sprintf(
+            "BOLT notification: Authorization requested for $boltCartTotal.  Order total is {$transaction->amount->currency_symbol}$orderTotal. Bolt transaction: %s/transaction/%s.", $this->_getMerchantDashboardUrl(), $transaction->reference
+        );
+
+        if(Mage::getSingleton('core/session')->getWasCreatedByHook()){ // order is create via AJAX call
+            $msg .= "  This order was created via webhook (Bolt traceId: <".Mage::helper('boltpay/bugsnag')->getBoltTraceId().">)";
+        }
+
+        $order->setState(Bolt_Boltpay_Model_Payment::transactionStatusToOrderStatus($transaction->status), true, $msg)
+            ->save();
+
+        $order->getPayment()
+            ->setAdditionalInformation('bolt_transaction_status', $transaction->status)
+            ->setAdditionalInformation('bolt_reference', $transaction->reference)
+            ->setAdditionalInformation('bolt_merchant_transaction_id', $transaction->id)
+            ->setTransactionId($transaction->id)
+            ->save();
+    }
+
+    /**
+     * Return the Bolt Merchant Dashboard URL
+     *
+     * @return string   The 'https://' prefixed merchant dashboard URL.  Sandbox if in testing, otherwise production
+     */
+    private function _getMerchantDashboardUrl() {
+        return Mage::getStoreConfig('payment/boltpay/test') ? Bolt_Boltpay_Model_Payment::URL_MERCHANT_SANDBOX : Bolt_Boltpay_Model_Payment::URL_MERCHANT_PRODUCTION;
     }
 }

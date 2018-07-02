@@ -1,6 +1,6 @@
 <?php
 /**
- * Magento
+ * Bolt magento plugin
  *
  * NOTICE OF LICENSE
  *
@@ -8,19 +8,10 @@
  * that is bundled with this package in the file LICENSE.txt.
  * It is also available through the world-wide-web at this URL:
  * http://opensource.org/licenses/osl-3.0.php
- * If you did not receive a copy of the license and are unable to
- * obtain it through the world-wide-web, please send an email
- * to license@magento.com so we can send you a copy immediately.
- *
- * DISCLAIMER
- *
- * Do not edit or add to this file if you wish to upgrade the Bolt extension
- * to a newer versions in the future. If you wish to customize this extension
- * for your needs please refer to http://www.magento.com for more information.
  *
  * @category   Bolt
  * @package    Bolt_Boltpay
- * @copyright  Copyright (c) 2018 Bolt Financial, Inc (http://www.bolt.com)
+ * @copyright  Copyright (c) 2018 Bolt Financial, Inc (https://www.bolt.com)
  * @license    http://opensource.org/licenses/osl-3.0.php  Open Software License (OSL 3.0)
  */
 
@@ -129,47 +120,61 @@ class Bolt_Boltpay_Helper_Data extends Mage_Core_Helper_Abstract
     }
 
     /**
-     * Decrypt key
-     *
-     * @param $key
-     * @return string
-     */
-    private function decryptKey($key)
-    {
-        return Mage::helper('core')->decrypt($key);
-    }
-
-    /**
-     * Get MultiPage key
+     * Get publishable key used in cart page.
      *
      * @return string
      */
     public function getPublishableKeyMultiPage()
     {
         $key = Mage::getStoreConfig('payment/boltpay/publishable_key_multipage');
-        return $this->decryptKey($key);
+        return $key;
     }
 
     /**
-     * Get OnePage Key
+     * Get publishable key used in checkout page.
      *
-     * @param bool $decrypt
      * @return string
      */
     public function getPublishableKeyOnePage()
     {
         $key = Mage::getStoreConfig('payment/boltpay/publishable_key_onepage');
-        return $this->decryptKey($key);
+        return $key;
     }
 
     /**
+     * Get publishable key used in magento admin.
+     *
      * @return string
+     */
+    public function getPublishableKeyBackOffice()
+    {
+        $key = Mage::getStoreConfig('payment/boltpay/publishable_key_admin');
+        return $key;
+    }
+
+    /**
+     * Gets the connect.js url depending on the sandbox state of the application
+     *
+     * @return string  Sandbox connect.js URL for Sanbox mode, otherwise production
      */
     public function getConnectJsUrl()
     {
         return Mage::getStoreConfigFlag('payment/boltpay/test') ?
             Bolt_Boltpay_Block_Checkout_Boltpay::JS_URL_TEST . "/connect.js":
             Bolt_Boltpay_Block_Checkout_Boltpay::JS_URL_PROD . "/connect.js";
+    }
+
+    /**
+     * Initiates the Bolt order creation / token receiving and sets up BoltCheckout with generated data.
+     * In BoltCheckout.configure success callback the order is saved in additional ajax call to
+     * Bolt_Boltpay_OrderController save action.
+     *
+     * @param string $checkoutType  'multi-page' | 'one-page' | 'admin'
+     * @return string               BoltCheckout javascript
+     */
+    public function getCartDataJs($checkoutType = 'multi-page')
+    {
+        return Mage::app()->getLayout()->createBlock('boltpay/checkout_boltpay')->getCartDataJs($checkoutType);
     }
 
     /**

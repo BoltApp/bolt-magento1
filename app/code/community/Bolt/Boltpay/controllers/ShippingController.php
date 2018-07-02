@@ -1,6 +1,6 @@
 <?php
 /**
- * Magento
+ * Bolt magento plugin
  *
  * NOTICE OF LICENSE
  *
@@ -8,19 +8,10 @@
  * that is bundled with this package in the file LICENSE.txt.
  * It is also available through the world-wide-web at this URL:
  * http://opensource.org/licenses/osl-3.0.php
- * If you did not receive a copy of the license and are unable to
- * obtain it through the world-wide-web, please send an email
- * to license@magento.com so we can send you a copy immediately.
- *
- * DISCLAIMER
- *
- * Do not edit or add to this file if you wish to upgrade the Bolt extension
- * to a newer versions in the future. If you wish to customize this extension
- * for your needs please refer to http://www.magento.com for more information.
  *
  * @category   Bolt
  * @package    Bolt_Boltpay
- * @copyright  Copyright (c) 2018 Bolt Financial, Inc (http://www.bolt.com)
+ * @copyright  Copyright (c) 2018 Bolt Financial, Inc (https://www.bolt.com)
  * @license    http://opensource.org/licenses/osl-3.0.php  Open Software License (OSL 3.0)
  */
 
@@ -45,7 +36,7 @@ class Bolt_Boltpay_ShippingController extends Mage_Core_Controller_Front_Action
      * Responds with available shipping options and calculated taxes
      * for the cart and address specified.
      */
-    public function indexAction() 
+    public function indexAction()
     {
         try {
             $hmacHeader = $_SERVER['HTTP_X_BOLT_HMAC_SHA256'];
@@ -62,11 +53,14 @@ class Bolt_Boltpay_ShippingController extends Mage_Core_Controller_Front_Action
             $shippingAddress = $requestData->shipping_address;
 
             if (!$this->isPOBoxAllowed() && $this->doesAddressContainPOBox($shippingAddress->street_address1, $shippingAddress->street_address2)) {
+                $errorDetails = array('code' => 6101, 'message' => Mage::helper('boltpay')->__('Address with P.O. Box is not allowed.'));
                 return $this->getResponse()->setHttpResponseCode(403)
-                    ->setBody(json_encode(['status' => 'failure','error' => ['code' => '6101','message' => Mage::helper('boltpay')->__('Address with P.O. Box is not allowed.')]]));
+                    ->setBody(json_encode(array('status' => 'failure','error' => $errorDetails)));
             }
 
-            $region = Mage::getModel('directory/region')->loadByName($shippingAddress->region, $shippingAddress->country_code)->getCode();
+            $directory = Mage::getModel('directory/region')->loadByName($shippingAddress->region, $shippingAddress->country_code);
+            $region = $directory->getName(); // For region field should be the name not a code.
+            $regionId = $directory->getRegionId(); // This is require field for calculation: shipping, shopping price rules and etc.
 
             $addressData = array(
                 'email' => $shippingAddress->email,
@@ -76,15 +70,16 @@ class Bolt_Boltpay_ShippingController extends Mage_Core_Controller_Front_Action
                 'company' => $shippingAddress->company,
                 'city' => $shippingAddress->locality,
                 'region' => $region,
+                'region_id' => $regionId,
                 'postcode' => $shippingAddress->postal_code,
                 'country_id' => $shippingAddress->country_code,
                 'telephone' => $shippingAddress->phone
             );
 
             $quoteId = $requestData->cart->order_reference;
+
             /* @var Mage_Sales_Model_Quote $quote */
             $quote = Mage::getModel('sales/quote')->loadByIdWithoutStore($quoteId);
-
 
             /***********************/
             // Set session quote to real customer quote
@@ -182,7 +177,12 @@ class Bolt_Boltpay_ShippingController extends Mage_Core_Controller_Front_Action
 
             $this->getResponse()->setBody($response);
         } catch (Exception $e) {
-            Mage::helper('boltpay/bugsnag')->notifyException($e);
+            $metaData = array();
+            if (isset($quote)){
+                $metaData['quote'] = var_export($quote->debug(), true);
+            }
+
+            Mage::helper('boltpay/bugsnag')->notifyException($e, $metaData);
             throw $e;
         }
     }
@@ -198,6 +198,12 @@ class Bolt_Boltpay_ShippingController extends Mage_Core_Controller_Front_Action
         /** @var Mage_Sales_Model_Quote $quote */
         $quote = Mage::getSingleton('checkout/session')->getQuote();
 
+        if(!$quote->getId() || !$quote->getItemsCount()){
+            $this->getResponse()->setHeader('Content-type', 'application/json');
+            $this->getResponse()->setBody("{}");
+            return;
+        }
+
         $shippingAddressOriginal = $quote->getShippingAddress()->getData();
 
         $cacheIdentifier = $this->getPrefetchCacheIdentifier($quote, $shippingAddressOriginal);
@@ -210,18 +216,18 @@ class Bolt_Boltpay_ShippingController extends Mage_Core_Controller_Front_Action
             $geoLocationAddress = $this->cleanEmptyAddressField($geoLocationAddress);
 
             // ----------^_^----------- //
-            $shippingAddress = [
+            $shippingAddress = array(
                 'city'       => @$shippingAddressOriginal['city'],
                 'region'     => @$shippingAddressOriginal['region'],
                 'region_id'  => @$shippingAddressOriginal['region_id'] ? $shippingAddressOriginal['region_id'] : null,
                 'postcode'   => @$shippingAddressOriginal['postcode'],
                 'country_id' => @$shippingAddressOriginal['country_id'],
-            ];
+            );
             unset($shippingAddressOriginal);
 
             $addressData = $this->mergeAddressData($geoLocationAddress, $shippingAddress);
 
-            if (@$addressData['postcode']) {
+            if(@$addressData['postcode']) {
                 $cacheIdentifier = $this->getPrefetchCacheIdentifier($quote, $addressData);
                 $this->saveAddressCache($addressData, $cacheIdentifier);
 

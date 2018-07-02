@@ -1,6 +1,6 @@
 <?php
 /**
- * Magento
+ * Bolt magento plugin
  *
  * NOTICE OF LICENSE
  *
@@ -8,19 +8,10 @@
  * that is bundled with this package in the file LICENSE.txt.
  * It is also available through the world-wide-web at this URL:
  * http://opensource.org/licenses/osl-3.0.php
- * If you did not receive a copy of the license and are unable to
- * obtain it through the world-wide-web, please send an email
- * to license@magento.com so we can send you a copy immediately.
- *
- * DISCLAIMER
- *
- * Do not edit or add to this file if you wish to upgrade the Bolt extension
- * to a newer versions in the future. If you wish to customize this extension
- * for your needs please refer to http://www.magento.com for more information.
  *
  * @category   Bolt
  * @package    Bolt_Boltpay
- * @copyright  Copyright (c) 2018 Bolt Financial, Inc (http://www.bolt.com)
+ * @copyright  Copyright (c) 2018 Bolt Financial, Inc (https://www.bolt.com)
  * @license    http://opensource.org/licenses/osl-3.0.php  Open Software License (OSL 3.0)
  */
 
@@ -54,6 +45,9 @@ class Bolt_Boltpay_Model_Payment extends Mage_Payment_Model_Method_Abstract
     const HOOK_TYPE_PENDING = 'pending';
     const HOOK_TYPE_VOID = 'void';
     const HOOK_TYPE_REFUND = 'credit';
+
+    const URL_MERCHANT_SANDBOX = 'https://merchant-sandbox.bolt.com';
+    const URL_MERCHANT_PRODUCTION = 'https://merchant.bolt.com';
 
     const CAPTURE_TYPE = 'online';
 
@@ -192,49 +186,17 @@ class Bolt_Boltpay_Model_Payment extends Mage_Payment_Model_Method_Abstract
 
     /**
      * Bolt Authorize is a dummy authorize method since authorization is done by Bolt's checkout iframe
-     * This authorize method does the following
-     * 1. Logs the reference id and reference to the comments
-     * 2. Keeps the authorization transaction record open
-     * 3. Moves the transaction to either pending or non pending state based on the response
+     * This authorize method merely keeps the authorization transaction record open
+     * @param Varien_Object $payment
+     * @param $amount
+     * @return Bolt_Boltpay_Model_Payment
+     * @throws Exception
      */
     public function authorize(Varien_Object $payment, $amount)
     {
-
         try {
-            $reference = $payment->getAdditionalInformation('bolt_reference');
-
-            //Mage::log(sprintf('Initiating authorize on payment id: %d', $payment->getId()), null, 'bolt.log');
-            // Get the merchant transaction id
-            $reference = $payment->getAdditionalInformation('bolt_reference');
-            if (empty($reference)) {
-                throw new Exception("Payment missing expected transaction ID.");
-            }
-
-            $boltHelper = Mage::helper('boltpay/api');
-            $transaction = $boltHelper->fetchTransaction($reference);
-            $boltCartTotal = $transaction->amount->currency_symbol. ($transaction->amount->amount/100);
-
-            $payment->setTransactionId($reference);
-
-            $isAjaxRequest = $payment->getAdditionalInformation('is_ajax_request');
-            $hostname = Mage::getStoreConfig('payment/boltpay/test') ? "merchant-sandbox.bolt.com" : "merchant.bolt.com";
-            if($isAjaxRequest){ // order is create via AJAX call
-                $msg = sprintf(
-                    "BOLT notification: Authorization requested for $boltCartTotal.  Cart total is {$transaction->amount->currency_symbol}$amount. Bolt transaction: https://%s/transaction/%s.", $hostname, $reference
-                ); 
-            }
-            else{ // order is created via hook (orphan)
-                $boltTraceId = Mage::helper('boltpay/bugsnag')->getBoltTraceId();
-                $msg = sprintf(
-                    "BOLT notification: Authorization requested for $boltCartTotal.  Cart total is {$transaction->amount->currency_symbol}$amount. Bolt transaction: https://%s/transaction/%s. This order was created via webhook (Bolt traceId: <%s>)", $hostname, $reference, $boltTraceId
-                ); 
-            }
-            
-            $payment->getOrder()->setState(Mage_Sales_Model_Order::STATE_NEW, true, $msg);
-
             // Auth transactions need to be kept open to support cancelling/voiding transaction
             $payment->setIsTransactionClosed(false);
-            //Mage::log(sprintf('Authorization completed for payment id: %d', $payment->getId()), null, 'bolt.log');
             return $this;
         } catch (Exception $e) {
             $error = array('error' => $e->getMessage());
@@ -781,5 +743,37 @@ class Bolt_Boltpay_Model_Payment extends Mage_Payment_Model_Method_Abstract
         }
 
         return $this;
+    }
+
+    /**
+     * Converts a Bolt Transaction Status to a Magento order status
+     *
+     * @param string $transactionStatus A Bolt transaction status
+     * @return string The Magento order status mapped to the Bolt Status
+     */
+    public static function transactionStatusToOrderStatus( $transactionStatus ) {
+        $new_order_status = Mage_Sales_Model_Order::STATE_NEW;
+        switch ($transactionStatus) {
+            case Bolt_Boltpay_Model_Payment::TRANSACTION_AUTHORIZED:
+                $new_order_status = Mage_Sales_Model_Order::STATE_PROCESSING;
+                break;
+            case Bolt_Boltpay_Model_Payment::TRANSACTION_PENDING:
+                $new_order_status = Mage_Sales_Model_Order::STATE_PAYMENT_REVIEW;
+                break;
+            case Bolt_Boltpay_Model_Payment::TRANSACTION_COMPLETED:
+                $new_order_status = Mage_Sales_Model_Order::STATE_PROCESSING;
+                break;
+            case Bolt_Boltpay_Model_Payment::TRANSACTION_REJECTED_REVERSIBLE:
+                $new_order_status = Bolt_Boltpay_Model_Payment::ORDER_DEFERRED;
+                break;
+            case Bolt_Boltpay_Model_Payment::TRANSACTION_CANCELLED:
+            case Bolt_Boltpay_Model_Payment::TRANSACTION_REJECTED_IRREVERSIBLE:
+                $new_order_status = Mage_Sales_Model_Order::STATE_CANCELED;
+                break;
+            default:
+                Mage::helper('boltpay/bugsnag')->notifyException(new Exception("'$transactionStatus' is not a recognized order status.  $new_order_status is being set instead."));
+        }
+
+        return $new_order_status;
     }
 }
