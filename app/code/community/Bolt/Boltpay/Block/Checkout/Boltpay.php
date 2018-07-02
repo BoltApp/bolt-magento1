@@ -83,11 +83,11 @@ class Bolt_Boltpay_Block_Checkout_Boltpay extends Mage_Checkout_Block_Onepage_Re
 
         $items = $quote->getAllVisibleItems();
 
-        $has_admin_shipping = false;
+        $hasAdminShipping = false;
         if (Mage::app()->getStore()->isAdmin()) {
             /* @var Mage_Adminhtml_Block_Sales_Order_Create_Shipping_Method_Form $shippingMethodBlock */
             $shippingMethodBlock = Mage::app()->getLayout()->createBlock("adminhtml/sales_order_create_shipping_method_form");
-            $has_admin_shipping = $shippingMethodBlock->getActiveMethodRate();
+            $hasAdminShipping = $shippingMethodBlock->getActiveMethodRate();
         }
 
         if (empty($items)) {
@@ -98,7 +98,7 @@ class Bolt_Boltpay_Block_Checkout_Boltpay extends Mage_Checkout_Block_Onepage_Re
             !$isMultiPage
             && !$quote->isVirtual()
             && !$quote->getShippingAddress()->getShippingMethod()
-            && !$has_admin_shipping
+            && !$hasAdminShipping
         ) {
 
             return json_decode('{"token" : "", "error": "A valid shipping method must be selected.  Please check your address data and that you have selected a shipping method, then, refresh to try again."}');

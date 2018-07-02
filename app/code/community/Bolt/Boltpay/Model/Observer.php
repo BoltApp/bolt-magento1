@@ -96,7 +96,7 @@ class Bolt_Boltpay_Model_Observer
 
                 # Adjust amount if it is off by only one cent, likely due to rounding
                 $difference = $transaction->amount->amount - $magentoTotal;
-                if ( abs($difference) <= 1) {
+                if ( abs($difference) == 1) {
                     $order->setTaxAmount($order->getTaxAmount() + ($difference/100))
                         ->setBaseTaxAmount($order->getBaseTaxAmount() + ($difference/100))
                         ->setGrandTotal($order->getGrandTotal() + ($difference/100))
