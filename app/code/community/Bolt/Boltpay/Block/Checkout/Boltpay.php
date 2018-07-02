@@ -136,8 +136,9 @@ class Bolt_Boltpay_Block_Checkout_Boltpay extends Mage_Checkout_Block_Onepage_Re
 
             $orderCreationResponse = json_decode('{"token" : "", "error": "Unexpected error.  Please contact support for assistance."}');
 
+            $isMultiPage = $checkoutType === 'multi-page';
             // For multi-page, remove shipping that may have been added by Magento shipping and tax estimate interface
-            if ($checkoutType === 'multi-page') {
+            if ($isMultiPage) {
                 // Resets shipping rate
                 $shippingMethod = $sessionQuote->getShippingAddress()->getShippingMethod();
                 $boltHelper->applyShippingRate($sessionQuote, null);
@@ -145,8 +146,6 @@ class Bolt_Boltpay_Block_Checkout_Boltpay extends Mage_Checkout_Block_Onepage_Re
 
             // Call Bolt create order API
             try {
-                $isMultiPage = $checkoutType === 'multi-page';
-
                 /////////////////////////////////////////////////////////////////////////////////
                 // We create a copy of the quote that is immutable by the customer/frontend
                 // Bolt saves this quote to the database at Magento-side order save time.
@@ -186,7 +185,7 @@ class Bolt_Boltpay_Block_Checkout_Boltpay extends Mage_Checkout_Block_Onepage_Re
             }
 
             // For multi-page, reapply shipping to quote that may be used for shipping and tax estimate
-            if ($checkoutType === 'multi-page') {
+            if ($isMultiPage) {
                 $boltHelper->applyShippingRate($sessionQuote, $shippingMethod);
             }
 
