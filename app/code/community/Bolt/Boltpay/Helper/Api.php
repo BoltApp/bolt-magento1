@@ -252,7 +252,8 @@ class Bolt_Boltpay_Helper_Api extends Bolt_Boltpay_Helper_Data
                         'transaction'   => $transaction,
                         'rates' => $this->getRatesDebuggingData($rates),
                         'service' => $service,
-                        'shipping_address' => var_export($shippingAddress->debug(), true)
+                        'shipping_address' => var_export($shippingAddress->debug(), true),
+                        'quote' => var_export($immutableQuote->debug(), true)
                     );
                     Mage::helper('boltpay/bugsnag')->notifyException(new Exception($errorMessage), $metaData);
                 }
