@@ -161,109 +161,6 @@ class Bolt_Boltpay_Helper_Data extends Mage_Core_Helper_Abstract
      *
      * @return Mage_Sales_Model_Quote  The cloned copy of the source quote
      */
-    public function cloneQuote(Mage_Sales_Model_Quote $sourceQuote, $isForMultipage = false ) {
-        /* @var Mage_Sales_Model_Quote $clonedQuote */
-        $immutableQuote = Mage::getSingleton('sales/quote');
-
-        try {
-            $immutableQuote->merge($sourceQuote);
-        } catch (Exception $e) {
-            Mage::helper('boltpay/bugsnag')->notifyException($e);
-        }
-
-        if (!$isForMultipage) {
-            // For one-page checkout page we want to set the
-            // billing and shipping, and shipping method at this time.
-            // For multi-page, we add the addresses during the shipping and tax hook
-            // and the chosen shipping method at order save time.
-            $immutableQuote
-                ->setBillingAddress($sourceQuote->getBillingAddress())
-                ->setShippingAddress($sourceQuote->getShippingAddress())
-                ->getShippingAddress()
-                ->setShippingMethod($sourceQuote->getShippingAddress()->getShippingMethod())
-                ->save();
-        }
-
-        // Attempting to reset some of the values already set by merge affects the totals passed to
-        // Bolt in such a way that the grand total becomes 0.  Since we do not need to reset these values
-        // we ignore them all.
-        $fieldsSetByMerge = array(
-            'coupon_code',
-            'subtotal',
-            'base_subtotal',
-            'subtotal_with_discount',
-            'base_subtotal_with_discount',
-            'grand_total',
-            'base_grand_total',
-            'auctaneapi_discounts',
-            'applied_rule_ids',
-            'items_count',
-            'items_qty',
-            'virtual_items_qty',
-            'trigger_recollect',
-            'can_apply_msrp',
-            'totals_collected_flag',
-            'global_currency_code',
-            'base_currency_code',
-            'store_currency_code',
-            'quote_currency_code',
-            'store_to_base_rate',
-            'store_to_quote_rate',
-            'base_to_global_rate',
-            'base_to_quote_rate',
-            'is_changed',
-            'created_at',
-            'updated_at',
-            'entity_id'
-        );
-
-        // Add all previously saved data that may have been added by other plugins
-        foreach ($sourceQuote->getData() as $key => $value) {
-            if (!in_array($key, $fieldsSetByMerge)) {
-                $immutableQuote->setData($key, $value);
-            }
-        }
-
-        /////////////////////////////////////////////////////////////////
-        // Generate new increment order id and associate it with current quote, if not already assigned
-        // Save the reserved order ID to the session to check order existence at frontend order save time
-        /////////////////////////////////////////////////////////////////
-        $reservedOrderId = $sourceQuote->reserveOrderId()->save()->getReservedOrderId();
-        Mage::getSingleton('core/session')->setReservedOrderId($reservedOrderId);
-
-        $immutableQuote
-            ->setCustomer($sourceQuote->getCustomer())
-            ->setCustomerGroupId($sourceQuote->getCustomerGroupId())
-            ->setCustomerIsGuest((($sourceQuote->getCustomerId()) ? false : true))
-            ->setReservedOrderId($reservedOrderId)
-            ->setStoreId($sourceQuote->getStoreId())
-            ->setParentQuoteId($sourceQuote->getId())
-            ->save();
-
-        return $immutableQuote;
-    }
-
-    /**
-     * Gets the connect.js url depending on the sandbox state of the application
-     *
-     * @return string  Sandbox connect.js URL for Sanbox mode, otherwise production
-     */
-    public function getConnectJsUrl()
-    {
-        return Mage::getStoreConfigFlag('payment/boltpay/test') ?
-            Bolt_Boltpay_Block_Checkout_Boltpay::JS_URL_TEST . "/connect.js":
-            Bolt_Boltpay_Block_Checkout_Boltpay::JS_URL_PROD . "/connect.js";
-    }
-
-    /**
-     * Creates a clone of a quote including items, addresses, customer details,
-     * and shipping and tax options when
-     *
-     * @param Mage_Sales_Model_Quote $sourceQuote   The quote to be cloned
-     * @param bool $isForMultipage    Determines if the quote is for payment only, (i.e. with address and shipping data), or multi-page, (i.e. without address and shipping data)
-     *
-     * @return Mage_Sales_Model_Quote  The cloned copy of the source quote
-     */
     public function cloneQuote(Mage_Sales_Model_Quote $sourceQuote, $isForMultipage = false )
     {
 
@@ -350,6 +247,18 @@ class Bolt_Boltpay_Helper_Data extends Mage_Core_Helper_Abstract
             ->save();
 
         return $clonedQuote;
+    }
+
+    /**
+     * Gets the connect.js url depending on the sandbox state of the application
+     *
+     * @return string  Sandbox connect.js URL for Sanbox mode, otherwise production
+     */
+    public function getConnectJsUrl()
+    {
+        return Mage::getStoreConfigFlag('payment/boltpay/test') ?
+            Bolt_Boltpay_Block_Checkout_Boltpay::JS_URL_TEST . "/connect.js":
+            Bolt_Boltpay_Block_Checkout_Boltpay::JS_URL_PROD . "/connect.js";
     }
 
     /**
