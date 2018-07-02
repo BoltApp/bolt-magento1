@@ -61,7 +61,7 @@ class Bolt_Boltpay_Model_Observer
         return Mage::helper('boltpay/api');
     }
 
-    /**
+   /**
      * Event handler called after a save event.
      * Calls the complete authorize Bolt end point to confirm the order is valid.
      * If the order has been changed between the creation on Bolt end and the save in Magento
@@ -69,7 +69,6 @@ class Bolt_Boltpay_Model_Observer
      *
      * @param $observer
      * @throws Exception
-     *
      */
     public function verifyOrderContents($observer) 
     {
@@ -79,26 +78,31 @@ class Bolt_Boltpay_Model_Observer
         /* @var Mage_Sales_Model_Order $order */
         $order = $observer->getEvent()->getOrder();
         $transaction = $observer->getEvent()->getTransaction();
-
         $payment = $quote->getPayment();
         $method = $payment->getMethod();
-
         if (strtolower($method) == Bolt_Boltpay_Model_Payment::METHOD_CODE) {
-
             $reference = $payment->getAdditionalInformation('bolt_reference');
-
-            if ( (int)(round($order->getGrandTotal()*100)) !== $transaction->amount->amount)  {
-
+            $magentoTotal = (int)(round($order->getGrandTotal() * 100));
+            if ($magentoTotal !== $transaction->amount->amount)  {
                 $message = "THERE IS A MISMATCH IN THE ORDER PAID AND ORDER RECORDED.<br>PLEASE COMPARE THE ORDER DETAILS WITH THAT RECORD IN YOUR BOLT MERCHANT ACCOUNT AT: ";
                 $message .= $this->_getMerchantDashboardUrl();
                 $message .= "/transaction/$reference";
-                $message .= "<br/>Bolt reports ".($transaction->amount->amount/100).'. Magento expects '.$order->getGrandTotal();
-
-                // TOD properly adjust amount
-                if (abs((int)($order->getGrandTotal()*100) - $transaction->amount->amount) > 1) {
-                    $order->setState(Mage_Sales_Model_Order::STATE_HOLDED, true, $message)->save();
+                $message .= "<br/>Bolt reports ".($transaction->amount->amount/100).'. Magento expects '.$magentoTotal/100;
+                # Adjust amount if it is off by only one cent, likely due to rounding
+                $difference = $transaction->amount->amount - $magentoTotal;
+                if ( abs($difference) == 1) {
+                    $order->setTaxAmount($order->getTaxAmount() + ($difference/100))
+                        ->setBaseTaxAmount($order->getBaseTaxAmount() + ($difference/100))
+                        ->setGrandTotal($order->getGrandTotal() + ($difference/100))
+                        ->setBaseGrandTotal($order->getBaseGrandTotal() + ($difference/100))
+                        ->save();
+                } else {
+                    # Total differs by more than one cent, so we put the order on hold.
+                    $order->setHoldBeforeState($order->getState());
+                    $order->setHoldBeforeStatus($order->getStatus());
+                    $order->setState(Mage_Sales_Model_Order::STATE_HOLDED, true, $message)
+                        ->save();
                 }
-
                 $metaData = array(
                     'process'   => "order verification",
                     'reference'  => $reference,
@@ -107,7 +111,6 @@ class Bolt_Boltpay_Model_Observer
                 );
                 Mage::helper('boltpay/bugsnag')->notifyException(new Exception($message), $metaData);
            }
-
             $this->sendOrderEmail($order);
             $order->save();
         }
