@@ -94,9 +94,13 @@ class Bolt_Boltpay_Adminhtml_Sales_Order_CreateController extends Mage_Adminhtml
                 $this->_getOrderCreateModel()->getQuote()->getPayment()->addData($paymentData);
             }
 
+            $orderData = $this->getRequest()->getPost('order');
+            if ($this->getRequest()->getPost('shipping_method')) {
+                $orderData['shipping_method'] = $this->getRequest()->getPost('shipping_method');
+            }
             $orderCreateModel = $this->_getOrderCreateModel()
                 ->setIsValidate(true)
-                ->importPostData($this->getRequest()->getPost('order'));
+                ->importPostData($orderData);
 
             $this->_getQuote()->getShippingAddress()->setCollectShippingRates(true)->collectShippingRates()->save();
             $this->_getQuote()->setTotalsCollectedFlag(false)->collectTotals();
