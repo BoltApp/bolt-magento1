@@ -154,7 +154,7 @@ class Bolt_Boltpay_Block_Checkout_Boltpay extends Mage_Checkout_Block_Onepage_Re
                 // and discount calculations change on the Magento server
                 ////////////////////////////////////////////////////////////////////////////////
                 $immutableQuote = $boltHelper->cloneQuote($sessionQuote, $isMultiPage);
-                $orderCreationResponse = $this->_createBoltOrder($immutableQuote, $isMultiPage);
+                $orderCreationResponse = $this->_createBoltOrder($immutableQuote, $checkoutType);
                 ////////////////////////////////////////////////////////////////////////////////
 
                 if (@!$orderCreationResponse->error) {
