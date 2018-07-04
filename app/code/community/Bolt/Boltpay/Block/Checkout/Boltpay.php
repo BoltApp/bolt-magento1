@@ -190,9 +190,9 @@ class Bolt_Boltpay_Block_Checkout_Boltpay extends Mage_Checkout_Block_Onepage_Re
                 $boltHelper->applyShippingRate($sessionQuote, $shippingMethod);
             }
 
-            $cartData = $this->generateCartData($orderCreationResponse);
+            $cartData = $this->buildCartData($orderCreationResponse);
 
-            return $this->generateBoltCheckoutJavascript($checkoutType, $immutableQuote, $hintData, $cartData);
+            return $this->buildBoltCheckoutJavascript($checkoutType, $immutableQuote, $hintData, $cartData);
 
         } catch (Exception $e) {
             Mage::helper('boltpay/bugsnag')->notifyException($e);
@@ -214,7 +214,7 @@ class Bolt_Boltpay_Block_Checkout_Boltpay extends Mage_Checkout_Block_Onepage_Re
      * @param $orderCreationResponse
      * @return array
      */
-    public function generateCartData($orderCreationResponse)
+    public function buildCartData($orderCreationResponse)
     {
         $authCapture = (Mage::getStoreConfigFlag('payment/boltpay/auto_capture') === self::AUTO_CAPTURE_ENABLED);
 
@@ -243,7 +243,7 @@ class Bolt_Boltpay_Block_Checkout_Boltpay extends Mage_Checkout_Block_Onepage_Re
      * @param $cartData
      * @return string
      */
-    public function generateBoltCheckoutJavascript($checkoutType, $immutableQuote, $hintData, $cartData)
+    public function buildBoltCheckoutJavascript($checkoutType, $immutableQuote, $hintData, $cartData)
     {
         /* @var Bolt_Boltpay_Helper_Api $boltHelper */
         $boltHelper = Mage::helper('boltpay');
