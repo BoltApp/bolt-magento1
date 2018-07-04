@@ -43,9 +43,9 @@ class Bolt_Boltpay_Block_Checkout_Boltpay extends Mage_Checkout_Block_Onepage_Re
     const JS_URL_PROD = 'https://connect.bolt.com';
 
     /**
-     * @var int flag that represents if the capture is automatically done on authentication
+     * @var bool flag that represents if the capture is automatically done on authentication
      */
-    const AUTO_CAPTURE_ENABLED = 1;
+    const AUTO_CAPTURE_ENABLED = true;
 
 
     const CSS_SUFFIX = 'bolt-css-suffix';
@@ -190,20 +190,7 @@ class Bolt_Boltpay_Block_Checkout_Boltpay extends Mage_Checkout_Block_Onepage_Re
                 $boltHelper->applyShippingRate($sessionQuote, $shippingMethod);
             }
 
-            $authCapture = (Mage::getStoreConfig('payment/boltpay/auto_capture') == self::AUTO_CAPTURE_ENABLED);
-
-            //////////////////////////////////////////////////////////////////////////
-            // Generate JSON cart and hints objects for the javascript returned below.
-            //////////////////////////////////////////////////////////////////////////
-            $cartData = array(
-                'authcapture' => $authCapture,
-                'orderToken' => ($orderCreationResponse) ? $orderCreationResponse->token: '',
-            );
-
-            // If there was an unexpected API error, then it was stored in the registry
-            if (Mage::registry("api_error")) {
-                $cartData['error'] = Mage::registry("api_error");
-            }
+            $cartData = $this->generateCartData($orderCreationResponse);
 
             return $this->generateBoltCheckoutJavascript($checkoutType, $immutableQuote, $hintData, $cartData);
 
@@ -216,9 +203,35 @@ class Bolt_Boltpay_Block_Checkout_Boltpay extends Mage_Checkout_Block_Onepage_Re
      * @param $checkoutType
      * @return bool
      */
-    public function isAdminAndUseJsInAdmin($checkoutType)
+    protected function isAdminAndUseJsInAdmin($checkoutType)
     {
         return ($checkoutType === self::CHECKOUT_TYPE_ADMIN) && !Mage::getStoreConfig('payment/boltpay/use_javascript_in_admin');
+    }
+
+    /**
+     * Generate cart data
+     *
+     * @param $orderCreationResponse
+     * @return array
+     */
+    public function generateCartData($orderCreationResponse)
+    {
+        $authCapture = (Mage::getStoreConfigFlag('payment/boltpay/auto_capture') === self::AUTO_CAPTURE_ENABLED);
+
+        //////////////////////////////////////////////////////////////////////////
+        // Generate JSON cart and hints objects for the javascript returned below.
+        //////////////////////////////////////////////////////////////////////////
+        $cartData = array(
+            'authcapture' => $authCapture,
+            'orderToken' => ($orderCreationResponse) ? $orderCreationResponse->token: '',
+        );
+
+        // If there was an unexpected API error, then it was stored in the registry
+        if (Mage::registry("api_error")) {
+            $cartData['error'] = Mage::registry("api_error");
+        }
+
+        return $cartData;
     }
 
     /**
@@ -226,8 +239,8 @@ class Bolt_Boltpay_Block_Checkout_Boltpay extends Mage_Checkout_Block_Onepage_Re
      *
      * @param $checkoutType
      * @param $immutableQuote
-     * @param $jsonHints
-     * @param $jsonCart
+     * @param $hintData
+     * @param $cartData
      * @return string
      */
     public function generateBoltCheckoutJavascript($checkoutType, $immutableQuote, $hintData, $cartData)
