@@ -248,9 +248,6 @@ class Bolt_Boltpay_Block_Checkout_BoltpayTest extends PHPUnit_Framework_TestCase
         $hintData = array();
 
         $checkoutType = Bolt_Boltpay_Block_Checkout_Boltpay::CHECKOUT_TYPE_MULTI_PAGE;
-        $immutableQuote = $this->getMockBuilder('Mage_Sales_Model_Quote')
-            ->getMock()
-        ;
 
         $this->app->getStore()->setConfig('payment/boltpay/check', '');
         $this->app->getStore()->setConfig('payment/boltpay/on_checkout_start', '');
@@ -261,16 +258,9 @@ class Bolt_Boltpay_Block_Checkout_BoltpayTest extends PHPUnit_Framework_TestCase
         $this->app->getStore()->setConfig('payment/boltpay/close', '');
 
         $immutableQuoteID = 6;
-        $immutableQuote->expects($this->once())
-            ->method('getId')
-            ->will($this->returnValue($immutableQuoteID));
 
         $jsonCart = json_encode($cartData);
-        $jsonHints = '{}';
-        if (sizeof($hintData) != 0) {
-            // Convert $hint_data to object, because when empty data it consists array not an object
-            $jsonHints = json_encode($hintData, JSON_FORCE_OBJECT);
-        }
+        $jsonHints = json_encode($hintData, JSON_FORCE_OBJECT);
         $onSuccessCallback = 'function(transaction, callback) { console.log(test) }';
 
         $expected = $this->testHelper->buildCartDataJs($jsonCart, $immutableQuoteID, $jsonHints, array(
@@ -287,7 +277,7 @@ class Bolt_Boltpay_Block_Checkout_BoltpayTest extends PHPUnit_Framework_TestCase
             ->method('buildOnCloseCallback')
             ->will($this->returnValue(''));
 
-        $result = $this->currentMock->buildBoltCheckoutJavascript($checkoutType, $immutableQuote, $hintData, $cartData);
+        $result = $this->currentMock->buildBoltCheckoutJavascript($checkoutType, $immutableQuoteID, $hintData, $cartData);
 
         $this->assertEquals($expected, $result);
     }

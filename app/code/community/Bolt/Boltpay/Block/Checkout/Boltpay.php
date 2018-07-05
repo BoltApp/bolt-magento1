@@ -192,7 +192,7 @@ class Bolt_Boltpay_Block_Checkout_Boltpay extends Mage_Checkout_Block_Onepage_Re
 
             $cartData = $this->buildCartData($orderCreationResponse);
 
-            return $this->buildBoltCheckoutJavascript($checkoutType, $immutableQuote, $hintData, $cartData);
+            return $this->buildBoltCheckoutJavascript($checkoutType, $immutableQuote->getId(), $hintData, $cartData);
 
         } catch (Exception $e) {
             Mage::helper('boltpay/bugsnag')->notifyException($e);
@@ -216,7 +216,7 @@ class Bolt_Boltpay_Block_Checkout_Boltpay extends Mage_Checkout_Block_Onepage_Re
      */
     public function buildCartData($orderCreationResponse)
     {
-        $authCapture = (Mage::getStoreConfigFlag('payment/boltpay/auto_capture') === self::AUTO_CAPTURE_ENABLED);
+        $authCapture = Mage::getStoreConfigFlag('payment/boltpay/auto_capture');
 
         //////////////////////////////////////////////////////////////////////////
         // Generate JSON cart and hints objects for the javascript returned below.
@@ -238,22 +238,18 @@ class Bolt_Boltpay_Block_Checkout_Boltpay extends Mage_Checkout_Block_Onepage_Re
      * Generate BoltCheckout Javascript for output.
      *
      * @param $checkoutType
-     * @param $immutableQuote
+     * @param $immutableQuoteId
      * @param $hintData
      * @param $cartData
      * @return string
      */
-    public function buildBoltCheckoutJavascript($checkoutType, $immutableQuote, $hintData, $cartData)
+    public function buildBoltCheckoutJavascript($checkoutType, $immutableQuoteId, $hintData, $cartData)
     {
         /* @var Bolt_Boltpay_Helper_Api $boltHelper */
         $boltHelper = Mage::helper('boltpay');
 
         $jsonCart = json_encode($cartData);
-        $jsonHints = '{}';
-        if (sizeof($hintData) != 0) {
-            // Convert $hint_data to object, because when empty data it consists array not an object
-            $jsonHints = json_encode($hintData, JSON_FORCE_OBJECT);
-        }
+        $jsonHints = json_encode($hintData, JSON_FORCE_OBJECT);
 
         //////////////////////////////////////////////////////
         // Collect the event Javascripts
@@ -268,11 +264,6 @@ class Bolt_Boltpay_Block_Checkout_Boltpay extends Mage_Checkout_Block_Onepage_Re
         $onPaymentSubmitCustom = $boltHelper->getPaymentBoltpayConfig('on_payment_submit', $checkoutType);
         $successCustom = $boltHelper->getPaymentBoltpayConfig('success', $checkoutType);
         $closeCustom = $boltHelper->getPaymentBoltpayConfig('close', $checkoutType);
-
-        //////////////////////////////////////////////////////
-        // Generate and return BoltCheckout javascript.
-        //////////////////////////////////////////////////////
-        $immutableQuoteId = ($immutableQuote) ? $immutableQuote->getId() : -1;
 
         $onCheckCallbackAdmin = $this->buildOnCheckCallback($checkoutType);
         $onSuccessCallback = $this->buildOnSuccessCallback($successCustom, $checkoutType);
