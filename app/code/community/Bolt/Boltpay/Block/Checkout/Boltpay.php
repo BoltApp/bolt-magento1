@@ -328,6 +328,10 @@ class Bolt_Boltpay_Block_Checkout_Boltpay extends Mage_Checkout_Block_Onepage_Re
         );");
     }
 
+    /**
+     * @param $checkoutType
+     * @return string
+     */
     public function buildOnCheckCallback($checkoutType)
     {
         $checkCallback = '';
@@ -356,6 +360,11 @@ class Bolt_Boltpay_Block_Checkout_Boltpay extends Mage_Checkout_Block_Onepage_Re
         return $checkCallback;
     }
 
+    /**
+     * @param string $successCustom
+     * @param $checkoutType
+     * @return string
+     */
     public function buildOnSuccessCallback($successCustom = '', $checkoutType)
     {
         $saveOrderUrl = $this->getUrl('boltpay/order/save');
@@ -397,6 +406,11 @@ class Bolt_Boltpay_Block_Checkout_Boltpay extends Mage_Checkout_Block_Onepage_Re
         return $onSuccessCallback;
     }
 
+    /**
+     * @param $closeCustom
+     * @param $checkoutType
+     * @return string
+     */
     public function buildOnCloseCallback($closeCustom, $checkoutType)
     {
         $successUrl = $this->getUrl(Mage::getStoreConfig('payment/boltpay/successpage'));
