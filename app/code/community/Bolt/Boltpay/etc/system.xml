@@ -102,6 +102,21 @@
               <show_in_website>1</show_in_website>
               <show_in_store>0</show_in_store>
             </signing_key>
+            
+            <ipstack_key translate="label">
+              <label>Ipstack Access Key</label>
+              <frontend_type>obscure</frontend_type>
+              <backend_model>adminhtml/system_config_backend_encrypted</backend_model>
+              <tooltip>
+                <![CDATA[
+                <b>If provided, Bolt plugin performs address lookup to optimize the performance. Obtain API key via https://ipstack.com/ or contact Bolt</b>
+                ]]>
+              </tooltip>
+              <sort_order>16</sort_order>
+              <show_in_default>1</show_in_default>
+              <show_in_website>1</show_in_website>
+              <show_in_store>0</show_in_store>
+            </ipstack_key>
 
             <title translate="label">
               <label>Title</label>

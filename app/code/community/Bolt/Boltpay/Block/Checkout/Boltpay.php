@@ -44,7 +44,6 @@ class Bolt_Boltpay_Block_Checkout_Boltpay extends Mage_Checkout_Block_Onepage_Re
      */
     const AUTO_CAPTURE_ENABLED = 1;
 
-
     const CSS_SUFFIX = 'bolt-css-suffix';
 
     /**
@@ -663,8 +662,12 @@ class Bolt_Boltpay_Block_Checkout_Boltpay extends Mage_Checkout_Block_Onepage_Re
         $locationInfo = Mage::getSingleton('core/session')->getLocationInfo();
 
         if (empty($locationInfo)) {
-            $locationInfo = $this->url_get_contents("http://freegeoip.net/json/".$this->getIpAddress());
-            Mage::getSingleton('core/session')->setLocationInfo($locationInfo);
+            //To receive the API results in the old freegeoip format, we need ipstack Access Key
+            $ipstackAccessKey = Mage::helper('core')->decrypt(Mage::getStoreConfig('payment/boltpay/ipstack_key'));
+            if(!empty($ipstackAccessKey)){
+               $locationInfo = $this->url_get_contents("http://api.ipstack.com/".$this->getIpAddress()."?access_key=".$ipstackAccessKey."&output=json&legacy=1");
+               Mage::getSingleton('core/session')->setLocationInfo($locationInfo);
+            }
         }
 
         return $locationInfo;
