@@ -1,17 +1,24 @@
 <?php
 
+require_once('TestHelper.php');
+
 class Bolt_Boltpay_Block_Checkout_BoltpayTest extends PHPUnit_Framework_TestCase
 {
     private $app = null;
 
     private $currentMock;
 
+    /**
+     * @var $testHelper Bolt_Boltpay_TestHelper
+     */
+    private $testHelper = null;
+
     public function setUp()
     {
         $this->app = Mage::app('default');
 
         $this->currentMock = $this->getMockBuilder('Bolt_Boltpay_Block_Checkout_Boltpay')
-            ->setMethods(array('isAdminAndUseJsInAdmin', 'getUrl'))
+            ->setMethods(array('isAdminAndUseJsInAdmin', 'buildOnCheckCallback', 'buildOnSuccessCallback', 'buildOnCloseCallback'))
             ->disableOriginalConstructor()
             ->disableOriginalClone()
             ->disableArgumentCloning()
@@ -20,6 +27,8 @@ class Bolt_Boltpay_Block_Checkout_BoltpayTest extends PHPUnit_Framework_TestCase
 
         $this->session  = Mage::getSingleton('customer/session');
         $this->quote    = Mage::getSingleton('checkout/session')->getQuote();
+
+        $this->testHelper = new Bolt_Boltpay_TestHelper();
     }
 
     public function testIsEnableMerchantScopedAccount()
@@ -223,7 +232,59 @@ class Bolt_Boltpay_Block_Checkout_BoltpayTest extends PHPUnit_Framework_TestCase
      */
     public function testBuildBoltCheckoutJavascript()
     {
+        $autoCapture = true;
+        $this->app->getStore()->setConfig('payment/boltpay/auto_capture', $autoCapture);
 
+        $cartData = array(
+            'authcapture' => $autoCapture,
+            'orderToken' => md5('bolt')
+        );
+
+        $hintData = array();
+
+        $checkoutType = Bolt_Boltpay_Block_Checkout_Boltpay::CHECKOUT_TYPE_MULTI_PAGE;
+        $immutableQuote = $this->getMockBuilder('Mage_Sales_Model_Quote')
+            ->getMock()
+        ;
+
+        $this->app->getStore()->setConfig('payment/boltpay/check', '');
+        $this->app->getStore()->setConfig('payment/boltpay/on_checkout_start', '');
+        $this->app->getStore()->setConfig('payment/boltpay/on_shipping_details_complete', '');
+        $this->app->getStore()->setConfig('payment/boltpay/on_shipping_options_complete', '');
+        $this->app->getStore()->setConfig('payment/boltpay/on_payment_submit', '');
+        $this->app->getStore()->setConfig('payment/boltpay/success', '');
+        $this->app->getStore()->setConfig('payment/boltpay/close', '');
+
+        $immutableQuoteID = 6;
+        $immutableQuote->expects($this->once())
+            ->method('getId')
+            ->will($this->returnValue($immutableQuoteID));
+
+        $jsonCart = json_encode($cartData);
+        $jsonHints = '{}';
+        if (sizeof($hintData) != 0) {
+            // Convert $hint_data to object, because when empty data it consists array not an object
+            $jsonHints = json_encode($hintData, JSON_FORCE_OBJECT);
+        }
+        $onSuccessCallback = 'function(transaction, callback) { console.log(test) }';
+
+        $expected = $this->testHelper->buildCartDataJs($jsonCart, $immutableQuoteID, $jsonHints, array(
+            'onSuccessCallback' => $onSuccessCallback
+        ));
+
+        $this->currentMock
+            ->method('buildOnCheckCallback')
+            ->will($this->returnValue(''));
+        $this->currentMock
+            ->method('buildOnSuccessCallback')
+            ->will($this->returnValue($onSuccessCallback));
+        $this->currentMock
+            ->method('buildOnCloseCallback')
+            ->will($this->returnValue(''));
+
+        $result = $this->currentMock->buildBoltCheckoutJavascript($checkoutType, $immutableQuote, $hintData, $cartData);
+
+        $this->assertEquals($expected, $result);
     }
 
     public function testGetTrackJsUrl()
