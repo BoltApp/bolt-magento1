@@ -29,19 +29,26 @@ AdminOrder.prototype.prepareParams =
 
         /*
          *  this.serializeData Magento implemented approach, (i.e. prototype), is not reliably
-         *  serializing this.shippingAddressContainer, so we will do it the more straight-forward,
-         *  robust way.
+         *  serializing this.shippingAddressContainer, and this.billingAddressContainer so we will
+         *  do it the more straight-forward, robust way.
          */
-        var address_data = $(this.shippingAddressContainer).select('input', 'select', 'textarea');
-        if (address_data) {
-            address_data.each(function(form_element) {
+        var shipping_address_data = $(this.shippingAddressContainer).select('input', 'select', 'textarea');
+        if (shipping_address_data) {
+            shipping_address_data.each(function(form_element) {
                 params[form_element.name] = form_element.value;
             });
         }
+
+        var billing_address_data = $(this.billingAddressContainer).select('input', 'select', 'textarea');
+        if (billing_address_data) {
+            billing_address_data.each(function(form_element) {
+                params[form_element.name] = form_element.value;
+            });
+        }
+
         var email = document.getElementById('email');
 
-
-        if ((typeof email !== 'undefined') && email.value) {
+        if (email && email.value) {
             params['order[account][email]'] = email.value;
         }
 
@@ -53,8 +60,8 @@ AdminOrder.prototype.prepareParams =
 // Require email in admin
 var intervalId = setInterval(
     function() {
-        var email = document.getElementById('email')
-        if (typeof email !== 'undefined') {
+        var email = document.getElementById('email');
+        if (email) {
             email.classList.add('required-entry');
             clearInterval(intervalId);
         }

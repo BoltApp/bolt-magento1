@@ -81,6 +81,65 @@ class Bolt_Boltpay_Adminhtml_Sales_Order_CreateController extends Mage_Adminhtml
         Mage::getSingleton('core/session')->setBoltReference($boltReference);
         Mage::getSingleton('core/session')->setWasCreatedByHook(false);
 
-        parent::saveAction();
+        try {
+            $this->_processActionData('save');
+            $paymentData = $this->getRequest()->getPost('payment');
+            if ($paymentData) {
+                $paymentData['checks'] = Mage_Payment_Model_Method_Abstract::CHECK_USE_INTERNAL
+                    | Mage_Payment_Model_Method_Abstract::CHECK_USE_FOR_COUNTRY
+                    | Mage_Payment_Model_Method_Abstract::CHECK_USE_FOR_CURRENCY
+                    | Mage_Payment_Model_Method_Abstract::CHECK_ORDER_TOTAL_MIN_MAX
+                    | Mage_Payment_Model_Method_Abstract::CHECK_ZERO_TOTAL;
+                $this->_getOrderCreateModel()->setPaymentData($paymentData);
+                $this->_getOrderCreateModel()->getQuote()->getPayment()->addData($paymentData);
+            }
+
+            $orderData = $this->getRequest()->getPost('order');
+            if ($this->getRequest()->getPost('shipping_method')) {
+                $orderData['shipping_method'] = $this->getRequest()->getPost('shipping_method');
+            }
+            $orderCreateModel = $this->_getOrderCreateModel()
+                ->setIsValidate(true)
+                ->importPostData($orderData);
+
+            $this->_getQuote()->getShippingAddress()->setCollectShippingRates(true)->collectShippingRates()->save();
+            $this->_getQuote()->setTotalsCollectedFlag(false)->collectTotals();
+
+            $order =  $orderCreateModel->createOrder();
+
+            $this->_getSession()->clear();
+            Mage::getSingleton('adminhtml/session')->addSuccess($this->__('The order has been created.'));
+            if (Mage::getSingleton('admin/session')->isAllowed('sales/order/actions/view')) {
+                $this->_redirect('*/sales_order/view', array('order_id' => $order->getId()));
+            } else {
+                $this->_redirect('*/sales_order/index');
+            }
+        } catch (Mage_Payment_Model_Info_Exception $e) {
+            if ($paymentData['method'] == 'boltpay') {
+                Mage::helper('boltpay/bugsnag')->notifyException($e);
+            }
+            $this->_getOrderCreateModel()->saveQuote();
+            $message = $e->getMessage();
+            if( !empty($message) ) {
+                $this->_getSession()->addError($message);
+            }
+            $this->_redirect('*/*/');
+        } catch (Mage_Core_Exception $e){
+            if ($paymentData['method'] == 'boltpay') {
+                Mage::helper('boltpay/bugsnag')->notifyException($e);
+            }
+            $message = $e->getMessage();
+            if( !empty($message) ) {
+                $this->_getSession()->addError($message);
+            }
+            $this->_redirect('*/*/');
+        }
+        catch (Exception $e){
+            if ($paymentData['method'] == 'boltpay') {
+                Mage::helper('boltpay/bugsnag')->notifyException($e);
+            }
+            $this->_getSession()->addException($e, $this->__('Order saving error: %s', $e->getMessage()));
+            $this->_redirect('*/*/');
+        }
     }
 }
