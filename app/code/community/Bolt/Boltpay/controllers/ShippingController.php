@@ -217,17 +217,17 @@ class Bolt_Boltpay_ShippingController extends Mage_Core_Controller_Front_Action
 
             // ----------^_^----------- //
             $shippingAddress = array(
-                'city'       => @$shippingAddressOriginal['city'],
-                'region'     => @$shippingAddressOriginal['region'],
-                'region_id'  => @$shippingAddressOriginal['region_id'] ? $shippingAddressOriginal['region_id'] : null,
-                'postcode'   => @$shippingAddressOriginal['postcode'],
-                'country_id' => @$shippingAddressOriginal['country_id'],
+                'city'       => @($shippingAddressOriginal['city']),
+                'region'     => @($shippingAddressOriginal['region']),
+                'region_id'  => @($shippingAddressOriginal['region_id']),
+                'postcode'   => @($shippingAddressOriginal['postcode']),
+                'country_id' => @($shippingAddressOriginal['country_id']),
             );
             unset($shippingAddressOriginal);
 
             $addressData = $this->mergeAddressData($geoLocationAddress, $shippingAddress);
 
-            if(@$addressData['postcode']) {
+            if(isset($addressData['postcode'])) {
                 $cacheIdentifier = $this->getPrefetchCacheIdentifier($quote, $addressData);
                 $this->saveAddressCache($addressData, $cacheIdentifier);
 
@@ -329,22 +329,30 @@ class Bolt_Boltpay_ShippingController extends Mage_Core_Controller_Front_Action
         $requestData = json_decode($requestJson);
 
         $addressData = array(
-            'city'          => $requestData->city,
-            'region'        => $requestData->region_code,
-            'region_name'   => $requestData->region_name,
-            'postcode'      => $requestData->zip_code,
-            'country_id'    => $requestData->country_code
+            'city'          => isset($requestData->city) ?$requestData->city: '',
+            'region'        => isset($requestData->region_code) ?$requestData->region_code: '',
+            'region_name'   => isset($requestData->region_name) ?$requestData->region_name: '',
+            'postcode'      => isset($requestData->zip_code) ?$requestData->zip_code: '',
+            'country_id'    => isset($requestData->country_code) ?$requestData->country_code: ''
         );
 
-        /** @var Mage_Directory_Model_Country $countryObj */
-        $countryObj = Mage::getModel('directory/country')->load($addressData['country_id']);
-        $isRegionAvailable = ($countryObj->getRegionCollection()->getSize() > 0);
-
-        if (!$isRegionAvailable) {
-            // If country does not have region options for dropdown.
-            $addressData['region'] = $addressData['region_name'];
+        if(!empty($addressData['country_id'])){
+            /** @var Mage_Directory_Model_Country $countryObj */
+            $countryObj = Mage::getModel('directory/country')->loadByCode($addressData['country_id']);
+            $isRegionAvailable = ($countryObj->getRegionCollection()->getSize() > 0);
+    
+            if (!$isRegionAvailable) {
+                // If country does not have region options for dropdown.
+                $addressData['region'] = $addressData['region_name'];
+            }
+            elseif(!empty($addressData['region'])){
+                $regionModel = Mage::getModel('directory/region')->loadByCode($addressData['region'], $addressData['country_id']);
+                if($regionModel){
+                    $addressData['region'] = $regionModel->getName();
+                    $addressData['region_id'] = $regionModel->getId();
+                }
+            }    
         }
-
         return $addressData;
     }
 

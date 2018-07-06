@@ -32,21 +32,33 @@ if($this->isBoltActive()) {
                             _data = result.address_data,
                             postcode = document.getElementById('postcode'),
                             country = document.getElementById('country'),
+                            region_id = document.getElementById('region_id'),
+                            city = document.getElementById('city'),
                             region = document.getElementById('region');
 
-                        if (postcode && !postcode.value.length) {
+                        if (postcode && !postcode.value.length && _data.postcode != null) {
                             postcode.value = _data.postcode;
                         }
 
-                        if (country && !country.value.length ) {
+                        if (country && !country.value.length && _data.country_id != null) {
                             evt.initEvent('change', true, true);
                             country.value = _data.country_id;
                             country.dispatchEvent(evt);
                         }
+                        
+                        if (city && !city.value.length && _data.city != null) {
+                            city.value = _data.city;
+                        }
+                        
+                        if (region_id && !region_id.value.length && _data.region_id != null) {
+                            evt.initEvent('change', true, true);
+                            region_id.value = _data.region_id;
+                            region_id.dispatchEvent(evt);
+                        }
 
-                        if (region && !region.value.length) {
+                        if (region && !region.value.length && _data.region != null) {
                             if (region.tagName.toLowerCase() === 'input') {
-                                region.value = _data.region_name;
+                                region.value = _data.region;
                             } else if (region.tagName.toLowerCase() === 'select') {
                                 evt.initEvent('change', true, true);
                                 region.value = _data.region;
