@@ -28,16 +28,6 @@ class Bolt_Boltpay_Block_Checkout_BoltpayTest extends PHPUnit_Framework_TestCase
         $this->testHelper = new Bolt_Boltpay_TestHelper();
     }
 
-    public function testIsEnableMerchantScopedAccount()
-    {
-
-    }
-
-    public function testIsAllowedReplaceScriptOnCurrentPage()
-    {
-
-    }
-
     /**
      * @inheritdoc
      */
@@ -129,99 +119,41 @@ class Bolt_Boltpay_Block_Checkout_BoltpayTest extends PHPUnit_Framework_TestCase
         $this->assertEquals($cartData, $result, 'Something wrong with testBuildCartDataWithApiError()');
     }
 
-    public function testIsBoltOnlyPayment()
-    {
-
-    }
-
-    public function testGetPublishableKey()
-    {
-
-    }
-
-    public function testGetAdditionalCSS()
-    {
-
-    }
-
-    public function testGetIpAddress()
-    {
-
-    }
-
-    public function testGetReservedUserId()
-    {
-
-    }
-
-    public function testUrl_get_contents()
-    {
-
-    }
-
-    public function testCanUseBolt()
-    {
-
-    }
-
-    public function testIsBoltActive()
-    {
-
-    }
-
-    public function testGetCartDataJs()
-    {
-
-    }
-
-    public function testGetLocationEstimate()
-    {
-
-    }
-
-    public function testGetQuote()
-    {
-
-    }
-
-    public function testIsAllowedConnectJsOnCurrentPage()
-    {
-
-    }
-
-    public function testGetTheme()
-    {
-
-    }
-
-    public function testGetConfigSelectors()
-    {
-
-    }
-
-    public function testGetPublishableKeyForRoute()
-    {
-
-    }
-
-    public function testIsTestMode()
-    {
-
-    }
-
+    /**
+     * @inheritdoc
+     */
     public function testGetCartURL()
     {
+        $expect = Mage::getUrl('checkout/cart');
 
+        $result = $this->currentMock->getCartUrl();
+
+        $this->assertEquals($expect, $result);
     }
 
     public function testGetSelectorsCSS()
     {
+        $style = '.test-selector { color: red; }';
 
+        $this->app->getStore()->setConfig('payment/boltpay/additional_css', $style);
+
+        $result = $this->currentMock->getAdditionalCSS();
+
+        $this->assertEquals($style, $result);
     }
 
+    /**
+     * @inheritdoc
+     */
     public function testGetSuccessURL()
     {
+        $url = 'checkout/onepage/success';
+        $this->app->getStore()->setConfig('payment/boltpay/successpage', $url);
+        $expect = Mage::getUrl($url);
 
+        $result = $this->currentMock->getSuccessUrl();
+
+        $this->assertEquals($expect, $result);
     }
 
     /**
@@ -427,18 +359,43 @@ class Bolt_Boltpay_Block_Checkout_BoltpayTest extends PHPUnit_Framework_TestCase
         $this->assertEquals($expect, $result);
     }
 
+    /**
+     * @inheritdoc
+     */
     public function testGetTrackJsUrl()
     {
+        $this->app->getStore()->setConfig('payment/boltpay/test', false);
 
+        $expect = Bolt_Boltpay_Block_Checkout_Boltpay::JS_URL_PROD . "/track.js";
+
+        $result = $this->currentMock->getTrackJsUrl();
+
+        $this->assertEquals($expect, $result);
     }
 
-    public function testGetCssSuffix()
+    /**
+     * @inheritdoc
+     */
+    public function testGetTrackJsUrlIfTestMode()
     {
+        $this->app->getStore()->setConfig('payment/boltpay/test', true);
 
+        $expect = Bolt_Boltpay_Block_Checkout_Boltpay::JS_URL_TEST . "/track.js";
+
+        $result = $this->currentMock->getTrackJsUrl();
+
+        $this->assertEquals($expect, $result);
     }
 
+    /**
+     * @inheritdoc
+     */
     public function testGetSaveOrderURL()
     {
+        $expect = Mage::getUrl('boltpay/order/save');
 
+        $result = $this->currentMock->getSaveOrderUrl();
+
+        $this->assertEquals($expect, $result);
     }
 }
