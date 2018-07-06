@@ -372,10 +372,11 @@ class Bolt_Boltpay_Helper_Api extends Bolt_Boltpay_Helper_Data
      * @param string $data     an object to be encoded to JSON as the value passed to the endpoint
      * @param string $object   defines part of endpoint url which is normally/always??? set to merchant
      * @param string $type     Defines the endpoint type (i.e. order|transactions|sign) that is used as part of the url
+     * @param null $storeId
      * @throws  Mage_Core_Exception  thrown if an error is detected in a response
      * @return mixed           Object derived from Json got as a response
      */
-    public function transmit($command, $data, $object='merchant', $type='transactions')
+    public function transmit($command, $data, $object='merchant', $type='transactions', $storeId = null)
     {
         $url = $this->getApiUrl() . 'v1/';
 
@@ -397,9 +398,9 @@ class Bolt_Boltpay_Helper_Api extends Bolt_Boltpay_Helper_Data
         }
 
         if ($command == '' && $type == '' && $object == 'merchant') {
-            $key = Mage::getStoreConfig('payment/boltpay/publishable_key_multipage');
+            $key = Mage::getStoreConfig('payment/boltpay/publishable_key_multipage', $storeId);
         } else {
-            $key = Mage::getStoreConfig('payment/boltpay/api_key');
+            $key = Mage::getStoreConfig('payment/boltpay/api_key', $storeId);
         }
 
         //Mage::log('KEY: ' . Mage::helper('core')->decrypt($key), null, 'bolt.log');
@@ -537,12 +538,12 @@ class Bolt_Boltpay_Helper_Api extends Bolt_Boltpay_Helper_Data
 
     /**
      * Returns the Bolt API url, sandbox or production, depending on the store configuration.
-     *
+     * @param null $storeId
      * @return string  the api url, sandbox or production
      */
-    public function getApiUrl()
+    public function getApiUrl($storeId = null)
     {
-        return Mage::getStoreConfigFlag('payment/boltpay/test') ?
+        return Mage::getStoreConfigFlag('payment/boltpay/test', $storeId) ?
             self::API_URL_TEST :
             self::API_URL_PROD;
     }
