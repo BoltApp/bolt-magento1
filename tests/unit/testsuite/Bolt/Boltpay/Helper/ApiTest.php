@@ -76,47 +76,6 @@ class Bolt_Boltpay_Helper_ApiTest extends PHPUnit_Framework_TestCase
     /**
      * @inheritdoc
      */
-    public function testVerify_hook()
-    {
-        $this->currentMock = $this->getMockBuilder('Bolt_Boltpay_Helper_Api')
-            ->setMethods(['verify_hook_secret', 'verify_hook_api', 'getSigningKey'])
-            ->disableOriginalConstructor()
-            ->disableOriginalClone()
-            ->disableArgumentCloning()
-            ->getMock();
-
-        $payload = '{"quote_id":"666","reference":"QQQQ-ABCD-28ZU","transaction_id":"TOeHtN0dxxAgt","notification_type":"pending"}';
-        $hmac_header = 'oA50gC+Fajoq0cDmIFcLT+MAN5ukVIXowe3iGO8Glug=';
-
-        $encryptedSigningKey = 'CyyPvZ1MqHLNze2M+nQFBuMnILlm2YblO6FlG7OjHVA72WrV3bjvDLX7ru/0DLp9HA3CGWipH7guy14PcdhPfA==';
-        $this->currentMock
-            ->method('getSigningKey')
-            ->will($this->returnValue($encryptedSigningKey));
-
-        $this->currentMock->expects($this->any())
-            ->method('verify_hook_secret')
-            ->with(
-                $this->equalTo($payload),
-                $this->equalTo($hmac_header)
-            )
-            ->will($this->returnValue(true));
-
-        $this->currentMock->expects($this->any())
-            ->method('verify_hook_api')
-            ->with(
-                $this->equalTo($payload),
-                $this->equalTo($hmac_header)
-            )
-            ->will($this->returnValue(true));
-
-        $result = $this->currentMock->verify_hook($payload, $hmac_header);
-
-        $this->assertTrue($result);
-    }
-
-    /**
-     * @inheritdoc
-     */
     public function testGetApiUrl()
     {
         $urlTest = Bolt_Boltpay_Helper_Api::API_URL_TEST;
