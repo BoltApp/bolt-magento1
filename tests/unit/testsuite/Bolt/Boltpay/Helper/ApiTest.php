@@ -154,6 +154,9 @@ class Bolt_Boltpay_Helper_ApiTest extends PHPUnit_Framework_TestCase
         $item = $_items[0];
         $product = $item->getProduct();
 
+        $productMediaConfig = Mage::getModel('catalog/product_media_config');
+        $imageUrl = $productMediaConfig->getMediaUrl($product->getThumbnail());
+
         $expected = array (
           'order_reference' => $_quote->getId(),
           'display_id' => NULL,
@@ -162,7 +165,7 @@ class Bolt_Boltpay_Helper_ApiTest extends PHPUnit_Framework_TestCase
             0 =>
             array (
               'reference' => $_quote->getId(),
-              'image_url' => 'http://62e4a9ae.ngrok.io/media/catalog/product/',
+              'image_url' => $imageUrl,
               'name' => $item->getName(),
               'sku' => $item->getSku(),
               'description' => substr($product->getDescription(), 0, 8182) ?: '',
@@ -230,5 +233,10 @@ class Bolt_Boltpay_Helper_ApiTest extends PHPUnit_Framework_TestCase
         $result = $this->currentMock->isResponseError($response);
 
         $this->assertTrue($result);
+    }
+
+    public function testGetShippingAndTaxEstimate()
+    {
+
     }
 }
