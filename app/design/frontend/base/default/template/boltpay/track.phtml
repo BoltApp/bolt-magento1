@@ -28,6 +28,6 @@ $version = (string)$versionElm[0];
             src="<?= $this->getTrackJsUrl(); ?>"
             data-publishable-key="<?=$this->getPublishableKey((Mage::app()->getRequest()->getControllerName() === 'cart') ? 'multi-page' : 'one-page'); ?>">
     </script>
-    <script>console.log("Bolt Version: <?=$version?>");');</script>
+    <script>console.log("Bolt Version: <?=$version?>");</script>
 <?php endif; ?>
 

@@ -15,7 +15,50 @@
  * @license    http://opensource.org/licenses/osl-3.0.php  Open Software License (OSL 3.0)
  */
 
+/**
+ * Class Bolt_Boltpay_InvalidTransitionException
+ *
+ * This exception is thrown when an attempt is made to change a transactions state through
+ * and unsupported workflow.
+ */
 class Bolt_Boltpay_InvalidTransitionException extends Exception
 {
+    private $_oldStatus;
+    private $_newStatus;
 
+    /**
+     * Bolt_Boltpay_InvalidTransitionException constructor.
+     *
+     * @param string $oldStatus         The original status of the transaction
+     * @param int $newStatus            The failed destination status
+     * @param string $message           [optional] The Exception message to throw.
+     * @param int $code                 [optional] The Exception code.
+     * @param Throwable|null $previous  [optional] The previous throwable used for the exception chaining.
+     */
+    public function __construct($oldStatus, $newStatus, $message = "", $code = 0, Throwable $previous = null)
+    {
+        $this->_oldStatus = $oldStatus;
+        $this->_newStatus = $newStatus;
+        parent::__construct($message, $code, $previous);
+    }
+
+    /**
+     * Gets the original status of the transaction
+     *
+     * @return string
+     */
+    public function getOldStatus()
+    {
+        return $this->_oldStatus;
+    }
+
+    /**
+     * Gets the failed destination status
+     *
+     * @return string
+     */
+    public function getNewStatus()
+    {
+        return $this->_newStatus;
+    }
 }
