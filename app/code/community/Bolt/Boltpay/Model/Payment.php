@@ -467,7 +467,7 @@ class Bolt_Boltpay_Model_Payment extends Mage_Payment_Model_Method_Abstract
                 //Mage::log(sprintf("Valid next states from %s: %s", $prevTransactionStatus, implode(",",$validNextStatuses)), null, 'bolt.log');
                 $requestedStateOrAll = array($newTransactionStatus, self::TRANSACTION_ALL_STATES);
 
-                if (!array_intersect($requestedStateOrAll, $this->_validStateTransitions)) {
+                if (!array_intersect($requestedStateOrAll, $validNextStatuses)) {
                     throw new Bolt_Boltpay_InvalidTransitionException(
                       $prevTransactionStatus, $newTransactionStatus, sprintf("Cannot transition a transaction from %s to %s", $prevTransactionStatus, $newTransactionStatus));
                 }
