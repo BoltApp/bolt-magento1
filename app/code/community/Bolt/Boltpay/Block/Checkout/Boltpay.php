@@ -457,7 +457,7 @@ class Bolt_Boltpay_Block_Checkout_Boltpay extends Mage_Checkout_Block_Onepage_Re
         // otherwise use customer shipping address for logged in users.
         /////////////////////////////////////////////////////////////////////////
         $address = $quote->getShippingAddress();
-        if (!$address->getStreet1()) {
+        if (!$address || !$address->getStreet1()) {
             if ( $session && $session->isLoggedIn()) {
                 /** @var Mage_Customer_Model_Customer $customer */
                 $customer = Mage::getModel('customer/customer')->load($session->getId());
@@ -467,17 +467,18 @@ class Bolt_Boltpay_Block_Checkout_Boltpay extends Mage_Checkout_Block_Onepage_Re
         }
 
         // If address value exists populate the hints array with existing address data.
-        if ($address->getEmail())     $hints['email']        = $address->getEmail();
-        if ($address->getFirstname()) $hints['firstName']    = $address->getFirstname();
-        if ($address->getLastname())  $hints['lastName']     = $address->getLastname();
-        if ($address->getStreet1())   $hints['addressLine1'] = $address->getStreet1();
-        if ($address->getStreet2())   $hints['addressLine2'] = $address->getStreet2();
-        if ($address->getCity())      $hints['city']         = $address->getCity();
-        if ($address->getRegion())    $hints['state']        = $address->getRegion();
-        if ($address->getPostcode())  $hints['zip']          = $address->getPostcode();
-        if ($address->getTelephone()) $hints['phone']        = $address->getTelephone();
-        if ($address->getCountryId()) $hints['country']      = $address->getCountryId();
-
+        if ( $address instanceof Mage_Sales_Model_Quote_Address) {
+            if ($address->getEmail())     $hints['email']        = $address->getEmail();
+            if ($address->getFirstname()) $hints['firstName']    = $address->getFirstname();
+            if ($address->getLastname())  $hints['lastName']     = $address->getLastname();
+            if ($address->getStreet1())   $hints['addressLine1'] = $address->getStreet1();
+            if ($address->getStreet2())   $hints['addressLine2'] = $address->getStreet2();
+            if ($address->getCity())      $hints['city']         = $address->getCity();
+            if ($address->getRegion())    $hints['state']        = $address->getRegion();
+            if ($address->getPostcode())  $hints['zip']          = $address->getPostcode();
+            if ($address->getTelephone()) $hints['phone']        = $address->getTelephone();
+            if ($address->getCountryId()) $hints['country']      = $address->getCountryId();
+        }
 
         if ($checkoutType === 'admin') {
             $hints['email'] = Mage::getSingleton('admin/session')->getOrderShippingAddress()['email'];
@@ -730,8 +731,12 @@ class Bolt_Boltpay_Block_Checkout_Boltpay extends Mage_Checkout_Block_Onepage_Re
         $locationInfo = Mage::getSingleton('core/session')->getLocationInfo();
 
         if (empty($locationInfo)) {
-            $locationInfo = $this->url_get_contents("http://freegeoip.net/json/".$this->getIpAddress());
-            Mage::getSingleton('core/session')->setLocationInfo($locationInfo);
+            //To receive the API results in the old freegeoip format, we need ipstack Access Key
+            $ipstackAccessKey = Mage::helper('core')->decrypt(Mage::getStoreConfig('payment/boltpay/ipstack_key'));
+            if(!empty($ipstackAccessKey)){
+               $locationInfo = $this->url_get_contents("http://api.ipstack.com/".$this->getIpAddress()."?access_key=".$ipstackAccessKey."&output=json&legacy=1");
+               Mage::getSingleton('core/session')->setLocationInfo($locationInfo);
+            }
         }
 
         return $locationInfo;
