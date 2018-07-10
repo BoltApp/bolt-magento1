@@ -616,13 +616,20 @@ class Bolt_Boltpay_Helper_Api extends Bolt_Boltpay_Helper_Data
         ///////////////////////////////////////////////////////////
         // Generate base cart data, quote, order and items related.
         ///////////////////////////////////////////////////////////
+        /** @var Mage_Catalog_Model_Product_Media_Config $productMediaConfig */
         $productMediaConfig = Mage::getModel('catalog/product_media_config');
+        /** @var Mage_Catalog_Helper_Image $imageHelper */
+        $imageHelper = Mage::helper('catalog/image');
+        $imagePlaceholder = $imageHelper->getPlaceholder();
         $cartSubmissionData = array(
             'order_reference' => $quote->getId(),
             'display_id'      => $quote->getReservedOrderId(),
             'items'           => array_map(
-                function ($item) use ($quote, $productMediaConfig, &$calculatedTotal) {
-                    $imageUrl = $productMediaConfig->getMediaUrl($item->getProduct()->getThumbnail());
+                function ($item) use ($quote, $productMediaConfig, &$calculatedTotal, $imagePlaceholder) {
+                    $imageUrl = $imagePlaceholder;
+                    if (!empty($item->getProduct()->getThumbnail()) && $item->getProduct()->getThumbnail() !== 'no_selection') {
+                        $imageUrl = $productMediaConfig->getMediaUrl($item->getProduct()->getThumbnail());
+                    }
                     $product   = Mage::getModel('catalog/product')->load($item->getProductId());
                     $calculatedTotal += round($item->getPrice() * 100 * $item->getQty());
                     return array(
