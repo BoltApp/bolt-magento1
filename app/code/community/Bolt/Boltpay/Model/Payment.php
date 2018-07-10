@@ -483,8 +483,17 @@ class Bolt_Boltpay_Model_Payment extends Mage_Payment_Model_Method_Abstract
                 $payment->setShouldCloseParentTransaction(true);
 
                 if ($newTransactionStatus == self::TRANSACTION_AUTHORIZED) {
-                    $message = Mage::helper('boltpay')->__('BOLT notification: Payment transaction is authorized.');
+                    $reference = $payment->getAdditionalInformation('bolt_reference');
+                    if (empty($reference)) {
+                        throw new Exception("Payment missing expected transaction ID.");
+                    }
                     $order = $payment->getOrder();
+                    $payment->setTransactionId($reference);
+                    $transaction = $payment->addTransaction( Mage_Sales_Model_Order_Payment_Transaction::TYPE_AUTH );
+                    $transaction->setIsClosed(false);
+                    $payment->save();
+                    
+                    $message = Mage::helper('boltpay')->__('BOLT notification: Payment transaction is authorized.');
                     $order->setState( Mage_Sales_Model_Order::STATE_PROCESSING, true, $message );
                     $order->save();
                 } elseif ($newTransactionStatus == self::TRANSACTION_COMPLETED) {
