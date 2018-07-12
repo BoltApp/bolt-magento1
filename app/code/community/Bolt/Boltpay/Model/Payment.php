@@ -726,7 +726,7 @@ class Bolt_Boltpay_Model_Payment extends Mage_Payment_Model_Method_Abstract
      * but it checks for approval or denial (including pending or not) in fetch
      * transaction status request
      */
-    public function _handleBoltTransactionStatus(Mage_Payment_Model_Info $payment, $status)
+    function _handleBoltTransactionStatus(Mage_Payment_Model_Info $payment, $status)
     {
         switch(strtolower($status)) {
             case "completed":

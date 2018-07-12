@@ -38,7 +38,6 @@ class Bolt_Boltpay_Helper_ApiTest extends PHPUnit_Framework_TestCase
         $this->currentMock = $this->getMockBuilder('Bolt_Boltpay_Helper_Api')
             ->setMethods(['verify_hook_secret', 'verify_hook_api', 'getBoltContextInfo'])
             ->enableOriginalConstructor()
-//            ->disableOriginalClone()
             ->getMock();
 
         $appStore->setConfig('payment/boltpay/active', 1);
@@ -73,9 +72,6 @@ class Bolt_Boltpay_Helper_ApiTest extends PHPUnit_Framework_TestCase
         Bolt_Boltpay_ProductProvider::deleteDummyProduct(self::$productId);
     }
 
-    /**
-     * @inheritdoc
-     */
     public function testGetApiUrl()
     {
         $urlTest = Bolt_Boltpay_Helper_Api::API_URL_TEST;
@@ -86,9 +82,6 @@ class Bolt_Boltpay_Helper_ApiTest extends PHPUnit_Framework_TestCase
         $this->assertEquals($urlTest, $result);
     }
 
-    /**
-     * @inheritdoc
-     */
     public function testGetApiUrlProductionMode()
     {
         $urlProd = Bolt_Boltpay_Helper_Api::API_URL_PROD;
@@ -99,9 +92,6 @@ class Bolt_Boltpay_Helper_ApiTest extends PHPUnit_Framework_TestCase
         $this->assertEquals($urlProd, $result);
     }
 
-    /**
-     * @inheritdoc
-     */
     public function testBuildCart()
     {
         $this->testHelper = new Bolt_Boltpay_TestHelper();
@@ -143,9 +133,6 @@ class Bolt_Boltpay_Helper_ApiTest extends PHPUnit_Framework_TestCase
         $this->assertEquals($expected, $result);
     }
 
-    /**
-     * @inheritdoc
-     */
     public function testStoreHasAllCartItems()
     {
         $this->testHelper = new Bolt_Boltpay_TestHelper();
@@ -156,9 +143,6 @@ class Bolt_Boltpay_Helper_ApiTest extends PHPUnit_Framework_TestCase
         $this->assertTrue($result);
     }
 
-    /**
-     * @inheritdoc
-     */
     public function testIsResponseError()
     {
         $response = (object) $this->testBoltResponse;
@@ -168,9 +152,6 @@ class Bolt_Boltpay_Helper_ApiTest extends PHPUnit_Framework_TestCase
         $this->assertFalse($result);
     }
 
-    /**
-     * @inheritdoc
-     */
     public function testIsResponseErrorWithErrors()
     {
         $this->testBoltResponse->errors = ['some_error_key' => 'some_error_message'];
@@ -181,9 +162,6 @@ class Bolt_Boltpay_Helper_ApiTest extends PHPUnit_Framework_TestCase
         $this->assertTrue($result);
     }
 
-    /**
-     * @inheritdoc
-     */
     public function testIsResponseErrorWithErrorCode()
     {
         $this->testBoltResponse->error_code = 10603;
@@ -192,10 +170,5 @@ class Bolt_Boltpay_Helper_ApiTest extends PHPUnit_Framework_TestCase
         $result = $this->currentMock->isResponseError($response);
 
         $this->assertTrue($result);
-    }
-
-    public function testGetShippingAndTaxEstimate()
-    {
-
     }
 }
