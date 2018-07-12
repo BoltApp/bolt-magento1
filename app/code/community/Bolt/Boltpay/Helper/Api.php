@@ -542,7 +542,7 @@ class Bolt_Boltpay_Helper_Api extends Bolt_Boltpay_Helper_Data
      */
     public function getApiUrl()
     {
-        return Mage::getStoreConfig('payment/boltpay/test') ?
+        return Mage::getStoreConfigFlag('payment/boltpay/test') ?
             self::API_URL_TEST :
             self::API_URL_PROD;
     }
