@@ -20,7 +20,7 @@
 
   <modules>
     <Bolt_Boltpay>
-      <version>1.1.5</version> <!-- version number should be incremented appropriately  -->
+      <version>1.1.5.2</version> <!-- commit 57f237e8562138760e41c20c6d6d7952f263d17c -->
     </Bolt_Boltpay>
   </modules>
 
@@ -54,14 +54,12 @@
       </boltpay>
     </helpers>
 
-    <!--
     <rewrite>
       <bolt_boltpay_onepage>
         <from><![CDATA[#^/checkout/onepage/#]]></from>
         <to>/boltpay/onepage/</to>
       </bolt_boltpay_onepage>
     </rewrite>
-    -->
 
     <resources>
       <bolt_boltpay_setup>
