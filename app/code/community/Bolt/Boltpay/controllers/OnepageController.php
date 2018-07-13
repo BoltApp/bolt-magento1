@@ -50,6 +50,10 @@ class Bolt_Boltpay_OnepageController extends Mage_Checkout_OnepageController
             Mage::dispatchEvent('checkout_onepage_controller_success_action', array('order_ids' => array($lastOrderId)));
         } catch ( Exception $e ) {
             Mage::helper('boltpay/bugsnag')->notifyException($e);
+            
+            if (strtolower($this->_getOrder()->getPayment()->getMethod()) !== Bolt_Boltpay_Model_Payment::METHOD_CODE) {
+                throw $e;
+            }
         }
         $this->renderLayout();
     }
