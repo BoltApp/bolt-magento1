@@ -201,7 +201,7 @@ class Bolt_Boltpay_Helper_Api extends Bolt_Boltpay_Helper_Data
                 throw new Exception("The quote ". $immutableQuote->getParentQuoteId() ." is currently being processed or has been processed.");
             } else {
                 $parentQuote->setIsActive(false)->save();
-            }          
+            }
 
             // adding guest user email to order
             if (!$immutableQuote->getCustomerEmail()) {
@@ -209,7 +209,7 @@ class Bolt_Boltpay_Helper_Api extends Bolt_Boltpay_Helper_Data
                 $immutableQuote->setCustomerEmail($email);
                 $immutableQuote->save();
             }
-        
+
             // explicitly set quote belong to guest if customer id does not exist
             $immutableQuote
                ->setCustomerIsGuest( (($parentQuote->getCustomerId()) ? false : true) )
