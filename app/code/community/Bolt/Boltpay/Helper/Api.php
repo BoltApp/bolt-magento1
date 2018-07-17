@@ -267,6 +267,22 @@ class Bolt_Boltpay_Helper_Api extends Bolt_Boltpay_Helper_Data
 
             Mage::helper('boltpay')->collectTotals($immutableQuote, true)->save();
 
+            ////////////////////////////////////////////////////////////////////////////
+            // reset increment id if needed
+            ////////////////////////////////////////////////////////////////////////////
+            /* @var Mage_Sales_Model_Order $preExistingOrder */
+            $preExistingOrder = Mage::getModel('sales/order')->loadByIncrementId($parentQuote->getReservedOrderId());
+
+            if (!$preExistingOrder->isObjectNew()) {
+                $parentQuote
+                    ->setReservedOrderId(null)
+                    ->reserveOrderId()
+                    ->save();
+
+                $immutableQuote->setReservedOrderId($parentQuote->getReservedOrderId());
+            }
+            ////////////////////////////////////////////////////////////////////////////
+
             // a call to internal Magento service for order creation
             $service = Mage::getModel('sales/service_quote', $immutableQuote);
 
