@@ -56,6 +56,7 @@ class Bolt_Boltpay_ApiController extends Mage_Core_Controller_Front_Action
             $transactionId = @$bodyParams['transaction_id'] ?: $bodyParams['id'];
             $hookType = @$bodyParams['notification_type'] ?: $bodyParams['type'];
 
+            /** @var Bolt_Boltpay_Helper_Api $boltHelper */
             $boltHelper = Mage::helper('boltpay/api');
 
             $boltHelperBase = Mage::helper('boltpay');
@@ -67,13 +68,7 @@ class Bolt_Boltpay_ApiController extends Mage_Core_Controller_Front_Action
             $orderId = @$transaction->order->cart->display_id;
             $quoteId = $transaction->order->cart->order_reference;
 
-            /* @var Mage_Sales_Model_Resource_Order_Collection $orderCollection */
-            $orderCollection = Mage::getResourceModel('sales/order_collection');
-
-            /* @var Mage_Sales_Model_Order $order */
-            $order =  $orderCollection
-                ->addFieldToFilter('quote_id', $quoteId)
-                ->getFirstItem();
+            $order =  $boltHelper->getOrderByQuoteId($quoteId);
 
             if (!$order->isObjectNew()) {
                 //Mage::log('Order Found. Updating it', null, 'bolt.log');

@@ -35,6 +35,7 @@ class Bolt_Boltpay_OrderController extends Mage_Core_Controller_Front_Action
                 Mage::throwException("OrderController::saveAction called with a non AJAX call");
             }
 
+            /** @var Bolt_Boltpay_Helper_Api $boltHelper */
             $boltHelper = Mage::helper('boltpay/api');
 
             $checkoutSession = Mage::getSingleton('checkout/session');
@@ -58,14 +59,7 @@ class Bolt_Boltpay_OrderController extends Mage_Core_Controller_Front_Action
             // have already created the order, we don't need to do anything
             // besides returning 200 OK, which happens automatically
             /////////////////////////////////////////////////////////
-
-            /* @var Mage_Sales_Model_Resource_Order_Collection $orderCollection */
-            $orderCollection = Mage::getResourceModel('sales/order_collection');
-
-            /* @var Mage_Sales_Model_Order $order */
-            $order = $orderCollection
-                ->addFieldToFilter('quote_id', $transaction->order->cart->order_reference)
-                ->getFirstItem();
+            $order = $boltHelper->getOrderByQuoteId($transaction->order->cart->order_reference);
 
             if ($order->isObjectNew()) {
                 $sessionQuote = $checkoutSession->getQuote();
