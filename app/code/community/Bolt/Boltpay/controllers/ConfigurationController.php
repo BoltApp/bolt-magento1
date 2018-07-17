@@ -111,10 +111,7 @@ class Bolt_Boltpay_ConfigurationController extends Mage_Core_Controller_Front_Ac
      */
     protected function curlCheckPublishableKey($key)
     {
-        /** @var Bolt_Boltpay_Helper_Api $boltHelper */
-        $boltHelper = Mage::helper('boltpay/api');
-
-        $url = $boltHelper->getApiUrl($this->_storeId) . 'v1/merchant';
+        $url = Mage::helper('boltpay/url')->getApiUrl($this->_storeId) . 'v1/merchant';
 
         $ch = curl_init($url);
 

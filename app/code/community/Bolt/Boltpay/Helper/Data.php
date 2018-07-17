@@ -256,9 +256,7 @@ class Bolt_Boltpay_Helper_Data extends Mage_Core_Helper_Abstract
      */
     public function getConnectJsUrl()
     {
-        return Mage::getStoreConfigFlag('payment/boltpay/test') ?
-            Bolt_Boltpay_Block_Checkout_Boltpay::JS_URL_TEST . "/connect.js":
-            Bolt_Boltpay_Block_Checkout_Boltpay::JS_URL_PROD . "/connect.js";
+        return Mage::helper('boltpay/url')->getJsUrl() . "/connect.js";
     }
 
     /**

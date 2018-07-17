@@ -72,26 +72,6 @@ class Bolt_Boltpay_Helper_ApiTest extends PHPUnit_Framework_TestCase
         Bolt_Boltpay_ProductProvider::deleteDummyProduct(self::$productId);
     }
 
-    public function testGetApiUrl()
-    {
-        $urlTest = Bolt_Boltpay_Helper_Api::API_URL_TEST;
-        $this->app->getStore()->setConfig('payment/boltpay/test', true);
-
-        $result = $this->currentMock->getApiUrl();
-
-        $this->assertEquals($urlTest, $result);
-    }
-
-    public function testGetApiUrlProductionMode()
-    {
-        $urlProd = Bolt_Boltpay_Helper_Api::API_URL_PROD;
-        $this->app->getStore()->setConfig('payment/boltpay/test', false);
-
-        $result = $this->currentMock->getApiUrl();
-
-        $this->assertEquals($urlProd, $result);
-    }
-
     public function testBuildCart()
     {
         $this->testHelper = new Bolt_Boltpay_TestHelper();

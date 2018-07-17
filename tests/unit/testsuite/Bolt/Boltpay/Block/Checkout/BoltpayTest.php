@@ -359,33 +359,6 @@ class Bolt_Boltpay_Block_Checkout_BoltpayTest extends PHPUnit_Framework_TestCase
         $this->assertEquals($expect, $result);
     }
 
-    /**
-     * @inheritdoc
-     */
-    public function testGetTrackJsUrl()
-    {
-        $this->app->getStore()->setConfig('payment/boltpay/test', false);
-
-        $expect = Bolt_Boltpay_Block_Checkout_Boltpay::JS_URL_PROD . "/track.js";
-
-        $result = $this->currentMock->getTrackJsUrl();
-
-        $this->assertEquals($expect, $result);
-    }
-
-    /**
-     * @inheritdoc
-     */
-    public function testGetTrackJsUrlIfTestMode()
-    {
-        $this->app->getStore()->setConfig('payment/boltpay/test', true);
-
-        $expect = Bolt_Boltpay_Block_Checkout_Boltpay::JS_URL_TEST . "/track.js";
-
-        $result = $this->currentMock->getTrackJsUrl();
-
-        $this->assertEquals($expect, $result);
-    }
 
     /**
      * @inheritdoc
