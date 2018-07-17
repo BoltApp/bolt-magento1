@@ -28,9 +28,6 @@
  */
 class Bolt_Boltpay_Helper_Api extends Bolt_Boltpay_Helper_Data
 {
-    const API_URL_TEST = 'https://api-sandbox.bolt.com/';
-    const API_URL_PROD = 'https://api.bolt.com/';
-
     protected $curlHeaders;
     protected $curlBody;
 
@@ -97,7 +94,7 @@ class Bolt_Boltpay_Helper_Api extends Bolt_Boltpay_Helper_Data
     private function verify_hook_api($payload, $hmacHeader)
     {
         try {
-            $url = $this->getApiUrl() . "/v1/merchant/verify_signature";
+            $url = Mage::helper('boltpay/url')->getApiUrl() . "/v1/merchant/verify_signature";
 
             $key = Mage::helper('core')->decrypt(Mage::getStoreConfig('payment/boltpay/api_key'));
 
@@ -378,7 +375,7 @@ class Bolt_Boltpay_Helper_Api extends Bolt_Boltpay_Helper_Data
      */
     public function transmit($command, $data, $object='merchant', $type='transactions', $storeId = null)
     {
-        $url = $this->getApiUrl() . 'v1/';
+        $url = Mage::helper('boltpay/url')->getApiUrl() . 'v1/';
 
         if($command == 'sign' || $command == 'orders') {
             $url .= $object . '/' . $command;
@@ -534,18 +531,6 @@ class Bolt_Boltpay_Helper_Api extends Bolt_Boltpay_Helper_Data
             default:
                 return 'Unknown error';
         }
-    }
-
-    /**
-     * Returns the Bolt API url, sandbox or production, depending on the store configuration.
-     * @param null $storeId
-     * @return string  the api url, sandbox or production
-     */
-    public function getApiUrl($storeId = null)
-    {
-        return Mage::getStoreConfigFlag('payment/boltpay/test', $storeId) ?
-            self::API_URL_TEST :
-            self::API_URL_PROD;
     }
 
     /**

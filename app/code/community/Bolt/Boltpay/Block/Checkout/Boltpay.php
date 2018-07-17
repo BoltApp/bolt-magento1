@@ -32,16 +32,6 @@ class Bolt_Boltpay_Block_Checkout_Boltpay extends Mage_Checkout_Block_Onepage_Re
     const CHECKOUT_TYPE_MULTI_PAGE  = 'multi-page';
     const CHECKOUT_TYPE_ONE_PAGE    = 'one-page';
 
-    /**
-     * @var string The Bolt sandbox url for the javascript
-     */
-    const JS_URL_TEST = 'https://connect-sandbox.bolt.com';
-
-    /**
-     * @var string The Bolt production url for the javascript
-     */
-    const JS_URL_PROD = 'https://connect.bolt.com';
-
     const CSS_SUFFIX = 'bolt-css-suffix';
 
     /**
@@ -50,9 +40,7 @@ class Bolt_Boltpay_Block_Checkout_Boltpay extends Mage_Checkout_Block_Onepage_Re
     public function _construct()
     {
         parent::_construct();
-        $this->_jsUrl = Mage::getStoreConfig('payment/boltpay/test') ?
-            self::JS_URL_TEST . "/connect.js":
-            self::JS_URL_PROD . "/connect.js";
+        $this->_jsUrl = Mage::helper('boltpay/url')->getJsUrl() . "/connect.js";
     }
 
     /**
@@ -60,9 +48,7 @@ class Bolt_Boltpay_Block_Checkout_Boltpay extends Mage_Checkout_Block_Onepage_Re
      */
     public function getTrackJsUrl()
     {
-        return Mage::getStoreConfigFlag('payment/boltpay/test') ?
-            self::JS_URL_TEST . "/track.js":
-            self::JS_URL_PROD . "/track.js";
+        return Mage::helper('boltpay/url')->getJsUrl() . "/track.js";
     }
 
     /**
