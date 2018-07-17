@@ -1087,4 +1087,21 @@ class Bolt_Boltpay_Helper_Api extends Bolt_Boltpay_Helper_Data
 
         return true;
     }
+
+
+    /**
+     * Gets a an order by quote id/order reference
+     *
+     * @param int|string $quoteId  The quote id which this order was created from
+     *
+     * @return Mage_Sales_Model_Order   If found, and order with all the details, otherwise a new object order
+     */
+    public function getOrderByQuoteId($quoteId) {
+        /* @var Mage_Sales_Model_Resource_Order_Collection $orderCollection */
+        $orderCollection = Mage::getResourceModel('sales/order_collection');
+
+        return $orderCollection
+                ->addFieldToFilter('quote_id', $quoteId)
+                ->getFirstItem();
+    }
 }
