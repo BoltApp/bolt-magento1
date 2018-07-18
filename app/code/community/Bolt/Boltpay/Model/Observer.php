@@ -243,7 +243,7 @@ class Bolt_Boltpay_Model_Observer
         $orderTotal = $order->getGrandTotal();
 
         $msg = sprintf(
-            "BOLT notification: Authorization requested for $boltCartTotal.  Order total is {$transaction->amount->currency_symbol}$orderTotal. Bolt transaction: %s/transaction/%s.", $this->_getMerchantDashboardUrl(), $transaction->reference
+            "BOLT notification: Authorization requested for $boltCartTotal.  Order total is {$transaction->amount->currency_symbol}$orderTotal. Bolt transaction: %s/transaction/%s.", Mage::helper('boltpay/url')->getBoltMerchantUrl(), $transaction->reference
         );
 
         if(Mage::getSingleton('core/session')->getWasCreatedByHook()){ // order is create via AJAX call
