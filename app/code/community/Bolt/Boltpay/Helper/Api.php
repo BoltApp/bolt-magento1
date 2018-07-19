@@ -145,16 +145,17 @@ class Bolt_Boltpay_Helper_Api extends Bolt_Boltpay_Helper_Data
     /**
      * Processes Magento order creation. Called from both frontend and API.
      *
-     * @param string    $reference           Bolt transaction reference
-     * @param int       $sessionQuoteId      Quote id, used if triggered from shopping session context,
-     *                                       This will be null if called from within an API call context
-     * @param boolean   $isAjaxRequest       If called by ajax request. default to false.
+     * @param string        $reference           Bolt transaction reference
+     * @param int           $sessionQuoteId      Quote id, used if triggered from shopping session context,
+     *                                           This will be null if called from within an API call context
+     * @param boolean       $isAjaxRequest       If called by ajax request. default to false.
+     * @param object        $transaction         pre-loaded Bolt Transaction object
      *
      * @return Mage_Sales_Model_Order   The order saved to Magento
      *
      * @throws Exception    thrown on order creation failure
      */
-    public function createOrder($reference, $sessionQuoteId = null, $isAjaxRequest = false)
+    public function createOrder($reference, $sessionQuoteId = null, $isAjaxRequest = false, $transaction = null)
     {
 
         try {
@@ -162,7 +163,7 @@ class Bolt_Boltpay_Helper_Api extends Bolt_Boltpay_Helper_Data
                 throw new Exception("Bolt transaction reference is missing in the Magento order creation process.");
             }
 
-            $transaction = $this->fetchTransaction($reference);
+            $transaction = $transaction ?: $this->fetchTransaction($reference);
             $transactionStatus = $transaction->status;
 
             $immutableQuoteId = $transaction->order->cart->order_reference;
@@ -1096,5 +1097,22 @@ class Bolt_Boltpay_Helper_Api extends Bolt_Boltpay_Helper_Data
         }
 
         return true;
+    }
+
+
+    /**
+     * Gets a an order by quote id/order reference
+     *
+     * @param int|string $quoteId  The quote id which this order was created from
+     *
+     * @return Mage_Sales_Model_Order   If found, and order with all the details, otherwise a new object order
+     */
+    public function getOrderByQuoteId($quoteId) {
+        /* @var Mage_Sales_Model_Resource_Order_Collection $orderCollection */
+        $orderCollection = Mage::getResourceModel('sales/order_collection');
+
+        return $orderCollection
+                ->addFieldToFilter('quote_id', $quoteId)
+                ->getFirstItem();
     }
 }
