@@ -28,6 +28,9 @@
  */
 class Bolt_Boltpay_Helper_Api extends Bolt_Boltpay_Helper_Data
 {
+    const ITEM_TYPE_PHYSICAL = 'physical';
+    const ITEM_TYPE_DIGITAL  = 'digital';
+
     protected $curlHeaders;
     protected $curlBody;
 
@@ -611,6 +614,8 @@ class Bolt_Boltpay_Helper_Api extends Bolt_Boltpay_Helper_Data
                 function ($item) use ($quote, $productMediaConfig, &$calculatedTotal) {
                     $imageUrl = $productMediaConfig->getMediaUrl($item->getProduct()->getThumbnail());
                     $product   = Mage::getModel('catalog/product')->load($item->getProductId());
+                    $type = $product->getTypeId() == 'virtual' ? self::ITEM_TYPE_DIGITAL : self::ITEM_TYPE_PHYSICAL;
+
                     $calculatedTotal += round($item->getPrice() * 100 * $item->getQty());
                     return array(
                         'reference'    => $quote->getId(),
@@ -620,7 +625,8 @@ class Bolt_Boltpay_Helper_Api extends Bolt_Boltpay_Helper_Data
                         'description'  => substr($product->getDescription(), 0, 8182) ?: '',
                         'total_amount' => round($item->getCalculationPrice() * 100 * $item->getQty()),
                         'unit_price'   => round($item->getCalculationPrice() * 100),
-                        'quantity'     => $item->getQty()
+                        'quantity'     => $item->getQty(),
+                        'type'         => $type
                     );
                 }, $items
             ),
