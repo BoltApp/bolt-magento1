@@ -168,14 +168,9 @@ class Bolt_Boltpay_Helper_Api extends Bolt_Boltpay_Helper_Data
             /* @var Mage_Sales_Model_Quote $immutableQuote */
             $immutableQuote = Mage::getModel('sales/quote')->loadByIdWithoutStore($immutableQuoteId);
 
-            // make sure a quote for this session has not already been processed
+            // check that the order is in the system.  If not, we have an unexpected problem
             if ($immutableQuote->isEmpty()) {
-                throw new Exception("The order #".$immutableQuote->getReservedOrderId()." has already been processed.  This order request is deemed a duplicate and will not be processed.");
-            }
-
-            // make sure this quote has not already processed
-            if ($immutableQuote->isEmpty()) {
-                throw new Exception("This order has already been processed by Magento.");
+                throw new Exception("The expected quote is missing from the Magento system.  Were old quotes recently removed from the database?");
             }
 
             if(!$this->storeHasAllCartItems($immutableQuote)){
