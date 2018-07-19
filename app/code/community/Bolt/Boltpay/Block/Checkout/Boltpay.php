@@ -773,7 +773,9 @@ class Bolt_Boltpay_Block_Checkout_Boltpay extends Mage_Checkout_Block_Onepage_Re
         $routeName = $this->getRequest()->getRouteName();
         $controllerName = $this->getRequest()->getControllerName();
 
-        $isAllowed = ($routeName === 'checkout' && $controllerName === 'cart') || $routeName == 'firecheckout';
+        $isAllowed = ($routeName === 'checkout' && $controllerName === 'cart')
+                        || ($routeName == 'firecheckout')
+                        || ($routeName === 'adminhtml' && $controllerName === 'sales_order_create');
 
         return $isAllowed;
     }
@@ -791,9 +793,14 @@ class Bolt_Boltpay_Block_Checkout_Boltpay extends Mage_Checkout_Block_Onepage_Re
         $routeName = $this->getRequest()->getRouteName();
         $controllerName = $this->getRequest()->getControllerName();
 
-        $isForMultiPage = !($routeName === 'firecheckout') && !($routeName === 'checkout' && $controllerName !== 'cart');
+        $checkoutType = static::CHECKOUT_TYPE_MULTI_PAGE;
+        if ($routeName === 'adminhtml') {
+            $checkoutType = static::CHECKOUT_TYPE_ADMIN;
+        } else if ( ($routeName === 'firecheckout') || ($routeName === 'checkout' && $controllerName !== 'onepage') ) {
+            $checkoutType = static::CHECKOUT_TYPE_ONE_PAGE;
+        }
 
-        return $this->getPublishableKey($isForMultiPage);
+        return $this->getPublishableKey($checkoutType);
     }
 
     /**
