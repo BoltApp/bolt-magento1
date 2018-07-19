@@ -31,5 +31,8 @@
         <reference name="head">
             <action method="addJs"><file>boltpay/admin_order.js</file></action>
         </reference>
+        <reference name="js">
+            <block type="boltpay/checkout_boltpay" name="connect_js" as="connect_js" template="boltpay/connectjs.phtml" />
+        </reference>
     </adminhtml_sales_order_create_index>
 </layout>

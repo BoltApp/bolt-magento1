@@ -67,9 +67,8 @@ AdminOrder.prototype.prepareParams =
 var intervalId = setInterval(
     function() {
         var email = document.getElementById('email');
-        var loading_mask = document.getElementById('loading-mask');
 
-        if (email && loading_mask && (loading_mask.style.display == 'none') ) {
+        if (email) {
             email.classList.add('required-entry');
             clearInterval(intervalId);
         }
