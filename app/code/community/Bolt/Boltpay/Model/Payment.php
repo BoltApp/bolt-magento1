@@ -291,10 +291,6 @@ class Bolt_Boltpay_Model_Payment extends Mage_Payment_Model_Method_Abstract
             $paymentInfo = $this->getInfoInstance();
             $order = $paymentInfo->getOrder();
 
-            if (!$order->canCreditmemo() || !($payment->getCreditmemo()->getInvoice()->canRefund())) {
-                $message = 'Impossible to issue a refund transaction on this invoice';
-                Mage::throwException($message);
-            }
             $transId = $payment->getAdditionalInformation('bolt_merchant_transaction_id');
             if ($transId == null) {
                 $message = 'Waiting for a transaction update from Bolt. Please retry after 60 seconds.';
