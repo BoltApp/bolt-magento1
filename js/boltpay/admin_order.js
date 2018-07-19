@@ -3,6 +3,9 @@
 // shipping address data is available on server
 // for Bolt order creation
 //////////////////////////////////////////////////
+
+var addBillingToPrepareParams = false;
+
 AdminOrder.prototype.prepareParams =
     function(params){
         if (!params) {
@@ -39,17 +42,20 @@ AdminOrder.prototype.prepareParams =
             });
         }
 
-        var billing_address_data = $(this.billingAddressContainer).select('input', 'select', 'textarea');
-        if (billing_address_data) {
-            billing_address_data.each(function(form_element) {
-                params[form_element.name] = form_element.value;
-            });
+        if (addBillingToPrepareParams) {
+            var billing_address_data = $(this.billingAddressContainer).select('input', 'select', 'textarea');
+            if (billing_address_data) {
+                billing_address_data.each(function(form_element) {
+                    params[form_element.name] = form_element.value;
+                });
+            }
         }
 
         var email = document.getElementById('email');
 
         if (email && email.value) {
             params['order[account][email]'] = email.value;
+            addBillingToPrepareParams = true;
         }
 
         return params;
@@ -61,7 +67,9 @@ AdminOrder.prototype.prepareParams =
 var intervalId = setInterval(
     function() {
         var email = document.getElementById('email');
-        if (email) {
+        var loading_mask = document.getElementById('loading-mask');
+
+        if (email && loading_mask && (loading_mask.style.display == 'none') ) {
             email.classList.add('required-entry');
             clearInterval(intervalId);
         }
