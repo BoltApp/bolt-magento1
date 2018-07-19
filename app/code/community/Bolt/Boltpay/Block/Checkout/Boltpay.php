@@ -796,7 +796,7 @@ class Bolt_Boltpay_Block_Checkout_Boltpay extends Mage_Checkout_Block_Onepage_Re
         $checkoutType = static::CHECKOUT_TYPE_MULTI_PAGE;
         if ($routeName === 'adminhtml') {
             $checkoutType = static::CHECKOUT_TYPE_ADMIN;
-        } else if ( ($routeName === 'firecheckout') || ($routeName === 'checkout' && $controllerName !== 'onepage') ) {
+        } else if ( ($routeName === 'firecheckout') || ($routeName === 'checkout' && $controllerName === 'onepage') ) {
             $checkoutType = static::CHECKOUT_TYPE_ONE_PAGE;
         }
 
