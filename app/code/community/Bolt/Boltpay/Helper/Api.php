@@ -142,16 +142,17 @@ class Bolt_Boltpay_Helper_Api extends Bolt_Boltpay_Helper_Data
     /**
      * Processes Magento order creation. Called from both frontend and API.
      *
-     * @param string    $reference           Bolt transaction reference
-     * @param int       $sessionQuoteId      Quote id, used if triggered from shopping session context,
-     *                                       This will be null if called from within an API call context
-     * @param boolean   $isAjaxRequest       If called by ajax request. default to false.
+     * @param string        $reference           Bolt transaction reference
+     * @param int           $sessionQuoteId      Quote id, used if triggered from shopping session context,
+     *                                           This will be null if called from within an API call context
+     * @param boolean       $isAjaxRequest       If called by ajax request. default to false.
+     * @param object        $transaction         pre-loaded Bolt Transaction object
      *
      * @return Mage_Sales_Model_Order   The order saved to Magento
      *
      * @throws Exception    thrown on order creation failure
      */
-    public function createOrder($reference, $sessionQuoteId = null, $isAjaxRequest = false)
+    public function createOrder($reference, $sessionQuoteId = null, $isAjaxRequest = false, $transaction = null)
     {
 
         try {
@@ -159,7 +160,7 @@ class Bolt_Boltpay_Helper_Api extends Bolt_Boltpay_Helper_Data
                 throw new Exception("Bolt transaction reference is missing in the Magento order creation process.");
             }
 
-            $transaction = $this->fetchTransaction($reference);
+            $transaction = $transaction ?: $this->fetchTransaction($reference);
             $transactionStatus = $transaction->status;
 
             $immutableQuoteId = $transaction->order->cart->order_reference;
