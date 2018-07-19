@@ -636,6 +636,7 @@ class Bolt_Boltpay_Helper_Api extends Bolt_Boltpay_Helper_Data
         $productMediaConfig = Mage::getModel('catalog/product_media_config');
         $cartSubmissionData = array(
             'order_reference' => $quote->getId(),
+            'display_id'      => $quote->getReservedOrderId(),
             'items'           => array_map(
                 function ($item) use ($quote, $productMediaConfig, &$calculatedTotal) {
                     $imageUrl = $productMediaConfig->getMediaUrl($item->getProduct()->getThumbnail());

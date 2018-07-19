@@ -108,6 +108,7 @@ class Bolt_Boltpay_Helper_ApiTest extends PHPUnit_Framework_TestCase
 
         $expected = array (
           'order_reference' => $_quote->getId(),
+          'display_id' => NULL,
           'items' =>
           array (
             0 =>

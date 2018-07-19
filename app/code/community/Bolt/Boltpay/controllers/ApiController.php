@@ -65,7 +65,6 @@ class Bolt_Boltpay_ApiController extends Mage_Core_Controller_Front_Action
             $boltHelperBase::$fromHooks = true;
 
             $transaction = $boltHelper->fetchTransaction($reference);
-            $orderId = @$transaction->order->cart->display_id;
             $quoteId = $transaction->order->cart->order_reference;
 
             $order =  $boltHelper->getOrderByQuoteId($quoteId);
@@ -115,28 +114,16 @@ class Bolt_Boltpay_ApiController extends Mage_Core_Controller_Front_Action
                     ->handleTransactionUpdate($orderPayment, $newTransactionStatus, $prevTransactionStatus, $transactionAmount);
 
 
-                if ( !$orderId ) {
-                    $this->getResponse()->setBody(
-                        json_encode(
-                            array(
-                                'status' => 'success',
-                                'created_objects' => array ('merchant_order_ref' => $order->getIncrementId()),
-                                'message' => "Order creation was successful"
-                            )
+                $this->getResponse()->setBody(
+                    json_encode(
+                        array(
+                            'status' => 'success',
+                            'display_id' => $order->getIncrementId(),
+                            'message' => "Updated existing order ".$order->getIncrementId()
                         )
-                    );
-                    $this->getResponse()->setHttpResponseCode(201);
-                } else {
-                    $this->getResponse()->setBody(
-                        json_encode(
-                            array(
-                                'status' => 'success',
-                                'message' => "Updated existing order $orderId."
-                            )
-                        )
-                    );
-                    $this->getResponse()->setHttpResponseCode(200);
-                }
+                    )
+                );
+                $this->getResponse()->setHttpResponseCode(200);
 
                 return;
             }
@@ -162,13 +149,13 @@ class Bolt_Boltpay_ApiController extends Mage_Core_Controller_Front_Action
                 return;
             }
 
-            $order = $boltHelper->createOrder($reference, $sessionQuoteId = null);
+            $order = $boltHelper->createOrder($reference, $sessionQuoteId = null, $transaction);
 
             $this->getResponse()->setBody(
                 json_encode(
                     array(
                         'status' => 'success',
-                        'created_objects' => array ('merchant_order_ref' => $order->getIncrementId()),
+                        'display_id' => $order->getIncrementId(),
                         'message' => "Order creation was successful"
                     )
                 )
