@@ -26,7 +26,7 @@ class Bolt_Boltpay_ApiController extends Mage_Core_Controller_Front_Action
     /**
      * The starting point for all Api hook request
      */
-    public function hookAction() 
+    public function hookAction()
     {
 
         try {
@@ -54,8 +54,9 @@ class Bolt_Boltpay_ApiController extends Mage_Core_Controller_Front_Action
 
             $reference = $bodyParams['reference'];
             $transactionId = @$bodyParams['transaction_id'] ?: $bodyParams['id'];
-            $hookType = @$bodyParams['notification_type'] ?: $bodyParams['type'];  
+            $hookType = @$bodyParams['notification_type'] ?: $bodyParams['type'];
 
+            /** @var Bolt_Boltpay_Helper_Api $boltHelper */
             $boltHelper = Mage::helper('boltpay/api');
 
             $boltHelperBase = Mage::helper('boltpay');
@@ -64,12 +65,9 @@ class Bolt_Boltpay_ApiController extends Mage_Core_Controller_Front_Action
             $boltHelperBase::$fromHooks = true;
 
             $transaction = $boltHelper->fetchTransaction($reference);
-            $orderId = $transaction->order->cart->display_id;
             $quoteId = $transaction->order->cart->order_reference;
 
-            /* @var Mage_Sales_Model_Order $order */
-            $order = Mage::getModel('sales/order')->loadByIncrementId($orderId);
-            /***************************************************************************/
+            $order =  $boltHelper->getOrderByQuoteId($quoteId);
 
             if (!$order->isObjectNew()) {
                 //Mage::log('Order Found. Updating it', null, 'bolt.log');
@@ -98,10 +96,10 @@ class Bolt_Boltpay_ApiController extends Mage_Core_Controller_Front_Action
                             sprintf(
                                 'Transaction id mismatch. Expected: %s got: %s', $merchantTransactionId, $transactionId
                             )
-                         )
-                     );
+                        )
+                    );
                 }
-                
+
                 if($hookType == 'credit'){
                     $transactionAmount = $bodyParams['amount']/100;
                 }
@@ -115,15 +113,18 @@ class Bolt_Boltpay_ApiController extends Mage_Core_Controller_Front_Action
                     ->setStore($order->getStoreId())
                     ->handleTransactionUpdate($orderPayment, $newTransactionStatus, $prevTransactionStatus, $transactionAmount);
 
+
                 $this->getResponse()->setBody(
                     json_encode(
                         array(
-                        'status' => 'success',
-                        'message' => "Updated existing order $orderId."
+                            'status' => 'success',
+                            'display_id' => $order->getIncrementId(),
+                            'message' => "Updated existing order ".$order->getIncrementId()
                         )
                     )
                 );
                 $this->getResponse()->setHttpResponseCode(200);
+
                 return;
             }
 
@@ -133,8 +134,8 @@ class Bolt_Boltpay_ApiController extends Mage_Core_Controller_Front_Action
 
             Mage::helper('boltpay/bugsnag')->addBreadcrumb(
                 array(
-                'reference'  => $reference,
-                'quote_id'   => $quoteId,
+                    'reference'  => $reference,
+                    'quote_id'   => $quoteId,
                 )
             );
 
@@ -148,17 +149,18 @@ class Bolt_Boltpay_ApiController extends Mage_Core_Controller_Front_Action
                 return;
             }
 
-            $boltHelper->createOrder($reference, $sessionQuoteId = null);
+            $order = $boltHelper->createOrder($reference, $sessionQuoteId = null, $transaction);
 
             $this->getResponse()->setBody(
                 json_encode(
                     array(
-                    'status' => 'success',
-                    'message' => "Order creation was successful"
+                        'status' => 'success',
+                        'display_id' => $order->getIncrementId(),
+                        'message' => "Order creation was successful"
                     )
                 )
             );
-            $this->getResponse()->setHttpResponseCode(200);
+            $this->getResponse()->setHttpResponseCode(201);
 
         } catch (Bolt_Boltpay_InvalidTransitionException $boltPayInvalidTransitionException) {
 

@@ -260,6 +260,32 @@ class Bolt_Boltpay_Helper_Api extends Bolt_Boltpay_Helper_Data
 
             Mage::helper('boltpay')->collectTotals($immutableQuote, true)->save();
 
+            ////////////////////////////////////////////////////////////////////////////
+            // reset increment id if needed
+            ////////////////////////////////////////////////////////////////////////////
+            /* @var Mage_Sales_Model_Order $preExistingOrder */
+            $preExistingOrder = Mage::getModel('sales/order')->loadByIncrementId($parentQuote->getReservedOrderId());
+
+            ############################
+            # First check if this order matches the transaction and therefore already created
+            ############################
+            $preExistingTransactionReference = $preExistingOrder->getPayment()->getAdditionalInformation('bolt_reference');
+            if ( $preExistingTransactionReference === $reference ) {
+                Mage::helper('boltpay/bugsnag')->notifyException( new Exception("The order #".$preExistingOrder->getIncrementId()." has already been processed for this quote." ), array(), 'warning' );
+                return $preExistingOrder;
+            }
+            ############################
+
+            if (!$preExistingOrder->isObjectNew()) {
+                $parentQuote
+                    ->setReservedOrderId(null)
+                    ->reserveOrderId()
+                    ->save();
+
+                $immutableQuote->setReservedOrderId($parentQuote->getReservedOrderId());
+            }
+            ////////////////////////////////////////////////////////////////////////////
+
             // a call to internal Magento service for order creation
             $service = Mage::getModel('sales/service_quote', $immutableQuote);
 
@@ -1052,5 +1078,22 @@ class Bolt_Boltpay_Helper_Api extends Bolt_Boltpay_Helper_Data
         }
 
         return true;
+    }
+
+
+    /**
+     * Gets a an order by quote id/order reference
+     *
+     * @param int|string $quoteId  The quote id which this order was created from
+     *
+     * @return Mage_Sales_Model_Order   If found, and order with all the details, otherwise a new object order
+     */
+    public function getOrderByQuoteId($quoteId) {
+        /* @var Mage_Sales_Model_Resource_Order_Collection $orderCollection */
+        $orderCollection = Mage::getResourceModel('sales/order_collection');
+
+        return $orderCollection
+                ->addFieldToFilter('quote_id', $quoteId)
+                ->getFirstItem();
     }
 }
