@@ -161,9 +161,8 @@ class Bolt_Boltpay_Helper_Api extends Bolt_Boltpay_Helper_Data
             }
 
             $transaction = $transaction ?: $this->fetchTransaction($reference);
-            $transactionStatus = $transaction->status;
 
-            $immutableQuoteId = $transaction->order->cart->order_reference;
+            $immutableQuoteId = $this->getImmutableQuoteIdFromTransaction($transaction);
 
             /* @var Mage_Sales_Model_Quote $immutableQuote */
             $immutableQuote = Mage::getModel('sales/quote')->loadByIdWithoutStore($immutableQuoteId);
@@ -627,8 +626,8 @@ class Bolt_Boltpay_Helper_Api extends Bolt_Boltpay_Helper_Data
         ///////////////////////////////////////////////////////////
         $productMediaConfig = Mage::getModel('catalog/product_media_config');
         $cartSubmissionData = array(
-            'order_reference' => $quote->getId(),
-            'display_id'      => $quote->getReservedOrderId(),
+            'order_reference' => $quote->getParentQuoteId(),
+            'display_id'      => $quote->getReservedOrderId().'|'.$quote->getId(),
             'items'           => array_map(
                 function ($item) use ($quote, $productMediaConfig, &$calculatedTotal) {
                     $imageUrl = $productMediaConfig->getMediaUrl($item->getProduct()->getThumbnail());
@@ -1096,5 +1095,35 @@ class Bolt_Boltpay_Helper_Api extends Bolt_Boltpay_Helper_Data
         return $orderCollection
                 ->addFieldToFilter('quote_id', $quoteId)
                 ->getFirstItem();
+    }
+
+    /**
+     * Gets the immutable quote id stored in the Bolt transaction.  This is backwards
+     * compatible with older versions of the plugin and is suitable for transition
+     * installations.
+     *
+     * @param object $transaction  The Bolt transaction as a php object
+     *
+     * @return string  The immutable quote id
+     */
+    public function getImmutableQuoteIdFromTransaction( $transaction ) {
+        return (strpos($transaction->order->cart->display_id, '|'))
+            ? explode("|", $transaction->order->cart->display_id)[1]
+            : $transaction->order->cart->order_reference;
+    }
+
+    /**
+     * Gets the increment id stored in the Bolt transaction.  This is backwards
+     * compatible with older versions of the plugin and is suitable for transition
+     * installations.
+     *
+     * @param object $transaction  The Bolt transaction as a php object
+     *
+     * @return string  The order increment id
+     */
+    public function getIncrementIdFromTransaction( $transaction ) {
+        return (strpos($transaction->order->cart->display_id, '|'))
+            ? explode("|", $transaction->order->cart->display_id)[0]
+            : $transaction->order->cart->display_id;
     }
 }
