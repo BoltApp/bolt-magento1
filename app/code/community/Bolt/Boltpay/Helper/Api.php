@@ -266,17 +266,18 @@ class Bolt_Boltpay_Helper_Api extends Bolt_Boltpay_Helper_Data
             /* @var Mage_Sales_Model_Order $preExistingOrder */
             $preExistingOrder = Mage::getModel('sales/order')->loadByIncrementId($parentQuote->getReservedOrderId());
 
-            ############################
-            # First check if this order matches the transaction and therefore already created
-            ############################
-            $preExistingTransactionReference = $preExistingOrder->getPayment()->getAdditionalInformation('bolt_reference');
-            if ( $preExistingTransactionReference === $reference ) {
-                Mage::helper('boltpay/bugsnag')->notifyException( new Exception("The order #".$preExistingOrder->getIncrementId()." has already been processed for this quote." ), array(), 'warning' );
-                return $preExistingOrder;
-            }
-            ############################
-
             if (!$preExistingOrder->isObjectNew()) {
+                ############################
+                # First check if this order matches the transaction and therefore already created
+                # If so, we can return it after notifying Bugsnag
+                ############################
+                $preExistingTransactionReference = $preExistingOrder->getPayment()->getAdditionalInformation('bolt_reference');
+                if ( $preExistingTransactionReference === $reference ) {
+                    Mage::helper('boltpay/bugsnag')->notifyException( new Exception("The order #".$preExistingOrder->getIncrementId()." has already been processed for this quote." ), array(), 'warning' );
+                    return $preExistingOrder;
+                }
+                ############################
+
                 $parentQuote
                     ->setReservedOrderId(null)
                     ->reserveOrderId()
