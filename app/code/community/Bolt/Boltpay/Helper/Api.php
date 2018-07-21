@@ -189,8 +189,10 @@ class Bolt_Boltpay_Helper_Api extends Bolt_Boltpay_Helper_Data
             // check if this order is currently being proccessed.  If so, throw exception
             /* @var Mage_Sales_Model_Quote $parentQuote */
             $parentQuote = Mage::getModel('sales/quote')->loadByIdWithoutStore($immutableQuote->getParentQuoteId());
-            if ($parentQuote->isEmpty() || !$parentQuote->getIsActive()) {
-                throw new Exception("The quote ". $immutableQuote->getParentQuoteId() ." is currently being processed or has been processed.");
+            if ($parentQuote->isEmpty() ) {
+                throw new Exception("The parent quote ". $immutableQuote->getParentQuoteId() ." is unexpectedly missing.");
+            } else if (!$parentQuote->getIsActive() ) {
+                throw new Exception("The parent quote ". $immutableQuote->getParentQuoteId() ." is currently being processed or has been processed.");
             } else {
                 $parentQuote->setIsActive(false)->save();
             }
@@ -335,7 +337,6 @@ class Bolt_Boltpay_Helper_Api extends Bolt_Boltpay_Helper_Data
 
         Mage::dispatchEvent('bolt_boltpay_save_order_after', array('order'=>$order, 'quote'=>$immutableQuote, 'transaction' => $transaction));
 
-        $parentQuote = Mage::getModel('sales/quote')->loadByIdWithoutStore($immutableQuote->getParentQuoteId());
         if ($sessionQuoteId) {
             $checkoutSession = Mage::getSingleton('checkout/session');
             $checkoutSession
@@ -348,12 +349,20 @@ class Bolt_Boltpay_Helper_Api extends Bolt_Boltpay_Helper_Data
                 ->setRedirectUrl('')
                 ->setLastRealOrderId($order->getIncrementId());
         }
-        // Close out session by deleting the parent quote and deactivating the immutable quote so that it can no
-        // longer be used.
-        /* @var Mage_Sales_Model_Quote $parentQuote */
+
+        ///////////////////////////////////////////////////////
+        // Close out session by
+        // 1.) deactivating the immutable quote so it can no longer be uses
+        // 2.) assigning the immutable quote as the parent of its parent quote
+        //
+        // This creates a circular reference so that we can use the parent quote
+        // to look up the used immutable quote
+        ///////////////////////////////////////////////////////
         $immutableQuote->setIsActive(false)
             ->save();
-        $parentQuote->delete();
+        $parentQuote->setParentQuoteId($immutableQuote->getId())
+            ->save();
+        ///////////////////////////////////////////////////////
 
         return $order;
     }
@@ -1107,9 +1116,26 @@ class Bolt_Boltpay_Helper_Api extends Bolt_Boltpay_Helper_Data
      * @return string  The immutable quote id
      */
     public function getImmutableQuoteIdFromTransaction( $transaction ) {
-        return (strpos($transaction->order->cart->display_id, '|'))
-            ? explode("|", $transaction->order->cart->display_id)[1]
-            : $transaction->order->cart->order_reference;
+        if (strpos($transaction->order->cart->display_id, '|')) {
+            return explode("|", $transaction->order->cart->display_id)[1];
+        } else {
+            /////////////////////////////////////////////////////////////////
+            // here we deal with older versus newer version
+            // For $transaction->order->cart->order_reference
+            //  - older version stores the immutable quote ID here, and parent ID in getParentQuoteId()
+            //  - newer version stores the parent ID here, and immutable quote ID in getParentQuoteId()
+            // So, we take the max of getParentQuoteId() and $transaction->order->cart->order_reference
+            // which will be the immutable quote ID
+            /////////////////////////////////////////////////////////////////
+            $potentialQuoteId = (int) $transaction->order->cart->order_reference;
+            /** @var Mage_Sales_Model_Quote $potentialQuote */
+            $potentialQuote = Mage::getModel('sales/quote')->loadByIdWithoutStore($potentialQuoteId);
+
+            $associatedQuoteId = (int) $potentialQuote->getParentQuoteId();
+
+            return max($potentialQuoteId, $associatedQuoteId);
+        }
+
     }
 
     /**
