@@ -355,7 +355,7 @@ class Bolt_Boltpay_Helper_Api extends Bolt_Boltpay_Helper_Data
 
         ///////////////////////////////////////////////////////
         // Close out session by
-        // 1.) deactivating the immutable quote so it can no longer be uses
+        // 1.) deactivating the immutable quote so it can no longer be used
         // 2.) assigning the immutable quote as the parent of its parent quote
         //
         // This creates a circular reference so that we can use the parent quote
