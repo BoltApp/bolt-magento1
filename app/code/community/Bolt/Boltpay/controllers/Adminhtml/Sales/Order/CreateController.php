@@ -78,8 +78,43 @@ class Bolt_Boltpay_Adminhtml_Sales_Order_CreateController extends Mage_Adminhtml
     public function saveAction()
     {
         $boltReference = $this->getRequest()->getPost('bolt_reference');
+
+        /////////////////////////////////////////////////////////////////////////////
+        // If there is no bolt reference, then it indicates this is another payment
+        // method.  In this case, we differ to Magento to handle this after assuring
+        // that the shipping method is set in a compatible format across several
+        // Magento versions.
+        /////////////////////////////////////////////////////////////////////////////
+        if ($this->getRequest()->getPost('shipping_method')) {
+            $_POST['order[shipping_method]'] = $this->getRequest()->getPost('shipping_method');
+        }
+
+        if (!$boltReference) {
+            parent::saveAction();
+            return;
+        }
+        /////////////////////////////////////////////////////////////////////////////
+
+
+        //////////////////////////////////////////////////////////////
+        /// Set variables that will be used in the post order save
+        /// Observer event
+        //////////////////////////////////////////////////////////////
         Mage::getSingleton('core/session')->setBoltReference($boltReference);
         Mage::getSingleton('core/session')->setWasCreatedByHook(false);
+        //////////////////////////////////////////////////////////////
+
+        ///////////////////////////////////////////////////
+        /// We must use the immutable quote to create
+        /// this order for subsequent webhooks to succeed.
+        ///////////////////////////////////////////////////
+        /** @var Bolt_Boltpay_Helper_Api $boltHelper */
+        $boltHelper = Mage::helper('boltpay/api');
+        $transaction = $boltHelper->fetchTransaction($boltReference);
+
+        $immutableQuoteId = $boltHelper->getImmutableQuoteIdFromTransaction($transaction);
+        $this->_getSession()->setQuoteId($immutableQuoteId);
+        ///////////////////////////////////////////////////
 
         try {
             $this->_processActionData('save');
@@ -95,9 +130,7 @@ class Bolt_Boltpay_Adminhtml_Sales_Order_CreateController extends Mage_Adminhtml
             }
 
             $orderData = $this->getRequest()->getPost('order');
-            if ($this->getRequest()->getPost('shipping_method')) {
-                $orderData['shipping_method'] = $this->getRequest()->getPost('shipping_method');
-            }
+
             $orderCreateModel = $this->_getOrderCreateModel()
                 ->setIsValidate(true)
                 ->importPostData($orderData);
