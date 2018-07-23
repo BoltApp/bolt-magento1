@@ -3,6 +3,9 @@ language: php
 node_js:
   - "8.1.2"
 
+addons:
+  chrome: stable
+
 services:
   - mysql
 
