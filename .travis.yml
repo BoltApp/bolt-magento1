@@ -4,9 +4,6 @@ addons:
 
 language: php
 
-node_js:
-  - "8.1.2"
-
 services:
   - mysql
 
@@ -25,7 +22,7 @@ jobs:
   include:
   - stage: unit-tests
   - php: 5.5
-    env: PHPUNIT_PHAR=tests/unit/phpunit-4.8.36.phar MAGENTO_VERSION=magento-mirror-1.8.1.0 NODE_VERSION="8.1.2"
+    env: PHPUNIT_PHAR=tests/unit/phpunit-4.8.36.phar MAGENTO_VERSION=magento-mirror-1.8.1.0
   - php: 5.5
     env: PHPUNIT_PHAR=tests/unit/phpunit-4.8.36.phar MAGENTO_VERSION=magento-mirror-1.9.3.6
   - php: 5.6
