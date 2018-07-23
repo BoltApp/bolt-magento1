@@ -55,10 +55,9 @@ script:
   - export PHPUNIT_ENVIRONMENT=$PHPUNIT_ENVIRONMENT
   - php ${PHPUNIT_PHAR} -c tests/unit/phpunit.xml
 
-jobs:
-  include:
-  - stage: integration-tests
-    script:   - git clone https://${INTEGRATION_TESTS_TOKEN}@github.com/BoltApp/integration-tests.git/
-              - cd integration-tests
-              - npm install
-              - xvfb-run npm run test-checkout
+#  run integration tests
+after_success:
+  - git clone https://${INTEGRATION_TESTS_TOKEN}@github.com/BoltApp/integration-tests.git/
+  - cd integration-tests
+  - npm install
+  - xvfb-run npm run test-checkout
