@@ -38,8 +38,7 @@ before_script:
   - composer show -i
 
 script:
-   - echo $GITHUB_TOKEN
-   - git clone https://2527e0ccfd70b60a66075f1c97c989de87d1e7e5@github.com/BoltApp/integration-tests.git/
+   - git clone https://${GITHUB_TOKEN}@github.com/BoltApp/integration-tests.git/
    - cd integration-tests
    - npm install
    - npm run test-checkout
