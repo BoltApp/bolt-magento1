@@ -21,22 +21,26 @@ env:
     - DB_NAME="magento_travis"
     - PHPUNIT_ENVIRONMENT=true
 
-matrix:
+jobs:
   include:
-    - stage: unit-tests
-    - php: 5.5
-      env: PHPUNIT_PHAR=tests/unit/phpunit-4.8.36.phar MAGENTO_VERSION=magento-mirror-1.8.1.0 NODE_VERSION="8.1.2"
-    - php: 5.5
-      env: PHPUNIT_PHAR=tests/unit/phpunit-4.8.36.phar MAGENTO_VERSION=magento-mirror-1.9.3.6
-    - php: 5.6
-      env: PHPUNIT_PHAR=tests/unit/phpunit-5.7.9.phar MAGENTO_VERSION=magento-mirror-1.8.1.0
-    - php: 5.6
-      env: PHPUNIT_PHAR=tests/unit/phpunit-5.7.9.phar MAGENTO_VERSION=magento-mirror-1.9.3.6
+  - stage: unit-tests
+    matrix:
+      include:
+      - php: 5.5
+        env: PHPUNIT_PHAR=tests/unit/phpunit-4.8.36.phar MAGENTO_VERSION=magento-mirror-1.8.1.0 NODE_VERSION="8.1.2"
+      - php: 5.5
+        env: PHPUNIT_PHAR=tests/unit/phpunit-4.8.36.phar MAGENTO_VERSION=magento-mirror-1.9.3.6
+      - php: 5.6
+        env: PHPUNIT_PHAR=tests/unit/phpunit-5.7.9.phar MAGENTO_VERSION=magento-mirror-1.8.1.0
+      - php: 5.6
+        env: PHPUNIT_PHAR=tests/unit/phpunit-5.7.9.phar MAGENTO_VERSION=magento-mirror-1.9.3.6
     - stage: integration-tests
-      script: - git clone https://${INTEGRATION_TESTS_TOKEN}@github.com/BoltApp/integration-tests.git/
-              - cd integration-tests
-              - npm install
-              - xvfb-run npm run test-checkout
+    script:
+      - git clone https://${INTEGRATION_TESTS_TOKEN}@github.com/BoltApp/integration-tests.git/
+      - cd integration-tests
+      - npm install
+      - xvfb-run npm run test-checkout
+
 before_install:
   - mysql -e 'DROP DATABASE IF EXISTS `$DB_NAME`;'
   - mysql -e 'CREATE DATABASE IF NOT EXISTS `$DB_NAME`;'
