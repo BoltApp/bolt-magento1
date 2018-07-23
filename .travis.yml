@@ -54,8 +54,11 @@ script:
   - cd BoltApp/bolt-magento1/
   - export PHPUNIT_ENVIRONMENT=$PHPUNIT_ENVIRONMENT
   - php ${PHPUNIT_PHAR} -c tests/unit/phpunit.xml
-#   Integration tests
-  - git clone https://${INTEGRATION_TESTS_TOKEN}@github.com/BoltApp/integration-tests.git/
-  - cd integration-tests
-  - npm install
-  - xvfb-run npm run test-checkout
+
+jobs:
+  include:
+  - stage: integration-tests
+    script:   - git clone https://${INTEGRATION_TESTS_TOKEN}@github.com/BoltApp/integration-tests.git/
+              - cd integration-tests
+              - npm install
+              - xvfb-run npm run test-checkout
