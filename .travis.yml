@@ -1,7 +1,5 @@
-sudo: required
-apt:
-  packages:
-  - google-chrome-stable
+addons:
+  chrome: stable
 
 language: php
 
