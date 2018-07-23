@@ -1,3 +1,4 @@
+sudo: required
 addons:
   chrome: stable
 
@@ -45,7 +46,7 @@ script:
    - git clone https://${INTEGRATION_TESTS_TOKEN}@github.com/BoltApp/integration-tests.git/
    - cd integration-tests
    - npm install
-   - npm run test-checkout
+   - xvfb-run npm run test-checkout
 #  - cd /home/travis/build/
 #  - curl -O https://files.magerun.net/n98-magerun.phar
 #  - chmod +x n98-magerun.phar
