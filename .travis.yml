@@ -35,10 +35,11 @@ before_install:
 before_script:
   - composer self-update -q
   - if [ -n "$GITHUB_TOKEN" ]; then composer config github-oauth.github.com ${GITHUB_TOKEN}; fi;
+  - if [ -n "INTEGRATION_TESTS_TOKEN" ]; then composer config github-oauth.github.com ${INTEGRATION_TESTS_TOKEN}; fi;
   - composer show -i
 
 script:
-   - git clone https://${GITHUB_TOKEN}@github.com/BoltApp/integration-tests.git/
+   - git clone https://${INTEGRATION_TESTS_TOKEN}@github.com/BoltApp/integration-tests.git/
    - cd integration-tests
    - npm install
    - npm run test-checkout
