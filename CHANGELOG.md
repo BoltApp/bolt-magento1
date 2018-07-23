@@ -1,4 +1,9 @@
 # Changelog
+## [v1.1.7](https://s3-us-west-1.amazonaws.com/bolt-public/magento-integration-release/bolt-magento1_v1.1.7.zip) 2018-07-23
+ - Add product type
+ - Stability fix for quote lookup
+ - Admin order creation bugfix
+
 ## [v1.1.6](https://s3-us-west-1.amazonaws.com/bolt-public/magento-integration-release/bolt-magento1_v1.1.6.zip) 2018-07-10
  - refund hook support
  - fix on-hold was accidentally updated via hook
