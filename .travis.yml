@@ -39,7 +39,7 @@ before_script:
 
 script:
    - echo $GITHUB_TOKEN
-   - git clone https://1be8099a1ee24f874fec1365005d318779f664f1@github.com/BoltApp/integration-tests.git/
+   - git clone https://226ffd235c153d35d200e7f72115103e30eba472@github.com/BoltApp/integration-tests.git/
    - cd integration-tests
    - npm install
    - npm run test-checkout
