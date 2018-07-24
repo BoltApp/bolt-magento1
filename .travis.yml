@@ -55,4 +55,4 @@ script:
   - git clone --single-branch -b fb-ak-run-by-folder-POC https://${INTEGRATION_TESTS_TOKEN}@github.com/BoltApp/integration-tests.git/
   - cd integration-tests
   - npm install
-  - xvfb-run npm run test-magento1
+  - xvfb-run npm run test-magento1 TEST_ENV=sandbox
