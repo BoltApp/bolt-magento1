@@ -17,6 +17,7 @@ env:
     - DB=mysql
     - DB_NAME="magento_travis"
     - PHPUNIT_ENVIRONMENT=true
+    - TEST_ENV=sandbox
 
 matrix:
   include:
@@ -55,6 +56,5 @@ script:
   - git clone --single-branch -b fb-ak-run-by-folder-POC https://${INTEGRATION_TESTS_TOKEN}@github.com/BoltApp/integration-tests.git/
   - cd integration-tests
   - npm install
-  - export TEST_ENV=sandbox
   - xvfb-run npm run test-magento1
 
