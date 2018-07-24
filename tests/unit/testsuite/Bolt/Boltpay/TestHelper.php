@@ -24,7 +24,6 @@ class Bolt_Boltpay_TestHelper
         return $cart;
     }
 
-
     /**
      * @param array $addressData
      * @return Mage_Checkout_Model_Type_Onepage
@@ -52,7 +51,7 @@ class Bolt_Boltpay_TestHelper
         return $checkout;
     }
 
-    public function addTestFlatRateShippingAddress($addressData, $paymentMethod) 
+    public function addTestFlatRateShippingAddress($addressData, $paymentMethod)
     {
         $checkout = Mage::getSingleton('checkout/type_onepage');
         $shippingAddress = $checkout->getQuote()->getShippingAddress()->addData($addressData);
@@ -116,12 +115,73 @@ class Bolt_Boltpay_TestHelper
         return $service->getOrder();
     }
 
-    public function resetApp() 
+    public function resetApp()
     {
         $_POST = array();
         $_REQUEST = array();
         $_GET = array();
         $this->app = Mage::app('default');
         $this->app->getStore()->resetConfig();
+    }
+
+    public function buildCartDataJs($jsonCart, $immutableQuoteId, $jsonHints, $callbacks = array())
+    {
+        $checkCustom = (isset($callbacks['checkCustom'])) ? $callbacks['checkCustom'] : '';
+        $onCheckCallbackAdmin = (isset($callbacks['onCheckCallbackAdmin'])) ? $callbacks['onCheckCallbackAdmin'] : '';
+        $onCheckoutStartCustom = (isset($callbacks['onCheckoutStartCustom'])) ? $callbacks['onCheckoutStartCustom'] : '';
+        $onShippingDetailsCompleteCustom = (isset($callbacks['onShippingDetailsCompleteCustom'])) ? $callbacks['onShippingDetailsCompleteCustom'] : '';
+        $onShippingOptionsCompleteCustom = (isset($callbacks['onShippingOptionsCompleteCustom'])) ? $callbacks['onShippingOptionsCompleteCustom'] : '';
+        $onPaymentSubmitCustom = (isset($callbacks['onPaymentSubmitCustom'])) ? $callbacks['onPaymentSubmitCustom'] : '';
+        $onSuccessCallback = (isset($callbacks['onSuccessCallback'])) ? $callbacks['onSuccessCallback'] : '';
+        $onCloseCallback = (isset($callbacks['onCloseCallback'])) ? $callbacks['onCloseCallback'] : '';
+
+        return ("
+            var json_cart = $jsonCart;
+            var quote_id = '{$immutableQuoteId}';
+            var order_completed = false;
+
+            BoltCheckout.configure(
+                json_cart,
+                $jsonHints,
+                {
+                  check: function() {
+                    $checkCustom
+                    $onCheckCallbackAdmin
+                    if (!json_cart.orderToken) {
+                        alert(json_cart.error);
+                        return false;
+                    }
+                    return true;
+                  },
+                  
+                  onCheckoutStart: function() {
+                    // This function is called after the checkout form is presented to the user.
+                    $onCheckoutStartCustom
+                  },
+                  
+                  onShippingDetailsComplete: function() {
+                    // This function is called when the user proceeds to the shipping options page.
+                    // This is applicable only to multi-step checkout.
+                    $onShippingDetailsCompleteCustom
+                  },
+                  
+                  onShippingOptionsComplete: function() {
+                    // This function is called when the user proceeds to the payment details page.
+                    // This is applicable only to multi-step checkout.
+                    $onShippingOptionsCompleteCustom
+                  },
+                  
+                  onPaymentSubmit: function() {
+                    // This function is called after the user clicks the pay button.
+                    $onPaymentSubmitCustom
+                  },
+                  
+                  success: $onSuccessCallback,
+
+                  close: function() {
+                     $onCloseCallback
+                  }
+                }
+        );");
     }
 }

@@ -256,9 +256,7 @@ class Bolt_Boltpay_Helper_Data extends Mage_Core_Helper_Abstract
      */
     public function getConnectJsUrl()
     {
-        return Mage::getStoreConfigFlag('payment/boltpay/test') ?
-            Bolt_Boltpay_Block_Checkout_Boltpay::JS_URL_TEST . "/connect.js":
-            Bolt_Boltpay_Block_Checkout_Boltpay::JS_URL_PROD . "/connect.js";
+        return Mage::helper('boltpay/url')->getJsUrl() . "/connect.js";
     }
 
     /**
@@ -285,5 +283,20 @@ class Bolt_Boltpay_Helper_Data extends Mage_Core_Helper_Abstract
         $isEverywhere = $this->shouldAddButtonEverywhere();
 
         return ($active && $isEverywhere);
+    }
+
+    /**
+     * Get config value from specific bolt config and depending from checkoutType.
+     *
+     * @param $configPath
+     * @param $checkoutType
+     * @return string
+     */
+    public function getPaymentBoltpayConfig($configPath, $checkoutType)
+    {
+        /** @var string $configValue */
+        $configValue = Mage::getStoreConfig('payment/boltpay/'.$configPath);
+
+        return ($checkoutType === Bolt_Boltpay_Block_Checkout_Boltpay::CHECKOUT_TYPE_ADMIN) ? '' : $configValue;
     }
 }

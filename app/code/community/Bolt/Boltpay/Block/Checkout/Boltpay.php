@@ -28,21 +28,9 @@
  */
 class Bolt_Boltpay_Block_Checkout_Boltpay extends Mage_Checkout_Block_Onepage_Review_Info
 {
-
-    /**
-     * @var string The Bolt sandbox url for the javascript
-     */
-    const JS_URL_TEST = 'https://connect-sandbox.bolt.com';
-
-    /**
-     * @var string The Bolt production url for the javascript
-     */
-    const JS_URL_PROD = 'https://connect.bolt.com';
-
-    /**
-     * @var int flag that represents if the capture is automatically done on authentication
-     */
-    const AUTO_CAPTURE_ENABLED = 1;
+    const CHECKOUT_TYPE_ADMIN       = 'admin';
+    const CHECKOUT_TYPE_MULTI_PAGE  = 'multi-page';
+    const CHECKOUT_TYPE_ONE_PAGE    = 'one-page';
 
     const CSS_SUFFIX = 'bolt-css-suffix';
 
@@ -52,9 +40,7 @@ class Bolt_Boltpay_Block_Checkout_Boltpay extends Mage_Checkout_Block_Onepage_Re
     public function _construct()
     {
         parent::_construct();
-        $this->_jsUrl = Mage::getStoreConfig('payment/boltpay/test') ?
-            self::JS_URL_TEST . "/connect.js":
-            self::JS_URL_PROD . "/connect.js";
+        $this->_jsUrl = Mage::helper('boltpay/url')->getJsUrl() . "/connect.js";
     }
 
     /**
@@ -62,9 +48,7 @@ class Bolt_Boltpay_Block_Checkout_Boltpay extends Mage_Checkout_Block_Onepage_Re
      */
     public function getTrackJsUrl()
     {
-        return Mage::getStoreConfig('payment/boltpay/test') ?
-            self::JS_URL_TEST . "/track.js":
-            self::JS_URL_PROD . "/track.js";
+        return Mage::helper('boltpay/url')->getJsUrl() . "/track.js";
     }
 
     /**
@@ -119,14 +103,11 @@ class Bolt_Boltpay_Block_Checkout_Boltpay extends Mage_Checkout_Block_Onepage_Re
      * @param string $checkoutType  'multi-page' | 'one-page' | 'admin'
      * @return string               BoltCheckout javascript
      */
-    public function getCartDataJs($checkoutType = 'multi-page')
+    public function getCartDataJs($checkoutType = self::CHECKOUT_TYPE_MULTI_PAGE)
     {
         try {
-            // Admin and Store front use different session objects.  We get the appropriate one here.
-            $session = ($checkoutType === 'admin') ? Mage::getSingleton('adminhtml/session_quote') : Mage::getSingleton('checkout/session');
-
             /* @var Mage_Sales_Model_Quote $sessionQuote */
-            $sessionQuote =  $session->getQuote();
+            $sessionQuote = $this->getSessionQuote($checkoutType);
 
             /* @var Bolt_Boltpay_Helper_Api $boltHelper */
             $boltHelper = Mage::helper('boltpay/api');
@@ -135,7 +116,7 @@ class Bolt_Boltpay_Block_Checkout_Boltpay extends Mage_Checkout_Block_Onepage_Re
 
             $orderCreationResponse = json_decode('{"token" : "", "error": "Unexpected error.  Please contact support for assistance."}');
 
-            $isMultiPage = $checkoutType === 'multi-page';
+            $isMultiPage = ($checkoutType === self::CHECKOUT_TYPE_MULTI_PAGE);
             // For multi-page, remove shipping that may have been added by Magento shipping and tax estimate interface
             if ($isMultiPage) {
                 // Resets shipping rate
@@ -152,6 +133,7 @@ class Bolt_Boltpay_Block_Checkout_Boltpay extends Mage_Checkout_Block_Onepage_Re
                 // Only shipping, tax and discounts can change, and only if the shipping, tax
                 // and discount calculations change on the Magento server
                 ////////////////////////////////////////////////////////////////////////////////
+                /** @var Mage_Sales_Model_Quote $immutableQuote */
                 $immutableQuote = $boltHelper->cloneQuote($sessionQuote, $isMultiPage);
                 $orderCreationResponse = $this->_createBoltOrder($immutableQuote, $checkoutType);
                 ////////////////////////////////////////////////////////////////////////////////
@@ -188,185 +170,257 @@ class Bolt_Boltpay_Block_Checkout_Boltpay extends Mage_Checkout_Block_Onepage_Re
                 $boltHelper->applyShippingRate($sessionQuote, $shippingMethod);
             }
 
-            $authCapture = (Mage::getStoreConfig('payment/boltpay/auto_capture') == self::AUTO_CAPTURE_ENABLED);
+            $cartData = $this->buildCartData($orderCreationResponse);
 
-            //////////////////////////////////////////////////////////////////////////
-            // Generate JSON cart and hints objects for the javascript returned below.
-            //////////////////////////////////////////////////////////////////////////
-            $cartData = array(
-                'authcapture' => $authCapture,
-                'orderToken' => ($orderCreationResponse) ? $orderCreationResponse->token: '',
-            );
-
-            // If there was an unexpected API error, then it was stored in the registry
-            if (Mage::registry("api_error")) {
-                $cartData['error'] = Mage::registry("api_error");
-            }
-
-            $jsonCart = json_encode($cartData);
-            $jsonHints = '{}';
-            if (sizeof($hintData) != 0) {
-                // Convert $hint_data to object, because when empty data it consists array not an object
-                $jsonHints = json_encode($hintData, JSON_FORCE_OBJECT);
-            }
-
-            //////////////////////////////////////////////////////////////////////////
-            // Format the success and save order urls for the javascript returned below.
-            $successUrl   = $this->getUrl(Mage::getStoreConfig('payment/boltpay/successpage'));
-            $saveOrderUrl = $this->getUrl('boltpay/order/save');
-
-            //////////////////////////////////////////////////////
-            // Collect the event Javascripts
-            // We execute these events as early as possible, typically
-            // before Bolt defined event JS to give merchants the
-            // opportunity to do full overrides
-            //////////////////////////////////////////////////////
-            if (($checkoutType === 'admin') && !Mage::getStoreConfig('payment/boltpay/use_javascript_in_admin')) {
-                $check = '';
-                $onCheckoutStart = '';
-                $onShippingDetailsComplete = '';
-                $onShippingOptionsComplete = '';
-                $onPaymentSubmit = '';
-                $success = '';
-                $close = '';
-            } else {
-                $check = Mage::getStoreConfig('payment/boltpay/check');
-                $onCheckoutStart = Mage::getStoreConfig('payment/boltpay/on_checkout_start');
-                $onShippingDetailsComplete = Mage::getStoreConfig('payment/boltpay/on_shipping_details_complete');
-                $onShippingOptionsComplete = Mage::getStoreConfig('payment/boltpay/on_shipping_options_complete');
-                $onPaymentSubmit = Mage::getStoreConfig('payment/boltpay/on_payment_submit');
-                $success = Mage::getStoreConfig('payment/boltpay/success');
-                $close = Mage::getStoreConfig('payment/boltpay/close');
-            }
-
-            //////////////////////////////////////////////////////
-            // Generate and return BoltCheckout javascript.
-            //////////////////////////////////////////////////////
-            $immutableQuoteId = ($immutableQuote) ? $immutableQuote->getId() : -1;
-
-            $checkForAdmin = '';
-            $onSuccessCallback = '';
-            $onClose = '';
-            if ($checkoutType === 'admin') {
-                $checkForAdmin = "if ((typeof editForm !== 'undefined') && (typeof editForm.validate === 'function')) {
-                    var bolt_hidden = document.getElementById('boltpay_payment_button');
-                    bolt_hidden.classList.remove('required-entry');
-
-                    var is_valid = true;
-
-                    if (!editForm.validate()) {
-                        is_valid = false;
-                    } else {
-                        var shipping_method = $$('input:checked[type=\"radio\"][name=\"order[shipping_method]\"]')[0] || $$('input:checked[type=\"radio\"][name=\"shipping_method\"]')[0];
-                        if (typeof shipping_method === 'undefined') {
-                            alert('Please select a shipping method.');
-                            is_valid = false;
-                        }
-                    }
-
-                    bolt_hidden.classList.add('required-entry');
-                    return is_valid;
-                }";
-                $onSuccessCallback = "function(transaction, callback) {
-                    $success
-                    
-                    var input = document.createElement('input');
-                    input.setAttribute('type', 'hidden');
-                    input.setAttribute('name', 'bolt_reference');
-                    input.setAttribute('value', transaction.reference);
-                    document.getElementById('edit_form').appendChild(input);
-                    
-                    // order and order.submit should exist for admin            
-                    if ((typeof order !== 'undefined' ) && (typeof order.submit === 'function')) {
-                        order_completed = true;
-                        callback();
-                    }
-                }";
-                $onClose = "if (order_completed && (typeof order !== 'undefined' ) && (typeof order.submit === 'function')) {
-                    $close
-                    var bolt_hidden = document.getElementById('boltpay_payment_button');
-                    bolt_hidden.classList.remove('required-entry');
-                    order.submit();
-                 }";
-            } else {
-                $onSuccessCallback = "function(transaction, callback) {
-                    new Ajax.Request(
-                        '$saveOrderUrl',
-                        {
-                            method:'post',
-                            onSuccess:
-                                function() {
-                                    $success
-                                    order_completed = true;
-                                    callback();
-                                },
-                            parameters: 'reference='+transaction.reference
-                        }
-                    );
-                }";
-                $onClose = "if (typeof bolt_checkout_close === 'function') {
-                    // used internally to set overlay in firecheckout
-                    bolt_checkout_close();
-                 }
-                 if (order_completed) {
-                    location.href = '$successUrl';
-                 }";
-            }
-
-            return ("
-                var json_cart = $jsonCart;
-                var quote_id = '{$immutableQuoteId}';
-                var order_completed = false;
-                
-                BoltCheckout.configure(
-                    json_cart,
-                    $jsonHints,
-                    {
-                      check: function() {
-                        $check
-                        $checkForAdmin
-                        if (!json_cart.orderToken) {
-                            alert(json_cart.error);
-                            return false;
-                        }
-                        return true;
-                      },
-                      
-                      onCheckoutStart: function() {
-                        // This function is called after the checkout form is presented to the user.
-                        $onCheckoutStart
-                      },
-                      
-                      onShippingDetailsComplete: function() {
-                        // This function is called when the user proceeds to the shipping options page.
-                        // This is applicable only to multi-step checkout.
-                        $onShippingDetailsComplete
-                      },
-                      
-                      onShippingOptionsComplete: function() {
-                        // This function is called when the user proceeds to the payment details page.
-                        // This is applicable only to multi-step checkout.
-                        $onShippingOptionsComplete
-                      },
-                      
-                      onPaymentSubmit: function() {
-                        // This function is called after the user clicks the pay button.
-                        $onPaymentSubmit
-                      },
-                      
-                      success: $onSuccessCallback,
-
-                      close: function() {
-                         $close
-                         $onClose
-                      }
-                    }
-                );"
-            );
+            return $this->buildBoltCheckoutJavascript($checkoutType, $immutableQuote->getId(), $hintData, $cartData);
 
         } catch (Exception $e) {
             Mage::helper('boltpay/bugsnag')->notifyException($e);
         }
+    }
+
+    /**
+     * @param $checkoutType
+     * @return bool
+     */
+    protected function isAdminAndUseJsInAdmin($checkoutType)
+    {
+        return ($checkoutType === self::CHECKOUT_TYPE_ADMIN) && !Mage::getStoreConfig('payment/boltpay/use_javascript_in_admin');
+    }
+
+    /**
+     * Generate cart data
+     *
+     * @param $orderCreationResponse
+     * @return array
+     */
+    public function buildCartData($orderCreationResponse)
+    {
+        $authCapture = Mage::getStoreConfigFlag('payment/boltpay/auto_capture');
+
+        //////////////////////////////////////////////////////////////////////////
+        // Generate JSON cart and hints objects for the javascript returned below.
+        //////////////////////////////////////////////////////////////////////////
+        $cartData = array(
+            'authcapture' => $authCapture,
+            'orderToken' => ($orderCreationResponse) ? $orderCreationResponse->token: '',
+        );
+
+        // If there was an unexpected API error, then it was stored in the registry
+        if (Mage::registry("api_error")) {
+            $cartData['error'] = Mage::registry("api_error");
+        }
+
+        return $cartData;
+    }
+
+    /**
+     * Generate BoltCheckout Javascript for output.
+     *
+     * @param $checkoutType
+     * @param $immutableQuoteId
+     * @param $hintData
+     * @param $cartData
+     * @return string
+     */
+    public function buildBoltCheckoutJavascript($checkoutType, $immutableQuoteId, $hintData, $cartData)
+    {
+        /* @var Bolt_Boltpay_Helper_Api $boltHelper */
+        $boltHelper = Mage::helper('boltpay');
+
+        $jsonCart = json_encode($cartData);
+        $jsonHints = json_encode($hintData, JSON_FORCE_OBJECT);
+
+        //////////////////////////////////////////////////////
+        // Collect the event Javascripts
+        // We execute these events as early as possible, typically
+        // before Bolt defined event JS to give merchants the
+        // opportunity to do full overrides
+        //////////////////////////////////////////////////////
+        $checkCustom = $boltHelper->getPaymentBoltpayConfig('check', $checkoutType);
+        $onCheckoutStartCustom = $boltHelper->getPaymentBoltpayConfig('on_checkout_start', $checkoutType);
+        $onShippingDetailsCompleteCustom = $boltHelper->getPaymentBoltpayConfig('on_shipping_details_complete', $checkoutType);
+        $onShippingOptionsCompleteCustom = $boltHelper->getPaymentBoltpayConfig('on_shipping_options_complete', $checkoutType);
+        $onPaymentSubmitCustom = $boltHelper->getPaymentBoltpayConfig('on_payment_submit', $checkoutType);
+        $successCustom = $boltHelper->getPaymentBoltpayConfig('success', $checkoutType);
+        $closeCustom = $boltHelper->getPaymentBoltpayConfig('close', $checkoutType);
+
+        $onCheckCallbackAdmin = $this->buildOnCheckCallback($checkoutType);
+        $onSuccessCallback = $this->buildOnSuccessCallback($successCustom, $checkoutType);
+        $onCloseCallback = $this->buildOnCloseCallback($closeCustom, $checkoutType);
+
+        return ("
+            var json_cart = $jsonCart;
+            var quote_id = '{$immutableQuoteId}';
+            var order_completed = false;
+
+            BoltCheckout.configure(
+                json_cart,
+                $jsonHints,
+                {
+                  check: function() {
+                    $checkCustom
+                    $onCheckCallbackAdmin
+                    if (!json_cart.orderToken) {
+                        alert(json_cart.error);
+                        return false;
+                    }
+                    return true;
+                  },
+                  
+                  onCheckoutStart: function() {
+                    // This function is called after the checkout form is presented to the user.
+                    $onCheckoutStartCustom
+                  },
+                  
+                  onShippingDetailsComplete: function() {
+                    // This function is called when the user proceeds to the shipping options page.
+                    // This is applicable only to multi-step checkout.
+                    $onShippingDetailsCompleteCustom
+                  },
+                  
+                  onShippingOptionsComplete: function() {
+                    // This function is called when the user proceeds to the payment details page.
+                    // This is applicable only to multi-step checkout.
+                    $onShippingOptionsCompleteCustom
+                  },
+                  
+                  onPaymentSubmit: function() {
+                    // This function is called after the user clicks the pay button.
+                    $onPaymentSubmitCustom
+                  },
+                  
+                  success: $onSuccessCallback,
+
+                  close: function() {
+                     $onCloseCallback
+                  }
+                }
+        );");
+    }
+
+    /**
+     * @param $checkoutType
+     * @return string
+     */
+    public function buildOnCheckCallback($checkoutType)
+    {
+        return ($checkoutType === self::CHECKOUT_TYPE_ADMIN) ?
+            "if ((typeof editForm !== 'undefined') && (typeof editForm.validate === 'function')) {
+                var bolt_hidden = document.getElementById('boltpay_payment_button');
+                bolt_hidden.classList.remove('required-entry');
+
+                var is_valid = true;
+
+                if (!editForm.validate()) {
+                    is_valid = false;
+                } else {
+                    var shipping_method = $$('input:checked[type=\"radio\"][name=\"order[shipping_method]\"]')[0] || $$('input:checked[type=\"radio\"][name=\"shipping_method\"]')[0];
+                    if (typeof shipping_method === 'undefined') {
+                        alert('Please select a shipping method.');
+                        is_valid = false;
+                    }
+                }
+
+                bolt_hidden.classList.add('required-entry');
+                return is_valid;
+            }"
+        : '';
+    }
+
+    /**
+     * @param string $successCustom
+     * @param $checkoutType
+     * @return string
+     */
+    public function buildOnSuccessCallback($successCustom = '', $checkoutType)
+    {
+        $saveOrderUrl = $this->getUrl('boltpay/order/save');
+
+        return ($checkoutType === self::CHECKOUT_TYPE_ADMIN) ?
+            "function(transaction, callback) {
+                $successCustom
+
+                var input = document.createElement('input');
+                input.setAttribute('type', 'hidden');
+                input.setAttribute('name', 'bolt_reference');
+                input.setAttribute('value', transaction.reference);
+                document.getElementById('edit_form').appendChild(input);
+
+                // order and order.submit should exist for admin
+                if ((typeof order !== 'undefined' ) && (typeof order.submit === 'function')) {
+                    order_completed = true;
+                    callback();
+                }
+            }"
+            : "function(transaction, callback) {
+                new Ajax.Request(
+                    '$saveOrderUrl',
+                    {
+                        method:'post',
+                        onSuccess:
+                            function() {
+                                $successCustom
+                                order_completed = true;
+                                callback();
+                            },
+                        parameters: 'reference='+transaction.reference
+                    }
+                );
+            }";
+    }
+
+    /**
+     * @param $closeCustom
+     * @param $checkoutType
+     * @return string
+     */
+    public function buildOnCloseCallback($closeCustom, $checkoutType)
+    {
+        $successUrl = $this->getUrl(Mage::getStoreConfig('payment/boltpay/successpage'));
+
+        return ($checkoutType === self::CHECKOUT_TYPE_ADMIN) ?
+            "if (order_completed && (typeof order !== 'undefined' ) && (typeof order.submit === 'function')) {
+                $closeCustom
+                var bolt_hidden = document.getElementById('boltpay_payment_button');
+                bolt_hidden.classList.remove('required-entry');
+                order.submit();
+             }"
+            : "if (typeof bolt_checkout_close === 'function') {
+                   // used internally to set overlay in firecheckout
+                   bolt_checkout_close();
+                }
+                if (order_completed) {
+                   location.href = '$successUrl';
+            }";
+    }
+
+    /**
+     * Return the session object depending of checkout type.
+     *
+     * @param $checkoutType
+     * @return Mage_Adminhtml_Model_Session_Quote|Mage_Checkout_Model_Session
+     */
+    protected function getSessionObject($checkoutType)
+    {
+        return ($checkoutType === self::CHECKOUT_TYPE_ADMIN) ?
+            Mage::getSingleton('adminhtml/session_quote') :
+            Mage::getSingleton('checkout/session')
+        ;
+    }
+
+    /**
+     * Get session quote regarding the checkout type
+     *
+     * @param $checkoutType
+     * @return Mage_Sales_Model_Quote
+     */
+    protected function getSessionQuote($checkoutType)
+    {
+        // Admin and Store front use different session objects.  We get the appropriate one here.
+        $session = $this->getSessionObject($checkoutType);
+
+        return $session->getQuote();
     }
 
     /**
@@ -462,7 +516,7 @@ class Bolt_Boltpay_Block_Checkout_Boltpay extends Mage_Checkout_Block_Onepage_Re
      * Returns CSS_SUFFIX constant to be added to selector identifiers
      * @return string
      */
-    function getCssSuffix()
+    public function getCssSuffix()
     {
         return self::CSS_SUFFIX;
     }
@@ -471,7 +525,7 @@ class Bolt_Boltpay_Block_Checkout_Boltpay extends Mage_Checkout_Block_Onepage_Re
      * Reads the Replace Buttons Style config and generates selectors CSS
      * @return string
      */
-    function getSelectorsCSS()
+    public function getSelectorsCSS()
     {
 
         $selectorStyles = Mage::getStoreConfig('payment/boltpay/selector_styles');
@@ -514,7 +568,7 @@ class Bolt_Boltpay_Block_Checkout_Boltpay extends Mage_Checkout_Block_Onepage_Re
      * Returns Additional CSS from configuration.
      * @return string
      */
-    function getAdditionalCSS()
+    public function getAdditionalCSS()
     {
         return Mage::getStoreConfig('payment/boltpay/additional_css');
     }
@@ -532,7 +586,7 @@ class Bolt_Boltpay_Block_Checkout_Boltpay extends Mage_Checkout_Block_Onepage_Re
      * Returns the Bolt Sandbox Mode configuration.
      * @return string
      */
-    function isTestMode()
+    public function isTestMode()
     {
         return Mage::getStoreConfigFlag('payment/boltpay/test');
     }
@@ -568,7 +622,7 @@ class Bolt_Boltpay_Block_Checkout_Boltpay extends Mage_Checkout_Block_Onepage_Re
      * Returns the Success Page Redirect configuration.
      * @return string
      */
-    function getSuccessURL()
+    public function getSuccessURL()
     {
         return $this->getUrl(Mage::getStoreConfig('payment/boltpay/successpage'));
     }
@@ -577,7 +631,7 @@ class Bolt_Boltpay_Block_Checkout_Boltpay extends Mage_Checkout_Block_Onepage_Re
      * Returns the Bolt Save Order Url.
      * @return string
      */
-    function getSaveOrderURL()
+    public function getSaveOrderURL()
     {
         return $this->getUrl('boltpay/order/save');
     }
@@ -586,7 +640,7 @@ class Bolt_Boltpay_Block_Checkout_Boltpay extends Mage_Checkout_Block_Onepage_Re
      * Returns the Cart Url.
      * @return string
      */
-    function getCartURL()
+    public function getCartURL()
     {
         return $this->getUrl('checkout/cart');
     }
@@ -719,7 +773,9 @@ class Bolt_Boltpay_Block_Checkout_Boltpay extends Mage_Checkout_Block_Onepage_Re
         $routeName = $this->getRequest()->getRouteName();
         $controllerName = $this->getRequest()->getControllerName();
 
-        $isAllowed = ($routeName === 'checkout' && $controllerName === 'cart') || $routeName == 'firecheckout';
+        $isAllowed = ($routeName === 'checkout' && $controllerName === 'cart')
+                        || ($routeName == 'firecheckout')
+                        || ($routeName === 'adminhtml' && $controllerName === 'sales_order_create');
 
         return $isAllowed;
     }
@@ -737,9 +793,14 @@ class Bolt_Boltpay_Block_Checkout_Boltpay extends Mage_Checkout_Block_Onepage_Re
         $routeName = $this->getRequest()->getRouteName();
         $controllerName = $this->getRequest()->getControllerName();
 
-        $isForMultiPage = !($routeName === 'firecheckout') && !($routeName === 'checkout' && $controllerName !== 'cart');
+        $checkoutType = static::CHECKOUT_TYPE_MULTI_PAGE;
+        if ($routeName === 'adminhtml') {
+            $checkoutType = static::CHECKOUT_TYPE_ADMIN;
+        } else if ( ($routeName === 'firecheckout') || ($routeName === 'checkout' && $controllerName === 'onepage') ) {
+            $checkoutType = static::CHECKOUT_TYPE_ONE_PAGE;
+        }
 
-        return $this->getPublishableKey($isForMultiPage);
+        return $this->getPublishableKey($checkoutType);
     }
 
     /**

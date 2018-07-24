@@ -20,7 +20,7 @@
 
   <modules>
     <Bolt_Boltpay>
-      <version>1.1.5</version> <!-- version number should be incremented appropriately  -->
+      <version>1.1.7</version> <!-- version number should be incremented appropriately  -->
     </Bolt_Boltpay>
   </modules>
 
@@ -85,7 +85,17 @@
           </bolt_boltpay_update_bolt_transaction_status>
         </observers>
       </sales_order_save_after>
-      <!-- Call after order has been saved -->
+      <checkout_onepage_controller_success_action> <!-- Call after order has been saved and fowarded to success page -->
+        <observers>
+          <bolt_boltpay_clear_shopping_cart>
+            <class>Bolt_Boltpay_Model_Observer</class>
+            <method>clearShoppingCart</method>
+            <depends>
+              <ZZZZZ_Bolt />  <!--  psuedo module to place execution at the back of event queue -->
+            </depends>
+          </bolt_boltpay_clear_shopping_cart>
+        </observers>
+      </checkout_onepage_controller_success_action>
       <bolt_boltpay_save_order_after>
         <observers>
           <bolt_boltpay_verify_order_contents>

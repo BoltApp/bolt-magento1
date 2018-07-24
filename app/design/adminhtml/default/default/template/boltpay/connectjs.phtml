@@ -17,17 +17,15 @@
 ?>
 <?php /* @var $this Bolt_Boltpay_Block_Checkout_Boltpay */ ?>
 <?php
-$versionElm =  Mage::getConfig()->getModuleConfig("Bolt_Boltpay")->xpath("version");
-$version = (string)$versionElm[0];
-/* TODO: extend key selection for mini-cart if necessary */
+$isAllowedConnectJs = $this->isAllowedConnectJsOnCurrentPage();
 ?>
-<?php if($this->isBoltActive()): ?>
-    <script
-            id="bolt-track"
-            type="text/javascript"
-            src="<?= $this->getTrackJsUrl(); ?>"
-            data-publishable-key="<?=$this->getPublishableKey((Mage::app()->getRequest()->getControllerName() === 'cart') ? 'multi-page' : 'one-page'); ?>">
-    </script>
-    <script>console.log("Bolt Version: <?=$version?>");</script>
+<?php if ($isAllowedConnectJs): ?>
+    <?php
+    $publishableKey = $this->getPublishableKeyForRoute();
+    ?>
+    <?php if ($publishableKey): ?>
+    <script src="<?=$this->getJsUrl();?>" id="bolt-connect"
+            type="text/javascript" data-shopping-cart-id="Magento"
+            data-publishable-key="<?=$publishableKey?>"></script>
+    <?php endif; ?>
 <?php endif; ?>
-

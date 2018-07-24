@@ -48,9 +48,6 @@ class Bolt_Boltpay_Model_Payment extends Mage_Payment_Model_Method_Abstract
     const HOOK_TYPE_VOID = 'void';
     const HOOK_TYPE_REFUND = 'credit';
 
-    const URL_MERCHANT_SANDBOX = 'https://merchant-sandbox.bolt.com';
-    const URL_MERCHANT_PRODUCTION = 'https://merchant.bolt.com';
-
     const CAPTURE_TYPE = 'online';
 
     protected $_code               = self::METHOD_CODE;
@@ -115,7 +112,6 @@ class Bolt_Boltpay_Model_Payment extends Mage_Payment_Model_Method_Abstract
 
     /**
      * @return bool
-     * @throws Mage_Core_Model_Store_Exception
      */
     public function isAdminArea()
     {
@@ -295,10 +291,6 @@ class Bolt_Boltpay_Model_Payment extends Mage_Payment_Model_Method_Abstract
             $paymentInfo = $this->getInfoInstance();
             $order = $paymentInfo->getOrder();
 
-            if (!$order->canCreditmemo() || !($payment->getCreditmemo()->getInvoice()->canRefund())) {
-                $message = 'Impossible to issue a refund transaction on this invoice';
-                Mage::throwException($message);
-            }
             $transId = $payment->getAdditionalInformation('bolt_merchant_transaction_id');
             if ($transId == null) {
                 $message = 'Waiting for a transaction update from Bolt. Please retry after 60 seconds.';
@@ -483,8 +475,17 @@ class Bolt_Boltpay_Model_Payment extends Mage_Payment_Model_Method_Abstract
                 $payment->setShouldCloseParentTransaction(true);
 
                 if ($newTransactionStatus == self::TRANSACTION_AUTHORIZED) {
-                    $message = Mage::helper('boltpay')->__('BOLT notification: Payment transaction is authorized.');
+                    $reference = $payment->getAdditionalInformation('bolt_reference');
+                    if (empty($reference)) {
+                        throw new Exception("Payment missing expected transaction ID.");
+                    }
                     $order = $payment->getOrder();
+                    $payment->setTransactionId($reference);
+                    $transaction = $payment->addTransaction( Mage_Sales_Model_Order_Payment_Transaction::TYPE_AUTH );
+                    $transaction->setIsClosed(false);
+                    $payment->save();
+                    
+                    $message = Mage::helper('boltpay')->__('BOLT notification: Payment transaction is authorized.');
                     $order->setState( Mage_Sales_Model_Order::STATE_PROCESSING, true, $message );
                     $order->save();
                 } elseif ($newTransactionStatus == self::TRANSACTION_COMPLETED) {
@@ -684,9 +685,10 @@ class Bolt_Boltpay_Model_Payment extends Mage_Payment_Model_Method_Abstract
      * Generates either a partial or full invoice for the order.
      *
      * @param        $order Mage_Sales_Model_Order
-     * @param        $captureAmount The amount to invoice for
+     * @param        $captureAmount - The amount to invoice for
      *
      * @return Mage_Sales_Model_Order_Invoice   The order invoice
+     * @throws Exception
      */
     protected function createInvoice($order, $captureAmount) {
         if (isset($captureAmount)) {
@@ -700,6 +702,10 @@ class Bolt_Boltpay_Model_Payment extends Mage_Payment_Model_Method_Abstract
         return $order->prepareInvoice();
     }
 
+    /**
+     * @param $captureAmount
+     * @throws Exception
+     */
     protected function validateCaptureAmount($captureAmount) {
         if(!isset($captureAmount) || !is_numeric($captureAmount) || $captureAmount < 0) {
             Mage::helper('boltpay/bugsnag')->addBreadcrumb(
@@ -745,14 +751,13 @@ class Bolt_Boltpay_Model_Payment extends Mage_Payment_Model_Method_Abstract
 
     /**
      * @param mixed $data
-     * @return $this|Mage_Payment_Model_Info|void
+     * @return Bolt_Boltpay_Model_Payment
      * @throws Mage_Core_Exception
-     * @throws Mage_Core_Model_Store_Exception
      */
     public function assignData($data)
     {
-        if (!Mage::app()->getStore()->isAdmin()) {
-            return;
+        if (!$this->isAdminArea()) {
+            return $this;
         }
 
         $info = $this->getInfoInstance();
