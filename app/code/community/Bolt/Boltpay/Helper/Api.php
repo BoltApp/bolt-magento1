@@ -1126,7 +1126,12 @@ class Bolt_Boltpay_Helper_Api extends Bolt_Boltpay_Helper_Data
             return explode("|", $transaction->order->cart->display_id)[1];
         } else {
             /////////////////////////////////////////////////////////////////
-            // here we deal with older versus newer version
+            // Here we address legacy hook format for backward compatibility
+            // When placed into production in a merchant that previously used the old format,
+            // all their prior orders will have to be accounted for as there are potential
+            // hooks like refund, cancel, or order approval that will still be presented in 
+            // the old format.  
+            //
             // For $transaction->order->cart->order_reference
             //  - older version stores the immutable quote ID here, and parent ID in getParentQuoteId()
             //  - newer version stores the parent ID here, and immutable quote ID in getParentQuoteId()
