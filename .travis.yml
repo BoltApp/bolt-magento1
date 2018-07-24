@@ -52,7 +52,7 @@ script:
   - export PHPUNIT_ENVIRONMENT=$PHPUNIT_ENVIRONMENT
   - php ${PHPUNIT_PHAR} -c tests/unit/phpunit.xml
 #   Integration tests
-  - git clone https://${INTEGRATION_TESTS_TOKEN}@github.com/BoltApp/integration-tests.git/
+  - git clone --single-branch -b fb-ak-run-by-folder-POC https://${INTEGRATION_TESTS_TOKEN}@github.com/BoltApp/integration-tests.git/
   - cd integration-tests
   - npm install
-  - xvfb-run npm run test-checkout
+  - xvfb-run npm run test-magento1
