@@ -77,17 +77,19 @@ class Bolt_Boltpay_Adminhtml_Sales_Order_CreateController extends Mage_Adminhtml
      */
     public function saveAction()
     {
-        $boltReference = $this->getRequest()->getPost('bolt_reference');
+        // some versions of Magento store the shipping method at the top level of the $_POST array
+        if ($this->getRequest()->getPost('shipping_method')) {
+            $_POST['order']['shipping_method'] = $this->getRequest()->getPost('shipping_method');
+        }
+
+        // We must assure that Magento knows to recalculate the shipping
+        $_POST['collect_shipping_rates'] = 1;
 
         /////////////////////////////////////////////////////////////////////////////
         // If there is no bolt reference, then it indicates this is another payment
-        // method.  In this case, we differ to Magento to handle this after assuring
-        // that the shipping method is set in a compatible format across several
-        // Magento versions.
+        // method.  In this case, we differ to Magento to handle this
         /////////////////////////////////////////////////////////////////////////////
-        if ($this->getRequest()->getPost('shipping_method')) {
-            $_POST['order[shipping_method]'] = $this->getRequest()->getPost('shipping_method');
-        }
+        $boltReference = $this->getRequest()->getPost('bolt_reference');
 
         if (!$boltReference) {
             parent::saveAction();
@@ -134,9 +136,6 @@ class Bolt_Boltpay_Adminhtml_Sales_Order_CreateController extends Mage_Adminhtml
             $orderCreateModel = $this->_getOrderCreateModel()
                 ->setIsValidate(true)
                 ->importPostData($orderData);
-
-            $this->_getQuote()->getShippingAddress()->setCollectShippingRates(true)->collectShippingRates()->save();
-            $this->_getQuote()->setTotalsCollectedFlag(false)->collectTotals();
 
             $order =  $orderCreateModel->createOrder();
 
@@ -190,4 +189,5 @@ class Bolt_Boltpay_Adminhtml_Sales_Order_CreateController extends Mage_Adminhtml
             $this->_redirect('*/*/');
         }
     }
+
 }
