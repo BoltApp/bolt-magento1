@@ -302,7 +302,6 @@ class Bolt_Boltpay_Helper_Data extends Mage_Core_Helper_Abstract
 
     /**
      * @param $item
-     * @param $productMediaConfig
      *
      * @return string
      */
