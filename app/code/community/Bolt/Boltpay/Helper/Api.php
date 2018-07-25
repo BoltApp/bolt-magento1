@@ -587,6 +587,8 @@ class Bolt_Boltpay_Helper_Api extends Bolt_Boltpay_Helper_Data
      */
     public function buildCart($quote, $items, $multipage)
     {
+        /** @var Bolt_Boltpay_Helper_Data $boltHelper */
+        $boltHelper = Mage::helper('boltpay');
 
         ///////////////////////////////////////////////////////////////////////////////////
         // Get quote totals
@@ -619,22 +621,20 @@ class Bolt_Boltpay_Helper_Api extends Bolt_Boltpay_Helper_Data
         /***************************************************/
 
         $calculated_total = 0;
-        Mage::helper('boltpay')->collectTotals($quote)->save();
+        $boltHelper->collectTotals($quote)->save();
 
         $totals = $quote->getTotals();
-        //Mage::log(var_export(array_keys($totals), 1), null, 'bolt.log');
         ///////////////////////////////////////////////////////////////////////////////////
 
         ///////////////////////////////////////////////////////////
         // Generate base cart data, quote, order and items related.
         ///////////////////////////////////////////////////////////
-        $productMediaConfig = Mage::getModel('catalog/product_media_config');
         $cartSubmissionData = array(
             'order_reference' => $quote->getId(),
             'display_id'      => $quote->getReservedOrderId(),
             'items'           => array_map(
-                function ($item) use ($quote, $productMediaConfig, &$calculatedTotal) {
-                    $imageUrl = $productMediaConfig->getMediaUrl($item->getProduct()->getThumbnail());
+                function ($item) use ($quote, &$calculatedTotal, $boltHelper) {
+                    $imageUrl = $boltHelper->getItemImageUrl($item);
                     $product   = Mage::getModel('catalog/product')->load($item->getProductId());
                     $type = $product->getTypeId() == 'virtual' ? self::ITEM_TYPE_DIGITAL : self::ITEM_TYPE_PHYSICAL;
 

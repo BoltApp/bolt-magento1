@@ -83,8 +83,9 @@ class Bolt_Boltpay_Helper_ApiTest extends PHPUnit_Framework_TestCase
         $item = $_items[0];
         $product = $item->getProduct();
 
-        $productMediaConfig = Mage::getModel('catalog/product_media_config');
-        $imageUrl = $productMediaConfig->getMediaUrl($product->getThumbnail());
+        /** @var Bolt_Boltpay_Helper_Data $helper */
+        $helper = Mage::helper('boltpay');
+        $imageUrl = $helper->getItemImageUrl($item);
 
         $expected = array (
           'order_reference' => $_quote->getId(),
