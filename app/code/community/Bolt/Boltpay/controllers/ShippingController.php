@@ -76,7 +76,8 @@ class Bolt_Boltpay_ShippingController extends Mage_Core_Controller_Front_Action
                 'telephone' => $shippingAddress->phone
             );
 
-            $quoteId = $requestData->cart->order_reference;
+            $mockTransaction = (object) array("order" => $requestData );
+            $quoteId = $boltHelper->getImmutableQuoteIdFromTransaction($mockTransaction);
 
             /* @var Mage_Sales_Model_Quote $quote */
             $quote = Mage::getModel('sales/quote')->loadByIdWithoutStore($quoteId);

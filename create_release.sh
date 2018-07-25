@@ -10,6 +10,7 @@ rm -fr /tmp/bolt_magento_plugin
 
 mkdir /tmp/bolt_magento_plugin
 cp -r app /tmp/bolt_magento_plugin/.
+cp -r js /tmp/bolt_magento_plugin/.
 cp -r lib /tmp/bolt_magento_plugin/.
 cp -r skin /tmp/bolt_magento_plugin/.
 cp CHANGELOG.md /tmp/bolt_magento_plugin/.

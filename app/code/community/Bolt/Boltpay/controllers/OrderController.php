@@ -30,15 +30,18 @@ class Bolt_Boltpay_OrderController extends Mage_Core_Controller_Front_Action
     public function saveAction()
     {
         try {
+
             if (!$this->getRequest()->isAjax()) {
                 Mage::throwException("OrderController::saveAction called with a non AJAX call");
             }
 
+            /** @var Bolt_Boltpay_Helper_Api $boltHelper */
             $boltHelper = Mage::helper('boltpay/api');
 
             $checkoutSession = Mage::getSingleton('checkout/session');
 
             $reference = $this->getRequest()->getPost('reference');
+            $transaction = $boltHelper->fetchTransaction($reference);
 
             Mage::helper('boltpay/bugsnag')->addBreadcrumb(
                 array(
@@ -51,19 +54,16 @@ class Bolt_Boltpay_OrderController extends Mage_Core_Controller_Front_Action
             );
 
             //////////////////////////////////////////////////////////
-            // Check for existing order with reserved ID in
+            // Check for existing order by order reference in
             // case webhooks beat this to the punch.  If the webhooks
             // have already created the order, we don't need to do anything
             // besides returning 200 OK, which happens automatically
             /////////////////////////////////////////////////////////
-            $reservedOrderId = Mage::getSingleton('core/session')->getReservedOrderId();
-
-            /* @var Mage_Sales_Model_Order $order */
-            $order = Mage::getModel('sales/order')->loadByIncrementId($reservedOrderId);
+            $order = $boltHelper->getOrderByQuoteId($boltHelper->getImmutableQuoteIdFromTransaction($transaction));
 
             if ($order->isObjectNew()) {
                 $sessionQuote = $checkoutSession->getQuote();
-                $boltHelper->createOrder($reference, $sessionQuote->getId(), true);
+                $boltHelper->createOrder($reference, $sessionQuote->getId(), true, $transaction);
             }
 
         } catch (Exception $e) {
@@ -76,7 +76,7 @@ class Bolt_Boltpay_OrderController extends Mage_Core_Controller_Front_Action
      * Locks and unlocks cart.  This is to be called by the Bolt server corresponding to the
      * opening and the closing of the Bolt modal.
      */
-    public function lockcartAction() 
+    public function lockcartAction()
     {
         ////////////////////////////////////////////////////////////////////////
         // To be uncommented once the lock cart endpoint has been implemented
