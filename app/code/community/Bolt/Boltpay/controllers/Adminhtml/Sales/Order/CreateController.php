@@ -78,7 +78,6 @@ class Bolt_Boltpay_Adminhtml_Sales_Order_CreateController extends Mage_Adminhtml
      */
     public function saveAction()
     {
-        $this->_normalizeOrderData();
 
         /////////////////////////////////////////////////////////////////////////////
         // If there is no bolt reference, then it indicates this is another payment
@@ -86,8 +85,23 @@ class Bolt_Boltpay_Adminhtml_Sales_Order_CreateController extends Mage_Adminhtml
         /////////////////////////////////////////////////////////////////////////////
         $boltReference = $this->getRequest()->getPost('bolt_reference');
         if (!$boltReference) {
+            $this->_normalizeOrderData();
             parent::saveAction();
             return;
+        } else {
+            ///////////////////////////////////////////////////
+            /// We must use the immutable quote to create
+            /// this order for subsequent webhooks to succeed.
+            ///////////////////////////////////////////////////
+            /** @var Bolt_Boltpay_Helper_Api $boltHelper */
+            $boltHelper = Mage::helper('boltpay/api');
+            $transaction = $boltHelper->fetchTransaction($boltReference);
+
+            $immutableQuoteId = $boltHelper->getImmutableQuoteIdFromTransaction($transaction);
+            $this->_getSession()->setQuoteId($immutableQuoteId);
+            ///////////////////////////////////////////////////
+
+            $this->_normalizeOrderData();
         }
         /////////////////////////////////////////////////////////////////////////////
 
@@ -100,17 +114,6 @@ class Bolt_Boltpay_Adminhtml_Sales_Order_CreateController extends Mage_Adminhtml
         Mage::getSingleton('core/session')->setWasCreatedByHook(false);
         //////////////////////////////////////////////////////////////
 
-        ///////////////////////////////////////////////////
-        /// We must use the immutable quote to create
-        /// this order for subsequent webhooks to succeed.
-        ///////////////////////////////////////////////////
-        /** @var Bolt_Boltpay_Helper_Api $boltHelper */
-        $boltHelper = Mage::helper('boltpay/api');
-        $transaction = $boltHelper->fetchTransaction($boltReference);
-
-        $immutableQuoteId = $boltHelper->getImmutableQuoteIdFromTransaction($transaction);
-        $this->_getSession()->setQuoteId($immutableQuoteId);
-        ///////////////////////////////////////////////////
 
         try {
             $this->_processActionData('save');
