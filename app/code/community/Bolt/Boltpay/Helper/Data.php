@@ -299,4 +299,23 @@ class Bolt_Boltpay_Helper_Data extends Mage_Core_Helper_Abstract
 
         return ($checkoutType === Bolt_Boltpay_Block_Checkout_Boltpay::CHECKOUT_TYPE_ADMIN) ? '' : $configValue;
     }
+
+    /**
+     * @param $item
+     * @param $productMediaConfig
+     *
+     * @return string
+     */
+    public function getItemImageUrl($item)
+    {
+        /** @var Mage_Catalog_Helper_Image $imageHelper */
+        $imageHelper = Mage::helper('catalog/image');
+
+        /** @var Mage_Catalog_Model_Product $_product */
+        $_product = $item->getProduct();
+
+        $image = $imageHelper->init($_product, 'thumbnail', $_product->getThumbnail());
+
+        return (string) $image;
+    }
 }
