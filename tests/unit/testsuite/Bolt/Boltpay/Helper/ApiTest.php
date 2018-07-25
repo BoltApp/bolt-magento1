@@ -78,6 +78,7 @@ class Bolt_Boltpay_Helper_ApiTest extends PHPUnit_Framework_TestCase
         $cart = $this->testHelper->addProduct(self::$productId, 2);
 
         $_quote = $cart->getQuote();
+        $_quote->reserveOrderId();
         $_items = $_quote->getAllItems();
         $_multipage = true;
         $item = $_items[0];
@@ -88,26 +89,26 @@ class Bolt_Boltpay_Helper_ApiTest extends PHPUnit_Framework_TestCase
         $imageUrl = $helper->getItemImageUrl($item);
 
         $expected = array (
-          'order_reference' => $_quote->getId(),
-          'display_id' => NULL,
-          'items' =>
-          array (
-            0 =>
-            array (
-              'reference' => $_quote->getId(),
-              'image_url' => $imageUrl,
-              'name' => $item->getName(),
-              'sku' => $item->getSku(),
-              'description' => substr($product->getDescription(), 0, 8182) ?: '',
-              'total_amount' => round($item->getCalculationPrice() * 100 * $item->getQty()),
-              'unit_price' => round($item->getCalculationPrice() * 100),
-              'quantity' => $item->getQty(),
-              'type' => 'physical'
-            ),
-          ),
-          'currency' => $_quote->getQuoteCurrencyCode(),
-          'discounts' => array (),
-          'total_amount' => round($_quote->getSubtotal() * 100),
+            'order_reference' => $_quote->getParentQuoteId(),
+            'display_id' => $_quote->getReservedOrderId()."|".$_quote->getId(),
+            'items' =>
+                array (
+                    0 =>
+                        array (
+                            'reference' => $_quote->getId(),
+                            'image_url' => $imageUrl,
+                            'name' => $item->getName(),
+                            'sku' => $item->getSku(),
+                            'description' => substr($product->getDescription(), 0, 8182) ?: '',
+                            'total_amount' => round($item->getCalculationPrice() * 100 * $item->getQty()),
+                            'unit_price' => round($item->getCalculationPrice() * 100),
+                            'quantity' => $item->getQty(),
+                            'type' => 'physical'
+                        ),
+                ),
+            'currency' => $_quote->getQuoteCurrencyCode(),
+            'discounts' => array (),
+            'total_amount' => round($_quote->getSubtotal() * 100),
         );
 
         $result = $this->currentMock->buildCart($_quote, $_items, $_multipage);

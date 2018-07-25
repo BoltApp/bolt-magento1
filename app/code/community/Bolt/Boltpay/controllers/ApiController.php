@@ -65,7 +65,7 @@ class Bolt_Boltpay_ApiController extends Mage_Core_Controller_Front_Action
             $boltHelperBase::$fromHooks = true;
 
             $transaction = $boltHelper->fetchTransaction($reference);
-            $quoteId = $transaction->order->cart->order_reference;
+            $quoteId = $boltHelper->getImmutableQuoteIdFromTransaction($transaction);
 
             $order =  $boltHelper->getOrderByQuoteId($quoteId);
 
