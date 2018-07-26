@@ -193,9 +193,10 @@ class Bolt_Boltpay_Adminhtml_Sales_Order_CreateController extends Mage_Adminhtml
 
     /**
      * Some versions of Magento store post data for the form with slightly different names
-     * and slightly different formats.  Over several ajax calls, and several state changes, both in
-     * the session data and persisted data, This method normalizes it here for the underlying
-     * Magento code to handle our data properly
+     * and slightly different formats.  Also, over several ajax calls, and several state changes,
+     * both in the session data and persisted data, the format of the order data changes.
+     * This method normalizes it to the expected format for underlying Magento code to handle our
+     * data properly
      */
     protected function _normalizeOrderData() {
 
