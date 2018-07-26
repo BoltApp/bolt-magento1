@@ -35,7 +35,7 @@
               <sort_order>1</sort_order>
               <show_in_default>1</show_in_default>
               <show_in_website>1</show_in_website>
-              <show_in_store>0</show_in_store>
+              <show_in_store>1</show_in_store>
             </active>
             <test translate="label">
               <label>Sandbox Mode</label>
@@ -44,7 +44,7 @@
               <sort_order>2</sort_order>
               <show_in_default>1</show_in_default>
               <show_in_website>1</show_in_website>
-              <show_in_store>0</show_in_store>
+              <show_in_store>1</show_in_store>
             </test>
             <auto_capture translate="label">
               <label>Automatic Capture Mode</label>
@@ -54,7 +54,7 @@
               <sort_order>3</sort_order>
               <show_in_default>1</show_in_default>
               <show_in_website>1</show_in_website>
-              <show_in_store>0</show_in_store>
+              <show_in_store>1</show_in_store>
             </auto_capture>
 
             <api_key translate="label">
@@ -64,7 +64,7 @@
               <sort_order>10</sort_order>
               <show_in_default>1</show_in_default>
               <show_in_website>1</show_in_website>
-              <show_in_store>0</show_in_store>
+              <show_in_store>1</show_in_store>
             </api_key>
             <publishable_key_onepage translate="label">
               <label> Publishable Key - One Page Checkout</label>
@@ -72,7 +72,7 @@
               <sort_order>11</sort_order>
               <show_in_default>1</show_in_default>
               <show_in_website>1</show_in_website>
-              <show_in_store>0</show_in_store>
+              <show_in_store>1</show_in_store>
             </publishable_key_onepage>
             <publishable_key_multipage translate="label">
               <label> Publishable Key - Multi-Page Checkout</label>
@@ -80,7 +80,7 @@
               <sort_order>12</sort_order>
               <show_in_default>1</show_in_default>
               <show_in_website>1</show_in_website>
-              <show_in_store>0</show_in_store>
+              <show_in_store>1</show_in_store>
             </publishable_key_multipage>
             <publishable_key_admin translate="label">
               <label> Publishable Key - Backoffice</label>
@@ -88,7 +88,7 @@
               <sort_order>13</sort_order>
               <show_in_default>1</show_in_default>
               <show_in_website>1</show_in_website>
-              <show_in_store>0</show_in_store>
+              <show_in_store>1</show_in_store>
             </publishable_key_admin>
             <!--
                 The Bolt Signing Secret Key configuration, used to verify web hook request signature.
@@ -100,7 +100,7 @@
               <sort_order>15</sort_order>
               <show_in_default>1</show_in_default>
               <show_in_website>1</show_in_website>
-              <show_in_store>0</show_in_store>
+              <show_in_store>1</show_in_store>
             </signing_key>
 
             <ipstack_key translate="label">
@@ -115,7 +115,7 @@
               <sort_order>16</sort_order>
               <show_in_default>1</show_in_default>
               <show_in_website>1</show_in_website>
-              <show_in_store>0</show_in_store>
+              <show_in_store>1</show_in_store>
             </ipstack_key>
 
             <title translate="label">
@@ -124,7 +124,7 @@
               <sort_order>20</sort_order>
               <show_in_default>1</show_in_default>
               <show_in_website>1</show_in_website>
-              <show_in_store>0</show_in_store>
+              <show_in_store>1</show_in_store>
             </title>
             <theme translate="label">
               <label>Button Theme</label>
@@ -133,7 +133,7 @@
               <sort_order>22</sort_order>
               <show_in_default>1</show_in_default>
               <show_in_website>1</show_in_website>
-              <show_in_store>0</show_in_store>
+              <show_in_store>1</show_in_store>
             </theme>
 
             <selectors translate="label">
@@ -143,7 +143,7 @@
               <sort_order>35</sort_order>
               <show_in_default>1</show_in_default>
               <show_in_website>1</show_in_website>
-              <show_in_store>0</show_in_store>
+              <show_in_store>1</show_in_store>
             </selectors>
 
             <selector_styles translate="label">
@@ -174,7 +174,7 @@
               <sort_order>36</sort_order>
               <show_in_default>1</show_in_default>
               <show_in_website>1</show_in_website>
-              <show_in_store>0</show_in_store>
+              <show_in_store>1</show_in_store>
             </selector_styles>
 
             <additional_css translate="label">
@@ -184,7 +184,7 @@
               <sort_order>38</sort_order>
               <show_in_default>1</show_in_default>
               <show_in_website>1</show_in_website>
-              <show_in_store>0</show_in_store>
+              <show_in_store>1</show_in_store>
             </additional_css>
 
             <successpage translate="label">
@@ -193,7 +193,7 @@
               <sort_order>40</sort_order>
               <show_in_default>1</show_in_default>
               <show_in_website>1</show_in_website>
-              <show_in_store>0</show_in_store>
+              <show_in_store>1</show_in_store>
             </successpage>
             
             <hide_on_checkout>
@@ -203,7 +203,7 @@
               <source_model>adminhtml/system_config_source_yesno</source_model>
               <show_in_default>1</show_in_default>
               <show_in_website>1</show_in_website>
-              <show_in_store>0</show_in_store>
+              <show_in_store>1</show_in_store>
             </hide_on_checkout>
 
             <disable_complete_authorize translate="label">
@@ -213,7 +213,7 @@
               <sort_order>46</sort_order>
               <show_in_default>1</show_in_default>
               <show_in_website>1</show_in_website>
-              <show_in_store>0</show_in_store>
+              <show_in_store>1</show_in_store>
             </disable_complete_authorize>
             
             <enable_merchant_scoped_account translate="label">
@@ -223,7 +223,7 @@
               <sort_order>48</sort_order>
               <show_in_default>1</show_in_default>
               <show_in_website>1</show_in_website>
-              <show_in_store>0</show_in_store>
+              <show_in_store>1</show_in_store>
             </enable_merchant_scoped_account>
 
             <allow_po_box translate="label">
@@ -233,7 +233,7 @@
               <sort_order>49</sort_order>
               <show_in_default>1</show_in_default>
               <show_in_website>1</show_in_website>
-              <show_in_store>0</show_in_store>
+              <show_in_store>1</show_in_store>
             </allow_po_box>
 
             <skip_payment translate="label">
@@ -244,7 +244,7 @@
               <sort_order>50</sort_order>
               <show_in_default>1</show_in_default>
               <show_in_website>1</show_in_website>
-              <show_in_store>0</show_in_store>
+              <show_in_store>1</show_in_store>
             </skip_payment>
 
             <allowspecific translate="label">
@@ -254,7 +254,7 @@
               <source_model>adminhtml/system_config_source_payment_allspecificcountries</source_model>
               <show_in_default>1</show_in_default>
               <show_in_website>1</show_in_website>
-              <show_in_store>0</show_in_store>
+              <show_in_store>1</show_in_store>
               <depends><skip_payment>0</skip_payment></depends>
             </allowspecific>
             <specificcountry translate="label">
@@ -264,7 +264,7 @@
               <source_model>adminhtml/system_config_source_country</source_model>
               <show_in_default>1</show_in_default>
               <show_in_website>1</show_in_website>
-              <show_in_store>0</show_in_store>
+              <show_in_store>1</show_in_store>
               <depends><skip_payment>0</skip_payment></depends>
             </specificcountry>
             <check translate="label">
@@ -281,7 +281,7 @@ with checkout at this point. This function should return a boolean.
               <frontend_type>textarea</frontend_type>
               <show_in_default>1</show_in_default>
               <show_in_website>1</show_in_website>
-              <show_in_store>0</show_in_store>
+              <show_in_store>1</show_in_store>
               <sort_order>100</sort_order>
             </check>
             <on_checkout_start translate="label">
@@ -296,7 +296,7 @@ This function is called after the checkout form is presented to the user.
               <frontend_type>textarea</frontend_type>
               <show_in_default>1</show_in_default>
               <show_in_website>1</show_in_website>
-              <show_in_store>0</show_in_store>
+              <show_in_store>1</show_in_store>
               <sort_order>101</sort_order>
             </on_checkout_start>
             <on_shipping_details_complete translate="label">
@@ -312,7 +312,7 @@ This is applicable only to multi-step checkout.
               <frontend_type>textarea</frontend_type>
               <show_in_default>1</show_in_default>
               <show_in_website>1</show_in_website>
-              <show_in_store>0</show_in_store>
+              <show_in_store>1</show_in_store>
               <sort_order>102</sort_order>
             </on_shipping_details_complete>
             <on_shipping_options_complete translate="label">
@@ -328,7 +328,7 @@ This is applicable only to multi-step checkout.
               <frontend_type>textarea</frontend_type>
               <show_in_default>1</show_in_default>
               <show_in_website>1</show_in_website>
-              <show_in_store>0</show_in_store>
+              <show_in_store>1</show_in_store>
               <sort_order>103</sort_order>
             </on_shipping_options_complete>
             <on_payment_submit translate="label">
@@ -343,7 +343,7 @@ This function is called after the user clicks the pay button.
               <frontend_type>textarea</frontend_type>
               <show_in_default>1</show_in_default>
               <show_in_website>1</show_in_website>
-              <show_in_store>0</show_in_store>
+              <show_in_store>1</show_in_store>
               <sort_order>104</sort_order>
             </on_payment_submit>
             <success translate="label">
@@ -358,7 +358,7 @@ This function is called when the Bolt checkout transaction is successful.
               <frontend_type>textarea</frontend_type>
               <show_in_default>1</show_in_default>
               <show_in_website>1</show_in_website>
-              <show_in_store>0</show_in_store>
+              <show_in_store>1</show_in_store>
               <sort_order>105</sort_order>
             </success>
             <close translate="label">
@@ -373,7 +373,7 @@ This function is called when the Bolt checkout modal is closed.
               <frontend_type>textarea</frontend_type>
               <show_in_default>1</show_in_default>
               <show_in_website>1</show_in_website>
-              <show_in_store>0</show_in_store>
+              <show_in_store>1</show_in_store>
               <sort_order>106</sort_order>
             </close>
             <use_javascript_in_admin translate="label">
@@ -384,7 +384,7 @@ This function is called when the Bolt checkout modal is closed.
               <sort_order>111</sort_order>
               <show_in_default>1</show_in_default>
               <show_in_website>1</show_in_website>
-              <show_in_store>0</show_in_store>
+              <show_in_store>1</show_in_store>
             </use_javascript_in_admin>
             <add_button_everywhere translate="label">
               <label>Add Bolt Button Everywhere</label>
@@ -394,7 +394,7 @@ This function is called when the Bolt checkout modal is closed.
               <sort_order>120</sort_order>
               <show_in_default>1</show_in_default>
               <show_in_website>1</show_in_website>
-              <show_in_store>0</show_in_store>
+              <show_in_store>1</show_in_store>
             </add_button_everywhere>
             <sort_order translate="label">
               <label>Sort Order</label>
@@ -413,7 +413,7 @@ This function is called when the Bolt checkout modal is closed.
               <sort_order>151</sort_order>
               <show_in_default>1</show_in_default>
               <show_in_website>1</show_in_website>
-              <show_in_store>0</show_in_store>
+              <show_in_store>1</show_in_store>
               <comment> </comment>
             </checkapi>
           </fields>
