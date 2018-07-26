@@ -28,6 +28,9 @@
  */
 class Bolt_Boltpay_Helper_Api extends Bolt_Boltpay_Helper_Data
 {
+    const ITEM_TYPE_PHYSICAL = 'physical';
+    const ITEM_TYPE_DIGITAL  = 'digital';
+
     protected $curlHeaders;
     protected $curlBody;
 
@@ -161,9 +164,8 @@ class Bolt_Boltpay_Helper_Api extends Bolt_Boltpay_Helper_Data
             }
 
             $transaction = $transaction ?: $this->fetchTransaction($reference);
-            $transactionStatus = $transaction->status;
 
-            $immutableQuoteId = $transaction->order->cart->order_reference;
+            $immutableQuoteId = $this->getImmutableQuoteIdFromTransaction($transaction);
 
             /* @var Mage_Sales_Model_Quote $immutableQuote */
             $immutableQuote = Mage::getModel('sales/quote')->loadByIdWithoutStore($immutableQuoteId);
@@ -190,8 +192,10 @@ class Bolt_Boltpay_Helper_Api extends Bolt_Boltpay_Helper_Data
             // check if this order is currently being proccessed.  If so, throw exception
             /* @var Mage_Sales_Model_Quote $parentQuote */
             $parentQuote = Mage::getModel('sales/quote')->loadByIdWithoutStore($immutableQuote->getParentQuoteId());
-            if ($parentQuote->isEmpty() || !$parentQuote->getIsActive()) {
-                throw new Exception("The quote ". $immutableQuote->getParentQuoteId() ." is currently being processed or has been processed.");
+            if ($parentQuote->isEmpty() ) {
+                throw new Exception("The parent quote ". $immutableQuote->getParentQuoteId() ." is unexpectedly missing.");
+            } else if (!$parentQuote->getIsActive() ) {
+                throw new Exception("The parent quote ". $immutableQuote->getParentQuoteId() ." is currently being processed or has been processed.");
             } else {
                 $parentQuote->setIsActive(false)->save();
             }
@@ -336,7 +340,6 @@ class Bolt_Boltpay_Helper_Api extends Bolt_Boltpay_Helper_Data
 
         Mage::dispatchEvent('bolt_boltpay_save_order_after', array('order'=>$order, 'quote'=>$immutableQuote, 'transaction' => $transaction));
 
-        $parentQuote = Mage::getModel('sales/quote')->loadByIdWithoutStore($immutableQuote->getParentQuoteId());
         if ($sessionQuoteId) {
             $checkoutSession = Mage::getSingleton('checkout/session');
             $checkoutSession
@@ -349,12 +352,20 @@ class Bolt_Boltpay_Helper_Api extends Bolt_Boltpay_Helper_Data
                 ->setRedirectUrl('')
                 ->setLastRealOrderId($order->getIncrementId());
         }
-        // Close out session by deleting the parent quote and deactivating the immutable quote so that it can no
-        // longer be used.
-        /* @var Mage_Sales_Model_Quote $parentQuote */
+
+        ///////////////////////////////////////////////////////
+        // Close out session by
+        // 1.) deactivating the immutable quote so it can no longer be used
+        // 2.) assigning the immutable quote as the parent of its parent quote
+        //
+        // This creates a circular reference so that we can use the parent quote
+        // to look up the used immutable quote
+        ///////////////////////////////////////////////////////
         $immutableQuote->setIsActive(false)
             ->save();
-        $parentQuote->delete();
+        $parentQuote->setParentQuoteId($immutableQuote->getId())
+            ->save();
+        ///////////////////////////////////////////////////////
 
         return $order;
     }
@@ -584,6 +595,8 @@ class Bolt_Boltpay_Helper_Api extends Bolt_Boltpay_Helper_Data
      */
     public function buildCart($quote, $items, $multipage)
     {
+        /** @var Bolt_Boltpay_Helper_Data $boltHelper */
+        $boltHelper = Mage::helper('boltpay');
 
         ///////////////////////////////////////////////////////////////////////////////////
         // Get quote totals
@@ -616,23 +629,23 @@ class Bolt_Boltpay_Helper_Api extends Bolt_Boltpay_Helper_Data
         /***************************************************/
 
         $calculated_total = 0;
-        Mage::helper('boltpay')->collectTotals($quote)->save();
+        $boltHelper->collectTotals($quote)->save();
 
         $totals = $quote->getTotals();
-        //Mage::log(var_export(array_keys($totals), 1), null, 'bolt.log');
         ///////////////////////////////////////////////////////////////////////////////////
 
         ///////////////////////////////////////////////////////////
         // Generate base cart data, quote, order and items related.
         ///////////////////////////////////////////////////////////
-        $productMediaConfig = Mage::getModel('catalog/product_media_config');
         $cartSubmissionData = array(
-            'order_reference' => $quote->getId(),
-            'display_id'      => $quote->getReservedOrderId(),
+            'order_reference' => $quote->getParentQuoteId(),
+            'display_id'      => $quote->getReservedOrderId().'|'.$quote->getId(),
             'items'           => array_map(
-                function ($item) use ($quote, $productMediaConfig, &$calculatedTotal) {
-                    $imageUrl = $productMediaConfig->getMediaUrl($item->getProduct()->getThumbnail());
+                function ($item) use ($quote, &$calculatedTotal, $boltHelper) {
+                    $imageUrl = $boltHelper->getItemImageUrl($item);
                     $product   = Mage::getModel('catalog/product')->load($item->getProductId());
+                    $type = $product->getTypeId() == 'virtual' ? self::ITEM_TYPE_DIGITAL : self::ITEM_TYPE_PHYSICAL;
+
                     $calculatedTotal += round($item->getPrice() * 100 * $item->getQty());
                     return array(
                         'reference'    => $quote->getId(),
@@ -642,7 +655,8 @@ class Bolt_Boltpay_Helper_Api extends Bolt_Boltpay_Helper_Data
                         'description'  => substr($product->getDescription(), 0, 8182) ?: '',
                         'total_amount' => round($item->getCalculationPrice() * 100 * $item->getQty()),
                         'unit_price'   => round($item->getCalculationPrice() * 100),
-                        'quantity'     => $item->getQty()
+                        'quantity'     => $item->getQty(),
+                        'type'         => $type
                     );
                 }, $items
             ),
@@ -1096,5 +1110,57 @@ class Bolt_Boltpay_Helper_Api extends Bolt_Boltpay_Helper_Data
         return $orderCollection
                 ->addFieldToFilter('quote_id', $quoteId)
                 ->getFirstItem();
+    }
+
+    /**
+     * Gets the immutable quote id stored in the Bolt transaction.  This is backwards
+     * compatible with older versions of the plugin and is suitable for transition
+     * installations.
+     *
+     * @param object $transaction  The Bolt transaction as a php object
+     *
+     * @return string  The immutable quote id
+     */
+    public function getImmutableQuoteIdFromTransaction( $transaction ) {
+        if (strpos($transaction->order->cart->display_id, '|')) {
+            return explode("|", $transaction->order->cart->display_id)[1];
+        } else {
+            /////////////////////////////////////////////////////////////////
+            // Here we address legacy hook format for backward compatibility
+            // When placed into production in a merchant that previously used the old format,
+            // all their prior orders will have to be accounted for as there are potential
+            // hooks like refund, cancel, or order approval that will still be presented in 
+            // the old format.  
+            //
+            // For $transaction->order->cart->order_reference
+            //  - older version stores the immutable quote ID here, and parent ID in getParentQuoteId()
+            //  - newer version stores the parent ID here, and immutable quote ID in getParentQuoteId()
+            // So, we take the max of getParentQuoteId() and $transaction->order->cart->order_reference
+            // which will be the immutable quote ID
+            /////////////////////////////////////////////////////////////////
+            $potentialQuoteId = (int) $transaction->order->cart->order_reference;
+            /** @var Mage_Sales_Model_Quote $potentialQuote */
+            $potentialQuote = Mage::getModel('sales/quote')->loadByIdWithoutStore($potentialQuoteId);
+
+            $associatedQuoteId = (int) $potentialQuote->getParentQuoteId();
+
+            return max($potentialQuoteId, $associatedQuoteId);
+        }
+
+    }
+
+    /**
+     * Gets the increment id stored in the Bolt transaction.  This is backwards
+     * compatible with older versions of the plugin and is suitable for transition
+     * installations.
+     *
+     * @param object $transaction  The Bolt transaction as a php object
+     *
+     * @return string  The order increment id
+     */
+    public function getIncrementIdFromTransaction( $transaction ) {
+        return (strpos($transaction->order->cart->display_id, '|'))
+            ? explode("|", $transaction->order->cart->display_id)[0]
+            : $transaction->order->cart->display_id;
     }
 }
