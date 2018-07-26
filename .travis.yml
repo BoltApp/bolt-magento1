@@ -1,4 +1,4 @@
-sudo: required
+sudo: enabled
 addons:
   chrome: stable
 
@@ -22,12 +22,12 @@ env:
 
 matrix:
   include:
-    - php: 5.5
-      env: PHPUNIT_PHAR=tests/unit/phpunit-4.8.36.phar MAGENTO_VERSION=magento-mirror-1.8.1.0
-    - php: 5.5
-      env: PHPUNIT_PHAR=tests/unit/phpunit-4.8.36.phar MAGENTO_VERSION=magento-mirror-1.9.3.6
-    - php: 5.6
-      env: PHPUNIT_PHAR=tests/unit/phpunit-5.7.9.phar MAGENTO_VERSION=magento-mirror-1.8.1.0
+#    - php: 5.5
+#      env: PHPUNIT_PHAR=tests/unit/phpunit-4.8.36.phar MAGENTO_VERSION=magento-mirror-1.8.1.0
+#    - php: 5.5
+#      env: PHPUNIT_PHAR=tests/unit/phpunit-4.8.36.phar MAGENTO_VERSION=magento-mirror-1.9.3.6
+#    - php: 5.6
+#      env: PHPUNIT_PHAR=tests/unit/phpunit-5.7.9.phar MAGENTO_VERSION=magento-mirror-1.8.1.0
     - php: 5.6
       env: PHPUNIT_PHAR=tests/unit/phpunit-5.7.9.phar MAGENTO_VERSION=magento-mirror-1.9.3.6
 
@@ -40,25 +40,17 @@ before_script:
   - if [ -n "$GITHUB_TOKEN" ]; then composer config github-oauth.github.com ${GITHUB_TOKEN}; fi;
   - if [ -n "INTEGRATION_TESTS_TOKEN" ]; then composer config github-oauth.github.com ${INTEGRATION_TESTS_TOKEN}; fi;
   - composer show -i
-  - apachectl testconfig
-  - cat /etc/hosts
+  - bash /home/travis/build/BoltApp/bolt-magento1/tests/scripts/apache_setup.sh
+  - bash /home/travis/build/BoltApp/bolt-magento1/tests/scripts/magento_install.sh
 
 script:
-  - bash /home/travis/build/BoltApp/bolt-magento1/tests/scripts/apache_setup.sh
-  - cd /home/travis/build/
-  - curl -O https://files.magerun.net/n98-magerun.phar
-  - chmod +x n98-magerun.phar
-  - php -d memroy_limit=512M n98-magerun.phar install --magentoVersionByName="${MAGENTO_VERSION}" --installationFolder="./magento" --dbHost=localhost --dbUser=root --dbName="$DB_NAME" --dbPass="" --installSampleData=no --useDefaultConfigParams=yes --baseUrl="${HOST_NAME}"
-  - php n98-magerun.phar config:set currency/options/base USD --root-dir ./magento/
-  - php n98-magerun.phar config:set currency/options/default USD --root-dir ./magento/
-  - php n98-magerun.phar config:set currency/options/allow USD --root-dir ./magento/
-  - cp -r magento/. BoltApp/bolt-magento1/
-  - cd BoltApp/bolt-magento1/
+  - cd /home/travis/build/BoltApp/bolt-magento1/
   - export PHPUNIT_ENVIRONMENT=$PHPUNIT_ENVIRONMENT
   - php ${PHPUNIT_PHAR} -c tests/unit/phpunit.xml
 #   Integration tests TODO remove single branch and run from master
+  - php /home/travis/build/BoltApp/bolt-magento1/tests/scripts/create_discounts.php
+  - php /home/travis/build/BoltApp/bolt-magento1/tests/scripts/create_products.php
   - git clone --single-branch -b fb-ak-run-by-folder-POC https://${INTEGRATION_TESTS_TOKEN}@github.com/BoltApp/integration-tests.git/
   - cd integration-tests
   - npm install
   - xvfb-run npm run test-magento1
-
