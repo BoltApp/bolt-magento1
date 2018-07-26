@@ -149,7 +149,7 @@ class Bolt_Boltpay_ApiController extends Mage_Core_Controller_Front_Action
                 return;
             }
 
-            $order = $boltHelper->createOrder($reference, $sessionQuoteId = null, $transaction);
+            $order = $boltHelper->createOrder($reference, $sessionQuoteId = null, false, $transaction);
 
             $this->getResponse()->setBody(
                 json_encode(
