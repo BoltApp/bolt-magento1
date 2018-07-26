@@ -77,9 +77,46 @@ class Bolt_Boltpay_Adminhtml_Sales_Order_CreateController extends Mage_Adminhtml
      */
     public function saveAction()
     {
+        // some versions of Magento store the shipping method at the top level of the $_POST array
+        if ($this->getRequest()->getPost('shipping_method')) {
+            $_POST['order']['shipping_method'] = $this->getRequest()->getPost('shipping_method');
+        }
+
+        // We must assure that Magento knows to recalculate the shipping
+        $_POST['collect_shipping_rates'] = 1;
+
+        /////////////////////////////////////////////////////////////////////////////
+        // If there is no bolt reference, then it indicates this is another payment
+        // method.  In this case, we differ to Magento to handle this
+        /////////////////////////////////////////////////////////////////////////////
         $boltReference = $this->getRequest()->getPost('bolt_reference');
+
+        if (!$boltReference) {
+            parent::saveAction();
+            return;
+        }
+        /////////////////////////////////////////////////////////////////////////////
+
+
+        //////////////////////////////////////////////////////////////
+        /// Set variables that will be used in the post order save
+        /// Observer event
+        //////////////////////////////////////////////////////////////
         Mage::getSingleton('core/session')->setBoltReference($boltReference);
         Mage::getSingleton('core/session')->setWasCreatedByHook(false);
+        //////////////////////////////////////////////////////////////
+
+        ///////////////////////////////////////////////////
+        /// We must use the immutable quote to create
+        /// this order for subsequent webhooks to succeed.
+        ///////////////////////////////////////////////////
+        /** @var Bolt_Boltpay_Helper_Api $boltHelper */
+        $boltHelper = Mage::helper('boltpay/api');
+        $transaction = $boltHelper->fetchTransaction($boltReference);
+
+        $immutableQuoteId = $boltHelper->getImmutableQuoteIdFromTransaction($transaction);
+        $this->_getSession()->setQuoteId($immutableQuoteId);
+        ///////////////////////////////////////////////////
 
         try {
             $this->_processActionData('save');
@@ -95,17 +132,25 @@ class Bolt_Boltpay_Adminhtml_Sales_Order_CreateController extends Mage_Adminhtml
             }
 
             $orderData = $this->getRequest()->getPost('order');
-            if ($this->getRequest()->getPost('shipping_method')) {
-                $orderData['shipping_method'] = $this->getRequest()->getPost('shipping_method');
-            }
+
             $orderCreateModel = $this->_getOrderCreateModel()
                 ->setIsValidate(true)
                 ->importPostData($orderData);
 
-            $this->_getQuote()->getShippingAddress()->setCollectShippingRates(true)->collectShippingRates()->save();
-            $this->_getQuote()->setTotalsCollectedFlag(false)->collectTotals();
-
             $order =  $orderCreateModel->createOrder();
+
+            ///////////////////////////////////////////////////////
+            // Close out session by
+            // 1.) deactivating the immutable quote so it can no longer be used
+            // 2.) assigning the immutable quote as the parent of its parent quote
+            // 3.) clearing the session
+            // 4.) redirecting to the created order page or order page depending on user permissions
+            //
+            // This creates a circular reference so that we can use the parent quote
+            // to look up the used immutable quote
+            ///////////////////////////////////////////////////////
+            $parentQuote = Mage::getModel('sales/quote')->loadByIdWithoutStore($this->_getSession()->getQuote()->getParentQuoteId());
+            $parentQuote->setParentQuoteId($immutableQuoteId)->save();
 
             $this->_getSession()->clear();
             Mage::getSingleton('adminhtml/session')->addSuccess($this->__('The order has been created.'));
@@ -114,6 +159,8 @@ class Bolt_Boltpay_Adminhtml_Sales_Order_CreateController extends Mage_Adminhtml
             } else {
                 $this->_redirect('*/sales_order/index');
             }
+            ///////////////////////////////////////////////////////
+
         } catch (Mage_Payment_Model_Info_Exception $e) {
             if ($paymentData['method'] == 'boltpay') {
                 Mage::helper('boltpay/bugsnag')->notifyException($e);
@@ -142,4 +189,5 @@ class Bolt_Boltpay_Adminhtml_Sales_Order_CreateController extends Mage_Adminhtml
             $this->_redirect('*/*/');
         }
     }
+
 }
