@@ -72,31 +72,42 @@ class Bolt_Boltpay_Adminhtml_Sales_Order_CreateController extends Mage_Adminhtml
         parent::loadBlockAction();
     }
 
+
     /**
      * Saving quote and create order.  We add the Bolt reference to the session
      */
     public function saveAction()
     {
-        // some versions of Magento store the shipping method at the top level of the $_POST array
-        if ($this->getRequest()->getPost('shipping_method')) {
-            $_POST['order']['shipping_method'] = $this->getRequest()->getPost('shipping_method');
-        }
-
-        // We must assure that Magento knows to recalculate the shipping
-        $_POST['collect_shipping_rates'] = 1;
 
         /////////////////////////////////////////////////////////////////////////////
+        // Case 1:
         // If there is no bolt reference, then it indicates this is another payment
         // method.  In this case, we differ to Magento to handle this
         /////////////////////////////////////////////////////////////////////////////
         $boltReference = $this->getRequest()->getPost('bolt_reference');
-
         if (!$boltReference) {
+            $this->_normalizeOrderData();  // We must re-normalize the data first
             parent::saveAction();
             return;
         }
         /////////////////////////////////////////////////////////////////////////////
+        
+        
+        ///////////////////////////////////////////////////
+        /// Case 2:
+        /// For Bolt orders, we must use the immutable quote to create
+        /// this order for subsequent webhooks to succeed.
+        ///////////////////////////////////////////////////
+        /** @var Bolt_Boltpay_Helper_Api $boltHelper */
+        $boltHelper = Mage::helper('boltpay/api');
+        $transaction = $boltHelper->fetchTransaction($boltReference);
 
+        $immutableQuoteId = $boltHelper->getImmutableQuoteIdFromTransaction($transaction);
+        $this->_getSession()->setQuoteId($immutableQuoteId);
+        
+        $this->_normalizeOrderData();
+        ///////////////////////////////////////////////////
+        
 
         //////////////////////////////////////////////////////////////
         /// Set variables that will be used in the post order save
@@ -106,17 +117,6 @@ class Bolt_Boltpay_Adminhtml_Sales_Order_CreateController extends Mage_Adminhtml
         Mage::getSingleton('core/session')->setWasCreatedByHook(false);
         //////////////////////////////////////////////////////////////
 
-        ///////////////////////////////////////////////////
-        /// We must use the immutable quote to create
-        /// this order for subsequent webhooks to succeed.
-        ///////////////////////////////////////////////////
-        /** @var Bolt_Boltpay_Helper_Api $boltHelper */
-        $boltHelper = Mage::helper('boltpay/api');
-        $transaction = $boltHelper->fetchTransaction($boltReference);
-
-        $immutableQuoteId = $boltHelper->getImmutableQuoteIdFromTransaction($transaction);
-        $this->_getSession()->setQuoteId($immutableQuoteId);
-        ///////////////////////////////////////////////////
 
         try {
             $this->_processActionData('save');
@@ -187,6 +187,67 @@ class Bolt_Boltpay_Adminhtml_Sales_Order_CreateController extends Mage_Adminhtml
             }
             $this->_getSession()->addException($e, $this->__('Order saving error: %s', $e->getMessage()));
             $this->_redirect('*/*/');
+        }
+    }
+
+
+    /**
+     * Some versions of Magento store post data for the form with slightly different names
+     * and slightly different formats.  Over several ajax calls, and several state changes, both in
+     * the session data and persisted data, This method normalizes it here for the underlying
+     * Magento code to handle our data properly
+     */
+    protected function _normalizeOrderData() {
+
+        if ($this->getRequest()->getPost('shipping_method')) {
+            $_POST['order']['shipping_method'] = $this->getRequest()->getPost('shipping_method');
+        }
+
+        $_POST['shipping_as_billing'] = @$_POST['shipping_as_billing'] ?: @$_POST['shipping_same_as_billing'];
+
+        // We must assure that Magento knows to recalculate the shipping
+        $_POST['collect_shipping_rates'] = 1;
+
+        /**
+         * Saving order data
+         */
+        if ($data = $this->getRequest()->getPost('order')) {
+            $this->_getOrderCreateModel()->importPostData($data);
+        }
+
+        /**
+         * init first billing address, need for virtual products
+         */
+        $this->_getOrderCreateModel()->getBillingAddress();
+
+        /**
+         * Flag for using billing address for shipping
+         */
+        if (!$this->_getOrderCreateModel()->getQuote()->isVirtual()) {
+            $syncFlag = $this->getRequest()->getPost('shipping_as_billing');
+            $shippingMethod = $this->_getOrderCreateModel()->getShippingAddress()->getShippingMethod();
+            if (is_null($syncFlag)
+                && $this->_getOrderCreateModel()->getShippingAddress()->getSameAsBilling()
+                && empty($shippingMethod)
+            ) {
+                $this->_getOrderCreateModel()->setShippingAsBilling(1);
+            } else {
+                $this->_getOrderCreateModel()->setShippingAsBilling((int)$syncFlag);
+            }
+        }
+
+        /**
+         * Change shipping address flag
+         */
+        if (!$this->_getOrderCreateModel()->getQuote()->isVirtual() && $this->getRequest()->getPost('reset_shipping')) {
+            $this->_getOrderCreateModel()->resetShippingMethod(true);
+        }
+
+        /**
+         * Forcibly collect shipping rates if the cart is not virtual
+         */
+        if (!$this->_getOrderCreateModel()->getQuote()->isVirtual()) {
+            $this->_getQuote()->getShippingAddress()->setCollectShippingRates(true)->collectShippingRates()->save();
         }
     }
 
