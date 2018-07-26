@@ -409,7 +409,7 @@ class Bolt_Boltpay_Helper_Api extends Bolt_Boltpay_Helper_Data
      */
     public function transmit($command, $data, $object='merchant', $type='transactions', $storeId = null)
     {
-        $url = Mage::helper('boltpay/url')->getApiUrl() . 'v1/';
+        $url = Mage::helper('boltpay/url')->getApiUrl($storeId) . 'v1/';
 
         if($command == 'sign' || $command == 'orders') {
             $url .= $object . '/' . $command;
