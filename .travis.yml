@@ -18,6 +18,7 @@ env:
     - DB_NAME="magento_travis"
     - PHPUNIT_ENVIRONMENT=true
     - TEST_ENV=sandbox
+    - HOST_NAME="http://travis_magento.loc/"
 
 matrix:
   include:
@@ -33,6 +34,7 @@ matrix:
 before_install:
   - mysql -e 'DROP DATABASE IF EXISTS `$DB_NAME`;'
   - mysql -e 'CREATE DATABASE IF NOT EXISTS `$DB_NAME`;'
+  - bash /home/travis/build/BoltApp/bolt-magento1/tests/scripts/apache_setup.sh
 
 before_script:
   - composer self-update -q
@@ -44,7 +46,7 @@ script:
   - cd /home/travis/build/
   - curl -O https://files.magerun.net/n98-magerun.phar
   - chmod +x n98-magerun.phar
-  - php -d memroy_limit=512M n98-magerun.phar install --magentoVersionByName="${MAGENTO_VERSION}" --installationFolder="./magento" --dbHost=localhost --dbUser=root --dbName="$DB_NAME" --dbPass="" --installSampleData=no --useDefaultConfigParams=yes --baseUrl="http://travis.magento.local/"
+  - php -d memroy_limit=512M n98-magerun.phar install --magentoVersionByName="${MAGENTO_VERSION}" --installationFolder="./magento" --dbHost=localhost --dbUser=root --dbName="$DB_NAME" --dbPass="" --installSampleData=no --useDefaultConfigParams=yes --baseUrl="${HOST_NAME}"
   - php n98-magerun.phar config:set currency/options/base USD --root-dir ./magento/
   - php n98-magerun.phar config:set currency/options/default USD --root-dir ./magento/
   - php n98-magerun.phar config:set currency/options/allow USD --root-dir ./magento/
