@@ -931,7 +931,7 @@ class Bolt_Boltpay_Helper_Api extends Bolt_Boltpay_Helper_Data
         $shippingAddress = $quote->getShippingAddress();
         $shippingAddress->setCollectShippingRates(true)->collectShippingRates()->save();
 
-        $originalDiscountedPrice = $quote->getSubtotalWithDiscount();
+        $originalDiscountedSubtotal = $quote->getSubtotalWithDiscount();
 
         $rates = $this->getSortedShippingRates($shippingAddress);
 
@@ -964,13 +964,13 @@ class Bolt_Boltpay_Helper_Api extends Bolt_Boltpay_Helper_Data
                 );
             }
 
-            $newDiscountedPrice = $quote->getSubtotalWithDiscount();
+            $adjustedShippingAmount = $this->getAdjustedShippingAmount($originalDiscountedSubtotal, $quote);
 
             $option = array(
                 "service" => $label,
                 "reference" => $rateCode,
-                "cost" => round(($quote->getShippingAddress()->getShippingAmount() + ($originalDiscountedPrice - $newDiscountedPrice)) * 100),
-                "tax_amount" => abs(round($quote->getShippingAddress()->getTaxAmount() * 100))
+                "cost" => round($adjustedShippingAmount * 100),
+                "tax_amount" => abs(round($shippingAddress->getTaxAmount() * 100))
             );
 
             $response['shipping_options'][] = $option;
@@ -1055,6 +1055,52 @@ class Bolt_Boltpay_Helper_Api extends Bolt_Boltpay_Helper_Data
     }
 
     /**
+     * When Bolt attempts to get shipping rates, it already knows the quote subtotal. However, if there are shipping
+     * methods that could affect the subtotal (e.g. $5 off when you choose Next Day Air), then we need to modify the
+     * shipping amount so that it makes up for the previous subtotal.
+     *
+     * @param float $originalDiscountedSubtotal    Original discounted subtotal
+     * @param Mage_Sales_Model_Quote    $quote    Quote which has been updated to use new shipping rate
+     *
+     * @return float    Discount modified as a result of the new shipping method
+     */
+    protected function getAdjustedShippingAmount($originalDiscountedSubtotal, $quote) {
+        $shippingAddress = $quote->getShippingAddress();
+
+        $newDiscountedSubtotal = $this->getDiscountedSubtotalWithoutShippingDiscount($quote);
+        $discountedShippingAmount = $this->getDiscountedShippingAmount($shippingAddress);
+
+        return $discountedShippingAmount + ($originalDiscountedSubtotal - $newDiscountedSubtotal);
+    }
+
+    /**
+     * $quote->getSubtotalWithDiscount() is problemattic because it includes the subtotal minus all discounts. Since the
+     * subtotal doesn't include shipping, but the discounts could include shipping discounts, the returned value will
+     * not be what is expected. This means that if you have a subtotal of $10 with a discount of $20 off
+     * on Next Day Air shipping where the shipping rate is $30, getSubtotalWithDiscount will return
+     * $10 - $20 (all discounts) = -$10 because getSubtotalWithDiscount() doesn't include the shipping but it does
+     * include the shipping discount.
+     * @param Mage_Sales_Model_Quote $quote
+     * @return float
+     */
+    protected function getDiscountedSubtotalWithoutShippingDiscount($quote)
+    {
+        $shippingAddress = $quote->getShippingAddress();
+        $discountedSubtotalWithoutShippingDiscount = $quote->getSubtotalWithDiscount() + $shippingAddress->getShippingDiscountAmount();
+
+        return $discountedSubtotalWithoutShippingDiscount;
+    }
+
+    /**
+     * Gets the shipping amount minus any shipping discounts.
+     * @param $shippingAddress
+     * @return float
+     */
+    protected function getDiscountedShippingAmount($shippingAddress) {
+        return $shippingAddress->getShippingAmount() - $shippingAddress->getShippingDiscountAmount();
+    }
+
+    /**
      * Sets Plugin information in the response headers to callers of the API
      */
     public function setResponseContextHeaders()
@@ -1129,8 +1175,8 @@ class Bolt_Boltpay_Helper_Api extends Bolt_Boltpay_Helper_Data
             // Here we address legacy hook format for backward compatibility
             // When placed into production in a merchant that previously used the old format,
             // all their prior orders will have to be accounted for as there are potential
-            // hooks like refund, cancel, or order approval that will still be presented in 
-            // the old format.  
+            // hooks like refund, cancel, or order approval that will still be presented in
+            // the old format.
             //
             // For $transaction->order->cart->order_reference
             //  - older version stores the immutable quote ID here, and parent ID in getParentQuoteId()
