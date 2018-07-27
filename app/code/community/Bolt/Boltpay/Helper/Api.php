@@ -1012,22 +1012,6 @@ class Bolt_Boltpay_Helper_Api extends Bolt_Boltpay_Helper_Data
         }
     }
 
-    /**
-     * Gets the quote total after tax and shipping costs have been removed
-     *
-     * @param Mage_Sales_Model_Quote $quote    Quote which has been updated to use new shipping rate
-     *
-     * @return float    Grand Total - Taxes - Shipping Cost
-     */
-    protected function getTotalWithoutTaxOrShipping($quote) {
-        $address = $quote->getShippingAddress();
-        $totalWithoutTaxOrShipping = $address->getGrandTotal() - $address->getTaxAmount() - $address->getShippingAmount();
-        if($totalWithoutTaxOrShipping < 0){
-            $totalWithoutTaxOrShipping = 0;
-        }
-        return $totalWithoutTaxOrShipping;
-    }
-
     protected function getSortedShippingRates($address) {
         $rates = array();
 
@@ -1038,20 +1022,6 @@ class Bolt_Boltpay_Helper_Api extends Bolt_Boltpay_Helper_Data
         }
 
         return $rates;
-    }
-
-    /**
-     * Gets the difference between a previously calculated subtotal and the new subtotal due to changing shipping methods.
-     *
-     * @param float $origTotalWithoutShippingOrTax    Original subtotal
-     * @param Mage_Sales_Model_Quote    $updatedQuote    Quote which has been updated to use new shipping rate
-     *
-     * @return float    Discount modified as a result of the new shipping method
-     */
-    protected function getShippingDiscountModifier($origTotalWithoutShippingOrTax, $updatedQuote) {
-        $newQuoteWithoutShippingOrTax = $this->getTotalWithoutTaxOrShipping($updatedQuote);
-
-        return $origTotalWithoutShippingOrTax - $newQuoteWithoutShippingOrTax;
     }
 
     /**
