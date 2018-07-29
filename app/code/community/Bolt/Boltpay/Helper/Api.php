@@ -195,7 +195,7 @@ class Bolt_Boltpay_Helper_Api extends Bolt_Boltpay_Helper_Data
             if ($parentQuote->isEmpty() ) {
                 throw new Exception("The parent quote ". $immutableQuote->getParentQuoteId() ." is unexpectedly missing.");
             } else if (!$parentQuote->getIsActive() ) {
-                throw new Exception("The parent quote ". $immutableQuote->getParentQuoteId() ." is currently being processed or has been processed.");
+                throw new Bolt_Boltpay_DuplicatedTransitionException("The parent quote ". $immutableQuote->getParentQuoteId() ." is currently being processed or has been processed.");
             } else {
                 $parentQuote->setIsActive(false)->save();
             }
@@ -324,6 +324,8 @@ class Bolt_Boltpay_Helper_Api extends Bolt_Boltpay_Helper_Data
                 throw $e;
             }
 
+        } catch (Bolt_Boltpay_DuplicatedTransitionException $boltPayDuplicatedTransitionException) {
+            throw $boltPayDuplicatedTransitionException;    
         } catch ( Exception $e ) {
             // Order creation failed, so mark the parent quote as active so webhooks can retry it
             if (@$parentQuote) {

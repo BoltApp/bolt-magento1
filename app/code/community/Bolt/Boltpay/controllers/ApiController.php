@@ -162,6 +162,11 @@ class Bolt_Boltpay_ApiController extends Mage_Core_Controller_Front_Action
             );
             $this->getResponse()->setHttpResponseCode(201);
 
+        } catch (Bolt_Boltpay_DuplicatedTransitionException $boltPayDuplicatedTransitionException) {
+            //In this case, The parent quote is currently being processed or has been processed,
+            //and this duplicated transaction should be ignored
+            Mage::helper('boltpay/bugsnag')->notifyException($boltPayDuplicatedTransitionException);
+            $this->getResponse()->setHttpResponseCode(200);
         } catch (Bolt_Boltpay_InvalidTransitionException $boltPayInvalidTransitionException) {
 
             if ($boltPayInvalidTransitionException->getOldStatus() == Bolt_Boltpay_Model_Payment::TRANSACTION_ON_HOLD) {
