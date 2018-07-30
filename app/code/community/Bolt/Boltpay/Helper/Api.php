@@ -649,7 +649,7 @@ class Bolt_Boltpay_Helper_Api extends Bolt_Boltpay_Helper_Data
                     $calculatedTotal += round($item->getPrice() * 100 * $item->getQty());
                     return array(
                         'reference'    => $quote->getId(),
-                        'image_url'    => (string) $imageUrl,
+                        'image_url'    => $imageUrl,
                         'name'         => $item->getName(),
                         'sku'          => $product->getData('sku'),
                         'description'  => substr($product->getDescription(), 0, 8182) ?: '',
