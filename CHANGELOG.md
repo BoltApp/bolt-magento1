@@ -1,4 +1,9 @@
 # Changelog
+## [v1.2.0](https://s3-us-west-1.amazonaws.com/bolt-public/magento-integration-release/bolt-magento1_v1.2.0.zip) 2018-07-29
+ - Bugfix around duplicate orders
+ - Admin order creation bugfix
+ - Better multi-store support
+
 ## [v1.1.7](https://s3-us-west-1.amazonaws.com/bolt-public/magento-integration-release/bolt-magento1_v1.1.7.zip) 2018-07-23
  - Add product type
  - Stability fix for quote lookup
