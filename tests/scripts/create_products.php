@@ -32,6 +32,13 @@ class Bolt_Shell_CreateProduct extends Mage_Shell_Abstract
                 'is_in_stock' => 1,
                 'price' => 123.45,
             ),
+            array(
+                'sku'   => 'TestProduct02',
+                'name'  => 'TestProduct02',
+                'qty'   => 123,
+                'is_in_stock' => 1,
+                'price' => 654.78,
+            ),
         );
     }
 
