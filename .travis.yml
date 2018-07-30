@@ -50,7 +50,7 @@ script:
 #   Integration tests TODO remove single branch and run from master
   - php /home/travis/build/BoltApp/bolt-magento1/tests/scripts/create_discounts.php
   - php /home/travis/build/BoltApp/bolt-magento1/tests/scripts/create_products.php
-  - git clone --single-branch -b fb-ak-run-by-folder-POC https://${INTEGRATION_TESTS_TOKEN}@github.com/BoltApp/integration-tests.git/
+  - git clone --single-branch -b master https://${INTEGRATION_TESTS_TOKEN}@github.com/BoltApp/integration-tests.git/
   - cd integration-tests
   - npm install
   - xvfb-run npm run test-magento1
