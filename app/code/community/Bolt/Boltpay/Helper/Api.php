@@ -1035,39 +1035,7 @@ class Bolt_Boltpay_Helper_Api extends Bolt_Boltpay_Helper_Data
      * @return float    Discount modified as a result of the new shipping method
      */
     protected function getAdjustedShippingAmount($originalDiscountedSubtotal, $quote) {
-        $shippingAddress = $quote->getShippingAddress();
-
-        $newDiscountedSubtotal = $this->getDiscountedSubtotalWithoutShippingDiscount($quote);
-        $discountedShippingAmount = $this->getDiscountedShippingAmount($shippingAddress);
-
-        return $discountedShippingAmount + ($originalDiscountedSubtotal - $newDiscountedSubtotal);
-    }
-
-    /**
-     * $quote->getSubtotalWithDiscount() is problemattic because it includes the subtotal minus all discounts. Since the
-     * subtotal doesn't include shipping, but the discounts could include shipping discounts, the returned value will
-     * not be what is expected. This means that if you have a subtotal of $10 with a discount of $20 off
-     * on Next Day Air shipping where the shipping rate is $30, getSubtotalWithDiscount will return
-     * $10 - $20 (all discounts) = -$10 because getSubtotalWithDiscount() doesn't include the shipping but it does
-     * include the shipping discount.
-     * @param Mage_Sales_Model_Quote $quote
-     * @return float
-     */
-    protected function getDiscountedSubtotalWithoutShippingDiscount($quote)
-    {
-        $shippingAddress = $quote->getShippingAddress();
-        $discountedSubtotalWithoutShippingDiscount = $quote->getSubtotalWithDiscount() + $shippingAddress->getShippingDiscountAmount();
-
-        return $discountedSubtotalWithoutShippingDiscount;
-    }
-
-    /**
-     * Gets the shipping amount minus any shipping discounts.
-     * @param $shippingAddress
-     * @return float
-     */
-    protected function getDiscountedShippingAmount($shippingAddress) {
-        return $shippingAddress->getShippingAmount() - $shippingAddress->getShippingDiscountAmount();
+        return $quote->getShippingAddress()->getShippingAmount() + $quote->getSubtotalWithDiscount() - $originalDiscountedSubtotal;
     }
 
     /**
