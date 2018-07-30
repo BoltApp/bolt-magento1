@@ -195,9 +195,10 @@ class Bolt_Boltpay_Helper_Api extends Bolt_Boltpay_Helper_Data
             if ($parentQuote->isEmpty() ) {
                 throw new Exception("The parent quote ". $immutableQuote->getParentQuoteId() ." is unexpectedly missing.");
             } else if (!$parentQuote->getIsActive() ) {
-                throw new Bolt_Boltpay_DuplicatedTransitionException("The parent quote ". $immutableQuote->getParentQuoteId() ." is currently being processed or has been processed.");
+                $parentQuoteBoltReference = $parentQuote->getBoltReference();
+                throw new Bolt_Boltpay_DuplicatedTransitionException($parentQuoteBoltReference, "The parent quote ". $immutableQuote->getParentQuoteId() ." is currently being processed or has been processed by bolt transaction ".$parentQuoteBoltReference.".");
             } else {
-                $parentQuote->setIsActive(false)->save();
+                $parentQuote->setIsActive(false)->setBoltReference($reference)->save();
             }
 
             // adding guest user email to order

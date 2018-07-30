@@ -163,10 +163,24 @@ class Bolt_Boltpay_ApiController extends Mage_Core_Controller_Front_Action
             $this->getResponse()->setHttpResponseCode(201);
 
         } catch (Bolt_Boltpay_DuplicatedTransitionException $boltPayDuplicatedTransitionException) {
-            //In this case, The parent quote is currently being processed or has been processed,
-            //and this duplicated transaction should be ignored
-            Mage::helper('boltpay/bugsnag')->notifyException($boltPayDuplicatedTransitionException);
-            $this->getResponse()->setHttpResponseCode(200);
+            //In this case, the parent quote is currently being processed or has been processed,
+            //and if this duplicated transaction has the same reference with the processed transaction, then it should be ignored
+            //and if not, there should report an error
+            if($boltPayDuplicatedTransitionException->getProcessedBoltReference() == $reference){
+                Mage::helper('boltpay/bugsnag')->notifyException( new Exception($e->getMessage()) );
+                $this->getResponse()->setHttpResponseCode(200);
+            }
+            else{
+                $errMsg = $e->getMessage().' Then this redundant bolt transaction '.$reference.' is set to on-hold';
+                Mage::helper('boltpay/bugsnag')->notifyException( new Exception($errMsg) );
+                $this->getResponse()->setHttpResponseCode(503)
+                    ->setHeader("Retry-After", "86400")
+                    ->setBody(json_encode(array(
+                        'status' => 'failure',
+                        'error' => array(
+                            'code' => '6009',
+                            'message' => $errMsg ))));
+            }            
         } catch (Bolt_Boltpay_InvalidTransitionException $boltPayInvalidTransitionException) {
 
             if ($boltPayInvalidTransitionException->getOldStatus() == Bolt_Boltpay_Model_Payment::TRANSACTION_ON_HOLD) {

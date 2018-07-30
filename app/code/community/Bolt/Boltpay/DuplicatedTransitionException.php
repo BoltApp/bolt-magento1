@@ -22,6 +22,7 @@
  */
 class Bolt_Boltpay_DuplicatedTransitionException extends Exception
 {
+    private $_processedBoltReference;
     /**
      * Bolt_Boltpay_InvalidTransitionException constructor.
      *
@@ -29,8 +30,14 @@ class Bolt_Boltpay_DuplicatedTransitionException extends Exception
      * @param int $code                 [optional] The Exception code.
      * @param Throwable|null $previous  [optional] The previous throwable used for the exception chaining.
      */
-    public function __construct($message = "", $code = 0, Throwable $previous = null)
+    public function __construct($processedBoltReference, $message = "", $code = 0, Throwable $previous = null)
     {
+        $this->_processedBoltReference = $processedBoltReference;
         parent::__construct($message, $code, $previous);
+    }
+    
+    public function getProcessedBoltReference()
+    {
+        return $this->_processedBoltReference;
     }
 }

@@ -161,6 +161,9 @@ class Bolt_Boltpay_ConfigurationController extends Mage_Core_Controller_Front_Ac
         if (!$connection->tableColumnExists($quoteTable, 'parent_quote_id')) {
             return false;
         }
+        if (!$connection->tableColumnExists($quoteTable, 'bolt_reference')) {
+            return false;
+        }
 
         $boltUserIdAttr = $setup->getAttribute('customer', 'bolt_user_id');
         if (!$boltUserIdAttr) {
