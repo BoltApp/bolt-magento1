@@ -313,9 +313,8 @@ class Bolt_Boltpay_Helper_Data extends Mage_Core_Helper_Abstract
         /** @var Mage_Catalog_Model_Product $_product */
         $_product = $item->getProduct();
 
-        echo "\n".$_product->getThumbnail();
         $image = $imageHelper->init($_product, 'thumbnail', $_product->getThumbnail());
 
-        return ($image) ? $image->__toString() : 'there-is-no-image';
+        return ($image) ? (string) $image : 'there-is-no-image';
     }
 }
