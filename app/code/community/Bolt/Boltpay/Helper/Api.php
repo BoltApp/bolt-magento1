@@ -641,15 +641,14 @@ class Bolt_Boltpay_Helper_Api extends Bolt_Boltpay_Helper_Data
             'order_reference' => $quote->getParentQuoteId(),
             'display_id'      => $quote->getReservedOrderId().'|'.$quote->getId(),
             'items'           => array_map(
-                function ($item) use ($quote, &$calculatedTotal, $boltHelper) {
-                    $imageUrl = $boltHelper->getItemImageUrl($item);
+                function ($item) use ($quote, &$calculatedTotal) {
                     $product   = Mage::getModel('catalog/product')->load($item->getProductId());
                     $type = $product->getTypeId() == 'virtual' ? self::ITEM_TYPE_DIGITAL : self::ITEM_TYPE_PHYSICAL;
 
                     $calculatedTotal += round($item->getPrice() * 100 * $item->getQty());
                     return array(
                         'reference'    => $quote->getId(),
-                        'image_url'    => $imageUrl,
+                        'image_url'    => $this->getItemImageUrl($product),
                         'name'         => $item->getName(),
                         'sku'          => $product->getData('sku'),
                         'description'  => substr($product->getDescription(), 0, 8182) ?: '',
