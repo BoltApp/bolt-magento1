@@ -17,8 +17,8 @@ env:
     - DB=mysql
     - DB_NAME="magento_travis"
     - PHPUNIT_ENVIRONMENT=true
-    - TEST_ENV=sandbox
     - HOST_NAME="http://travis_magento.loc/"
+    - TEST_ENV=local
 
 matrix:
   include:
@@ -50,7 +50,7 @@ script:
 #   Integration tests TODO remove single branch and run from master
   - php /home/travis/build/BoltApp/bolt-magento1/tests/scripts/create_discounts.php
   - php /home/travis/build/BoltApp/bolt-magento1/tests/scripts/create_products.php
-  - git clone --single-branch -b ak-magento1-admin-test https://${INTEGRATION_TESTS_TOKEN}@github.com/BoltApp/integration-tests.git/
+  - git clone --single-branch -b travis_ci_local_POC https://${INTEGRATION_TESTS_TOKEN}@github.com/BoltApp/integration-tests.git/
   - cd integration-tests
   - npm install
   - xvfb-run npm run test-magento1
