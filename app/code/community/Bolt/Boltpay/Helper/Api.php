@@ -1034,7 +1034,7 @@ class Bolt_Boltpay_Helper_Api extends Bolt_Boltpay_Helper_Data
      *
      * @return float    Discount modified as a result of the new shipping method
      */
-    protected function getAdjustedShippingAmount($originalDiscountedSubtotal, $quote) {
+    public function getAdjustedShippingAmount($originalDiscountedSubtotal, $quote) {
         return $quote->getShippingAddress()->getShippingAmount() + $quote->getSubtotalWithDiscount() - $originalDiscountedSubtotal;
     }
 
