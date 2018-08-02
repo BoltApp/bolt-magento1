@@ -14,8 +14,3 @@ php n98-magerun.phar config:set currency/options/default USD --root-dir $MAGENTO
 php n98-magerun.phar config:set currency/options/allow USD --root-dir $MAGENTO_DIR
 
 cp -r magento/. BoltApp/bolt-magento1/
-
-#cd /home/travis/build/BoltApp/bolt-magento1/
-#sudo chown -R travis:www-data BoltApp/
-ls -la /home/travis/build/
-ls -la /home/travis/build/BoltApp/bolt-magento1/

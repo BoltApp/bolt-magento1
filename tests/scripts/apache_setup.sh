@@ -81,20 +81,7 @@ sudo service apache2 restart
 cd $SITE_DIR
 echo "<?php echo '<h1>Local Travis Magento Environment</h1>'; ?>\n<?php phpinfo(); ?>" > $SITE_DIR/index.php
 
-ls -la /etc/apache2/sites-available/
-#cat /etc/apache2/sites-available/000-default.conf
-cat /etc/apache2/sites-available/$TRAVIS_APACHE_CONFIG
-cat /etc/hosts
 
 curl -Is $SITE_URL | head -n 1
 
-wget $SITE_URL
-
 rm $SITE_DIR/index.php
-
-
-#sudo ls -la /var/log/apache2/
-
-#sudo cat /var/log/apache2/access.log
-#sudo cat /var/log/apache2/error.log
-
