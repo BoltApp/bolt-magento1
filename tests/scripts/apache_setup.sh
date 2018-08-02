@@ -4,6 +4,7 @@
 SITE_DIR="/home/travis/build/BoltApp/bolt-magento1/"
 SITE_URL="http://travis_magento.loc"
 SITE_HOST="127.0.0.1"
+TRAVIS_APACHE_CONFIG="travis-ci-apache.conf"
 
 PARSED_OPTIONS=$(getopt -n "$0"  -o 'd::,u::,h::' --long "dir::,url::,host::"  -- "$@")
 
@@ -63,14 +64,22 @@ echo "Configuring Apache virtual hosts"
 printf $SEP
 echo "Apache default virtual host configuration will be overwritten to serve $SITE_URL from $SITE_DIR"
 
-sudo cp -f $SCRIPT_DIR/travis-ci-apache.conf /etc/apache2/sites-available/
-sudo sed -e "s?%DIR%?$SITE_DIR?g" --in-place /etc/apache2/sites-available/travis-ci-apache.conf
-sudo sed -e "s?%URL%?$SITE_URL?g" --in-place /etc/apache2/sites-available/travis-ci-apache.conf
+sudo cp -f $SCRIPT_DIR/$TRAVIS_APACHE_CONFIG /etc/apache2/sites-available/
+sudo sed -e "s?%DIR%?$SITE_DIR?g" --in-place /etc/apache2/sites-available/$TRAVIS_APACHE_CONFIG
+sudo sed -e "s?%URL%?$SITE_URL?g" --in-place /etc/apache2/sites-available/$TRAVIS_APACHE_CONFIG
 sudo sh -c "echo '\n$SITE_HOST    $SITE_URL' >> /etc/hosts"
-sudo a2ensite travis-ci-apache
+sudo a2ensite travis-ci-apache.conf
 
 printf $BREATH
 echo "Restarting Apache"
 printf $SEP
 
 sudo service apache2 restart
+
+
+ls -la /etc/apache2/sites-available/
+cat etc/apache2/sites-available/$TRAVIS_APACHE_CONFIG
+
+curl -Is $SITE_URL | head -n 1
+
+wget $SITE_URL
