@@ -1174,12 +1174,10 @@ class Bolt_Boltpay_Helper_Api extends Bolt_Boltpay_Helper_Data
      * @param   array $params
      * @return  string
      */
-    public function getSecureUrl($route = '', $params = array()){
+    public function getMagentoUrl($route = '', $params = array()){
         if ((Mage::app()->getStore()->isFrontUrlSecure()) &&
             (Mage::app()->getRequest()->isSecure())) {
-            // Connection is secure
             $params["_secure"] = true;
-            return Mage::getUrl($route, $params);
         }
         return Mage::getUrl($route, $params);
     }
