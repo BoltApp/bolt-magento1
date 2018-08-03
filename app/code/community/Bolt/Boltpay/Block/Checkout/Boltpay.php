@@ -335,7 +335,7 @@ class Bolt_Boltpay_Block_Checkout_Boltpay extends Mage_Checkout_Block_Onepage_Re
      */
     public function buildOnSuccessCallback($successCustom = '', $checkoutType)
     {
-        $saveOrderUrl = $this->getUrl('boltpay/order/save');
+        $saveOrderUrl = Mage::helper('boltpay/api')->getSecureUrl('boltpay/order/save');
 
         return ($checkoutType === self::CHECKOUT_TYPE_ADMIN) ?
             "function(transaction, callback) {
@@ -377,7 +377,7 @@ class Bolt_Boltpay_Block_Checkout_Boltpay extends Mage_Checkout_Block_Onepage_Re
      */
     public function buildOnCloseCallback($closeCustom, $checkoutType)
     {
-        $successUrl = $this->getUrl(Mage::getStoreConfig('payment/boltpay/successpage'));
+        $successUrl = Mage::helper('boltpay/api')->getSecureUrl(Mage::getStoreConfig('payment/boltpay/successpage'));
 
         return ($checkoutType === self::CHECKOUT_TYPE_ADMIN) ?
             "if (order_completed && (typeof order !== 'undefined' ) && (typeof order.submit === 'function')) {
@@ -624,7 +624,7 @@ class Bolt_Boltpay_Block_Checkout_Boltpay extends Mage_Checkout_Block_Onepage_Re
      */
     public function getSuccessURL()
     {
-        return $this->getUrl(Mage::getStoreConfig('payment/boltpay/successpage'));
+        return Mage::helper('boltpay/api')->getSecureUrl(Mage::getStoreConfig('payment/boltpay/successpage'));
     }
 
     /**
@@ -633,7 +633,7 @@ class Bolt_Boltpay_Block_Checkout_Boltpay extends Mage_Checkout_Block_Onepage_Re
      */
     public function getSaveOrderURL()
     {
-        return $this->getUrl('boltpay/order/save');
+        return Mage::helper('boltpay/api')->getSecureUrl('boltpay/order/save');
     }
 
     /**
@@ -642,7 +642,7 @@ class Bolt_Boltpay_Block_Checkout_Boltpay extends Mage_Checkout_Block_Onepage_Re
      */
     public function getCartURL()
     {
-        return $this->getUrl('checkout/cart');
+        return Mage::helper('boltpay/api')->getSecureUrl('checkout/cart');
     }
 
     /**

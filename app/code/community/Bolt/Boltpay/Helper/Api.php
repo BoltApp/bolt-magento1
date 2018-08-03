@@ -1166,4 +1166,21 @@ class Bolt_Boltpay_Helper_Api extends Bolt_Boltpay_Helper_Data
             ? explode("|", $transaction->order->cart->display_id)[0]
             : $transaction->order->cart->display_id;
     }
+    
+    /**
+     * Generate (if) secure url by route and parameters
+     *
+     * @param   string $route
+     * @param   array $params
+     * @return  string
+     */
+    public function getSecureUrl($route = '', $params = array()){
+        if ((Mage::app()->getStore()->isFrontUrlSecure()) &&
+            (Mage::app()->getRequest()->isSecure())) {
+            // Connection is secure
+            $params["_secure"] = true;
+            return Mage::getUrl($route, $params);
+        }
+        return Mage::getUrl($route, $params);
+    }
 }

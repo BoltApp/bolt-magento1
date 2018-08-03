@@ -21,7 +21,7 @@ if($this->isBoltActive()) {
         (function () {
             var xmlhttp = new XMLHttpRequest();
 
-            xmlhttp.open("POST", "<?=$this->getUrl('boltpay/shipping/prefetchEstimate');?>", true);
+            xmlhttp.open("POST", "<?php echo Mage::helper('boltpay/api')->getSecureUrl('boltpay/shipping/prefetchEstimate');?>", true);
             xmlhttp.setRequestHeader("Content-type", "application/json");
             xmlhttp.onreadystatechange = function() {
                 if (xmlhttp.readyState == XMLHttpRequest.DONE && xmlhttp.status == 200) {
