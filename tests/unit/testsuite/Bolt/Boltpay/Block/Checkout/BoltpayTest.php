@@ -124,7 +124,7 @@ class Bolt_Boltpay_Block_Checkout_BoltpayTest extends PHPUnit_Framework_TestCase
      */
     public function testGetCartURL()
     {
-        $expect = Mage::getUrl('checkout/cart');
+        $expect = Mage::helper('boltpay/api')->getMagentoUrl('checkout/cart');
 
         $result = $this->currentMock->getCartUrl();
 
@@ -149,7 +149,7 @@ class Bolt_Boltpay_Block_Checkout_BoltpayTest extends PHPUnit_Framework_TestCase
     {
         $url = 'checkout/onepage/success';
         $this->app->getStore()->setConfig('payment/boltpay/successpage', $url);
-        $expect = Mage::getUrl($url);
+        $expect = Mage::helper('boltpay/api')->getMagentoUrl($url);
 
         $result = $this->currentMock->getSuccessUrl();
 
@@ -263,7 +263,7 @@ class Bolt_Boltpay_Block_Checkout_BoltpayTest extends PHPUnit_Framework_TestCase
     {
         $this->app->getStore()->setConfig('payment/boltpay/success', '');
         $successCustom = "console.log('test')";
-        $saveOrderUrl = Mage::getUrl('boltpay/order/save');
+        $saveOrderUrl = Mage::helper('boltpay/api')->getMagentoUrl('boltpay/order/save');
         $checkoutType = Bolt_Boltpay_Block_Checkout_Boltpay::CHECKOUT_TYPE_MULTI_PAGE;
 
         $onSuccessCallback = "function(transaction, callback) {
@@ -322,7 +322,7 @@ class Bolt_Boltpay_Block_Checkout_BoltpayTest extends PHPUnit_Framework_TestCase
      */
     public function testBuildOnCloseCallback()
     {
-        $successUrl = Mage::getUrl('checkout/onepage/success');
+        $successUrl = Mage::helper('boltpay/api')->getMagentoUrl('checkout/onepage/success');
         $checkoutType = Bolt_Boltpay_Block_Checkout_Boltpay::CHECKOUT_TYPE_ONE_PAGE;
         $closeCustom = '';
 
@@ -365,7 +365,7 @@ class Bolt_Boltpay_Block_Checkout_BoltpayTest extends PHPUnit_Framework_TestCase
      */
     public function testGetSaveOrderURL()
     {
-        $expect = Mage::getUrl('boltpay/order/save');
+        $expect = Mage::helper('boltpay/api')->getMagentoUrl('boltpay/order/save');
 
         $result = $this->currentMock->getSaveOrderUrl();
 
