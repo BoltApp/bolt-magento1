@@ -168,10 +168,12 @@ class Bolt_Boltpay_ApiController extends Mage_Core_Controller_Front_Action
             //and if not, there should report an error
             if($boltPayDuplicatedTransitionException->getProcessedBoltReference() == $reference){
                 Mage::helper('boltpay/bugsnag')->notifyException( new Exception($e->getMessage()) );
-                $this->getResponse()->setHttpResponseCode(200);
+                $this->getResponse()->setHttpResponseCode(422)
+                    ->setBody(json_encode(array('status' => 'failure', 'error' => array('code' => '6009', 'message' => $e->getMessage()))));
             }
             else{
-                $errMsg = $e->getMessage().' Then this redundant bolt transaction '.$reference.' is set to on-hold';
+                $errMsg = Mage::helper('boltpay')->__("%s Therefore, this redundant bolt transaction %s will not be processed as an order in Magento.",
+                                                $e->getMessage(), $reference );
                 Mage::helper('boltpay/bugsnag')->notifyException( new Exception($errMsg) );
                 $this->getResponse()->setHttpResponseCode(503)
                     ->setHeader("Retry-After", "86400")
