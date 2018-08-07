@@ -117,8 +117,6 @@ class Bolt_Boltpay_OrderController extends Mage_Core_Controller_Front_Action
             $quote = $checkout->getQuote();
             $billing  = $this->getRequest()->getPost('billing', array());
 
-            $checkout->applyShippingMethod($this->getRequest()->getPost('shipping_method', false));
-
             $this->getResponse()->setHeader('Content-type', 'application/json', true);
 
             $result = $checkout->saveBilling(
@@ -169,6 +167,9 @@ class Bolt_Boltpay_OrderController extends Mage_Core_Controller_Front_Action
                     return;
                 }
             }
+
+            $checkout->applyShippingMethod($this->getRequest()->getPost('shipping_method', false));  # FireCheckout Logic for adding shipping method
+            $quote->getShippingAddress()->setShippingMethod($this->getRequest()->getPost('shipping_method', false));  # Bolt logic for adding shipping method
 
             $checkout->registerCustomerIfRequested();
 
