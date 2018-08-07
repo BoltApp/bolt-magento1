@@ -588,29 +588,28 @@ class Bolt_Boltpay_Helper_Api extends Bolt_Boltpay_Helper_Data
      * Generates order data for sending to Bolt.
      *
      * @param Mage_Sales_Model_Quote        $quote      Magento quote instance
-     * @param Mage_Sales_Model_Quote_Item[] $items      array of Magento products
      * @param bool                          $multipage  Is checkout type Multi-Page Checkout, the default is true, set to false for One Page Checkout
      *
      * @return array            The order payload to be sent as to bolt in API call as a PHP array
      */
-    public function buildOrder($quote, $items, $multipage)
+    public function buildOrder($quote, $multipage)
     {
-        $cart = $this->buildCart($quote, $items, $multipage);
+        $cart = $this->buildCart($quote, $multipage);
         return array(
             'cart' => $cart
         );
     }
 
+
     /**
      * Generates cart submission data for sending to Bolt order cart field.
      *
      * @param Mage_Sales_Model_Quote        $quote      Magento quote instance
-     * @param Mage_Sales_Model_Quote_Item[] $items      array of Magento products
      * @param bool                          $multipage  Is checkout type Multi-Page Checkout, the default is true, set to false for One Page Checkout
      *
      * @return array            The cart data part of the order payload to be sent as to bolt in API call as a PHP array
      */
-    public function buildCart($quote, $items, $multipage)
+    public function buildCart($quote, $multipage)
     {
         /** @var Bolt_Boltpay_Helper_Data $boltHelper */
         $boltHelper = Mage::helper('boltpay');
@@ -675,7 +674,7 @@ class Bolt_Boltpay_Helper_Api extends Bolt_Boltpay_Helper_Data
                         'quantity'     => $item->getQty(),
                         'type'         => $type
                     );
-                }, $items
+                }, $quote->getAllVisibleItems()
             ),
             'currency' => $quote->getQuoteCurrencyCode(),
         );
@@ -858,6 +857,7 @@ class Bolt_Boltpay_Helper_Api extends Bolt_Boltpay_Helper_Data
 
         return $this->getCorrectedTotal($calculatedTotal, $cartSubmissionData);
     }
+
 
     /**
      * Utility method that attempts to correct totals if the projected total that was calculated from

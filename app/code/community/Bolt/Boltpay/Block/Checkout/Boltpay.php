@@ -89,7 +89,7 @@ class Bolt_Boltpay_Block_Checkout_Boltpay extends Mage_Checkout_Block_Onepage_Re
         }
 
         // Generates order data for sending to Bolt create order API.
-        $orderRequest = $boltHelper->buildOrder($quote, $items, $isMultiPage);
+        $orderRequest = $boltHelper->buildOrder($quote, $isMultiPage);
 
         // Calls Bolt create order API
         return $boltHelper->transmit('orders', $orderRequest);
@@ -124,6 +124,12 @@ class Bolt_Boltpay_Block_Checkout_Boltpay extends Mage_Checkout_Block_Onepage_Re
                 $boltHelper->applyShippingRate($sessionQuote, null);
             }
 
+            $cachedCartDataJS = $this->getCachedCartJS($sessionQuote, $checkoutType);
+
+            if ($cachedCartDataJS) {
+                return $cachedCartDataJS;
+            }
+
             // Call Bolt create order API
             try {
                 /////////////////////////////////////////////////////////////////////////////////
@@ -137,6 +143,7 @@ class Bolt_Boltpay_Block_Checkout_Boltpay extends Mage_Checkout_Block_Onepage_Re
                 $immutableQuote = $boltHelper->cloneQuote($sessionQuote, $isMultiPage);
                 $orderCreationResponse = $this->_createBoltOrder($immutableQuote, $checkoutType);
                 ////////////////////////////////////////////////////////////////////////////////
+
 
                 if (@!$orderCreationResponse->error) {
                     ///////////////////////////////////////////////////////////////////////////////////////
@@ -172,12 +179,79 @@ class Bolt_Boltpay_Block_Checkout_Boltpay extends Mage_Checkout_Block_Onepage_Re
 
             $cartData = $this->buildCartData($orderCreationResponse);
 
-            return $this->buildBoltCheckoutJavascript($checkoutType, $immutableQuote->getId(), $hintData, $cartData);
+            $checkoutJS = $this->buildBoltCheckoutJavascript($checkoutType, $immutableQuote->getId(), $hintData, $cartData);
+
+            $this->cacheCartJS($checkoutJS, $sessionQuote, $checkoutType);
+
+            return $checkoutJS;
 
         } catch (Exception $e) {
             Mage::helper('boltpay/bugsnag')->notifyException($e);
         }
     }
+
+
+    /**
+     * Calculates and returns the key for storing a quote's Bolt cart
+     *
+     * @param Mage_Sales_Model_Quote $quote         The quote whose key that will be generated
+     * @param string                 $checkoutType  'multi-page' | 'one-page' | 'admin'
+     *
+     * @return string   The calculated key for this quote's cart.  Format is {quote id}_{md5 hash of cart content}
+     */
+    protected function calculateCartCacheKey( $quote, $checkoutType ) {
+        $boltHelper = Mage::helper('boltpay/api');
+        $boltCartArray = $boltHelper->buildOrder($quote, $checkoutType === 'multi-page');
+        if ($boltCartArray['cart']) {
+            unset($boltCartArray['cart']['display_id']);
+            unset($boltCartArray['cart']['order_reference']);
+        }
+        return $quote->getId().'_'.md5(json_encode($boltCartArray));
+    }
+
+
+    /**
+     * Get cached copy of cart JS if it exist and has not expired
+     *
+     * @param Mage_Sales_Model_Quote $quote         The quote for which the cached cart is sought
+     * @param string                 $checkoutType  'multi-page' | 'one-page' | 'admin'
+     *
+     * @return string|null  If it exist, the cached cart JS as a string
+     */
+    protected function getCachedCartJS($quote, $checkoutType) {
+
+        $cachedCartDataJS = Mage::getSingleton('core/session')->getCachedBoltCartDataJS();
+
+        if (
+            $cachedCartDataJS
+            && (($cachedCartDataJS['creation_time'] + 60*60) > time())
+            && ($cachedCartDataJS['key'] === $this->calculateCartCacheKey($quote, $checkoutType))
+        )
+        {
+            return $cachedCartDataJS["js"];
+        }
+
+        Mage::getSingleton('core/session')->unsCachedBoltCartDataJS();
+        return null;
+
+    }
+
+
+    /**
+     * Caches the javascript that is sent to the front end to be used for duplicate request
+     *
+     * @param string $boltCartJS  The complete Bolt Checkout JS code to be executed on the frontend
+     */
+    protected function cacheCartJS($boltCartJS, $quote, $checkoutType) {
+        Mage::getSingleton('core/session')->setCachedBoltCartDataJS(
+            array(
+                'creation_time' => time(),
+                'key' => $this->calculateCartCacheKey($quote, $checkoutType),
+                'js' => $boltCartJS
+            )
+        );
+    }
+
 
     /**
      * @param $checkoutType
