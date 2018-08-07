@@ -59,11 +59,7 @@ class Bolt_Boltpay_ApiController extends Mage_Core_Controller_Front_Action
                 $couponHelper = Mage::helper('boltpay/coupon');
                 $couponHelper->applyCoupon();
 
-                $this->getResponse()->setHeader('Content-type', 'application/json');
-                $this->getResponse()->setHttpResponseCode($couponHelper->getHttpCode());
-                $this->getResponse()->setBody(json_encode($couponHelper->getResponseData()));
-
-                return;
+                return $this->sendResponse($couponHelper->getHttpCode(), $couponHelper->getResponseData());
             }
 
             $reference = $bodyParams['reference'];
@@ -206,4 +202,17 @@ class Bolt_Boltpay_ApiController extends Mage_Core_Controller_Front_Action
 
         return null;
     }
+
+
+    /**
+     * @param int $httpCode
+     * @param array $data
+     */
+    protected function sendResponse($httpCode, $data = [])
+    {
+        $this->getResponse()->setHeader('Content-type', 'application/json');
+        $this->getResponse()->setHttpResponseCode($httpCode);
+        $this->getResponse()->setBody(json_encode($data));
+    }
+
 }
