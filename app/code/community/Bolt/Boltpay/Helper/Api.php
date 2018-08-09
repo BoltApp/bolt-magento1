@@ -46,6 +46,7 @@ class Bolt_Boltpay_Helper_Api extends Bolt_Boltpay_Helper_Data
         'credit', // magestore-customer-credit
         'amgiftcard', // https://amasty.com/magento-gift-card.html
         'amstcred', // https://amasty.com/magento-store-credit.html
+        'awraf',    //https://ecommerce.aheadworks.com/magento-extensions/refer-a-friend.html#magento1
     );
 
     /**
