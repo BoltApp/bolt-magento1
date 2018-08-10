@@ -1,0 +1,10 @@
+app/etc/modules/*           app/etc/modules/
+app/code/community/Bolt/*     app/code/community/Bolt/
+app/design/adminhtml/default/default/layout/* app/design/adminhtml/default/default/layout/
+app/design/adminhtml/default/default/template/boltpay/* app/design/adminhtml/default/default/template/boltpay/
+app/design/frontend/base/default/layout/* app/design/frontend/base/default/layout/
+app/design/frontend/base/default/template/boltpay/* app/design/frontend/base/default/template/boltpay/
+js/boltpay/* js/boltpay/
+lib/Boltpay/* lib/Boltpay/
+skin/frontend/base/default/boltpay/* skin/frontend/base/default/boltpay/
+skin/frontend/base/default/css/boltpay/* skin/frontend/base/default/css/boltpay/
