@@ -57,13 +57,20 @@ class Bolt_Boltpay_Helper_Coupon extends Mage_Core_Helper_Abstract
     public function applyCoupon()
     {
         try {
-            $this->setupVariables();
+
+            if (!$this->requestObject){
+                throw new \Bolt_Boltpay_BadInputException('Need to set setup variables in order to apply coupon');
+            }
+
             $this->validateCoupon();
             $this->applyCouponToQuotes();
             $this->validateAfterApplyingCoupon();
 
             $this->setSuccessResponse();
+        } catch (\Bolt_Boltpay_BadInputException $e){
+            return false;
         } catch (\Exception $e) {
+            Mage::helper('boltpay/bugsnag')->notifyException($e);
             return false;
         }
         return true;
@@ -71,20 +78,17 @@ class Bolt_Boltpay_Helper_Coupon extends Mage_Core_Helper_Abstract
 
     /**
      * Sets up any variables needed to process coupon.
-     *
-     * @throws Exception     thrown if input fails to be read.
+     * @param $requestObject
      */
-    protected function setupVariables() {
+    public function setupVariables($requestObject) {
         try {
-            $this->requestObject = json_decode(file_get_contents('php://input'));
+            $this->requestObject = $requestObject;
         } catch (\Exception $e) {
             $this->setErrorResponseAndThrowException(
                 self::ERR_SERVICE,
                 'Unknown error getting API request.',
                 422
             );
-
-            throw $e;
         }
     }
 
@@ -111,7 +115,7 @@ class Bolt_Boltpay_Helper_Coupon extends Mage_Core_Helper_Abstract
     /**
      * Verifies the coupon isn't an empty string.
      */
-    protected function validateEmptyCoupon()
+    public function validateEmptyCoupon()
     {
         // Check if empty coupon was sent
         if ($this->getCouponCode() === '') {
@@ -126,7 +130,7 @@ class Bolt_Boltpay_Helper_Coupon extends Mage_Core_Helper_Abstract
     /**
      * Verifies the coupon exists.
      */
-    protected function validateCouponExists()
+    public function validateCouponExists()
     {
         $coupon = $this->getCoupon();
         // Check if the coupon exists
@@ -143,7 +147,7 @@ class Bolt_Boltpay_Helper_Coupon extends Mage_Core_Helper_Abstract
     /**
      * Verifies the coupon rule exists.
      */
-    protected function validateRuleExists()
+    public function validateRuleExists()
     {
         // Load the coupon discount rule
         $rule = $this->getRule();
@@ -161,7 +165,7 @@ class Bolt_Boltpay_Helper_Coupon extends Mage_Core_Helper_Abstract
     /**
      * Verifies that the identifying factors for the care parent quote, immutable quote, and increment id were passed in.
      */
-    protected function validateCartIdentificationData()
+    public function validateCartIdentificationData()
     {
         $parentQuoteId = $this->getParentQuoteId();
         $incrementId = $this->getIncrementId();
@@ -177,9 +181,9 @@ class Bolt_Boltpay_Helper_Coupon extends Mage_Core_Helper_Abstract
     }
 
     /**
-     * Verifies that order doesn't already exist (based on increment id.
+     * Verifies that order doesn't already exist based on increment id.
      */
-    protected function validateOrderCreation()
+    public function validateOrderCreation()
     {
         // Check if the order has already been created
         $incrementId = $this->getIncrementId();
@@ -205,7 +209,7 @@ class Bolt_Boltpay_Helper_Coupon extends Mage_Core_Helper_Abstract
 
             $this->setErrorResponseAndThrowException(
                 self::ERR_INSUFFICIENT_INFORMATION,
-                sprintf('The session quote reference [%s] was not found.', $this->requestObject->cart->order_reference),
+                sprintf('The session quote reference [%s] was not found.', $this->getParentQuoteId()),
                 404
             );
         }
@@ -214,7 +218,7 @@ class Bolt_Boltpay_Helper_Coupon extends Mage_Core_Helper_Abstract
     /**
      * Verifies that the immutable quote exists.
      */
-    protected function validateImmutableQuote()
+    public function validateImmutableQuote()
     {
         // check the existence of child quote
         $immutableQuote = $this->getImmutableQuote();
@@ -231,7 +235,7 @@ class Bolt_Boltpay_Helper_Coupon extends Mage_Core_Helper_Abstract
     /**
      * Verifies that the immutable quote is not empty and has items in the cart.
      */
-    protected function validateEmptyCart()
+    public function validateEmptyCart()
     {
         $immutableQuote = $this->getImmutableQuote();
         // check if cart is empty
@@ -247,19 +251,16 @@ class Bolt_Boltpay_Helper_Coupon extends Mage_Core_Helper_Abstract
     /**
      * Verifies that the coupon isn't expired
      */
-    protected function validateToDateForRule()
+    public function validateToDateForRule()
     {
         $rule = $this->getRule();
-        $immutableQuote = $this->getImmutableQuote();
-
         $date = $rule->getToDate();
         if ($date && date('Y-m-d', strtotime($date)) < date('Y-m-d')) {
 
             $this->setErrorResponseAndThrowException(
                 self::ERR_CODE_EXPIRED,
                 sprintf('The coupon code [%s] is expired.', $this->getCouponCode()),
-                422,
-                $immutableQuote
+                422
             );
         }
     }
@@ -267,11 +268,9 @@ class Bolt_Boltpay_Helper_Coupon extends Mage_Core_Helper_Abstract
     /**
      * Verifies that the from date is in the past.
      */
-    protected function validateFromDateForRule()
+    public function validateFromDateForRule()
     {
         $rule = $this->getRule();
-        $immutableQuote = $this->getImmutableQuote();
-
         $date = $rule->getFromDate();
         if ($date && date('Y-m-d', strtotime($date)) > date('Y-m-d')) {
 
@@ -282,8 +281,7 @@ class Bolt_Boltpay_Helper_Coupon extends Mage_Core_Helper_Abstract
             $this->setErrorResponseAndThrowException(
                 self::ERR_CODE_NOT_AVAILABLE,
                 $desc,
-                422,
-                $immutableQuote
+                422
             );
         }
     }
@@ -291,18 +289,16 @@ class Bolt_Boltpay_Helper_Coupon extends Mage_Core_Helper_Abstract
     /**
      * Verifies that the coupon hasn't been used too many times.
      */
-    protected function validateCouponUsageLimits()
+    public function validateCouponUsageLimits()
     {
         $coupon = $this->getCoupon();
-        $immutableQuote = $this->getImmutableQuote();
         // Check coupon usage limits.
         if ($coupon->getUsageLimit() && $coupon->getTimesUsed() >= $coupon->getUsageLimit()) {
 
             $this->setErrorResponseAndThrowException(
                 self::ERR_CODE_LIMIT_REACHED,
                 sprintf('The code [%s] has exceeded usage limit.', $this->getCouponCode()),
-                422,
-                $immutableQuote
+                422
             );
         }
     }
@@ -310,7 +306,7 @@ class Bolt_Boltpay_Helper_Coupon extends Mage_Core_Helper_Abstract
     /**
      * Verifies that the coupon hasn't been used too many times for the current customer.
      */
-    protected function validateCouponCustomerUsageLimits()
+    public function validateCouponCustomerUsageLimits()
     {
         $coupon = $this->getCoupon();
         $immutableQuote = $this->getImmutableQuote();
@@ -327,8 +323,7 @@ class Bolt_Boltpay_Helper_Coupon extends Mage_Core_Helper_Abstract
                     $this->setErrorResponseAndThrowException(
                         self::ERR_CODE_LIMIT_REACHED,
                         sprintf('The code [%s] has exceeded usage limit.', $this->getCouponCode()),
-                        422,
-                        $immutableQuote
+                        422
                     );
                 }
             }
@@ -338,7 +333,7 @@ class Bolt_Boltpay_Helper_Coupon extends Mage_Core_Helper_Abstract
     /**
      * Verifies that the rule hasn't been used too many times.
      */
-    protected function validateRuleCustomerUsageLimits()
+    public function validateRuleCustomerUsageLimits()
     {
         $rule = $this->getRule();
         $immutableQuote = $this->getImmutableQuote();
@@ -350,8 +345,7 @@ class Bolt_Boltpay_Helper_Coupon extends Mage_Core_Helper_Abstract
                 $this->setErrorResponseAndThrowException(
                     self::ERR_CODE_LIMIT_REACHED,
                     sprintf('The code [%s] has exceeded usage limit.', $this->getCouponCode()),
-                    422,
-                    $immutableQuote
+                    422
                 );
             }
         }
@@ -376,8 +370,7 @@ class Bolt_Boltpay_Helper_Coupon extends Mage_Core_Helper_Abstract
             $this->setErrorResponseAndThrowException(
                 self::ERR_SERVICE,
                 $e->getMessage(),
-                422,
-                @$immutableQuote
+                422
             );
         }
     }
@@ -408,8 +401,7 @@ class Bolt_Boltpay_Helper_Coupon extends Mage_Core_Helper_Abstract
             $this->setErrorResponseAndThrowException(
                 self::ERR_SERVICE,
                 sprintf("Invalid coupon code response for coupon [%s]", $this->getCouponCode()),
-                422,
-                $immutableQuote
+                422
             );
         }
     }
@@ -419,9 +411,10 @@ class Bolt_Boltpay_Helper_Coupon extends Mage_Core_Helper_Abstract
      * @param int $errCode
      * @param string $message
      * @param int $httpStatusCode
+     * @param Exception $exception
      * @throws Exception
      */
-    protected function setErrorResponseAndThrowException($errCode, $message, $httpStatusCode)
+    protected function setErrorResponseAndThrowException($errCode, $message, $httpStatusCode,\Exception $exception = null)
     {
         $this->responseError = [
             'code' => $errCode,
@@ -430,7 +423,11 @@ class Bolt_Boltpay_Helper_Coupon extends Mage_Core_Helper_Abstract
 
         $this->httpCode = $httpStatusCode;
         $this->responseCart = $this->getCartTotals();
-        throw new \Exception($message);
+
+        if ($exception){
+            throw $exception;
+        }
+        throw new \Bolt_Boltpay_BadInputException($message);
     }
 
     /**

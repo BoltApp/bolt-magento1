@@ -57,6 +57,7 @@ class Bolt_Boltpay_ApiController extends Mage_Core_Controller_Front_Action
             if ($bodyParams['type'] == "discounts.code.apply") {
                 /** @var Bolt_Boltpay_Helper_Coupon $couponHelper */
                 $couponHelper = Mage::helper('boltpay/coupon');
+                $couponHelper->setupVariables(json_decode(file_get_contents('php://input')));
                 $couponHelper->applyCoupon();
 
                 return $this->sendResponse($couponHelper->getHttpCode(), $couponHelper->getResponseData());
