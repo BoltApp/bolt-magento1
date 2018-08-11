@@ -299,8 +299,8 @@ class Bolt_Boltpay_Model_Payment extends Mage_Payment_Model_Method_Abstract
 
             $data = array(
                 'transaction_id' => $transId,
-                'Amount' => $amount * 100,
-                'Currency' => $order->getOrderCurrencyCode(),
+                'amount' => $amount * 100,
+                'currency' => $order->getOrderCurrencyCode(),
             );
             $response = $boltHelper->transmit('credit', $data);
 
