@@ -237,38 +237,84 @@ class Bolt_Boltpay_Model_Observer
      */
     public function setInitialOrderStatusAndDetails(Varien_Event_Observer $observer) {
 
-        /** @var Mage_Sales_Model_Order $order */
-        $order = $observer->getEvent()->getOrder();
-        $payment = $order->getPayment();
+        try{
+            $boltApiHelper = Mage::helper('boltpay/api');
+            /** @var Mage_Sales_Model_Order $order */
+            $order = $observer->getEvent()->getOrder();
+            $payment = $order->getPayment();
+    
+            $paymentMethod = $payment->getMethod();
+            if (strtolower($paymentMethod) !== Bolt_Boltpay_Model_Payment::METHOD_CODE) {
+                return;
+            }
+    
+            $reference = Mage::getSingleton('core/session')->getBoltReference();
+            $transaction = Mage::getSingleton('core/session')->getBoltTransaction() ?: $boltApiHelper->fetchTransaction($reference);
+            
+            $boltCartTotal = $transaction->amount->currency_symbol. ($transaction->amount->amount/100);
+            $orderTotal = $order->getGrandTotal();
+    
+            $msg = Mage::helper('boltpay')->__(
+                "BOLT notification: Authorization requested for %s.  Order total is %s. Bolt transaction: %s/transaction/%s.", 
+                $boltCartTotal, $transaction->amount->currency_symbol.$orderTotal, Mage::helper('boltpay/url')->getBoltMerchantUrl(), $transaction->reference
+            );
+    
+            if(Mage::getSingleton('core/session')->getWasCreatedByHook()){ // order is create via AJAX call
+                $msg .= Mage::helper('boltpay')->__("  This order was created via webhook (Bolt traceId: <%s>)", Mage::helper('boltpay/bugsnag')->getBoltTraceId());
+            }
+    
+            $order->setState(Bolt_Boltpay_Model_Payment::transactionStatusToOrderStatus($transaction->status), true, $msg)
+                ->save();
+    
+            $order->getPayment()
+                ->setAdditionalInformation('bolt_transaction_status', $transaction->status)
+                ->setAdditionalInformation('bolt_reference', $transaction->reference)
+                ->setAdditionalInformation('bolt_merchant_transaction_id', $transaction->id)
+                ->setTransactionId($transaction->id)
+                ->save();
+            
+            //Set the customer note if exist
+            $spInstructions = trim($transaction->order->user_note);
+            if(!empty($spInstructions)){
+                $order->setCustomerNote($spInstructions)->save();
+            }
+        }
+        catch (Exception $e) {
+            Mage::helper('boltpay/bugsnag')->notifyException($e);
+        }
 
-        $paymentMethod = $payment->getMethod();
-        if (strtolower($paymentMethod) !== Bolt_Boltpay_Model_Payment::METHOD_CODE) {
+    }
+    
+    /**
+    * Prepend an additional order info box to the gift options block.
+    * - event: core_block_abstract_to_html_after
+    *
+    * @param Varien_Event_Observer $observer
+    */
+    public function setAdminOrderViewTemplate(Varien_Event_Observer $observer) {
+        $optionsBlock = $observer->getBlock();
+
+        if ($optionsBlock->getNameInLayout() === 'gift_options') {
+            $customInfoBlock = Mage::app()->getLayout()->createBlock(
+                'adminhtml/template',
+                'custom_order_info',
+                array(
+                    'template' => 'boltpay/order/list.phtml',
+                    'order' => Mage::registry('current_order'),
+                )
+            );
+            $optionsHtml = $observer->getTransport()->getHtml();
+            $customHtml  = $customInfoBlock->toHtml();        
+            $observer->getTransport()->setHtml($customHtml . $optionsHtml);
+        }
+        elseif( get_class($optionsBlock) === Mage::getConfig()->getBlockClassName('sales/order_info') ){
+            $customInfoBlock = Mage::app()->getLayout()->createBlock('boltpay/sales_order_view_note');
+            $optionsHtml = $observer->getTransport()->getHtml();
+            $customHtml  = $customInfoBlock->toHtml(); 
+            $observer->getTransport()->setHtml(  $optionsHtml.$customHtml );
+        }
+        else{
             return;
-        }
-
-        $reference = Mage::getSingleton('core/session')->getBoltReference();
-        $transaction = Mage::getSingleton('core/session')->getBoltTransaction() ?: Mage::helper('boltpay/api')->fetchTransaction($reference);
-
-        $boltCartTotal = $transaction->amount->currency_symbol. ($transaction->amount->amount/100);
-        $orderTotal = $order->getGrandTotal();
-
-        $msg = Mage::helper('boltpay')->__(
-            "BOLT notification: Authorization requested for %s.  Order total is %s. Bolt transaction: %s/transaction/%s.", 
-            $boltCartTotal, $transaction->amount->currency_symbol.$orderTotal, Mage::helper('boltpay/url')->getBoltMerchantUrl(), $transaction->reference
-        );
-
-        if(Mage::getSingleton('core/session')->getWasCreatedByHook()){ // order is create via AJAX call
-            $msg .= Mage::helper('boltpay')->__("  This order was created via webhook (Bolt traceId: <%s>)", Mage::helper('boltpay/bugsnag')->getBoltTraceId());
-        }
-
-        $order->setState(Bolt_Boltpay_Model_Payment::transactionStatusToOrderStatus($transaction->status), true, $msg)
-            ->save();
-
-        $order->getPayment()
-            ->setAdditionalInformation('bolt_transaction_status', $transaction->status)
-            ->setAdditionalInformation('bolt_reference', $transaction->reference)
-            ->setAdditionalInformation('bolt_merchant_transaction_id', $transaction->id)
-            ->setTransactionId($transaction->id)
-            ->save();
+        } 
     }
 }

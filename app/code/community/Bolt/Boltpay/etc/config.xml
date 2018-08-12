@@ -123,9 +123,20 @@
             <class>Bolt_Boltpay_Model_Observer</class>
             <method>setInitialOrderStatusAndDetails</method>
             <type>singleton</type>
+            <depends>
+              <ZZZZZ_Bolt />  <!--  psuedo module to place execution at the back of event queue -->
+            </depends>
           </set_initial_order_status_and_details>
         </observers>
       </sales_order_place_after>
+      <core_block_abstract_to_html_after>
+        <observers>
+            <boltpay_add_block_to_admin_order_view>
+                <class>Bolt_Boltpay_Model_Observer</class>
+                <method>setAdminOrderViewTemplate</method>
+            </boltpay_add_block_to_admin_order_view>
+        </observers>
+      </core_block_abstract_to_html_after>
     </events>
 
     <sales>
