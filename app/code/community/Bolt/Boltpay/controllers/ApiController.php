@@ -209,7 +209,7 @@ class Bolt_Boltpay_ApiController extends Mage_Core_Controller_Front_Action
      * @param int $httpCode
      * @param array $data
      */
-    protected function sendResponse($httpCode, $data = [])
+    protected function sendResponse($httpCode, $data = array())
     {
         $this->getResponse()->setHeader('Content-type', 'application/json');
         $this->getResponse()->setHttpResponseCode($httpCode);
