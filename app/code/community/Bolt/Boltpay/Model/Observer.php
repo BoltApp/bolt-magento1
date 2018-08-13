@@ -299,7 +299,7 @@ class Bolt_Boltpay_Model_Observer
                 'adminhtml/template',
                 'custom_order_info',
                 array(
-                    'template' => 'boltpay/order/list.phtml',
+                    'template' => 'boltpay/order/customernote.phtml',
                     'order' => Mage::registry('current_order'),
                 )
             );

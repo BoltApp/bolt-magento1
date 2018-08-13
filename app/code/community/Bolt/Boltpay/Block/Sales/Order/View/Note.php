@@ -20,7 +20,7 @@ class Bolt_Boltpay_Block_Sales_Order_View_Note extends Mage_Core_Block_Template
     public function __construct()
     {
         parent::__construct();
-        $this->setTemplate('boltpay/order/list.phtml');
+        $this->setTemplate('boltpay/order/customernote.phtml');
     }
     
     public function getCustomerNote()
