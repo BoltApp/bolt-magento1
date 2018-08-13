@@ -174,7 +174,7 @@ class Bolt_Boltpay_Helper_Api extends Bolt_Boltpay_Helper_Data
 
             // check that the order is in the system.  If not, we have an unexpected problem
             if ($immutableQuote->isEmpty()) {
-                throw new Exception(Mage::helper('boltpay')->__("The expected quote is missing from the Magento system.  Were old quotes recently removed from the database?"));
+                throw new Exception(Mage::helper('boltpay')->__("The expected immutable quote [$immutableQuoteId] is missing from the Magento system.  Were old quotes recently removed from the database?"));
             }
 
             if(!$this->storeHasAllCartItems($immutableQuote)){
