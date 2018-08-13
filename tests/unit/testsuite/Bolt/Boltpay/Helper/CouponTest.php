@@ -89,7 +89,7 @@ class Bolt_Boltpay_Helper_CouponTest extends PHPUnit_Framework_TestCase
             array('customer_id' => self::$customerId, 'coupon_code', self::$invalidCouponCode)
         );
         self::$couponCodeId = Bolt_Boltpay_CouponHelper::getCouponIdByCode(self::$invalidCouponCode);
-        self::$productId = Bolt_Boltpay_ProductProvider::createDummyProduct('PHPUNIT_TEST_' . 1);
+        self::$productId = Bolt_Boltpay_ProductProvider::createDummyProduct('PHPUNIT_TEST_1');
     }
 
     /**
@@ -253,7 +253,7 @@ class Bolt_Boltpay_Helper_CouponTest extends PHPUnit_Framework_TestCase
         $check = true;
         try {
             $this->setupEnvironment();
-            $this->currentMock->validateOrderCreation();
+            $this->currentMock->validateOrderExists();
         } catch (\Exception $e) {
             $check = false;
         }
@@ -271,7 +271,7 @@ class Bolt_Boltpay_Helper_CouponTest extends PHPUnit_Framework_TestCase
             $incrementId = Bolt_Boltpay_CouponHelper::createDummyOrder(self::$productId);
 
             $this->setupEnvironment(array('cart' => array('display_id' => "$incrementId|50256")));
-            $this->currentMock->validateOrderCreation();
+            $this->currentMock->validateOrderExists();
         } catch (\Exception $e) {
             $check = false;
         }
@@ -347,7 +347,7 @@ class Bolt_Boltpay_Helper_CouponTest extends PHPUnit_Framework_TestCase
     }
 
     /**
-     * Unit test for validating empty cart if it is passed
+     * Unit test for validating empty cart if valid cart exists
      */
     public function testPassValidateEmptyCart()
     {

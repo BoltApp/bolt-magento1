@@ -248,7 +248,7 @@ class Bolt_Boltpay_CouponHelper
     }
 
     /**
-     * * Creates dummy customer
+     * Creates dummy customer
      *
      * @param array  $additionalData
      * @param string $email

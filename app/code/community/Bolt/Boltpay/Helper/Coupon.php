@@ -95,7 +95,7 @@ class Bolt_Boltpay_Helper_Coupon extends Mage_Core_Helper_Abstract
         $this->validateCouponExists();
         $this->validateRuleExists();
         $this->validateCartIdentificationData();
-        $this->validateOrderCreation();
+        $this->validateOrderExists();
         $this->validateSessionQuote();
         $this->validateImmutableQuote();
         $this->validateEmptyCart();
@@ -113,7 +113,6 @@ class Bolt_Boltpay_Helper_Coupon extends Mage_Core_Helper_Abstract
      */
     public function validateEmptyCoupon()
     {
-        // Check if empty coupon was sent
         if ($this->getCouponCode() === '') {
             $this->setErrorResponseAndThrowException(
                 self::ERR_CODE_INVALID,
@@ -131,7 +130,6 @@ class Bolt_Boltpay_Helper_Coupon extends Mage_Core_Helper_Abstract
     public function validateCouponExists()
     {
         $coupon = $this->getCoupon();
-        // Check if the coupon exists
         if ($coupon->isEmpty() || $coupon->isObjectNew()) {
             $this->setErrorResponseAndThrowException(
                 self::ERR_CODE_INVALID,
@@ -149,10 +147,7 @@ class Bolt_Boltpay_Helper_Coupon extends Mage_Core_Helper_Abstract
      */
     public function validateRuleExists()
     {
-        // Load the coupon discount rule
         $rule = $this->getRule();
-
-        // check if the rule exists
         if ($rule->isEmpty() || $rule->isObjectNew()) {
             $this->setErrorResponseAndThrowException(
                 self::ERR_CODE_INVALID,
@@ -185,10 +180,11 @@ class Bolt_Boltpay_Helper_Coupon extends Mage_Core_Helper_Abstract
 
     /**
      * Verifies that order doesn't already exist based on increment id.
+     *
+     * @throws Exception
      */
-    public function validateOrderCreation()
+    public function validateOrderExists()
     {
-        // Check if the order has already been created
         $incrementId = $this->getIncrementId();
         /** @var Mage_Sales_Model_Order $order */
         $order = Mage::getModel('sales/order')->loadByIncrementId($incrementId);
@@ -227,7 +223,6 @@ class Bolt_Boltpay_Helper_Coupon extends Mage_Core_Helper_Abstract
      */
     public function validateImmutableQuote()
     {
-        // check the existence of child quote
         $immutableQuote = $this->getImmutableQuote();
 
         if ($immutableQuote->isEmpty()) {
@@ -247,7 +242,6 @@ class Bolt_Boltpay_Helper_Coupon extends Mage_Core_Helper_Abstract
     public function validateEmptyCart()
     {
         $immutableQuote = $this->getImmutableQuote();
-        // check if cart is empty
         if (!$immutableQuote->getItemsCount()) {
             $this->setErrorResponseAndThrowException(
                 self::ERR_INSUFFICIENT_INFORMATION,
@@ -267,7 +261,6 @@ class Bolt_Boltpay_Helper_Coupon extends Mage_Core_Helper_Abstract
         $rule = $this->getRule();
         $date = $rule->getToDate();
         if ($date && date('Y-m-d', strtotime($date)) < date('Y-m-d')) {
-
             $this->setErrorResponseAndThrowException(
                 self::ERR_CODE_EXPIRED,
                 sprintf('The coupon code [%s] is expired.', $this->getCouponCode()),
@@ -286,7 +279,6 @@ class Bolt_Boltpay_Helper_Coupon extends Mage_Core_Helper_Abstract
         $rule = $this->getRule();
         $date = $rule->getFromDate();
         if ($date && date('Y-m-d', strtotime($date)) > date('Y-m-d')) {
-
             $desc = 'Code available from ' . Mage::helper('core')->formatDate(
                     new \DateTime($rule->getFromDate()),
                     \IntlDateFormatter::MEDIUM
@@ -307,7 +299,6 @@ class Bolt_Boltpay_Helper_Coupon extends Mage_Core_Helper_Abstract
     public function validateCouponUsageLimits()
     {
         $coupon = $this->getCoupon();
-        // Check coupon usage limits.
         if ($coupon->getUsageLimit() && $coupon->getTimesUsed() >= $coupon->getUsageLimit()) {
             $this->setErrorResponseAndThrowException(
                 self::ERR_CODE_LIMIT_REACHED,
@@ -356,7 +347,6 @@ class Bolt_Boltpay_Helper_Coupon extends Mage_Core_Helper_Abstract
     {
         $rule = $this->getRule();
         $immutableQuote = $this->getImmutableQuote();
-        // rule per customer usage
         if ($usesPerCustomer = $rule->getUsesPerCustomer()) {
             $customerId = $immutableQuote->getCustomerId();
             $ruleCustomer = Mage::getModel('salesrule/rule_customer')->loadByCustomerRule($customerId, $rule->getId());
@@ -414,7 +404,7 @@ class Bolt_Boltpay_Helper_Coupon extends Mage_Core_Helper_Abstract
     /**
      * Verifies that the coupon code was applied to the quote.
      *
-     * @throws Exception     thrown if coupon in quote doesn't match the coupon applied.
+     * @throws Exception  thrown if coupon in quote doesn't match the coupon applied.
      */
     protected function validateAfterApplyingCoupon()
     {
