@@ -121,6 +121,10 @@ class Bolt_Boltpay_CouponHelper
      */
     public static function createDummyRule($couponCode = 'percent-coupon', $additionalData = array(), $couponData = array())
     {
+        if(self::getCouponIdByCode($couponCode)){
+            return self::getCouponByCode($couponCode)->getRuleId();
+        }
+
         // All customer group ids
         $customerGroupIds = Mage::getModel('customer/group')->getCollection()->getAllIds();
         // SalesRule Rule model
@@ -258,9 +262,13 @@ class Bolt_Boltpay_CouponHelper
      */
     public static function createDummyCustomer($additionalData = array(), $email = "bolt@bolt.com") {
         $customer = Mage::getModel("customer/customer");
-        $customer->setData($additionalData);
-        $customer->setEmail($email);
-        $customer->save();
+        $customer->setWebsiteId(Mage::app()->getStore()->getWebsiteId());
+        $customer->loadByEmail($email);
+        if (!$customer->getId()) {
+            $customer->setData($additionalData);
+            $customer->setEmail($email);
+            $customer->save();
+        }
 
         return $customer->getId();
     }
@@ -323,6 +331,18 @@ class Bolt_Boltpay_CouponHelper
     }
 
     /**
+     * Function get coupon by coupon code
+     *
+     * @param $code
+     *
+     * @return object
+     */
+    public static function getCouponByCode($code)
+    {
+        return Mage::getModel('salesrule/coupon')->load($code, 'code');
+    }
+
+    /**
      * Function get coupon id by coupon code
      *
      * @param $code
@@ -331,8 +351,6 @@ class Bolt_Boltpay_CouponHelper
      */
     public static function getCouponIdByCode($code)
     {
-        $coupon = Mage::getModel('salesrule/coupon')->load($code, 'code');
-
-        return $coupon->getId();
+        return self::getCouponByCode($code)->getId();
     }
 }

@@ -9,7 +9,7 @@ class Bolt_Boltpay_Helper_CouponTest extends PHPUnit_Framework_TestCase
 
     private static $couponExistCode = 'BOLT_EXIST_CODE';
 
-    private static $invalidCouponCode = 'FOO_INVALID_CODE';
+    private static $invalidCouponCode = 'BOLT_INVALID_CODE';
 
     /**
      * @var int|null
@@ -70,26 +70,30 @@ class Bolt_Boltpay_Helper_CouponTest extends PHPUnit_Framework_TestCase
      */
     public static function setUpBeforeClass()
     {
-        self::$ruleId = Bolt_Boltpay_CouponHelper::createDummyRule(self::$couponExistCode);
-        self::$invalidRuleId = Bolt_Boltpay_CouponHelper::createDummyRule(
-            self::$invalidCouponCode,
-            array(
-                'from_date'         => (new \DateTime('now +1 day'))->format('Y-m-d'),
-                'to_date'           => '2000-01-01',
-                'uses_per_customer' => 1
-            ),
-            array(
-                'usage_limit'        => 100,
-                'times_used'         => 100,
-                'usage_per_customer' => 1
-            )
-        );
-        self::$customerId = Bolt_Boltpay_CouponHelper::createDummyCustomer();
-        self::$quoteId = Bolt_Boltpay_CouponHelper::createDummyQuote(
-            array('customer_id' => self::$customerId, 'coupon_code', self::$invalidCouponCode)
-        );
-        self::$couponCodeId = Bolt_Boltpay_CouponHelper::getCouponIdByCode(self::$invalidCouponCode);
-        self::$productId = Bolt_Boltpay_ProductProvider::createDummyProduct('PHPUNIT_TEST_1');
+        try {
+            self::$ruleId = Bolt_Boltpay_CouponHelper::createDummyRule(self::$couponExistCode);
+            self::$invalidRuleId = Bolt_Boltpay_CouponHelper::createDummyRule(
+                self::$invalidCouponCode,
+                array(
+                    'from_date'         => (new \DateTime('now +1 day'))->format('Y-m-d'),
+                    'to_date'           => '2000-01-01',
+                    'uses_per_customer' => 1
+                ),
+                array(
+                    'usage_limit'        => 100,
+                    'times_used'         => 100,
+                    'usage_per_customer' => 1
+                )
+            );
+            self::$customerId = Bolt_Boltpay_CouponHelper::createDummyCustomer();
+            self::$quoteId = Bolt_Boltpay_CouponHelper::createDummyQuote(
+                array('customer_id' => self::$customerId, 'coupon_code', self::$invalidCouponCode)
+            );
+            self::$couponCodeId = Bolt_Boltpay_CouponHelper::getCouponIdByCode(self::$invalidCouponCode);
+            self::$productId = Bolt_Boltpay_ProductProvider::createDummyProduct('PHPUNIT_TEST_1');
+        } catch (\Exception $e) {
+            self::tearDownAfterClass();
+        }
     }
 
     /**
