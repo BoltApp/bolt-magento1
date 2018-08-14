@@ -16,9 +16,9 @@
  */
 
 /********************************************************************
- * Bolt replace button JavaScript / CSS that's added to the shopping cart page
+ * Bolt replace button JavaScript / CSS that's added to the firecheckout cart page
  ********************************************************************/
-
+/** @var Bolt_Boltpay_Block_Checkout_Boltpay $this */
 if(!Mage::helper('boltpay')->canUseBolt($this->getQuote(), false) || Mage::getStoreConfig('payment/boltpay/hide_on_checkout') ) return;
 
 ?>
@@ -63,7 +63,7 @@ if(!Mage::helper('boltpay')->canUseBolt($this->getQuote(), false) || Mage::getSt
 
                 if (responseJSON.cart_data) {
                     eval(responseJSON.cart_data);
-                    var bolt_button = document.querySelectorAll('.bolt-checkout-button-button')[0];
+                    var bolt_button = document.querySelectorAll('[data-tid=bolt-checkout-button], div.bolt-checkout-button > div')[0];
                     bolt_button.click();
                 } else {
                     this.setResponse(response);
@@ -73,13 +73,20 @@ if(!Mage::helper('boltpay')->canUseBolt($this->getQuote(), false) || Mage::getSt
 
             var i, length;
 
-            var place_order_button = document.querySelectorAll('.button.btn-checkout')[0];
+            var place_order_buttons = document.querySelectorAll('<?=Mage::getStoreConfig('payment/boltpay/selectors');?>');
 
-            var bolt_button =  document.createElement("div");
-            bolt_button.setAttribute("class", "bolt-checkout-button with-cards <?=$this->getCssSuffix(); ?> <?=$this->getTheme(); ?>");
-            bolt_button.style.display = "none";
+            place_order_buttons.forEach(
+                function(place_order_button) {
+                    var bolt_button =  document.createElement("div");
+                    bolt_button.setAttribute("class", "bolt-checkout-button with-cards <?=$this->getCssSuffix(); ?> <?=$this->getTheme(); ?>");
+                    bolt_button.style.display = "none";
 
-            place_order_button.parentNode.insertBefore(bolt_button, place_order_button);
+                    place_order_button.parentNode.insertBefore(bolt_button, place_order_button);
+                }
+            );
+
+            var bolt_buttons = document.querySelectorAll('.bolt-checkout-button');
+
             // Render Bolt button.
             BoltCheckout.configure({}, {}, {});
 
@@ -89,11 +96,27 @@ if(!Mage::helper('boltpay')->canUseBolt($this->getQuote(), false) || Mage::getSt
              */
             var toggleBoltButton = function () {
                 if (this.id == "p_method_boltpay") {
-                    bolt_button.style.display="";
-                    place_order_button.style.display="none";
+                    bolt_buttons.forEach(
+                        function (bolt_button) {
+                            bolt_button.style.display="";
+                        }
+                    );
+                    place_order_buttons.forEach(
+                        function (place_order_button) {
+                            place_order_button.style.display="none";
+                        }
+                    );
                 } else {
-                    bolt_button.style.display="none";
-                    place_order_button.style.display="";
+                    bolt_buttons.forEach(
+                        function (bolt_button) {
+                            bolt_button.style.display="none";
+                        }
+                    );
+                    place_order_buttons.forEach(
+                        function (place_order_button) {
+                            place_order_button.style.display="";
+                        }
+                    );
                 }
             };
 
@@ -139,6 +162,7 @@ if(!Mage::helper('boltpay')->canUseBolt($this->getQuote(), false) || Mage::getSt
 
                 var replaceRetries  = 10;
                 var replaceInterval = 500;
+                var areOverlaysSet = false;
 
                 var tryInterval = setInterval(
 
@@ -154,29 +178,30 @@ if(!Mage::helper('boltpay')->canUseBolt($this->getQuote(), false) || Mage::getSt
 
                         if (replaceRetries > 5) replaceRetries = 5;
 
-                        var bolt_button_overlay = document.getElementById('bolt_button_overlay');
+                        var bolt_buttons = document.querySelectorAll('.bolt-checkout-button');
+                        bolt_buttons.forEach(
+                            function (bolt_button) {
 
-                        if (bolt_button_overlay) {
+                                bolt_button_overlay = document.createElement("div");
+                                bolt_button_overlay.setAttribute("class", "bolt_button_overlay");
+                                bolt_button_overlay.style.cssText = 'cursor:pointer;top:6px;left:0px;position:absolute;width:100%;height:44px;opacity:0.0;z-index:10000;background:#fff;';
+
+                                bolt_button.appendChild(bolt_button_overlay);
+
+                                bolt_button_overlay.onclick = function() {
+
+                                    clearInterval(tryInterval);
+
+                                    checkout.createBoltOrder();
+                                };
+                                areOverlaysSet = true;
+                            }
+                        );
+
+                        if (areOverlaysSet) {
                             clearInterval(tryInterval);
                             return;
                         }
-
-                        var bolt_button = document.querySelectorAll('.bolt-checkout-button')[0];
-
-                        if (! bolt_button) return;
-
-                        bolt_button_overlay = document.createElement("div");
-                        bolt_button_overlay.setAttribute("id", "bolt_button_overlay");
-                        bolt_button_overlay.style.cssText = 'cursor:pointer;top:6px;left:0px;position:absolute;width:100%;height:44px;opacity:0.0;z-index:10000;background:#fff;';
-
-                        bolt_button.appendChild(bolt_button_overlay);
-
-                        bolt_button_overlay.onclick = function() {
-
-                            clearInterval(tryInterval);
-
-                            checkout.createBoltOrder();
-                        };
                     },
                     replaceInterval
                 );

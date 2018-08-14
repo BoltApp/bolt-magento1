@@ -243,7 +243,7 @@
         <payment_action>authorize</payment_action>
         <currency>USD</currency>
         <enable_merchant_scoped_account>0</enable_merchant_scoped_account>
-        <selectors><![CDATA[.btn-proceed-checkout, .minicart-actions .checkout-button]]></selectors>
+        <selectors><![CDATA[.btn-proceed-checkout, .minicart-actions .checkout-button, body.firecheckout-index-index .button.btn-checkout]]></selectors>
 
         <selector_styles>.btn-proceed-checkout {
   .bolt-checkout-button.with-cards {
