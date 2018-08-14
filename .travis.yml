@@ -55,3 +55,4 @@ script:
   - cd integration-tests
   - npm install
   - xvfb-run npm run test-magento1
+  - bash /home/travis/build/BoltApp/bolt-magento1/tests/scripts/magento_check_reports
