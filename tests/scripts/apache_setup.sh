@@ -1,9 +1,10 @@
 #!/usr/bin/env bash
 
 # defaults
-SITE_DIR="/home/travis/build/BoltApp/bolt-magento1/"
-SITE_URL="http://travis_magento.loc"
+SITE_DIR="/home/travis/build/BoltApp/bolt-magento1"
+SITE_URL=${HOST_NAME}
 SITE_HOST="127.0.0.1"
+TRAVIS_APACHE_CONFIG="travis-ci-apache.conf"
 
 PARSED_OPTIONS=$(getopt -n "$0"  -o 'd::,u::,h::' --long "dir::,url::,host::"  -- "$@")
 
@@ -43,7 +44,7 @@ printf $SEP
 
 sudo apt-get update
 sudo apt-get install -y apache2 libapache2-mod-fastcgi make
-sudo apt-get install -y php5-dev php-pear php5-mysql php5-gd php5-json
+#sudo apt-get install -y php5.6-dev php-pear php5.6-mysql php5.6-gd php5.6-json
 sudo a2enmod headers
 
 printf $BREATH
@@ -55,6 +56,8 @@ if [[ ${TRAVIS_PHP_VERSION:0:1} == "5" ]]; then sudo groupadd nobody; fi
 if [[ ${TRAVIS_PHP_VERSION:0:1} != "5" ]]; then cp $SCRIPT_DIR/www.conf ~/.phpenv/versions/$(phpenv version-name)/etc/php-fpm.d/; fi
 cp ~/.phpenv/versions/$(phpenv version-name)/etc/php-fpm.conf.default ~/.phpenv/versions/$(phpenv version-name)/etc/php-fpm.conf
 sudo a2enmod rewrite actions fastcgi alias
+sudo sed -i -e "s,www-data,travis,g" /etc/apache2/envvars
+sudo chown -R travis:travis /var/lib/apache2/fastcgi
 echo "cgi.fix_pathinfo = 1" >> ~/.phpenv/versions/$(phpenv version-name)/etc/php.ini
 ~/.phpenv/versions/$(phpenv version-name)/sbin/php-fpm
 
@@ -63,14 +66,22 @@ echo "Configuring Apache virtual hosts"
 printf $SEP
 echo "Apache default virtual host configuration will be overwritten to serve $SITE_URL from $SITE_DIR"
 
-sudo cp -f $SCRIPT_DIR/travis-ci-apache.conf /etc/apache2/sites-available/
-sudo sed -e "s?%DIR%?$SITE_DIR?g" --in-place /etc/apache2/sites-available/travis-ci-apache.conf
-sudo sed -e "s?%URL%?$SITE_URL?g" --in-place /etc/apache2/sites-available/travis-ci-apache.conf
+sudo cp -f $SCRIPT_DIR/$TRAVIS_APACHE_CONFIG /etc/apache2/sites-available/
+sudo sed -e "s?%DIR%?$SITE_DIR?g" --in-place /etc/apache2/sites-available/$TRAVIS_APACHE_CONFIG
+sudo sed -e "s?%URL%?$SITE_URL?g" --in-place /etc/apache2/sites-available/$TRAVIS_APACHE_CONFIG
 sudo sh -c "echo '\n$SITE_HOST    $SITE_URL' >> /etc/hosts"
-sudo a2ensite travis-ci-apache
+sudo a2ensite travis-ci-apache.conf
 
 printf $BREATH
 echo "Restarting Apache"
 printf $SEP
 
 sudo service apache2 restart
+
+cd $SITE_DIR
+echo "<?php echo '<h1>Local Travis Magento Environment</h1>'; ?>\n<?php phpinfo(); ?>" > $SITE_DIR/index.php
+
+
+curl -Is $SITE_URL | head -n 1
+
+rm $SITE_DIR/index.php
