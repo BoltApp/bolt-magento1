@@ -54,5 +54,5 @@ script:
   - git clone --single-branch -b travis_ci_local_POC https://${INTEGRATION_TESTS_TOKEN}@github.com/BoltApp/integration-tests.git/
   - cd integration-tests
   - npm install
-  - xvfb-run npm run test-magento1
+  - xvfb-run npm run test-checkout-magento1
   - wget http://travis_magento.loc
