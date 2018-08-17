@@ -127,6 +127,7 @@ class Bolt_Boltpay_ShippingController extends Mage_Core_Controller_Front_Action
                 'company' => $billingAddress->getCompany() ?: $shippingAddress->company,
                 'city' => $billingAddress->getCity() ?: $shippingAddress->locality,
                 'region' => $billingAddress->getRegion() ?: $region,
+                'region_id' => $billingAddress->getRegionId() ?: $regionId,
                 'postcode' => $billingAddress->getPostcode() ?: $shippingAddress->postal_code,
                 'country_id' => $billingAddress->getCountryId() ?: $shippingAddress->country_code,
                 'telephone' => $billingAddress->getTelephone() ?: $shippingAddress->phone
