@@ -1,4 +1,12 @@
 # Changelog
+## [v1.2.0](https://s3-us-west-1.amazonaws.com/bolt-public/magento-integration-release/bolt-magento1_v1.2.1.zip) 2018-08-17
+ - Introduced modman
+ - Tweaked explanation of publishable keys
+ - Bugfix for:
+  - shipping discount
+  - refund hook
+  - region_id
+
 ## [v1.2.0](https://s3-us-west-1.amazonaws.com/bolt-public/magento-integration-release/bolt-magento1_v1.2.0.zip) 2018-07-29
  - Bugfix around duplicate orders
  - Admin order creation bugfix

@@ -64,7 +64,7 @@ AdminOrder.prototype.prepareParams =
             addBillingToPrepareParams = true;
         }
 
-        return params;
+        return (typeof this.customPrepareParams == 'function') ? this.customPrepareParams(params) : params;
     }
 ;
 //////////////////////////////////////////////////

@@ -34,12 +34,14 @@ class Bolt_Boltpay_ApiController extends Mage_Core_Controller_Front_Action
 
             $requestJson = file_get_contents('php://input');
 
+            $boltHelperBase = Mage::helper('boltpay');
+
             $boltHelper = Mage::helper('boltpay/api');
 
             Mage::helper('boltpay/api')->setResponseContextHeaders();
 
             if (!$boltHelper->verify_hook($requestJson, $hmacHeader)) {
-                $exception = new Exception("Hook request failed validation.");
+                $exception = new Exception($boltHelperBase->__('Hook request failed validation.'));
                 $this->getResponse()->setHttpResponseCode(412);
                 $this->getResponse()->setBody(json_encode(array('status' => 'failure', 'error' => array('code' => '6001', 'message' => $exception->getMessage()))));
 
@@ -55,11 +57,6 @@ class Bolt_Boltpay_ApiController extends Mage_Core_Controller_Front_Action
             $reference = $bodyParams['reference'];
             $transactionId = @$bodyParams['transaction_id'] ?: $bodyParams['id'];
             $hookType = @$bodyParams['notification_type'] ?: $bodyParams['type'];
-
-            /** @var Bolt_Boltpay_Helper_Api $boltHelper */
-            $boltHelper = Mage::helper('boltpay/api');
-
-            $boltHelperBase = Mage::helper('boltpay');
 
             /* Allows this method to be used even if the Bolt plugin is disabled.  This accounts for orders that have already been processed by Bolt */
             $boltHelperBase::$fromHooks = true;
@@ -93,9 +90,7 @@ class Bolt_Boltpay_ApiController extends Mage_Core_Controller_Front_Action
                 } elseif ($merchantTransactionId != $transactionId && $hookType != 'credit') {
                     Mage::helper('boltpay/bugsnag')->notifyException(
                         new Exception(
-                            sprintf(
-                                'Transaction id mismatch. Expected: %s got: %s', $merchantTransactionId, $transactionId
-                            )
+                            $boltHelperBase->__("Transaction id mismatch. Expected: %s got: %s", $merchantTransactionId, $transactionId)
                         )
                     );
                 }
@@ -113,13 +108,12 @@ class Bolt_Boltpay_ApiController extends Mage_Core_Controller_Front_Action
                     ->setStore($order->getStoreId())
                     ->handleTransactionUpdate($orderPayment, $newTransactionStatus, $prevTransactionStatus, $transactionAmount);
 
-
                 $this->getResponse()->setBody(
                     json_encode(
                         array(
                             'status' => 'success',
                             'display_id' => $order->getIncrementId(),
-                            'message' => "Updated existing order ".$order->getIncrementId()
+                            'message' => $boltHelperBase->__( 'Updated existing order %d', $order->getIncrementId() )
                         )
                     )
                 );
@@ -140,7 +134,7 @@ class Bolt_Boltpay_ApiController extends Mage_Core_Controller_Front_Action
             );
 
             if (empty($reference) || empty($transactionId)) {
-                $exception = new Exception('Reference and/or transaction_id is missing');
+                $exception = new Exception($boltHelperBase->__('Reference and/or transaction_id is missing'));
 
                 $this->getResponse()->setHttpResponseCode(400)
                     ->setBody(json_encode(array('status' => 'failure', 'error' => array('code' => '6011', 'message' => $exception->getMessage()))));
@@ -156,7 +150,7 @@ class Bolt_Boltpay_ApiController extends Mage_Core_Controller_Front_Action
                     array(
                         'status' => 'success',
                         'display_id' => $order->getIncrementId(),
-                        'message' => "Order creation was successful"
+                        'message' => $boltHelperBase->__('Order creation was successful')
                     )
                 )
             );
@@ -167,7 +161,7 @@ class Bolt_Boltpay_ApiController extends Mage_Core_Controller_Front_Action
             if ($boltPayInvalidTransitionException->getOldStatus() == Bolt_Boltpay_Model_Payment::TRANSACTION_ON_HOLD) {
                 $this->getResponse()->setHttpResponseCode(503)
                     ->setHeader("Retry-After", "86400")
-                    ->setBody(json_encode(array('status' => 'failure', 'error' => array('code' => '6009', 'message' => 'The order is on-hold and requires manual update before this hook is accepted' ))));
+                    ->setBody(json_encode(array('status' => 'failure', 'error' => array('code' => '6009', 'message' => $boltHelperBase->__('The order is on-hold and requires manual update before this hook is accepted') ))));
             } else {
                 // An invalid transition is treated as a late queue event and hence will be ignored
                 //Mage::log($errorMessage, null, 'bolt.log');

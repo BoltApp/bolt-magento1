@@ -32,7 +32,7 @@ class Bolt_Boltpay_OrderController extends Mage_Core_Controller_Front_Action
         try {
 
             if (!$this->getRequest()->isAjax()) {
-                Mage::throwException("OrderController::saveAction called with a non AJAX call");
+                Mage::throwException(Mage::helper('boltpay')->__("OrderController::saveAction called with a non AJAX call"));
             }
 
             /** @var Bolt_Boltpay_Helper_Api $boltHelper */
@@ -109,15 +109,13 @@ class Bolt_Boltpay_OrderController extends Mage_Core_Controller_Front_Action
 
         try {
             if (!$this->getRequest()->isAjax()) {
-                Mage::throwException("OrderController::createAction called with a non AJAX call");
+                Mage::throwException(Mage::helper('boltpay')->__("OrderController::createAction called with a non AJAX call"));
             }
 
 
             $checkout = Mage::getSingleton('firecheckout/type_standard');
             $quote = $checkout->getQuote();
             $billing  = $this->getRequest()->getPost('billing', array());
-
-            $checkout->applyShippingMethod($this->getRequest()->getPost('shipping_method', false));
 
             $this->getResponse()->setHeader('Content-type', 'application/json', true);
 
@@ -170,6 +168,9 @@ class Bolt_Boltpay_OrderController extends Mage_Core_Controller_Front_Action
                 }
             }
 
+            $checkout->applyShippingMethod($this->getRequest()->getPost('shipping_method', false));  # FireCheckout Logic for adding shipping method
+            $quote->getShippingAddress()->setShippingMethod($this->getRequest()->getPost('shipping_method', false));  # Bolt logic for adding shipping method
+
             $checkout->registerCustomerIfRequested();
 
             Mage::helper('boltpay')->collectTotals($quote)->save();
@@ -183,7 +184,7 @@ class Bolt_Boltpay_OrderController extends Mage_Core_Controller_Front_Action
             if (!$result['cart_data']) {
                 $result['success'] = false;
                 $result['error']   = true;
-                $result['error_messages'] = "Your shopping cart is empty.  Your session may have expired.";
+                $result['error_messages'] = Mage::helper('boltpay')->__("Your shopping cart is empty.  Your session may have expired.");
             }
 
             $this->getResponse()->setHeader('Content-type', 'application/json', true);

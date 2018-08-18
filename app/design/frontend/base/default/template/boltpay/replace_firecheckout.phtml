@@ -47,7 +47,7 @@ if(!Mage::helper('boltpay')->canUseBolt($this->getQuote(), false) || Mage::getSt
 
                 checkout.setLoadWaiting(true);
 
-                new Ajax.Request('<?=$this->getUrl('boltpay/order/firecheckoutcreate');?>', {
+                new Ajax.Request('<?php echo Mage::helper('boltpay/api')->getMagentoUrl('boltpay/order/firecheckoutcreate');?>', {
                     method:'post',
                     parameters:params,
                     onSuccess: this.setBoltResponse.bind(this),
@@ -67,7 +67,7 @@ if(!Mage::helper('boltpay')->canUseBolt($this->getQuote(), false) || Mage::getSt
                     bolt_button.click();
                 } else {
                     this.setResponse(response);
-                    window.location.href = "<?=Mage::getURL('checkout/cart');?>";
+                    window.location.href = "<?php echo Mage::helper('boltpay/api')->getMagentoUrl('checkout/cart');?>";
                 }
             };
 

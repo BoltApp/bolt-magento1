@@ -66,30 +66,31 @@
               <show_in_website>1</show_in_website>
               <show_in_store>1</show_in_store>
             </api_key>
-            <publishable_key_onepage translate="label">
-              <label> Publishable Key - One Page Checkout</label>
+            <publishable_key_multipage translate="label">
+              <label> Publishable Key - Multi Step Checkout (default)</label>
               <frontend_type>text</frontend_type>
               <sort_order>11</sort_order>
               <show_in_default>1</show_in_default>
               <show_in_website>1</show_in_website>
               <show_in_store>1</show_in_store>
-            </publishable_key_onepage>
-            <publishable_key_multipage translate="label">
-              <label> Publishable Key - Multi-Page Checkout</label>
+            </publishable_key_multipage>
+            <publishable_key_admin translate="label">
+              <label> Publishable Key - Backoffice (optional)</label>
+              <comment>This key is required to process payment from magento admin. Please consult with your account manager if you don't have the key.</comment>
               <frontend_type>text</frontend_type>
               <sort_order>12</sort_order>
               <show_in_default>1</show_in_default>
               <show_in_website>1</show_in_website>
               <show_in_store>1</show_in_store>
-            </publishable_key_multipage>
-            <publishable_key_admin translate="label">
-              <label> Publishable Key - Backoffice</label>
+            </publishable_key_admin>
+            <publishable_key_onepage translate="label">
+              <label> Publishable Key - One Page Checkout (optional)</label>
               <frontend_type>text</frontend_type>
               <sort_order>13</sort_order>
               <show_in_default>1</show_in_default>
               <show_in_website>1</show_in_website>
               <show_in_store>1</show_in_store>
-            </publishable_key_admin>
+            </publishable_key_onepage>
             <!--
                 The Bolt Signing Secret Key configuration, used to verify web hook request signature.
              -->

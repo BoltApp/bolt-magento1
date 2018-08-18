@@ -98,7 +98,7 @@ class Bolt_Boltpay_Helper_Data extends Mage_Core_Helper_Abstract
      */
     public function collectTotals($quote, $clearTotalsCollectedFlag = false)
     {
-        Mage::getSingleton('salesrule/validator')->resetRoundingDeltas();
+        Mage::getSingleton('boltpay/validator')->resetRoundingDeltas();
 
         if($clearTotalsCollectedFlag) {
             $quote->setTotalsCollectedFlag(false);
