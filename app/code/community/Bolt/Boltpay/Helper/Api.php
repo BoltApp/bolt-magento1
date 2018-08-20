@@ -231,8 +231,10 @@ class Bolt_Boltpay_Helper_Api extends Bolt_Boltpay_Helper_Data
             ///  the Bolt transaction.
             //////////////////////////////////////////////////////////////////////////////////
             $shippingMethodCode = null;
+            $shippingAndTaxHelper = Mage::helper("boltpay/shippingAndTax");
             if ($transaction->order->cart->shipments) {
-                $this->applyShippingAddressToQuote($immutableQuote, $transaction->order->cart->shipments[0]->shipping_address);
+
+                $shippingAndTaxHelper->applyShippingAddressToQuote($immutableQuote, $transaction->order->cart->shipments[0]->shipping_address);
                 $shippingMethodCode = $transaction->order->cart->shipments[0]->reference;
             }
 

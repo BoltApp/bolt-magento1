@@ -46,6 +46,9 @@ class Bolt_Boltpay_ShippingController extends Mage_Core_Controller_Front_Action
 
             /* @var Bolt_Boltpay_Helper_Api $boltHelper */
             $boltHelper = Mage::helper('boltpay/api');
+            /* @var Bolt_Boltpay_Helper_ShippingAndTax $shippingAndTaxHelper */
+            $shippingAndTaxHelper = Mage::helper("boltpay/shippingAndTax");
+
             if (!$boltHelper->verify_hook($requestJson, $hmacHeader)) {
                 throw new Exception(Mage::helper('boltpay')->__("Failed HMAC Authentication"));
             }
@@ -70,7 +73,7 @@ class Bolt_Boltpay_ShippingController extends Mage_Core_Controller_Front_Action
             $session->setQuoteId($quoteId);
             /**************/
 
-            $addressData = $boltHelper->applyShippingAddressToQuote($quote, $shippingAddress);
+            $addressData = $shippingAndTaxHelper->applyShippingAddressToQuote($quote, $shippingAddress);
 
             ////////////////////////////////////////////////////////////////////////////////////////
             // Check session cache for estimate.  If the shipping city or postcode, and the country code match,
@@ -350,7 +353,7 @@ class Bolt_Boltpay_ShippingController extends Mage_Core_Controller_Front_Action
      */
     protected function isPOBoxAllowed()
     {
-        return (bool) Mage::getStoreConfig('payment/boltpay/allow_po_box');
+        return Mage::getStoreConfigFlag('payment/boltpay/allow_po_box');
     }
 
     /**
