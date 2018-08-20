@@ -810,6 +810,7 @@ class Bolt_Boltpay_Helper_Api extends Bolt_Boltpay_Helper_Data
                         'tax_amount'       => (int) round($shippingAddress->getShippingTaxAmount() * 100),
                         'service'          => $shippingAddress->getShippingDescription(),
                         'carrier'          => $shippingAddress->getShippingMethod(),
+                        'reference'        => $shippingAddress->getShippingMethod(),
                         'cost'             => (int) round($totals['shipping']->getValue() * 100),
                     ));
                     $calculatedTotal += round($totals['shipping']->getValue() * 100);
