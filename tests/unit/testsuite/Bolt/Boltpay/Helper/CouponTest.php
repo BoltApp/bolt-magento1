@@ -126,15 +126,15 @@ class Bolt_Boltpay_Helper_CouponTest extends PHPUnit_Framework_TestCase
      */
     public function testPassValidateEmptyCoupon()
     {
-        $check = true;
+        $passed = true;
         try {
             $this->setupEnvironment(array('discount_code' => 'BOLT_CODE'));
             $this->currentMock->validateEmptyCoupon();
-        } catch (\Exception $e) {
-            $check = false;
+        } catch (\Bolt_Boltpay_BadInputException $e) {
+            $passed = false;
         }
 
-        $this->assertTrue($check);
+        $this->assertTrue($passed);
     }
 
     /**
@@ -142,15 +142,15 @@ class Bolt_Boltpay_Helper_CouponTest extends PHPUnit_Framework_TestCase
      */
     public function testFailValidateEmptyCoupon()
     {
-        $check = true;
+        $passed = true;
         try {
             $this->setupEnvironment(array('discount_code' => ''));
             $this->currentMock->validateEmptyCoupon();
-        } catch (\Exception $e) {
-            $check = false;
+        } catch (\Bolt_Boltpay_BadInputException $e) {
+            $passed = false;
         }
 
-        $this->assertFalse($check);
+        $this->assertFalse($passed);
     }
 
     /**
@@ -158,15 +158,15 @@ class Bolt_Boltpay_Helper_CouponTest extends PHPUnit_Framework_TestCase
      */
     public function testPassValidateCouponExists()
     {
-        $check = true;
+        $passed = true;
         try {
             $this->setupEnvironment(array('discount_code' => self::$couponExistCode));
             $this->currentMock->validateCouponExists();
-        } catch (\Exception $e) {
-            $check = false;
+        } catch (\Bolt_Boltpay_BadInputException $e) {
+            $passed = false;
         }
 
-        $this->assertTrue($check);
+        $this->assertTrue($passed);
     }
 
     /**
@@ -174,15 +174,15 @@ class Bolt_Boltpay_Helper_CouponTest extends PHPUnit_Framework_TestCase
      */
     public function testFailValidateCouponExists()
     {
-        $check = true;
+        $passed = true;
         try {
             $this->setupEnvironment(array('discount_code' => 'BOLT_UN_EXIST_CODE'));
             $this->currentMock->validateCouponExists();
-        } catch (\Exception $e) {
-            $check = false;
+        } catch (\Bolt_Boltpay_BadInputException $e) {
+            $passed = false;
         }
 
-        $this->assertFalse($check);
+        $this->assertFalse($passed);
     }
 
     /**
@@ -190,15 +190,15 @@ class Bolt_Boltpay_Helper_CouponTest extends PHPUnit_Framework_TestCase
      */
     public function testPassValidateRuleExists()
     {
-        $check = true;
+        $passed = true;
         try {
             $this->setupEnvironment(array('discount_code' => self::$couponExistCode));
             $this->currentMock->validateRuleExists();
-        } catch (\Exception $e) {
-            $check = false;
+        } catch (\Bolt_Boltpay_BadInputException $e) {
+            $passed = false;
         }
 
-        $this->assertTrue($check);
+        $this->assertTrue($passed);
     }
 
     /**
@@ -206,15 +206,15 @@ class Bolt_Boltpay_Helper_CouponTest extends PHPUnit_Framework_TestCase
      */
     public function testFailValidateRuleExists()
     {
-        $check = true;
+        $passed = true;
         try {
             $this->setupEnvironment(array('discount_code' => 'BOLT_UN_EXIST_CODE'));
             $this->currentMock->validateRuleExists();
-        } catch (\Exception $e) {
-            $check = false;
+        } catch (\Bolt_Boltpay_BadInputException $e) {
+            $passed = false;
         }
 
-        $this->assertFalse($check);
+        $this->assertFalse($passed);
     }
 
     /**
@@ -222,15 +222,15 @@ class Bolt_Boltpay_Helper_CouponTest extends PHPUnit_Framework_TestCase
      */
     public function testPassValidateCartIdentificationData()
     {
-        $check = true;
+        $passed = true;
         try {
             $this->setupEnvironment();
             $this->currentMock->validateCartIdentificationData();
-        } catch (\Exception $e) {
-            $check = false;
+        } catch (\Bolt_Boltpay_BadInputException $e) {
+            $passed = false;
         }
 
-        $this->assertTrue($check);
+        $this->assertTrue($passed);
     }
 
     /**
@@ -238,15 +238,15 @@ class Bolt_Boltpay_Helper_CouponTest extends PHPUnit_Framework_TestCase
      */
     public function testFailValidateCartIdentificationData()
     {
-        $check = true;
+        $passed = true;
         try {
             $this->setupEnvironment(array('cart' => ''));
             $this->currentMock->validateCartIdentificationData();
-        } catch (\Exception $e) {
-            $check = false;
+        } catch (\Bolt_Boltpay_BadInputException $e) {
+            $passed = false;
         }
 
-        $this->assertFalse($check);
+        $this->assertFalse($passed);
     }
 
     /**
@@ -254,15 +254,15 @@ class Bolt_Boltpay_Helper_CouponTest extends PHPUnit_Framework_TestCase
      */
     public function testPassValidateOrderExists()
     {
-        $check = true;
+        $passed = true;
         try {
             $this->setupEnvironment();
             $this->currentMock->validateOrderExists();
-        } catch (\Exception $e) {
-            $check = false;
+        } catch (\Bolt_Boltpay_BadInputException $e) {
+            $passed = false;
         }
 
-        $this->assertTrue($check);
+        $this->assertTrue($passed);
     }
 
     /**
@@ -270,17 +270,17 @@ class Bolt_Boltpay_Helper_CouponTest extends PHPUnit_Framework_TestCase
      */
     public function testFailValidateOrderExists()
     {
-        $check = true;
+        $passed = true;
         try {
             $incrementId = Bolt_Boltpay_CouponHelper::createDummyOrder(self::$productId);
 
             $this->setupEnvironment(array('cart' => array('display_id' => "$incrementId|50256")));
             $this->currentMock->validateOrderExists();
-        } catch (\Exception $e) {
-            $check = false;
+        } catch (\Bolt_Boltpay_BadInputException $e) {
+            $passed = false;
         }
 
-        $this->assertFalse($check);
+        $this->assertFalse($passed);
         if (@$incrementId) {
             Bolt_Boltpay_CouponHelper::deleteDummyOrder($incrementId);
         }
@@ -291,15 +291,15 @@ class Bolt_Boltpay_Helper_CouponTest extends PHPUnit_Framework_TestCase
      */
     public function testPassValidateImmutableQuote()
     {
-        $check = true;
+        $passed = true;
         try {
             $this->setupEnvironment(array('cart' => array('display_id' => '100010289|' . self::$quoteId)));
             $this->currentMock->validateImmutableQuote();
-        } catch (\Exception $e) {
-            $check = false;
+        } catch (\Bolt_Boltpay_BadInputException $e) {
+            $passed = false;
         }
 
-        $this->assertTrue($check);
+        $this->assertTrue($passed);
     }
 
     /**
@@ -307,15 +307,15 @@ class Bolt_Boltpay_Helper_CouponTest extends PHPUnit_Framework_TestCase
      */
     public function testFailValidateImmutableQuote()
     {
-        $check = true;
+        $passed = true;
         try {
             $this->setupEnvironment();
             $this->currentMock->validateImmutableQuote();
-        } catch (\Exception $e) {
-            $check = false;
+        } catch (\Bolt_Boltpay_BadInputException $e) {
+            $passed = false;
         }
 
-        $this->assertFalse($check);
+        $this->assertFalse($passed);
     }
 
     /**
@@ -323,15 +323,15 @@ class Bolt_Boltpay_Helper_CouponTest extends PHPUnit_Framework_TestCase
      */
     public function testPassValidateSessionQuote()
     {
-        $check = true;
+        $passed = true;
         try {
             $this->setupEnvironment(array('cart' => array('order_reference' => self::$quoteId)));
             $this->currentMock->validateSessionQuote();
-        } catch (\Exception $e) {
-            $check = false;
+        } catch (\Bolt_Boltpay_BadInputException $e) {
+            $passed = false;
         }
 
-        $this->assertTrue($check);
+        $this->assertTrue($passed);
     }
 
     /**
@@ -339,15 +339,15 @@ class Bolt_Boltpay_Helper_CouponTest extends PHPUnit_Framework_TestCase
      */
     public function testFailValidateSessionQuote()
     {
-        $check = true;
+        $passed = true;
         try {
             $this->setupEnvironment();
             $this->currentMock->validateSessionQuote();
-        } catch (\Exception $e) {
-            $check = false;
+        } catch (\Bolt_Boltpay_BadInputException $e) {
+            $passed = false;
         }
 
-        $this->assertFalse($check);
+        $this->assertFalse($passed);
     }
 
     /**
@@ -355,7 +355,7 @@ class Bolt_Boltpay_Helper_CouponTest extends PHPUnit_Framework_TestCase
      */
     public function testPassValidateEmptyCart()
     {
-        $check = true;
+        $passed = true;
         try {
             $testHelper = new Bolt_Boltpay_TestHelper();
             $cart = $testHelper->addProduct(self::$productId, 2);
@@ -363,11 +363,11 @@ class Bolt_Boltpay_Helper_CouponTest extends PHPUnit_Framework_TestCase
 
             $this->setupEnvironment(array('cart' => array('display_id' => '100010289|' . $quote->getId())));
             $this->currentMock->validateEmptyCart();
-        } catch (\Exception $e) {
-            $check = false;
+        } catch (\Bolt_Boltpay_BadInputException $e) {
+            $passed = false;
         }
 
-        $this->assertTrue($check);
+        $this->assertTrue($passed);
     }
 
     /**
@@ -375,15 +375,15 @@ class Bolt_Boltpay_Helper_CouponTest extends PHPUnit_Framework_TestCase
      */
     public function testFailValidateEmptyCart()
     {
-        $check = true;
+        $passed = true;
         try {
             $this->setupEnvironment(array('cart' => array('display_id' => '100010289|' . self::$quoteId)));
             $this->currentMock->validateEmptyCart();
-        } catch (\Exception $e) {
-            $check = false;
+        } catch (\Bolt_Boltpay_BadInputException $e) {
+            $passed = false;
         }
 
-        $this->assertFalse($check);
+        $this->assertFalse($passed);
     }
 
     /**
@@ -391,15 +391,15 @@ class Bolt_Boltpay_Helper_CouponTest extends PHPUnit_Framework_TestCase
      */
     public function testPassValidateToDateForRule()
     {
-        $check = true;
+        $passed = true;
         try {
             $this->setupEnvironment(array('discount_code' => self::$couponExistCode));
             $this->currentMock->validateToDateForRule();
-        } catch (\Exception $e) {
-            $check = false;
+        } catch (\Bolt_Boltpay_BadInputException $e) {
+            $passed = false;
         }
 
-        $this->assertTrue($check);
+        $this->assertTrue($passed);
     }
 
     /**
@@ -407,15 +407,15 @@ class Bolt_Boltpay_Helper_CouponTest extends PHPUnit_Framework_TestCase
      */
     public function testFailValidateToDateForRule()
     {
-        $check = true;
+        $passed = true;
         try {
             $this->setupEnvironment(array('discount_code' => self::$invalidCouponCode));
             $this->currentMock->validateToDateForRule();
-        } catch (\Exception $e) {
-            $check = false;
+        } catch (\Bolt_Boltpay_BadInputException $e) {
+            $passed = false;
         }
 
-        $this->assertFalse($check);
+        $this->assertFalse($passed);
     }
 
     /**
@@ -423,15 +423,15 @@ class Bolt_Boltpay_Helper_CouponTest extends PHPUnit_Framework_TestCase
      */
     public function testPassValidateFromDateForRule()
     {
-        $check = true;
+        $passed = true;
         try {
             $this->setupEnvironment(array('discount_code' => self::$couponExistCode));
             $this->currentMock->validateFromDateForRule();
-        } catch (\Exception $e) {
-            $check = false;
+        } catch (\Bolt_Boltpay_BadInputException $e) {
+            $passed = false;
         }
 
-        $this->assertTrue($check);
+        $this->assertTrue($passed);
     }
 
     /**
@@ -439,15 +439,15 @@ class Bolt_Boltpay_Helper_CouponTest extends PHPUnit_Framework_TestCase
      */
     public function testFailValidateFromDateForRule()
     {
-        $check = true;
+        $passed = true;
         try {
             $this->setupEnvironment(array('discount_code' => self::$invalidCouponCode));
             $this->currentMock->validateFromDateForRule();
-        } catch (\Exception $e) {
-            $check = false;
+        } catch (\Bolt_Boltpay_BadInputException $e) {
+            $passed = false;
         }
 
-        $this->assertFalse($check);
+        $this->assertFalse($passed);
     }
 
     /**
@@ -455,15 +455,15 @@ class Bolt_Boltpay_Helper_CouponTest extends PHPUnit_Framework_TestCase
      */
     public function testPassValidateCouponUsageLimits()
     {
-        $check = true;
+        $passed = true;
         try {
             $this->setupEnvironment(array('discount_code' => self::$couponExistCode));
             $this->currentMock->validateCouponUsageLimits();
-        } catch (\Exception $e) {
-            $check = false;
+        } catch (\Bolt_Boltpay_BadInputException $e) {
+            $passed = false;
         }
 
-        $this->assertTrue($check);
+        $this->assertTrue($passed);
     }
 
     /**
@@ -471,15 +471,15 @@ class Bolt_Boltpay_Helper_CouponTest extends PHPUnit_Framework_TestCase
      */
     public function testFailValidateCouponUsageLimits()
     {
-        $check = true;
+        $passed = true;
         try {
             $this->setupEnvironment(array('discount_code' => self::$invalidCouponCode));
             $this->currentMock->validateCouponUsageLimits();
-        } catch (\Exception $e) {
-            $check = false;
+        } catch (\Bolt_Boltpay_BadInputException $e) {
+            $passed = false;
         }
 
-        $this->assertFalse($check);
+        $this->assertFalse($passed);
     }
 
     /**
@@ -487,7 +487,7 @@ class Bolt_Boltpay_Helper_CouponTest extends PHPUnit_Framework_TestCase
      */
     public function testPassValidateCouponCustomerUsageLimits()
     {
-        $check = true;
+        $passed = true;
         try {
             $this->setupEnvironment(
                 array(
@@ -496,11 +496,11 @@ class Bolt_Boltpay_Helper_CouponTest extends PHPUnit_Framework_TestCase
                 )
             );
             $this->currentMock->validateCouponCustomerUsageLimits();
-        } catch (\Exception $e) {
-            $check = false;
+        } catch (\Bolt_Boltpay_BadInputException $e) {
+            $passed = false;
         }
 
-        $this->assertTrue($check);
+        $this->assertTrue($passed);
     }
 
     /**
@@ -509,9 +509,9 @@ class Bolt_Boltpay_Helper_CouponTest extends PHPUnit_Framework_TestCase
 
     public function testFailValidateCouponCustomerUsageLimits()
     {
-        Bolt_Boltpay_CouponHelper::createDummyCouponCustomerUsageLimits(self::$couponCodeId, self::$customerId,2);
+        Bolt_Boltpay_CouponHelper::createDummyCouponCustomerUsageLimits(self::$couponCodeId, self::$customerId, 2);
 
-        $check = true;
+        $passed = true;
         try {
             $this->setupEnvironment(
                 array(
@@ -520,11 +520,11 @@ class Bolt_Boltpay_Helper_CouponTest extends PHPUnit_Framework_TestCase
                 )
             );
             $this->currentMock->validateCouponCustomerUsageLimits();
-        } catch (\Exception $e) {
-            $check = false;
+        } catch (\Bolt_Boltpay_BadInputException $e) {
+            $passed = false;
         }
 
-        $this->assertFalse($check);
+        $this->assertFalse($passed);
     }
 
     /**
@@ -532,7 +532,7 @@ class Bolt_Boltpay_Helper_CouponTest extends PHPUnit_Framework_TestCase
      */
     public function testPassValidateRuleCustomerUsageLimits()
     {
-        $check = true;
+        $passed = true;
         try {
             $this->setupEnvironment(
                 array(
@@ -541,11 +541,11 @@ class Bolt_Boltpay_Helper_CouponTest extends PHPUnit_Framework_TestCase
                 )
             );
             $this->currentMock->validateRuleCustomerUsageLimits();
-        } catch (\Exception $e) {
-            $check = false;
+        } catch (\Bolt_Boltpay_BadInputException $e) {
+            $passed = false;
         }
 
-        $this->assertTrue($check);
+        $this->assertTrue($passed);
     }
 
     /**
@@ -554,7 +554,7 @@ class Bolt_Boltpay_Helper_CouponTest extends PHPUnit_Framework_TestCase
     public function testFailValidateRuleCustomerUsageLimits()
     {
         Bolt_Boltpay_CouponHelper::createDummyRuleCustomerUsageLimits(self::$invalidRuleId, self::$customerId, 2);
-        $check = true;
+        $passed = true;
         try {
             $this->setupEnvironment(
                 array(
@@ -563,10 +563,10 @@ class Bolt_Boltpay_Helper_CouponTest extends PHPUnit_Framework_TestCase
                 )
             );
             $this->currentMock->validateRuleCustomerUsageLimits();
-        } catch (\Exception $e) {
-            $check = false;
+        } catch (\Bolt_Boltpay_BadInputException $e) {
+            $passed = false;
         }
 
-        $this->assertFalse($check);
+        $this->assertFalse($passed);
     }
 }
