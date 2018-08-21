@@ -48,6 +48,14 @@ class Bolt_Boltpay_Helper_Coupon extends Mage_Core_Helper_Abstract
     protected $rule = null;
 
     protected $requestObject = null;
+    protected $mockTransaction = null;
+
+    /** @var Bolt_Boltpay_Helper_Api|null  */
+    protected $helperApi = null;
+    public function __construct()
+    {
+        $this->helperApi = Mage::helper('boltpay/api');
+    }
 
     /**
      * Applies coupon from hook input to customer quote if the coupon is valid.
@@ -84,6 +92,7 @@ class Bolt_Boltpay_Helper_Coupon extends Mage_Core_Helper_Abstract
     public function setupVariables($requestObject)
     {
         $this->requestObject = $requestObject;
+        $this->mockTransaction = (object) array("order" => $requestObject );
     }
 
     /**
@@ -166,8 +175,8 @@ class Bolt_Boltpay_Helper_Coupon extends Mage_Core_Helper_Abstract
     public function validateCartIdentificationData()
     {
         $parentQuoteId = $this->getParentQuoteId();
-        $incrementId = $this->getIncrementId();
-        $immutableQuoteId = $this->getImmutableQuoteId();
+        $incrementId = $this->helperApi->getIncrementIdFromTransaction($this->mockTransaction);
+        $immutableQuoteId = $this->helperApi->getImmutableQuoteIdFromTransaction($this->mockTransaction);
 
         if (empty($parentQuoteId) || empty($incrementId) || empty($immutableQuoteId)) {
             $this->setErrorResponseAndThrowException(
@@ -185,7 +194,7 @@ class Bolt_Boltpay_Helper_Coupon extends Mage_Core_Helper_Abstract
      */
     public function validateOrderExists()
     {
-        $incrementId = $this->getIncrementId();
+        $incrementId = $this->helperApi->getIncrementIdFromTransaction($this->mockTransaction);
         /** @var Mage_Sales_Model_Order $order */
         $order = Mage::getModel('sales/order')->loadByIncrementId($incrementId);
         if ($order->getId()) {
@@ -516,7 +525,7 @@ class Bolt_Boltpay_Helper_Coupon extends Mage_Core_Helper_Abstract
     /**
      * Gets the session quote if it exists.
      *
-     * @return Mage_Sales_Model_Quote
+     * @return Mage_Sales_Model_Quote|null
      * @throws Varien_Exception
      */
     protected function getParentQuote()
@@ -537,7 +546,7 @@ class Bolt_Boltpay_Helper_Coupon extends Mage_Core_Helper_Abstract
     /**
      * Gets the immutable quote if it exists.
      *
-     * @return Mage_Sales_Model_Quote
+     * @return Mage_Sales_Model_Quote|null
      * @throws Varien_Exception
      */
     protected function getImmutableQuote()
@@ -548,7 +557,9 @@ class Bolt_Boltpay_Helper_Coupon extends Mage_Core_Helper_Abstract
             }
 
             /** @var Mage_Sales_Model_Quote $immutableQuote */
-            $immutableQuote = Mage::getModel('sales/quote')->loadByIdWithoutStore($this->getImmutableQuoteId());
+            $immutableQuote = Mage::getModel('sales/quote')->loadByIdWithoutStore(
+                $this->helperApi->getImmutableQuoteIdFromTransaction($this->mockTransaction)
+            );
             $this->immutableQuote = $immutableQuote;
         }
 
@@ -558,7 +569,7 @@ class Bolt_Boltpay_Helper_Coupon extends Mage_Core_Helper_Abstract
     /**
      * Get the coupon based on the coupon code if it exists.
      *
-     * @return object
+     * @return Mage_SalesRule_Model_Coupon|null
      */
     protected function getCoupon()
     {
@@ -566,7 +577,7 @@ class Bolt_Boltpay_Helper_Coupon extends Mage_Core_Helper_Abstract
             if (!$this->requestObject) {
                 return null;
             }
-
+            /** @var Mage_SalesRule_Model_Coupon $coupon */
             $coupon = Mage::getModel('salesrule/coupon')->load($this->getCouponCode(), 'code');
             $this->coupon = $coupon;
         }
@@ -577,7 +588,7 @@ class Bolt_Boltpay_Helper_Coupon extends Mage_Core_Helper_Abstract
     /**
      * Gets rule based on the coupon.
      *
-     * @return object
+     * @return Mage_SalesRule_Model_Rule|null
      */
     protected function getRule()
     {
@@ -588,6 +599,7 @@ class Bolt_Boltpay_Helper_Coupon extends Mage_Core_Helper_Abstract
 
             $coupon = $this->getCoupon();
             // Load the coupon discount rule
+            /** @var Mage_SalesRule_Model_Rule $rule */
             $rule = Mage::getModel('salesrule/rule')->load($coupon->getRuleId());
             $this->rule = $rule;
         }
@@ -603,39 +615,6 @@ class Bolt_Boltpay_Helper_Coupon extends Mage_Core_Helper_Abstract
     protected function getCouponCode()
     {
         return @$this->requestObject->discount_code;
-    }
-
-    /**
-     * Gets increment id from the request.
-     *
-     * @return string
-     */
-    protected function getIncrementId()
-    {
-        // The latter two are transmitted as display_id field, separated by " | "
-        list($incrementId, $immutableQuoteId) = array_pad(
-            explode('|', @$this->requestObject->cart->display_id),
-            2,
-            null
-        );
-
-        return $incrementId;
-    }
-
-    /**
-     * Gets immutable quote id from the request.
-     *
-     * @return int
-     */
-    protected function getImmutableQuoteId()
-    {
-        list($incrementId, $immutableQuoteId) = array_pad(
-            explode('|', @$this->requestObject->cart->display_id),
-            2,
-            null
-        );
-
-        return $immutableQuoteId;
     }
 
     /**
