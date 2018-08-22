@@ -54,6 +54,15 @@ class Bolt_Boltpay_ApiController extends Mage_Core_Controller_Front_Action
 
             $bodyParams = json_decode(file_get_contents('php://input'), true);
 
+            if ($bodyParams['type'] == "discounts.code.apply") {
+                /** @var Bolt_Boltpay_Helper_Coupon $couponHelper */
+                $couponHelper = Mage::helper('boltpay/coupon');
+                $couponHelper->setupVariables(json_decode(file_get_contents('php://input')));
+                $couponHelper->applyCoupon();
+
+                return $this->sendResponse($couponHelper->getHttpCode(), $couponHelper->getResponseData());
+            }
+
             $reference = $bodyParams['reference'];
             $transactionId = @$bodyParams['transaction_id'] ?: $bodyParams['id'];
             $hookType = @$bodyParams['notification_type'] ?: $bodyParams['type'];
@@ -194,4 +203,17 @@ class Bolt_Boltpay_ApiController extends Mage_Core_Controller_Front_Action
 
         return null;
     }
+
+
+    /**
+     * @param int $httpCode
+     * @param array $data
+     */
+    protected function sendResponse($httpCode, $data = array())
+    {
+        $this->getResponse()->setHeader('Content-type', 'application/json');
+        $this->getResponse()->setHttpResponseCode($httpCode);
+        $this->getResponse()->setBody(json_encode($data));
+    }
+
 }
