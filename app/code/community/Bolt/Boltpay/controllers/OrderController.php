@@ -106,12 +106,10 @@ class Bolt_Boltpay_OrderController extends Mage_Core_Controller_Front_Action
      */
     public function firecheckoutcreateAction()
     {
-
         try {
             if (!$this->getRequest()->isAjax()) {
                 Mage::throwException(Mage::helper('boltpay')->__("OrderController::createAction called with a non AJAX call"));
             }
-
 
             $checkout = Mage::getSingleton('firecheckout/type_standard');
             $quote = $checkout->getQuote();
@@ -179,7 +177,7 @@ class Bolt_Boltpay_OrderController extends Mage_Core_Controller_Front_Action
 
             $result = array();
 
-            $result['cart_data'] = $block->getCartDataJs('one-page');
+            $result['cart_data'] = $block->getCartDataJs('firecheckout');
 
             if (!$result['cart_data']) {
                 $result['success'] = false;
