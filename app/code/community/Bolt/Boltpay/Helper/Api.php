@@ -968,11 +968,6 @@ class Bolt_Boltpay_Helper_Api extends Bolt_Boltpay_Helper_Data
 
             $this->applyShippingRate($quote, $rate->getCode());
 
-            $label = $rate->getCarrierTitle();
-            if ($rate->getMethodTitle()) {
-                $label = $label . ' - ' . $rate->getMethodTitle();
-            }
-
             $rateCode = $rate->getCode();
 
             if (empty($rateCode)) {
@@ -987,7 +982,7 @@ class Bolt_Boltpay_Helper_Api extends Bolt_Boltpay_Helper_Data
             $adjustedShippingAmount = $this->getAdjustedShippingAmount($originalDiscountedSubtotal, $quote);
 
             $option = array(
-                "service" => $label,
+                "service" => $this->getShippingLabel($rate),
                 "reference" => $rateCode,
                 "cost" => round($adjustedShippingAmount * 100),
                 "tax_amount" => abs(round($shippingAddress->getTaxAmount() * 100))
@@ -1181,5 +1176,31 @@ class Bolt_Boltpay_Helper_Api extends Bolt_Boltpay_Helper_Data
             $params["_secure"] = true;
         }
         return Mage::getUrl($route, $params);
+    }
+
+    /**
+     * Returns user-visible label for given shipping rate.
+     *
+     * @param   object rate
+     * @return  string
+     */
+    public function getShippingLabel($rate) {
+        $carrier = $rate->getCarrierTitle();
+        $title = $rate->getMethodTitle();
+        if (!$title) {
+            return $carrier;
+        }
+
+        // Apply adhoc rules to return concise string.
+        if ($carrier === "Shipping Table Rates") {
+            return $title;
+        }
+        if ($carrier === "United Parcel Service" && substr( $title, 0, 3 ) === "UPS") {
+            return $title;
+        }
+        if (strncasecmp( $carrier, $title, strlen($carrier) ) === 0) {
+            return $title;
+        }
+        return $carrier . " - " . $title;
     }
 }
