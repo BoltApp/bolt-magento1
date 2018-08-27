@@ -42,6 +42,7 @@ before_script:
   - composer show -i
   - bash /home/travis/build/BoltApp/bolt-magento1/tests/scripts/apache_setup.sh
   - bash /home/travis/build/BoltApp/bolt-magento1/tests/scripts/magento_install.sh
+  - bash /home/travis/build/BoltApp/bolt-magento1/tests/scripts/install_bolt_credentials.sh
 
 script:
   - cd /home/travis/build/BoltApp/bolt-magento1/
