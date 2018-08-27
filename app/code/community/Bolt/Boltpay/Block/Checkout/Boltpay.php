@@ -53,17 +53,46 @@ class Bolt_Boltpay_Block_Checkout_Boltpay extends Mage_Checkout_Block_Onepage_Re
     }
 
     /**
-     * Creates an order on Bolt end
+     * Get an order token for a Bolt order either by creating it or making a Promise to create it
      *
      * @param Mage_Sales_Model_Quote $quote         Magento quote object which represents order/cart data
      * @param string                 $checkoutType  'multi-page' | 'one-page' | 'admin' | 'firecheckout'
      *
-     * @return mixed json based PHP object
+     * @return mixed json based PHP object or a javascript Promise string when initializing firecheckout
      */
-    private function _createBoltOrder($quote, $checkoutType)
+    public function getBoltOrderToken($quote, $checkoutType)
     {
         $boltHelper = Mage::helper('boltpay/api');
         $isMultiPage = $checkoutType === self::CHECKOUT_TYPE_MULTI_PAGE;
+
+        if ($checkoutType === self::CHECKOUT_TYPE_FIRECHECKOUT) {
+            $firecheckoutTokenUrl = $boltHelper->getMagentoUrl('boltpay/order/firecheckoutcreate');
+            return <<<PROMISE
+                        new Promise( 
+                            function (resolve, reject) {
+                                var firecheckoutAjaxId = setInterval(
+                                    function() {
+                                         if (isFireCheckoutFormValid) {
+                                            new Ajax.Request('$firecheckoutTokenUrl', {
+                                                method:'post',
+                                                parameters: checkout.getFormData ? checkout.getFormData() : Form.serialize(checkout.form, true),
+                                                onSuccess: function(response) {
+                                                    if(response.responseJSON.error) {
+                                                        reject(response.responseJSON.error);
+                                                    } else {
+                                                        resolve(response.responseJSON.cart_data);
+                                                    }                   
+                                                },
+                                                 onFailure: function(error) { alert('hello.'); reject(error) }
+                                            });
+                                            clearInterval(firecheckoutAjaxId);
+                                         }
+                                    }, 300
+                                );
+                            }
+                        )
+PROMISE;
+        }
 
         $items = $quote->getAllVisibleItems();
 
@@ -136,36 +165,9 @@ class Bolt_Boltpay_Block_Checkout_Boltpay extends Mage_Checkout_Block_Onepage_Re
                 ////////////////////////////////////////////////////////////////////////////////
                 /** @var Mage_Sales_Model_Quote $immutableQuote */
                 $immutableQuote = $boltHelper->cloneQuote($sessionQuote, $isMultiPage);
-
-                if ($checkoutType === self::CHECKOUT_TYPE_FIRECHECKOUT) {
-                    $firecheckoutTokenUrl = $boltHelper->getMagentoUrl('boltpay/order/firecheckoutcreate');
-                    $orderCreationResponse = <<<PROMISE
-                        new Promise( 
-                            function (resolve, reject) {
-                                var params = checkout.getFormData ? checkout.getFormData() : Form.serialize(checkout.form, true);
-                                
-                                var firecheckoutAjaxId = setInterval(
-                                    function() {
-                                         if (isFireCheckoutFormValid) {
-                                            new Ajax.Request('$firecheckoutTokenUrl', {
-                                                method:'post',
-                                                parameters:params,
-                                                onSuccess: function(response) {
-                                                    resolve(response);
-                                                },
-                                                 onFailure: function(error) { alert('problem.'); reject(error) }
-                                            });
-                                            clearInterval(firecheckoutAjaxId);
-                                         }
-                                    }, 300
-                                );
-                            }
-                        )
-PROMISE;
-                } else {
-                    $orderCreationResponse = $this->_createBoltOrder($immutableQuote, $checkoutType);
-                }
                 ////////////////////////////////////////////////////////////////////////////////
+
+                $orderCreationResponse = $this->getBoltOrderToken($immutableQuote, $checkoutType);
 
                 if (@!$orderCreationResponse->error) {
                     ///////////////////////////////////////////////////////////////////////////////////////
@@ -199,7 +201,7 @@ PROMISE;
                 $boltHelper->applyShippingRate($sessionQuote, $shippingMethod);
             }
 
-            $cartData = $this->buildCartData($orderCreationResponse);
+            $cartData = ($checkoutType === self::CHECKOUT_TYPE_FIRECHECKOUT) ? $orderCreationResponse : $this->buildCartData($orderCreationResponse);
 
             return $this->buildBoltCheckoutJavascript($checkoutType, $immutableQuote->getId(), $hintData, $cartData);
 
@@ -257,7 +259,7 @@ PROMISE;
         /* @var Bolt_Boltpay_Helper_Api $boltHelper */
         $boltHelper = Mage::helper('boltpay');
 
-        $jsonCart = json_encode($cartData);
+        $jsonCart = (!is_string($cartData)) ? json_encode($cartData) : $cartData;
         $jsonHints = json_encode($hintData, JSON_FORCE_OBJECT);
 
         //////////////////////////////////////////////////////
@@ -274,22 +276,23 @@ PROMISE;
         $successCustom = $boltHelper->getPaymentBoltpayConfig('success', $checkoutType);
         $closeCustom = $boltHelper->getPaymentBoltpayConfig('close', $checkoutType);
 
-        $onCheckCallbackAdmin = $this->buildOnCheckCallback($checkoutType);
+        $onCheckCallback = $this->buildOnCheckCallback($checkoutType);
         $onSuccessCallback = $this->buildOnSuccessCallback($successCustom, $checkoutType);
         $onCloseCallback = $this->buildOnCloseCallback($closeCustom, $checkoutType);
 
         return ("
             var json_cart = $jsonCart;
+            var json_hints = $jsonHints;
             var quote_id = '{$immutableQuoteId}';
             var order_completed = false;
 
             BoltCheckout.configure(
                 json_cart,
-                $jsonHints,
+                json_hints,
                 {
                   check: function() {
                     $checkCustom
-                    $onCheckCallbackAdmin
+                    $onCheckCallback
                     if (!json_cart.orderToken) {
                         alert(json_cart.error);
                         return false;
@@ -337,7 +340,8 @@ PROMISE;
         switch ($checkoutType) {
             case self::CHECKOUT_TYPE_ADMIN:
                 return
-                    "if ((typeof editForm !== 'undefined') && (typeof editForm.validate === 'function')) {
+                    "
+                    if ((typeof editForm !== 'undefined') && (typeof editForm.validate === 'function')) {
                         var bolt_hidden = document.getElementById('boltpay_payment_button');
                         bolt_hidden.classList.remove('required-entry');
         
@@ -355,21 +359,16 @@ PROMISE;
         
                         bolt_hidden.classList.add('required-entry');
                         return is_valid;
-                    }";
+                    }
+                    ";
             case self::CHECKOUT_TYPE_FIRECHECKOUT:
                 return
-                    "/*if (checkout.loadWaiting) {
-                        return;
-                    }*/
-    
+                    "
                     return (isFireCheckoutFormValid = checkout.validate());
                     ";
             default:
                 return '';
         }
-        return ($checkoutType === self::CHECKOUT_TYPE_ADMIN) ?
-
-        : '';
     }
 
     /**
@@ -422,21 +421,32 @@ PROMISE;
     public function buildOnCloseCallback($closeCustom, $checkoutType)
     {
         $successUrl = Mage::helper('boltpay/api')->getMagentoUrl(Mage::getStoreConfig('payment/boltpay/successpage'));
-
-        return ($checkoutType === self::CHECKOUT_TYPE_ADMIN) ?
-            "if (order_completed && (typeof order !== 'undefined' ) && (typeof order.submit === 'function')) {
-                $closeCustom
-                var bolt_hidden = document.getElementById('boltpay_payment_button');
-                bolt_hidden.classList.remove('required-entry');
-                order.submit();
-             }"
-            : "if (typeof bolt_checkout_close === 'function') {
-                   // used internally to set overlay in firecheckout
-                   bolt_checkout_close();
-                }
-                if (order_completed) {
-                   location.href = '$successUrl';
-            }";
+        $javascript = "";
+        switch ($checkoutType) {
+            case self::CHECKOUT_TYPE_ADMIN:
+                return
+                    "
+                    if (order_completed && (typeof order !== 'undefined' ) && (typeof order.submit === 'function')) {
+                        $closeCustom
+                        var bolt_hidden = document.getElementById('boltpay_payment_button');
+                        bolt_hidden.classList.remove('required-entry');
+                        order.submit();
+                    }
+                    ";
+            case self::CHECKOUT_TYPE_FIRECHECKOUT:
+                $javascript =
+                    "
+                    isFireCheckoutFormValid = false;
+                    initBoltButtons();
+                    ";
+            default:
+                return $javascript.
+                    "
+                    if (order_completed) {
+                        location.href = '$successUrl';
+                    }
+                    ";
+        }
     }
 
     /**

@@ -25,6 +25,10 @@ if(!Mage::helper('boltpay')->canUseBolt($this->getQuote(), false) || Mage::getSt
 <script>
 
     var isFireCheckoutFormValid = false;
+    var initBoltButtons = function() {
+        <?=$this->getCartDataJs(Bolt_Boltpay_Block_Checkout_Boltpay::CHECKOUT_TYPE_FIRECHECKOUT); ?>
+    }
+
     var initializeBolt = function(){
 
         // checkout.setLoadWaiting(false);
@@ -44,7 +48,7 @@ if(!Mage::helper('boltpay')->canUseBolt($this->getQuote(), false) || Mage::getSt
         var bolt_buttons = document.querySelectorAll('.bolt-checkout-button');
 
         // Render Bolt button.
-        <?=$this->getCartDataJs('firecheckout'); ?>
+        initBoltButtons();
 
         /**
          * Click event to payment method radio buttons that toggle
@@ -86,7 +90,7 @@ if(!Mage::helper('boltpay')->canUseBolt($this->getQuote(), false) || Mage::getSt
         var attachClickEvents = function(mutationList) {
 
             var payment_radios = document.querySelectorAll('[name="payment[method]"]');
-            for (var i = 0, var length = payment_radios.length; i < length; i++) {
+            for (i = 0, length = payment_radios.length; i < length; i++) {
 
                 var payment_radio = payment_radios[i];
 
@@ -120,7 +124,7 @@ if(!Mage::helper('boltpay')->canUseBolt($this->getQuote(), false) || Mage::getSt
             var shipping_selected = false;
             var shipping_methods  = document.querySelectorAll('input[name=shipping_method]');
 
-            for (var i = 0, var length = shipping_methods.length; i < length; i++) {
+            for (i = 0, length = shipping_methods.length; i < length; i++) {
                 var shipping_method = shipping_methods[i];
                 if (shipping_method.checked) {
                     shipping_selected = true;
