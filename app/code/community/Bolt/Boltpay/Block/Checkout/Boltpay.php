@@ -83,7 +83,7 @@ class Bolt_Boltpay_Block_Checkout_Boltpay extends Mage_Checkout_Block_Onepage_Re
                                                         resolve(response.responseJSON.cart_data);
                                                     }                   
                                                 },
-                                                 onFailure: function(error) { alert('hello.'); reject(error) }
+                                                 onFailure: function(error) { reject(error) }
                                             });
                                             clearInterval(firecheckoutAjaxId);
                                          }
@@ -259,7 +259,7 @@ PROMISE;
         /* @var Bolt_Boltpay_Helper_Api $boltHelper */
         $boltHelper = Mage::helper('boltpay');
 
-        $jsonCart = (!is_string($cartData)) ? json_encode($cartData) : $cartData;
+        $jsonCart = (is_string($cartData)) ? $cartData : json_encode($cartData);
         $jsonHints = json_encode($hintData, JSON_FORCE_OBJECT);
 
         //////////////////////////////////////////////////////
