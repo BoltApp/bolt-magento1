@@ -158,8 +158,8 @@ if(!$this->isAllowedReplaceScriptOnCurrentPage() || !$this->canUseBolt() ) retur
 
     };
 
-    if (window.addEventListener) {
-        window.addEventListener("load", onloadCallback, false);
+    if (document.addEventListener) {
+        document.addEventListener("DOMContentLoaded", onloadCallback);
     } else if (window.attachEvent) {
         window.attachEvent("onload", onloadCallback);
     } else {
