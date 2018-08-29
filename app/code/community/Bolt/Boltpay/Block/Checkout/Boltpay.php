@@ -162,7 +162,11 @@ class Bolt_Boltpay_Block_Checkout_Boltpay extends Mage_Checkout_Block_Onepage_Re
                     ///////////////////////////////////////////////////////////////////////////////////////
                 }
             } catch (Exception $e) {
-                Mage::helper('boltpay/bugsnag')->notifyException(new Exception($e));
+                $metaData = array('quote' => var_export($sessionQuote->debug(), true));
+                Mage::helper('boltpay/bugsnag')->notifyException(
+                    new Exception($e),
+                    $metaData
+                );
             }
 
             // For multi-page, reapply shipping to quote that may be used for shipping and tax estimate
