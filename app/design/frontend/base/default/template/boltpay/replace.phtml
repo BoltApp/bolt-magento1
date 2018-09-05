@@ -27,7 +27,7 @@ if(!$this->isAllowedReplaceScriptOnCurrentPage() || !$this->canUseBolt() ) retur
 ?>
 <script>
 
-    var onloadCallback = function(){
+    var onDomReady = function(){
 
         /****************************************************************************************************
          * Finds and replaces specified buttons with Bolt checkout buttons. Runs internal function
@@ -158,12 +158,12 @@ if(!$this->isAllowedReplaceScriptOnCurrentPage() || !$this->canUseBolt() ) retur
 
     };
 
-    if (window.addEventListener) {
-        window.addEventListener("load", onloadCallback, false);
+    if (document.addEventListener) {
+        document.addEventListener("DOMContentLoaded", onDomReady);
     } else if (window.attachEvent) {
-        window.attachEvent("onload", onloadCallback);
+        window.attachEvent("onload", onDomReady);
     } else {
-        window.onload = onloadCallback;
+        window.onload = onDomReady;
     }
 
 </script>

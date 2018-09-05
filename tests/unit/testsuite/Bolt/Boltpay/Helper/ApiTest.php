@@ -251,4 +251,56 @@ class Bolt_Boltpay_Helper_ApiTest extends PHPUnit_Framework_TestCase
 
         $this->assertTrue($result);
     }
+
+    public function testShippingLabel()
+    {
+        $rate = $this->getMockBuilder('Mage_Sales_Model_Quote_Address_Rate')
+            ->setMethods(array('getCarrierTitle', 'getMethodTitle'))
+            ->getMock();
+        $rate->method('getCarrierTitle')->willReturn('United Parcel Service');
+        $rate->method('getMethodTitle')->willReturn('2 Day Shipping');
+
+        $label = $this->currentMock->getShippingLabel($rate);
+
+        $this->assertEquals('United Parcel Service - 2 Day Shipping', $label);
+    }
+
+    public function testShippingLabel_notShowShippingTableLatePrefix()
+    {
+        $rate = $this->getMockBuilder('Mage_Sales_Model_Quote_Address_Rate')
+            ->setMethods(array('getCarrierTitle', 'getMethodTitle'))
+            ->getMock();
+        $rate->method('getCarrierTitle')->willReturn('Shipping Table Rates');
+        $rate->method('getMethodTitle')->willReturn('Free shipping (5 - 7 business days)');
+
+        $label = $this->currentMock->getShippingLabel($rate);
+
+        $this->assertEquals('Free shipping (5 - 7 business days)', $label);
+    }
+
+    public function testShippingLabel_notDuplicateCommonPrefix()
+    {
+        $rate = $this->getMockBuilder('Mage_Sales_Model_Quote_Address_Rate')
+            ->setMethods(array('getCarrierTitle', 'getMethodTitle'))
+            ->getMock();
+        $rate->method('getCarrierTitle')->willReturn('USPS');
+        $rate->method('getMethodTitle')->willReturn('USPS Two days');
+
+        $label = $this->currentMock->getShippingLabel($rate);
+
+        $this->assertEquals('USPS Two days', $label);
+    }
+
+    public function testShippingLabel_notDuplicateUPS()
+    {
+        $rate = $this->getMockBuilder('Mage_Sales_Model_Quote_Address_Rate')
+            ->setMethods(array('getCarrierTitle', 'getMethodTitle'))
+            ->getMock();
+        $rate->method('getCarrierTitle')->willReturn('United Parcel Service');
+        $rate->method('getMethodTitle')->willReturn('UPS Business 2 Days');
+
+        $label = $this->currentMock->getShippingLabel($rate);
+
+        $this->assertEquals('UPS Business 2 Days', $label);
+    }
 }
