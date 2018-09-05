@@ -78,7 +78,9 @@ class Bolt_Boltpay_Block_Checkout_Boltpay extends Mage_Checkout_Block_Onepage_Re
                                                 parameters: checkout.getFormData ? checkout.getFormData() : Form.serialize(checkout.form, true),
                                                 onSuccess: function(response) {
                                                     if(response.responseJSON.error) {
-                                                        reject(response.responseJSON.error);
+                                                        // BoltCheckout is currently not doing anything reasonable to alert the user of a problem, so we will do something
+                                                        alert(response.responseJSON.error_messages);
+                                                        reject(response.responseJSON.error_messages);
                                                     } else {
                                                         resolve(response.responseJSON.cart_data);
                                                     }                   
