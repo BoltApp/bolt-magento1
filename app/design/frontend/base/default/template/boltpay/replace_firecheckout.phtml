@@ -39,7 +39,7 @@ if(!Mage::helper('boltpay')->canUseBolt($this->getQuote(), false) || Mage::getSt
             function(place_order_button) {
                 var bolt_button =  document.createElement("div");
                 bolt_button.setAttribute("class", "bolt-checkout-button with-cards <?=$this->getCssSuffix(); ?> <?=$this->getTheme(); ?>");
-                bolt_button.style.display = "none";
+                bolt_button.style.display = "none!important";
 
                 place_order_button.parentNode.insertBefore(bolt_button, place_order_button);
             }
@@ -69,7 +69,7 @@ if(!Mage::helper('boltpay')->canUseBolt($this->getQuote(), false) || Mage::getSt
             } else {
                 bolt_buttons.forEach(
                     function (bolt_button) {
-                        bolt_button.style.display="none";
+                        bolt_button.style.display="none!important";
                     }
                 );
                 place_order_buttons.forEach(
