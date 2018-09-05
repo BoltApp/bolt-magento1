@@ -126,6 +126,7 @@ class Bolt_Boltpay_OrderController extends Mage_Core_Controller_Front_Action
                 $result['success'] = false;
                 $result['error']   = true;
                 if ($result['message'] === $checkout->getCustomerEmailExistsMessage()) {
+                    $result['error_messages'] = $result['message'];
                     unset($result['message']);
                     $result['body'] = array(
                         'id'      => 'emailexists',
