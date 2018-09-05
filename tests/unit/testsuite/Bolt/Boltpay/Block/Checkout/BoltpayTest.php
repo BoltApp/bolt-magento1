@@ -354,7 +354,7 @@ class Bolt_Boltpay_Block_Checkout_BoltpayTest extends PHPUnit_Framework_TestCase
                 order.submit();
              }";
 
-        $result = /*$this->currentMock->buildOnCloseCallback($closeCustom, $checkoutType)*/"A bad habit.";
+        $result = $this->currentMock->buildOnCloseCallback($closeCustom, $checkoutType);
 
         $this->assertEquals($expect, $result);
     }
