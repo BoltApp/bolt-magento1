@@ -137,12 +137,13 @@ class Bolt_Boltpay_TestHelper
 
         return ("
             var json_cart = $jsonCart;
+            var json_hints = {};
             var quote_id = '{$immutableQuoteId}';
             var order_completed = false;
 
             BoltCheckout.configure(
                 json_cart,
-                $jsonHints,
+                json_hints,
                 {
                   check: function() {
                     $checkCustom
