@@ -390,7 +390,7 @@ class Bolt_Boltpay_Helper_Api extends Bolt_Boltpay_Helper_Data
 
         Mage::dispatchEvent(
             'checkout_submit_all_after',
-            array('order' => $order, 'quote' => $this->getQuote(), 'recurring_profiles' => $service->getRecurringPaymentProfiles())
+            array('order' => $order, 'quote' => $immutableQuote, 'recurring_profiles' => $service->getRecurringPaymentProfiles())
         );
         ///////////////////////////////////////////////////////
 
