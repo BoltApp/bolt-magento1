@@ -73,7 +73,13 @@ class Bolt_Boltpay_ApiController extends Mage_Core_Controller_Front_Action
             $transaction = $boltHelper->fetchTransaction($reference);
             $quoteId = $boltHelper->getImmutableQuoteIdFromTransaction($transaction);
 
-            $order =  $boltHelper->getOrderByQuoteId($quoteId);
+            /* If display_id has been confirmed and updated on Bolt, then we should look up the order by display_id */
+            $order = Mage::getModel('sales/order')->loadByIncrementId($transaction->order->cart->display_id);
+
+            /* If it hasn't been confirmed, or could not be found, we use the quoteId as fallback */
+            if ($order->isObjectNew()) {
+                $order =  $boltHelper->getOrderByQuoteId($quoteId);
+            }
 
             if (!$order->isObjectNew()) {
                 //Mage::log('Order Found. Updating it', null, 'bolt.log');
