@@ -383,7 +383,16 @@ class Bolt_Boltpay_Helper_Api extends Bolt_Boltpay_Helper_Data
 
         Mage::getModel('boltpay/payment')->handleOrderUpdate($order);
 
+        ///////////////////////////////////////////////////////
+        /// Dispatch order save events
+        ///////////////////////////////////////////////////////
         Mage::dispatchEvent('bolt_boltpay_save_order_after', array('order'=>$order, 'quote'=>$immutableQuote, 'transaction' => $transaction));
+
+        Mage::dispatchEvent(
+            'checkout_submit_all_after',
+            array('order' => $order, 'quote' => $immutableQuote, 'recurring_profiles' => $service->getRecurringPaymentProfiles())
+        );
+        ///////////////////////////////////////////////////////
 
         if ($sessionQuoteId) {
             $checkoutSession = Mage::getSingleton('checkout/session');
