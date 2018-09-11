@@ -36,7 +36,7 @@ class Bolt_Boltpay_Helper_ApiTest extends PHPUnit_Framework_TestCase
         $this->testHelper = null;
 
         $this->currentMock = $this->getMockBuilder('Bolt_Boltpay_Helper_Api')
-            ->setMethods(['verify_hook_secret', 'verify_hook_api', 'getBoltContextInfo'])
+            ->setMethods(['verify_hook_secret', 'verify_hook_api', 'getBoltContextInfo', 'getItemImageUrl'])
             ->enableOriginalConstructor()
             ->getMock();
 
@@ -88,10 +88,10 @@ class Bolt_Boltpay_Helper_ApiTest extends PHPUnit_Framework_TestCase
         $_multipage = true;
         $item = $_items[0];
         $product = $item->getProduct();
+        $imageUrl = 'no-image';
 
-        /** @var Bolt_Boltpay_Helper_Data $helper */
-        $helper = Mage::helper('boltpay');
-        $imageUrl = $helper->getItemImageUrl($item);
+        $this->currentMock->method('getItemImageUrl')
+            ->will($this->returnValue($imageUrl));
 
         $expected = array (
             'order_reference' => $_quote->getParentQuoteId(),

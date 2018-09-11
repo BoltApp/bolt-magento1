@@ -301,20 +301,17 @@ class Bolt_Boltpay_Helper_Data extends Mage_Core_Helper_Abstract
     }
 
     /**
-     * @param $item
+     * @param Mage_Catalog_Model_Product $_product
      *
      * @return string
      */
-    public function getItemImageUrl($item)
+    public function getItemImageUrl(Mage_Catalog_Model_Product $_product)
     {
         /** @var Mage_Catalog_Helper_Image $imageHelper */
         $imageHelper = Mage::helper('catalog/image');
 
-        /** @var Mage_Catalog_Model_Product $_product */
-        $_product = $item->getProduct();
-
         $image = $imageHelper->init($_product, 'thumbnail', $_product->getThumbnail());
 
-        return (string) $image;
+        return $image;
     }
 }

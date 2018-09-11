@@ -1,3 +1,7 @@
+sudo: enabled
+addons:
+  chrome: stable
+
 language: php
 
 services:
@@ -13,6 +17,8 @@ env:
     - DB=mysql
     - DB_NAME="magento_travis"
     - PHPUNIT_ENVIRONMENT=true
+    - HOST_NAME="travis_magento.loc"
+    - TEST_ENV=local
 
 matrix:
   include:
@@ -32,17 +38,13 @@ before_install:
 before_script:
   - composer self-update -q
   - if [ -n "$GITHUB_TOKEN" ]; then composer config github-oauth.github.com ${GITHUB_TOKEN}; fi;
+  - if [ -n "INTEGRATION_TESTS_TOKEN" ]; then composer config github-oauth.github.com ${INTEGRATION_TESTS_TOKEN}; fi;
   - composer show -i
+  - bash /home/travis/build/BoltApp/bolt-magento1/tests/scripts/apache_setup.sh
+  - bash /home/travis/build/BoltApp/bolt-magento1/tests/scripts/magento_install.sh
 
 script:
-  - cd /home/travis/build/
-  - curl -O https://files.magerun.net/n98-magerun.phar
-  - chmod +x n98-magerun.phar
-  - php -d memroy_limit=512M n98-magerun.phar install --magentoVersionByName="${MAGENTO_VERSION}" --installationFolder="./magento" --dbHost=localhost --dbUser=root --dbName="$DB_NAME" --dbPass="" --installSampleData=no --useDefaultConfigParams=yes --baseUrl="http://travis.magento.local/"
-  - php n98-magerun.phar config:set currency/options/base USD --root-dir ./magento/
-  - php n98-magerun.phar config:set currency/options/default USD --root-dir ./magento/
-  - php n98-magerun.phar config:set currency/options/allow USD --root-dir ./magento/
-  - cp -r magento/. BoltApp/bolt-magento1/
-  - cd BoltApp/bolt-magento1/
+  - cd /home/travis/build/BoltApp/bolt-magento1/
   - export PHPUNIT_ENVIRONMENT=$PHPUNIT_ENVIRONMENT
   - php ${PHPUNIT_PHAR} -c tests/unit/phpunit.xml
+  - bash /home/travis/build/BoltApp/bolt-magento1/tests/scripts/magento_check_reports
