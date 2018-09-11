@@ -31,10 +31,11 @@ class Bolt_Boltpay_Model_Cron
      * the merchants.
      */
     public function cleanupQuotes() {
+        $sales_flat_quote_table = Mage::getSingleton('core/resource')->getTableName('sales/quote');
         $expiration_time = Mage::getModel('core/date')->date('Y-m-d H:i:s', time()-(60*60*24*7));
 
         $connection = Mage::getSingleton('core/resource')->getConnection('core_write');
-        $sql = "DELETE FROM sales_flat_quote WHERE (parent_quote_id IS NOT NULL) AND (parent_quote_id < entity_id) AND (updated_at <= '$expiration_time')";
+        $sql = "DELETE FROM $sales_flat_quote_table WHERE (parent_quote_id IS NOT NULL) AND (parent_quote_id < entity_id) AND (updated_at <= '$expiration_time')";
         $connection->query($sql);
     }
 }
