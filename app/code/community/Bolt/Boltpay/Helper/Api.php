@@ -864,12 +864,6 @@ class Bolt_Boltpay_Helper_Api extends Bolt_Boltpay_Helper_Data
 
                 }
 
-                foreach ($requiredAddressFields as $field) {
-                    if (empty($cartShippingAddress[$field])) {
-                        unset($cartSubmissionData['shipments']);
-                        break;
-                    }
-                }
             }
             ////////////////////////////////////////////////////////////////////////////////////
         }
