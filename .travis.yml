@@ -30,15 +30,15 @@ before_install:
   - mysql -e 'CREATE DATABASE IF NOT EXISTS `$DB_NAME`;'
 
 before_script:
-- composer self-update -q
-- if [ -n "$GITHUB_TOKEN" ]; then composer config github-oauth.github.com ${GITHUB_TOKEN}; fi;
-- if [ -n "INTEGRATION_TESTS_TOKEN" ]; then composer config github-oauth.github.com ${INTEGRATION_TESTS_TOKEN}; fi;
-- composer show -i
-- bash /home/travis/build/BoltApp/bolt-magento1/tests/scripts/apache_setup.sh
-- bash /home/travis/build/BoltApp/bolt-magento1/tests/scripts/magento_install.sh
+  - composer self-update -q
+  - if [ -n "$GITHUB_TOKEN" ]; then composer config github-oauth.github.com ${GITHUB_TOKEN}; fi;
+  - if [ -n "INTEGRATION_TESTS_TOKEN" ]; then composer config github-oauth.github.com ${INTEGRATION_TESTS_TOKEN}; fi;
+  - composer show -i
+  - bash /home/travis/build/BoltApp/bolt-magento1/tests/scripts/apache_setup.sh
+  - bash /home/travis/build/BoltApp/bolt-magento1/tests/scripts/magento_install.sh
 
 script:
-- cd /home/travis/build/BoltApp/bolt-magento1/
-- export PHPUNIT_ENVIRONMENT=$PHPUNIT_ENVIRONMENT
-- php ${PHPUNIT_PHAR} -c tests/unit/phpunit.xml
-- bash /home/travis/build/BoltApp/bolt-magento1/tests/scripts/magento_check_reports
+  - cd /home/travis/build/BoltApp/bolt-magento1/
+  - export PHPUNIT_ENVIRONMENT=$PHPUNIT_ENVIRONMENT
+  - php ${PHPUNIT_PHAR} -c tests/unit/phpunit.xml
+  - bash /home/travis/build/BoltApp/bolt-magento1/tests/scripts/magento_check_reports
