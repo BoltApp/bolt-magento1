@@ -564,7 +564,8 @@ class Bolt_Boltpay_Helper_Api extends Bolt_Boltpay_Helper_Data
             Mage::throwException($message);
         } elseif (self::isResponseError($response)) {
             if (property_exists($response, 'errors')) {
-                Mage::register("api_error", $response->errors[0]->message);
+                Mage::unregister("bolt_api_error");
+                Mage::register("bolt_api_error", $response->errors[0]->message);
             }
 
             $message = Mage::helper('boltpay')->__("BoltPay Gateway error for %s: Request: %s, Response: %s", $url, $request, json_encode($response, true));
