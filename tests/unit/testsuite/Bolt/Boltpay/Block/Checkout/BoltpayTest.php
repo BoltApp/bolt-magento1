@@ -106,7 +106,7 @@ class Bolt_Boltpay_Block_Checkout_BoltpayTest extends PHPUnit_Framework_TestCase
         $testBoltResponse->token = md5('bolt');
 
         $apiErrorMessage = 'Some error from api.';
-        Mage::register('api_error', $apiErrorMessage);
+        Mage::register('bolt_api_error', $apiErrorMessage);
 
         $result = $this->currentMock->buildCartData($testBoltResponse);
 

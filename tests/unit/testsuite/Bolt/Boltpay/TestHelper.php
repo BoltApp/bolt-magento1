@@ -146,12 +146,12 @@ class Bolt_Boltpay_TestHelper
                 json_hints,
                 {
                   check: function() {
-                    $checkCustom
-                    $onCheckCallbackAdmin
                     if (!json_cart.orderToken) {
                         alert(json_cart.error);
                         return false;
                     }
+                    $checkCustom
+                    $onCheckCallbackAdmin
                     return true;
                   },
                   
