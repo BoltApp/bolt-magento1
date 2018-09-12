@@ -246,8 +246,10 @@ PROMISE;
         );
 
         // If there was an unexpected API error, then it was stored in the registry
-        if (Mage::registry("api_error")) {
-            $cartData['error'] = Mage::registry("api_error");
+        if (Mage::registry("bolt_api_error")) {
+            $cartData['error'] = Mage::registry("bolt_api_error");
+        } else if (@$orderCreationResponse->error) {
+            $cartData['error'] = $orderCreationResponse->error;
         }
 
         return $cartData;
@@ -299,12 +301,12 @@ PROMISE;
                 json_hints,
                 {
                   check: function() {
-                    $checkCustom
-                    $onCheckCallback
                     if (!json_cart.orderToken) {
                         alert(json_cart.error);
                         return false;
                     }
+                    $checkCustom
+                    $onCheckCallback
                     return true;
                   },
                   
