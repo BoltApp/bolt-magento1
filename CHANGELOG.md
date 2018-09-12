@@ -1,4 +1,9 @@
 # Changelog
+## [v1.2.3](https://s3-us-west-1.amazonaws.com/bolt-public/magento-integration-release/bolt-magento1_v1.2.3.zip) 2018-09-12
+ - Improved firecheckout loading performance
+ - Fix issue with webhook and user session
+ - Fix issue with missing region
+
 ## [v1.2.2](https://s3-us-west-1.amazonaws.com/bolt-public/magento-integration-release/bolt-magento1_v1.2.2.zip) 2018-08-28
  - Fixed off-by-one error
  - Optimize loading
