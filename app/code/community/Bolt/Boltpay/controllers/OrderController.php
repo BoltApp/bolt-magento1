@@ -106,12 +106,10 @@ class Bolt_Boltpay_OrderController extends Mage_Core_Controller_Front_Action
      */
     public function firecheckoutcreateAction()
     {
-
         try {
             if (!$this->getRequest()->isAjax()) {
                 Mage::throwException(Mage::helper('boltpay')->__("OrderController::createAction called with a non AJAX call"));
             }
-
 
             $checkout = Mage::getSingleton('firecheckout/type_standard');
             $quote = $checkout->getQuote();
@@ -128,6 +126,7 @@ class Bolt_Boltpay_OrderController extends Mage_Core_Controller_Front_Action
                 $result['success'] = false;
                 $result['error']   = true;
                 if ($result['message'] === $checkout->getCustomerEmailExistsMessage()) {
+                    $result['error_messages'] = $result['message'];
                     unset($result['message']);
                     $result['body'] = array(
                         'id'      => 'emailexists',
@@ -175,11 +174,14 @@ class Bolt_Boltpay_OrderController extends Mage_Core_Controller_Front_Action
 
             Mage::helper('boltpay')->collectTotals($quote)->save();
 
+            /** @var Bolt_Boltpay_Block_Checkout_Boltpay $block */
             $block = $this->getLayout()->createBlock('boltpay/checkout_boltpay');
 
             $result = array();
 
-            $result['cart_data'] = $block->getCartDataJs('one-page');
+            /** @var Mage_Sales_Model_Quote $immutableQuote */
+            $immutableQuote = Mage::helper('boltpay')->cloneQuote($quote, false);
+            $result['cart_data'] = $block->buildCartData(($block->getBoltOrderToken($immutableQuote, Bolt_Boltpay_Block_Checkout_Boltpay::CHECKOUT_TYPE_ONE_PAGE)));
 
             if (!$result['cart_data']) {
                 $result['success'] = false;

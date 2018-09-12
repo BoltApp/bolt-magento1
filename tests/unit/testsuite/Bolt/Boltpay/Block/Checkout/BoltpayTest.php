@@ -106,7 +106,7 @@ class Bolt_Boltpay_Block_Checkout_BoltpayTest extends PHPUnit_Framework_TestCase
         $testBoltResponse->token = md5('bolt');
 
         $apiErrorMessage = 'Some error from api.';
-        Mage::register('api_error', $apiErrorMessage);
+        Mage::register('bolt_api_error', $apiErrorMessage);
 
         $result = $this->currentMock->buildCartData($testBoltResponse);
 
@@ -231,7 +231,8 @@ class Bolt_Boltpay_Block_Checkout_BoltpayTest extends PHPUnit_Framework_TestCase
     public function testBuildOnCheckCallbackIfAdminArea()
     {
         $checkoutType = Bolt_Boltpay_Block_Checkout_Boltpay::CHECKOUT_TYPE_ADMIN;
-        $checkCallback = "if ((typeof editForm !== 'undefined') && (typeof editForm.validate === 'function')) {
+        $checkCallback = "
+             if ((typeof editForm !== 'undefined') && (typeof editForm.validate === 'function')) {
                 var bolt_hidden = document.getElementById('boltpay_payment_button');
                 bolt_hidden.classList.remove('required-entry');
 
@@ -249,11 +250,12 @@ class Bolt_Boltpay_Block_Checkout_BoltpayTest extends PHPUnit_Framework_TestCase
 
                 bolt_hidden.classList.add('required-entry');
                 return is_valid;
-            }";
+            }
+        ";
 
         $result = $this->currentMock->buildOnCheckCallback($checkoutType);
 
-        $this->assertEquals($checkCallback, $result);
+        $this->assertEquals(preg_replace('/\s/', '', $checkCallback), preg_replace('/\s/', '', $result));
     }
 
     /**
@@ -326,17 +328,15 @@ class Bolt_Boltpay_Block_Checkout_BoltpayTest extends PHPUnit_Framework_TestCase
         $checkoutType = Bolt_Boltpay_Block_Checkout_Boltpay::CHECKOUT_TYPE_ONE_PAGE;
         $closeCustom = '';
 
-        $expect = "if (typeof bolt_checkout_close === 'function') {
-                   // used internally to set overlay in firecheckout
-                   bolt_checkout_close();
-                }
-                if (order_completed) {
+        $expect = "
+            if (order_completed) {
                    location.href = '$successUrl';
-            }";
+            }
+        ";
 
         $result = $this->currentMock->buildOnCloseCallback($closeCustom, $checkoutType);
 
-        $this->assertEquals($expect, $result);
+        $this->assertEquals(preg_replace('/\s/', '', $expect), preg_replace('/\s/', '', $result));
     }
 
     /**
@@ -347,16 +347,18 @@ class Bolt_Boltpay_Block_Checkout_BoltpayTest extends PHPUnit_Framework_TestCase
         $checkoutType = Bolt_Boltpay_Block_Checkout_Boltpay::CHECKOUT_TYPE_ADMIN;
         $closeCustom = '';
 
-        $expect = "if (order_completed && (typeof order !== 'undefined' ) && (typeof order.submit === 'function')) {
+        $expect = "
+             if (order_completed && (typeof order !== 'undefined' ) && (typeof order.submit === 'function')) {
                 $closeCustom
                 var bolt_hidden = document.getElementById('boltpay_payment_button');
                 bolt_hidden.classList.remove('required-entry');
                 order.submit();
-             }";
-
+             }
+        ";
+        
         $result = $this->currentMock->buildOnCloseCallback($closeCustom, $checkoutType);
 
-        $this->assertEquals($expect, $result);
+        $this->assertEquals(preg_replace('/\s/', '', $expect), preg_replace('/\s/', '', $result));
     }
 
 

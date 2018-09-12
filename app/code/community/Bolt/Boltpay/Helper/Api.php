@@ -208,7 +208,7 @@ class Bolt_Boltpay_Helper_Api extends Bolt_Boltpay_Helper_Data
             } else if (!$parentQuote->getIsActive() ) {
                 throw new Exception(
                     Mage::helper('boltpay')->__("The parent quote %s is currently being processed or has been processed.",
-                                                $immutableQuote->getParentQuoteId() )    
+                                                $immutableQuote->getParentQuoteId() )
                 );
             } else {
                 $parentQuote->setIsActive(false)->save();
@@ -226,16 +226,23 @@ class Bolt_Boltpay_Helper_Api extends Bolt_Boltpay_Helper_Data
                ->setCustomerIsGuest( (($parentQuote->getCustomerId()) ? false : true) )
                ->save();
 
+            //////////////////////////////////////////////////////////////////////////////////
+            ///  Apply shipping address and shipping method data to quote directly from
+            ///  the Bolt transaction.
+            //////////////////////////////////////////////////////////////////////////////////
+            $shippingMethodCode = null;
+            $shippingAndTaxHelper = Mage::helper("boltpay/shippingAndTax");
+            if ($transaction->order->cart->shipments) {
+
+                $shippingAndTaxHelper->applyShippingAddressToQuote($immutableQuote, $transaction->order->cart->shipments[0]->shipping_address);
+                $shippingMethodCode = $transaction->order->cart->shipments[0]->reference;
+            }
+
             $immutableQuote->getShippingAddress()->setShouldIgnoreValidation(true)->save();
             $immutableQuote->getBillingAddress()->setShouldIgnoreValidation(true)->save();
 
-            /********************************************************************
-             * Setting up shipping method by option reference
-             * the one set during checkout
-             ********************************************************************/
-            $referenceShipmentMethod = ($transaction->order->cart->shipments[0]->reference) ?: false;
-            if ($referenceShipmentMethod) {
-                $immutableQuote->getShippingAddress()->setShippingMethod($referenceShipmentMethod)->save();
+            if ($shippingMethodCode) {
+                $immutableQuote->getShippingAddress()->setShippingMethod($shippingMethodCode)->save();
             } else {
                 // Legacy transaction does not have shipments reference - fallback to $service field
                 $service = $transaction->order->cart->shipments[0]->service;
@@ -269,12 +276,15 @@ class Bolt_Boltpay_Helper_Api extends Bolt_Boltpay_Helper_Data
                     Mage::helper('boltpay/bugsnag')->notifyException(new Exception($errorMessage), $metaData);
                 }
             }
+            //////////////////////////////////////////////////////////////////////////////////
 
-
-            // setting Bolt as payment method
+            //////////////////////////////////////////////////////////////////////////////////
+            // set Bolt as payment method
+            //////////////////////////////////////////////////////////////////////////////////
             $immutableQuote->getShippingAddress()->setPaymentMethod(Bolt_Boltpay_Model_Payment::METHOD_CODE)->save();
             $payment = $immutableQuote->getPayment();
             $payment->setMethod(Bolt_Boltpay_Model_Payment::METHOD_CODE);
+            //////////////////////////////////////////////////////////////////////////////////
 
             Mage::helper('boltpay')->collectTotals($immutableQuote, true)->save();
 
@@ -309,7 +319,9 @@ class Bolt_Boltpay_Helper_Api extends Bolt_Boltpay_Helper_Data
             }
             ////////////////////////////////////////////////////////////////////////////
 
-            // a call to internal Magento service for order creation
+            ////////////////////////////////////////////////////////////////////////////
+            // call internal Magento service for order creation
+            ////////////////////////////////////////////////////////////////////////////
             $service = Mage::getModel('sales/service_quote', $immutableQuote);
 
             try {
@@ -341,6 +353,7 @@ class Bolt_Boltpay_Helper_Api extends Bolt_Boltpay_Helper_Data
                 );
                 throw $e;
             }
+            ////////////////////////////////////////////////////////////////////////////
 
         } catch ( Exception $e ) {
             // Order creation failed, so mark the parent quote as active so webhooks can retry it
@@ -353,23 +366,6 @@ class Bolt_Boltpay_Helper_Api extends Bolt_Boltpay_Helper_Data
 
         $order = $service->getOrder();
         $this->validateSubmittedOrder($order, $immutableQuote);
-
-        Mage::getModel('boltpay/payment')->handleOrderUpdate($order);
-
-        Mage::dispatchEvent('bolt_boltpay_save_order_after', array('order'=>$order, 'quote'=>$immutableQuote, 'transaction' => $transaction));
-
-        if ($sessionQuoteId) {
-            $checkoutSession = Mage::getSingleton('checkout/session');
-            $checkoutSession
-                ->clearHelperData();
-            $checkoutSession
-                ->setLastQuoteId($parentQuote->getId())
-                ->setLastSuccessQuoteId($parentQuote->getId());
-            // add order information to the session
-            $checkoutSession->setLastOrderId($order->getId())
-                ->setRedirectUrl('')
-                ->setLastRealOrderId($order->getIncrementId());
-        }
 
         ///////////////////////////////////////////////////////
         // Close out session by
@@ -384,6 +380,32 @@ class Bolt_Boltpay_Helper_Api extends Bolt_Boltpay_Helper_Data
         $parentQuote->setParentQuoteId($immutableQuote->getId())
             ->save();
         ///////////////////////////////////////////////////////
+
+        Mage::getModel('boltpay/payment')->handleOrderUpdate($order);
+
+        ///////////////////////////////////////////////////////
+        /// Dispatch order save events
+        ///////////////////////////////////////////////////////
+        Mage::dispatchEvent('bolt_boltpay_save_order_after', array('order'=>$order, 'quote'=>$immutableQuote, 'transaction' => $transaction));
+
+        Mage::dispatchEvent(
+            'checkout_submit_all_after',
+            array('order' => $order, 'quote' => $immutableQuote, 'recurring_profiles' => $service->getRecurringPaymentProfiles())
+        );
+        ///////////////////////////////////////////////////////
+
+        if ($sessionQuoteId) {
+            $checkoutSession = Mage::getSingleton('checkout/session');
+            $checkoutSession
+                ->clearHelperData();
+            $checkoutSession
+                ->setLastQuoteId($parentQuote->getId())
+                ->setLastSuccessQuoteId($parentQuote->getId());
+            // add order information to the session
+            $checkoutSession->setLastOrderId($order->getId())
+                ->setRedirectUrl('')
+                ->setLastRealOrderId($order->getIncrementId());
+        }
 
         return $order;
     }
@@ -542,7 +564,8 @@ class Bolt_Boltpay_Helper_Api extends Bolt_Boltpay_Helper_Data
             Mage::throwException($message);
         } elseif (self::isResponseError($response)) {
             if (property_exists($response, 'errors')) {
-                Mage::register("api_error", $response->errors[0]->message);
+                Mage::unregister("bolt_api_error");
+                Mage::register("bolt_api_error", $response->errors[0]->message);
             }
 
             $message = Mage::helper('boltpay')->__("BoltPay Gateway error for %s: Request: %s, Response: %s", $url, $request, json_encode($response, true));
@@ -774,6 +797,11 @@ class Bolt_Boltpay_Helper_Api extends Bolt_Boltpay_Helper_Data
 
             $shippingAddress = $quote->getShippingAddress();
 
+            $region = $shippingAddress->getRegion();
+            if (empty($region) && !in_array($shippingAddress->getCountry(), array('US', 'CA'))) {
+                $region = $shippingAddress->getCity();
+            }
+
             if ($shippingAddress) {
                 $cartShippingAddress = array(
                     'street_address1' => $shippingAddress->getStreet1(),
@@ -783,7 +811,7 @@ class Bolt_Boltpay_Helper_Api extends Bolt_Boltpay_Helper_Data
                     'first_name'      => $shippingAddress->getFirstname(),
                     'last_name'       => $shippingAddress->getLastname(),
                     'locality'        => $shippingAddress->getCity(),
-                    'region'          => $shippingAddress->getRegion(),
+                    'region'          => $region,
                     'postal_code'     => $shippingAddress->getPostcode(),
                     'country_code'    => $shippingAddress->getCountry(),
                     'phone'           => $shippingAddress->getTelephone(),
@@ -799,6 +827,7 @@ class Bolt_Boltpay_Helper_Api extends Bolt_Boltpay_Helper_Data
                         'tax_amount'       => (int) round($shippingAddress->getShippingTaxAmount() * 100),
                         'service'          => $shippingAddress->getShippingDescription(),
                         'carrier'          => $shippingAddress->getShippingMethod(),
+                        'reference'        => $shippingAddress->getShippingMethod(),
                         'cost'             => (int) round($totals['shipping']->getValue() * 100),
                     ));
                     $calculatedTotal += round($totals['shipping']->getValue() * 100);
@@ -841,12 +870,6 @@ class Bolt_Boltpay_Helper_Api extends Bolt_Boltpay_Helper_Data
 
                 }
 
-                foreach ($requiredAddressFields as $field) {
-                    if (empty($cartShippingAddress[$field])) {
-                        unset($cartSubmissionData['shipments']);
-                        break;
-                    }
-                }
             }
             ////////////////////////////////////////////////////////////////////////////////////
         }
@@ -1162,7 +1185,7 @@ class Bolt_Boltpay_Helper_Api extends Bolt_Boltpay_Helper_Data
             ? explode("|", $transaction->order->cart->display_id)[0]
             : $transaction->order->cart->display_id;
     }
-    
+
     /**
      * Generate (if) secure url by route and parameters
      *
@@ -1202,5 +1225,83 @@ class Bolt_Boltpay_Helper_Api extends Bolt_Boltpay_Helper_Data
             return $title;
         }
         return $carrier . " - " . $title;
+    }
+
+    /**
+     *  Updates the shipping address data and, if necessary, the billing address data to the Magento
+     *  quote
+     *
+     * @param Mage_Sales_Model_Quote    $quote             The quote to which the address will be applied
+     * @param array                     $shippingAddress   The Bolt formatted address data
+     *
+     * @return  array   The shipping address applied in Magento compatible format
+     */
+    public function applyShippingAddressToQuote( $quote, $shippingAddress ) {
+
+        $directory = Mage::getModel('directory/region')->loadByName($shippingAddress->region, $shippingAddress->country_code);
+        $region = $directory->getName(); // For region field should be the name not a code.
+        $regionId = $directory->getRegionId(); // This is require field for calculation: shipping, shopping price rules and etc.
+
+        $addressData = array(
+            'email' => $shippingAddress->email ?: $shippingAddress->email_address,
+            'firstname' => $shippingAddress->first_name,
+            'lastname' => $shippingAddress->last_name,
+            'street' => $shippingAddress->street_address1 . ($shippingAddress->street_address2 ? "\n" . $shippingAddress->street_address2 : ''),
+            'company' => $shippingAddress->company,
+            'city' => $shippingAddress->locality,
+            'region' => $region,
+            'region_id' => $regionId,
+            'postcode' => $shippingAddress->postal_code,
+            'country_id' => $shippingAddress->country_code,
+            'telephone' => $shippingAddress->phone ?: $shippingAddress->phone_number
+        );
+
+        if ($quote->getCustomerId()) {
+            $customerSession = Mage::getSingleton('customer/session');
+            $customerSession->setCustomerGroupId($quote->getCustomerGroupId());
+            $customer = Mage::getModel("customer/customer")->load($quote->getCustomerId());
+            $address = $customer->getPrimaryShippingAddress();
+
+            if (!$address) {
+                $address = Mage::getModel('customer/address');
+
+                $address->setCustomerId($customer->getId())
+                    ->setCustomer($customer)
+                    ->setIsDefaultShipping('1')
+                    ->setSaveInAddressBook('1')
+                    ->save();
+
+
+                $address->addData($addressData);
+                $address->save();
+
+                $customer->addAddress($address)
+                    ->setDefaultShippingg($address->getId())
+                    ->save();
+            }
+        }
+        $quote->removeAllAddresses();
+        $quote->save();
+        $quote->getShippingAddress()->addData($addressData)->save();
+
+        $billingAddress = $quote->getBillingAddress();
+
+        $quote->getBillingAddress()->addData(
+            array(
+                'email' => $billingAddress->getEmail() ?: ($shippingAddress->email ?: $shippingAddress->email_address),
+                'firstname' => $billingAddress->getFirstname() ?: $shippingAddress->first_name,
+                'lastname' => $billingAddress->getLastname() ?: $shippingAddress->last_name,
+                'street' => implode("\n", $billingAddress->getStreet()) ?: $shippingAddress->street_address1 . ($shippingAddress->street_address2 ? "\n" . $shippingAddress->street_address2 : ''),
+                'company' => $billingAddress->getCompany() ?: $shippingAddress->company,
+                'city' => $billingAddress->getCity() ?: $shippingAddress->locality,
+                'region' => $billingAddress->getRegion() ?: $region,
+                'region_id' => $billingAddress->getRegionId() ?: $regionId,
+                'postcode' => $billingAddress->getPostcode() ?: $shippingAddress->postal_code,
+                'country_id' => $billingAddress->getCountryId() ?: $shippingAddress->country_code,
+                'telephone' => $billingAddress->getTelephone() ?: ($shippingAddress->phone ?: $shippingAddress->phone_number)
+            )
+        )->save();
+
+        return $addressData;
     }
 }

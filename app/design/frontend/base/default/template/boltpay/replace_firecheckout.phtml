@@ -16,209 +16,138 @@
  */
 
 /********************************************************************
- * Bolt replace button JavaScript / CSS that's added to the shopping cart page
+ * Bolt replace button JavaScript / CSS that's added to the firecheckout cart page
  ********************************************************************/
-
+/** @var Bolt_Boltpay_Block_Checkout_Boltpay $this */
 if(!Mage::helper('boltpay')->canUseBolt($this->getQuote(), false) || Mage::getStoreConfig('payment/boltpay/hide_on_checkout') ) return;
 
 ?>
 <script>
 
-    var onloadCallback = function(){
+    var isFireCheckoutFormValid = false;
+    var initBoltButtons = function() {
+        <?=$this->getCartDataJs(Bolt_Boltpay_Block_Checkout_Boltpay::CHECKOUT_TYPE_FIRECHECKOUT); ?>
+    }
 
-        /****************************************************************************************************
-         * Fire Checkout extension
-         ****************************************************************************************************/
-        var fireCheckout = function() {
+    var initializeBolt = function(){
 
-            if (typeof FireCheckout !== "function") return false;
+        // checkout.setLoadWaiting(false);
 
-            FireCheckout.prototype.createBoltOrder = function() {
+        var place_order_buttons = document.querySelectorAll('<?=Mage::getStoreConfig('payment/boltpay/selectors');?>');
 
-                if (this.loadWaiting != false) {
-                    return;
-                }
+        place_order_buttons.forEach(
+            function(place_order_button) {
+                var bolt_button =  document.createElement("div");
+                bolt_button.setAttribute("class", "bolt-checkout-button with-cards <?=$this->getCssSuffix(); ?> <?=$this->getTheme(); ?>");
+                bolt_button.style.cssText = "display: none !important";
 
-                if (!this.validate()) {
-                    return;
-                }
-
-                var params = this.getFormData ? this.getFormData() : Form.serialize(this.form, true);
-
-                checkout.setLoadWaiting(true);
-
-                new Ajax.Request('<?php echo Mage::helper('boltpay/api')->getMagentoUrl('boltpay/order/firecheckoutcreate');?>', {
-                    method:'post',
-                    parameters:params,
-                    onSuccess: this.setBoltResponse.bind(this),
-                    onFailure: this.ajaxFailure.bind(this)
-                });
-            };
-
-            FireCheckout.prototype.setBoltResponse = function(response){
-
-                checkout.setLoadWaiting(false);
-
-                var responseJSON = response.responseJSON;
-
-                if (responseJSON.cart_data) {
-                    eval(responseJSON.cart_data);
-                    var bolt_button = document.querySelectorAll('.bolt-checkout-button-button')[0];
-                    bolt_button.click();
-                } else {
-                    this.setResponse(response);
-                    window.location.href = "<?php echo Mage::helper('boltpay/api')->getMagentoUrl('checkout/cart');?>";
-                }
-            };
-
-            var i, length;
-
-            var place_order_button = document.querySelectorAll('.button.btn-checkout')[0];
-
-            var bolt_button =  document.createElement("div");
-            bolt_button.setAttribute("class", "bolt-checkout-button with-cards <?=$this->getCssSuffix(); ?> <?=$this->getTheme(); ?>");
-            bolt_button.style.display = "none";
-
-            place_order_button.parentNode.insertBefore(bolt_button, place_order_button);
-            // Render Bolt button.
-            BoltCheckout.configure({}, {}, {});
-
-            /**
-             * Click event to payment method radio buttons that toggle
-             * display of the bolt button
-             */
-            var toggleBoltButton = function () {
-                if (this.id == "p_method_boltpay") {
-                    bolt_button.style.display="";
-                    place_order_button.style.display="none";
-                } else {
-                    bolt_button.style.display="none";
-                    place_order_button.style.display="";
-                }
-            };
-
-            /**
-             * Attaches click event to all radio buttons
-             *
-             * @param   An option list passed in by an observer if this function is called in that context
-             *          This can be omitted.
-             */
-            var attachClickEvents = function(mutationList) {
-
-                var payment_radios = document.querySelectorAll('[name="payment[method]"]');
-                for (i = 0, length = payment_radios.length; i < length; i++) {
-
-                    var payment_radio = payment_radios[i];
-
-                    payment_radio.onclick = toggleBoltButton;
-
-                    <?php if ($this->isBoltOnlyPayment()): ?>
-                    if (payment_radio.id == "p_method_boltpay") {
-                        payment_radio.click();
-                    } else {
-                        payment_radio.parentNode.style.display = "none";
-                    }
-                    <?php endif; ?>
-
-                    if (payment_radio.checked) payment_radio.click();
-                }
-
+                place_order_button.parentNode.insertBefore(bolt_button, place_order_button);
             }
+        );
 
-            attachClickEvents();
+        var bolt_buttons = document.querySelectorAll('.bolt-checkout-button');
 
-            //////////////////////////////////////////////////////////////////////
-            // Watch for changes in the payment methods to re-attach click events
-            //////////////////////////////////////////////////////////////////////
-            var paymentMethodsContainer = document.getElementById('checkout-payment-method-load');
-            var paymentMethodObserver = new MutationObserver(attachClickEvents);
-            paymentMethodObserver.observe(paymentMethodsContainer, { childList: true });
-            //////////////////////////////////////////////////////////////////////
+        // Render Bolt button.
+        initBoltButtons();
 
-            var setOverlay = function() {
-
-                var replaceRetries  = 10;
-                var replaceInterval = 500;
-
-                var tryInterval = setInterval(
-
-                    function() {
-
-                        replaceRetries -= 1;
-                        if (replaceRetries <= 0) clearInterval(tryInterval);
-
-                        if (typeof BoltCheckout === "undefined") {
-                            replaceRetries = 10;
-                            return;
-                        }
-
-                        if (replaceRetries > 5) replaceRetries = 5;
-
-                        var bolt_button_overlay = document.getElementById('bolt_button_overlay');
-
-                        if (bolt_button_overlay) {
-                            clearInterval(tryInterval);
-                            return;
-                        }
-
-                        var bolt_button = document.querySelectorAll('.bolt-checkout-button')[0];
-
-                        if (! bolt_button) return;
-
-                        bolt_button_overlay = document.createElement("div");
-                        bolt_button_overlay.setAttribute("id", "bolt_button_overlay");
-                        bolt_button_overlay.style.cssText = 'cursor:pointer;top:6px;left:0px;position:absolute;width:100%;height:44px;opacity:0.0;z-index:10000;background:#fff;';
-
-                        bolt_button.appendChild(bolt_button_overlay);
-
-                        bolt_button_overlay.onclick = function() {
-
-                            clearInterval(tryInterval);
-
-                            checkout.createBoltOrder();
-                        };
-                    },
-                    replaceInterval
+        /**
+         * Click event to payment method radio buttons that toggle
+         * display of the bolt button
+         */
+        var toggleBoltButton = function () {
+            if (this.id == "p_method_boltpay") {
+                bolt_buttons.forEach(
+                    function (bolt_button) {
+                        bolt_button.style.cssText = "";
+                    }
                 );
-            };
-
-            var bolt_checkout_close = setOverlay;
-
-            setOverlay();
-
-            var autoSelectShipping = function () {
-
-                var shipping_selected = false;
-                var shipping_methods  = document.querySelectorAll('input[name=shipping_method]');
-
-                for (i = 0, length = shipping_methods.length; i < length; i++) {
-                    var shipping_method = shipping_methods[i];
-                    if (shipping_method.checked) {
-                        shipping_selected = true;
-                        shipping_method.click();
+                place_order_buttons.forEach(
+                    function (place_order_button) {
+                        place_order_button.style.display="none";
                     }
-                }
-
-                if (!shipping_selected)  document.querySelectorAll('input[name=shipping_method]')[0].click();
-            };
-            if (window.addEventListener) {
-                window.addEventListener("load", autoSelectShipping, false);
-            } else if (window.attachEvent) {
-                window.attachEvent("onload", autoSelectShipping);
+                );
             } else {
-                window.onload = autoSelectShipping;
+                bolt_buttons.forEach(
+                    function (bolt_button) {
+                        bolt_button.style.cssText = "display: none !important";
+                    }
+                );
+                place_order_buttons.forEach(
+                    function (place_order_button) {
+                        place_order_button.style.display="";
+                    }
+                );
             }
-
-            return true;
         };
 
-        fireCheckout();
+
+        /**
+         * Attaches click event to all radio buttons
+         *
+         * @param   An option list passed in by an observer if this function is called in that context
+         *          This can be omitted.
+         */
+        var attachClickEvents = function(mutationList) {
+
+            var payment_radios = document.querySelectorAll('[name="payment[method]"]');
+            for (i = 0, length = payment_radios.length; i < length; i++) {
+
+                var payment_radio = payment_radios[i];
+
+                payment_radio.onclick = toggleBoltButton;
+
+                <?php if ($this->isBoltOnlyPayment()): ?>
+                if (payment_radio.id == "p_method_boltpay") {
+                    payment_radio.click();
+                } else {
+                    payment_radio.parentNode.style.display = "none";
+                }
+                <?php endif; ?>
+
+                if (payment_radio.checked) payment_radio.click();
+            }
+
+        };
+
+        attachClickEvents();
+
+        //////////////////////////////////////////////////////////////////////
+        // Watch for changes in the payment methods to re-attach click events
+        //////////////////////////////////////////////////////////////////////
+        var paymentMethodsContainer = document.getElementById('checkout-payment-method-load');
+        var paymentMethodObserver = new MutationObserver(attachClickEvents);
+        paymentMethodObserver.observe(paymentMethodsContainer, { childList: true });
+        //////////////////////////////////////////////////////////////////////
+
+        var autoSelectShipping = function () {
+
+            var shipping_selected = false;
+            var shipping_methods  = document.querySelectorAll('input[name=shipping_method]');
+
+            for (i = 0, length = shipping_methods.length; i < length; i++) {
+                var shipping_method = shipping_methods[i];
+                if (shipping_method.checked) {
+                    shipping_selected = true;
+                    shipping_method.click();
+                }
+            }
+
+            if (!shipping_selected)  document.querySelectorAll('input[name=shipping_method]')[0].click();
+        };
+
+        if (window.addEventListener) {
+            window.addEventListener("load", autoSelectShipping, false);
+        } else if (window.attachEvent) {
+            window.attachEvent("onload", autoSelectShipping);
+        } else {
+            window.onload = autoSelectShipping;
+        }
     };
 
     if (window.addEventListener) {
-        window.addEventListener("load", onloadCallback, false);
+        window.addEventListener("load", initializeBolt, false);
     } else if (window.attachEvent) {
-        window.attachEvent("onload", onloadCallback);
+        window.attachEvent("onload", initializeBolt);
     } else {
         window.onload = onloadCallback;
     }
