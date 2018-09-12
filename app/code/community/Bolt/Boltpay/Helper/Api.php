@@ -796,6 +796,11 @@ class Bolt_Boltpay_Helper_Api extends Bolt_Boltpay_Helper_Data
 
             $shippingAddress = $quote->getShippingAddress();
 
+            $region = $shippingAddress->getRegion();
+            if (empty($region) && !in_array($shippingAddress->getCountry(), array('US', 'CA'))) {
+                $region = $shippingAddress->getCity();
+            }
+
             if ($shippingAddress) {
                 $cartShippingAddress = array(
                     'street_address1' => $shippingAddress->getStreet1(),
@@ -805,7 +810,7 @@ class Bolt_Boltpay_Helper_Api extends Bolt_Boltpay_Helper_Data
                     'first_name'      => $shippingAddress->getFirstname(),
                     'last_name'       => $shippingAddress->getLastname(),
                     'locality'        => $shippingAddress->getCity(),
-                    'region'          => $shippingAddress->getRegion(),
+                    'region'          => $region,
                     'postal_code'     => $shippingAddress->getPostcode(),
                     'country_code'    => $shippingAddress->getCountry(),
                     'phone'           => $shippingAddress->getTelephone(),
