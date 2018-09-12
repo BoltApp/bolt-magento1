@@ -73,9 +73,7 @@ class Bolt_Boltpay_ApiController extends Mage_Core_Controller_Front_Action
             $transaction = $boltHelper->fetchTransaction($reference);
             $quoteId = $boltHelper->getImmutableQuoteIdFromTransaction($transaction);
 
-            //region set session for customer
             $this->setCustomerSession($quoteId);
-            //endregion
 
             /* If display_id has been confirmed and updated on Bolt, then we should look up the order by display_id */
             $order = Mage::getModel('sales/order')->loadByIncrementId($transaction->order->cart->display_id);
