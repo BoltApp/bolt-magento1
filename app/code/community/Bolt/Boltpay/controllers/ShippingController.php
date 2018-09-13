@@ -46,6 +46,7 @@ class Bolt_Boltpay_ShippingController extends Mage_Core_Controller_Front_Action
 
             /* @var Bolt_Boltpay_Helper_Api $boltHelper */
             $boltHelper = Mage::helper('boltpay/api');
+
             /* @var Bolt_Boltpay_Helper_ShippingAndTax $shippingAndTaxHelper */
             $shippingAndTaxHelper = Mage::helper("boltpay/shippingAndTax");
 
@@ -62,7 +63,10 @@ class Bolt_Boltpay_ShippingController extends Mage_Core_Controller_Front_Action
             }
 
             $mockTransaction = (object) array("order" => $requestData );
-            $quoteId = $boltHelper->getImmutableQuoteIdFromTransaction($mockTransaction);
+
+            /** @var Bolt_Boltpay_Helper_Transaction $transactionHelper */
+            $transactionHelper = Mage::helper('boltpay/transaction');
+            $quoteId = $transactionHelper->getImmutableQuoteIdFromTransaction($mockTransaction);
 
             /* @var Mage_Sales_Model_Quote $quote */
             $quote = Mage::getModel('sales/quote')->loadByIdWithoutStore($quoteId);
@@ -94,13 +98,13 @@ class Bolt_Boltpay_ShippingController extends Mage_Core_Controller_Front_Action
                 $response = unserialize($this->_cache->load($prefetchCacheKey));
                 $cacheBoltHeader = 'HIT';
                 if (!$response) {
-                    $response = Mage::helper('boltpay/api')->getShippingAndTaxEstimate($quote);
+                    $response = Mage::helper('boltpay/shippingAndTax')->getShippingAndTaxEstimate($quote);
                     $cacheBoltHeader = 'MISS';
                 }
             } else {
                 //Mage::log('Generating address from quote', null, 'shipping_and_tax.log');
                 //Mage::log('Live address: '.var_export($address_data, true), null, 'shipping_and_tax.log');
-                $response = Mage::helper('boltpay/api')->getShippingAndTaxEstimate($quote);
+                $response = Mage::helper('boltpay/shippingAndTax')->getShippingAndTaxEstimate($quote);
                 $cacheBoltHeader = 'MISS';
             }
 
@@ -178,8 +182,8 @@ class Bolt_Boltpay_ShippingController extends Mage_Core_Controller_Front_Action
                 $quote->getBillingAddress()->addData($addressData);
 
                 try {
-                    /** @var Bolt_Boltpay_Helper_Api $helper */
-                    $helper = Mage::helper('boltpay/api');
+                    /** @var Bolt_Boltpay_Helper_ShippingAndTax $helper */
+                    $helper = Mage::helper('boltpay/shippingAndTax');
                     $estimateResponse = $helper->getShippingAndTaxEstimate($quote);
 
                     $this->cacheShippingAndTaxEstimate($estimateResponse, $cacheIdentifier);

@@ -34,7 +34,7 @@ class Bolt_Boltpay_OrderController extends Mage_Core_Controller_Front_Action
             if (!$this->getRequest()->isAjax()) {
                 Mage::throwException(Mage::helper('boltpay')->__("OrderController::saveAction called with a non AJAX call"));
             }
-
+            
             /** @var Bolt_Boltpay_Helper_Api $boltHelper */
             $boltHelper = Mage::helper('boltpay/api');
 
@@ -59,11 +59,17 @@ class Bolt_Boltpay_OrderController extends Mage_Core_Controller_Front_Action
             // have already created the order, we don't need to do anything
             // besides returning 200 OK, which happens automatically
             /////////////////////////////////////////////////////////
-            $order = $boltHelper->getOrderByQuoteId($boltHelper->getImmutableQuoteIdFromTransaction($transaction));
+            /** @var Bolt_Boltpay_Helper_Transaction $transactionHelper */
+            $transactionHelper = Mage::helper('boltpay/transaction');
+
+            /** @var Bolt_Boltpay_Helper_Order $boltOrderHelper */
+            $boltOrderHelper = Mage::helper('boltpay/order');
+
+            $order = $boltOrderHelper->getOrderByQuoteId($transactionHelper->getImmutableQuoteIdFromTransaction($transaction));
 
             if ($order->isObjectNew()) {
                 $sessionQuote = $checkoutSession->getQuote();
-                $boltHelper->createOrder($reference, $sessionQuote->getId(), true, $transaction);
+                $boltOrderHelper->createOrder($reference, $sessionQuote->getId(), true, $transaction);
             }
 
         } catch (Exception $e) {

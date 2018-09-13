@@ -59,12 +59,6 @@ class Bolt_Boltpay_Helper_CouponTest extends PHPUnit_Framework_TestCase
         $this->currentMock = new Bolt_Boltpay_Helper_Coupon();
     }
 
-
-    protected function tearDown()
-    {
-        Mage::getSingleton('checkout/cart')->truncate()->save();
-    }
-
     /**
      * Generates data for testing purposes
      */
