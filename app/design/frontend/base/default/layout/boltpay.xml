@@ -23,6 +23,7 @@
       <block type="boltpay/checkout_boltpay" name="track_script" as="track_script" template="boltpay/track.phtml" />
       <block type="boltpay/checkout_boltpay" name="connect_js_script" as="connect_js" template="boltpay/connectjs.phtml"/>
       <block type="boltpay/checkout_boltpay" name="replace_script" as="replace_script" template="boltpay/replace.phtml"/>
+      <block type="core/template" name="bolt_popup" as="bolt_popup" template="boltpay/popup.phtml"/>
     </reference>
   </default>
 

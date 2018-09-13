@@ -302,7 +302,7 @@ PROMISE;
                 {
                   check: function() {
                     if (!json_cart.orderToken) {
-                        alert(json_cart.error);
+                        boltPopup(json_cart.error);
                         return false;
                     }
                     $checkCustom
