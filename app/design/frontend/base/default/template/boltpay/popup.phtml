@@ -1,17 +1,11 @@
-<?php /* @var $this Bolt_Boltpay_Block_Checkout_Popup */?>
-<?php
-
-?>
+<?php /* @var $this Mage_Core_Block_Template */?>
 
 <div id="bolt-popup" class="bolt-popup">
     <div class="popup-wrapper">
-        <div class="popup-title"></div>
-        <div class="popup-content">
-        </div>
+        <div class="popup-title"><?php echo $this->__('Bolt Checkout'); ?></div>
+        <div class="popup-content"></div>
         <div class="popup-action">
-            <button class="popup-close btn-close">
-                <?php echo $this->__('Close')?>
-            </button>
+            <button class="popup-close btn-close"><?php echo $this->__('Close')?></button>
         </div>
         <div class="popup-close">x</div>
     </div>
@@ -46,9 +40,13 @@
             this.popupElm.show();
         },
         addMessage: function(message) {
-            if (message.length) {
+            if (message && message.length) {
                 this.popupElm.find('.popup-content').html(message);
+            } else {
+                message = "<?php echo $this->__('Sorry, but something went wrong. Please contact the seller.'); ?>";
             }
+
+            this.popupElm.find('.popup-content').html(message)
 
             return this;
         }
@@ -67,7 +65,7 @@
         left: 0;
         top: 0;
     }
-    .popup-wrapper {
+    .bolt-popup .popup-wrapper {
         position: absolute;
         max-width: 600px;
         width: 100%;
@@ -82,35 +80,38 @@
         box-sizing: border-box;
         padding: 15px;
     }
-    .popup-wrapper .popup-close {
+    .bolt-popup .popup-wrapper .popup-close {
         position: absolute;
         color: #fff;
         right: -10px;
         top: -30px;
         font-size: 20px;
     }
-    .popup-wrapper .popup-close.btn-close {
+    .bolt-popup .popup-wrapper .popup-close.btn-close {
         position: static;
     }
-    .popup-wrapper .popup-title {
+    .bolt-popup .popup-wrapper .popup-title {
         font-size: 20px;
         text-align: center;
     }
-    .popup-wrapper .popup-action {
+    .bolt-popup .popup-wrapper .popup-action {
         text-align: right;
     }
-    .popup-wrapper .popup-action button {
+    .bolt-popup .popup-wrapper .popup-action button {
         background: none;
-        padding: 5px 10px;
-        border: 1px solid #000000;
-        -webkit-transform: all .5s;
-        -moz-transform: all .5s;
-        -ms-transform: all .5s;
-        -o-transform: all .5s;
-        transform: all .5s;
-    }
-    .popup-wrapper .popup-action button:hover {
+        padding: 6px 30px;
+        border: 1px solid #268eff;
         color: #ffffff;
-        background: #000000;
+        background: #268eff;
+        border-radius: 4px;
+        margin: 15px 0;
+        font-size: 16px;
+    }
+    .bolt-popup .popup-wrapper .popup-action button:hover {
+        background: #0078fb;
+        border-color: #0078fb;
+    }
+    .bolt-popup .popup-wrapper .popup-content {
+        margin: 10px 0;
     }
 </style>
