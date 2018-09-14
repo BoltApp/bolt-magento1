@@ -71,7 +71,10 @@ class Bolt_Boltpay_ApiController extends Mage_Core_Controller_Front_Action
             $boltHelperBase::$fromHooks = true;
 
             $transaction = $boltHelper->fetchTransaction($reference);
-            $quoteId = $boltHelper->getImmutableQuoteIdFromTransaction($transaction);
+
+            /** @var Bolt_Boltpay_Helper_Transaction $transactionHelper */
+            $transactionHelper = Mage::helper('boltpay/transaction');
+            $quoteId = $transactionHelper->getImmutableQuoteIdFromTransaction($transaction);
 
             $this->setCustomerSession($quoteId);
 
@@ -80,7 +83,10 @@ class Bolt_Boltpay_ApiController extends Mage_Core_Controller_Front_Action
 
             /* If it hasn't been confirmed, or could not be found, we use the quoteId as fallback */
             if ($order->isObjectNew()) {
-                $order =  $boltHelper->getOrderByQuoteId($quoteId);
+                /** @var Bolt_Boltpay_Helper_Order $boltOrderHelper */
+                $boltOrderHelper = Mage::helper('boltpay/order');
+
+                $order =  $boltOrderHelper->getOrderByQuoteId($quoteId);
             }
 
             if (!$order->isObjectNew()) {
@@ -160,7 +166,10 @@ class Bolt_Boltpay_ApiController extends Mage_Core_Controller_Front_Action
                 return;
             }
 
-            $order = $boltHelper->createOrder($reference, $sessionQuoteId = null, false, $transaction);
+            /** @var Bolt_Boltpay_Helper_Order $boltOrderHelper */
+            $boltOrderHelper = Mage::helper('boltpay/order');
+
+            $order = $boltOrderHelper->createOrder($reference, $sessionQuoteId = null, false, $transaction);
 
             $this->getResponse()->setBody(
                 json_encode(
