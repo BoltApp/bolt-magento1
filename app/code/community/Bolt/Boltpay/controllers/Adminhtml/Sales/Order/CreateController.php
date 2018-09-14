@@ -100,9 +100,13 @@ class Bolt_Boltpay_Adminhtml_Sales_Order_CreateController extends Mage_Adminhtml
         ///////////////////////////////////////////////////
         /** @var Bolt_Boltpay_Helper_Api $boltHelper */
         $boltHelper = Mage::helper('boltpay/api');
+
         $transaction = $boltHelper->fetchTransaction($boltReference);
 
-        $immutableQuoteId = $boltHelper->getImmutableQuoteIdFromTransaction($transaction);
+        /** @var Bolt_Boltpay_Helper_Transaction $transactionHelper */
+        $transactionHelper = Mage::helper('boltpay/transaction');
+        $immutableQuoteId = $transactionHelper->getImmutableQuoteIdFromTransaction($transaction);
+
         $this->_getSession()->setQuoteId($immutableQuoteId);
         
         $this->_normalizeOrderData();
