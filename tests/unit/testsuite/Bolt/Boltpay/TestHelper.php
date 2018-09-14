@@ -147,7 +147,11 @@ class Bolt_Boltpay_TestHelper
                 {
                   check: function() {
                     if (!json_cart.orderToken) {
-                        alert(json_cart.error);
+                        if (typeof BoltPopup !== \"undefined\") {
+                            BoltPopup.addMessage(json_cart.error).show();
+                        } else {
+                            alert(json_cart.error);
+                        }
                         return false;
                     }
                     $checkCustom
