@@ -5,14 +5,9 @@
  */
 class Bolt_Boltpay_Helper_LogLevel
 {
-    const EMERGENCY = 'emergency';
-    const ALERT     = 'alert';
-    const CRITICAL  = 'critical';
     const ERROR     = 'error';
     const WARNING   = 'warning';
-    const NOTICE    = 'notice';
     const INFO      = 'info';
-    const DEBUG     = 'debug';
 }
 
 /**
@@ -27,47 +22,6 @@ trait Bolt_Boltpay_Helper_LoggerTrait
     
     public static $isLoggerEnabled = true;
     
-    /**
-     * System is unusable.
-     *
-     * @param string $message
-     * @param array  $context
-     *
-     * @return void
-     */
-    public function emergency($message, array $context = array())
-    {
-        $this->log(Bolt_Boltpay_Helper_LogLevel::EMERGENCY, $message, $context);
-    }
-    /**
-     * Action must be taken immediately.
-     *
-     * Example: Entire website down, database unavailable, etc. This should
-     * trigger the SMS alerts and wake you up.
-     *
-     * @param string $message
-     * @param array  $context
-     *
-     * @return void
-     */
-    public function alert($message, array $context = array())
-    {
-        $this->log(Bolt_Boltpay_Helper_LogLevel::ALERT, $message, $context);
-    }
-    /**
-     * Critical conditions.
-     *
-     * Example: Application component unavailable, unexpected exception.
-     *
-     * @param string $message
-     * @param array  $context
-     *
-     * @return void
-     */
-    public function critical($message, array $context = array())
-    {
-        $this->log(Bolt_Boltpay_Helper_LogLevel::CRITICAL, $message, $context);
-    }
     /**
      * Runtime errors that do not require immediate action but should typically
      * be logged and monitored.
@@ -97,18 +51,6 @@ trait Bolt_Boltpay_Helper_LoggerTrait
         $this->log(Bolt_Boltpay_Helper_LogLevel::WARNING, $message, $context);
     }
     /**
-     * Normal but significant events.
-     *
-     * @param string $message
-     * @param array  $context
-     *
-     * @return void
-     */
-    public function notice($message, array $context = array())
-    {
-        $this->log(Bolt_Boltpay_Helper_LogLevel::NOTICE, $message, $context);
-    }
-    /**
      * Interesting events.
      *
      * Example: User logs in, SQL logs.
@@ -121,18 +63,6 @@ trait Bolt_Boltpay_Helper_LoggerTrait
     public function info($message, array $context = array())
     {
         $this->log(Bolt_Boltpay_Helper_LogLevel::INFO, $message, $context);
-    }
-    /**
-     * Detailed debug information.
-     *
-     * @param string $message
-     * @param array  $context
-     *
-     * @return void
-     */
-    public function debug($message, array $context = array())
-    {
-        $this->log(Bolt_Boltpay_Helper_LogLevel::DEBUG, $message, $context);
     }
     /**
      * Logs with an arbitrary level.
