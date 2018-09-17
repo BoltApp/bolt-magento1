@@ -196,4 +196,46 @@ class Bolt_Boltpay_OrderController extends Mage_Core_Controller_Front_Action
             throw $e;
         }
     }
+
+    /**
+     * API to expose order details
+     */
+    public function viewAction()
+    {
+        try {
+            $reference = $this->getRequest()->getParam('reference');
+
+            if (!$reference) {
+                Mage::throwException(Mage::helper('boltpay')->__("Transaction parameter is required"));
+            }
+
+            /** @var Mage_Sales_Model_Order_Payment $orderPayment */
+            $orderPayment = Mage::getModel('sales/order_payment')
+                ->getCollection()
+                ->addFieldToFilter('last_trans_id', $reference)
+                ->getFirstItem();
+
+            /** @var Bolt_Boltpay_Model_Order $boltOrder */
+            $boltOrder = Mage::getModel('boltpay/order');
+            $boltOrder->initWithPayment($orderPayment);
+            $transaction = $boltOrder->generateOrderDetail();
+
+            $response = Mage::helper('core')->jsonEncode($transaction);
+            $this->getResponse()->setHeader('Content-type', 'application/json');
+            $this->getResponse()->setBody($response);
+        } catch (Exception $e) {
+            if (
+                strpos($e->getMessage(), 'No order found') !== 0 ||
+                strpos($e->getMessage(), 'No payment found') !== 0
+            ) {
+                $this->getResponse()->setHttpResponseCode(404)
+                    ->setBody(json_encode(array('status' => 'failure', 'error' => array('code' => 6009, 'message' => $e->getMessage()))));
+            } else {
+                $this->getResponse()->setHttpResponseCode(409)
+                    ->setBody(json_encode(array('status' => 'failure', 'error' => array('code' => 6009, 'message' => $e->getMessage()))));
+
+                Mage::helper('boltpay/bugsnag')->notifyException($e);
+            }
+        }
+    }
 }
