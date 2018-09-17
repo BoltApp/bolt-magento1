@@ -23,7 +23,7 @@
 class Bolt_Boltpay_Model_Cron
 {
     /**
-     * After an immutable quote has existed for a week or more, we remove it from the system.
+     * After an immutable quote has existed for 2 weeks or more, we remove it from the system.
      * At this point, only the order object is relevant for converted orders and any immutable
      * quote that was to be converted will have been handled well before this time.
      *
@@ -32,7 +32,7 @@ class Bolt_Boltpay_Model_Cron
      */
     public function cleanupQuotes() {
         $sales_flat_quote_table = Mage::getSingleton('core/resource')->getTableName('sales/quote');
-        $expiration_time = Mage::getModel('core/date')->date('Y-m-d H:i:s', time()-(60*60*24*7));
+        $expiration_time = Mage::getModel('core/date')->date('Y-m-d H:i:s', time()-(60*60*24*7*2));
 
         $connection = Mage::getSingleton('core/resource')->getConnection('core_write');
         $sql = "DELETE FROM $sales_flat_quote_table WHERE (parent_quote_id IS NOT NULL) AND (parent_quote_id < entity_id) AND (updated_at <= '$expiration_time')";
