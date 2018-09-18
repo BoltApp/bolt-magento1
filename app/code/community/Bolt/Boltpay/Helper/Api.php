@@ -1002,7 +1002,7 @@ class Bolt_Boltpay_Helper_Api extends Bolt_Boltpay_Helper_Data
                 );
             }
 
-            $adjustedShippingAmount = $this->getAdjustedShippingAmount($originalDiscountedSubtotal, $quote);
+            $adjustedShippingAmount = $shippingAddress->getShippingAmount();
 
             $option = array(
                 "service" => $this->getShippingLabel($rate),
@@ -1023,7 +1023,8 @@ class Bolt_Boltpay_Helper_Api extends Bolt_Boltpay_Helper_Data
      * @param Mage_Sales_Model_Quote $quote    Quote which has been updated to use new shipping rate
      * @param string $shippingRateCode    Shipping rate code
      */
-    public function applyShippingRate($quote, $shippingRateCode) {
+    public function applyShippingRate($quote, $shippingRateCode)
+    {
         $shippingAddress = $quote->getShippingAddress();
 
         if (!empty($shippingAddress)) {
@@ -1050,7 +1051,8 @@ class Bolt_Boltpay_Helper_Api extends Bolt_Boltpay_Helper_Data
         }
     }
 
-    protected function getSortedShippingRates($address) {
+    protected function getSortedShippingRates($address)
+    {
         $rates = array();
 
         foreach($address->getGroupedAllShippingRates() as $code => $carrierRates) {
@@ -1072,7 +1074,9 @@ class Bolt_Boltpay_Helper_Api extends Bolt_Boltpay_Helper_Data
      *
      * @return float    Discount modified as a result of the new shipping method
      */
-    public function getAdjustedShippingAmount($originalDiscountedSubtotal, $quote) {
+    public function getAdjustedShippingAmount($originalDiscountedSubtotal, $quote)
+    {
+        $sSubtotalWithDiscount = '';
         return $quote->getShippingAddress()->getShippingAmount() + $quote->getSubtotalWithDiscount() - $originalDiscountedSubtotal;
     }
 
