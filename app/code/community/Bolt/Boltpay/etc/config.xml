@@ -20,7 +20,7 @@
 
   <modules>
     <Bolt_Boltpay>
-      <version>1.2.3</version> <!-- version number should be incremented appropriately  -->
+      <version>1.3.0</version> <!-- version number should be incremented appropriately  -->
     </Bolt_Boltpay>
   </modules>
 
