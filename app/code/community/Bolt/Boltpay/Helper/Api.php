@@ -189,14 +189,6 @@ class Bolt_Boltpay_Helper_Api extends Bolt_Boltpay_Helper_Data
                 );
             }
 
-            // check if quote has already been used
-            if ( !$immutableQuote->getIsActive() ) {
-                throw new Exception(
-                    Mage::helper('boltpay')->__("The order #%s has already been processed for this quote.",
-                                                $immutableQuote->getReservedOrderId() )
-                );
-            }
-
             // check if this order is currently being proccessed.  If so, throw exception
             /* @var Mage_Sales_Model_Quote $parentQuote */
             $parentQuote = Mage::getModel('sales/quote')->loadByIdWithoutStore($immutableQuote->getParentQuoteId());
@@ -207,8 +199,8 @@ class Bolt_Boltpay_Helper_Api extends Bolt_Boltpay_Helper_Data
                 );
             } else if (!$parentQuote->getIsActive() ) {
                 throw new Exception(
-                    Mage::helper('boltpay')->__("The parent quote %s is currently being processed or has been processed.",
-                                                $immutableQuote->getParentQuoteId() )
+                    Mage::helper('boltpay')->__("The parent quote %s for immutable quote %s is currently being processed or has been processed for order #%s. Check quote %s for details.",
+                        $parentQuote->getId(), $immutableQuote->getId(), $parentQuote->getReservedOrderId(), $parentQuote->getParentQuoteId() )
                 );
             } else {
                 $parentQuote->setIsActive(false)->save();
@@ -368,15 +360,12 @@ class Bolt_Boltpay_Helper_Api extends Bolt_Boltpay_Helper_Data
         $this->validateSubmittedOrder($order, $immutableQuote);
 
         ///////////////////////////////////////////////////////
-        // Close out session by
-        // 1.) deactivating the immutable quote so it can no longer be used
-        // 2.) assigning the immutable quote as the parent of its parent quote
+        // Close out session by assigning the immutable quote
+        // as the parent of its parent quote
         //
         // This creates a circular reference so that we can use the parent quote
         // to look up the used immutable quote
         ///////////////////////////////////////////////////////
-        $immutableQuote->setIsActive(false)
-            ->save();
         $parentQuote->setParentQuoteId($immutableQuote->getId())
             ->save();
         ///////////////////////////////////////////////////////
@@ -409,7 +398,6 @@ class Bolt_Boltpay_Helper_Api extends Bolt_Boltpay_Helper_Data
 
         return $order;
     }
-
 
     protected function getRatesDebuggingData($rates) {
         $rateDebuggingData = '';
