@@ -99,7 +99,6 @@ class Bolt_Boltpay_Model_Order extends Mage_Core_Model_Abstract
         return true;
     }
 
-
     protected function addOrderDetails() {
         $this->addOrderReference();
         $this->addDisplayId();

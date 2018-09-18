@@ -203,6 +203,16 @@ class Bolt_Boltpay_OrderController extends Mage_Core_Controller_Front_Action
     public function viewAction()
     {
         try {
+            $hmacHeader = $_SERVER['HTTP_X_BOLT_HMAC_SHA256'];
+            $requestJson = file_get_contents('php://input');
+
+            /* @var Bolt_Boltpay_Helper_Api $boltHelper */
+            $boltHelper = Mage::helper('boltpay/api');
+
+            if (!$boltHelper->verify_hook($requestJson, $hmacHeader)) {
+                Mage::throwException(Mage::helper('boltpay')->__("Failed HMAC Authentication"));
+            }
+
             $reference = $this->getRequest()->getParam('reference');
 
             if (!$reference) {
@@ -225,8 +235,8 @@ class Bolt_Boltpay_OrderController extends Mage_Core_Controller_Front_Action
             $this->getResponse()->setBody($response);
         } catch (Exception $e) {
             if (
-                strpos($e->getMessage(), 'No order found') !== 0 ||
-                strpos($e->getMessage(), 'No payment found') !== 0
+                strpos($e->getMessage(), Mage::helper('boltpay')->__('No order found')) !== 0 ||
+                strpos($e->getMessage(), Mage::helper('boltpay')->__('No payment found')) !== 0
             ) {
                 $this->getResponse()->setHttpResponseCode(404)
                     ->setBody(json_encode(array('status' => 'failure', 'error' => array('code' => 6009, 'message' => $e->getMessage()))));
