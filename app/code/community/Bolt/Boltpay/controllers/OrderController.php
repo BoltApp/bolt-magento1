@@ -204,12 +204,11 @@ class Bolt_Boltpay_OrderController extends Mage_Core_Controller_Front_Action
     {
         try {
             $hmacHeader = $_SERVER['HTTP_X_BOLT_HMAC_SHA256'];
-            $requestJson = file_get_contents('php://input');
 
             /* @var Bolt_Boltpay_Helper_Api $boltHelper */
             $boltHelper = Mage::helper('boltpay/api');
 
-            if (!$boltHelper->verify_hook($requestJson, $hmacHeader)) {
+            if (!$boltHelper->verify_hook("{}", $hmacHeader)) {
                 Mage::throwException(Mage::helper('boltpay')->__("Failed HMAC Authentication"));
             }
 
@@ -226,7 +225,7 @@ class Bolt_Boltpay_OrderController extends Mage_Core_Controller_Front_Action
                 ->getFirstItem();
 
             /** @var Bolt_Boltpay_Model_Order $boltOrder */
-            $boltOrder = Mage::getModel('boltpay/order');
+            $boltOrder = Mage::getModel('boltpay/order_detail');
             $boltOrder->initWithPayment($orderPayment);
             $transaction = $boltOrder->generateOrderDetail();
 
