@@ -167,7 +167,9 @@ class Bolt_Boltpay_Helper_Api extends Bolt_Boltpay_Helper_Data
 
             $transaction = $transaction ?: $this->fetchTransaction($reference);
 
-            $immutableQuoteId = $this->getImmutableQuoteIdFromTransaction($transaction);
+            /** @var Bolt_Boltpay_Helper_Transaction $transactionHelper */
+            $transactionHelper = Mage::helper('boltpay/transaction');
+            $immutableQuoteId = $transactionHelper->getImmutableQuoteIdFromTransaction($transaction);
 
             /* @var Mage_Sales_Model_Quote $immutableQuote */
             $immutableQuote = Mage::getModel('sales/quote')->loadByIdWithoutStore($immutableQuoteId);
@@ -1123,58 +1125,6 @@ class Bolt_Boltpay_Helper_Api extends Bolt_Boltpay_Helper_Data
     }
 
     /**
-     * Gets the immutable quote id stored in the Bolt transaction.  This is backwards
-     * compatible with older versions of the plugin and is suitable for transition
-     * installations.
-     *
-     * @param object $transaction  The Bolt transaction as a php object
-     *
-     * @return string  The immutable quote id
-     */
-    public function getImmutableQuoteIdFromTransaction( $transaction ) {
-        if (strpos($transaction->order->cart->display_id, '|')) {
-            return explode("|", $transaction->order->cart->display_id)[1];
-        } else {
-            /////////////////////////////////////////////////////////////////
-            // Here we address legacy hook format for backward compatibility
-            // When placed into production in a merchant that previously used the old format,
-            // all their prior orders will have to be accounted for as there are potential
-            // hooks like refund, cancel, or order approval that will still be presented in
-            // the old format.
-            //
-            // For $transaction->order->cart->order_reference
-            //  - older version stores the immutable quote ID here, and parent ID in getParentQuoteId()
-            //  - newer version stores the parent ID here, and immutable quote ID in getParentQuoteId()
-            // So, we take the max of getParentQuoteId() and $transaction->order->cart->order_reference
-            // which will be the immutable quote ID
-            /////////////////////////////////////////////////////////////////
-            $potentialQuoteId = (int) $transaction->order->cart->order_reference;
-            /** @var Mage_Sales_Model_Quote $potentialQuote */
-            $potentialQuote = Mage::getModel('sales/quote')->loadByIdWithoutStore($potentialQuoteId);
-
-            $associatedQuoteId = (int) $potentialQuote->getParentQuoteId();
-
-            return max($potentialQuoteId, $associatedQuoteId);
-        }
-
-    }
-
-    /**
-     * Gets the increment id stored in the Bolt transaction.  This is backwards
-     * compatible with older versions of the plugin and is suitable for transition
-     * installations.
-     *
-     * @param object $transaction  The Bolt transaction as a php object
-     *
-     * @return string  The order increment id
-     */
-    public function getIncrementIdFromTransaction( $transaction ) {
-        return (strpos($transaction->order->cart->display_id, '|'))
-            ? explode("|", $transaction->order->cart->display_id)[0]
-            : $transaction->order->cart->display_id;
-    }
-
-    /**
      * Generate (if) secure url by route and parameters
      *
      * @param   string $route
@@ -1213,83 +1163,5 @@ class Bolt_Boltpay_Helper_Api extends Bolt_Boltpay_Helper_Data
             return $title;
         }
         return $carrier . " - " . $title;
-    }
-
-    /**
-     *  Updates the shipping address data and, if necessary, the billing address data to the Magento
-     *  quote
-     *
-     * @param Mage_Sales_Model_Quote    $quote             The quote to which the address will be applied
-     * @param array                     $shippingAddress   The Bolt formatted address data
-     *
-     * @return  array   The shipping address applied in Magento compatible format
-     */
-    public function applyShippingAddressToQuote( $quote, $shippingAddress ) {
-
-        $directory = Mage::getModel('directory/region')->loadByName($shippingAddress->region, $shippingAddress->country_code);
-        $region = $directory->getName(); // For region field should be the name not a code.
-        $regionId = $directory->getRegionId(); // This is require field for calculation: shipping, shopping price rules and etc.
-
-        $addressData = array(
-            'email' => $shippingAddress->email ?: $shippingAddress->email_address,
-            'firstname' => $shippingAddress->first_name,
-            'lastname' => $shippingAddress->last_name,
-            'street' => $shippingAddress->street_address1 . ($shippingAddress->street_address2 ? "\n" . $shippingAddress->street_address2 : ''),
-            'company' => $shippingAddress->company,
-            'city' => $shippingAddress->locality,
-            'region' => $region,
-            'region_id' => $regionId,
-            'postcode' => $shippingAddress->postal_code,
-            'country_id' => $shippingAddress->country_code,
-            'telephone' => $shippingAddress->phone ?: $shippingAddress->phone_number
-        );
-
-        if ($quote->getCustomerId()) {
-            $customerSession = Mage::getSingleton('customer/session');
-            $customerSession->setCustomerGroupId($quote->getCustomerGroupId());
-            $customer = Mage::getModel("customer/customer")->load($quote->getCustomerId());
-            $address = $customer->getPrimaryShippingAddress();
-
-            if (!$address) {
-                $address = Mage::getModel('customer/address');
-
-                $address->setCustomerId($customer->getId())
-                    ->setCustomer($customer)
-                    ->setIsDefaultShipping('1')
-                    ->setSaveInAddressBook('1')
-                    ->save();
-
-
-                $address->addData($addressData);
-                $address->save();
-
-                $customer->addAddress($address)
-                    ->setDefaultShippingg($address->getId())
-                    ->save();
-            }
-        }
-        $quote->removeAllAddresses();
-        $quote->save();
-        $quote->getShippingAddress()->addData($addressData)->save();
-
-        $billingAddress = $quote->getBillingAddress();
-
-        $quote->getBillingAddress()->addData(
-            array(
-                'email' => $billingAddress->getEmail() ?: ($shippingAddress->email ?: $shippingAddress->email_address),
-                'firstname' => $billingAddress->getFirstname() ?: $shippingAddress->first_name,
-                'lastname' => $billingAddress->getLastname() ?: $shippingAddress->last_name,
-                'street' => implode("\n", $billingAddress->getStreet()) ?: $shippingAddress->street_address1 . ($shippingAddress->street_address2 ? "\n" . $shippingAddress->street_address2 : ''),
-                'company' => $billingAddress->getCompany() ?: $shippingAddress->company,
-                'city' => $billingAddress->getCity() ?: $shippingAddress->locality,
-                'region' => $billingAddress->getRegion() ?: $region,
-                'region_id' => $billingAddress->getRegionId() ?: $regionId,
-                'postcode' => $billingAddress->getPostcode() ?: $shippingAddress->postal_code,
-                'country_id' => $billingAddress->getCountryId() ?: $shippingAddress->country_code,
-                'telephone' => $billingAddress->getTelephone() ?: ($shippingAddress->phone ?: $shippingAddress->phone_number)
-            )
-        )->save();
-
-        return $addressData;
     }
 }
