@@ -20,7 +20,7 @@
 
   <modules>
     <Bolt_Boltpay>
-      <version>1.2.3</version> <!-- version number should be incremented appropriately  -->
+      <version>1.3.0</version> <!-- version number should be incremented appropriately  -->
     </Bolt_Boltpay>
   </modules>
 
@@ -270,4 +270,16 @@
       </boltpay>
     </payment>
   </default>
+  <crontab>
+    <jobs>
+      <immutable_quote_cleanup>
+        <schedule>
+          <cron_expr>0 3 * * *</cron_expr>
+        </schedule>
+        <run>
+          <model>boltpay/cron::cleanupQuotes</model>
+        </run>
+      </immutable_quote_cleanup>
+    </jobs>
+  </crontab>
 </config>
