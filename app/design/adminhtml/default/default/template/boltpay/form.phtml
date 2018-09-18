@@ -28,6 +28,7 @@
 <?php
 $quote = Mage::getSingleton('checkout/session')->getQuote();
 $additionalClasses = Mage::helper('boltpay')->getAdditionalButtonClasses();
+$buttonColor = Mage::helper('boltpay')->getBoltPrimaryColor();
 $_code = $this->getMethodCode();
 $fieldName = Mage::helper('boltpay')->__('Process Order Through Bolt');
 ?>
@@ -35,7 +36,7 @@ $fieldName = Mage::helper('boltpay')->__('Process Order Through Bolt');
     <li>
         <div class="input-box">
             <label for="<?php echo $_code ?>_payment_button"><?php echo $fieldName ?> <span class="required">*</span></label><br/>
-            <div class="bolt-checkout-button <?= $additionalClasses; ?>"></div>
+            <div class="bolt-checkout-button <?= $additionalClasses; ?>" style="--bolt-primary-action-color:<?=$buttonColor?>"></div>
             <input type="hidden" title="<?php echo Mage::helper('core')->quoteEscape($fieldName) ?>" class="required-entry" id="<?php echo $_code ?>_payment_button" name="payment[bolt_reference]" value="<?php echo $this->getInfoData('bolt_reference') ?>"/>
         </div>
     </li>

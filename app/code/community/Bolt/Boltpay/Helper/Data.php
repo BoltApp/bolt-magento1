@@ -142,6 +142,15 @@ class Bolt_Boltpay_Helper_Data extends Mage_Core_Helper_Abstract
     }
 
     /**
+     *
+     * @return string
+     */
+    public function getBoltPrimaryColor()
+    {
+        return Mage::getStoreConfig('payment/boltpay/color');
+    }
+
+    /**
      * Get publishable key used in magento admin.
      *
      * @return string
