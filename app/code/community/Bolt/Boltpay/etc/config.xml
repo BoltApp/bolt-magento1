@@ -270,4 +270,16 @@
       </boltpay>
     </payment>
   </default>
+  <crontab>
+    <jobs>
+      <immutable_quote_cleanup>
+        <schedule>
+          <cron_expr>0 3 * * *</cron_expr>
+        </schedule>
+        <run>
+          <model>boltpay/cron::cleanupQuotes</model>
+        </run>
+      </immutable_quote_cleanup>
+    </jobs>
+  </crontab>
 </config>
