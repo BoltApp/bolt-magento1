@@ -218,15 +218,10 @@ class Bolt_Boltpay_OrderController extends Mage_Core_Controller_Front_Action
                 Mage::throwException(Mage::helper('boltpay')->__("Transaction parameter is required"));
             }
 
-            /** @var Mage_Sales_Model_Order_Payment $orderPayment */
-            $orderPayment = Mage::getModel('sales/order_payment')
-                ->getCollection()
-                ->addFieldToFilter('last_trans_id', $reference)
-                ->getFirstItem();
-
-            /** @var Bolt_Boltpay_Model_Order $boltOrder */
+            /** @var Bolt_Boltpay_Model_Order_Detail $boltOrder */
             $boltOrder = Mage::getModel('boltpay/order_detail');
-            $boltOrder->initWithPayment($orderPayment);
+            $boltOrder->init($reference);
+
             $transaction = $boltOrder->generateOrderDetail();
 
             $response = Mage::helper('core')->jsonEncode($transaction);

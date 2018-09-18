@@ -40,13 +40,43 @@ class Bolt_Boltpay_Model_Order_Detail extends Mage_Core_Model_Abstract
 
     /**
      * Init data for model
+     **
+     *
+     * @param $reference
+     *
+     * @return $this
+     * @throws \Exception
+     */
+    public function init($reference)
+    {
+        /** @var Mage_Sales_Model_Order_Payment $orderPayment */
+        $orderPayment = Mage::getModel('sales/order_payment')
+            ->getCollection()
+            ->addFieldToFilter('last_trans_id', array('like' => "$reference%"))
+            ->getFirstItem();
+
+        try {
+            $this->initWithPayment($orderPayment);
+        } catch (Exception $e) {
+            if (!$this->initByReference($reference)) {
+                throw $e;
+            }
+        }
+
+        return $this;
+    }
+
+
+    /**
+     * Init data for model
      *
      * @param Mage_Sales_Model_Order_Payment $orderPayment
      *
-     * @return \Bolt_Boltpay_Model_Order
+     * @return $this
      * @throws \Mage_Core_Exception
      */
-    public function initWithPayment(Mage_Sales_Model_Order_Payment $orderPayment) {
+    public function initWithPayment(Mage_Sales_Model_Order_Payment $orderPayment)
+    {
         if (!$orderPayment->getId()) {
             Mage::throwException(Mage::helper('boltpay')->__("No payment found"));
         }
@@ -63,12 +93,44 @@ class Bolt_Boltpay_Model_Order_Detail extends Mage_Core_Model_Abstract
     }
 
     /**
+     * @param $reference
+     *
+     * @return $this|bool
+     * @throws \Exception
+     */
+    public function initByReference($reference)
+    {
+        /* @var Bolt_Boltpay_Helper_Api $boltHelper */
+        $boltHelper = Mage::helper('boltpay/api');
+
+        $transaction = $boltHelper->fetchTransaction($reference);
+
+        /* If display_id has been confirmed and updated on Bolt, then we should look up the order by display_id */
+        $order = Mage::getModel('sales/order')->loadByIncrementId($transaction->order->cart->display_id);
+
+        /* If it hasn't been confirmed, or could not be found, we use the quoteId as fallback */
+        if ($order->isObjectNew()) {
+            $quoteId = $boltHelper->getImmutableQuoteIdFromTransaction($transaction);
+            $order = $boltHelper->getOrderByQuoteId($quoteId);
+        }
+
+        if (!$order->getId()) {
+            return false;
+        }
+
+        $this->order = $order;
+
+        return $this;
+    }
+
+    /**
      * Generate order detail for validating order on Bolt side
      *
      * @return array
      * @throws \Mage_Core_Exception
      */
-    public function generateOrderDetail() {
+    public function generateOrderDetail()
+    {
         if (!$this->validateOrderDetail()) {
             return $this->generatedData;
         }
@@ -86,7 +148,8 @@ class Bolt_Boltpay_Model_Order_Detail extends Mage_Core_Model_Abstract
      * @return bool
      * @throws \Mage_Core_Exception
      */
-    protected function validateOrderDetail() {
+    protected function validateOrderDetail()
+    {
         if (!$this->order->getId()) {
             Mage::throwException(Mage::helper('boltpay')->__("No order found"));
 
@@ -99,7 +162,8 @@ class Bolt_Boltpay_Model_Order_Detail extends Mage_Core_Model_Abstract
         return true;
     }
 
-    protected function addOrderDetails() {
+    protected function addOrderDetails()
+    {
         $this->addOrderReference();
         $this->addDisplayId();
         $this->addCurrency();
@@ -107,45 +171,55 @@ class Bolt_Boltpay_Model_Order_Detail extends Mage_Core_Model_Abstract
         $this->addShipments();
     }
 
-    protected function addOrderReference() {
+    protected function addOrderReference()
+    {
         $this->generatedData['order_reference'] = $this->order->getQuoteId();
     }
 
-    protected function addDisplayId() {
+    protected function addDisplayId()
+    {
         $this->generatedData['display_id'] = $this->order->getIncrementId();
     }
 
-    protected function addCurrency() {
+    protected function addCurrency()
+    {
         $this->generatedData['currency'] = $this->order->getOrderCurrencyCode();
     }
 
-    protected function addBillingAddress() {
+    protected function addBillingAddress()
+    {
         $this->generatedData['billing_address'] = $this->getGeneratedBillingAddress();
     }
 
-    protected function addShipments() {
+    protected function addShipments()
+    {
         $this->generatedData['shipments'] = $this->getGeneratedShipments();
     }
 
-    protected function addItemDetails() {
+    protected function addItemDetails()
+    {
         $this->generatedData['items'] = $this->getGeneratedItems();
     }
 
-    protected function addTotals() {
+    protected function addTotals()
+    {
         $this->addDiscounts();
         $this->addTotalAmount();
         $this->addTaxAmount();
     }
 
-    protected function addDiscounts() {
+    protected function addDiscounts()
+    {
         $this->generatedData['discounts'] = $this->getGeneratedDiscounts();
     }
 
-    protected function addTotalAmount() {
+    protected function addTotalAmount()
+    {
         $this->generatedData['total_amount'] = (int)round($this->order->getGrandTotal() * 100);
     }
 
-    protected function addTaxAmount() {
+    protected function addTaxAmount()
+    {
         $this->generatedData['tax_amount'] = (int)round($this->order->getTaxAmount() * 100);
     }
 
@@ -153,7 +227,8 @@ class Bolt_Boltpay_Model_Order_Detail extends Mage_Core_Model_Abstract
      *
      * @return array
      */
-    protected function getGeneratedItems() {
+    protected function getGeneratedItems()
+    {
         $items = $this->order->getAllVisibleItems();
         /** @var Bolt_Boltpay_Helper_Data $boltHelper */
         $boltHelper = Mage::helper('boltpay');
@@ -188,7 +263,8 @@ class Bolt_Boltpay_Model_Order_Detail extends Mage_Core_Model_Abstract
      *
      * @return mixed
      */
-    protected function getGeneratedDiscounts() {
+    protected function getGeneratedDiscounts()
+    {
         $discounts = array();
 
         $discountAmount = abs((int)round($this->order->getDiscountAmount() * 100));
@@ -208,7 +284,8 @@ class Bolt_Boltpay_Model_Order_Detail extends Mage_Core_Model_Abstract
      *
      * @return mixed
      */
-    protected function getGeneratedBillingAddress() {
+    protected function getGeneratedBillingAddress()
+    {
         $billingAddress = $this->order->getBillingAddress();
 
         if (!$billingAddress) {
@@ -245,7 +322,8 @@ class Bolt_Boltpay_Model_Order_Detail extends Mage_Core_Model_Abstract
      *
      * @return mixed
      */
-    protected function getGeneratedShipments() {
+    protected function getGeneratedShipments()
+    {
         $order = $this->order;
         $shippingAddress = $order->getShippingAddress();
 
