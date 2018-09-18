@@ -642,15 +642,6 @@ PROMISE;
     }
 
     /**
-     * Returns the Bolt Button Theme from configuration.
-     * @return string
-     */
-    function getTheme()
-    {
-        return Mage::getStoreConfig('payment/boltpay/theme');
-    }
-
-    /**
      * Returns the Bolt Sandbox Mode configuration.
      * @return string
      */
@@ -842,8 +833,8 @@ PROMISE;
         $controllerName = $this->getRequest()->getControllerName();
 
         $isAllowed = ($routeName === 'checkout' && $controllerName === 'cart')
-                        || ($routeName == 'firecheckout')
-                        || ($routeName === 'adminhtml' && $controllerName === 'sales_order_create');
+            || ($routeName == 'firecheckout')
+            || ($routeName === 'adminhtml' && $controllerName === 'sales_order_create');
 
         return $isAllowed;
     }

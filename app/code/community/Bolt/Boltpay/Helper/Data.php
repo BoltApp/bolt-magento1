@@ -153,6 +153,15 @@ class Bolt_Boltpay_Helper_Data extends Mage_Core_Helper_Abstract
     }
 
     /**
+     *
+     * @return string
+     */
+    public function getAdditionalButtonClasses()
+    {
+        return Mage::getStoreConfig('payment/boltpay/button_classes');
+    }
+
+    /**
      * Creates a clone of a quote including items, addresses, customer details,
      * and shipping and tax options when
      *
