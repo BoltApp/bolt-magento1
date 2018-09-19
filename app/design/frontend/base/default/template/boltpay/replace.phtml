@@ -82,7 +82,9 @@ $additionalClasses = Mage::helper('boltpay')->getAdditionalButtonClasses();
                                 bolt_button.setAttribute("class",selectors[selector]);
 
                                 <?php $buttonColor = Mage::helper('boltpay')->getBoltPrimaryColor();?>
-                                bolt_button.setAttribute("style", "--bolt-primary-action-color:<?=$buttonColor?>");
+                                <?php if($buttonColor):?>
+                                    bolt_button.setAttribute("style", "--bolt-primary-action-color:<?php echo $buttonColor?>");
+                                <?php endif; ?>
 
                                 element.parentNode.insertBefore(bolt_button, element);
 

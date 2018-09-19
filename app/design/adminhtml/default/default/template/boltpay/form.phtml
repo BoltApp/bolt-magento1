@@ -36,7 +36,11 @@ $fieldName = Mage::helper('boltpay')->__('Process Order Through Bolt');
     <li>
         <div class="input-box">
             <label for="<?php echo $_code ?>_payment_button"><?php echo $fieldName ?> <span class="required">*</span></label><br/>
-            <div class="bolt-checkout-button <?= $additionalClasses; ?>" style="--bolt-primary-action-color:<?=$buttonColor?>"></div>
+            <div class="bolt-checkout-button <?php echo $additionalClasses; ?>"
+                <?php if($buttonColor): ?>
+                    style="--bolt-primary-action-color:<?php echo $buttonColor?>"
+                <?php endif;?>
+            ></div>
             <input type="hidden" title="<?php echo Mage::helper('core')->quoteEscape($fieldName) ?>" class="required-entry" id="<?php echo $_code ?>_payment_button" name="payment[bolt_reference]" value="<?php echo $this->getInfoData('bolt_reference') ?>"/>
         </div>
     </li>

@@ -26,7 +26,11 @@ if(($quote->getPayment()->getMethodInstance()->getCode() == 'boltpay') && $publi
     $additionalClasses = Mage::helper('boltpay')->getAdditionalButtonClasses();
     $buttonColor = Mage::helper('boltpay')->getBoltPrimaryColor();
     ?>
-    <div class="bolt-checkout-button <?= $additionalClasses; ?>" style="--bolt-primary-action-color:<?=$buttonColor?>"></div>
+    <div class="bolt-checkout-button <?php echo $additionalClasses; ?>"
+        <?php if($buttonColor): ?>
+            style="--bolt-primary-action-color:<?php echo $buttonColor?>"
+        <?php endif;?>
+    ></div>
     <script type="text/javascript">
         (function() {
 
