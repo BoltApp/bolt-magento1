@@ -16,12 +16,12 @@
  */
 
 /**
- * Class Bolt_Boltpay_Helper_Coupon
+ * Class Bolt_Boltpay_Model_Coupon
  *
- * Base Magento Bolt Coupon Helper class
+ * Base Magento Bolt Coupon Model class
  *
  */
-class Bolt_Boltpay_Helper_Coupon extends Mage_Core_Helper_Abstract
+class Bolt_Boltpay_Model_Coupon extends Mage_Core_Model_Abstract
 {
     const ERR_INSUFFICIENT_INFORMATION = 6200;
     const ERR_CODE_INVALID = 6201;
@@ -54,10 +54,11 @@ class Bolt_Boltpay_Helper_Coupon extends Mage_Core_Helper_Abstract
     protected $transactionHelper = null;
 
     /**
-     * Bolt_Boltpay_Helper_Coupon constructor.
+     * Bolt_Boltpay_Model_Coupon constructor.
      */
     public function __construct()
     {
+        parent::__construct();
         $this->transactionHelper = Mage::helper('boltpay/transaction');
     }
 
