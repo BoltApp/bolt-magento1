@@ -292,10 +292,7 @@ class Bolt_Boltpay_Helper_Coupon extends Mage_Core_Helper_Abstract
         $rule = $this->getRule();
         $date = $rule->getFromDate();
         if ($date && date('Y-m-d', strtotime($date)) > date('Y-m-d')) {
-            $desc = 'Code available from ' . Mage::helper('core')->formatDate(
-                    new \DateTime($rule->getFromDate()),
-                    2//\IntlDateFormatter::MEDIUM
-                )->format('m/d/Y');
+            $desc = 'Code available from ' . date('m/d/Y', strtotime($date));
             $this->setErrorResponseAndThrowException(
                 self::ERR_CODE_NOT_AVAILABLE,
                 $desc,
