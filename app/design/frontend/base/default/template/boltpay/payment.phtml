@@ -22,8 +22,8 @@ $publishableKey = Mage::helper('boltpay')->getPublishableKeyOnePage();
 
 if(($quote->getPayment()->getMethodInstance()->getCode() == 'boltpay') && $publishableKey): ?>
 
-    <?php $theme = Mage::getStoreConfig('payment/boltpay/theme'); ?>
-    <div class="bolt-checkout-button with-cards <?= $theme; ?>"></div>
+    <?php $additionalClasses = Mage::helper('boltpay')->getAdditionalButtonClasses(); ?>
+    <div class="bolt-checkout-button <?= $additionalClasses; ?>"></div>
     <script type="text/javascript">
         (function() {
 

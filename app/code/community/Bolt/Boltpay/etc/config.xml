@@ -237,7 +237,7 @@
         <active>1</active>
         <hide_on_checkout>0</hide_on_checkout>
         <model>boltpay/payment</model>
-        <theme>dark</theme>
+        <button_classes>with-cards</button_classes>
         <title>Credit card</title>
         <order_status>processing</order_status>
         <payment_action>authorize</payment_action>
