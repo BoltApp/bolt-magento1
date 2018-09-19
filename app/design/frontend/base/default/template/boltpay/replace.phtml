@@ -81,6 +81,11 @@ $additionalClasses = Mage::helper('boltpay')->getAdditionalButtonClasses();
                                 var bolt_button =  document.createElement("div");
                                 bolt_button.setAttribute("class",selectors[selector]);
 
+                                <?php $buttonColor = Mage::helper('boltpay')->getBoltPrimaryColor();?>
+                                <?php if($buttonColor):?>
+                                    bolt_button.setAttribute("style", "--bolt-primary-action-color:<?php echo $buttonColor?>");
+                                <?php endif; ?>
+
                                 element.parentNode.insertBefore(bolt_button, element);
 
                                 if (element.parentNode.style.display === "") {
@@ -92,7 +97,7 @@ $additionalClasses = Mage::helper('boltpay')->getAdditionalButtonClasses();
 
                     if (! found_elements) return;
 
-					<?php if ($this->isBoltOnlyPayment()): ?>
+                    <?php if ($this->isBoltOnlyPayment()): ?>
 
                     var lis = document.querySelectorAll('ul.checkout-types li');
 
@@ -108,7 +113,7 @@ $additionalClasses = Mage::helper('boltpay')->getAdditionalButtonClasses();
                         proceed_link.text = proceed_link.text = "<?=$this->__('Proceed to Checkout');?>";
                     }
 
-					<?php endif; ?>
+                    <?php endif; ?>
 
                     // do nut run the replacement routine again
                     clearInterval(tryInterval);

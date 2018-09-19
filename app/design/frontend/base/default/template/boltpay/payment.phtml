@@ -22,8 +22,15 @@ $publishableKey = Mage::helper('boltpay')->getPublishableKeyOnePage();
 
 if(($quote->getPayment()->getMethodInstance()->getCode() == 'boltpay') && $publishableKey): ?>
 
-    <?php $additionalClasses = Mage::helper('boltpay')->getAdditionalButtonClasses(); ?>
-    <div class="bolt-checkout-button <?= $additionalClasses; ?>"></div>
+    <?php
+    $additionalClasses = Mage::helper('boltpay')->getAdditionalButtonClasses();
+    $buttonColor = Mage::helper('boltpay')->getBoltPrimaryColor();
+    ?>
+    <div class="bolt-checkout-button <?php echo $additionalClasses; ?>"
+        <?php if($buttonColor): ?>
+            style="--bolt-primary-action-color:<?php echo $buttonColor?>"
+        <?php endif;?>
+    ></div>
     <script type="text/javascript">
         (function() {
 
