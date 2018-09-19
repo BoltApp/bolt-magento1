@@ -50,11 +50,15 @@ class Bolt_Boltpay_Helper_Coupon extends Mage_Core_Helper_Abstract
     protected $requestObject = null;
     protected $mockTransaction = null;
 
-    /** @var Bolt_Boltpay_Helper_Api|null  */
-    protected $helperApi = null;
+    /** @var Bolt_Boltpay_Helper_Transaction|null  */
+    protected $transactionHelper = null;
+
+    /**
+     * Bolt_Boltpay_Helper_Coupon constructor.
+     */
     public function __construct()
     {
-        $this->helperApi = Mage::helper('boltpay/api');
+        $this->transactionHelper = Mage::helper('boltpay/transaction');
     }
 
     /**
@@ -175,8 +179,8 @@ class Bolt_Boltpay_Helper_Coupon extends Mage_Core_Helper_Abstract
     public function validateCartIdentificationData()
     {
         $parentQuoteId = $this->getParentQuoteId();
-        $incrementId = $this->helperApi->getIncrementIdFromTransaction($this->mockTransaction);
-        $immutableQuoteId = $this->helperApi->getImmutableQuoteIdFromTransaction($this->mockTransaction);
+        $incrementId = $this->transactionHelper->getIncrementIdFromTransaction($this->mockTransaction);
+        $immutableQuoteId = $this->transactionHelper->getImmutableQuoteIdFromTransaction($this->mockTransaction);
 
         if (empty($parentQuoteId) || empty($incrementId) || empty($immutableQuoteId)) {
             $this->setErrorResponseAndThrowException(
@@ -194,7 +198,7 @@ class Bolt_Boltpay_Helper_Coupon extends Mage_Core_Helper_Abstract
      */
     public function validateOrderExists()
     {
-        $incrementId = $this->helperApi->getIncrementIdFromTransaction($this->mockTransaction);
+        $incrementId = $this->transactionHelper->getIncrementIdFromTransaction($this->mockTransaction);
         /** @var Mage_Sales_Model_Order $order */
         $order = Mage::getModel('sales/order')->loadByIncrementId($incrementId);
         if ($order->getId()) {
@@ -288,10 +292,7 @@ class Bolt_Boltpay_Helper_Coupon extends Mage_Core_Helper_Abstract
         $rule = $this->getRule();
         $date = $rule->getFromDate();
         if ($date && date('Y-m-d', strtotime($date)) > date('Y-m-d')) {
-            $desc = 'Code available from ' . Mage::helper('core')->formatDate(
-                    new \DateTime($rule->getFromDate()),
-                    \IntlDateFormatter::MEDIUM
-                )->format('m/d/Y');
+            $desc = 'Code available from ' . date('m/d/Y', strtotime($date));
             $this->setErrorResponseAndThrowException(
                 self::ERR_CODE_NOT_AVAILABLE,
                 $desc,
@@ -558,7 +559,7 @@ class Bolt_Boltpay_Helper_Coupon extends Mage_Core_Helper_Abstract
 
             /** @var Mage_Sales_Model_Quote $immutableQuote */
             $immutableQuote = Mage::getModel('sales/quote')->loadByIdWithoutStore(
-                $this->helperApi->getImmutableQuoteIdFromTransaction($this->mockTransaction)
+                $this->transactionHelper->getImmutableQuoteIdFromTransaction($this->mockTransaction)
             );
             $this->immutableQuote = $immutableQuote;
         }
