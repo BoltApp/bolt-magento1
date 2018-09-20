@@ -290,7 +290,7 @@ PROMISE;
         $onSuccessCallback = $this->buildOnSuccessCallback($successCustom, $checkoutType);
         $onCloseCallback = $this->buildOnCloseCallback($closeCustom, $checkoutType);
 
-        $standardCheck = ($checkoutType === self::CHECKOUT_TYPE_FIRECHECKOUT)
+        $requiredCheck = ($checkoutType === self::CHECKOUT_TYPE_FIRECHECKOUT)
             ? ""
             : "
                     if (!json_cart.orderToken) {
@@ -315,7 +315,7 @@ PROMISE;
                 json_hints,
                 {
                   check: function() {
-                    $standardCheck
+                    $requiredCheck
                     $checkCustom
                     $onCheckCallback
                     return true;
