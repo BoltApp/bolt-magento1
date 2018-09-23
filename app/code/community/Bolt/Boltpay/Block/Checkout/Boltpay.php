@@ -290,6 +290,20 @@ PROMISE;
         $onSuccessCallback = $this->buildOnSuccessCallback($successCustom, $checkoutType);
         $onCloseCallback = $this->buildOnCloseCallback($closeCustom, $checkoutType);
 
+        $requiredCheck = ($checkoutType === self::CHECKOUT_TYPE_FIRECHECKOUT)
+            ? ""
+            : "
+                    if (!json_cart.orderToken) {
+                        if (typeof BoltPopup !== \"undefined\") {
+                            BoltPopup.addMessage(json_cart.error).show();
+                        } else {
+                            alert(json_cart.error);
+                        }
+                        return false;
+                    }
+            "
+        ;
+
         return ("
             var json_cart = $jsonCart;
             var json_hints = $jsonHints;
@@ -301,14 +315,7 @@ PROMISE;
                 json_hints,
                 {
                   check: function() {
-                    if (!json_cart.orderToken) {
-                        if (typeof BoltPopup !== \"undefined\") {
-                            BoltPopup.addMessage(json_cart.error).show();
-                        } else {
-                            alert(json_cart.error);
-                        }
-                        return false;
-                    }
+                    $requiredCheck
                     $checkCustom
                     $onCheckCallback
                     return true;

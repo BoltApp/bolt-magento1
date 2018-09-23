@@ -211,7 +211,7 @@ class Bolt_Boltpay_Block_Checkout_BoltpayTest extends PHPUnit_Framework_TestCase
 
         $result = $this->currentMock->buildBoltCheckoutJavascript($checkoutType, $immutableQuoteID, $hintData, $cartData);
 
-        $this->assertEquals($expected, $result);
+        $this->assertEquals(preg_replace('/\s/', '', $expected), preg_replace('/\s/', '', $result));
     }
 
     /**
