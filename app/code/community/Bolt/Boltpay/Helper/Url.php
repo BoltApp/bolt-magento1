@@ -75,7 +75,7 @@ class Bolt_Boltpay_Helper_Url extends Mage_Core_Helper_Abstract
                 $this->apiUrlTest :
                 $this->apiUrlProd ;
     }
-    
+
     /**
      * Returns the Bolt javascript url, sandbox or production, depending on the store configuration.
      * @param null $storeId
@@ -88,4 +88,18 @@ class Bolt_Boltpay_Helper_Url extends Mage_Core_Helper_Abstract
                 $this->jsUrlProd ;
     }
 
+    /**
+     * Generate (if) secure url by route and parameters
+     * @param string $route
+     * @param array $params
+     * @return string
+     * @throws Mage_Core_Model_Store_Exception
+     */
+    public function getMagentoUrl($route = '', $params = array()){
+        if ((Mage::app()->getStore()->isFrontUrlSecure()) &&
+            (Mage::app()->getRequest()->isSecure())) {
+            $params["_secure"] = true;
+        }
+        return Mage::getUrl($route, $params);
+    }
 }
