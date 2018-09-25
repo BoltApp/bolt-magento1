@@ -141,7 +141,7 @@ class Bolt_Boltpay_Model_Api2_Order_Rest_Admin_V1 extends Bolt_Boltpay_Model_Api
                 );
             }
             /** @var Bolt_Boltpay_Model_Order $boltOrderModel */
-            $boltOrderModel =Mage::getModel('boltpay/order');
+            $boltOrderModel = Mage::getModel('boltpay/order');
             $boltOrderModel->createOrder($reference, $sessionQuoteId = null);
 
             $this->getResponse()->addMessage(
