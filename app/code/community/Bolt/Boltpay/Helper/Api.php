@@ -743,6 +743,23 @@ class Bolt_Boltpay_Helper_Api extends Bolt_Boltpay_Helper_Data
                 'country_code',
             );
 
+            $customerEmail = $quote->getCustomerEmail();
+            if (!$customerEmail && Mage::app()->getStore()->isAdmin()) {
+                //////////////////////////////////////////////////
+                // In the admin, guest customer's email will be stored in the order for
+                // edits and reorders
+                //////////////////////////////////////////////////
+                /** @var Mage_Adminhtml_Model_Session_Quote $session */
+                $session = Mage::getSingleton('adminhtml/session_quote');
+                $orderId = $session->getOrderId() ?: $session->getReordered();
+
+                if ($orderId) {
+                    /** @var Mage_Sales_Model_Order $order */
+                    $order = Mage::getModel('sales/order')->load($orderId);
+                    $customerEmail = $order->getCustomerEmail();
+                }
+            }
+
             ///////////////////////////////////////////
             // Include billing address info if defined.
             ///////////////////////////////////////////
@@ -761,9 +778,9 @@ class Bolt_Boltpay_Helper_Api extends Bolt_Boltpay_Helper_Data
                     'postal_code'     => $billingAddress->getPostcode(),
                     'country_code'    => $billingAddress->getCountry(),
                     'phone'           => $billingAddress->getTelephone(),
-                    'email'           => $billingAddress->getEmail() ?: $quote->getCustomerEmail(),
+                    'email'           => $billingAddress->getEmail() ?: $customerEmail,
                     'phone_number'    => $billingAddress->getTelephone(),
-                    'email_address'   => $billingAddress->getEmail() ?: $quote->getCustomerEmail(),
+                    'email_address'   => $billingAddress->getEmail() ?: $customerEmail,
                 );
 
                 foreach ($requiredAddressFields as $field) {
@@ -805,9 +822,9 @@ class Bolt_Boltpay_Helper_Api extends Bolt_Boltpay_Helper_Data
                     'postal_code'     => $shippingAddress->getPostcode(),
                     'country_code'    => $shippingAddress->getCountry(),
                     'phone'           => $shippingAddress->getTelephone(),
-                    'email'           => $shippingAddress->getEmail() ?: $quote->getCustomerEmail(),
+                    'email'           => $shippingAddress->getEmail() ?: $customerEmail,
                     'phone_number'    => $shippingAddress->getTelephone(),
-                    'email_address'   => $shippingAddress->getEmail() ?: $quote->getCustomerEmail(),
+                    'email_address'   => $shippingAddress->getEmail() ?: $customerEmail,
                 );
 
                 if (@$totals['shipping']) {
@@ -826,7 +843,7 @@ class Bolt_Boltpay_Helper_Api extends Bolt_Boltpay_Helper_Data
                     $cartShippingAddress = Mage::getSingleton('admin/session')->getOrderShippingAddress();
 
                     if (empty($cartShippingAddress['email'])) {
-                        $cartShippingAddress['email'] = $cartShippingAddress['email_address'] = $quote->getCustomerEmail();
+                        $cartShippingAddress['email'] = $cartShippingAddress['email_address'] = $customerEmail;
                     }
 
                     /* @var Mage_Adminhtml_Block_Sales_Order_Create_Shipping_Method_Form $shippingMethodBlock */
