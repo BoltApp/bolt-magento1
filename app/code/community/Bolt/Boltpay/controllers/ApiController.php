@@ -83,7 +83,7 @@ class Bolt_Boltpay_ApiController extends Mage_Core_Controller_Front_Action
 
             /* If it hasn't been confirmed, or could not be found, we use the quoteId as fallback */
             if ($order->isObjectNew()) {
-                $order =  $boltHelper->getOrderByQuoteId($quoteId);
+                $order =  Mage::getModel('boltpay/order')->getOrderByQuoteId($quoteId);
             }
 
             if (!$order->isObjectNew()) {
@@ -163,7 +163,7 @@ class Bolt_Boltpay_ApiController extends Mage_Core_Controller_Front_Action
                 return;
             }
 
-            $order = $boltHelper->createOrder($reference, $sessionQuoteId = null, false, $transaction);
+            $order = Mage::getModel('boltpay/order')->createOrder($reference, $sessionQuoteId = null, false, $transaction);
 
             $this->getResponse()->setBody(
                 json_encode(

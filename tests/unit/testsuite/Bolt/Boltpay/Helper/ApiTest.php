@@ -121,16 +121,6 @@ class Bolt_Boltpay_Helper_ApiTest extends PHPUnit_Framework_TestCase
         $this->assertEquals($expected, $result);
     }
 
-    public function testStoreHasAllCartItems()
-    {
-        $this->testHelper = new Bolt_Boltpay_TestHelper();
-        $cart = $this->testHelper->addProduct(self::$productId, 2);
-
-        $result = $this->currentMock->storeHasAllCartItems($cart->getQuote());
-
-        $this->assertTrue($result);
-    }
-
     public function testIsResponseError()
     {
         $response = (object) $this->testBoltResponse;
