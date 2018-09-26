@@ -110,8 +110,8 @@ class Bolt_Boltpay_Model_Order_Detail extends Mage_Core_Model_Abstract
 
         /* If it hasn't been confirmed, or could not be found, we use the quoteId as fallback */
         if ($order->isObjectNew()) {
-            $quoteId = $boltHelper->getImmutableQuoteIdFromTransaction($transaction);
-            $order = $boltHelper->getOrderByQuoteId($quoteId);
+            $quoteId = Mage::helper('boltpay/transaction')->getImmutableQuoteIdFromTransaction($transaction);
+            $order = Mage::getModel('boltpay/order')->getOrderByQuoteId($quoteId);
         }
 
         if (!$order->getId()) {

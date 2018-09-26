@@ -22,9 +22,8 @@
  *
  * 1. Fetching the transaction info by calling the Fetch Bolt API endpoint.
  * 2. Verifying Hook Requests.
- * 3. Saves the order in Magento system.
- * 4. Makes the calls towards Bolt API.
- * 5. Generates Bolt order submission data.
+ * 3. Makes the calls towards Bolt API.
+ * 4. Generates Bolt order submission data.
  */
 class Bolt_Boltpay_Helper_Api extends Bolt_Boltpay_Helper_Data
 {
@@ -145,288 +144,6 @@ class Bolt_Boltpay_Helper_Api extends Bolt_Boltpay_Helper_Data
     }
 
     /**
-     * Processes Magento order creation. Called from both frontend and API.
-     *
-     * @param string        $reference           Bolt transaction reference
-     * @param int           $sessionQuoteId      Quote id, used if triggered from shopping session context,
-     *                                           This will be null if called from within an API call context
-     * @param boolean       $isAjaxRequest       If called by ajax request. default to false.
-     * @param object        $transaction         pre-loaded Bolt Transaction object
-     *
-     * @return Mage_Sales_Model_Order   The order saved to Magento
-     *
-     * @throws Exception    thrown on order creation failure
-     */
-    public function createOrder($reference, $sessionQuoteId = null, $isAjaxRequest = false, $transaction = null)
-    {
-
-        try {
-            if (empty($reference)) {
-                throw new Exception(Mage::helper('boltpay')->__("Bolt transaction reference is missing in the Magento order creation process."));
-            }
-
-            $transaction = $transaction ?: $this->fetchTransaction($reference);
-
-            /** @var Bolt_Boltpay_Helper_Transaction $transactionHelper */
-            $transactionHelper = Mage::helper('boltpay/transaction');
-            $immutableQuoteId = $transactionHelper->getImmutableQuoteIdFromTransaction($transaction);
-
-            /* @var Mage_Sales_Model_Quote $immutableQuote */
-            $immutableQuote = Mage::getModel('sales/quote')->loadByIdWithoutStore($immutableQuoteId);
-
-            // check that the order is in the system.  If not, we have an unexpected problem
-            if ($immutableQuote->isEmpty()) {
-                throw new Exception(Mage::helper('boltpay')->__("The expected immutable quote [$immutableQuoteId] is missing from the Magento system.  Were old quotes recently removed from the database?"));
-            }
-
-            if(!$this->storeHasAllCartItems($immutableQuote)){
-                throw new Exception(Mage::helper('boltpay')->__("Not all items are available in the requested quantities."));
-            }
-
-            // check if the quotes matches, frontend only
-            if ( $sessionQuoteId && ($sessionQuoteId != $immutableQuote->getParentQuoteId()) ) {
-                throw new Exception(
-                    Mage::helper('boltpay')->__("The Bolt order reference does not match the current cart ID. Cart ID: [%s]  Bolt Reference: [%s]",
-                                                $sessionQuoteId , $immutableQuote->getParentQuoteId())
-                );
-            }
-
-            // check if this order is currently being proccessed.  If so, throw exception
-            /* @var Mage_Sales_Model_Quote $parentQuote */
-            $parentQuote = Mage::getModel('sales/quote')->loadByIdWithoutStore($immutableQuote->getParentQuoteId());
-            if ($parentQuote->isEmpty() ) {
-                throw new Exception(
-                    Mage::helper('boltpay')->__("The parent quote %s is unexpectedly missing.",
-                                                $immutableQuote->getParentQuoteId() )
-                );
-            } else if (!$parentQuote->getIsActive() ) {
-                throw new Exception(
-                    Mage::helper('boltpay')->__("The parent quote %s for immutable quote %s is currently being processed or has been processed for order #%s. Check quote %s for details.",
-                        $parentQuote->getId(), $immutableQuote->getId(), $parentQuote->getReservedOrderId(), $parentQuote->getParentQuoteId() )
-                );
-            } else {
-                $parentQuote->setIsActive(false)->save();
-            }
-
-            // adding guest user email to order
-            if (!$immutableQuote->getCustomerEmail()) {
-                $email = $transaction->from_credit_card->billing_address->email_address;
-                $immutableQuote->setCustomerEmail($email);
-                $immutableQuote->save();
-            }
-
-            // explicitly set quote belong to guest if customer id does not exist
-            $immutableQuote
-               ->setCustomerIsGuest( (($parentQuote->getCustomerId()) ? false : true) )
-               ->save();
-
-            //////////////////////////////////////////////////////////////////////////////////
-            ///  Apply shipping address and shipping method data to quote directly from
-            ///  the Bolt transaction.
-            //////////////////////////////////////////////////////////////////////////////////
-            $shippingMethodCode = null;
-            $shippingAndTaxHelper = Mage::helper("boltpay/shippingAndTax");
-            if ($transaction->order->cart->shipments) {
-
-                $shippingAndTaxHelper->applyShippingAddressToQuote($immutableQuote, $transaction->order->cart->shipments[0]->shipping_address);
-                $shippingMethodCode = $transaction->order->cart->shipments[0]->reference;
-            }
-
-            $immutableQuote->getShippingAddress()->setShouldIgnoreValidation(true)->save();
-            $immutableQuote->getBillingAddress()->setShouldIgnoreValidation(true)->save();
-
-            if ($shippingMethodCode) {
-                $immutableQuote->getShippingAddress()->setShippingMethod($shippingMethodCode)->save();
-            } else {
-                // Legacy transaction does not have shipments reference - fallback to $service field
-                $service = $transaction->order->cart->shipments[0]->service;
-
-                Mage::helper('boltpay')->collectTotals($immutableQuote);
-
-                $shippingAddress = $immutableQuote->getShippingAddress();
-                $shippingAddress->setCollectShippingRates(true)->collectShippingRates();
-                $rates = $shippingAddress->getAllShippingRates();
-
-                $isShippingSet = false;
-                foreach ($rates as $rate) {
-                    if ($rate->getCarrierTitle() . ' - ' . $rate->getMethodTitle() == $service
-                        || (!$rate->getMethodTitle() && $rate->getCarrierTitle() == $service)) {
-                        $shippingMethod = $rate->getCarrier() . '_' . $rate->getMethod();
-                        $immutableQuote->getShippingAddress()->setShippingMethod($shippingMethod)->save();
-                        $isShippingSet = true;
-                        break;
-                    }
-                }
-
-                if (!$isShippingSet) {
-                    $errorMessage = Mage::helper('boltpay')->__('Shipping method not found');
-                    $metaData = array(
-                        'transaction'   => $transaction,
-                        'rates' => $this->getRatesDebuggingData($rates),
-                        'service' => $service,
-                        'shipping_address' => var_export($shippingAddress->debug(), true),
-                        'quote' => var_export($immutableQuote->debug(), true)
-                    );
-                    Mage::helper('boltpay/bugsnag')->notifyException(new Exception($errorMessage), $metaData);
-                }
-            }
-            //////////////////////////////////////////////////////////////////////////////////
-
-            //////////////////////////////////////////////////////////////////////////////////
-            // set Bolt as payment method
-            //////////////////////////////////////////////////////////////////////////////////
-            $immutableQuote->getShippingAddress()->setPaymentMethod(Bolt_Boltpay_Model_Payment::METHOD_CODE)->save();
-            $payment = $immutableQuote->getPayment();
-            $payment->setMethod(Bolt_Boltpay_Model_Payment::METHOD_CODE);
-            //////////////////////////////////////////////////////////////////////////////////
-
-            Mage::helper('boltpay')->collectTotals($immutableQuote, true)->save();
-
-            ////////////////////////////////////////////////////////////////////////////
-            // reset increment id if needed
-            ////////////////////////////////////////////////////////////////////////////
-            /* @var Mage_Sales_Model_Order $preExistingOrder */
-            $preExistingOrder = Mage::getModel('sales/order')->loadByIncrementId($parentQuote->getReservedOrderId());
-
-            if (!$preExistingOrder->isObjectNew()) {
-                ############################
-                # First check if this order matches the transaction and therefore already created
-                # If so, we can return it after notifying Bugsnag
-                ############################
-                $preExistingTransactionReference = $preExistingOrder->getPayment()->getAdditionalInformation('bolt_reference');
-                if ( $preExistingTransactionReference === $reference ) {
-                    Mage::helper('boltpay/bugsnag')->notifyException(
-                        new Exception( Mage::helper('boltpay')->__("The order #%s has already been processed for this quote.", $preExistingOrder->getIncrementId() ) ),
-                        array(),
-                        'warning'
-                    );
-                    return $preExistingOrder;
-                }
-                ############################
-
-                $parentQuote
-                    ->setReservedOrderId(null)
-                    ->reserveOrderId()
-                    ->save();
-
-                $immutableQuote->setReservedOrderId($parentQuote->getReservedOrderId());
-            }
-            ////////////////////////////////////////////////////////////////////////////
-
-            ////////////////////////////////////////////////////////////////////////////
-            // call internal Magento service for order creation
-            ////////////////////////////////////////////////////////////////////////////
-            $service = Mage::getModel('sales/service_quote', $immutableQuote);
-
-            try {
-                ///////////////////////////////////////////////////////
-                /// These values are used in the observer after successful
-                /// order creation
-                ///////////////////////////////////////////////////////
-                Mage::getSingleton('core/session')->setBoltTransaction($transaction);
-                Mage::getSingleton('core/session')->setBoltReference($reference);
-                Mage::getSingleton('core/session')->setWasCreatedByHook(!$isAjaxRequest);
-                ///////////////////////////////////////////////////////
-
-                $service->submitAll();
-            } catch (Exception $e) {
-
-                ///////////////////////////////////////////////////////
-                /// Unset session values set above
-                ///////////////////////////////////////////////////////
-                Mage::getSingleton('core/session')->unsBoltTransaction();
-                Mage::getSingleton('core/session')->unsBoltReference();
-                Mage::getSingleton('core/session')->unsWasCreatedByHook();
-                ///////////////////////////////////////////////////////
-
-                Mage::helper('boltpay/bugsnag')->addBreadcrumb(
-                    array(
-                        'transaction'   => json_encode((array)$transaction),
-                        'quote_address' => var_export($immutableQuote->getShippingAddress()->debug(), true)
-                    )
-                );
-                throw $e;
-            }
-            ////////////////////////////////////////////////////////////////////////////
-
-        } catch ( Exception $e ) {
-            // Order creation failed, so mark the parent quote as active so webhooks can retry it
-            if (@$parentQuote) {
-                $parentQuote->setIsActive(true)->save();
-            }
-
-            throw $e;
-        }
-
-        $order = $service->getOrder();
-        $this->validateSubmittedOrder($order, $immutableQuote);
-
-        ///////////////////////////////////////////////////////
-        // Close out session by assigning the immutable quote
-        // as the parent of its parent quote
-        //
-        // This creates a circular reference so that we can use the parent quote
-        // to look up the used immutable quote
-        ///////////////////////////////////////////////////////
-        $parentQuote->setParentQuoteId($immutableQuote->getId())
-            ->save();
-        ///////////////////////////////////////////////////////
-
-        Mage::getModel('boltpay/payment')->handleOrderUpdate($order);
-
-        ///////////////////////////////////////////////////////
-        /// Dispatch order save events
-        ///////////////////////////////////////////////////////
-        Mage::dispatchEvent('bolt_boltpay_save_order_after', array('order'=>$order, 'quote'=>$immutableQuote, 'transaction' => $transaction));
-
-        Mage::dispatchEvent(
-            'checkout_submit_all_after',
-            array('order' => $order, 'quote' => $immutableQuote, 'recurring_profiles' => $service->getRecurringPaymentProfiles())
-        );
-        ///////////////////////////////////////////////////////
-
-        if ($sessionQuoteId) {
-            $checkoutSession = Mage::getSingleton('checkout/session');
-            $checkoutSession
-                ->clearHelperData();
-            $checkoutSession
-                ->setLastQuoteId($parentQuote->getId())
-                ->setLastSuccessQuoteId($parentQuote->getId());
-            // add order information to the session
-            $checkoutSession->setLastOrderId($order->getId())
-                ->setRedirectUrl('')
-                ->setLastRealOrderId($order->getIncrementId());
-        }
-
-        return $order;
-    }
-
-    protected function getRatesDebuggingData($rates) {
-        $rateDebuggingData = '';
-
-        if(isset($rates)) {
-            foreach($rates as $rate) {
-                $rateDebuggingData .= var_export($rate->debug(), true);
-            }
-        }
-
-        return $rateDebuggingData;
-    }
-
-    protected function validateSubmittedOrder($order, $quote) {
-        if(empty($order)) {
-            Mage::helper('boltpay/bugsnag')->addBreadcrumb(
-                array(
-                    'quote'  => var_export($quote->debug(), true),
-                    'quote_address'  => var_export($quote->getShippingAddress()->debug(), true),
-                )
-            );
-
-            throw new Exception(Mage::helper('boltpay')->__('Order is empty after call to Sales_Model_Service_Quote->submitAll()'));
-        }
-    }
-
-    /**
      * Calls the Bolt API endpoint.
      *
      * @param string $command  The endpoint to be called
@@ -507,6 +224,19 @@ class Bolt_Boltpay_Helper_Api extends Bolt_Boltpay_Helper_Data
 
         return $this->_handleErrorResponse($resultJSON, $url, $params);
     }
+
+    /**
+     * Sets Plugin information in the response headers to callers of the API
+     */
+    public function setResponseContextHeaders()
+    {
+        $contextInfo = Mage::helper('boltpay/bugsnag')->getContextInfo();
+
+        Mage::app()->getResponse()
+            ->setHeader('User-Agent', 'BoltPay/Magento-' . $contextInfo["Magento-Version"], true)
+            ->setHeader('X-Bolt-Plugin-Version', $contextInfo["Bolt-Plugin-Version"], true);
+    }
+
 
     protected function setCurlResultWithHeader($curlResource, $result)
     {
@@ -875,6 +605,7 @@ class Bolt_Boltpay_Helper_Api extends Bolt_Boltpay_Helper_Data
         return $this->getCorrectedTotal($calculatedTotal, $cartSubmissionData);
     }
 
+
     /**
      * Utility method that attempts to correct totals if the projected total that was calculated from
      * all items and the given discount, does not match the $magento calculated total.  The totals may vary
@@ -885,7 +616,7 @@ class Bolt_Boltpay_Helper_Api extends Bolt_Boltpay_Helper_Data
      *
      * @return array  the corrected Bolt formatted cart data.
      */
-    private function getCorrectedTotal($projectedTotal, $magentoDerivedCartData)
+    protected function getCorrectedTotal($projectedTotal, $magentoDerivedCartData)
     {
         // we'll check if we can simply dividing by two corrects the problem
         if ($projectedTotal == (int)($magentoDerivedCartData['total_amount']/2)) {
@@ -919,252 +650,9 @@ class Bolt_Boltpay_Helper_Api extends Bolt_Boltpay_Helper_Data
      * @param $response     Bolt API response
      * @return bool         true if there is an error, false otherwise
      */
-    public function isResponseError($response)
+    private function isResponseError($response)
     {
         return property_exists($response, 'errors') || property_exists($response, 'error_code');
-    }
-
-    /**
-     * Gets the shipping and the tax estimate for a quote
-     *
-     * @param Mage_Sales_Model_Quote  $quote    A quote object with pre-populated addresses
-     *
-     * @return array    Bolt shipping and tax response array to be converted to JSON
-     */
-    public function getShippingAndTaxEstimate( $quote )
-    {
-        $response = array(
-            'shipping_options' => array(),
-            'tax_result' => array(
-                "amount" => 0
-            ),
-        );
-
-        Mage::helper('boltpay')->collectTotals(Mage::getModel('sales/quote')->load($quote->getId()));
-
-        //we should first determine if the cart is virtual
-        if($quote->isVirtual()){
-            Mage::helper('boltpay')->collectTotals($quote, true);
-            $option = array(
-                "service"   => Mage::helper('boltpay')->__('No Shipping Required'),
-                "reference" => 'noshipping',
-                "cost" => 0,
-                "tax_amount" => abs(round($quote->getBillingAddress()->getTaxAmount() * 100))
-            );
-            $response['shipping_options'][] = $option;
-            $quote->setTotalsCollectedFlag(true);
-            return $response;
-        }
-
-        /*****************************************************************************************
-         * Calculate tax
-         *****************************************************************************************/
-        $this->applyShippingRate($quote, null);
-
-        $shippingAddress = $quote->getShippingAddress();
-        $shippingAddress->setCollectShippingRates(true)->collectShippingRates()->save();
-
-        $originalDiscountedSubtotal = $quote->getSubtotalWithDiscount();
-
-        $rates = $this->getSortedShippingRates($shippingAddress);
-
-        foreach ($rates as $rate) {
-
-            if ($rate->getErrorMessage()) {
-                $metaData = array('quote' => var_export($quote->debug(), true));
-                Mage::helper('boltpay/bugsnag')->notifyException(
-                    new Exception(
-                        Mage::helper('boltpay')->__("Error getting shipping option for %s: %s", $rate->getCarrierTitle(), $rate->getErrorMessage())
-                    ),
-                    $metaData
-                );
-                continue;
-            }
-
-            $this->applyShippingRate($quote, $rate->getCode());
-
-            $rateCode = $rate->getCode();
-
-            if (empty($rateCode)) {
-                $metaData = array('quote' => var_export($quote->debug(), true));
-
-                Mage::helper('boltpay/bugsnag')->notifyException(
-                    new Exception( Mage::helper('boltpay')->__('Rate code is empty. ') . var_export($rate->debug(), true) ),
-                    $metaData
-                );
-            }
-
-            $adjustedShippingAmount = $this->getAdjustedShippingAmount($originalDiscountedSubtotal, $quote);
-
-            $option = array(
-                "service" => $this->getShippingLabel($rate),
-                "reference" => $rateCode,
-                "cost" => round($adjustedShippingAmount * 100),
-                "tax_amount" => abs(round($shippingAddress->getTaxAmount() * 100))
-            );
-
-            $response['shipping_options'][] = $option;
-        }
-
-        return $response;
-    }
-
-    /**
-     * Applies shipping rate to quote. Clears previously calculated discounts by clearing address id.
-     *
-     * @param Mage_Sales_Model_Quote $quote    Quote which has been updated to use new shipping rate
-     * @param string $shippingRateCode    Shipping rate code
-     */
-    public function applyShippingRate($quote, $shippingRateCode) {
-        $shippingAddress = $quote->getShippingAddress();
-
-        if (!empty($shippingAddress)) {
-            // Flagging address as new is required to force collectTotals to recalculate discounts
-            $shippingAddress->isObjectNew(true);
-            $shippingAddressId = $shippingAddress->getData('address_id');
-
-            $shippingAddress->setShippingMethod($shippingRateCode);
-
-            // When multiple shipping methods apply a discount to the sub-total, collect totals doesn't clear the
-            // previously set discount, so the previous discount gets added to each subsequent shipping method that
-            // includes a discount. Here we reset it to the original amount to resolve this bug.
-            $quoteItems = $quote->getAllItems();
-            foreach ($quoteItems as $item) {
-                $item->setData('discount_amount', $item->getOrigData('discount_amount'));
-                $item->setData('base_discount_amount', $item->getOrigData('base_discount_amount'));
-            }
-
-            Mage::helper('boltpay')->collectTotals($quote, true);
-
-            if(!empty($shippingAddressId) && $shippingAddressId != $shippingAddress->getData('address_id')) {
-                $shippingAddress->setData('address_id', $shippingAddressId);
-            }
-        }
-    }
-
-    protected function getSortedShippingRates($address) {
-        $rates = array();
-
-        foreach($address->getGroupedAllShippingRates() as $code => $carrierRates) {
-            foreach ($carrierRates as $carrierRate) {
-                $rates[] = $carrierRate;
-            }
-        }
-
-        return $rates;
-    }
-
-    /**
-     * When Bolt attempts to get shipping rates, it already knows the quote subtotal. However, if there are shipping
-     * methods that could affect the subtotal (e.g. $5 off when you choose Next Day Air), then we need to modify the
-     * shipping amount so that it makes up for the previous subtotal.
-     *
-     * @param float $originalDiscountedSubtotal    Original discounted subtotal
-     * @param Mage_Sales_Model_Quote    $quote    Quote which has been updated to use new shipping rate
-     *
-     * @return float    Discount modified as a result of the new shipping method
-     */
-    public function getAdjustedShippingAmount($originalDiscountedSubtotal, $quote) {
-        return $quote->getShippingAddress()->getShippingAmount() + $quote->getSubtotalWithDiscount() - $originalDiscountedSubtotal;
-    }
-
-    /**
-     * Sets Plugin information in the response headers to callers of the API
-     */
-    public function setResponseContextHeaders()
-    {
-        $contextInfo = Mage::helper('boltpay/bugsnag')->getContextInfo();
-
-        Mage::app()->getResponse()
-            ->setHeader('User-Agent', 'BoltPay/Magento-' . $contextInfo["Magento-Version"], true)
-            ->setHeader('X-Bolt-Plugin-Version', $contextInfo["Bolt-Plugin-Version"], true);
-    }
-
-
-    /**
-     * Determines whether the cart has either all items available if Manage Stock is yes for requested quantities,
-     * or, if not, those items are eligible for back order.
-     *
-     * @var Mage_Sales_Model_Quote $quote   The quote that defines the cart
-     *
-     * @return bool true if the store can accept an order for all items in the cart,
-     *              otherwise, false
-     */
-    public function storeHasAllCartItems($quote)
-    {
-        foreach ($quote->getAllItems() as $cartItem) {
-            if($cartItem->getHasChildren()) {
-                continue;
-            }
-
-            $_product = Mage::getModel('catalog/product')->load($cartItem->getProductId());
-            $stockInfo = Mage::getModel('cataloginventory/stock_item')->loadByProduct($_product);
-            if($stockInfo->getManageStock()){
-                if( ($stockInfo->getQty() < $cartItem->getQty()) && !$stockInfo->getBackorders() ){
-                    return false;
-                }
-            }
-        }
-
-        return true;
-    }
-
-
-    /**
-     * Gets a an order by quote id/order reference
-     *
-     * @param int|string $quoteId  The quote id which this order was created from
-     *
-     * @return Mage_Sales_Model_Order   If found, and order with all the details, otherwise a new object order
-     */
-    public function getOrderByQuoteId($quoteId) {
-        /* @var Mage_Sales_Model_Resource_Order_Collection $orderCollection */
-        $orderCollection = Mage::getResourceModel('sales/order_collection');
-
-        return $orderCollection
-                ->addFieldToFilter('quote_id', $quoteId)
-                ->getFirstItem();
-    }
-
-    /**
-     * Generate (if) secure url by route and parameters
-     *
-     * @param   string $route
-     * @param   array $params
-     * @return  string
-     */
-    public function getMagentoUrl($route = '', $params = array()){
-        if ((Mage::app()->getStore()->isFrontUrlSecure()) &&
-            (Mage::app()->getRequest()->isSecure())) {
-            $params["_secure"] = true;
-        }
-        return Mage::getUrl($route, $params);
-    }
-
-    /**
-     * Returns user-visible label for given shipping rate.
-     *
-     * @param   object rate
-     * @return  string
-     */
-    public function getShippingLabel($rate) {
-        $carrier = $rate->getCarrierTitle();
-        $title = $rate->getMethodTitle();
-        if (!$title) {
-            return $carrier;
-        }
-
-        // Apply adhoc rules to return concise string.
-        if ($carrier === "Shipping Table Rates") {
-            return $title;
-        }
-        if ($carrier === "United Parcel Service" && substr( $title, 0, 3 ) === "UPS") {
-            return $title;
-        }
-        if (strncasecmp( $carrier, $title, strlen($carrier) ) === 0) {
-            return $title;
-        }
-        return $carrier . " - " . $title;
     }
 
 
@@ -1176,7 +664,7 @@ class Bolt_Boltpay_Helper_Api extends Bolt_Boltpay_Helper_Data
      *
      * @return string    The customer's email address, if found
      */
-    public function getCustomerEmail($quote = null) {
+    private function getCustomerEmail($quote = null) {
         $customerEmail = $quote ? $quote->getCustomerEmail() : "";
         if (!$customerEmail && Mage::app()->getStore()->isAdmin()) {
             //////////////////////////////////////////////////

@@ -66,7 +66,7 @@ class Bolt_Boltpay_Block_Checkout_Boltpay extends Mage_Checkout_Block_Onepage_Re
         $isMultiPage = $checkoutType === self::CHECKOUT_TYPE_MULTI_PAGE;
 
         if ($checkoutType === self::CHECKOUT_TYPE_FIRECHECKOUT) {
-            $firecheckoutTokenUrl = $boltHelper->getMagentoUrl('boltpay/order/firecheckoutcreate');
+            $firecheckoutTokenUrl = Mage::helper('boltpay/url')->getMagentoUrl('boltpay/order/firecheckoutcreate');
             return <<<PROMISE
                         new Promise( 
                             function (resolve, reject) {
@@ -146,6 +146,9 @@ PROMISE;
             /* @var Bolt_Boltpay_Helper_Api $boltHelper */
             $boltHelper = Mage::helper('boltpay/api');
 
+            /** @var Bolt_Boltpay_Model_ShippingAndTax $shippingAndTaxModel */
+            $shippingAndTaxModel = Mage::getModel('boltpay/shippingAndTax');
+
             $hintData = $this->getAddressHints($sessionQuote, $checkoutType);
 
             $orderCreationResponse = json_decode('{"token" : "", "error": "'.Mage::helper('boltpay')->__('Unexpected error.  Please contact support for assistance.').'"}');
@@ -155,7 +158,7 @@ PROMISE;
             if ($isMultiPage) {
                 // Resets shipping rate
                 $shippingMethod = $sessionQuote->getShippingAddress()->getShippingMethod();
-                $boltHelper->applyShippingRate($sessionQuote, null);
+                $shippingAndTaxModel->applyShippingRate($sessionQuote, null);
             }
 
             // Call Bolt create order API
@@ -206,7 +209,7 @@ PROMISE;
 
             // For multi-page, reapply shipping to quote that may be used for shipping and tax estimate
             if ($isMultiPage) {
-                $boltHelper->applyShippingRate($sessionQuote, $shippingMethod);
+                $shippingAndTaxModel->applyShippingRate($sessionQuote, $shippingMethod);
             }
 
             $cartData = ($checkoutType === self::CHECKOUT_TYPE_FIRECHECKOUT) ? $orderCreationResponse : $this->buildCartData($orderCreationResponse);
@@ -399,7 +402,7 @@ PROMISE;
      */
     public function buildOnSuccessCallback($successCustom = '', $checkoutType)
     {
-        $saveOrderUrl = Mage::helper('boltpay/api')->getMagentoUrl('boltpay/order/save');
+        $saveOrderUrl = Mage::helper('boltpay/url')->getMagentoUrl('boltpay/order/save');
 
         return ($checkoutType === self::CHECKOUT_TYPE_ADMIN) ?
             "function(transaction, callback) {
@@ -441,7 +444,7 @@ PROMISE;
      */
     public function buildOnCloseCallback($closeCustom, $checkoutType)
     {
-        $successUrl = Mage::helper('boltpay/api')->getMagentoUrl(Mage::getStoreConfig('payment/boltpay/successpage'));
+        $successUrl = Mage::helper('boltpay/url')->getMagentoUrl(Mage::getStoreConfig('payment/boltpay/successpage'));
         $javascript = "";
         switch ($checkoutType) {
             case self::CHECKOUT_TYPE_ADMIN:
@@ -690,7 +693,7 @@ PROMISE;
      */
     public function getSuccessURL()
     {
-        return Mage::helper('boltpay/api')->getMagentoUrl(Mage::getStoreConfig('payment/boltpay/successpage'));
+        return Mage::helper('boltpay/url')->getMagentoUrl(Mage::getStoreConfig('payment/boltpay/successpage'));
     }
 
     /**
@@ -699,7 +702,7 @@ PROMISE;
      */
     public function getSaveOrderURL()
     {
-        return Mage::helper('boltpay/api')->getMagentoUrl('boltpay/order/save');
+        return Mage::helper('boltpay/url')->getMagentoUrl('boltpay/order/save');
     }
 
     /**
@@ -708,7 +711,7 @@ PROMISE;
      */
     public function getCartURL()
     {
-        return Mage::helper('boltpay/api')->getMagentoUrl('checkout/cart');
+        return Mage::helper('boltpay/url')->getMagentoUrl('checkout/cart');
     }
 
     /**
