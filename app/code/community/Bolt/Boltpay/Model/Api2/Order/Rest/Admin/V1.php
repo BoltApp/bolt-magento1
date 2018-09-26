@@ -140,8 +140,9 @@ class Bolt_Boltpay_Model_Api2_Order_Rest_Admin_V1 extends Bolt_Boltpay_Model_Api
                     Mage::helper('boltpay')->__('Reference and/or transaction_id is missing'), Mage_Api2_Model_Server::HTTP_BAD_REQUEST
                 );
             }
-
-            $boltHelper->createOrder($reference, $sessionQuoteId = null);
+            /** @var Bolt_Boltpay_Model_Order $boltOrderModel */
+            $boltOrderModel = Mage::getModel('boltpay/order');
+            $boltOrderModel->createOrder($reference, $sessionQuoteId = null);
 
             $this->getResponse()->addMessage(
                 self::$SUCCESS_ORDER_CREATED['message'], self::$SUCCESS_ORDER_CREATED['http_response_code'],

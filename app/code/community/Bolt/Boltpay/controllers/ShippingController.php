@@ -46,8 +46,6 @@ class Bolt_Boltpay_ShippingController extends Mage_Core_Controller_Front_Action
 
             /* @var Bolt_Boltpay_Helper_Api $boltHelper */
             $boltHelper = Mage::helper('boltpay/api');
-            /* @var Bolt_Boltpay_Helper_ShippingAndTax $shippingAndTaxHelper */
-            $shippingAndTaxHelper = Mage::helper("boltpay/shippingAndTax");
 
             if (!$boltHelper->verify_hook($requestJson, $hmacHeader)) {
                 throw new Exception(Mage::helper('boltpay')->__("Failed HMAC Authentication"));
@@ -62,7 +60,10 @@ class Bolt_Boltpay_ShippingController extends Mage_Core_Controller_Front_Action
             }
 
             $mockTransaction = (object) array("order" => $requestData );
-            $quoteId = $boltHelper->getImmutableQuoteIdFromTransaction($mockTransaction);
+
+            /** @var Bolt_Boltpay_Helper_Transaction $transactionHelper */
+            $transactionHelper = Mage::helper('boltpay/transaction');
+            $quoteId = $transactionHelper->getImmutableQuoteIdFromTransaction($mockTransaction);
 
             /* @var Mage_Sales_Model_Quote $quote */
             $quote = Mage::getModel('sales/quote')->loadByIdWithoutStore($quoteId);
@@ -73,7 +74,9 @@ class Bolt_Boltpay_ShippingController extends Mage_Core_Controller_Front_Action
             $session->setQuoteId($quoteId);
             /**************/
 
-            $addressData = $shippingAndTaxHelper->applyShippingAddressToQuote($quote, $shippingAddress);
+            /* @var Bolt_Boltpay_Model_ShippingAndTax $shippingAndTaxModel */
+            $shippingAndTaxModel = Mage::getModel('boltpay/shippingAndTax');
+            $addressData = $shippingAndTaxModel->applyShippingAddressToQuote($quote, $shippingAddress);
 
             ////////////////////////////////////////////////////////////////////////////////////////
             // Check session cache for estimate.  If the shipping city or postcode, and the country code match,
@@ -94,13 +97,13 @@ class Bolt_Boltpay_ShippingController extends Mage_Core_Controller_Front_Action
                 $response = unserialize($this->_cache->load($prefetchCacheKey));
                 $cacheBoltHeader = 'HIT';
                 if (!$response) {
-                    $response = Mage::helper('boltpay/api')->getShippingAndTaxEstimate($quote);
+                    $response = $shippingAndTaxModel->getShippingAndTaxEstimate($quote);
                     $cacheBoltHeader = 'MISS';
                 }
             } else {
                 //Mage::log('Generating address from quote', null, 'shipping_and_tax.log');
                 //Mage::log('Live address: '.var_export($address_data, true), null, 'shipping_and_tax.log');
-                $response = Mage::helper('boltpay/api')->getShippingAndTaxEstimate($quote);
+                $response = $shippingAndTaxModel->getShippingAndTaxEstimate($quote);
                 $cacheBoltHeader = 'MISS';
             }
 
@@ -178,9 +181,9 @@ class Bolt_Boltpay_ShippingController extends Mage_Core_Controller_Front_Action
                 $quote->getBillingAddress()->addData($addressData);
 
                 try {
-                    /** @var Bolt_Boltpay_Helper_Api $helper */
-                    $helper = Mage::helper('boltpay/api');
-                    $estimateResponse = $helper->getShippingAndTaxEstimate($quote);
+                    /** @var Bolt_Boltpay_Model_ShippingAndTax $shippingAndTaxModel */
+                    $shippingAndTaxModel = Mage::getModel('boltpay/shippingAndTax');
+                    $estimateResponse = $shippingAndTaxModel->getShippingAndTaxEstimate($quote);
 
                     $this->cacheShippingAndTaxEstimate($estimateResponse, $cacheIdentifier);
                 } catch (Exception $e) {

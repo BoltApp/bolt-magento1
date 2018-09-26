@@ -34,6 +34,16 @@ AdminOrder.prototype.prepareParams =
             }
         }
 
+        var shippingMethodContainer = $('order-shipping_method');
+        if (shippingMethodContainer) {
+            var data = this.serializeData('order-shipping_method');
+            if (data) {
+                data.each(function(value) {
+                    params[value[0]] = value[1];
+                });
+            }
+        }
+
         /*
          *  this.serializeData Magento implemented approach, (i.e. prototype), is not reliably
          *  serializing this.shippingAddressContainer, and this.billingAddressContainer so we will

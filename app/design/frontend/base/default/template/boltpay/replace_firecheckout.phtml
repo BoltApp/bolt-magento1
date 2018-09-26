@@ -38,7 +38,13 @@ if(!Mage::helper('boltpay')->canUseBolt($this->getQuote(), false) || Mage::getSt
         place_order_buttons.forEach(
             function(place_order_button) {
                 var bolt_button =  document.createElement("div");
-                bolt_button.setAttribute("class", "bolt-checkout-button with-cards <?=$this->getCssSuffix(); ?> <?=$this->getTheme(); ?>");
+                bolt_button.setAttribute("class", "bolt-checkout-button <?=$this->getCssSuffix(); ?> <?=Mage::helper('boltpay')->getAdditionalButtonClasses() ?>");
+
+                <?php $buttonColor = Mage::helper('boltpay')->getBoltPrimaryColor();?>
+                <?php if($buttonColor):?>
+                bolt_button.setAttribute("style", "--bolt-primary-action-color:<?php echo $buttonColor?>");
+                <?php endif; ?>
+
                 bolt_button.style.cssText = "display: none !important";
 
                 place_order_button.parentNode.insertBefore(bolt_button, place_order_button);

@@ -3,7 +3,7 @@
 require_once('TestHelper.php');
 require_once('CouponHelper.php');
 
-class Bolt_Boltpay_Helper_CouponTest extends PHPUnit_Framework_TestCase
+class Bolt_Boltpay_Model_CouponTest extends PHPUnit_Framework_TestCase
 {
     private $app = null;
 
@@ -37,7 +37,7 @@ class Bolt_Boltpay_Helper_CouponTest extends PHPUnit_Framework_TestCase
     private static $quoteId = null;
 
     /**
-     * @var Bolt_Boltpay_Helper_Coupon
+     * @var Bolt_Boltpay_Model_Coupon
      */
     private $currentMock = null;
 
@@ -56,7 +56,7 @@ class Bolt_Boltpay_Helper_CouponTest extends PHPUnit_Framework_TestCase
         $this->app = Mage::app('default');
         $this->app->getStore()->resetConfig();
         $this->couponHelper = new Bolt_Boltpay_CouponHelper();
-        $this->currentMock = new Bolt_Boltpay_Helper_Coupon();
+        $this->currentMock = Mage::getModel('boltpay/coupon');
     }
 
 

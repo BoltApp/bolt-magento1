@@ -59,11 +59,15 @@ class Bolt_Boltpay_OrderController extends Mage_Core_Controller_Front_Action
             // have already created the order, we don't need to do anything
             // besides returning 200 OK, which happens automatically
             /////////////////////////////////////////////////////////
-            $order = $boltHelper->getOrderByQuoteId($boltHelper->getImmutableQuoteIdFromTransaction($transaction));
+            /** @var Bolt_Boltpay_Helper_Transaction $transactionHelper */
+            $transactionHelper = Mage::helper('boltpay/transaction');
+            /** @var  Bolt_Boltpay_Model_Order $orderModel */
+            $orderModel = Mage::getModel('boltpay/order');
+            $order = $orderModel->getOrderByQuoteId($transactionHelper->getImmutableQuoteIdFromTransaction($transaction));
 
             if ($order->isObjectNew()) {
                 $sessionQuote = $checkoutSession->getQuote();
-                $boltHelper->createOrder($reference, $sessionQuote->getId(), true, $transaction);
+                $orderModel->createOrder($reference, $sessionQuote->getId(), true, $transaction);
             }
 
         } catch (Exception $e) {
@@ -194,6 +198,52 @@ class Bolt_Boltpay_OrderController extends Mage_Core_Controller_Front_Action
         } catch (Exception $e) {
             Mage::helper('boltpay/bugsnag')->notifyException($e);
             throw $e;
+        }
+    }
+
+    /**
+     * API to expose order details
+     */
+    public function viewAction()
+    {
+        try {
+            $hmacHeader = $_SERVER['HTTP_X_BOLT_HMAC_SHA256'];
+
+            /* @var Bolt_Boltpay_Helper_Api $boltHelper */
+            $boltHelper = Mage::helper('boltpay/api');
+
+            if (!$boltHelper->verify_hook("{}", $hmacHeader)) {
+                Mage::throwException(Mage::helper('boltpay')->__("Failed HMAC Authentication"));
+            }
+
+            $reference = $this->getRequest()->getParam('reference');
+
+            if (!$reference) {
+                Mage::throwException(Mage::helper('boltpay')->__("Transaction parameter is required"));
+            }
+
+            /** @var Bolt_Boltpay_Model_Order_Detail $boltOrder */
+            $boltOrder = Mage::getModel('boltpay/order_detail');
+            $boltOrder->init($reference);
+
+            $transaction = $boltOrder->generateOrderDetail();
+
+            $response = Mage::helper('core')->jsonEncode($transaction);
+            $this->getResponse()->setHeader('Content-type', 'application/json');
+            $this->getResponse()->setBody($response);
+        } catch (Exception $e) {
+            if (
+                strpos($e->getMessage(), Mage::helper('boltpay')->__('No order found')) !== 0 ||
+                strpos($e->getMessage(), Mage::helper('boltpay')->__('No payment found')) !== 0
+            ) {
+                $this->getResponse()->setHttpResponseCode(404)
+                    ->setBody(json_encode(array('status' => 'failure', 'error' => array('code' => 6009, 'message' => $e->getMessage()))));
+            } else {
+                $this->getResponse()->setHttpResponseCode(409)
+                    ->setBody(json_encode(array('status' => 'failure', 'error' => array('code' => 6009, 'message' => $e->getMessage()))));
+
+                Mage::helper('boltpay/bugsnag')->notifyException($e);
+            }
         }
     }
 }
