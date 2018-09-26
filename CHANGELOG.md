@@ -1,5 +1,10 @@
 # Changelog
-## [v1.3.0](https://s3-us-west-1.amazonaws.com/bolt-public/magento-integration-release/bolt-magento1_v1.2.3.zip) 2018-09-17
+## [v1.3.1](https://s3-us-west-1.amazonaws.com/bolt-public/magento-integration-release/bolt-magento1_v1.3.1.zip) 2018-09-25
+ - Refactoring
+ - Fix issue with firecheckout
+ - Allow merchants to edit orders
+
+## [v1.3.0](https://s3-us-west-1.amazonaws.com/bolt-public/magento-integration-release/bolt-magento1_v1.3.0.zip) 2018-09-17
  - Add cron to cleanup expired immutable quotes
  - Remove JS alert and replaced with custom UI
 
