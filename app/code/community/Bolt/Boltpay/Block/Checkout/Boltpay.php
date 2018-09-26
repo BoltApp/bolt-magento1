@@ -844,7 +844,7 @@ PROMISE;
 
         $isAllowed = ($routeName === 'checkout' && $controllerName === 'cart')
             || ($routeName == 'firecheckout')
-            || ($routeName === 'adminhtml' && $controllerName === 'sales_order_create');
+            || ($routeName === 'adminhtml' && in_array($controllerName, array('sales_order_create', 'sales_order_edit')));
 
         return $isAllowed;
     }

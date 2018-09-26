@@ -24,8 +24,9 @@ $isAllowedConnectJs = $this->isAllowedConnectJsOnCurrentPage();
     $publishableKey = $this->getPublishableKeyForRoute();
     ?>
     <?php if ($publishableKey): ?>
-    <script src="<?=$this->getJsUrl();?>" id="bolt-connect"
-            type="text/javascript" data-shopping-cart-id="Magento"
-            data-publishable-key="<?=$publishableKey?>"></script>
+        <script src="<?=$this->getJsUrl();?>" id="bolt-connect"
+                type="text/javascript" data-shopping-cart-id="Magento"
+                data-publishable-key="<?=$publishableKey?>">
+        </script>
     <?php endif; ?>
 <?php endif; ?>

@@ -225,6 +225,19 @@ class Bolt_Boltpay_Helper_Api extends Bolt_Boltpay_Helper_Data
         return $this->_handleErrorResponse($resultJSON, $url, $params);
     }
 
+    /**
+     * Sets Plugin information in the response headers to callers of the API
+     */
+    public function setResponseContextHeaders()
+    {
+        $contextInfo = Mage::helper('boltpay/bugsnag')->getContextInfo();
+
+        Mage::app()->getResponse()
+            ->setHeader('User-Agent', 'BoltPay/Magento-' . $contextInfo["Magento-Version"], true)
+            ->setHeader('X-Bolt-Plugin-Version', $contextInfo["Bolt-Plugin-Version"], true);
+    }
+
+
     protected function setCurlResultWithHeader($curlResource, $result)
     {
         $curlHeaderSize = curl_getinfo($curlResource, CURLINFO_HEADER_SIZE);
@@ -460,6 +473,8 @@ class Bolt_Boltpay_Helper_Api extends Bolt_Boltpay_Helper_Data
                 'country_code',
             );
 
+            $customerEmail = $this->getCustomerEmail($quote);
+
             ///////////////////////////////////////////
             // Include billing address info if defined.
             ///////////////////////////////////////////
@@ -478,9 +493,9 @@ class Bolt_Boltpay_Helper_Api extends Bolt_Boltpay_Helper_Data
                     'postal_code'     => $billingAddress->getPostcode(),
                     'country_code'    => $billingAddress->getCountry(),
                     'phone'           => $billingAddress->getTelephone(),
-                    'email'           => $billingAddress->getEmail() ?: $quote->getCustomerEmail(),
+                    'email'           => $billingAddress->getEmail() ?: $customerEmail,
                     'phone_number'    => $billingAddress->getTelephone(),
-                    'email_address'   => $billingAddress->getEmail() ?: $quote->getCustomerEmail(),
+                    'email_address'   => $billingAddress->getEmail() ?: $customerEmail,
                 );
 
                 foreach ($requiredAddressFields as $field) {
@@ -522,9 +537,9 @@ class Bolt_Boltpay_Helper_Api extends Bolt_Boltpay_Helper_Data
                     'postal_code'     => $shippingAddress->getPostcode(),
                     'country_code'    => $shippingAddress->getCountry(),
                     'phone'           => $shippingAddress->getTelephone(),
-                    'email'           => $shippingAddress->getEmail() ?: $quote->getCustomerEmail(),
+                    'email'           => $shippingAddress->getEmail() ?: $customerEmail,
                     'phone_number'    => $shippingAddress->getTelephone(),
-                    'email_address'   => $shippingAddress->getEmail() ?: $quote->getCustomerEmail(),
+                    'email_address'   => $shippingAddress->getEmail() ?: $customerEmail,
                 );
 
                 if (@$totals['shipping']) {
@@ -543,7 +558,7 @@ class Bolt_Boltpay_Helper_Api extends Bolt_Boltpay_Helper_Data
                     $cartShippingAddress = Mage::getSingleton('admin/session')->getOrderShippingAddress();
 
                     if (empty($cartShippingAddress['email'])) {
-                        $cartShippingAddress['email'] = $cartShippingAddress['email_address'] = $quote->getCustomerEmail();
+                        $cartShippingAddress['email'] = $cartShippingAddress['email_address'] = $customerEmail;
                     }
 
                     /* @var Mage_Adminhtml_Block_Sales_Order_Create_Shipping_Method_Form $shippingMethodBlock */
@@ -590,6 +605,7 @@ class Bolt_Boltpay_Helper_Api extends Bolt_Boltpay_Helper_Data
         return $this->getCorrectedTotal($calculatedTotal, $cartSubmissionData);
     }
 
+
     /**
      * Utility method that attempts to correct totals if the projected total that was calculated from
      * all items and the given discount, does not match the $magento calculated total.  The totals may vary
@@ -600,7 +616,7 @@ class Bolt_Boltpay_Helper_Api extends Bolt_Boltpay_Helper_Data
      *
      * @return array  the corrected Bolt formatted cart data.
      */
-    private function getCorrectedTotal($projectedTotal, $magentoDerivedCartData)
+    protected function getCorrectedTotal($projectedTotal, $magentoDerivedCartData)
     {
         // we'll check if we can simply dividing by two corrects the problem
         if ($projectedTotal == (int)($magentoDerivedCartData['total_amount']/2)) {
@@ -634,20 +650,38 @@ class Bolt_Boltpay_Helper_Api extends Bolt_Boltpay_Helper_Data
      * @param $response     Bolt API response
      * @return bool         true if there is an error, false otherwise
      */
-    public function isResponseError($response)
+    private function isResponseError($response)
     {
         return property_exists($response, 'errors') || property_exists($response, 'error_code');
     }
 
-    /**
-     * Sets Plugin information in the response headers to callers of the API
-     */
-    public function setResponseContextHeaders()
-    {
-        $contextInfo = Mage::helper('boltpay/bugsnag')->getContextInfo();
 
-        Mage::app()->getResponse()
-            ->setHeader('User-Agent', 'BoltPay/Magento-' . $contextInfo["Magento-Version"], true)
-            ->setHeader('X-Bolt-Plugin-Version', $contextInfo["Bolt-Plugin-Version"], true);
+    /**
+     * Get's the customer's email from the given quote, if provided.  Otherwise, attempts
+     * to retrieve it via contextual hints from the session
+     *
+     * @param Mage_Sales_Model_Quote|null $quote    A quote from which to retrieve the customer's email
+     *
+     * @return string    The customer's email address, if found
+     */
+    private function getCustomerEmail($quote = null) {
+        $customerEmail = $quote ? $quote->getCustomerEmail() : "";
+        if (!$customerEmail && Mage::app()->getStore()->isAdmin()) {
+            //////////////////////////////////////////////////
+            // In the admin, guest customer's email will be stored in the order for
+            // order edits and reorders
+            //////////////////////////////////////////////////
+            /** @var Mage_Adminhtml_Model_Session_Quote $session */
+            $session = Mage::getSingleton('adminhtml/session_quote');
+            $orderId = $session->getOrderId() ?: $session->getReordered();
+
+            if ($orderId) {
+                /** @var Mage_Sales_Model_Order $order */
+                $order = Mage::getModel('sales/order')->load($orderId);
+                $customerEmail = $order->getCustomerEmail();
+            }
+        }
+
+        return $customerEmail;
     }
 }
