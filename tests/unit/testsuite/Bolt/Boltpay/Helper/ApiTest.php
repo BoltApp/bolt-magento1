@@ -125,7 +125,10 @@ class Bolt_Boltpay_Helper_ApiTest extends PHPUnit_Framework_TestCase
     {
         $response = (object) $this->testBoltResponse;
 
-        $result = $this->currentMock->isResponseError($response);
+        $isResponseErrorMethod = new ReflectionMethod($this->currentMock, 'isResponseError');
+        $isResponseErrorMethod->setAccessible(true);
+
+        $result = $isResponseErrorMethod->invoke($this->currentMock, $response);
 
         $this->assertFalse($result);
     }
@@ -135,7 +138,10 @@ class Bolt_Boltpay_Helper_ApiTest extends PHPUnit_Framework_TestCase
         $this->testBoltResponse->errors = ['some_error_key' => 'some_error_message'];
         $response = (object) $this->testBoltResponse;
 
-        $result = $this->currentMock->isResponseError($response);
+        $isResponseErrorMethod = new ReflectionMethod($this->currentMock, 'isResponseError');
+        $isResponseErrorMethod->setAccessible(true);
+
+        $result = $isResponseErrorMethod->invoke($this->currentMock, $response);
 
         $this->assertTrue($result);
     }
@@ -145,7 +151,10 @@ class Bolt_Boltpay_Helper_ApiTest extends PHPUnit_Framework_TestCase
         $this->testBoltResponse->error_code = 10603;
         $response = (object) $this->testBoltResponse;
 
-        $result = $this->currentMock->isResponseError($response);
+        $isResponseErrorMethod = new ReflectionMethod($this->currentMock, 'isResponseError');
+        $isResponseErrorMethod->setAccessible(true);
+
+        $result = $isResponseErrorMethod->invoke($this->currentMock, $response);
 
         $this->assertTrue($result);
     }

@@ -46,7 +46,6 @@ class Bolt_Boltpay_Adminhtml_Sales_Order_CreateController extends Mage_Adminhtml
     {
         $quote = $this->_getQuote();
         $postData = $this->getRequest()->getPost('order');
-
         $shippingAddress = $postData['shipping_address'];
 
         $addressData = array(
@@ -67,9 +66,9 @@ class Bolt_Boltpay_Adminhtml_Sales_Order_CreateController extends Mage_Adminhtml
         if (@$postData['account'] && @$postData['account']['email']) {
             $addressData['email'] = $addressData['email_address'] = @$postData['account']['email'];
         }
-
-
+        
         Mage::getSingleton('admin/session')->setOrderShippingAddress($addressData);
+
         parent::loadBlockAction();
     }
 
