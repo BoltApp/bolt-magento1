@@ -743,22 +743,7 @@ class Bolt_Boltpay_Helper_Api extends Bolt_Boltpay_Helper_Data
                 'country_code',
             );
 
-            $customerEmail = $quote->getCustomerEmail();
-            if (!$customerEmail && Mage::app()->getStore()->isAdmin()) {
-                //////////////////////////////////////////////////
-                // In the admin, guest customer's email will be stored in the order for
-                // edits and reorders
-                //////////////////////////////////////////////////
-                /** @var Mage_Adminhtml_Model_Session_Quote $session */
-                $session = Mage::getSingleton('adminhtml/session_quote');
-                $orderId = $session->getOrderId() ?: $session->getReordered();
-
-                if ($orderId) {
-                    /** @var Mage_Sales_Model_Order $order */
-                    $order = Mage::getModel('sales/order')->load($orderId);
-                    $customerEmail = $order->getCustomerEmail();
-                }
-            }
+            $customerEmail = $this->getCustomerEmail($quote);
 
             ///////////////////////////////////////////
             // Include billing address info if defined.
@@ -1180,5 +1165,35 @@ class Bolt_Boltpay_Helper_Api extends Bolt_Boltpay_Helper_Data
             return $title;
         }
         return $carrier . " - " . $title;
+    }
+
+
+    /**
+     * Get's the customer's email from the given quote, if provided.  Otherwise, attempts
+     * to retrieve it via contextual hints from the session
+     *
+     * @param Mage_Sales_Model_Quote|null $quote    A quote from which to retrieve the customer's email
+     *
+     * @return string    The customer's email address, if found
+     */
+    public function getCustomerEmail($quote = null) {
+        $customerEmail = $quote ? $quote->getCustomerEmail() : "";
+        if (!$customerEmail && Mage::app()->getStore()->isAdmin()) {
+            //////////////////////////////////////////////////
+            // In the admin, guest customer's email will be stored in the order for
+            // order edits and reorders
+            //////////////////////////////////////////////////
+            /** @var Mage_Adminhtml_Model_Session_Quote $session */
+            $session = Mage::getSingleton('adminhtml/session_quote');
+            $orderId = $session->getOrderId() ?: $session->getReordered();
+
+            if ($orderId) {
+                /** @var Mage_Sales_Model_Order $order */
+                $order = Mage::getModel('sales/order')->load($orderId);
+                $customerEmail = $order->getCustomerEmail();
+            }
+        }
+
+        return $customerEmail;
     }
 }
