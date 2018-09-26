@@ -61,6 +61,7 @@ class Bolt_Boltpay_Model_ObserverTest extends PHPUnit_Framework_TestCase
      */
     public static function tearDownAfterClass()
     {
+        Mage::getSingleton('checkout/cart')->truncate()->save();
         Bolt_Boltpay_ProductProvider::deleteDummyProduct(self::$productId);
     }
 
