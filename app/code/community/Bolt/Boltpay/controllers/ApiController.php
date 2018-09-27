@@ -163,6 +163,7 @@ class Bolt_Boltpay_ApiController extends Mage_Core_Controller_Front_Action
                 return;
             }
 
+            /** @var Mage_Sales_Model_Order $order */
             $order = Mage::getModel('boltpay/order')->createOrder($reference, $sessionQuoteId = null, false, $transaction);
 
             $this->getResponse()->setBody(
@@ -174,7 +175,17 @@ class Bolt_Boltpay_ApiController extends Mage_Core_Controller_Front_Action
                     )
                 )
             );
-            $this->getResponse()->setHttpResponseCode(201);
+            $this->getResponse()
+                ->setHttpResponseCode(201)
+                ->sendResponse();
+
+            //////////////////////////////////////////////
+            //  Clear parent quote to empty the cart
+            //////////////////////////////////////////////
+            /** @var Mage_Sales_Model_Quote $parentQuote */
+            $parentQuote = Mage::getModel('boltpay/order')->getParentQuoteFromOrder($order);
+            $parentQuote->removeAllItems()->save();
+            //////////////////////////////////////////////
 
         } catch (Bolt_Boltpay_InvalidTransitionException $boltPayInvalidTransitionException) {
 
