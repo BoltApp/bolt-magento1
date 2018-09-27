@@ -62,6 +62,7 @@ class Bolt_Boltpay_Block_Checkout_Boltpay extends Mage_Checkout_Block_Onepage_Re
      */
     public function getBoltOrderToken($quote, $checkoutType)
     {
+        /** @var Bolt_Boltpay_Helper_Api $boltHelper */
         $boltHelper = Mage::helper('boltpay/api');
         $isMultiPage = $checkoutType === self::CHECKOUT_TYPE_MULTI_PAGE;
 
@@ -123,7 +124,7 @@ PROMISE;
         }
 
         // Generates order data for sending to Bolt create order API.
-        $orderRequest = $boltHelper->buildOrder($quote, $items, $isMultiPage);
+        $orderRequest = Mage::getModel('boltpay/quote')->buildOrder($quote, $items, $isMultiPage);
 
         // Calls Bolt create order API
         return $boltHelper->transmit('orders', $orderRequest);
