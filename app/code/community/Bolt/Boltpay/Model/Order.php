@@ -325,6 +325,31 @@ class Bolt_Boltpay_Model_Order extends Mage_Core_Model_Abstract
     }
 
 
+    /**
+     * Retrieve the Quote object of an order
+     *
+     * @param Mage_Sales_Model_Order $order  The order from which to retrieve its quote
+     *
+     * @return Mage_Sales_Model_Quote   The quote which created the order
+     */
+    public function getQuoteFromOrder($order) {
+        return Mage::getModel('sales/quote')->loadByIdWithoutStore($order->getQuoteId());
+    }
+
+
+    /**
+     * Retrieve the parent Quote object of an order
+     *
+     * @param Mage_Sales_Model_Order $order     The order from which to retrieve its parent quote
+     *
+     * @return Mage_Sales_Model_Quote   The parent quote of the order that is tied to the Magento session
+     */
+    public function getParentQuoteFromOrder($order) {
+        $quote = $this->getQuoteFromOrder($order);
+        return Mage::getModel('sales/quote')->loadByIdWithoutStore($quote->getParentQuoteId());
+    }
+
+
     protected function getRatesDebuggingData($rates) {
         $rateDebuggingData = '';
 
