@@ -464,11 +464,11 @@ class Bolt_Boltpay_Model_Coupon extends Mage_Core_Model_Abstract
     protected function getCartTotals()
     {
         $quote = $this->getImmutableQuote();
-        /** @var Bolt_Boltpay_Helper_Api $boltHelper */
-        $boltHelper = Mage::helper('boltpay/api');
+        /** @var Bolt_Boltpay_Model_Quote $quoteModel */
+        $quoteModel = Mage::getModel('boltpay/quote');
         $items = @$quote->getAllVisibleItems();
 
-        $cart = $boltHelper->buildCart($quote, $items, 'multi-page');
+        $cart = $quoteModel->buildCart($quote, $items, 'multi-page');
 
         return array(
             'total_amount' => $cart['total_amount'],
