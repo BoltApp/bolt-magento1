@@ -22,7 +22,10 @@
 <?php /* @var $this Bolt_Boltpay_Block_Checkout_Boltpay */?>
 <?php
 
-if(!$this->isAllowedReplaceScriptOnCurrentPage() || !$this->canUseBolt() ) return;
+if(!$this->isAllowedReplaceScriptOnCurrentPage()
+   || !$this->canUseBolt()
+   || !$this->getPublishableKeyForRoute()
+) return;
 
 $additionalClasses = Mage::helper('boltpay')->getAdditionalButtonClasses();
 ?>
