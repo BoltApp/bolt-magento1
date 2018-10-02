@@ -35,27 +35,6 @@ class Bolt_Boltpay_ProductpageController extends Mage_Core_Controller_Front_Acti
             }
 
             $request = json_decode($requestJson);
-            //            //region Hard code request data for now
-            //            $request = json_decode(
-            //                json_encode(
-            //                    array(
-            //                        'currency' => 'USD',
-            //                        'items'    => array(
-            //                            array(
-            //                                'reference' => '905',
-            //                                'price'      => '16000',
-            //                                'image'      => '',
-            //                                'name'       => 'Plaid Cotton Shirt-Royal Blue-L',
-            //                                'color'      => 'Blue',
-            //                                'quantity'   => 1,
-            //                                'size'       => 'L'
-            //                            )
-            //                        ),
-            //                        'total'    => 0
-            //                    )
-            //                )
-            //            );
-            //            //endregion
 
             /** @var Bolt_Boltpay_Model_Productpage_Cart $productCartModel */
             $productCartModel = Mage::getModel('boltpay/productpage_cart');
