@@ -34,6 +34,7 @@ class Bolt_Boltpay_ApiController extends Mage_Core_Controller_Front_Action
 
             $requestJson = file_get_contents('php://input');
 
+            /** @var Bolt_Boltpay_Helper_Data $boltHelperBase */
             $boltHelperBase = Mage::helper('boltpay');
 
             $boltHelper = Mage::helper('boltpay/api');
@@ -76,7 +77,7 @@ class Bolt_Boltpay_ApiController extends Mage_Core_Controller_Front_Action
             $transactionHelper = Mage::helper('boltpay/transaction');
             $quoteId = $transactionHelper->getImmutableQuoteIdFromTransaction($transaction);
 
-            $this->setCustomerSession($quoteId);
+            $boltHelperBase->setCustomerSessionByQuoteId($quoteId);
 
             /* If display_id has been confirmed and updated on Bolt, then we should look up the order by display_id */
             $order = Mage::getModel('sales/order')->loadByIncrementId($transaction->order->cart->display_id);
@@ -224,19 +225,6 @@ class Bolt_Boltpay_ApiController extends Mage_Core_Controller_Front_Action
         }
 
         return null;
-    }
-
-    /**
-     * Add customer session for api hook request if quote is created by logged customer
-     *
-     * @param $quoteId
-     */
-    protected function setCustomerSession($quoteId)
-    {
-        $customerId = Mage::getModel('sales/quote')->loadByIdWithoutStore($quoteId)->getCustomerId();
-        if ($customerId) {
-            Mage::getSingleton('customer/session')->loginById($customerId);
-        }
     }
 
     /**
