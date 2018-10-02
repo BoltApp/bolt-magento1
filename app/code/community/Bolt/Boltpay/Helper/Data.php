@@ -338,7 +338,7 @@ class Bolt_Boltpay_Helper_Data extends Mage_Core_Helper_Abstract
     }
 
     /**
-     * Add customer session for hook request if quote is created by logged customer by quote id
+     * Set customer session based on the quote id passed in
      *
      * @param $quoteId
      */
@@ -349,7 +349,7 @@ class Bolt_Boltpay_Helper_Data extends Mage_Core_Helper_Abstract
     }
 
     /**
-     * Add customer session for hook request if quote is created by logged customer by customer id
+     * Set customer session based on the customer id passed in
      *
      * @param $customerId
      */
