@@ -51,5 +51,5 @@ script:
   - git clone https://${INTEGRATION_TESTS_TOKEN}@github.com/BoltApp/integration-tests.git/
   - cd integration-tests
   - npm install
-  - xvfb-run npm run test-checkout
+  - xvfb-run TEST_ENV=staging npm run test-checkout
   - bash /home/travis/build/BoltApp/bolt-magento1/tests/scripts/magento_check_reports
