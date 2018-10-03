@@ -16,12 +16,12 @@
  */
 
 /**
- * Class Bolt_Boltpay_Model_Quote
+ * Class Bolt_Boltpay_Model_BoltOrder
  *
  * The Magento Model class that provides order related utility methods
  *
  */
-class Bolt_Boltpay_Model_Quote extends Mage_Core_Model_Abstract
+class Bolt_Boltpay_Model_BoltOrder extends Mage_Core_Model_Abstract
 {
     const ITEM_TYPE_PHYSICAL = 'physical';
     const ITEM_TYPE_DIGITAL  = 'digital';
