@@ -318,7 +318,6 @@ class Bolt_Boltpay_Model_Quote extends Mage_Core_Model_Abstract
         return $this->getCorrectedTotal($calculatedTotal, $cartSubmissionData);
     }
 
-
     /**
      * Utility method that attempts to correct totals if the projected total that was calculated from
      * all items and the given discount, does not match the $magento calculated total.  The totals may vary
@@ -354,7 +353,6 @@ class Bolt_Boltpay_Model_Quote extends Mage_Core_Model_Abstract
 
         // otherwise, we have no better thing to do than let the Bolt server do the checking
         return $magentoDerivedCartData;
-
     }
 
     /**
