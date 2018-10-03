@@ -23,11 +23,25 @@ AdminOrder.prototype.prepareParams =
         if (!params.form_key) {
             params.form_key = FORM_KEY;
         }
-        var data = this.serializeData('order-billing_method');
-        if (data) {
-            data.each(function(value) {
-                params[value[0]] = value[1];
-            });
+
+        var billingMethodContainer = $('order-billing_method');
+        if (billingMethodContainer) {
+            var data = this.serializeData('order-billing_method');
+            if (data) {
+                data.each(function(value) {
+                    params[value[0]] = value[1];
+                });
+            }
+        }
+
+        var shippingMethodContainer = $('order-shipping_method');
+        if (shippingMethodContainer) {
+            var data = this.serializeData('order-shipping_method');
+            if (data) {
+                data.each(function(value) {
+                    params[value[0]] = value[1];
+                });
+            }
         }
 
         /*
@@ -35,11 +49,13 @@ AdminOrder.prototype.prepareParams =
          *  serializing this.shippingAddressContainer, and this.billingAddressContainer so we will
          *  do it the more straight-forward, robust way.
          */
-        var shipping_address_data = $(this.shippingAddressContainer).select('input', 'select', 'textarea');
-        if (shipping_address_data) {
-            shipping_address_data.each(function(form_element) {
-                params[form_element.name] = form_element.value;
-            });
+        if (this.shippingAddressContainer) {
+            var shipping_address_data = $(this.shippingAddressContainer).select('input', 'select', 'textarea');
+            if (shipping_address_data) {
+                shipping_address_data.each(function(form_element) {
+                    params[form_element.name] = form_element.value;
+                });
+            }
         }
 
         if (addBillingToPrepareParams) {
@@ -58,7 +74,7 @@ AdminOrder.prototype.prepareParams =
             addBillingToPrepareParams = true;
         }
 
-        return params;
+        return (typeof this.customPrepareParams == 'function') ? this.customPrepareParams(params) : params;
     }
 ;
 //////////////////////////////////////////////////
@@ -74,6 +90,3 @@ var intervalId = setInterval(
         }
     },500
 );
-
-
-

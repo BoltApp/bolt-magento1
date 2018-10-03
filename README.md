@@ -26,3 +26,18 @@ Run phpunit test with coverage html report:
 If you prefer to run test through PHPStorm, please read:
 
 > http://devdocs.magento.com/guides/v2.2/test/unit/unit_test_execution_phpstorm.html 
+
+## Modman guide
+Our extension is set up for local development with [modman](https://github.com/colinmollenhour/modman).
+
+To install modman, see the installation instructions [here](https://github.com/colinmollenhour/modman#installation).
+
+Once modman is installed, change directory to your root Magento installation and run:
+> modman init 
+
+This will create an empty .modman folder in the Magento root directory. Then clone the repo by running:
+> modman clone git@github.com:BoltApp/bolt-magento1.git
+
+This will download the Bolt repository and symlink the modman Bolt files to the symlinked Magento files.
+If you would like to pull the latest Bolt code from the Git repo and update Magento, simply run:
+> modman update

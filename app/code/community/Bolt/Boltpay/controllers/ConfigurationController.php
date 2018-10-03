@@ -26,29 +26,29 @@ class Bolt_Boltpay_ConfigurationController extends Mage_Core_Controller_Front_Ac
 
         // Validate for API key
         if (!($this->checkApiKey())) {
-            $this->setErrorResponseData($responseData, 'Api Key is invalid');
+            $this->setErrorResponseData($responseData, Mage::helper('boltpay')->__('Api Key is invalid'));
         }
 
         // Validate for Signing Secret
         if (!($this->checkSigningSecret())) {
-            $this->setErrorResponseData($responseData, 'Signing Secret is invalid');
+            $this->setErrorResponseData($responseData, Mage::helper('boltpay')->__('Signing Secret is invalid'));
         }
 
         // Validate Publishable Key - Multi-Page Checkout / Publishable Key - One Page Checkout
         if (!($this->checkPublishableKeyMultiPage())) {
-            $this->setErrorResponseData($responseData, 'Publishable Key - Multi-Page Checkout is invalid');
+            $this->setErrorResponseData($responseData, Mage::helper('boltpay')->__('Publishable Key - Multi-Page Checkout is invalid'));
         }
         if (!($this->checkPublishableKeyOnePage())) {
-            $this->setErrorResponseData($responseData, 'Publishable Key - One Page Checkout is invalid');
+            $this->setErrorResponseData($responseData, Mage::helper('boltpay')->__('Publishable Key - One Page Checkout is invalid'));
         }
 
         // Validate database schema
         if (!($this->checkSchema())) {
-            $this->setErrorResponseData($responseData, 'Schema is invalid');
+            $this->setErrorResponseData($responseData, Mage::helper('boltpay')->__('Schema is invalid'));
         }
 
         if (!$responseData['result']){
-            Mage::helper('boltpay/bugsnag')->notifyException(new Exception('Invalid configuration'), $responseData);
+            Mage::helper('boltpay/bugsnag')->notifyException(new Exception(Mage::helper('boltpay')->__('Invalid configuration')), $responseData);
         }
 
         $response = Mage::helper('core')->jsonEncode($responseData);

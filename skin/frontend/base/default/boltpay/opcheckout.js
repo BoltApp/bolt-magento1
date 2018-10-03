@@ -52,7 +52,7 @@
         }
 
         checkout.setShippingMethod();
-    }
+    };
 
     Review.prototype.initialize = function (saveUrl, successUrl, agreementsForm, cartUrl) {
         this.nextUrl = cartUrl;

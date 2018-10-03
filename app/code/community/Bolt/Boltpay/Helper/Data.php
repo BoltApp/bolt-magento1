@@ -98,7 +98,7 @@ class Bolt_Boltpay_Helper_Data extends Mage_Core_Helper_Abstract
      */
     public function collectTotals($quote, $clearTotalsCollectedFlag = false)
     {
-        Mage::getSingleton('salesrule/validator')->resetRoundingDeltas();
+        Mage::getSingleton('boltpay/validator')->resetRoundingDeltas();
 
         if($clearTotalsCollectedFlag) {
             $quote->setTotalsCollectedFlag(false);
@@ -142,6 +142,15 @@ class Bolt_Boltpay_Helper_Data extends Mage_Core_Helper_Abstract
     }
 
     /**
+     *
+     * @return string
+     */
+    public function getBoltPrimaryColor()
+    {
+        return Mage::getStoreConfig('payment/boltpay/color');
+    }
+
+    /**
      * Get publishable key used in magento admin.
      *
      * @return string
@@ -150,6 +159,15 @@ class Bolt_Boltpay_Helper_Data extends Mage_Core_Helper_Abstract
     {
         $key = Mage::getStoreConfig('payment/boltpay/publishable_key_admin');
         return $key;
+    }
+
+    /**
+     *
+     * @return string
+     */
+    public function getAdditionalButtonClasses()
+    {
+        return Mage::getStoreConfig('payment/boltpay/button_classes');
     }
 
     /**
@@ -238,6 +256,7 @@ class Bolt_Boltpay_Helper_Data extends Mage_Core_Helper_Abstract
         Mage::getSingleton('core/session')->setReservedOrderId($reservedOrderId);
 
         $clonedQuote
+            ->setIsActive(false)
             ->setCustomer($sourceQuote->getCustomer())
             ->setCustomerGroupId($sourceQuote->getCustomerGroupId())
             ->setCustomerIsGuest((($sourceQuote->getCustomerId()) ? false : true))
@@ -313,5 +332,28 @@ class Bolt_Boltpay_Helper_Data extends Mage_Core_Helper_Abstract
         $image = $imageHelper->init($_product, 'thumbnail', $_product->getThumbnail());
 
         return $image;
+    }
+
+    /**
+     * Set customer session based on the quote id passed in
+     *
+     * @param $quoteId
+     */
+    public function setCustomerSessionByQuoteId($quoteId)
+    {
+        $customerId = Mage::getModel('sales/quote')->loadByIdWithoutStore($quoteId)->getCustomerId();
+        $this->setCustomerSessionById($customerId);
+    }
+
+    /**
+     * Set customer session based on the customer id passed in
+     *
+     * @param $customerId
+     */
+    public function setCustomerSessionById($customerId)
+    {
+        if ($customerId) {
+            Mage::getSingleton('customer/session')->loginById($customerId);
+        }
     }
 }

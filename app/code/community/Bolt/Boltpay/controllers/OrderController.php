@@ -32,7 +32,7 @@ class Bolt_Boltpay_OrderController extends Mage_Core_Controller_Front_Action
         try {
 
             if (!$this->getRequest()->isAjax()) {
-                Mage::throwException("OrderController::saveAction called with a non AJAX call");
+                Mage::throwException(Mage::helper('boltpay')->__("OrderController::saveAction called with a non AJAX call"));
             }
 
             /** @var Bolt_Boltpay_Helper_Api $boltHelper */
@@ -59,11 +59,15 @@ class Bolt_Boltpay_OrderController extends Mage_Core_Controller_Front_Action
             // have already created the order, we don't need to do anything
             // besides returning 200 OK, which happens automatically
             /////////////////////////////////////////////////////////
-            $order = $boltHelper->getOrderByQuoteId($boltHelper->getImmutableQuoteIdFromTransaction($transaction));
+            /** @var Bolt_Boltpay_Helper_Transaction $transactionHelper */
+            $transactionHelper = Mage::helper('boltpay/transaction');
+            /** @var  Bolt_Boltpay_Model_Order $orderModel */
+            $orderModel = Mage::getModel('boltpay/order');
+            $order = $orderModel->getOrderByQuoteId($transactionHelper->getImmutableQuoteIdFromTransaction($transaction));
 
             if ($order->isObjectNew()) {
                 $sessionQuote = $checkoutSession->getQuote();
-                $boltHelper->createOrder($reference, $sessionQuote->getId(), true, $transaction);
+                $orderModel->createOrder($reference, $sessionQuote->getId(), true, $transaction);
             }
 
         } catch (Exception $e) {
@@ -106,18 +110,14 @@ class Bolt_Boltpay_OrderController extends Mage_Core_Controller_Front_Action
      */
     public function firecheckoutcreateAction()
     {
-
         try {
             if (!$this->getRequest()->isAjax()) {
-                Mage::throwException("OrderController::createAction called with a non AJAX call");
+                Mage::throwException(Mage::helper('boltpay')->__("OrderController::createAction called with a non AJAX call"));
             }
-
 
             $checkout = Mage::getSingleton('firecheckout/type_standard');
             $quote = $checkout->getQuote();
             $billing  = $this->getRequest()->getPost('billing', array());
-
-            $checkout->applyShippingMethod($this->getRequest()->getPost('shipping_method', false));
 
             $this->getResponse()->setHeader('Content-type', 'application/json', true);
 
@@ -130,6 +130,7 @@ class Bolt_Boltpay_OrderController extends Mage_Core_Controller_Front_Action
                 $result['success'] = false;
                 $result['error']   = true;
                 if ($result['message'] === $checkout->getCustomerEmailExistsMessage()) {
+                    $result['error_messages'] = $result['message'];
                     unset($result['message']);
                     $result['body'] = array(
                         'id'      => 'emailexists',
@@ -170,20 +171,26 @@ class Bolt_Boltpay_OrderController extends Mage_Core_Controller_Front_Action
                 }
             }
 
+            $checkout->applyShippingMethod($this->getRequest()->getPost('shipping_method', false));  # FireCheckout Logic for adding shipping method
+            $quote->getShippingAddress()->setShippingMethod($this->getRequest()->getPost('shipping_method', false));  # Bolt logic for adding shipping method
+
             $checkout->registerCustomerIfRequested();
 
             Mage::helper('boltpay')->collectTotals($quote)->save();
 
+            /** @var Bolt_Boltpay_Block_Checkout_Boltpay $block */
             $block = $this->getLayout()->createBlock('boltpay/checkout_boltpay');
 
             $result = array();
 
-            $result['cart_data'] = $block->getCartDataJs('one-page');
+            /** @var Mage_Sales_Model_Quote $immutableQuote */
+            $immutableQuote = Mage::helper('boltpay')->cloneQuote($quote, false);
+            $result['cart_data'] = $block->buildCartData(($block->getBoltOrderToken($immutableQuote, Bolt_Boltpay_Block_Checkout_Boltpay::CHECKOUT_TYPE_ONE_PAGE)));
 
             if (!$result['cart_data']) {
                 $result['success'] = false;
                 $result['error']   = true;
-                $result['error_messages'] = "Your shopping cart is empty.  Your session may have expired.";
+                $result['error_messages'] = Mage::helper('boltpay')->__("Your shopping cart is empty.  Your session may have expired.");
             }
 
             $this->getResponse()->setHeader('Content-type', 'application/json', true);
@@ -191,6 +198,52 @@ class Bolt_Boltpay_OrderController extends Mage_Core_Controller_Front_Action
         } catch (Exception $e) {
             Mage::helper('boltpay/bugsnag')->notifyException($e);
             throw $e;
+        }
+    }
+
+    /**
+     * API to expose order details
+     */
+    public function viewAction()
+    {
+        try {
+            $hmacHeader = $_SERVER['HTTP_X_BOLT_HMAC_SHA256'];
+
+            /* @var Bolt_Boltpay_Helper_Api $boltHelper */
+            $boltHelper = Mage::helper('boltpay/api');
+
+            if (!$boltHelper->verify_hook("{}", $hmacHeader)) {
+                Mage::throwException(Mage::helper('boltpay')->__("Failed HMAC Authentication"));
+            }
+
+            $reference = $this->getRequest()->getParam('reference');
+
+            if (!$reference) {
+                Mage::throwException(Mage::helper('boltpay')->__("Transaction parameter is required"));
+            }
+
+            /** @var Bolt_Boltpay_Model_Order_Detail $boltOrder */
+            $boltOrder = Mage::getModel('boltpay/order_detail');
+            $boltOrder->init($reference);
+
+            $transaction = $boltOrder->generateOrderDetail();
+
+            $response = Mage::helper('core')->jsonEncode($transaction);
+            $this->getResponse()->setHeader('Content-type', 'application/json');
+            $this->getResponse()->setBody($response);
+        } catch (Exception $e) {
+            if (
+                strpos($e->getMessage(), Mage::helper('boltpay')->__('No order found')) !== 0 ||
+                strpos($e->getMessage(), Mage::helper('boltpay')->__('No payment found')) !== 0
+            ) {
+                $this->getResponse()->setHttpResponseCode(404)
+                    ->setBody(json_encode(array('status' => 'failure', 'error' => array('code' => 6009, 'message' => $e->getMessage()))));
+            } else {
+                $this->getResponse()->setHttpResponseCode(409)
+                    ->setBody(json_encode(array('status' => 'failure', 'error' => array('code' => 6009, 'message' => $e->getMessage()))));
+
+                Mage::helper('boltpay/bugsnag')->notifyException($e);
+            }
         }
     }
 }
