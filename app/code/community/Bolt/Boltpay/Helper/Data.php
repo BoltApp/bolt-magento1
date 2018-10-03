@@ -336,4 +336,27 @@ class Bolt_Boltpay_Helper_Data extends Mage_Core_Helper_Abstract
 
         return (string) $image;
     }
+
+    /**
+     * Set customer session based on the quote id passed in
+     *
+     * @param $quoteId
+     */
+    public function setCustomerSessionByQuoteId($quoteId)
+    {
+        $customerId = Mage::getModel('sales/quote')->loadByIdWithoutStore($quoteId)->getCustomerId();
+        $this->setCustomerSessionById($customerId);
+    }
+
+    /**
+     * Set customer session based on the customer id passed in
+     *
+     * @param $customerId
+     */
+    public function setCustomerSessionById($customerId)
+    {
+        if ($customerId) {
+            Mage::getSingleton('customer/session')->loginById($customerId);
+        }
+    }
 }

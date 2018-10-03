@@ -20,7 +20,7 @@ class Bolt_Boltpay_Model_Admin_Form_Color extends Mage_Core_Model_Config_Data
     public function save()
     {
         $hexColor = $this->getValue();
-        if(!preg_match('/#([a-fA-F0-9]{3}){1,2}\b/', $hexColor)){
+        if(!empty($hexColor) && !preg_match('/^#(([A-Fa-f0-9]{6})|([A-Fa-f0-9]{8}))$/', $hexColor)){
             $this->setValue($this->getOldValue());
             Mage::getSingleton('core/session')->addError(Mage::helper('boltpay')->__('Invalid hex color value. Should be in the form #f00000 or #f00'));
         }

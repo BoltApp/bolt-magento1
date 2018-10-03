@@ -45,7 +45,7 @@ if(!Mage::helper('boltpay')->canUseBolt($this->getQuote(), false) || Mage::getSt
                 bolt_button.setAttribute("style", "--bolt-primary-action-color:<?php echo $buttonColor?>");
                 <?php endif; ?>
 
-                bolt_button.style.cssText = "display: none !important";
+                bolt_button.style.display = "none";
 
                 place_order_button.parentNode.insertBefore(bolt_button, place_order_button);
             }
@@ -64,7 +64,7 @@ if(!Mage::helper('boltpay')->canUseBolt($this->getQuote(), false) || Mage::getSt
             if (this.id == "p_method_boltpay") {
                 bolt_buttons.forEach(
                     function (bolt_button) {
-                        bolt_button.style.cssText = "";
+                        bolt_button.style.display = "";
                     }
                 );
                 place_order_buttons.forEach(
@@ -75,7 +75,7 @@ if(!Mage::helper('boltpay')->canUseBolt($this->getQuote(), false) || Mage::getSt
             } else {
                 bolt_buttons.forEach(
                     function (bolt_button) {
-                        bolt_button.style.cssText = "display: none !important";
+                        bolt_button.style.display = "none";
                     }
                 );
                 place_order_buttons.forEach(
