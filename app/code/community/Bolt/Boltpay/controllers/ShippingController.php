@@ -101,6 +101,8 @@ class Bolt_Boltpay_ShippingController extends Mage_Core_Controller_Front_Action
                     $cacheBoltHeader = 'MISS';
                 }
             } else {
+                Mage::helper('boltpay')->setCustomerSessionById($quote->getCustomerId());
+
                 //Mage::log('Generating address from quote', null, 'shipping_and_tax.log');
                 //Mage::log('Live address: '.var_export($address_data, true), null, 'shipping_and_tax.log');
                 $response = $shippingAndTaxModel->getShippingAndTaxEstimate($quote);
