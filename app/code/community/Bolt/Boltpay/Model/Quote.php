@@ -175,6 +175,9 @@ class Bolt_Boltpay_Model_Quote extends Mage_Core_Model_Abstract
             /////////////////////////////////////////////////////////////////////////////////////////
         } else {
 
+            $billingAddress  = $quote->getBillingAddress();
+            $shippingAddress = $quote->getShippingAddress();
+
             // Billing / shipping address fields that are required when the address data is sent to Bolt.
             $requiredAddressFields = array(
                 'first_name',
@@ -188,11 +191,14 @@ class Bolt_Boltpay_Model_Quote extends Mage_Core_Model_Abstract
 
             $customerEmail = $this->getCustomerEmail($quote);
 
+            $billingRegion = $billingAddress->getRegion();
+            if (empty($shippingRegion) && !in_array($billingAddress->getCountry(), array('US', 'CA'))) {
+                $billingRegion = $billingAddress->getCity();
+            }
+
             ///////////////////////////////////////////
             // Include billing address info if defined.
             ///////////////////////////////////////////
-            $billingAddress  = $quote->getBillingAddress();
-
             if ($billingAddress) {
                 $cartSubmissionData['billing_address'] = array(
                     'street_address1' => $billingAddress->getStreet1(),
@@ -202,21 +208,14 @@ class Bolt_Boltpay_Model_Quote extends Mage_Core_Model_Abstract
                     'first_name'      => $billingAddress->getFirstname(),
                     'last_name'       => $billingAddress->getLastname(),
                     'locality'        => $billingAddress->getCity(),
-                    'region'          => $billingAddress->getRegion(),
-                    'postal_code'     => $billingAddress->getPostcode(),
+                    'region'          => $billingRegion,
+                    'postal_code'     => $billingAddress->getPostcode() ?: '-',
                     'country_code'    => $billingAddress->getCountry(),
                     'phone'           => $billingAddress->getTelephone(),
-                    'email'           => $billingAddress->getEmail() ?: $customerEmail,
+                    'email'           => $billingAddress->getEmail() ?: ($customerEmail ?: $shippingAddress->getEmail()),
                     'phone_number'    => $billingAddress->getTelephone(),
-                    'email_address'   => $billingAddress->getEmail() ?: $customerEmail,
+                    'email_address'   => $billingAddress->getEmail() ?: ($customerEmail ?: $shippingAddress->getEmail()),
                 );
-
-                foreach ($requiredAddressFields as $field) {
-                    if (empty($cartSubmissionData['billing_address'][$field])) {
-                        unset($cartSubmissionData['billing_address']);
-                        break;
-                    }
-                }
             }
             ///////////////////////////////////////////
 
@@ -230,11 +229,9 @@ class Bolt_Boltpay_Model_Quote extends Mage_Core_Model_Abstract
                 $calculatedTotal += $cartSubmissionData['tax_amount'];
             }
 
-            $shippingAddress = $quote->getShippingAddress();
-
-            $region = $shippingAddress->getRegion();
-            if (empty($region) && !in_array($shippingAddress->getCountry(), array('US', 'CA'))) {
-                $region = $shippingAddress->getCity();
+            $shippingRegion = $shippingAddress->getRegion();
+            if (empty($shippingRegion) && !in_array($shippingAddress->getCountry(), array('US', 'CA'))) {
+                $shippingRegion = $shippingAddress->getCity();
             }
 
             if ($shippingAddress) {
@@ -246,13 +243,13 @@ class Bolt_Boltpay_Model_Quote extends Mage_Core_Model_Abstract
                     'first_name'      => $shippingAddress->getFirstname(),
                     'last_name'       => $shippingAddress->getLastname(),
                     'locality'        => $shippingAddress->getCity(),
-                    'region'          => $region,
-                    'postal_code'     => $shippingAddress->getPostcode(),
+                    'region'          => $shippingRegion,
+                    'postal_code'     => $shippingAddress->getPostcode() ?: '-',
                     'country_code'    => $shippingAddress->getCountry(),
                     'phone'           => $shippingAddress->getTelephone(),
-                    'email'           => $shippingAddress->getEmail() ?: $customerEmail,
+                    'email'           => $shippingAddress->getEmail() ?: ($customerEmail ?: $billingAddress->getEmail()),
                     'phone_number'    => $shippingAddress->getTelephone(),
-                    'email_address'   => $shippingAddress->getEmail() ?: $customerEmail,
+                    'email_address'   => $shippingAddress->getEmail() ?: ($customerEmail ?: $billingAddress->getEmail()),
                 );
 
                 if (@$totals['shipping']) {
@@ -318,6 +315,7 @@ class Bolt_Boltpay_Model_Quote extends Mage_Core_Model_Abstract
         return $this->getCorrectedTotal($calculatedTotal, $cartSubmissionData);
     }
 
+
     /**
      * Utility method that attempts to correct totals if the projected total that was calculated from
      * all items and the given discount, does not match the $magento calculated total.  The totals may vary
@@ -353,6 +351,7 @@ class Bolt_Boltpay_Model_Quote extends Mage_Core_Model_Abstract
 
         // otherwise, we have no better thing to do than let the Bolt server do the checking
         return $magentoDerivedCartData;
+
     }
 
     /**
