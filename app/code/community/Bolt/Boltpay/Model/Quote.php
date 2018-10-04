@@ -178,20 +178,6 @@ class Bolt_Boltpay_Model_Quote extends Mage_Core_Model_Abstract
             $billingAddress  = $quote->getBillingAddress();
             $shippingAddress = $quote->getShippingAddress();
 
-            /*////////////////////////////////////////////////////////////////////////////
-               -------------------------------------
-                Billing / shipping address fields that are required
-                when the address data is sent to Bolt.
-                ------------------------------------
-                'first_name',
-                'last_name',
-                'street_address1',
-                'locality',
-                'region',
-                'postal_code',
-                'country_code',
-             */
-
             $customerEmail = $this->getCustomerEmail($quote);
 
             $billingRegion = $billingAddress->getRegion();
