@@ -175,24 +175,19 @@ class Bolt_Boltpay_Model_BoltOrder extends Mage_Core_Model_Abstract
             /////////////////////////////////////////////////////////////////////////////////////////
         } else {
 
-            // Billing / shipping address fields that are required when the address data is sent to Bolt.
-            $requiredAddressFields = array(
-                'first_name',
-                'last_name',
-                'street_address1',
-                'locality',
-                'region',
-                'postal_code',
-                'country_code',
-            );
+            $billingAddress  = $quote->getBillingAddress();
+            $shippingAddress = $quote->getShippingAddress();
 
             $customerEmail = $this->getCustomerEmail($quote);
+
+            $billingRegion = $billingAddress->getRegion();
+            if (empty($shippingRegion) && !in_array($billingAddress->getCountry(), array('US', 'CA'))) {
+                $billingRegion = $billingAddress->getCity();
+            }
 
             ///////////////////////////////////////////
             // Include billing address info if defined.
             ///////////////////////////////////////////
-            $billingAddress  = $quote->getBillingAddress();
-
             if ($billingAddress) {
                 $cartSubmissionData['billing_address'] = array(
                     'street_address1' => $billingAddress->getStreet1(),
@@ -202,21 +197,12 @@ class Bolt_Boltpay_Model_BoltOrder extends Mage_Core_Model_Abstract
                     'first_name'      => $billingAddress->getFirstname(),
                     'last_name'       => $billingAddress->getLastname(),
                     'locality'        => $billingAddress->getCity(),
-                    'region'          => $billingAddress->getRegion(),
-                    'postal_code'     => $billingAddress->getPostcode(),
+                    'region'          => $billingRegion,
+                    'postal_code'     => $billingAddress->getPostcode() ?: '-',
                     'country_code'    => $billingAddress->getCountry(),
                     'phone'           => $billingAddress->getTelephone(),
-                    'email'           => $billingAddress->getEmail() ?: $customerEmail,
-                    'phone_number'    => $billingAddress->getTelephone(),
-                    'email_address'   => $billingAddress->getEmail() ?: $customerEmail,
+                    'email'           => $billingAddress->getEmail() ?: ($customerEmail ?: $shippingAddress->getEmail()),
                 );
-
-                foreach ($requiredAddressFields as $field) {
-                    if (empty($cartSubmissionData['billing_address'][$field])) {
-                        unset($cartSubmissionData['billing_address']);
-                        break;
-                    }
-                }
             }
             ///////////////////////////////////////////
 
@@ -230,11 +216,9 @@ class Bolt_Boltpay_Model_BoltOrder extends Mage_Core_Model_Abstract
                 $calculatedTotal += $cartSubmissionData['tax_amount'];
             }
 
-            $shippingAddress = $quote->getShippingAddress();
-
-            $region = $shippingAddress->getRegion();
-            if (empty($region) && !in_array($shippingAddress->getCountry(), array('US', 'CA'))) {
-                $region = $shippingAddress->getCity();
+            $shippingRegion = $shippingAddress->getRegion();
+            if (empty($shippingRegion) && !in_array($shippingAddress->getCountry(), array('US', 'CA'))) {
+                $shippingRegion = $shippingAddress->getCity();
             }
 
             if ($shippingAddress) {
@@ -246,13 +230,11 @@ class Bolt_Boltpay_Model_BoltOrder extends Mage_Core_Model_Abstract
                     'first_name'      => $shippingAddress->getFirstname(),
                     'last_name'       => $shippingAddress->getLastname(),
                     'locality'        => $shippingAddress->getCity(),
-                    'region'          => $region,
-                    'postal_code'     => $shippingAddress->getPostcode(),
+                    'region'          => $shippingRegion,
+                    'postal_code'     => $shippingAddress->getPostcode() ?: '-',
                     'country_code'    => $shippingAddress->getCountry(),
                     'phone'           => $shippingAddress->getTelephone(),
-                    'email'           => $shippingAddress->getEmail() ?: $customerEmail,
-                    'phone_number'    => $shippingAddress->getTelephone(),
-                    'email_address'   => $shippingAddress->getEmail() ?: $customerEmail,
+                    'email'           => $shippingAddress->getEmail() ?: ($customerEmail ?: $billingAddress->getEmail()),
                 );
 
                 if (@$totals['shipping']) {
