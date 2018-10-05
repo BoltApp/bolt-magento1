@@ -216,8 +216,6 @@ class Bolt_Boltpay_Model_Quote extends Mage_Core_Model_Abstract
                     'country_code'    => $billingAddress->getCountry(),
                     'phone'           => $billingAddress->getTelephone(),
                     'email'           => $billingAddress->getEmail() ?: ($customerEmail ?: $shippingAddress->getEmail()),
-                    'phone_number'    => $billingAddress->getTelephone(),
-                    'email_address'   => $billingAddress->getEmail() ?: ($customerEmail ?: $shippingAddress->getEmail()),
                 );
             }
             ///////////////////////////////////////////
@@ -251,8 +249,6 @@ class Bolt_Boltpay_Model_Quote extends Mage_Core_Model_Abstract
                     'country_code'    => $shippingAddress->getCountry(),
                     'phone'           => $shippingAddress->getTelephone(),
                     'email'           => $shippingAddress->getEmail() ?: ($customerEmail ?: $billingAddress->getEmail()),
-                    'phone_number'    => $shippingAddress->getTelephone(),
-                    'email_address'   => $shippingAddress->getEmail() ?: ($customerEmail ?: $billingAddress->getEmail()),
                 );
 
                 if (@$totals['shipping']) {
