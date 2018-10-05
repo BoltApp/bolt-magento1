@@ -77,34 +77,6 @@ class Bolt_Boltpay_OrderController extends Mage_Core_Controller_Front_Action
     }
 
     /**
-     * Locks and unlocks cart.  This is to be called by the Bolt server corresponding to the
-     * opening and the closing of the Bolt modal.
-     */
-    public function lockcartAction()
-    {
-        ////////////////////////////////////////////////////////////////////////
-        // To be uncommented once the lock cart endpoint has been implemented
-        ////////////////////////////////////////////////////////////////////////
-        /*
-        $hmac_header = $_SERVER['HTTP_X_BOLT_HMAC_SHA256'];
-
-        $request_json = file_get_contents('php://input');
-        $request_data = json_decode($request_json);
-
-        $boltHelper = Mage::helper('boltpay/api');
-        if (!$boltHelper->verify_hook($request_json, $hmac_header)) exit;
-        */
-
-        $quote = Mage::getModel('sales/quote')
-            ->loadByIdWithoutStore(Mage::app()->getRequest()->getParam('quote_id'));
-
-        $quote->setIsActive((bool)Mage::app()->getRequest()->getParam('unlock', false));
-        $quote->save();
-
-        Mage::getSingleton('checkout/session')->setQuoteId($quote->getId());
-    }
-
-    /**
      * Creating the Bolt order and returning Bolt.process javascript.
      * Called from the firecheckout page.
      */
