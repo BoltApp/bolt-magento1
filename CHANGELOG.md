@@ -1,4 +1,8 @@
 # Changelog
+## [v1.3.4](https://s3-us-west-1.amazonaws.com/bolt-public/magento-integration-release/bolt-magento1_v1.3.4.zip) 2018-10-08
+ - Cleanup
+ - Tweak logic of quote cleanup - keep quotes that tied to orders
+
 ## [v1.3.3](https://s3-us-west-1.amazonaws.com/bolt-public/magento-integration-release/bolt-magento1_v1.3.3.zip) 2018-10-02
  - Fix for not including JavaScript when not needed
  - Bugfix around shipping&tax
