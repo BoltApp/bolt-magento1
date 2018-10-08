@@ -124,7 +124,7 @@ PROMISE;
         }
 
         // Generates order data for sending to Bolt create order API.
-        $orderRequest = Mage::getModel('boltpay/quote')->buildOrder($quote, $items, $isMultiPage);
+        $orderRequest = Mage::getModel('boltpay/boltOrder')->buildOrder($quote, $items, $isMultiPage);
 
         // Calls Bolt create order API
         return $boltHelper->transmit('orders', $orderRequest);

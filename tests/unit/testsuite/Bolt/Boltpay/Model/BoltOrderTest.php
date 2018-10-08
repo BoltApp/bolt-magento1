@@ -3,9 +3,9 @@
 require_once('TestHelper.php');
 
 /**
- * Class Bolt_Boltpay_Model_QuoteTest
+ * Class Bolt_Boltpay_Model_BoltOrderTest
  */
-class Bolt_Boltpay_Model_QuoteTest extends PHPUnit_Framework_TestCase
+class Bolt_Boltpay_Model_BoltOrderTest extends PHPUnit_Framework_TestCase
 {
     /**
      * @var int|null
@@ -18,7 +18,7 @@ class Bolt_Boltpay_Model_QuoteTest extends PHPUnit_Framework_TestCase
     private $testHelper = null;
 
     /**
-     * @var Bolt_Boltpay_Model_Quote
+     * @var Bolt_Boltpay_Model_BoltOrder
      */
     private $currentMock;
 
@@ -28,7 +28,7 @@ class Bolt_Boltpay_Model_QuoteTest extends PHPUnit_Framework_TestCase
     {
         $this->app = Mage::app('default');
         $this->app->getStore()->resetConfig();
-        $this->currentMock = Mage::getModel('boltpay/quote');
+        $this->currentMock = Mage::getModel('boltpay/boltOrder');
         $this->testHelper = new Bolt_Boltpay_TestHelper();
 
     }

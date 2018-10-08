@@ -29,14 +29,17 @@ $quoteTable = $installer->getTable('sales/quote');
 
 if ($installer->getConnection()->isTableExists($quoteTable)) {
     $table = $installer->getConnection();
-    $table->addIndex(
-        $quoteTable,
-        $installer->getIdxName(
-            'sales/quote',
+    $indexlist = $table->getIndexList($quoteTable);
+    if (!isset($indexlist[strtoupper($installer->getIdxName('sales/quote', 'parent_quote_id'))])) {
+        $table->addIndex(
+            $quoteTable,
+            $installer->getIdxName(
+                'sales/quote',
+                'parent_quote_id'
+            ),
             'parent_quote_id'
-        ),
-        'parent_quote_id'
-    );
+        );
+    }
 }
 
 Mage::log('Bolt 1.1.3 updates installation completed', null, 'bolt_install.log');
