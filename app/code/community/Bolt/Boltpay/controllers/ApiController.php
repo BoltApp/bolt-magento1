@@ -195,10 +195,33 @@ class Bolt_Boltpay_ApiController extends Mage_Core_Controller_Front_Action
                     ->setHeader("Retry-After", "86400")
                     ->setBody(json_encode(array('status' => 'failure', 'error' => array('code' => 6009, 'message' => $boltHelperBase->__('The order is on-hold and requires manual update before this hook is accepted') ))));
             } else {
-                // An invalid transition is treated as a late queue event and hence will be ignored
-                //Mage::log($errorMessage, null, 'bolt.log');
-                //Mage::log("Late queue event. Returning as OK", null, 'bolt.log');
-                $this->getResponse()->setHttpResponseCode(200);
+                /////////////////////////////////////////////////////////////
+                // An invalid transition is considered manually handled if
+                //      1.) It is not a credit hook
+                //      2.) It is moving from and to the same status, or
+                //      3.) The previous status is completed, and therefore, there is nothing left to do.
+                /////////////////////////////////////////////////////////////
+                if ($newTransactionStatus !== 'credit'
+                    &&
+                    (
+                        ($newTransactionStatus === $prevTransactionStatus)
+                        || ($prevTransactionStatus === 'completed')
+                    )
+                ) {
+                    $this->getResponse()->setBody(
+                        json_encode(
+                            array(
+                                'status' => 'success',
+                                'display_id' => $order->getIncrementId(),
+                                'message' => $boltHelperBase->__('Order already manually handled, so hook was ignored')
+                            )
+                        )
+                    )->setHttpResponseCode(200);
+                } else {
+                    $this->getResponse()
+                        ->setHttpResponseCode(422)
+                        ->setBody(json_encode(array('status' => 'failure', 'error' => array('code' => 6009, 'message' => $boltHelperBase->__('Invalid webhook transition from %s to %s', $prevTransactionStatus, $newTransactionStatus) ))));
+                }
             }
 
         } catch (Exception $e) {
