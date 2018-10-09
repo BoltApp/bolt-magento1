@@ -198,14 +198,15 @@ class Bolt_Boltpay_ApiController extends Mage_Core_Controller_Front_Action
                 /////////////////////////////////////////////////////////////
                 // An invalid transition is considered manually handled if
                 //      1.) It is not a credit hook
-                //      2.) It is moving from and to the same status, or
-                //      3.) The previous status is completed, and therefore, there is nothing left to do.
+                //      2.) It is moving from and to the same status
+                //      3.) The order is canceled, and therefore, nothing left to do, or
+                //      4.) The previous status is completed, and therefore, there is nothing left to do.
                 /////////////////////////////////////////////////////////////
                 if ($newTransactionStatus !== 'credit'
                     &&
                     (
                         ($newTransactionStatus === $prevTransactionStatus)
-                        || ($prevTransactionStatus === 'completed')
+                        || in_array($prevTransactionStatus, array('completed', 'cancelled'))
                     )
                 ) {
                     $this->getResponse()->setBody(
