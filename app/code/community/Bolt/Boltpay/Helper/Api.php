@@ -171,7 +171,7 @@ class Bolt_Boltpay_Helper_Api extends Bolt_Boltpay_Helper_Data
             'Content-Length: ' . strlen($params),
             'X-Api-Key: ' . Mage::helper('core')->decrypt($key),
             'X-Nonce: ' . rand(100000000, 999999999),
-            'User-Agent: BoltPay/Magento-' . $contextInfo["Magento-Version"],
+            'User-Agent: BoltPay/Magento-' . $contextInfo["Magento-Version"] . '/' . $contextInfo["Bolt-Plugin-Version"],
             'X-Bolt-Plugin-Version: ' . $contextInfo["Bolt-Plugin-Version"]
         );
         curl_setopt($ch, CURLOPT_HTTPHEADER, $headerInfo);
@@ -215,7 +215,7 @@ class Bolt_Boltpay_Helper_Api extends Bolt_Boltpay_Helper_Data
         $contextInfo = Mage::helper('boltpay/bugsnag')->getContextInfo();
 
         Mage::app()->getResponse()
-            ->setHeader('User-Agent', 'BoltPay/Magento-' . $contextInfo["Magento-Version"], true)
+            ->setHeader('User-Agent', 'BoltPay/Magento-' . $contextInfo["Magento-Version"] . '/' . $contextInfo["Bolt-Plugin-Version"], true)
             ->setHeader('X-Bolt-Plugin-Version', $contextInfo["Bolt-Plugin-Version"], true);
     }
 
