@@ -27,7 +27,7 @@ if(!Mage::helper('boltpay')->canUseBolt($this->getQuote(), false) || Mage::getSt
     var isFireCheckoutFormValid = false;
     var initBoltButtons = function() {
         <?=$this->getCartDataJs(Bolt_Boltpay_Block_Checkout_Boltpay::CHECKOUT_TYPE_FIRECHECKOUT); ?>
-    }
+    };
 
     var initializeBolt = function(){
 

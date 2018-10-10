@@ -102,7 +102,6 @@ class Bolt_Boltpay_Model_BoltOrder extends Mage_Core_Model_Abstract
          */
         /***************************************************/
 
-        $calculated_total = 0;
         $boltHelper->collectTotals($quote)->save();
 
         $totals = $quote->getTotals();
