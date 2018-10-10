@@ -68,12 +68,6 @@ class Bolt_Boltpay_ShippingController extends Mage_Core_Controller_Front_Action
             /* @var Mage_Sales_Model_Quote $quote */
             $quote = Mage::getModel('sales/quote')->loadByIdWithoutStore($quoteId);
 
-            /***********************/
-            // Set session quote to real customer quote
-            $session = Mage::getSingleton('checkout/session');
-            $session->setQuoteId($quoteId);
-            /**************/
-
             /* @var Bolt_Boltpay_Model_ShippingAndTax $shippingAndTaxModel */
             $shippingAndTaxModel = Mage::getModel('boltpay/shippingAndTax');
             $addressData = $shippingAndTaxModel->applyShippingAddressToQuote($quote, $shippingAddress);
@@ -102,6 +96,12 @@ class Bolt_Boltpay_ShippingController extends Mage_Core_Controller_Front_Action
                 }
             } else {
                 Mage::helper('boltpay')->setCustomerSessionById($quote->getCustomerId());
+
+                /***********************/
+                // Set session quote to real customer quote
+                $session = Mage::getSingleton('checkout/session');
+                $session->setQuoteId($quoteId);
+                /**************/
 
                 //Mage::log('Generating address from quote', null, 'shipping_and_tax.log');
                 //Mage::log('Live address: '.var_export($address_data, true), null, 'shipping_and_tax.log');
