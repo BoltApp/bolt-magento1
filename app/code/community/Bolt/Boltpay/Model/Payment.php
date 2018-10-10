@@ -177,8 +177,6 @@ class Bolt_Boltpay_Model_Payment extends Mage_Payment_Model_Method_Abstract
             $this->handleTransactionUpdate($payment, $transactionStatus, $prevTransactionStatus);
             //Mage::log(sprintf('Fetch transaction info completed for payment id: %d', $payment->getId()), null, 'bolt.log');
         } catch (Exception $e) {
-            $error = array('error' => $e->getMessage());
-            //Mage::log($error, null, 'bolt.log');
             Mage::helper('boltpay/bugsnag')->notifyException($e);
             throw $e;
         }
@@ -211,8 +209,6 @@ class Bolt_Boltpay_Model_Payment extends Mage_Payment_Model_Method_Abstract
             $payment->setIsTransactionClosed(false);
             return $this;
         } catch (Exception $e) {
-            $error = array('error' => $e->getMessage());
-            //Mage::log($error, null, 'bolt.log');
             Mage::helper('boltpay/bugsnag')->notifyException($e);
             throw $e;
         }
@@ -273,7 +269,6 @@ class Bolt_Boltpay_Model_Payment extends Mage_Payment_Model_Method_Abstract
             $payment->setTransactionId(sprintf("%s-capture", $reference));
             return $this;
         } catch (Exception $e) {
-            $error = array('error' => $e->getMessage());
             Mage::helper('boltpay/bugsnag')->notifyException($e);
             throw $e;
         }
@@ -347,8 +342,6 @@ class Bolt_Boltpay_Model_Payment extends Mage_Payment_Model_Method_Abstract
             //Mage::log(sprintf('Refund completed for payment id: %d', $payment->getId()), null, 'bolt.log');
             return $this;
         } catch (Exception $e) {
-            $error = array('error' => $e->getMessage());
-            //Mage::log($error, null, 'bolt.log');
             Mage::helper('boltpay/bugsnag')->notifyException($e);
             throw $e;
         }
@@ -383,8 +376,6 @@ class Bolt_Boltpay_Model_Payment extends Mage_Payment_Model_Method_Abstract
             //Mage::log(sprintf('Void completed for payment id: %d', $payment->getId()), null, 'bolt.log');
             return $this;
         } catch (Exception $e) {
-            $error = array('error' => $e->getMessage());
-            //Mage::log($error, null, 'bolt.log');
             Mage::helper('boltpay/bugsnag')->notifyException($e);
             throw $e;
         }
