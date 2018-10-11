@@ -31,11 +31,6 @@ class Bolt_Boltpay_Model_PaymentTest extends PHPUnit_Framework_TestCase
         $this->assertTrue($payment->canEdit());
         $this->assertTrue($payment->canRefundPartialPerInvoice());
         $this->assertTrue($payment->canCapturePartial());
-
-        // Added a compatibility with magento 1.7.x and 1.8.x
-        if (method_exists($payment, 'canCaptureOnce')) {
-            $this->assertTrue($payment->canCaptureOnce());
-        }
         $this->assertTrue($payment->canUseInternal());
 
         // All the features that are disabled
