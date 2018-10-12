@@ -96,8 +96,16 @@ class Bolt_Boltpay_Model_Order extends Mage_Core_Model_Abstract
 
             // explicitly set quote belong to guest if customer id does not exist
             $immutableQuote
-                ->setCustomerIsGuest( (($parentQuote->getCustomerId()) ? false : true) )
-                ->save();
+                ->setCustomerIsGuest( (($parentQuote->getCustomerId()) ? false : true) );
+
+            // Set the firstname and lastname if guest customer.
+            if ($immutableQuote->getCustomerIsGuest()) {
+                $consumerData = $transaction->from_consumer;
+                $immutableQuote
+                    ->setCustomerFirstname($consumerData->first_name)
+                    ->setCustomerLastname($consumerData->last_name);
+            }
+            $immutableQuote->save();
 
             //////////////////////////////////////////////////////////////////////////////////
             ///  Apply shipping address and shipping method data to quote directly from
