@@ -70,6 +70,27 @@ class Bolt_Boltpay_OrderController extends Mage_Core_Controller_Front_Action
                 $orderModel->createOrder($reference, $sessionQuote->getId(), true, $transaction);
             }
 
+        } catch (Bolt_Boltpay_DuplicateTransitionException $boltPayDuplicateTransitionException) {
+            //In this case, the parent quote is currently being processed or has been processed,
+            //and if this Duplicate transaction has the same reference with the processed transaction, then it should be ignored
+            //and if not, there should report an error
+            if($boltPayDuplicateTransitionException->getProcessedBoltReference() == $reference){
+                Mage::helper('boltpay/bugsnag')->notifyException( new Exception($boltPayDuplicateTransitionException->getMessage()) );
+                $this->getResponse()->setHttpResponseCode(422)
+                    ->setBody(json_encode(array('status' => 'failure', 'error' => array('code' => '6009', 'message' => $boltPayDuplicateTransitionException->getMessage()))));
+            }
+            else{
+                $errMsg = Mage::helper('boltpay')->__("%s Therefore, this redundant bolt transaction %s will not be processed as an order in Magento.",
+                                                $boltPayDuplicateTransitionException->getMessage(), $reference );
+                Mage::helper('boltpay/bugsnag')->notifyException( new Exception($errMsg) );
+                $this->getResponse()->setHttpResponseCode(503)
+                    ->setHeader("Retry-After", "86400")
+                    ->setBody(json_encode(array(
+                        'status' => 'failure',
+                        'error' => array(
+                            'code' => '6009',
+                            'message' => $errMsg ))));
+            }            
         } catch (Exception $e) {
             Mage::helper('boltpay/bugsnag')->notifyException($e);
             throw $e;

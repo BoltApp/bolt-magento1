@@ -79,12 +79,11 @@ class Bolt_Boltpay_Model_Order extends Mage_Core_Model_Abstract
                         $immutableQuote->getParentQuoteId() )
                 );
             } else if (!$parentQuote->getIsActive() ) {
-                throw new Exception(
-                    Mage::helper('boltpay')->__("The parent quote %s for immutable quote %s is currently being processed or has been processed for order #%s. Check quote %s for details.",
-                        $parentQuote->getId(), $immutableQuote->getId(), $parentQuote->getReservedOrderId(), $parentQuote->getParentQuoteId() )
-                );
+                $parentQuoteBoltReference = $parentQuote->getBoltReference();
+                throw new Bolt_Boltpay_DuplicateTransitionException($parentQuoteBoltReference, Mage::helper('boltpay')->__("The parent quote %s is currently being processed or has been processed by bolt transaction %s.",
+                                                $immutableQuote->getParentQuoteId(), $parentQuoteBoltReference ));
             } else {
-                $parentQuote->setIsActive(false)->save();
+                $parentQuote->setIsActive(false)->setBoltReference($reference)->save();
             }
 
             // adding guest user email to order
