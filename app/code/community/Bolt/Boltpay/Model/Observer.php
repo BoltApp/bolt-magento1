@@ -72,7 +72,6 @@ class Bolt_Boltpay_Model_Observer
      */
     public function verifyOrderContents($observer) 
     {
-        $boltHelper = $this->getBoltApiHelper();
         /* @var Mage_Sales_Model_Quote $quote */
         $quote = $observer->getEvent()->getQuote();
         /* @var Mage_Sales_Model_Order $order */
@@ -84,10 +83,10 @@ class Bolt_Boltpay_Model_Observer
             $reference = $payment->getAdditionalInformation('bolt_reference');
             $magentoTotal = (int)(round($order->getGrandTotal() * 100));
             if ($magentoTotal !== $transaction->amount->amount)  {
-                $message = "THERE IS A MISMATCH IN THE ORDER PAID AND ORDER RECORDED.<br>PLEASE COMPARE THE ORDER DETAILS WITH THAT RECORD IN YOUR BOLT MERCHANT ACCOUNT AT: ";
-                $message .= Mage::helper('boltpay/url')->getBoltMerchantUrl();
-                $message .= "/transaction/$reference";
-                $message .= "<br/>Bolt reports ".($transaction->amount->amount/100).'. Magento expects '.$magentoTotal/100;
+                $message = Mage::helper('boltpay')->__("THERE IS A MISMATCH IN THE ORDER PAID AND ORDER RECORDED.<br>
+                           PLEASE COMPARE THE ORDER DETAILS WITH THAT RECORD IN YOUR BOLT MERCHANT ACCOUNT AT: %s/transaction/%s<br/>
+                           Bolt reports %s. Magento expects %s", Mage::helper('boltpay/url')->getBoltMerchantUrl(), 
+                           $reference, ($transaction->amount->amount/100), ($magentoTotal/100) );
 
                 # Adjust amount if it is off by only one cent, likely due to rounding
                 $difference = $transaction->amount->amount - $magentoTotal;
@@ -138,7 +137,7 @@ class Bolt_Boltpay_Model_Observer
     public function sendOrderEmail($order)
     {
         $order->sendNewOrderEmail();
-        $history = $order->addStatusHistoryComment('Email sent for order ' . $order->getIncrementId());
+        $history = $order->addStatusHistoryComment( Mage::helper('boltpay')->__('Email sent for order %s', $order->getIncrementId()) );
         $history->setIsCustomerNotified(true);
     }
 
@@ -224,7 +223,7 @@ class Bolt_Boltpay_Model_Observer
     protected function _addMagentoOrderIdToMessage($incrementId)
     {
         if ($incrementId) {
-            return Mage::helper('sales')->__('Magento Order ID: "%s".', $incrementId);
+            return Mage::helper('boltpay')->__('Magento Order ID: "%s".', $incrementId);
         }
 
         return '';
@@ -252,12 +251,13 @@ class Bolt_Boltpay_Model_Observer
         $boltCartTotal = $transaction->amount->currency_symbol. ($transaction->amount->amount/100);
         $orderTotal = $order->getGrandTotal();
 
-        $msg = sprintf(
-            "BOLT notification: Authorization requested for $boltCartTotal.  Order total is {$transaction->amount->currency_symbol}$orderTotal. Bolt transaction: %s/transaction/%s.", Mage::helper('boltpay/url')->getBoltMerchantUrl(), $transaction->reference
+        $msg = Mage::helper('boltpay')->__(
+            "BOLT notification: Authorization requested for %s.  Order total is %s. Bolt transaction: %s/transaction/%s.", 
+            $boltCartTotal, $transaction->amount->currency_symbol.$orderTotal, Mage::helper('boltpay/url')->getBoltMerchantUrl(), $transaction->reference
         );
 
         if(Mage::getSingleton('core/session')->getWasCreatedByHook()){ // order is create via AJAX call
-            $msg .= "  This order was created via webhook (Bolt traceId: <".Mage::helper('boltpay/bugsnag')->getBoltTraceId().">)";
+            $msg .= Mage::helper('boltpay')->__("  This order was created via webhook (Bolt traceId: <%s>)", Mage::helper('boltpay/bugsnag')->getBoltTraceId());
         }
 
         $order->setState(Bolt_Boltpay_Model_Payment::transactionStatusToOrderStatus($transaction->status), true, $msg)

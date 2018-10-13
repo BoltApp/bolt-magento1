@@ -24,6 +24,9 @@
       <block type="boltpay/checkout_boltpay" name="connect_js_script" as="connect_js" template="boltpay/connectjs.phtml"/>
       <block type="boltpay/checkout_boltpay" name="replace_script" as="replace_script" template="boltpay/replace.phtml"/>
     </reference>
+    <reference name="before_body_end">
+      <block type="core/template" name="bolt_popup" as="bolt_popup" template="boltpay/popup.phtml"/>
+    </reference>
   </default>
 
   <checkout_cart_index>

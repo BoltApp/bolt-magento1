@@ -17,21 +17,24 @@ class Bolt_Boltpay_ShippingControllerTest extends PHPUnit_Framework_TestCase
 
     public function testPOBoxMatchesCases()
     {
+        $doesAddressContainPOBoxMethod = new ReflectionMethod($this->_shippingController, 'doesAddressContainPOBox');
+        $doesAddressContainPOBoxMethod->setAccessible(true);
+
         $address1 = 'P.O. Box 66';
         $address2 = 'Post Box 123';
         $address3 = 'Post Office Box 456';
         $address4 = 'PO Box 456';
         $address5 = 'PO Box #456';
         $address6 = 'Post Office Box #456';
-        $check1 = $this->_shippingController->doesAddressContainPOBox($address1);
-        $check2 = $this->_shippingController->doesAddressContainPOBox($address2);
-        $check3 = $this->_shippingController->doesAddressContainPOBox($address3);
-        $check4 = $this->_shippingController->doesAddressContainPOBox($address4);
-        $check5 = $this->_shippingController->doesAddressContainPOBox($address5);
-        $check6 = $this->_shippingController->doesAddressContainPOBox($address6);
-        $additionalCheck1 = $this->_shippingController->doesAddressContainPOBox($address1, $address2);
-        $additionalCheck2 = $this->_shippingController->doesAddressContainPOBox($address1, $address3);
-        $additionalCheck3 = $this->_shippingController->doesAddressContainPOBox($address2, $address3);
+        $check1 = $doesAddressContainPOBoxMethod->invoke($this->_shippingController, $address1);
+        $check2 = $doesAddressContainPOBoxMethod->invoke($this->_shippingController, $address2);
+        $check3 = $doesAddressContainPOBoxMethod->invoke($this->_shippingController, $address3);
+        $check4 = $doesAddressContainPOBoxMethod->invoke($this->_shippingController, $address4);
+        $check5 = $doesAddressContainPOBoxMethod->invoke($this->_shippingController, $address5);
+        $check6 = $doesAddressContainPOBoxMethod->invoke($this->_shippingController, $address6);
+        $additionalCheck1 = $doesAddressContainPOBoxMethod->invoke($this->_shippingController, $address1, $address2);
+        $additionalCheck2 = $doesAddressContainPOBoxMethod->invoke($this->_shippingController, $address1, $address3);
+        $additionalCheck3 = $doesAddressContainPOBoxMethod->invoke($this->_shippingController, $address2, $address3);
 
         $this->assertTrue($check1);
         $this->assertTrue($check2);
@@ -46,14 +49,17 @@ class Bolt_Boltpay_ShippingControllerTest extends PHPUnit_Framework_TestCase
 
     public function testPOBoxDoesNotMatchCases()
     {
+        $doesAddressContainPOBoxMethod = new ReflectionMethod($this->_shippingController, 'doesAddressContainPOBox');
+        $doesAddressContainPOBoxMethod->setAccessible(true);
+        
         $address1 = 'Post street';
         $address2 = '2 Box';
         $address3 = '425 Sesame St';
-        $check1 = $this->_shippingController->doesAddressContainPOBox($address1);
-        $check2 = $this->_shippingController->doesAddressContainPOBox($address2);
-        $check3 = $this->_shippingController->doesAddressContainPOBox($address3);
-        $additionalCheck1 = $this->_shippingController->doesAddressContainPOBox($address1, $address2);
-        $additionalCheck2 = $this->_shippingController->doesAddressContainPOBox($address2, $address3);
+        $check1 = $doesAddressContainPOBoxMethod->invoke($this->_shippingController, $address1);
+        $check2 = $doesAddressContainPOBoxMethod->invoke($this->_shippingController, $address2);
+        $check3 = $doesAddressContainPOBoxMethod->invoke($this->_shippingController, $address3);
+        $additionalCheck1 = $doesAddressContainPOBoxMethod->invoke($this->_shippingController, $address1, $address2);
+        $additionalCheck2 = $doesAddressContainPOBoxMethod->invoke($this->_shippingController, $address2, $address3);
 
         $this->assertNotTrue($check1);
         $this->assertNotTrue($check2);

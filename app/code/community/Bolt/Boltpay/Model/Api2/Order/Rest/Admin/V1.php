@@ -27,7 +27,7 @@ class Bolt_Boltpay_Model_Api2_Order_Rest_Admin_V1 extends Bolt_Boltpay_Model_Api
      * @var array  The response payload for successful order creation
      */
     public static $SUCCESS_ORDER_CREATED = array(
-        'message' => 'New Order created',
+        'message' => Mage::helper('boltpay')->__('New Order created'),
         'status' => 'success',
         'http_response_code' => 201
     );
@@ -36,7 +36,7 @@ class Bolt_Boltpay_Model_Api2_Order_Rest_Admin_V1 extends Bolt_Boltpay_Model_Api
      * @var array  The response payload for successful order updates
      */
     public static $SUCCESS_ORDER_UPDATED = array(
-        'message' => 'Updated existing order',
+        'message' => Mage::helper('boltpay')->__('Updated existing order'),
         'status' => 'success',
         'http_response_code' => 200
     );
@@ -97,11 +97,8 @@ class Bolt_Boltpay_Model_Api2_Order_Rest_Admin_V1 extends Bolt_Boltpay_Model_Api
                     $orderPayment->save();
                 } elseif ($merchantTransactionId != $transactionId) {
                     $this->_critical(
-                        Mage::helper('boltpay')
-                        ->__(
-                            sprintf(
-                                'Transaction id mismatch. Expected: %s got: %s', $merchantTransactionId, $transactionId
-                            )
+                        Mage::helper('boltpay')->__(
+                            'Transaction id mismatch. Expected: %s got: %s', $merchantTransactionId, $transactionId
                         ),
                         Mage_Api2_Model_Server::HTTP_BAD_REQUEST
                     );
@@ -134,19 +131,18 @@ class Bolt_Boltpay_Model_Api2_Order_Rest_Admin_V1 extends Bolt_Boltpay_Model_Api
             if (sizeof($quote->getData()) == 0) {
                 //Mage::log("Quote not found: $quoteId. Quote must have been already processed.", null, 'bolt.log');
                 $this->_critical(
-                    Mage::helper('boltpay')
-                    ->__("Quote not found: $quoteId.  Quote must have been already processed."), Mage_Api2_Model_Server::HTTP_BAD_REQUEST
+                    Mage::helper('boltpay')->__("Quote not found: %s.  Quote must have been already processed.", $quoteId), Mage_Api2_Model_Server::HTTP_BAD_REQUEST
                 );
             }
 
             if (empty($reference) || empty($transactionId)) {
                 $this->_critical(
-                    Mage::helper('boltpay')
-                    ->__('Reference and/or transaction_id is missing'), Mage_Api2_Model_Server::HTTP_BAD_REQUEST
+                    Mage::helper('boltpay')->__('Reference and/or transaction_id is missing'), Mage_Api2_Model_Server::HTTP_BAD_REQUEST
                 );
             }
-
-            $boltHelper->createOrder($reference, $sessionQuoteId = null);
+            /** @var Bolt_Boltpay_Model_Order $boltOrderModel */
+            $boltOrderModel = Mage::getModel('boltpay/order');
+            $boltOrderModel->createOrder($reference, $sessionQuoteId = null);
 
             $this->getResponse()->addMessage(
                 self::$SUCCESS_ORDER_CREATED['message'], self::$SUCCESS_ORDER_CREATED['http_response_code'],

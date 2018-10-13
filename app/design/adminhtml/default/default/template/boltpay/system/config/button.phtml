@@ -32,7 +32,7 @@
 
         var xmlhttp = new XMLHttpRequest();
 
-        xmlhttp.open("POST", "<?=$this->getUrl('boltpay/configuration/check');?>", true);
+        xmlhttp.open("POST", "<?php echo Mage::helper('boltpay/url')->getMagentoUrl('boltpay/configuration/check');?>", true);
         xmlhttp.setRequestHeader("Content-type", "application/json");
         xmlhttp.onreadystatechange = function () {
             if (xmlhttp.readyState == XMLHttpRequest.DONE && xmlhttp.status == 200) {

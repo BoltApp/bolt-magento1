@@ -22,12 +22,16 @@
 <?php /* @var $this Bolt_Boltpay_Block_Checkout_Boltpay */?>
 <?php
 
-if(!$this->isAllowedReplaceScriptOnCurrentPage() || !$this->canUseBolt() ) return;
+if(!$this->isAllowedReplaceScriptOnCurrentPage()
+   || !$this->canUseBolt()
+   || !$this->getPublishableKeyForRoute()
+) return;
 
+$additionalClasses = Mage::helper('boltpay')->getAdditionalButtonClasses();
 ?>
 <script>
 
-    var onloadCallback = function(){
+    var onDomReady = function(){
 
         /****************************************************************************************************
          * Finds and replaces specified buttons with Bolt checkout buttons. Runs internal function
@@ -40,14 +44,14 @@ if(!$this->isAllowedReplaceScriptOnCurrentPage() || !$this->canUseBolt() ) retur
 
             // replaceable button selectors and types of Bolt buttons to replace them with
             var selectors = {
-                ".block-cart .block-content .actions button.button" : "bolt-checkout-button with-cards bolt-multi-step-checkout forward-to-cart <?=$this->getTheme(); ?>"
+                ".block-cart .block-content .actions button.button" : "bolt-checkout-button bolt-multi-step-checkout forward-to-cart <?=$additionalClasses; ?>"
             };
 
             var config_selectors = JSON.parse('<?=$this->getConfigSelectors();?>');
 
             for (var i = 0, length = config_selectors.length; i < length; i++ ) {
                 var selector = config_selectors[i];
-                selectors[selector] = "bolt-checkout-button with-cards bolt-multi-step-checkout " + selector.replace(/^[.#]*/, "").replace(/[.#]*$/, "") + "-<?=$this->getCssSuffix(); ?> <?=$this->getTheme(); ?>";
+                selectors[selector] = "bolt-checkout-button bolt-multi-step-checkout " + selector.replace(/^[.#]*/, "").replace(/[.#]*$/, "") + "-<?=$this->getCssSuffix(); ?> <?=$additionalClasses; ?>";
             }
 
             var tryInterval = setInterval(
@@ -80,6 +84,11 @@ if(!$this->isAllowedReplaceScriptOnCurrentPage() || !$this->canUseBolt() ) retur
                                 var bolt_button =  document.createElement("div");
                                 bolt_button.setAttribute("class",selectors[selector]);
 
+                                <?php $buttonColor = Mage::helper('boltpay')->getBoltPrimaryColor();?>
+                                <?php if($buttonColor):?>
+                                    bolt_button.setAttribute("style", "--bolt-primary-action-color:<?php echo $buttonColor?>");
+                                <?php endif; ?>
+
                                 element.parentNode.insertBefore(bolt_button, element);
 
                                 if (element.parentNode.style.display === "") {
@@ -91,7 +100,7 @@ if(!$this->isAllowedReplaceScriptOnCurrentPage() || !$this->canUseBolt() ) retur
 
                     if (! found_elements) return;
 
-					<?php if ($this->isBoltOnlyPayment()): ?>
+                    <?php if ($this->isBoltOnlyPayment()): ?>
 
                     var lis = document.querySelectorAll('ul.checkout-types li');
 
@@ -107,7 +116,7 @@ if(!$this->isAllowedReplaceScriptOnCurrentPage() || !$this->canUseBolt() ) retur
                         proceed_link.text = proceed_link.text = "<?=$this->__('Proceed to Checkout');?>";
                     }
 
-					<?php endif; ?>
+                    <?php endif; ?>
 
                     // do nut run the replacement routine again
                     clearInterval(tryInterval);
@@ -158,12 +167,12 @@ if(!$this->isAllowedReplaceScriptOnCurrentPage() || !$this->canUseBolt() ) retur
 
     };
 
-    if (window.addEventListener) {
-        window.addEventListener("load", onloadCallback, false);
+    if (document.addEventListener) {
+        document.addEventListener("DOMContentLoaded", onDomReady);
     } else if (window.attachEvent) {
-        window.attachEvent("onload", onloadCallback);
+        window.attachEvent("onload", onDomReady);
     } else {
-        window.onload = onloadCallback;
+        window.onload = onDomReady;
     }
 
 </script>
