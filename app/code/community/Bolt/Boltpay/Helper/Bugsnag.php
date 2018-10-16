@@ -74,6 +74,16 @@ class Bolt_Boltpay_Helper_Bugsnag extends Mage_Core_Helper_Abstract
     protected function addDefaultMetaData() 
     {
         $this->addTraceIdMetaData();
+        $this->addStoreUrlMetaData();
+    }
+
+    protected function addStoreUrlMetaData()
+    {
+        $storeUrl = Mage::getBaseUrl();
+
+        if(!empty($storeUrl) && !array_key_exists('store_url', $this->metaData)) {
+            $this->addBreadcrumb(array('store_url' => $storeUrl));
+        }
     }
 
     protected function addTraceIdMetaData() 
