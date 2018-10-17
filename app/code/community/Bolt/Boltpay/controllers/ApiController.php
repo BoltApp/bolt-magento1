@@ -138,7 +138,7 @@ class Bolt_Boltpay_ApiController extends Mage_Core_Controller_Front_Action
                         )
                     )
                 );
-                $this->getResponse()->setHttpResponseCode(200);
+                $this->getResponse()->setHttpResponseCode(200)->setBody(json_encode(array('status' => 'success')));
 
                 return;
             }
@@ -198,7 +198,7 @@ class Bolt_Boltpay_ApiController extends Mage_Core_Controller_Front_Action
                 // An invalid transition is treated as a late queue event and hence will be ignored
                 //Mage::log($errorMessage, null, 'bolt.log');
                 //Mage::log("Late queue event. Returning as OK", null, 'bolt.log');
-                $this->getResponse()->setHttpResponseCode(200);
+                $this->getResponse()->setHttpResponseCode(200)->setBody(json_encode(array('status' => 'success')));
             }
 
         } catch (Exception $e) {
