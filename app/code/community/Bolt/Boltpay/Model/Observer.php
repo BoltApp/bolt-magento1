@@ -72,7 +72,6 @@ class Bolt_Boltpay_Model_Observer
      */
     public function verifyOrderContents($observer) 
     {
-        $boltHelper = $this->getBoltApiHelper();
         /* @var Mage_Sales_Model_Quote $quote */
         $quote = $observer->getEvent()->getQuote();
         /* @var Mage_Sales_Model_Order $order */

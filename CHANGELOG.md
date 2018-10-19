@@ -1,4 +1,9 @@
 # Changelog
+## [V1.3.5](https://s3-us-west-1.amazonaws.com/bolt-public/magento-integration-release/bolt-magento1_v1.3.5.zip) 2018-10-15
+ - Fix session related bug
+ - Add user name to order
+ - Tweak bugsnag
+
 ## [v1.3.4](https://s3-us-west-1.amazonaws.com/bolt-public/magento-integration-release/bolt-magento1_v1.3.4.zip) 2018-10-08
  - Cleanup
  - Tweak logic of quote cleanup - keep quotes that tied to orders
