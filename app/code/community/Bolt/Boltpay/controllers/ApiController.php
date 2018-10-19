@@ -196,17 +196,26 @@ class Bolt_Boltpay_ApiController extends Mage_Core_Controller_Front_Action
                     ->setBody(json_encode(array('status' => 'failure', 'error' => array('code' => 6009, 'message' => $boltHelperBase->__('The order is on-hold and requires manual update before this hook is accepted') ))));
             } else {
                 /////////////////////////////////////////////////////////////
-                // An invalid transition is considered manually handled if
-                //      1.) It is not a credit hook
-                //      2.) It is moving from and to the same status
-                //      3.) The order is canceled, and therefore, nothing left to do, or
-                //      4.) The previous status is completed, and therefore, there is nothing left to do.
+                // An invalid transition can be looked over (i.e. webhook considered as handled) if
+                //      case 1 - It is not a credit or capture hook - **these must succeed via the normal flow**
+                //      case 2 - It is moving from and to the same status - this is a duplicate hook
+                //      case 3 - The order is already marked as cancelled, and a reversible or irreversible rejection hook has been sent
+                //      case 4 - The order is already marked as completed, and an auth hook has been sent
                 /////////////////////////////////////////////////////////////
-                if ($newTransactionStatus !== 'credit'
+                if ( !in_array($hookType, array('credit', 'capture'))  # case 1
                     &&
                     (
-                        ($newTransactionStatus === $prevTransactionStatus)
-                        || in_array($prevTransactionStatus, array('completed', 'cancelled'))
+                        ($newTransactionStatus === $prevTransactionStatus) # case 2
+                        || (
+                            # case 3
+                            ($prevTransactionStatus === Bolt_Boltpay_Model_Payment::TRANSACTION_CANCELLED)
+                            && in_array($hookType, array('void','rejected_reversible','rejected_irreversible'))
+                        )
+                        || (
+                            # case 4
+                            ($prevTransactionStatus === Bolt_Boltpay_Model_Payment::TRANSACTION_COMPLETED)
+                            && in_array($hookType, array('auth','payment'))
+                        )
                     )
                 ) {
                     $this->getResponse()->setBody(
@@ -214,7 +223,7 @@ class Bolt_Boltpay_ApiController extends Mage_Core_Controller_Front_Action
                             array(
                                 'status' => 'success',
                                 'display_id' => $order->getIncrementId(),
-                                'message' => $boltHelperBase->__('Order already manually handled, so hook was ignored')
+                                'message' => $boltHelperBase->__('Order already handled, so hook was ignored')
                             )
                         )
                     )->setHttpResponseCode(200);
