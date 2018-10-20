@@ -195,29 +195,19 @@ class Bolt_Boltpay_ApiController extends Mage_Core_Controller_Front_Action
                     ->setHeader("Retry-After", "86400")
                     ->setBody(json_encode(array('status' => 'failure', 'error' => array('code' => 6009, 'message' => $boltHelperBase->__('The order is on-hold and requires manual update before this hook is accepted') ))));
             } else {
-                /////////////////////////////////////////////////////////////
-                // An invalid transition can be looked over (i.e. webhook considered as handled) if
-                //      case 1 - It is not a credit or capture hook - **these must succeed via the normal flow**
-                //      case 2 - It is moving from and to the same status - this is a duplicate hook
-                //      case 3 - The order is already marked as cancelled, and a reversible or irreversible rejection hook has been sent
-                //      case 4 - The order is already marked as completed, and an auth hook has been sent
-                /////////////////////////////////////////////////////////////
-                if ( !in_array($hookType, array('credit', 'capture'))  # case 1
-                    &&
-                    (
-                        ($newTransactionStatus === $prevTransactionStatus) # case 2
-                        || (
-                            # case 3
-                            ($prevTransactionStatus === Bolt_Boltpay_Model_Payment::TRANSACTION_CANCELLED)
-                            && in_array($hookType, array('void','rejected_reversible','rejected_irreversible'))
-                        )
-                        || (
-                            # case 4
-                            ($prevTransactionStatus === Bolt_Boltpay_Model_Payment::TRANSACTION_COMPLETED)
-                            && in_array($hookType, array('auth','payment'))
-                        )
-                    )
-                ) {
+                $isNotRefundOrCaptureHook = !in_array($hookType, array(Bolt_Boltpay_Model_Payment::HOOK_TYPE_REFUND, Bolt_Boltpay_Model_Payment::HOOK_TYPE_CAPTURE));
+                $isRepeatHook = $newTransactionStatus === $prevTransactionStatus;
+                $isRejectionHookForCancelledOrder =
+                    ($prevTransactionStatus === Bolt_Boltpay_Model_Payment::TRANSACTION_CANCELLED)
+                    && in_array($hookType, array(Bolt_Boltpay_Model_Payment::HOOK_TYPE_REJECTED_REVERSIBLE, Bolt_Boltpay_Model_Payment::HOOK_TYPE_REJECTED_IRREVERSIBLE));
+                $isAuthHookForCompletedOrder =
+                    ($prevTransactionStatus === Bolt_Boltpay_Model_Payment::TRANSACTION_COMPLETED)
+                    && ($hookType === Bolt_Boltpay_Model_Payment::HOOK_TYPE_AUTH);
+
+                $canAssumeHookedIsHandled = $isNotRefundOrCaptureHook && ($isRepeatHook || $isRejectionHookForCancelledOrder || $isAuthHookForCompletedOrder);
+
+                if ( $canAssumeHookedIsHandled )
+                {
                     $this->getResponse()->setBody(
                         json_encode(
                             array(
@@ -233,7 +223,6 @@ class Bolt_Boltpay_ApiController extends Mage_Core_Controller_Front_Action
                         ->setBody(json_encode(array('status' => 'failure', 'error' => array('code' => 6009, 'message' => $boltHelperBase->__('Invalid webhook transition from %s to %s', $prevTransactionStatus, $newTransactionStatus) ))));
                 }
             }
-
         } catch (Exception $e) {
             if(stripos($e->getMessage(), 'Not all products are available in the requested quantity') !== false) {
                 $this->getResponse()->setHttpResponseCode(409)
