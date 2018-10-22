@@ -66,4 +66,10 @@
     </reference>
   </checkout_onepage_review>
 
+  <catalog_product_view>
+    <reference name="beforeBodyEnd">
+      <block type="boltpay/checkout_boltpay" name="bolt_product_checkout_config" template="boltpay/catalog/product/configure_checkout.phtml"/>
+    </reference>
+  </catalog_product_view>
+
 </layout>
