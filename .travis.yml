@@ -30,7 +30,7 @@ matrix:
       php: 5.6
     - env: TEST_SUITE=unit PHPUNIT_PHAR=tests/unit/phpunit-5.7.9.phar MAGENTO_VERSION=magento-mirror-1.9.3.6
       php: 5.6
-    - env: TEST_SUITE=integration
+    - env: TEST_SUITE=integration MAGENTO_VERSION=magento-mirror-1.9.3.6
       php: 5.6
 
 before_install:
@@ -48,5 +48,5 @@ script:
   - cd /home/travis/build/BoltApp/bolt-magento1/
   - export PHPUNIT_ENVIRONMENT=$PHPUNIT_ENVIRONMENT
   - php ${PHPUNIT_PHAR} -c tests/unit/phpunit.xml
-  - if [ $TEST_SUITE="integration" ]; then bash run_integration_tests fi;
+  - if [ "$TEST_SUITE" == "integration" ]; then bash run_integration_tests fi;
   - bash /home/travis/build/BoltApp/bolt-magento1/tests/scripts/magento_check_reports
