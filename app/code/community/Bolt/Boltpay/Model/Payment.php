@@ -65,7 +65,6 @@ class Bolt_Boltpay_Model_Payment extends Mage_Payment_Model_Method_Abstract
 
     protected $_canManageRecurringProfiles  = false;
     protected $_canCapturePartial           = true;
-    protected $_canCaptureOnce              = true;
     // TODO: This can be set to true and we could move the handleOrderUpdate method
     protected $_canOrder                    = false;
     protected $_canUseInternal              = true;
@@ -76,7 +75,7 @@ class Bolt_Boltpay_Model_Payment extends Mage_Payment_Model_Method_Abstract
 
     protected $_validStateTransitions = array(
         self::TRANSACTION_AUTHORIZED => array(self::TRANSACTION_COMPLETED, self::TRANSACTION_CANCELLED, self::TRANSACTION_REJECTED_REVERSIBLE, self::TRANSACTION_REJECTED_IRREVERSIBLE, self::TRANSACTION_PENDING),
-        self::TRANSACTION_COMPLETED => array(self::TRANSACTION_REFUND, self::TRANSACTION_NO_NEW_STATE),
+        self::TRANSACTION_COMPLETED => array(self::TRANSACTION_REFUND, self::TRANSACTION_NO_NEW_STATE, self::TRANSACTION_COMPLETED),
         self::TRANSACTION_PENDING => array(self::TRANSACTION_AUTHORIZED, self::TRANSACTION_CANCELLED, self::TRANSACTION_REJECTED_REVERSIBLE, self::TRANSACTION_REJECTED_IRREVERSIBLE, self::TRANSACTION_COMPLETED),
         self::TRANSACTION_ON_HOLD => array(self::TRANSACTION_CANCELLED, self::TRANSACTION_REJECTED_REVERSIBLE, self::TRANSACTION_REJECTED_IRREVERSIBLE),
         self::TRANSACTION_REJECTED_IRREVERSIBLE => array(self::TRANSACTION_NO_NEW_STATE),
@@ -177,8 +176,6 @@ class Bolt_Boltpay_Model_Payment extends Mage_Payment_Model_Method_Abstract
             $this->handleTransactionUpdate($payment, $transactionStatus, $prevTransactionStatus);
             //Mage::log(sprintf('Fetch transaction info completed for payment id: %d', $payment->getId()), null, 'bolt.log');
         } catch (Exception $e) {
-            $error = array('error' => $e->getMessage());
-            //Mage::log($error, null, 'bolt.log');
             Mage::helper('boltpay/bugsnag')->notifyException($e);
             throw $e;
         }
@@ -211,8 +208,6 @@ class Bolt_Boltpay_Model_Payment extends Mage_Payment_Model_Method_Abstract
             $payment->setIsTransactionClosed(false);
             return $this;
         } catch (Exception $e) {
-            $error = array('error' => $e->getMessage());
-            //Mage::log($error, null, 'bolt.log');
             Mage::helper('boltpay/bugsnag')->notifyException($e);
             throw $e;
         }
@@ -220,6 +215,10 @@ class Bolt_Boltpay_Model_Payment extends Mage_Payment_Model_Method_Abstract
 
     public function capture(Varien_Object $payment, $amount)
     {
+        if (Bolt_Boltpay_Helper_Data::$fromHooks) {
+            return $this;
+        }
+
         try {
             //Mage::log(sprintf('Initiating capture on payment id: %d', $payment->getId()), null, 'bolt.log');
             $boltHelper = Mage::helper('boltpay/api');
@@ -238,11 +237,12 @@ class Bolt_Boltpay_Model_Payment extends Mage_Payment_Model_Method_Abstract
                 Mage::throwException($message);
             }
 
-            if ($transactionStatus == self::TRANSACTION_AUTHORIZED) {
+            if (in_array($transactionStatus, array(self::TRANSACTION_AUTHORIZED, self::TRANSACTION_COMPLETED))) {
                 $captureRequest = array(
                     'transaction_id' => $merchantTransId,
-                    'amount' => $amount * 100,
-                    'currency' => $payment->getOrder()->getOrderCurrencyCode()
+                    'amount'         => $amount * 100,
+                    'currency'       => $payment->getOrder()->getOrderCurrencyCode(),
+                    'skip_hook_notification' => true
                 );
                 $response = $boltHelper->transmit('capture', $captureRequest);
                 if (strlen($response->status) == 0) {
@@ -256,24 +256,16 @@ class Bolt_Boltpay_Model_Payment extends Mage_Payment_Model_Method_Abstract
                 $payment->setAdditionalInformation('bolt_transaction_status', $responseStatus);
 
                 $payment->save();
-            } elseif ($transactionStatus == self::TRANSACTION_COMPLETED) {
-                $order = $payment->getOrder();
-
-                $invoices = $order->getInvoiceCollection()->getItems();
-
-                if ($this->_canCaptureOnce && sizeof($invoices) > 1) {
-                    Mage::throwException( Mage::helper('boltpay')->__('Invoice capture attempt denied for order %s. The Bolt payment method only allows a single capture for each order.', $order->getIncrementId()) );
-                }
             } else {
                 $message = Mage::helper('boltpay')->__('Capture attempted denied. Transaction status: %s', $transactionStatus);
                 Mage::throwException($message);
             }
 
             $payment->setParentTransactionId($reference);
-            $payment->setTransactionId(sprintf("%s-capture", $reference));
+            $payment->setTransactionId(sprintf("%s-capture-%s", $reference, time()));
+            $payment->setIsTransactionClosed(0);
             return $this;
         } catch (Exception $e) {
-            $error = array('error' => $e->getMessage());
             Mage::helper('boltpay/bugsnag')->notifyException($e);
             throw $e;
         }
@@ -347,8 +339,6 @@ class Bolt_Boltpay_Model_Payment extends Mage_Payment_Model_Method_Abstract
             //Mage::log(sprintf('Refund completed for payment id: %d', $payment->getId()), null, 'bolt.log');
             return $this;
         } catch (Exception $e) {
-            $error = array('error' => $e->getMessage());
-            //Mage::log($error, null, 'bolt.log');
             Mage::helper('boltpay/bugsnag')->notifyException($e);
             throw $e;
         }
@@ -383,8 +373,6 @@ class Bolt_Boltpay_Model_Payment extends Mage_Payment_Model_Method_Abstract
             //Mage::log(sprintf('Void completed for payment id: %d', $payment->getId()), null, 'bolt.log');
             return $this;
         } catch (Exception $e) {
-            $error = array('error' => $e->getMessage());
-            //Mage::log($error, null, 'bolt.log');
             Mage::helper('boltpay/bugsnag')->notifyException($e);
             throw $e;
         }
@@ -439,7 +427,10 @@ class Bolt_Boltpay_Model_Payment extends Mage_Payment_Model_Method_Abstract
             if ($prevTransactionStatus != null) {
                 $prevTransactionStatus = strtolower($prevTransactionStatus);
 
-                if ($newTransactionStatus != self::TRANSACTION_REFUND && $newTransactionStatus == $prevTransactionStatus) {
+                if (
+                    !in_array($newTransactionStatus, array(self::TRANSACTION_REFUND, self::TRANSACTION_COMPLETED)) &&
+                    $newTransactionStatus == $prevTransactionStatus
+                ) {
                     //Mage::log(sprintf('No new state change. Current transaction status: %s', $newTransactionStatus), null, 'bolt.log');
                     return;
                 }
@@ -466,14 +457,16 @@ class Bolt_Boltpay_Model_Payment extends Mage_Payment_Model_Method_Abstract
                 }
             }
 
-            if ($newTransactionStatus == self::TRANSACTION_REFUND || $newTransactionStatus != $prevTransactionStatus) {
+            if (
+                in_array($newTransactionStatus, array( self::TRANSACTION_REFUND, self::TRANSACTION_COMPLETED)) ||
+                $newTransactionStatus != $prevTransactionStatus
+            ) {
                 //Mage::log(sprintf("Transitioning from %s to %s", $prevTransactionStatus, $newTransactionStatus), null, 'bolt.log');
                 $reference = $payment->getAdditionalInformation('bolt_reference');
 
                 $this->_handleBoltTransactionStatus($payment, $newTransactionStatus);
                 $payment->setAdditionalInformation('bolt_transaction_status', $newTransactionStatus);
                 $payment->save();
-                $payment->setShouldCloseParentTransaction(true);
 
                 if ($newTransactionStatus == self::TRANSACTION_AUTHORIZED) {
                     $reference = $payment->getAdditionalInformation('bolt_reference');
@@ -489,29 +482,29 @@ class Bolt_Boltpay_Model_Payment extends Mage_Payment_Model_Method_Abstract
                     $message = Mage::helper('boltpay')->__('BOLT notification: Payment transaction is authorized.');
                     $order->setState( Mage_Sales_Model_Order::STATE_PROCESSING, true, $message );
                     $order->save();
-                } elseif ($newTransactionStatus == self::TRANSACTION_COMPLETED) {
-                    $order = $payment->getOrder();
-                    $invoices = $order->getInvoiceCollection()->getItems();
-                    $invoice = null;
-                    if (empty($invoices)) {
-                        $invoice = $this->createInvoice($order, $transactionAmount);
+                } else if ($newTransactionStatus == self::TRANSACTION_COMPLETED) {
+                    $boltCaptures = $this->getNewBoltCaptures($payment);
 
+                    $order = $payment->getOrder();
+                    // Create invoices for items from $boltCaptures that are not exists on Magento
+                    $identifier = count($boltCaptures) > 1 ? 0 : null;
+                    foreach ($boltCaptures as $captureAmount) {
+
+                        $invoice = $this->createInvoice($order, $captureAmount / 100);
                         $invoice->setTransactionId($reference);
-                        $payment->setParentTransactionId($reference);
                         $invoice->setRequestedCaptureCase(self::CAPTURE_TYPE);
+                        $invoice->setState(Mage_Sales_Model_Order_Invoice::STATE_PAID);
                         $invoice->register();
-                        $payment->setCreatedInvoice($invoice);
+
+                        $this->updatePayment($payment, $invoice, $identifier);
+
                         $order->addRelatedObject($invoice);
-                        $order->save();
-                    } elseif (sizeof($invoices) == 1) {
-                        $invoice = reset($invoices);
-                        $invoice->capture();
-                        $invoice->save();
-                    } else {
-                        $message = Mage::helper('boltpay')->__('Found multiple invoices');
-                        Mage::throwException($message);
+                        $identifier++;
                     }
-                    $order->save();
+
+                    if ($boltCaptures) {
+                        $order->save();
+                    }
                 } elseif ($newTransactionStatus == self::TRANSACTION_PENDING) {
                     $order = $payment->getOrder();
                     $message = Mage::helper('boltpay')->__('BOLT notification: Payment is under review');
@@ -693,7 +686,7 @@ class Bolt_Boltpay_Model_Payment extends Mage_Payment_Model_Method_Abstract
      */
     protected function createInvoice($order, $captureAmount) {
         if (isset($captureAmount)) {
-            $this->validateCaptureAmount($captureAmount);
+            $this->validateCaptureAmount($order, $captureAmount);
 
             if($order->getGrandTotal() > $captureAmount) {
                 return Mage::getModel('boltpay/service_order', $order)->prepareInvoiceWithoutItems($captureAmount);
@@ -707,15 +700,17 @@ class Bolt_Boltpay_Model_Payment extends Mage_Payment_Model_Method_Abstract
      * @param $captureAmount
      * @throws Exception
      */
-    protected function validateCaptureAmount($captureAmount) {
-        if(!isset($captureAmount) || !is_numeric($captureAmount) || $captureAmount < 0) {
+    protected function validateCaptureAmount($order, $captureAmount) {
+        $isInvalidAmount = !isset($captureAmount) || !is_numeric($captureAmount) || $captureAmount < 0;
+        $isInvalidAmountRange = $order->getTotalInvoiced() + $captureAmount > $order->getGrandTotal();
+
+        if($isInvalidAmount || $isInvalidAmountRange) {
             Mage::helper('boltpay/bugsnag')->addBreadcrumb(
                 array(
                     'capture_amount'  => $captureAmount,
                 )
             );
-
-            throw new Exception( Mage::helper('boltpay')->__('Capture amount is invalid') );
+            throw new Exception( Mage::helper('boltpay')->__('Capture amount is invalid'));
         }
     }
 
@@ -800,5 +795,107 @@ class Bolt_Boltpay_Model_Payment extends Mage_Payment_Model_Method_Abstract
         }
 
         return $new_order_status;
+    }
+
+    /**
+     * @param \Mage_Payment_Model_Info $payment
+     *
+     * @return array
+     * @throws \Exception
+     */
+    protected function getNewBoltCaptures(Mage_Payment_Model_Info $payment)
+    {
+        $reference = $payment->getAdditionalInformation('bolt_reference');
+        /** @var Bolt_Boltpay_Helper_Api $boltHelper */
+        $boltHelper = Mage::helper('boltpay/api');
+        $transaction = $boltHelper->fetchTransaction($reference);
+        $boltCaptures = $this->getBoltCaptures($transaction);
+
+        return $this->removeInvoicedCaptures($payment, $boltCaptures);
+    }
+
+    /**
+     * @param $transaction
+     *
+     * @return array
+     */
+    protected function getBoltCaptures($transaction)
+    {
+        $boltCaptures = array();
+        foreach (@$transaction->captures as $capture) {
+            if (@$capture->status == 'succeeded') {
+                $boltCaptures[] = @$capture->amount->amount;
+            }
+        }
+
+        return $boltCaptures;
+    }
+
+    /**
+     * @param       $payment
+     * @param array $boltCaptures
+     *
+     * @return array
+     */
+    protected function removeInvoicedCaptures(Mage_Payment_Model_Info $payment, $boltCaptures = array())
+    {
+        $order = $payment->getOrder();
+        /** @var Mage_Sales_Model_Order_Invoice $invoice */
+        foreach ($order->getInvoiceCollection() as $invoice) {
+            $amount = $invoice->getGrandTotal() * 100;
+            $index = array_search($amount, $boltCaptures);
+
+            if ($index !== false) {
+                unset($boltCaptures[$index]);
+            }
+        }
+
+        return $boltCaptures;
+    }
+
+    /**
+     * @param Mage_Payment_Model_Info         $payment
+     * @param  Mage_Sales_Model_Order_Invoice $invoice
+     * @param                                 $identifier
+     *
+     * @throws \Exception
+     */
+    protected function updatePayment(Mage_Payment_Model_Info $payment, Mage_Sales_Model_Order_Invoice $invoice, $identifier = null)
+    {
+        /** @var Mage_Sales_Model_Order $order */
+        $order = $payment->getOrder();
+        $reference = $payment->getAdditionalInformation('bolt_reference');
+        $amount = $invoice->getGrandTotal();
+        $transactionId = sprintf("%s-capture-%s", $reference, time());
+        $transactionId .= $identifier !== null ? "-$identifier" : '';
+
+        $payment->setParentTransactionId($reference);
+        $payment->setTransactionId($transactionId);
+        $payment->setIsTransactionClosed(0);
+
+        Mage::dispatchEvent('sales_order_payment_capture', array('payment' => $payment, 'invoice' => $invoice));
+
+        $message = $payment->getPreparedMessage() . Mage::helper('boltpay')->__(
+                ' Captured amount of %s online.',
+                $order->getBaseCurrency()->formatTxt($amount, array())
+            );
+
+        $payment->addTransaction(
+            Mage_Sales_Model_Order_Payment_Transaction::TYPE_CAPTURE,
+            $invoice,
+            true,
+            $message
+        );
+
+        if (!$order->getTotalDue()){
+            /** @var Mage_Sales_Model_Order_Payment_Transaction $parentTransaction */
+            $parentTransaction = Mage::getModel('sales/order_payment_transaction')->load($reference, 'txn_id');
+            if ($parentTransaction->getId()){
+                if (!$parentTransaction->getIsClosed()) {
+                    $parentTransaction->setOrderPaymentObject($payment);
+                    $parentTransaction->close();
+                }
+            }
+        }
     }
 }

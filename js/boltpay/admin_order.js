@@ -26,9 +26,9 @@ AdminOrder.prototype.prepareParams =
 
         var billingMethodContainer = $('order-billing_method');
         if (billingMethodContainer) {
-            var data = this.serializeData('order-billing_method');
-            if (data) {
-                data.each(function(value) {
+            var billingData = this.serializeData('order-billing_method');
+            if (billingData) {
+                billingData.each(function(value) {
                     params[value[0]] = value[1];
                 });
             }
@@ -36,9 +36,9 @@ AdminOrder.prototype.prepareParams =
 
         var shippingMethodContainer = $('order-shipping_method');
         if (shippingMethodContainer) {
-            var data = this.serializeData('order-shipping_method');
-            if (data) {
-                data.each(function(value) {
+            var shippingData = this.serializeData('order-shipping_method');
+            if (shippingData) {
+                shippingData.each(function(value) {
                     params[value[0]] = value[1];
                 });
             }

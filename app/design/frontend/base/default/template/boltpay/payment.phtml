@@ -55,8 +55,7 @@ if(($quote->getPayment()->getMethodInstance()->getCode() == 'boltpay') && $publi
                     }
                 }
 
-                var parent = document.getElementsByTagName(parent)[0];
-                parent.appendChild(el);
+                document.getElementsByTagName(parent)[0].appendChild(el);
             };
 
             var loadConnectJS = function(key) {
