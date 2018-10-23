@@ -213,7 +213,7 @@ PROMISE;
                 $shippingAndTaxModel->applyShippingRate($sessionQuote, $shippingMethod);
             }
 
-            $cartData = ($checkoutType === self::CHECKOUT_TYPE_FIRECHECKOUT) ? $orderCreationResponse : $this->buildCartData($orderCreationResponse);
+            $cartData = ($checkoutType === self::CHECKOUT_TYPE_FIRECHECKOUT) ? $orderCreationResponse : $this->buildCartData($orderCreationResponse, $checkoutType);
 
             return $this->buildBoltCheckoutJavascript($checkoutType, $immutableQuote->getId(), $hintData, $cartData);
 
@@ -234,12 +234,13 @@ PROMISE;
     /**
      * Generate cart data
      *
-     * @param $orderCreationResponse
+     * @param      $orderCreationResponse
+     * @param null $checkoutType
      * @return array
      */
-    public function buildCartData($orderCreationResponse)
+    public function buildCartData($orderCreationResponse, $checkoutType = null)
     {
-        $authCapture = Mage::getStoreConfigFlag('payment/boltpay/auto_capture');
+        $authCapture = $checkoutType === 'admin' ? true : Mage::getStoreConfigFlag('payment/boltpay/auto_capture');
 
         //////////////////////////////////////////////////////////////////////////
         // Generate JSON cart and hints objects for the javascript returned below.
