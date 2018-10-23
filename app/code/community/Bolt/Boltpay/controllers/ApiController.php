@@ -193,14 +193,36 @@ class Bolt_Boltpay_ApiController extends Mage_Core_Controller_Front_Action
             if ($boltPayInvalidTransitionException->getOldStatus() == Bolt_Boltpay_Model_Payment::TRANSACTION_ON_HOLD) {
                 $this->getResponse()->setHttpResponseCode(503)
                     ->setHeader("Retry-After", "86400")
-                    ->setBody(json_encode(array('status' => 'failure', 'error' => array('code' => 6009, 'message' => $boltHelperBase->__('The order is on-hold and requires manual update before this hook is accepted') ))));
+                    ->setBody(json_encode(array('status' => 'failure', 'error' => array('code' => 6009, 'message' => $boltHelperBase->__('The order is on-hold and requires manual merchant update before this hook can be processed') ))));
             } else {
-                // An invalid transition is treated as a late queue event and hence will be ignored
-                //Mage::log($errorMessage, null, 'bolt.log');
-                //Mage::log("Late queue event. Returning as OK", null, 'bolt.log');
-                $this->getResponse()->setHttpResponseCode(200);
-            }
+                $isNotRefundOrCaptureHook = !in_array($hookType, array(Bolt_Boltpay_Model_Payment::HOOK_TYPE_REFUND, Bolt_Boltpay_Model_Payment::HOOK_TYPE_CAPTURE));
+                $isRepeatHook = $newTransactionStatus === $prevTransactionStatus;
+                $isRejectionHookForCancelledOrder =
+                    ($prevTransactionStatus === Bolt_Boltpay_Model_Payment::TRANSACTION_CANCELLED)
+                    && in_array($hookType, array(Bolt_Boltpay_Model_Payment::HOOK_TYPE_REJECTED_REVERSIBLE, Bolt_Boltpay_Model_Payment::HOOK_TYPE_REJECTED_IRREVERSIBLE));
+                $isAuthHookForCompletedOrder =
+                    ($prevTransactionStatus === Bolt_Boltpay_Model_Payment::TRANSACTION_COMPLETED)
+                    && ($hookType === Bolt_Boltpay_Model_Payment::HOOK_TYPE_AUTH);
 
+                $canAssumeHookedIsHandled = $isNotRefundOrCaptureHook && ($isRepeatHook || $isRejectionHookForCancelledOrder || $isAuthHookForCompletedOrder);
+
+                if ( $canAssumeHookedIsHandled )
+                {
+                    $this->getResponse()->setBody(
+                        json_encode(
+                            array(
+                                'status' => 'success',
+                                'display_id' => $order->getIncrementId(),
+                                'message' => $boltHelperBase->__('Order already handled, so hook was ignored')
+                            )
+                        )
+                    )->setHttpResponseCode(200);
+                } else {
+                    $this->getResponse()
+                        ->setHttpResponseCode(422)
+                        ->setBody(json_encode(array('status' => 'failure', 'error' => array('code' => 6009, 'message' => $boltHelperBase->__('Invalid webhook transition from %s to %s', $prevTransactionStatus, $newTransactionStatus) ))));
+                }
+            }
         } catch (Exception $e) {
             if(stripos($e->getMessage(), 'Not all products are available in the requested quantity') !== false) {
                 $this->getResponse()->setHttpResponseCode(409)
