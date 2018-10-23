@@ -242,20 +242,17 @@ PROMISE;
             /** @var Bolt_Boltpay_Model_ShippingAndTax $shippingAndTaxModel */
             $shippingAndTaxModel = Mage::getModel('boltpay/shippingAndTax');
 
-            $hintData = $this->getAddressHints($sessionQuote, $checkoutType);
+//            $hintData = $this->getAddressHints($sessionQuote, $checkoutType);
+            $hintData = array( "prefill" => [] );
 
-            $orderCreationResponse = json_decode('{"token" : "", "error": "'.Mage::helper('boltpay')->__('Unexpected error.  Please contact support for assistance.').'"}');
+//            $isMultiPage = ($checkoutType === self::CHECKOUT_TYPE_MULTI_PAGE);
+//            // For multi-page, remove shipping that may have been added by Magento shipping and tax estimate interface
+//            if ($isMultiPage) {
+//                // Resets shipping rate
+//                $shippingMethod = $sessionQuote->getShippingAddress()->getShippingMethod();
+//                $shippingAndTaxModel->applyShippingRate($sessionQuote, null);
+//            }
 
-            $isMultiPage = ($checkoutType === self::CHECKOUT_TYPE_MULTI_PAGE);
-            // For multi-page, remove shipping that may have been added by Magento shipping and tax estimate interface
-            if ($isMultiPage) {
-                // Resets shipping rate
-                $shippingMethod = $sessionQuote->getShippingAddress()->getShippingMethod();
-                $shippingAndTaxModel->applyShippingRate($sessionQuote, null);
-            }
-
-            // Call Bolt create order API
-            try {
                 /////////////////////////////////////////////////////////////////////////////////
                 // We create a copy of the quote that is immutable by the customer/frontend
                 // Bolt saves this quote to the database at Magento-side order save time.
@@ -264,62 +261,51 @@ PROMISE;
                 // and discount calculations change on the Magento server
                 ////////////////////////////////////////////////////////////////////////////////
                 /** @var Mage_Sales_Model_Quote $immutableQuote */
-                $immutableQuote = $boltHelper->cloneQuote($sessionQuote, $isMultiPage);
+//                $immutableQuote = $boltHelper->cloneQuote($sessionQuote, $isMultiPage);
                 ////////////////////////////////////////////////////////////////////////////////
 
-                $orderCreationResponse = $this->getBoltOrderToken($immutableQuote, $checkoutType);
+            $currency = $sessionQuote->getQuoteCurrencyCode();
+            $totalAmount = $sessionQuote->getGrandTotal();
 
-                if (@!$orderCreationResponse->error) {
-                    ///////////////////////////////////////////////////////////////////////////////////////
-                    // Merchant scope: get "bolt_user_id" if the user is logged in or should be registered,
-                    // sign it and add to hints.
-                    ///////////////////////////////////////////////////////////////////////////////////////
-                    $reservedUserId = $this->getReservedUserId($sessionQuote);
-                    if ($reservedUserId && $this->isEnableMerchantScopedAccount()) {
-                        $signRequest = array(
-                            'merchant_user_id' => $reservedUserId,
-                        );
+            $productCheckoutCartItem = [];
+            $items = $sessionQuote->getAllVisibleItems();
+            foreach ($items as $_item) {
+                /* @var $_item Mage_Sales_Model_Quote_Item */
 
-                        $signResponse = $boltHelper->transmit('sign', $signRequest);
-
-                        if ($signResponse != null) {
-                            $hintData['signed_merchant_user_id'] = array(
-                                "merchant_user_id" => $signResponse->merchant_user_id,
-                                "signature" => $signResponse->signature,
-                                "nonce" => $signResponse->nonce,
-                            );
-                        }
-                    }
-                    ///////////////////////////////////////////////////////////////////////////////////////
-                }
-            } catch (Exception $e) {
-                $metaData = array('quote' => var_export($sessionQuote->debug(), true));
-                Mage::helper('boltpay/bugsnag')->notifyException(
-                    new Exception($e),
-                    $metaData
-                );
+                /** @var Mage_Catalog_Model_Product $_product */
+                $_product = $_item->getProduct();
+                $productCheckoutCartItem[] = [
+                    'reference' => $_item->getSku(),
+                    'price' => $_item->getPrice(),
+                    'quantity' => $_item->getQty(),
+                    'image' => $_product->getImageUrl(),
+                    'name' => $_item->getName(),
+                    'color' => '',
+                    'size' => '',
+                    'shopifyProductReference' => 0,
+                    'shopifyProductVariantReference' => 0,
+                ];
             }
 
-            // For multi-page, reapply shipping to quote that may be used for shipping and tax estimate
-            if ($isMultiPage) {
-                $shippingAndTaxModel->applyShippingRate($sessionQuote, $shippingMethod);
-            }
+            $productCheckoutCart = [
+                'currency' => $currency,
+                'items' => $productCheckoutCartItem,
+                'total' => $totalAmount,
+            ];
 
-            $cartData = ($checkoutType === self::CHECKOUT_TYPE_FIRECHECKOUT) ? $orderCreationResponse : $this->buildCartData($orderCreationResponse, $checkoutType);
-
-            return $this->configureProductCheckout($checkoutType, $immutableQuote->getId(), $hintData, $cartData);
+            return $this->configureProductCheckout($checkoutType, $sessionQuote->getId(), $hintData, $productCheckoutCart);
 
         } catch (Exception $e) {
             Mage::helper('boltpay/bugsnag')->notifyException($e);
         }
     }
 
-    public function configureProductCheckout($checkoutType, $immutableQuoteId, $hintData = null, $cartData)
+    public function configureProductCheckout($checkoutType, $immutableQuoteId, $hintData = null, $productCheckoutCart)
     {
         /* @var Bolt_Boltpay_Helper_Api $boltHelper */
         $boltHelper = Mage::helper('boltpay');
 
-        $jsonCart = (is_string($cartData)) ? $cartData : json_encode($cartData);
+        $jsonCart = (is_string($productCheckoutCart)) ? $productCheckoutCart : json_encode($productCheckoutCart);
 //        $jsonHints = json_encode($hintData, JSON_FORCE_OBJECT);
 
         //////////////////////////////////////////////////////
@@ -342,27 +328,16 @@ PROMISE;
 
         $requiredCheck = ($checkoutType === self::CHECKOUT_TYPE_FIRECHECKOUT)
             ? ""
-            : "
-                    if (!json_cart.orderToken) {
-                        if (typeof BoltPopup !== \"undefined\") {
-                            BoltPopup.addMessage(json_cart.error).show();
-                        } else {
-                            alert(json_cart.error);
-                        }
-                        return false;
-                    }
-            "
+            : ""
         ;
 
         return ("
-            var json_cart = $jsonCart;
-            var json_hints = null;
-            var quote_id = '{$immutableQuoteId}';
-            var order_completed = false;
+            var jsonProductCart = $jsonCart;
+            var jsonProductHints = null;
 
             BoltCheckout.configureProductCheckout(
-                json_cart,
-                json_hints,
+                jsonProductCart,
+                jsonProductHints,
                 {
                   check: function() {
                     $requiredCheck

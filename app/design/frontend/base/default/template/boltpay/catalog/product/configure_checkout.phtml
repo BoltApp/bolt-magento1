@@ -1,6 +1,15 @@
 <?php /* @var $this Bolt_Boltpay_Block_Checkout_Boltpay */ ?>
-<script>
-    jQuery(function($) {
-        <?php echo $this->getCartDataJsForProductPage(); ?>
-    });
+<script type="text/javascript">
+document.addEventListener("DOMContentLoaded", function() {
+    var processIntervalProd = setInterval(
+        function() {
+            if (typeof BoltCheckout !== "undefined") {
+                clearInterval(processIntervalProd);
+                console.log('execute: getCartDataJsForProductPage()');
+                <?php echo $this->getCartDataJsForProductPage(); ?>
+            }
+
+        }, 50
+    );
+});
 </script>
