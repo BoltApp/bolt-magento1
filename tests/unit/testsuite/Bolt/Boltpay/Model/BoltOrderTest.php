@@ -78,7 +78,7 @@ class Bolt_Boltpay_Model_BoltOrderTest extends PHPUnit_Framework_TestCase
                     0 =>
                         array (
                             'reference' => $_quote->getId(),
-                            'image_url' => $imageUrl,
+                            'image_url' => (string) $imageUrl,
                             'name' => $item->getName(),
                             'sku' => $item->getSku(),
                             'description' => substr($product->getDescription(), 0, 8182) ?: '',
