@@ -275,7 +275,7 @@ PROMISE;
                 /** @var Mage_Catalog_Model_Product $_product */
                 $_product = $_item->getProduct();
                 $productCheckoutCartItem[] = [
-                    'reference' => $_item->getSku(),
+                    'reference' => $_product->getId(),
                     'price' => $_item->getPrice(),
                     'quantity' => $_item->getQty(),
                     'image' => $_product->getImageUrl(),
