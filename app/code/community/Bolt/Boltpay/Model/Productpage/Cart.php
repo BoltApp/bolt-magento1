@@ -17,11 +17,11 @@
 
 class Bolt_Boltpay_Model_Productpage_Cart extends Mage_Core_Model_Abstract
 {
-    const ERR_CODE_OUT_OF_STOCKS = 7001;
-    const ERR_CODE_INVALID_SIZE = 7002;
-    const ERR_CODE_INVALID_QUANTITY = 7003;
-    const ERR_CODE_INVALID_REFERENCE = 7004;
-    const ERR_CODE_INVALID_AMOUNT = 7005;
+    const ERR_CODE_OUT_OF_STOCKS = 6301;
+    const ERR_CODE_INVALID_SIZE = 6302;
+    const ERR_CODE_INVALID_QUANTITY = 6303;
+    const ERR_CODE_INVALID_REFERENCE = 6304;
+    const ERR_CODE_INVALID_AMOUNT = 6305;
 
     const ITEM_TYPE_PHYSICAL = 'physical';
     const ITEM_TYPE_DIGITAL = 'digital';
@@ -223,7 +223,7 @@ class Bolt_Boltpay_Model_Productpage_Cart extends Mage_Core_Model_Abstract
             'order_reference' => $quote->getId(),
             'currency'        => $quote->getQuoteCurrencyCode(),
             'items'           => $this->getGeneratedItems(),
-            'total'           => $this->getGeneratedTotal()
+            'total_amount'           => $this->getGeneratedTotal()
         );
         $this->httpCode = 200;
 

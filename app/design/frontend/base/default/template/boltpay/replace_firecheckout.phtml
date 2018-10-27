@@ -25,35 +25,39 @@ if(!Mage::helper('boltpay')->canUseBolt($this->getQuote(), false) || Mage::getSt
 <script>
 
     var isFireCheckoutFormValid = false;
+    var bolt_buttons = null;
+    var place_order_buttons = null;
+
     var initBoltButtons = function() {
         <?=$this->getCartDataJs(Bolt_Boltpay_Block_Checkout_Boltpay::CHECKOUT_TYPE_FIRECHECKOUT); ?>
     };
 
     var initializeBolt = function(){
 
-        // checkout.setLoadWaiting(false);
+        var addBoltButtons = function() {
+            place_order_buttons = document.querySelectorAll('<?=Mage::getStoreConfig('payment/boltpay/selectors');?>');
 
-        var place_order_buttons = document.querySelectorAll('<?=Mage::getStoreConfig('payment/boltpay/selectors');?>');
+            place_order_buttons.forEach(
+                function(place_order_button) {
+                    var bolt_button =  document.createElement("div");
+                    bolt_button.setAttribute("class", "bolt-checkout-button <?=$this->getCssSuffix(); ?> <?=Mage::helper('boltpay')->getAdditionalButtonClasses() ?>");
 
-        place_order_buttons.forEach(
-            function(place_order_button) {
-                var bolt_button =  document.createElement("div");
-                bolt_button.setAttribute("class", "bolt-checkout-button <?=$this->getCssSuffix(); ?> <?=Mage::helper('boltpay')->getAdditionalButtonClasses() ?>");
+                    <?php $buttonColor = Mage::helper('boltpay')->getBoltPrimaryColor();?>
+                    <?php if($buttonColor):?>
+                    bolt_button.setAttribute("style", "--bolt-primary-action-color:<?php echo $buttonColor?>");
+                    <?php endif; ?>
 
-                <?php $buttonColor = Mage::helper('boltpay')->getBoltPrimaryColor();?>
-                <?php if($buttonColor):?>
-                bolt_button.setAttribute("style", "--bolt-primary-action-color:<?php echo $buttonColor?>");
-                <?php endif; ?>
+                    bolt_button.style.display = "none";
 
-                bolt_button.style.display = "none";
+                    place_order_button.parentNode.insertBefore(bolt_button, place_order_button);
+                }
+            );
 
-                place_order_button.parentNode.insertBefore(bolt_button, place_order_button);
-            }
-        );
-
-        var bolt_buttons = document.querySelectorAll('.bolt-checkout-button');
+            bolt_buttons = document.querySelectorAll('.bolt-checkout-button');
+        };
 
         // Render Bolt button.
+        addBoltButtons();
         initBoltButtons();
 
         /**
@@ -135,12 +139,17 @@ if(!Mage::helper('boltpay')->canUseBolt($this->getQuote(), false) || Mage::getSt
         autoSelectShipping();
         attachClickEvents();
 
-        var bolt_radio = document.querySelector('#p_method_boltpay');
-        if (selected_radio) {
-            selected_radio.click();
-        } else if (bolt_radio) {
-            bolt_radio.click();
-        }
+        var autoSelectPaymentMethod = function () {
+            var bolt_radio = document.querySelector('#p_method_boltpay');
+
+            if (selected_radio) {
+                selected_radio.click();
+            } else if (bolt_radio) {
+                bolt_radio.click();
+            }
+        };
+
+        autoSelectPaymentMethod();
 
         //////////////////////////////////////////////////////////////////////
         // Watch for changes in the payment methods to re-attach click events
