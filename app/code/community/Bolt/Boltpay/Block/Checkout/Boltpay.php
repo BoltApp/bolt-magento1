@@ -369,7 +369,8 @@ PROMISE;
                   close: function() {
                      $onCloseCallback
                   }
-                }
+                },
+                { checkoutButtonClassName: 'bolt-product-checkout-button' }
         );");
     }
 
