@@ -280,10 +280,6 @@ PROMISE;
                     'quantity' => $_item->getQty(),
                     'image' => $_product->getImageUrl(),
                     'name' => $_item->getName(),
-                    'color' => '',
-                    'size' => '',
-                    'shopifyProductReference' => 0,
-                    'shopifyProductVariantReference' => 0,
                 ];
             }
 
