@@ -205,7 +205,7 @@ PROMISE;
                 // and discount calculations change on the Magento server
                 ////////////////////////////////////////////////////////////////////////////////
                 /** @var Mage_Sales_Model_Quote $immutableQuote */
-                $immutableQuote = $boltHelper->cloneQuote($sessionQuote, $isMultiPage);
+                $immutableQuote = $boltHelper->cloneQuote($sessionQuote, $checkoutType);
                 ////////////////////////////////////////////////////////////////////////////////
 
                 $orderCreationResponse = $this->getBoltOrderToken($immutableQuote, $checkoutType);

@@ -156,7 +156,7 @@ class Bolt_Boltpay_OrderController extends Mage_Core_Controller_Front_Action
             $result = array();
 
             /** @var Mage_Sales_Model_Quote $immutableQuote */
-            $immutableQuote = Mage::helper('boltpay')->cloneQuote($quote, false);
+            $immutableQuote = Mage::helper('boltpay')->cloneQuote($quote, Bolt_Boltpay_Block_Checkout_Boltpay::CHECKOUT_TYPE_ONE_PAGE);
             $result['cart_data'] = $block->buildCartData(($block->getBoltOrderToken($immutableQuote, Bolt_Boltpay_Block_Checkout_Boltpay::CHECKOUT_TYPE_ONE_PAGE)));
 
             if (!$result['cart_data']) {
