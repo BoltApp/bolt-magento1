@@ -185,6 +185,7 @@ class Bolt_Boltpay_Helper_Data extends Mage_Core_Helper_Abstract
     {
         return Mage::getStoreConfig('payment/boltpay/product_page_checkout_selector');
     }
+
     /**
      * Creates a clone of a quote including items, addresses, customer details,
      * and shipping and tax options when
