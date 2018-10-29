@@ -223,7 +223,7 @@ class Bolt_Boltpay_Model_Productpage_Cart extends Mage_Core_Model_Abstract
             'order_reference' => $quote->getId(),
             'currency'        => $quote->getQuoteCurrencyCode(),
             'items'           => $this->getGeneratedItems(),
-            'total'           => $this->getGeneratedTotal()
+            'total_amount'           => $this->getGeneratedTotal()
         );
         $this->httpCode = 200;
 

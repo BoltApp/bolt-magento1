@@ -1,4 +1,7 @@
 # Changelog
+## [V1.3.6](https://s3-us-west-1.amazonaws.com/bolt-public/magento-integration-release/bolt-magento1_v1.3.6.zip) 2018-10-21
+ - Bug fixes
+
 ## [V1.3.5](https://s3-us-west-1.amazonaws.com/bolt-public/magento-integration-release/bolt-magento1_v1.3.5.zip) 2018-10-15
  - Fix session related bug
  - Add user name to order
