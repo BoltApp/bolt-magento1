@@ -308,15 +308,11 @@ PROMISE;
                 /** @var Mage_Catalog_Model_Product $_product */
                 $_product = $_item->getProduct();
                 $productCheckoutCartItem[] = [
-                    'reference' => $_item->getSku(),
+                    'reference' => $_product->getId(),
                     'price' => $_item->getPrice(),
                     'quantity' => $_item->getQty(),
                     'image' => $_product->getImageUrl(),
                     'name' => $_item->getName(),
-                    'color' => '',
-                    'size' => '',
-                    'shopifyProductReference' => 0,
-                    'shopifyProductVariantReference' => 0,
                 ];
             }
 
@@ -408,7 +404,8 @@ PROMISE;
                   close: function() {
                      $onCloseCallback
                   }
-                }
+                },
+                { checkoutButtonClassName: 'bolt-product-checkout-button' }
         );");
     }
 
