@@ -1,4 +1,5 @@
 <?php /* @var $this Bolt_Boltpay_Block_Checkout_Boltpay */ ?>
+<?php if ($this->isEnabledProductPageCheckout()): ?>
 <script type="text/javascript">
 document.addEventListener("DOMContentLoaded", function() {
     var processIntervalProd = setInterval(
@@ -8,8 +9,8 @@ document.addEventListener("DOMContentLoaded", function() {
                 console.log('execute: getCartDataJsForProductPage()');
                 <?php echo $this->getCartDataJsForProductPage(); ?>
             }
-
         }, 50
     );
 });
 </script>
+<?php endif; ?>

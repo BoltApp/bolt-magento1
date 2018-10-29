@@ -177,11 +177,31 @@
               <show_in_store>1</show_in_store>
             </selector_styles>
 
+            <enable_product_page_checkout>
+              <label>Enable Product Page Checkout</label>
+              <comment></comment>
+              <frontend_type>select</frontend_type>
+              <source_model>adminhtml/system_config_source_yesno</source_model>
+              <sort_order>40</sort_order>
+              <show_in_default>1</show_in_default>
+              <show_in_website>1</show_in_website>
+              <show_in_store>1</show_in_store>
+            </enable_product_page_checkout>
+            <product_page_checkout_selector>
+              <label>Product Page Checkout Selector</label>
+              <frontend_type>text</frontend_type>
+              <comment>CSS selectors of buttons to be replaced by Bolt.  Selectors are comma delimited, default: .btn-cart</comment>
+              <sort_order>43</sort_order>
+              <show_in_default>1</show_in_default>
+              <show_in_website>1</show_in_website>
+              <show_in_store>1</show_in_store>
+            </product_page_checkout_selector>
+
             <additional_css translate="label">
               <label>Global CSS</label>
               <comment>Any CSS that is to be added to pages when any Bolt button selector is found</comment>
               <frontend_type>textarea</frontend_type>
-              <sort_order>38</sort_order>
+              <sort_order>45</sort_order>
               <show_in_default>1</show_in_default>
               <show_in_website>1</show_in_website>
               <show_in_store>1</show_in_store>
@@ -190,7 +210,7 @@
             <successpage translate="label">
               <label>Success Page Redirect</label>
               <frontend_type>text</frontend_type>
-              <sort_order>40</sort_order>
+              <sort_order>50</sort_order>
               <show_in_default>1</show_in_default>
               <show_in_website>1</show_in_website>
               <show_in_store>1</show_in_store>
@@ -198,7 +218,7 @@
 
             <hide_on_checkout>
               <label>Hide On Checkout Page</label>
-              <sort_order>42</sort_order>
+              <sort_order>55</sort_order>
               <frontend_type>select</frontend_type>
               <source_model>adminhtml/system_config_source_yesno</source_model>
               <show_in_default>1</show_in_default>
@@ -210,7 +230,7 @@
               <label>Disable Complete Authorize</label>
               <frontend_type>select</frontend_type>
               <source_model>adminhtml/system_config_source_yesno</source_model>
-              <sort_order>46</sort_order>
+              <sort_order>60</sort_order>
               <show_in_default>1</show_in_default>
               <show_in_website>1</show_in_website>
               <show_in_store>1</show_in_store>
@@ -220,7 +240,7 @@
               <label>Enable merchant scoped account</label>
               <frontend_type>select</frontend_type>
               <source_model>adminhtml/system_config_source_yesno</source_model>
-              <sort_order>48</sort_order>
+              <sort_order>65</sort_order>
               <show_in_default>1</show_in_default>
               <show_in_website>1</show_in_website>
               <show_in_store>1</show_in_store>
@@ -230,7 +250,7 @@
               <label>Allow Shipping To PO Box</label>
               <frontend_type>select</frontend_type>
               <source_model>adminhtml/system_config_source_yesno</source_model>
-              <sort_order>49</sort_order>
+              <sort_order>70</sort_order>
               <show_in_default>1</show_in_default>
               <show_in_website>1</show_in_website>
               <show_in_store>1</show_in_store>
@@ -241,7 +261,7 @@
               <frontend_type>select</frontend_type>
               <source_model>adminhtml/system_config_source_yesno</source_model>
               <comment>Makes Bolt the only payment method when available</comment>
-              <sort_order>50</sort_order>
+              <sort_order>75</sort_order>
               <show_in_default>1</show_in_default>
               <show_in_website>1</show_in_website>
               <show_in_store>1</show_in_store>
@@ -250,7 +270,7 @@
             <allowspecific translate="label">
               <label>Payment from Applicable Countries</label>
               <frontend_type>allowspecific</frontend_type>
-              <sort_order>70</sort_order>
+              <sort_order>80</sort_order>
               <source_model>adminhtml/system_config_source_payment_allspecificcountries</source_model>
               <show_in_default>1</show_in_default>
               <show_in_website>1</show_in_website>
@@ -260,7 +280,7 @@
             <specificcountry translate="label">
               <label>Payment from Specific Countries</label>
               <frontend_type>multiselect</frontend_type>
-              <sort_order>80</sort_order>
+              <sort_order>90</sort_order>
               <source_model>adminhtml/system_config_source_country</source_model>
               <show_in_default>1</show_in_default>
               <show_in_website>1</show_in_website>

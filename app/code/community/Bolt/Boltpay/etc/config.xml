@@ -250,6 +250,8 @@
     float: right;
   }
 }       </selector_styles>
+        <enable_product_page_checkout>0</enable_product_page_checkout>
+        <product_page_checkout_selector>.btn-cart</product_page_checkout_selector>
 
         <additional_css>
 #checkout-review-submit .bolt-checkout-button {

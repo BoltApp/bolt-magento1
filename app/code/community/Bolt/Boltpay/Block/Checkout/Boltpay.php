@@ -326,19 +326,26 @@ PROMISE;
                 'total' => $totalAmount,
             ];
 
-            return $this->configureProductCheckout($checkoutType, $sessionQuote->getId(), $hintData, $productCheckoutCart);
+            return $this->configureProductCheckout($checkoutType, $sessionQuote, $hintData, $productCheckoutCart);
 
         } catch (Exception $e) {
             Mage::helper('boltpay/bugsnag')->notifyException($e);
         }
     }
 
-    public function configureProductCheckout($checkoutType, $immutableQuoteId, $hintData = null, $productCheckoutCart)
+    /**
+     * @param      $checkoutType
+     * @param      $quote
+     * @param null $hintData
+     * @param      $productCheckoutCart
+     * @return string
+     */
+    public function configureProductCheckout($checkoutType, $quote, $hintData = null, $productCheckoutCart)
     {
         /* @var Bolt_Boltpay_Helper_Api $boltHelper */
         $boltHelper = Mage::helper('boltpay');
 
-        $jsonCart = (is_string($productCheckoutCart)) ? $productCheckoutCart : json_encode($productCheckoutCart);
+        $jsonCart = json_encode($productCheckoutCart);
 //        $jsonHints = json_encode($hintData, JSON_FORCE_OBJECT);
 
         //////////////////////////////////////////////////////
@@ -355,25 +362,20 @@ PROMISE;
         $successCustom = $boltHelper->getPaymentBoltpayConfig('success', $checkoutType);
         $closeCustom = $boltHelper->getPaymentBoltpayConfig('close', $checkoutType);
 
-        $onCheckCallback = $this->buildOnCheckCallback($checkoutType);
+        $onCheckCallback = $this->buildOnCheckCallback($checkoutType, $quote);
         $onSuccessCallback = $this->buildOnSuccessCallback($successCustom, $checkoutType);
         $onCloseCallback = $this->buildOnCloseCallback($closeCustom, $checkoutType);
-
-        $requiredCheck = ($checkoutType === self::CHECKOUT_TYPE_FIRECHECKOUT)
-            ? ""
-            : ""
-        ;
 
         return ("
             var jsonProductCart = $jsonCart;
             var jsonProductHints = null;
+            var productPageCheckoutSelector = '". $this->escapeHtml($this->getProductPageCheckoutSelector())."';
 
             BoltCheckout.configureProductCheckout(
                 jsonProductCart,
                 jsonProductHints,
                 {
                   check: function() {
-                    $requiredCheck
                     $checkCustom
                     $onCheckCallback
                     return true;
@@ -1092,5 +1094,21 @@ PROMISE;
         $isFireCheckoutPage = ($this->getRequest()->getRouteName() === 'firecheckout');
 
         return (!$isFireCheckoutPage && $this->isAllowedConnectJsOnCurrentPage());
+    }
+
+    /**
+     * @return bool
+     */
+    public function isEnabledProductPageCheckout()
+    {
+        return $this->helper('boltpay')->isEnabledProductPageCheckout();
+    }
+
+    /**
+     * @return string
+     */
+    public function getProductPageCheckoutSelector()
+    {
+        return $this->helper('boltpay')->getProductPageCheckoutSelector();
     }
 }
