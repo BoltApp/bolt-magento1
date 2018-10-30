@@ -879,8 +879,11 @@ PROMISE;
         $routeName = $this->getRequest()->getRouteName();
         $controllerName = $this->getRequest()->getControllerName();
 
+        $isEnabledProductPageCheckout = $this->helper('boltpay')->isEnabledProductPageCheckout();
+
         $isAllowed = ($routeName === 'checkout' && $controllerName === 'cart')
-            || ($routeName == 'firecheckout')
+            || ($routeName === 'firecheckout')
+            || ($isEnabledProductPageCheckout && $routeName === 'catalog' && $controllerName === 'product')
             || ($routeName === 'adminhtml' && in_array($controllerName, array('sales_order_create', 'sales_order_edit')));
 
         return $isAllowed;

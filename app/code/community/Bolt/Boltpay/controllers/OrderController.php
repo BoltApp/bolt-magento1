@@ -61,7 +61,7 @@ class Bolt_Boltpay_OrderController extends Mage_Core_Controller_Front_Action
             /////////////////////////////////////////////////////////
             /** @var Bolt_Boltpay_Helper_Transaction $transactionHelper */
             $transactionHelper = Mage::helper('boltpay/transaction');
-            /** @var  Bolt_Boltpay_Model_Order $orderModel */
+            /** @var Bolt_Boltpay_Model_Order $orderModel */
             $orderModel = Mage::getModel('boltpay/order');
             $order = $orderModel->getOrderByQuoteId($transactionHelper->getImmutableQuoteIdFromTransaction($transaction));
 

@@ -2,12 +2,19 @@
 <?php if ($this->isEnabledProductPageCheckout()): ?>
 <script type="text/javascript">
 document.addEventListener("DOMContentLoaded", function() {
+    var processIntervalCounter = 0;
     var processIntervalProd = setInterval(
         function() {
+            processIntervalCounter++;
+            console.log('BoltDebug: run', 'processIntervalProd');
             if (typeof BoltCheckout !== "undefined") {
                 clearInterval(processIntervalProd);
                 console.log('execute: getCartDataJsForProductPage()');
                 <?php echo $this->getCartDataJsForProductPage(); ?>
+            }
+
+            if (processIntervalCounter > 50) {
+                clearInterval(processIntervalProd);
             }
         }, 50
     );
