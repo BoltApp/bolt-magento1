@@ -136,7 +136,15 @@ class Bolt_Boltpay_Model_Observer
      */
     public function sendOrderEmail($order)
     {
-        $order->sendNewOrderEmail();
+        try {
+            $order->sendNewOrderEmail();
+        } catch (Exception $e) {
+            // Catches errors that occur when sending order email confirmation (e.g. Mandrill API is down)
+            // and allows order creation to complete.
+            Mage::helper('boltpay/bugsnag')->notifyException($e);
+            return;
+        }
+
         $history = $order->addStatusHistoryComment( Mage::helper('boltpay')->__('Email sent for order %s', $order->getIncrementId()) );
         $history->setIsCustomerNotified(true);
     }
