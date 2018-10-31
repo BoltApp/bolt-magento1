@@ -1,0 +1,372 @@
+.checkout-cart-index .shipement-title{
+    text-align: center;
+    margin-bottom: 20px;
+    margin-top: 25px;
+    font-weight: 600;
+}
+.checkout-cart-index .shipment-option{
+    overflow: hidden;
+}
+
+.checkout-cart-index .order_info_actions_container ul.checkout-types.bottom{
+    padding-top:20px;
+}
+
+.checkout-cart-index .shipment-shipment{
+    width: 47%;
+    float: left;
+    text-align: center;
+}
+.checkout-cart-index .shipment-shipment:first-child{
+    margin-right: 6%;
+}
+.checkout-cart-index .shipment-instore{
+    padding: 15px 0;
+    border: 1px solid #000;
+    text-transform: uppercase;
+    margin: auto;
+    cursor: pointer;
+    font-weight: 600;
+    white-space: nowrap;
+    background-color: #181818;
+    color: #FFFFFF;
+}
+.checkout-cart-index #for-instore{
+    margin-top: 30px;
+    overflow: hidden;
+    text-align: center;
+}
+.checkout-cart-index #for-instore span{
+    display: block;
+    margin-bottom: 30px;
+    font-weight: 600;
+}
+.checkout-cart-index .for-instore-continue{
+    padding: 15px;
+    margin: auto;
+}
+.checkout-cart-index .for-instore-continue a{
+    color: #fff;
+    font-weight: 700;
+    text-transform: uppercase;
+    padding: 15px 30px;
+    background-color: #000;
+    text-decoration: none;
+}
+.checkout-cart-index .for-instore-continue a:hover{
+    color: #fff;
+    text-decoration: none;
+}
+.checkout-cart-index .shipment-unclicked{
+    color: #000000;
+    border: 1px solid #000000;
+    background-color: #F1F1F1;
+}
+
+.checkout-cart-index .cart-forms .discount{
+    padding: 20px 0;
+}
+
+.checkout-cart-index .order_info_actions_container .cart-totals-wrapper{
+    border-top: 2px solid #d8d8d8;
+}
+
+.bolt-horizontal-border{
+    border-bottom: 2px solid #d8d8d8;
+}
+
+#discount-coupon-form .discount{
+    padding-bottom: 0;
+}
+
+.checkout-cart-index .cart-forms #add-points-form .discount {
+    padding-bottom: 10px;
+}
+
+.checkout-cart-index .order_info_actions_container .cart-totals{
+    border: 0;
+}
+
+.checkout-cart-index .method-checkout-cart-methods-paypal_express-bottom .paypal-logo a:hover {
+    text-decoration:none;
+    box-shadow: inset 0 0 100px 100px rgba(0, 0, 0, 0.05);
+}
+
+.checkout-cart-index .method-checkout-cart-methods-paypal_express-bottom .paypal-logo a{
+    background-color: #ffc439;
+    padding: 15px 0;
+}
+
+.checkout-cart-index .order_info_actions_container{
+    padding: 0 40px;
+}
+
+.checkout-cart-index .order_info_actions_container .cart-totals-wrapper{
+    padding: 0;
+}
+
+.checkout-cart-index .order_info_actions_container #message-double{
+    width: 100%;
+    text-align: center;
+    padding: 27px 0 18px;
+}
+.checkout-cart-index .order_info_actions_container #message{
+    width: 100%;
+    margin: 0;
+}
+
+.checkout-cart-index .order_info_actions_container #message.reward-applied .cart_subtotal_message{
+    padding-top: 0;
+}
+
+.checkout-cart-index .order_info_actions_container #message-double a:first-child{
+    font-size: 14.5px;
+    word-spacing: 1px;
+    letter-spacing: 2px;
+    display: block;
+    text-transform: uppercase;
+    color: #268eff !important;
+}
+
+.checkout-cart-index .order_info_actions_container #message-double a.bolt-btn-login{
+    font-size: 14.5px;
+}
+
+.checkout-cart-index #add-points{
+    width: 100%;
+    border: 0!important;
+    outline: 1px solid #CCC;
+    height: 32px;
+    background-color: white;
+    font-size: 13px;
+    font-family: inherit;
+}
+
+.checkout-cart-index .discount-form.points .input-box span:first-child{
+    float: left;
+    font-weight: bold;
+}
+
+
+.checkout-cart-index .discount-form.points .input-box span:nth-child(2){
+    float: right;
+}
+
+.checkout-cart-index .discount-form.points .input-box .cart_subtotal_message{
+    color: #7d7d7d;
+    font-size: 9px;
+    padding-top: 6px;
+}
+
+.checkout-cart-index #shopping-cart-totals-table tr:first-child td.a-right{
+    text-transform: uppercase;
+}
+.checkout-cart-index #shopping-cart-totals-table{
+    text-transform: none;
+}
+
+.order_info_actions_container .cart-totals p.cart_subtotal_message{
+    text-align: left;
+    color: #7d7d7d;
+}
+
+.checkout-cart-index .bolt-label{
+    font-weight: bold;
+}
+
+.checkout-cart-index .bolt-input{
+    width: 100%!important;
+    border-right: none!important;
+}
+
+.checkout-cart-index .discount-form{
+    text-align: left;
+}
+.checkout-cart-index .discount-form.points .input-box{
+    width: 100%;
+}
+.checkout-cart-index .discount-form .input-box{
+    float: left;
+    width: 87%;
+}
+
+.checkout-cart-index .discount-form .buttons-set{
+    float: left;
+    width: 13%;
+    clear: none;
+    margin-top: 1px;
+}
+
+.checkout-cart-index .discount-form .buttons-set a{
+    padding: 10px 0 10px 43%;
+    background: black;
+    width: 100%;
+}
+
+.checkout-cart-index #amgiftcard_info{
+    overflow: hidden;
+}
+
+.checkout-cart-index #amgiftcard_info > div{
+    display: block;
+}
+
+.checkout-cart-index #amgiftcard_info > div:first-child{
+    float: left;
+}
+
+.checkout-cart-index #amgiftcard_info > div:nth-child(2){
+    float: right;
+}
+
+.checkout-cart-index #amgiftcard_info > div:nth-child(2) .cancel-coupon{
+    background: transparent;
+    color: #268eff;
+    text-transform: none;
+    text-decoration: underline;
+    padding: 0;
+}
+
+.checkout-cart-index #amgiftcard_info > div:nth-child(2) .cancel-coupon:hover{
+    background: #000000;
+    cursor: pointer;
+}
+
+.checkout-cart-index .bolt-arrow-right{
+    width: 0;
+    height: 0;
+    border-top: 5px solid transparent;
+    border-bottom: 5px solid transparent;
+    border-left: 7px solid white;
+}
+
+
+.checkout-cart-index .order_info_actions_container .cart-totals table tbody tr td:last-child{
+    width: 20%;
+    text-align: right;
+}
+
+.checkout-cart-index .btn-remove.btn-remove-amgiftcard img, .checkout-cart-index .btn-remove.btn-remove-amstcred img{
+    display:none;
+}
+
+.checkout-cart-index .bolt-row{
+    width: 100%;
+    overflow: hidden;
+}
+.checkout-cart-index .cancel-coupon-wrapper{
+    text-align: center;
+    margin-top: 7px;
+}
+
+.checkout-cart-index .remove-reward-point,.checkout-cart-index .cancel-coupon{
+    background: transparent;
+    padding: 0;
+    color: #3399cc;
+}
+
+.checkout-cart-index .remove-reward-point:hover, .checkout-cart-index .cancel-coupon:hover{
+    color: #3399cc;
+    background-color: #000000;
+}
+
+.checkout-cart-index #form-bolt-store-credit{
+    margin: 6px 0 17px;
+    text-align: left;
+}
+
+.checkout-cart-index #form-bolt-store-credit label{
+    text-transform: none;
+    font-size: 12px;
+}
+
+.checkout-cart-index #amstcred_use_customer_balance{
+    top: 1px;
+}
+
+.checkout-cart-index .bolt-btn-login{
+    position: relative;
+    margin-top: 15px;
+    padding: 6px 13%;
+}
+
+.checkout-cart-index .bolt-btn-login .bolt-arrow-right{
+    position: absolute;
+    right: 5%;
+    top: 35%;
+}
+
+/*====================================== Button customization*/
+.checkout-cart-index .paypal-button-logo{
+    height: 20px;
+    max-height: 26px;
+    min-height: 18px;
+}
+
+.checkout-cart-index .bolt-checkout-button-button{
+    -webkit-border-radius: 0!important;
+    -moz-border-radius: 0!important;
+    border-radius: 0!important;
+}
+
+.checkout-cart-index .bolt-checkout-button{
+    width: 100%!important;
+}
+.checkout-cart-index .checkout-types li {
+    margin: 0;
+}
+
+.checkout-cart-index .amazon-pay-button {
+    background-color: #fad676;
+    position: relative;
+    padding-top: 16px;
+}
+
+.checkout-cart-index .additional-checkout-button__logo{
+    position: relative;
+    z-index: 0;
+    height: 19px;
+}
+.checkout-cart-index .amazonpay-button-inner-image{
+    opacity: 0;
+    position: absolute;
+    width: 100%;
+    height: 100%;
+    max-height: 320px;
+    top: 0;
+    left: 0;
+}
+
+@media (min-width: 980px) and (max-width: 1025px) {
+    .checkout-cart-index .shipment-shipment{
+        font-size: 11px;
+    }
+}
+
+@media (max-width: 422px) {
+    .checkout-cart-index .order_info_actions_container #message-double a:first-child{
+        font-size: 14.5px;
+    }
+    .checkout-cart-index .order_info_actions_container #message-double a.bolt-btn-login{
+        font-size: 12px;
+    }
+}
+
+
+@media only screen and (max-width: 379px) {
+    .checkout-cart-index .shipment-shipment{
+        font-size: 10px;
+    }
+    .checkout-cart-index .order_info_actions_container #message-double a:first-child{
+        font-size: 13px;
+    }
+    .checkout-cart-index .order_info_actions_container #message-double{
+        padding: 15px 0;
+    }
+}
+
+@media (max-width: 340px) {
+    .checkout-cart-index .order_info_actions_container #message-double a:first-child{
+        font-size: 11px;
+    }
+}

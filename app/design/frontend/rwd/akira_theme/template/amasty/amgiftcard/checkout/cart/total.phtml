@@ -1,0 +1,36 @@
+<?php
+/**
+ * @author Amasty Team
+ * @copyright Copyright (c) 2016 Amasty (https://www.amasty.com)
+ * @package Amasty_GiftCard
+ */
+?>
+<?php
+$_cards = ($this->getTotal()->getAddress()) ? $this->getTotal()->getAddress()->getAmGiftCards() : null;
+if($_cards) {
+    $_cards = unserialize($_cards);
+}
+if (!$_cards) {
+    $_cards = $this->getQuoteGiftCards();
+}
+?>
+<?php if ($this->getTotal()->getValue()): ?>
+    <?php foreach ($_cards as $_card): ?>
+        <tr>
+            <td colspan="<?php echo $this->getColspan(); ?>" style="<?php echo $this->getTotal()->getStyle() ?>" class="a-right">
+                <?php if ($this->getRenderingArea() == $this->getTotal()->getArea()): ?><strong><?php endif; ?>
+                    <?php $_title = $this->__('Remove'); ?>
+                    <?php $_url = Mage::getUrl('amgiftcard/cart/remove', array('am_giftcard_code'=>$_card['c'])); ?>
+                    <a href="<?php echo $_url; ?>" title="<?php echo $_title; ?>" class="btn-remove btn-remove-amgiftcard"><img src="<?php echo $this->getSkinUrl('images/btn_remove.gif') ?>" alt="<?php echo $this->__('Remove')?>" /></a>
+
+                    <?php echo $this->__('Gift Card (%s)', $_card['c']); ?>
+                    <?php if ($this->getRenderingArea() == $this->getTotal()->getArea()): ?></strong><?php endif; ?>
+            </td>
+            <td style="<?php echo $this->getTotal()->getStyle() ?>" class="a-right">
+                <?php if ($this->getRenderingArea() == $this->getTotal()->getArea()): ?><strong><?php endif; ?>
+                    -<?php echo $this->helper('checkout')->formatPrice($_card['a']) ?>
+                    <?php if ($this->getRenderingArea() == $this->getTotal()->getArea()): ?></strong><?php endif; ?>
+            </td>
+        </tr>
+    <?php endforeach; ?>
+<?php endif; ?>

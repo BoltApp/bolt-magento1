@@ -1,0 +1,50 @@
+Please make sure that:
+
+1.) Place the contents of the zip file in the top level Magento directory
+2.) As always, refresh and clear Magento cache (and recompile code if that option is being used)
+3.) Bolt Config settings:
+
+===============================
+Replace Button Selectors:
+===============================
+.btn-proceed-checkout, .minicart-actions .checkout-button, .bolt-checkout
+
+===============================
+Global CSS:
+===============================
+#checkout-review-submit .bolt-checkout-button {
+  clear:both;
+  float:right;
+}
+.col-right.sidebar .block.block-cart .block-content .actions .bolt-checkout-button-button {
+  min-width: max-content!important;
+}
+.checkout-cart-index .order_info_actions_container ul.checkout-types.bottom li.method-checkout-cart-methods-paypal_express-bottom{
+    padding-bottom: 0;
+    margin-bottom: 6px;
+}
+.checkout-cart-index .amazon-pay-button{
+   margin-bottom: 0!important;
+}
+
+.checkout-cart-index .method-checkout-cart-methods-onepage-bottom button.btn-checkout{
+ width:282px;
+}
+
+.bolt-checkout {
+    background-image: url('/skin/frontend/rwd/akira_theme/images/loader-2.gif');
+    height: 30px;
+    margin-top: 10px;
+    background-repeat: no-repeat;
+    background-size: contain;
+    background-position: center;
+    animation: spin 1s linear infinite;
+}
+
+.checkout-types .bolt-checkout-button{
+   margin: 0 auto;
+}
+
+.bolt-checkout-button div div img {
+    display: none !important;
+}

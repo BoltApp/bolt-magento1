@@ -1,0 +1,26 @@
+<?php /** @var $this Bolt_Bolt_Block_Cart_Storecredit */ ?>
+
+<?php if ($this->canShowBlock()): ?>
+        <form action="<?php echo $this->getFormActionUrl() ?>" method="post" id="form-bolt-store-credit" name="form-bolt-store-credit">
+            <input type="hidden" id="amstcred_use_customer_balance_hidden" name="storecreditbalance" value="0"/>
+            <input type="checkbox" class="checkbox" name="storecreditbalance" value="1" id="amstcred_use_customer_balance"
+                <?php echo($this->isCustomerBalanceUsed() ? 'checked' : '') ?>/>
+
+            <?php $balance = Mage::helper('core')->currency($this->getBalance()); ?>
+            <label for="amstcred_use_customer_balance">
+                <strong>
+                    <?php echo Mage::helper('amstcred')->__('Apply store credit'); ?>
+                    (<span id="amstcred_available_amount"><?php echo $balance; ?></span> <?php echo Mage::helper('amstcred')->__('available'); ?>)
+                </strong>
+            </label>
+        </form>
+
+        <script>
+            var storeCreditForm = new VarienForm('form-bolt-store-credit');
+            $('amstcred_use_customer_balance').observe('click', function() {
+                storeCreditForm.submit();
+            });
+        </script>
+
+<?php endif;?>
+<div class="bolt-horizontal-border"></div>

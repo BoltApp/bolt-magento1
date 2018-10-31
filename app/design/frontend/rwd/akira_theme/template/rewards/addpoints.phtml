@@ -1,0 +1,122 @@
+<style type="text/css">
+#add-points {
+    width: 75%;
+    height: 30px;
+    margin: 4px 10px 0 0;
+}
+.discount-form.points {
+    margin-top: 10px;
+}
+#add-points-form span {
+    display: block;
+    margin: 5px 0;
+}
+#message, #message-double {
+    font-size: 11px;
+    text-align: center;
+    width: 75%;
+    margin: 6px auto;
+    text-align: left;
+}
+</style>
+<?php if($this->canShow()): ?>
+<script type="text/javascript">
+    function addPoints(isRemove){
+        if(isRemove) {
+            jQuery('#add-points-form').attr('action', '<?php echo $this->getUrl('rewards/discount/removePoints'); ?>');
+        }
+        jQuery('#add-points-form').submit();
+    }
+
+    function showMessage() {
+        var value = jQuery('#add-points').val();
+
+        if(!value) {
+            return;
+        }
+
+        if (confirm('Add ' + value + ' points to your cart?')) {
+            addPoints();
+        }else{
+            jQuery('#add-points').val('');
+        }
+
+        return;
+    }
+
+    <?php if($this->pointsOnCart()): ?>
+        jQuery( document ).ready(function() {
+            jQuery('#discount-coupon-form').hide();
+        });
+    <?php endif; ?>
+
+</script>
+<form id="add-points-form" action="<?php echo $this->getUrl('rewards/discount/addPoints'); ?>" method="post">
+    <div class="discount">
+        <div class="discount-form points">
+            <div class="input-box">
+                <div class="bolt-row">
+                    <span><strong><?php echo $this->__('Apply rewards points')?>:</strong></span>
+                    <span><?php echo $this->getAvailablePoints(); ?> <?php echo $this->__('available points')?></span>
+                </div>
+                <?php if(!$this->pointsOnCart()): ?>
+                <select name="add" id="add-points" onchange="showMessage()">
+                    <option value="" selected><?php echo $this->__('Choose points amount')?></option>
+                    <?php foreach($this->getPointsAmountOptions() as $data): ?>
+                    <option value="<?php echo $data['points']; ?>">Use <?php echo $data['points']; ?> points (<?php echo $data['amount']; ?>)</option>
+                    <?php endforeach; ?>
+                </select>
+                <div id="message">
+                    <p class="cart_subtotal_message"><?php echo $this->__('Unused value in a single transaction will be forfeited. Cannot combine Rewards Discounts with coupon codes')?>.</p>
+                </div>
+                <?php else: ?>
+                <div class="bolt-row">
+                    <span><strong><?php echo $this->__('Points in cart')?>:</strong></span>
+                    <span>
+                        <?php echo $this->getPointsInCar(); ?>
+                        <input type="hidden" name="remove" value="1" />
+                        <a style="z-index: 9999; width: auto;" class="button remove-reward-point" href="javascript:void(0);" onclick="addPoints(true)">
+                            <?php echo Mage::helper('core')->quoteEscape($this->__('Remove Points')) ?>
+                        </a>
+                    </span>
+                </div>
+                <div id="message" class="reward-applied">
+                    <p class="cart_subtotal_message"><?php echo $this->__('Rewards discounts cannot be combined with coupon codes')?></p>
+                </div>
+                <?php endif; ?>
+            </div>
+        </div>
+    </div>
+</form>
+<?php elseif($this->cartHasCouponCode() && $this->canShowMessage()): ?>
+<div id="message" style="text-align: left; width: 100%; padding: 20px 0 0 0;">
+    <span style="display: block;"><?php echo $this->__('Coupon codes and rewards discounts cannot be combined. To redeem rewards, select "Cancel Coupon"')?>.</span>
+</div>
+<?php endif; ?>
+<?php if($this->showModal() && !$this->cartHasCouponCode()): ?>
+<script type="text/javascript">
+    function closeAlertModal(){
+        var modal = document.getElementById('referred-modal');
+        modal.style.display = "none";
+        resetErrorMessage();
+    }
+</script>
+<div id="referred-modal" class="review-modal" style="display: block; z-index: 200000;">
+    <!-- Modal content -->
+    <div class="review-modal-content">
+        <span onclick="closeAlertModal()" class="review-modal-close">&times;</span>
+        <img style="width:100%;" src="<?php echo $this->getModalImage(); ?>" alt="IMAGE" />
+    </div>
+</div>
+<?php endif; ?>
+<?php if (!Mage::getSingleton('customer/session')->isLoggedIn()): ?>
+    <?php Mage::getSingleton('customer/session')->setAfterAuthUrl(Mage::getUrl('checkout/cart/index')); ?>
+    <div id="message-double" style="font-weight: bold;">
+        <a href="<?php echo Mage::getBaseUrl() . 'customer/account/login' ?>"
+           style="color: #3399cc;">Log in to earn rewards<br>and redeem store credit</a>
+        <a class="button bolt-btn-login" href="<?php echo Mage::getBaseUrl() . 'customer/account/login' ?>" >
+            LOG IN HERE <div class="bolt-arrow-right"></div>
+        </a>
+    </div>
+<?php endif; ?>
+ 

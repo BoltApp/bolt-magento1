@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<config>
+    <modules>
+        <Bolt_Bolt>
+            <active>true</active>
+            <codePool>local</codePool>
+            <depends>
+                <Bolt_Boltpay/>
+            </depends>
+        </Bolt_Bolt>
+    </modules>
+</config>

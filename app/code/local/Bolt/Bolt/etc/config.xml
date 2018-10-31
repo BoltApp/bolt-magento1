@@ -1,0 +1,66 @@
+<?xml version="1.0"?>
+<config>
+    <modules>
+        <Bolt_Bolt>
+            <version>0.0.1</version>
+        </Bolt_Bolt>
+    </modules>
+
+    <global>
+        <helpers>
+            <bolt_bolt>
+                <class>Bolt_Bolt_Helper</class>
+            </bolt_bolt>
+            <boltpay>
+                <rewrite>
+                    <api>Bolt_Bolt_Helper_Api</api>
+                </rewrite>
+            </boltpay>
+        </helpers>
+        <blocks>
+            <bolt_bolt>
+                <class>Bolt_Bolt_Block</class>
+            </bolt_bolt>
+            <boltpay>
+                <rewrite>
+                    <checkout_boltpay>Bolt_Bolt_Block_Checkout_Boltpay</checkout_boltpay>
+                </rewrite>
+            </boltpay>
+        </blocks>
+		<models>
+            <bolt_bolt>
+                <class>Bolt_Bolt_Model</class>
+            </bolt_bolt>
+            <salesrule>
+                <rewrite>
+                    <validator>Bolt_Bolt_Model_Validator</validator>
+                </rewrite>
+            </salesrule>
+			<amrules>
+                <rewrite>
+                    <observer>Bolt_Bolt_Model_Observer</observer>
+                </rewrite>
+            </amrules>
+        </models>
+    </global>
+
+    <frontend>
+        <routers>
+            <bolt_bolt>
+                <use>standard</use>
+                <args>
+                    <module>Bolt_Bolt</module>
+                    <frontName>bolt</frontName>
+                </args>
+            </bolt_bolt>
+        </routers>
+        <layout>
+            <updates>
+                <bolt_bolt>
+                    <file>bolt.xml</file>
+                </bolt_bolt>
+            </updates>
+        </layout>
+    </frontend>
+
+</config>
