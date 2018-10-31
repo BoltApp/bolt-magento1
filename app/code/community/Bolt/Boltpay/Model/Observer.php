@@ -139,9 +139,11 @@ class Bolt_Boltpay_Model_Observer
         try {
             $order->sendNewOrderEmail();
         } catch (Exception $e) {
-            // Catches errors that occur when sending order email confirmation (e.g. Mandrill API is down)
+            // Catches errors that occur when sending order email confirmation (e.g. external API is down)
             // and allows order creation to complete.
-            Mage::helper('boltpay/bugsnag')->notifyException($e);
+
+            $error = new Exception('Failed to send order email', 0, $e);
+            Mage::helper('boltpay/bugsnag')->notifyException($error);
             return;
         }
 
