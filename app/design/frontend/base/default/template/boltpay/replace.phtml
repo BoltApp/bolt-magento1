@@ -25,7 +25,10 @@
 if(!$this->isAllowedReplaceScriptOnCurrentPage()
    || !$this->canUseBolt()
    || !$this->getPublishableKeyForRoute()
-) return;
+    || Mage::app()->getRequest()->getRouteName() === 'catalog' && Mage::app()->getRequest()->getControllerName() === 'product'
+) {
+    return;
+}
 
 $additionalClasses = Mage::helper('boltpay')->getAdditionalButtonClasses();
 ?>
