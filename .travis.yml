@@ -1,7 +1,11 @@
+sudo: enabled
+addons:
+  chrome: stable
+
 language: php
 
 services:
-  - mysql
+- mysql
 
 deploy:
   skip-cleanup: false
@@ -13,17 +17,21 @@ env:
     - DB=mysql
     - DB_NAME="magento_travis"
     - PHPUNIT_ENVIRONMENT=true
+    - HOST_NAME="travis_magento.loc"
+    - TEST_ENV=local
 
 matrix:
   include:
-    - php: 5.5
-      env: PHPUNIT_PHAR=tests/unit/phpunit-4.8.36.phar MAGENTO_VERSION=magento-mirror-1.8.1.0
-    - php: 5.5
-      env: PHPUNIT_PHAR=tests/unit/phpunit-4.8.36.phar MAGENTO_VERSION=magento-mirror-1.9.3.6
-    - php: 5.6
-      env: PHPUNIT_PHAR=tests/unit/phpunit-5.7.9.phar MAGENTO_VERSION=magento-mirror-1.8.1.0
-    - php: 5.6
-      env: PHPUNIT_PHAR=tests/unit/phpunit-5.7.9.phar MAGENTO_VERSION=magento-mirror-1.9.3.6
+    - env: TEST_SUITE=unit PHPUNIT_PHAR=tests/unit/phpunit-4.8.36.phar MAGENTO_VERSION=magento-mirror-1.8.1.0
+      php: 5.5
+    - env: TEST_SUITE=unit PHPUNIT_PHAR=tests/unit/phpunit-4.8.36.phar MAGENTO_VERSION=magento-mirror-1.9.3.6
+      php: 5.5
+    - env: TEST_SUITE=unit PHPUNIT_PHAR=tests/unit/phpunit-5.7.9.phar MAGENTO_VERSION=magento-mirror-1.8.1.0
+      php: 5.6
+    - env: TEST_SUITE=unit PHPUNIT_PHAR=tests/unit/phpunit-5.7.9.phar MAGENTO_VERSION=magento-mirror-1.9.3.6
+      php: 5.6
+    - env: TEST_SUITE=integration MAGENTO_VERSION=magento-mirror-1.9.3.6
+      php: 5.6
 
 before_install:
   - mysql -e 'DROP DATABASE IF EXISTS `$DB_NAME`;'
@@ -32,17 +40,11 @@ before_install:
 before_script:
   - composer self-update -q
   - if [ -n "$GITHUB_TOKEN" ]; then composer config github-oauth.github.com ${GITHUB_TOKEN}; fi;
+  - if [ -n "INTEGRATION_TESTS_TOKEN" ]; then composer config github-oauth.github.com ${INTEGRATION_TESTS_TOKEN}; fi;
   - composer show -i
+  - if [ "${TEST_SUITE}" == "unit" ]; then bash /home/travis/build/BoltApp/bolt-magento1/tests/scripts/magento_install.sh; fi;
 
 script:
-  - cd /home/travis/build/
-  - curl -O https://files.magerun.net/n98-magerun.phar
-  - chmod +x n98-magerun.phar
-  - php -d memroy_limit=512M n98-magerun.phar install --magentoVersionByName="${MAGENTO_VERSION}" --installationFolder="./magento" --dbHost=localhost --dbUser=root --dbName="$DB_NAME" --dbPass="" --installSampleData=no --useDefaultConfigParams=yes --baseUrl="http://travis.magento.local/"
-  - php n98-magerun.phar config:set currency/options/base USD --root-dir ./magento/
-  - php n98-magerun.phar config:set currency/options/default USD --root-dir ./magento/
-  - php n98-magerun.phar config:set currency/options/allow USD --root-dir ./magento/
-  - cp -r magento/. BoltApp/bolt-magento1/
-  - cd BoltApp/bolt-magento1/
-  - export PHPUNIT_ENVIRONMENT=$PHPUNIT_ENVIRONMENT
-  - php ${PHPUNIT_PHAR} -c tests/unit/phpunit.xml
+  - if [ "${TEST_SUITE}" == "unit" ]; then bash tests/scripts/run_phpunit_tests.sh; fi;
+  - if [ "${TEST_SUITE}" == "unit" ]; then bash /home/travis/build/BoltApp/bolt-magento1/tests/scripts/magento_check_reports; fi;
+  - if [ "${TEST_SUITE}" == "integration" ]; then bash tests/scripts/run_integration_tests.sh; fi;
