@@ -62,30 +62,30 @@ class Bolt_Boltpay_Model_Order extends Mage_Core_Model_Abstract
                 throw new Exception(Mage::helper('boltpay')->__("Not all items are available in the requested quantities."));
             }
 
-            // check if the quotes matches, frontend only
-            if ( $sessionQuoteId && ($sessionQuoteId != $immutableQuote->getParentQuoteId()) ) {
-                throw new Exception(
-                    Mage::helper('boltpay')->__("The Bolt order reference does not match the current cart ID. Cart ID: [%s]  Bolt Reference: [%s]",
-                        $sessionQuoteId , $immutableQuote->getParentQuoteId())
-                );
-            }
+//            // check if the quotes matches, frontend only
+//            if ( $sessionQuoteId && ($sessionQuoteId != $immutableQuote->getParentQuoteId()) ) {
+//                throw new Exception(
+//                    Mage::helper('boltpay')->__("The Bolt order reference does not match the current cart ID. Cart ID: [%s]  Bolt Reference: [%s]",
+//                        $sessionQuoteId , $immutableQuote->getParentQuoteId())
+//                );
+//            }
 
             // check if this order is currently being proccessed.  If so, throw exception
             /* @var Mage_Sales_Model_Quote $parentQuote */
-            $parentQuote = Mage::getModel('sales/quote')->loadByIdWithoutStore($immutableQuote->getParentQuoteId());
-            if ($parentQuote->isEmpty() ) {
-                throw new Exception(
-                    Mage::helper('boltpay')->__("The parent quote %s is unexpectedly missing.",
-                        $immutableQuote->getParentQuoteId() )
-                );
-            } else if (!$parentQuote->getIsActive() ) {
-                throw new Exception(
-                    Mage::helper('boltpay')->__("The parent quote %s for immutable quote %s is currently being processed or has been processed for order #%s. Check quote %s for details.",
-                        $parentQuote->getId(), $immutableQuote->getId(), $parentQuote->getReservedOrderId(), $parentQuote->getParentQuoteId() )
-                );
-            } else {
-                $parentQuote->setIsActive(false)->save();
-            }
+//            $parentQuote = Mage::getModel('sales/quote')->loadByIdWithoutStore($immutableQuote->getParentQuoteId());
+//            if ($parentQuote->isEmpty() ) {
+//                throw new Exception(
+//                    Mage::helper('boltpay')->__("The parent quote %s is unexpectedly missing.",
+//                        $immutableQuote->getParentQuoteId() )
+//                );
+//            } else if (!$parentQuote->getIsActive() ) {
+//                throw new Exception(
+//                    Mage::helper('boltpay')->__("The parent quote %s for immutable quote %s is currently being processed or has been processed for order #%s. Check quote %s for details.",
+//                        $parentQuote->getId(), $immutableQuote->getId(), $parentQuote->getReservedOrderId(), $parentQuote->getParentQuoteId() )
+//                );
+//            } else {
+//                $parentQuote->setIsActive(false)->save();
+//            }
 
             // adding guest user email to order
             if (!$immutableQuote->getCustomerEmail()) {
@@ -94,9 +94,11 @@ class Bolt_Boltpay_Model_Order extends Mage_Core_Model_Abstract
                 $immutableQuote->save();
             }
 
-            // explicitly set quote belong to guest if customer id does not exist
-            $immutableQuote
-                ->setCustomerIsGuest( (($parentQuote->getCustomerId()) ? false : true) );
+            if ($parentQuote) {
+                // explicitly set quote belong to guest if customer id does not exist
+                $immutableQuote
+                    ->setCustomerIsGuest((($parentQuote->getCustomerId()) ? false : true));
+            }
 
             // Set the firstname and lastname if guest customer.
             if ($immutableQuote->getCustomerIsGuest()) {
@@ -114,7 +116,6 @@ class Bolt_Boltpay_Model_Order extends Mage_Core_Model_Abstract
             $shippingMethodCode = null;
             $shippingAndTaxModel = Mage::getModel("boltpay/shippingAndTax");
             if ($transaction->order->cart->shipments) {
-
                 $shippingAndTaxModel->applyShippingAddressToQuote($immutableQuote, $transaction->order->cart->shipments[0]->shipping_address);
                 $shippingMethodCode = $transaction->order->cart->shipments[0]->reference;
             }
@@ -173,30 +174,34 @@ class Bolt_Boltpay_Model_Order extends Mage_Core_Model_Abstract
             // reset increment id if needed
             ////////////////////////////////////////////////////////////////////////////
             /* @var Mage_Sales_Model_Order $preExistingOrder */
-            $preExistingOrder = Mage::getModel('sales/order')->loadByIncrementId($parentQuote->getReservedOrderId());
+            if ($parentQuote) {
+                $preExistingOrder = Mage::getModel('sales/order')->loadByIncrementId($parentQuote->getReservedOrderId());
 
-            if (!$preExistingOrder->isObjectNew()) {
-                ############################
-                # First check if this order matches the transaction and therefore already created
-                # If so, we can return it after notifying Bugsnag
-                ############################
-                $preExistingTransactionReference = $preExistingOrder->getPayment()->getAdditionalInformation('bolt_reference');
-                if ( $preExistingTransactionReference === $reference ) {
-                    Mage::helper('boltpay/bugsnag')->notifyException(
-                        new Exception( Mage::helper('boltpay')->__("The order #%s has already been processed for this quote.", $preExistingOrder->getIncrementId() ) ),
-                        array(),
-                        'warning'
-                    );
-                    return $preExistingOrder;
+                if (!$preExistingOrder->isObjectNew()) {
+                    ############################
+                    # First check if this order matches the transaction and therefore already created
+                    # If so, we can return it after notifying Bugsnag
+                    ############################
+                    $preExistingTransactionReference = $preExistingOrder->getPayment()->getAdditionalInformation('bolt_reference');
+                    if ($preExistingTransactionReference === $reference) {
+                        Mage::helper('boltpay/bugsnag')->notifyException(
+                            new Exception(Mage::helper('boltpay')->__("The order #%s has already been processed for this quote.", $preExistingOrder->getIncrementId())),
+                            array(),
+                            'warning'
+                        );
+                        return $preExistingOrder;
+                    }
+                    ############################
+
+                    if ($parentQuote->getId()) {
+                        $parentQuote
+                            ->setReservedOrderId(null)
+                            ->reserveOrderId()
+                            ->save();
+                        $immutableQuote->setReservedOrderId($parentQuote->getReservedOrderId());
+                    }
+
                 }
-                ############################
-
-                $parentQuote
-                    ->setReservedOrderId(null)
-                    ->reserveOrderId()
-                    ->save();
-
-                $immutableQuote->setReservedOrderId($parentQuote->getReservedOrderId());
             }
             ////////////////////////////////////////////////////////////////////////////
 
@@ -255,8 +260,10 @@ class Bolt_Boltpay_Model_Order extends Mage_Core_Model_Abstract
         // This creates a circular reference so that we can use the parent quote
         // to look up the used immutable quote
         ///////////////////////////////////////////////////////
-        $parentQuote->setParentQuoteId($immutableQuote->getId())
-            ->save();
+        if ($parentQuote) {
+            $parentQuote->setParentQuoteId($immutableQuote->getId())
+                ->save();
+        }
         ///////////////////////////////////////////////////////
 
         Mage::getModel('boltpay/payment')->handleOrderUpdate($order);
@@ -276,9 +283,11 @@ class Bolt_Boltpay_Model_Order extends Mage_Core_Model_Abstract
             $checkoutSession = Mage::getSingleton('checkout/session');
             $checkoutSession
                 ->clearHelperData();
-            $checkoutSession
-                ->setLastQuoteId($parentQuote->getId())
-                ->setLastSuccessQuoteId($parentQuote->getId());
+            if ($parentQuote) {
+                $checkoutSession
+                    ->setLastQuoteId($parentQuote->getId())
+                    ->setLastSuccessQuoteId($parentQuote->getId());
+            }
             // add order information to the session
             $checkoutSession->setLastOrderId($order->getId())
                 ->setRedirectUrl('')

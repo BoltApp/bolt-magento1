@@ -46,13 +46,13 @@ class Bolt_Boltpay_Block_Catalog_Product_Boltpay extends Mage_Core_Block_Templat
     {
         try {
             /* @var Mage_Sales_Model_Quote $sessionQuote */
-            $sessionQuote = $this->getSessionQuote($checkoutType);
+//            $sessionQuote = $this->getSessionQuote($checkoutType);
 
             /* @var Bolt_Boltpay_Helper_Api $boltHelper */
-            $boltHelper = Mage::helper('boltpay/api');
+//            $boltHelper = Mage::helper('boltpay/api');
 
             /** @var Bolt_Boltpay_Model_ShippingAndTax $shippingAndTaxModel */
-            $shippingAndTaxModel = Mage::getModel('boltpay/shippingAndTax');
+//            $shippingAndTaxModel = Mage::getModel('boltpay/shippingAndTax');
 
 //            $hintData = $this->getAddressHints($sessionQuote, $checkoutType);
             $hintData = array( "prefill" => [] );
@@ -61,8 +61,8 @@ class Bolt_Boltpay_Block_Catalog_Product_Boltpay extends Mage_Core_Block_Templat
 //            // For multi-page, remove shipping that may have been added by Magento shipping and tax estimate interface
             if ($isMultiPage) {
                 // Resets shipping rate
-                $shippingMethod = $sessionQuote->getShippingAddress()->getShippingMethod();
-                $shippingAndTaxModel->applyShippingRate($sessionQuote, null);
+//                $shippingMethod = $sessionQuote->getShippingAddress()->getShippingMethod();
+//                $shippingAndTaxModel->applyShippingRate($sessionQuote, null);
             }
 
                 /////////////////////////////////////////////////////////////////////////////////
@@ -73,27 +73,45 @@ class Bolt_Boltpay_Block_Catalog_Product_Boltpay extends Mage_Core_Block_Templat
                 // and discount calculations change on the Magento server
                 ////////////////////////////////////////////////////////////////////////////////
                 /** @var Mage_Sales_Model_Quote $immutableQuote */
-                $immutableQuote = $boltHelper->cloneQuote($sessionQuote, $isMultiPage);
+//                $immutableQuote = $boltHelper->cloneQuote($sessionQuote, $isMultiPage);
                 ////////////////////////////////////////////////////////////////////////////////
 
-            $currency = $immutableQuote->getQuoteCurrencyCode();
-            $totalAmount = $immutableQuote->getGrandTotal();
+//            $currency = $immutableQuote->getQuoteCurrencyCode();
+            $currency = 'USD';
+//            $totalAmount = $immutableQuote->getGrandTotal();
 
             $productCheckoutCartItem = [];
-            $items = $immutableQuote->getAllVisibleItems();
-            foreach ($items as $_item) {
-                /* @var $_item Mage_Sales_Model_Quote_Item */
+//            if ($immutableQuote->getItemsCount()) {
+//                $items = $immutableQuote->getAllVisibleItems();
+//                foreach ($items as $_item) {
+//                    /* @var $_item Mage_Sales_Model_Quote_Item */
+//
+//                    /** @var Mage_Catalog_Model_Product $_product */
+//                    $_product = $_item->getProduct();
+//                    $productCheckoutCartItem[] = [
+//                        'reference' => $_product->getId(),
+//                        'price' => $_item->getPrice(),
+//                        'quantity' => $_item->getQty(),
+//                        'image' => $_product->getImageUrl(),
+//                        'name' => $_item->getName(),
+//                    ];
+//                }
+//            } else {
+                $_product = Mage::registry('current_product');
+                if (!$_product) {
+                    throw new Exception('Bolt: Cannot find product info');
+                }
 
-                /** @var Mage_Catalog_Model_Product $_product */
-                $_product = $_item->getProduct();
                 $productCheckoutCartItem[] = [
                     'reference' => $_product->getId(),
-                    'price' => $_item->getPrice(),
-                    'quantity' => $_item->getQty(),
+                    'price' => $_product->getPrice(),
+                    'quantity' => 1,
                     'image' => $_product->getImageUrl(),
-                    'name' => $_item->getName(),
+                    'name' => $_product->getName(),
                 ];
-            }
+                $totalAmount = $_product->getPrice();
+//            }
+
 
             $productCheckoutCart = [
                 'currency' => $currency,
@@ -101,7 +119,7 @@ class Bolt_Boltpay_Block_Catalog_Product_Boltpay extends Mage_Core_Block_Templat
                 'total' => $totalAmount,
             ];
 
-            return $this->configureProductCheckout($checkoutType, $immutableQuote, $hintData, $productCheckoutCart);
+            return $this->configureProductCheckout($checkoutType, $sessionQuote, $hintData, $productCheckoutCart);
 
         } catch (Exception $e) {
             Mage::helper('boltpay/bugsnag')->notifyException($e);
@@ -144,7 +162,7 @@ class Bolt_Boltpay_Block_Catalog_Product_Boltpay extends Mage_Core_Block_Templat
         return ("
             var jsonProductCart = $jsonCart;
             var jsonProductHints = null;
-            var quote_id = '{$quote->getId()}';
+
             var productPageCheckoutSelector = '". $this->escapeHtml($this->getProductPageCheckoutSelector())."';
             var order_completed = false;
 
