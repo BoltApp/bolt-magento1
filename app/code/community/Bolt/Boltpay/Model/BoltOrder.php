@@ -124,7 +124,7 @@ class Bolt_Boltpay_Model_BoltOrder extends Mage_Core_Model_Abstract
                         'reference'    => $quote->getId(),
                         'image_url'    => $imageUrl,
                         'name'         => $item->getName(),
-                        'sku'          => $product->getData('sku'),
+                        'sku'          => $item->getSku(),
                         'description'  => substr($product->getDescription(), 0, 8182) ?: '',
                         'total_amount' => round($item->getCalculationPrice() * 100) * $item->getQty(),
                         'unit_price'   => round($item->getCalculationPrice() * 100),
