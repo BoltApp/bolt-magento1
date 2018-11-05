@@ -25,21 +25,29 @@ class Bolt_Boltpay_Model_Api2_Order_Rest_Admin_V1 extends Bolt_Boltpay_Model_Api
 {
     /**
      * @var array  The response payload for successful order creation
+     * @return array
      */
-    public static $SUCCESS_ORDER_CREATED = array(
-        'message' => Mage::helper('boltpay')->__('New Order created'),
-        'status' => 'success',
-        'http_response_code' => 201
-    );
+    public static function successOrderCreated()
+    {
+        return array(
+                'message' => Mage::helper('boltpay')->__('New Order created'),
+                'status' => 'success',
+                'http_response_code' => 201
+            );
+    }
 
     /**
      * @var array  The response payload for successful order updates
+     * @return array
      */
-    public static $SUCCESS_ORDER_UPDATED = array(
-        'message' => Mage::helper('boltpay')->__('Updated existing order'),
-        'status' => 'success',
-        'http_response_code' => 200
-    );
+    public static function successOrderUpdated()
+    {
+        return array(
+            'message' => Mage::helper('boltpay')->__('Updated existing order'),
+            'status' => 'success',
+            'http_response_code' => 200
+        );
+    }
 
     /**
      * @inheritdoc
@@ -109,8 +117,9 @@ class Bolt_Boltpay_Model_Api2_Order_Rest_Admin_V1 extends Bolt_Boltpay_Model_Api
                     ->setStore($order->getStoreId())
                     ->handleTransactionUpdate($orderPayment, $newTransactionStatus, $prevTransactionStatus);
 
+                $orderUpdatedResponse = $this->successOrderUpdated();
                 $this->getResponse()->addMessage(
-                    self::$SUCCESS_ORDER_UPDATED['message'], self::$SUCCESS_ORDER_UPDATED['http_response_code'],
+                    $orderUpdatedResponse['message'], $orderUpdatedResponse['http_response_code'],
                     array(), 'success'
                 );
                 $this->getResponse()->setHttpResponseCode(Mage_Api2_Model_Server::HTTP_OK);
@@ -144,8 +153,9 @@ class Bolt_Boltpay_Model_Api2_Order_Rest_Admin_V1 extends Bolt_Boltpay_Model_Api
             $boltOrderModel = Mage::getModel('boltpay/order');
             $boltOrderModel->createOrder($reference, $sessionQuoteId = null);
 
+            $orderUpdatedResponse = $this->successOrderUpdated();
             $this->getResponse()->addMessage(
-                self::$SUCCESS_ORDER_CREATED['message'], self::$SUCCESS_ORDER_CREATED['http_response_code'],
+                $orderUpdatedResponse['message'], $orderUpdatedResponse['http_response_code'],
                 array(), 'success'
             );
             //Mage::log('Order creation was successful', null, 'bolt.log');
