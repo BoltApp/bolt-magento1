@@ -197,7 +197,7 @@ class Bolt_Boltpay_Model_Observer
                     $payment->setAdditionalInformation('bolt_transaction_status', Bolt_Boltpay_Model_Payment::TRANSACTION_COMPLETED);
                     break;
                 case Mage_Sales_Model_Order::STATE_PROCESSING:
-                    if ($order->getTotalPaid() >= .01) {
+                    if (!$order->getTotalDue()) {
                         $payment->setAdditionalInformation('bolt_transaction_status', Bolt_Boltpay_Model_Payment::TRANSACTION_COMPLETED);
                     } else {
                         $payment->setAdditionalInformation('bolt_transaction_status', Bolt_Boltpay_Model_Payment::TRANSACTION_AUTHORIZED);
