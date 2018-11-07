@@ -757,6 +757,9 @@ class Bolt_Boltpay_Model_Payment extends Mage_Payment_Model_Method_Abstract
         $boltCaptures = $this->getNewBoltCaptures($payment);
 
         $order = $payment->getOrder();
+        $order->setStatus(Mage_Sales_Model_Order::STATE_PROCESSING);
+        $order->setState(Mage_Sales_Model_Order::STATE_PROCESSING);
+
         // Create invoices for items from $boltCaptures that are not exists on Magento
         $identifier = count($boltCaptures) > 1 ? 0 : null;
         foreach ($boltCaptures as $captureAmount) {
@@ -768,7 +771,7 @@ class Bolt_Boltpay_Model_Payment extends Mage_Payment_Model_Method_Abstract
             $identifier++;
         }
 
-        if ($boltCaptures) { $order->save(); }
+        $order->save();
     }
 
     /**
