@@ -72,7 +72,7 @@ class Bolt_Boltpay_Model_Order extends Mage_Core_Model_Abstract
 
             // check if this order is currently being proccessed.  If so, throw exception
             /* @var Mage_Sales_Model_Quote $parentQuote */
-//            $parentQuote = Mage::getModel('sales/quote')->loadByIdWithoutStore($immutableQuote->getParentQuoteId());
+            $parentQuote = Mage::getModel('sales/quote')->loadByIdWithoutStore($immutableQuote->getParentQuoteId());
 //            if ($parentQuote->isEmpty() ) {
 //                throw new Exception(
 //                    Mage::helper('boltpay')->__("The parent quote %s is unexpectedly missing.",
@@ -280,6 +280,7 @@ class Bolt_Boltpay_Model_Order extends Mage_Core_Model_Abstract
         ///////////////////////////////////////////////////////
 
         if ($sessionQuoteId) {
+            /** @var Mage_Checkout_Model_Session $checkoutSession */
             $checkoutSession = Mage::getSingleton('checkout/session');
             $checkoutSession
                 ->clearHelperData();
@@ -287,6 +288,10 @@ class Bolt_Boltpay_Model_Order extends Mage_Core_Model_Abstract
                 $checkoutSession
                     ->setLastQuoteId($parentQuote->getId())
                     ->setLastSuccessQuoteId($parentQuote->getId());
+            } else {
+                $checkoutSession
+                    ->setLastQuoteId($immutableQuote->getId())
+                    ->setLastSuccessQuoteId($immutableQuote->getId());
             }
             // add order information to the session
             $checkoutSession->setLastOrderId($order->getId())
