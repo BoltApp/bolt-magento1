@@ -248,7 +248,7 @@ class Bolt_Boltpay_Model_Order_Detail extends Mage_Core_Model_Abstract
                     'reference'    => $this->order->getQuoteId(),
                     'image_url'    => $imageUrl,
                     'name'         => $item->getName(),
-                    'sku'          => $product->getData('sku'),
+                    'sku'          => $item->getSku(),
                     'description'  => substr($product->getDescription(), 0, 8182) ?: '',
                     'total_amount' => $totalAmount,
                     'unit_price'   => $unitPrice,
