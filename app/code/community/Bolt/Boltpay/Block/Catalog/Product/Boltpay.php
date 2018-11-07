@@ -18,12 +18,12 @@
 /**
  * Class Bolt_Boltpay_Block_Catalog_Product_Boltpay
  *
- * This block is used in boltpay/track.phtml and boltpay/replace.phtml templates
+ * This block is used in boltpay/catalog/product/configure_checkout.phtml and boltpay/catalog/product/button.phtml templates
  *
  * This is defined in boltpay.xml config file
  *
- * The purpose is to add the Bolt tracking javascript files to every page, Bolt connect javascript to order and product pages,
- * create the order on Bolt side and set up the javascript BoltCheckout.configure process with cart and hint data.
+ * The purpose is to add the Bolt to the Product Page,
+ * create the order on Bolt side through the javascript BoltCheckout.configureProductCheckout process.
  *
  */
 class Bolt_Boltpay_Block_Catalog_Product_Boltpay extends Mage_Core_Block_Template
@@ -45,73 +45,28 @@ class Bolt_Boltpay_Block_Catalog_Product_Boltpay extends Mage_Core_Block_Templat
     public function getCartDataJsForProductPage($checkoutType = self::CHECKOUT_TYPE_MULTI_PAGE)
     {
         try {
-            /* @var Mage_Sales_Model_Quote $sessionQuote */
-//            $sessionQuote = $this->getSessionQuote($checkoutType);
-
-            /* @var Bolt_Boltpay_Helper_Api $boltHelper */
-//            $boltHelper = Mage::helper('boltpay/api');
-
-            /** @var Bolt_Boltpay_Model_ShippingAndTax $shippingAndTaxModel */
-//            $shippingAndTaxModel = Mage::getModel('boltpay/shippingAndTax');
-
 //            $hintData = $this->getAddressHints($sessionQuote, $checkoutType);
             $hintData = array( "prefill" => [] );
 
-            $isMultiPage = ($checkoutType === self::CHECKOUT_TYPE_MULTI_PAGE);
-//            // For multi-page, remove shipping that may have been added by Magento shipping and tax estimate interface
-            if ($isMultiPage) {
-                // Resets shipping rate
-//                $shippingMethod = $sessionQuote->getShippingAddress()->getShippingMethod();
-//                $shippingAndTaxModel->applyShippingRate($sessionQuote, null);
-            }
-
-                /////////////////////////////////////////////////////////////////////////////////
-                // We create a copy of the quote that is immutable by the customer/frontend
-                // Bolt saves this quote to the database at Magento-side order save time.
-                // This assures that the quote saved to Magento matches what is stored on Bolt
-                // Only shipping, tax and discounts can change, and only if the shipping, tax
-                // and discount calculations change on the Magento server
-                ////////////////////////////////////////////////////////////////////////////////
-                /** @var Mage_Sales_Model_Quote $immutableQuote */
-//                $immutableQuote = $boltHelper->cloneQuote($sessionQuote, $isMultiPage);
-                ////////////////////////////////////////////////////////////////////////////////
-
+            // TODO: get store currency from config.
 //            $currency = $immutableQuote->getQuoteCurrencyCode();
             $currency = 'USD';
-//            $totalAmount = $immutableQuote->getGrandTotal();
 
             $productCheckoutCartItem = [];
-//            if ($immutableQuote->getItemsCount()) {
-//                $items = $immutableQuote->getAllVisibleItems();
-//                foreach ($items as $_item) {
-//                    /* @var $_item Mage_Sales_Model_Quote_Item */
-//
-//                    /** @var Mage_Catalog_Model_Product $_product */
-//                    $_product = $_item->getProduct();
-//                    $productCheckoutCartItem[] = [
-//                        'reference' => $_product->getId(),
-//                        'price' => $_item->getPrice(),
-//                        'quantity' => $_item->getQty(),
-//                        'image' => $_product->getImageUrl(),
-//                        'name' => $_item->getName(),
-//                    ];
-//                }
-//            } else {
-                $_product = Mage::registry('current_product');
-                if (!$_product) {
-                    throw new Exception('Bolt: Cannot find product info');
-                }
 
-                $productCheckoutCartItem[] = [
-                    'reference' => $_product->getId(),
-                    'price' => $_product->getPrice(),
-                    'quantity' => 1,
-                    'image' => $_product->getImageUrl(),
-                    'name' => $_product->getName(),
-                ];
-                $totalAmount = $_product->getPrice();
-//            }
+            $_product = Mage::registry('current_product');
+            if (!$_product) {
+                throw new Exception('Bolt: Cannot find product info');
+            }
 
+            $productCheckoutCartItem[] = [
+                'reference' => $_product->getId(),
+                'price'     => $_product->getPrice(),
+                'quantity'  => 1, // TODO: add determination the price by qty field
+                'image'     => $_product->getImageUrl(),
+                'name'  => $_product->getName(),
+            ];
+            $totalAmount = $_product->getPrice();
 
             $productCheckoutCart = [
                 'currency' => $currency,
@@ -119,7 +74,7 @@ class Bolt_Boltpay_Block_Catalog_Product_Boltpay extends Mage_Core_Block_Templat
                 'total' => $totalAmount,
             ];
 
-            return $this->configureProductCheckout($checkoutType, $sessionQuote, $hintData, $productCheckoutCart);
+            return $this->configureProductCheckout($checkoutType, $hintData, $productCheckoutCart);
 
         } catch (Exception $e) {
             Mage::helper('boltpay/bugsnag')->notifyException($e);
@@ -128,12 +83,11 @@ class Bolt_Boltpay_Block_Catalog_Product_Boltpay extends Mage_Core_Block_Templat
 
     /**
      * @param      $checkoutType
-     * @param      $quote
      * @param null $hintData
      * @param      $productCheckoutCart
      * @return string
      */
-    public function configureProductCheckout($checkoutType, $quote, $hintData = null, $productCheckoutCart)
+    public function configureProductCheckout($checkoutType, $hintData = null, $productCheckoutCart)
     {
         /* @var Bolt_Boltpay_Helper_Api $boltHelper */
         $boltHelper = Mage::helper('boltpay');
@@ -155,7 +109,7 @@ class Bolt_Boltpay_Block_Catalog_Product_Boltpay extends Mage_Core_Block_Templat
         $successCustom = $boltHelper->getPaymentBoltpayConfig('success', $checkoutType);
         $closeCustom = $boltHelper->getPaymentBoltpayConfig('close', $checkoutType);
 
-        $onCheckCallback = $this->buildOnCheckCallback($checkoutType, $quote);
+        $onCheckCallback = '';
         $onSuccessCallback = $this->buildOnSuccessCallback($checkoutType, $successCustom);
         $onCloseCallback = $this->buildOnCloseCallback($checkoutType, $closeCustom);
 
@@ -206,48 +160,6 @@ class Bolt_Boltpay_Block_Catalog_Product_Boltpay extends Mage_Core_Block_Templat
                 },
                 { checkoutButtonClassName: 'bolt-product-checkout-button' }
         );");
-    }
-
-    /**
-     * @param $checkoutType
-     * @param $quote
-     *
-     * @return string
-     */
-    public function buildOnCheckCallback($checkoutType, $quote)
-    {
-        switch ($checkoutType) {
-            case self::CHECKOUT_TYPE_ADMIN:
-                return
-                    "
-                    if ((typeof editForm !== 'undefined') && (typeof editForm.validate === 'function')) {
-                        var bolt_hidden = document.getElementById('boltpay_payment_button');
-                        bolt_hidden.classList.remove('required-entry');
-        
-                        var is_valid = true;
-        
-                        if (!editForm.validate()) {
-                            is_valid = false;
-                        } ". ($quote->isVirtual() ? "" : " else {
-                            var shipping_method = $$('input:checked[type=\"radio\"][name=\"order[shipping_method]\"]')[0] || $$('input:checked[type=\"radio\"][name=\"shipping_method\"]')[0];
-                            if (typeof shipping_method === 'undefined') {
-                                alert('".Mage::helper('boltpay')->__('Please select a shipping method.')."');
-                                is_valid = false;
-                            }
-                        } "). "
-        
-                        bolt_hidden.classList.add('required-entry');
-                        return is_valid;
-                    }
-                    ";
-            case self::CHECKOUT_TYPE_FIRECHECKOUT:
-                return
-                    "
-                    return (isFireCheckoutFormValid = checkout.validate());
-                    ";
-            default:
-                return '';
-        }
     }
 
     /**
