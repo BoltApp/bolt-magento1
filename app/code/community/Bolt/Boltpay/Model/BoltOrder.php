@@ -124,7 +124,7 @@ class Bolt_Boltpay_Model_BoltOrder extends Mage_Core_Model_Abstract
                         'reference'    => $quote->getId(),
                         'image_url'    => $imageUrl,
                         'name'         => $item->getName(),
-                        'sku'          => $product->getData('sku'),
+                        'sku'          => $item->getSku(),
                         'description'  => substr($product->getDescription(), 0, 8182) ?: '',
                         'total_amount' => round($item->getCalculationPrice() * 100) * $item->getQty(),
                         'unit_price'   => round($item->getCalculationPrice() * 100),
@@ -282,8 +282,17 @@ class Bolt_Boltpay_Model_BoltOrder extends Mage_Core_Model_Abstract
 
                         $cartSubmissionData['total_amount'] = (int) round($grandTotal->getValue() * 100);
                         $cartSubmissionData['tax_amount'] = $taxTotal ? (int) round($taxTotal->getValue() * 100) : 0;
+                    }else{
+                        if($quote->isVirtual()){
+                            $cartSubmissionData['shipments'] = array(array(
+                                'shipping_address' => $cartShippingAddress,
+                                'tax_amount'       => (int) round($shippingAddress->getShippingTaxAmount() * 100),
+                                'service'          => Mage::helper('boltpay')->__('No Shipping Required'),
+                                'reference'        => "noshipping",
+                                'cost'             => 0
+                            ));
+                        }
                     }
-
                 }
 
             }
