@@ -91,7 +91,7 @@ class Bolt_Boltpay_ApiController extends Mage_Core_Controller_Front_Action
                 //Mage::log('Order Found. Updating it', null, 'bolt.log');
                 $orderPayment = $order->getPayment();
 
-                $newTransactionStatus = Bolt_Boltpay_Model_Payment::translateHookTypeToTransactionStatus($hookType);
+                $newTransactionStatus = Bolt_Boltpay_Model_Payment::translateHookTypeToTransactionStatus($hookType, $transaction);
                 $prevTransactionStatus = $orderPayment->getAdditionalInformation('bolt_transaction_status');
 
                 // Update the transaction id as it may change, particularly with refunds
