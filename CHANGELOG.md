@@ -1,4 +1,8 @@
 # Changelog
+## [V1.3.7](https://s3-us-west-1.amazonaws.com/bolt-public/magento-integration-release/bolt-magento1_v1.3.7.zip) 2018-11-08
+ - Implement support for multiple capture
+ - Bug fixes around admin order
+
 ## [V1.3.6](https://s3-us-west-1.amazonaws.com/bolt-public/magento-integration-release/bolt-magento1_v1.3.6.zip) 2018-10-21
  - Bug fixes
 
