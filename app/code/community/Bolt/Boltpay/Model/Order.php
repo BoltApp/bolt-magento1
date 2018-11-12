@@ -62,30 +62,9 @@ class Bolt_Boltpay_Model_Order extends Mage_Core_Model_Abstract
                 throw new Exception(Mage::helper('boltpay')->__("Not all items are available in the requested quantities."));
             }
 
-//            // check if the quotes matches, frontend only
-//            if ( $sessionQuoteId && ($sessionQuoteId != $immutableQuote->getParentQuoteId()) ) {
-//                throw new Exception(
-//                    Mage::helper('boltpay')->__("The Bolt order reference does not match the current cart ID. Cart ID: [%s]  Bolt Reference: [%s]",
-//                        $sessionQuoteId , $immutableQuote->getParentQuoteId())
-//                );
-//            }
-
             // check if this order is currently being proccessed.  If so, throw exception
             /* @var Mage_Sales_Model_Quote $parentQuote */
             $parentQuote = Mage::getModel('sales/quote')->loadByIdWithoutStore($immutableQuote->getParentQuoteId());
-//            if ($parentQuote->isEmpty() ) {
-//                throw new Exception(
-//                    Mage::helper('boltpay')->__("The parent quote %s is unexpectedly missing.",
-//                        $immutableQuote->getParentQuoteId() )
-//                );
-//            } else if (!$parentQuote->getIsActive() ) {
-//                throw new Exception(
-//                    Mage::helper('boltpay')->__("The parent quote %s for immutable quote %s is currently being processed or has been processed for order #%s. Check quote %s for details.",
-//                        $parentQuote->getId(), $immutableQuote->getId(), $parentQuote->getReservedOrderId(), $parentQuote->getParentQuoteId() )
-//                );
-//            } else {
-//                $parentQuote->setIsActive(false)->save();
-//            }
 
             // adding guest user email to order
             if (!$immutableQuote->getCustomerEmail()) {
@@ -114,6 +93,7 @@ class Bolt_Boltpay_Model_Order extends Mage_Core_Model_Abstract
             ///  the Bolt transaction.
             //////////////////////////////////////////////////////////////////////////////////
             $shippingMethodCode = null;
+            /** @var Bolt_Boltpay_Model_ShippingAndTax $shippingAndTaxModel */
             $shippingAndTaxModel = Mage::getModel("boltpay/shippingAndTax");
             if ($transaction->order->cart->shipments) {
                 $shippingAndTaxModel->applyShippingAddressToQuote($immutableQuote, $transaction->order->cart->shipments[0]->shipping_address);
@@ -123,16 +103,17 @@ class Bolt_Boltpay_Model_Order extends Mage_Core_Model_Abstract
             $immutableQuote->getShippingAddress()->setShouldIgnoreValidation(true)->save();
             $immutableQuote->getBillingAddress()->setShouldIgnoreValidation(true)->save();
 
+            $shippingAddress = $immutableQuote->getShippingAddress();
+            $shippingAddress->setCollectShippingRates(true)->collectShippingRates();
+
             if ($shippingMethodCode) {
-                $immutableQuote->getShippingAddress()->setShippingMethod($shippingMethodCode)->save();
+                $shippingAddress->setShippingMethod($shippingMethodCode)->save();
             } else {
                 // Legacy transaction does not have shipments reference - fallback to $service field
                 $service = $transaction->order->cart->shipments[0]->service;
 
                 Mage::helper('boltpay')->collectTotals($immutableQuote);
 
-                $shippingAddress = $immutableQuote->getShippingAddress();
-                $shippingAddress->setCollectShippingRates(true)->collectShippingRates();
                 $rates = $shippingAddress->getAllShippingRates();
 
                 $isShippingSet = false;
