@@ -38,7 +38,6 @@ class Bolt_Boltpay_Model_Order extends Mage_Core_Model_Abstract
      */
     public function createOrder($reference, $sessionQuoteId = null, $isAjaxRequest = false, $transaction = null)
     {
-
         try {
             if (empty($reference)) {
                 throw new Exception(Mage::helper('boltpay')->__("Bolt transaction reference is missing in the Magento order creation process."));
@@ -62,7 +61,7 @@ class Bolt_Boltpay_Model_Order extends Mage_Core_Model_Abstract
                 throw new Exception(Mage::helper('boltpay')->__("Not all items are available in the requested quantities."));
             }
 
-            // check if this order is currently being proccessed.  If so, throw exception
+            // check if this order is currently being processed.
             /* @var Mage_Sales_Model_Quote $parentQuote */
             $parentQuote = Mage::getModel('sales/quote')->loadByIdWithoutStore($immutableQuote->getParentQuoteId());
 
@@ -70,7 +69,6 @@ class Bolt_Boltpay_Model_Order extends Mage_Core_Model_Abstract
             if (!$immutableQuote->getCustomerEmail()) {
                 $email = $transaction->from_credit_card->billing_address->email_address;
                 $immutableQuote->setCustomerEmail($email);
-                $immutableQuote->save();
             }
 
             if ($parentQuote) {
@@ -93,9 +91,9 @@ class Bolt_Boltpay_Model_Order extends Mage_Core_Model_Abstract
             ///  the Bolt transaction.
             //////////////////////////////////////////////////////////////////////////////////
             $shippingMethodCode = null;
-            /** @var Bolt_Boltpay_Model_ShippingAndTax $shippingAndTaxModel */
-            $shippingAndTaxModel = Mage::getModel("boltpay/shippingAndTax");
             if ($transaction->order->cart->shipments) {
+                /** @var Bolt_Boltpay_Model_ShippingAndTax $shippingAndTaxModel */
+                $shippingAndTaxModel = Mage::getModel("boltpay/shippingAndTax");
                 $shippingAndTaxModel->applyShippingAddressToQuote($immutableQuote, $transaction->order->cart->shipments[0]->shipping_address);
                 $shippingMethodCode = $transaction->order->cart->shipments[0]->reference;
             }
@@ -154,8 +152,8 @@ class Bolt_Boltpay_Model_Order extends Mage_Core_Model_Abstract
             ////////////////////////////////////////////////////////////////////////////
             // reset increment id if needed
             ////////////////////////////////////////////////////////////////////////////
-            /* @var Mage_Sales_Model_Order $preExistingOrder */
             if ($parentQuote) {
+                /* @var Mage_Sales_Model_Order $preExistingOrder */
                 $preExistingOrder = Mage::getModel('sales/order')->loadByIncrementId($parentQuote->getReservedOrderId());
 
                 if (!$preExistingOrder->isObjectNew()) {
