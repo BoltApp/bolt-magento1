@@ -28,26 +28,18 @@
  */
 class Bolt_Boltpay_Block_Catalog_Product_Boltpay extends Mage_Core_Block_Template
 {
-    const CHECKOUT_TYPE_ADMIN       = 'admin';
     const CHECKOUT_TYPE_MULTI_PAGE  = 'multi-page';
-    const CHECKOUT_TYPE_ONE_PAGE    = 'one-page';
-
-    const CHECKOUT_TYPE_FIRECHECKOUT = 'firecheckout';
 
     /**
-     * Initiates the Bolt order creation / token receiving and sets up BoltCheckout with generated data.
-     * In BoltCheckout.configure success callback the order is saved in additional ajax call to
+     * Initiates sets up BoltCheckout. with generated data.
+     * In BoltCheckout.configureProductCheckout success callback the order is saved in additional ajax call to
      * Bolt_Boltpay_OrderController save action.
      *
-     * @param string $checkoutType  'multi-page' | 'one-page' | 'admin' | 'firecheckout'
      * @return string               BoltCheckout javascript
      */
-    public function getCartDataJsForProductPage($checkoutType = self::CHECKOUT_TYPE_MULTI_PAGE)
+    public function getCartDataJsForProductPage()
     {
         try {
-//            $hintData = $this->getAddressHints($sessionQuote, $checkoutType);
-            $hintData = array( "prefill" => [] );
-
             // TODO: get store currency from config.
 //            $currency = $immutableQuote->getQuoteCurrencyCode();
             $currency = 'USD';
@@ -74,7 +66,7 @@ class Bolt_Boltpay_Block_Catalog_Product_Boltpay extends Mage_Core_Block_Templat
                 'total' => $totalAmount,
             ];
 
-            return $this->configureProductCheckout($checkoutType, $hintData, $productCheckoutCart);
+            return $this->configureProductCheckout(self::CHECKOUT_TYPE_MULTI_PAGE, $productCheckoutCart);
 
         } catch (Exception $e) {
             Mage::helper('boltpay/bugsnag')->notifyException($e);
@@ -83,20 +75,19 @@ class Bolt_Boltpay_Block_Catalog_Product_Boltpay extends Mage_Core_Block_Templat
 
     /**
      * @param      $checkoutType
-     * @param null $hintData
      * @param      $productCheckoutCart
+     *
      * @return string
      */
-    public function configureProductCheckout($checkoutType, $hintData = null, $productCheckoutCart)
+    public function configureProductCheckout($checkoutType, $productCheckoutCart)
     {
         /* @var Bolt_Boltpay_Helper_Api $boltHelper */
         $boltHelper = Mage::helper('boltpay');
 
         $jsonCart = json_encode($productCheckoutCart);
-//        $jsonHints = json_encode($hintData, JSON_FORCE_OBJECT);
 
         //////////////////////////////////////////////////////
-        // Collect the event Javascripts
+        // Collect the javascript events.
         // We execute these events as early as possible, typically
         // before Bolt defined event JS to give merchants the
         // opportunity to do full overrides
@@ -110,8 +101,8 @@ class Bolt_Boltpay_Block_Catalog_Product_Boltpay extends Mage_Core_Block_Templat
         $closeCustom = $boltHelper->getPaymentBoltpayConfig('close', $checkoutType);
 
         $onCheckCallback = '';
-        $onSuccessCallback = $this->buildOnSuccessCallback($checkoutType, $successCustom);
-        $onCloseCallback = $this->buildOnCloseCallback($checkoutType, $closeCustom);
+        $onSuccessCallback = $this->buildOnSuccessCallback($successCustom);
+        $onCloseCallback = $this->buildOnCloseCallback($closeCustom);
 
         return ("
             var jsonProductCart = $jsonCart;
@@ -164,30 +155,13 @@ class Bolt_Boltpay_Block_Catalog_Product_Boltpay extends Mage_Core_Block_Templat
 
     /**
      * @param string $successCustom
-     * @param $checkoutType
      * @return string
      */
-    public function buildOnSuccessCallback($checkoutType, $successCustom = '')
+    public function buildOnSuccessCallback($successCustom = '')
     {
         $saveOrderUrl = Mage::helper('boltpay/url')->getMagentoUrl('boltpay/order/save');
 
-        return ($checkoutType === self::CHECKOUT_TYPE_ADMIN) ?
-            "function(transaction, callback) {
-                $successCustom
-
-                var input = document.createElement('input');
-                input.setAttribute('type', 'hidden');
-                input.setAttribute('name', 'bolt_reference');
-                input.setAttribute('value', transaction.reference);
-                document.getElementById('edit_form').appendChild(input);
-
-                // order and order.submit should exist for admin
-                if ((typeof order !== 'undefined' ) && (typeof order.submit === 'function')) {
-                    order_completed = true;
-                    callback();
-                }
-            }"
-            : "function(transaction, callback) {
+        return "function(transaction, callback) {
                 new Ajax.Request(
                     '$saveOrderUrl',
                     {
@@ -206,46 +180,18 @@ class Bolt_Boltpay_Block_Catalog_Product_Boltpay extends Mage_Core_Block_Templat
 
     /**
      * @param $closeCustom
-     * @param $checkoutType
      * @return string
      */
-    public function buildOnCloseCallback($checkoutType, $closeCustom = '')
+    public function buildOnCloseCallback($closeCustom = '')
     {
         $successUrl = Mage::helper('boltpay/url')->getMagentoUrl(Mage::getStoreConfig('payment/boltpay/successpage'));
-        $javascript = "";
-        switch ($checkoutType) {
-            case self::CHECKOUT_TYPE_ADMIN:
-                return
-                    "
-                    if (order_completed && (typeof order !== 'undefined' ) && (typeof order.submit === 'function')) {
-                        $closeCustom
-                        var bolt_hidden = document.getElementById('boltpay_payment_button');
-                        bolt_hidden.classList.remove('required-entry');
-                        order.submit();
-                    }
-                    ";
-            case self::CHECKOUT_TYPE_FIRECHECKOUT:
-                return "
-                    isFireCheckoutFormValid = false;
-                    initBoltButtons();
-                    ";
-            default:
-                return $javascript.
-                    "
-                    if (order_completed) {
-                        location.href = '$successUrl';
-                    }
-                    ";
-        }
-    }
+        $javascript = $closeCustom;
 
-    /**
-     * @param $checkoutType
-     * @return bool
-     */
-    protected function isAdminAndUseJsInAdmin($checkoutType)
-    {
-        return ($checkoutType === self::CHECKOUT_TYPE_ADMIN) && !Mage::getStoreConfig('payment/boltpay/use_javascript_in_admin');
+        return $javascript .
+            "if (order_completed) {
+                location.href = '$successUrl';
+            }
+            ";
     }
 
     /**
