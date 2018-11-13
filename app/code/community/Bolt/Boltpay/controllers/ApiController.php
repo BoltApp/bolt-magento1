@@ -55,7 +55,7 @@ class Bolt_Boltpay_ApiController extends Mage_Core_Controller_Front_Action
 
             $bodyParams = json_decode(file_get_contents('php://input'), true);
 
-            if (isset($bodyParams['type']) && $bodyParams['type'] == "discounts.code.apply") {
+            if ($bodyParams['type'] == "discounts.code.apply") {
                 /** @var Bolt_Boltpay_Model_Coupon $couponModel */
                 $couponModel = Mage::getModel('boltpay/coupon');
                 $couponModel->setupVariables(json_decode(file_get_contents('php://input')));
