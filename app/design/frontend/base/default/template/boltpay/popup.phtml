@@ -3,11 +3,11 @@
 <div id="bolt-popup" class="bolt-popup" style="display: none;">
     <div class="popup-wrapper">
         <div class="popup-title"><?php echo $this->__('Bolt Checkout'); ?></div>
-        <div class="popup-content"></div>
+        <div class="popup-content"><?php echo $this->__('Sorry, but something went wrong. Please contact the seller.'); ?></div>
         <div class="popup-action">
             <button class="popup-close btn-close"><?php echo $this->__('Close')?></button>
         </div>
-        <div class="popup-close">x</div>
+        <div class="popup-close icon-close">x</div>
     </div>
 </div>
 
@@ -36,18 +36,17 @@
         },
         show: function() {
             this.popupElm.addClass('active');
-
             this.popupElm.show();
         },
         addMessage: function(message) {
-            if (message && message.length) {
-                this.popupElm.find('.popup-content').html(message);
-            } else {
-                message = "<?php echo $this->__('Sorry, but something went wrong. Please contact the seller.'); ?>";
-            }
-
             this.popupElm.find('.popup-content').html(message);
-
+            return this;
+        },
+        setMessage: function(message) {
+            this.addMessage(message);
+        },
+        setTitle: function(title) {
+            this.popupElm.find('.popup-title').html(title);
             return this;
         }
     };
@@ -81,14 +80,18 @@
         padding: 15px;
     }
     .bolt-popup .popup-wrapper .popup-close {
-        position: absolute;
         color: #fff;
-        right: -10px;
-        top: -30px;
         font-size: 20px;
+        cursor: pointer;
     }
     .bolt-popup .popup-wrapper .popup-close.btn-close {
         position: static;
+    }
+    .bolt-popup .popup-wrapper .popup-close.icon-close {
+        position: absolute;
+        display: none;
+        right: -10px;
+        top: -30px;
     }
     .bolt-popup .popup-wrapper .popup-title {
         font-size: 20px;
