@@ -125,7 +125,7 @@ if(!Mage::helper('boltpay')->canUseBolt($this->getQuote(), false) || Mage::getSt
             var shipping_selected = false;
             var shipping_methods  = document.querySelectorAll('input[name=shipping_method]');
 
-            for (i = 0, length = shipping_methods.length; i < length; i++) {
+            for (i = 0; i < shipping_methods.length; i++) {
                 var shipping_method = shipping_methods[i];
                 if (shipping_method.checked) {
                     shipping_selected = true;
@@ -133,7 +133,7 @@ if(!Mage::helper('boltpay')->canUseBolt($this->getQuote(), false) || Mage::getSt
                 }
             }
 
-            if (!shipping_selected)  document.querySelectorAll('input[name=shipping_method]')[0].click();
+            if (!shipping_selected && shipping_methods.length)  document.querySelectorAll('input[name=shipping_method]')[0].click();
         };
 
         autoSelectShipping();
