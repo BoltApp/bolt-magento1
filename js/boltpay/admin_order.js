@@ -8,6 +8,7 @@ var addBillingToPrepareParams = false;
 
 AdminOrder.prototype.prepareParams =
     function(params){
+
         if (!params) {
             params = {};
         }
@@ -23,6 +24,28 @@ AdminOrder.prototype.prepareParams =
         if (!params.form_key) {
             params.form_key = FORM_KEY;
         }
+
+        ////////////////////////////////////////////////////////////////////
+        // Force billing to populate shipping when 'billing as shipping' is set
+        ////////////////////////////////////////////////////////////////////
+        var billingAddressContainer = $('order-billing_address');
+        if (billingAddressContainer) {
+
+            var isBillingAddressShipping = document.getElementById('order-shipping_as_billing');
+            if (isBillingAddressShipping && isBillingAddressShipping.checked) {
+                var billingAddressData = this.serializeData('order-billing_address');
+                if (billingAddressData) {
+                    billingAddressData.each(function(value) {
+                        try {
+                            document.querySelector("[name='"+value[0].replace('billing_', 'shipping_')+"']").value = value[1];
+                        } catch (e) {
+                            console.log(e);  // Can't find matching shipping form element. log info to browser to troubleshoot, if necessary
+                        }
+                    });
+                }
+            }
+        }
+        ////////////////////////////////////////////////////////////////////
 
         var billingMethodContainer = $('order-billing_method');
         if (billingMethodContainer) {
