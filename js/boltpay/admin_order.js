@@ -36,7 +36,11 @@ AdminOrder.prototype.prepareParams =
                 var billingAddressData = this.serializeData('order-billing_address');
                 if (billingAddressData) {
                     billingAddressData.each(function(value) {
-                        document.querySelector("[name='"+value[0].replace('billing_', 'shipping_')+"']").value = value[1];
+                        try {
+                            document.querySelector("[name='"+value[0].replace('billing_', 'shipping_')+"']").value = value[1];
+                        } catch (e) {
+                            console.log(e);  // Can't find matching shipping form element. log info to browser to troubleshoot, if necessary
+                        }
                     });
                 }
             }
