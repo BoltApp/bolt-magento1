@@ -142,12 +142,15 @@ class Bolt_Boltpay_Helper_Data extends Mage_Core_Helper_Abstract
     }
 
     /**
+     *  Returns the primary color customized for Bolt
      *
-     * @return string
+     * @return string   If set, a 6 or 8 digit hexadecimal color value preceded by a '#' character, otherwise an empty string
      */
     public function getBoltPrimaryColor()
     {
-        return Mage::getStoreConfig('payment/boltpay/color');
+        $extraOptions = (array) json_decode(Mage::getStoreConfig('payment/boltpay/extra_options'), true);
+
+        return @$extraOptions['boltPrimaryColor'] ?: '';
     }
 
     /**
