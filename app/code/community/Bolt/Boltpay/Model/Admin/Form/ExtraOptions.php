@@ -24,10 +24,10 @@
  *
  * The name of the option is used as the basis of searching for the options validation method,
  * where the first letter of the option name is capitalized, and then prepended with the string
- * 'isValid'.
+ * 'hasValid'.
  *
  * (e.g. The option `boltPrimaryColor` would have a corresponding validation method
- * named `isValidBoltPrimaryColor`)
+ * named `hasValidBoltPrimaryColor`)
  *
  * If the method exist in this object, then it is called for validation, otherwise,
  * the value is assumed valid.
@@ -45,22 +45,22 @@ class Bolt_Boltpay_Model_Admin_Form_ExtraOptions extends Mage_Core_Model_Config_
     public function save()
     {
         $optionsJson = (array) json_decode($this->getValue(), true);
-        $areAllValidOptions = true;
+        $areAllOptionsValid = true;
 
         if (json_last_error() === JSON_ERROR_NONE) {
             foreach ( $optionsJson as $optionName => $optionValue ) {
                 $methodPostfix = ucfirst($optionName);
-                if (method_exists($this, 'isValid'.$methodPostfix)) {
-                    $validationMethod = 'isValid'.$methodPostfix;
-                    $areAllValidOptions = $areAllValidOptions && $this->$validationMethod($optionValue);
+                $validationMethod = 'hasValid'.$methodPostfix;
+                if (method_exists($this, $validationMethod)) {
+                    $areAllOptionsValid = $areAllOptionsValid && $this->$validationMethod($optionValue);
                 }
             }
         } else {
-            $areAllValidOptions = false;
+            $areAllOptionsValid = false;
             Mage::getSingleton('core/session')->addError(Mage::helper('boltpay')->__('Invalid json for Bolt Extra Options.'));
         }
 
-        if (!$areAllValidOptions) {
+        if (!$areAllOptionsValid) {
             $this->setValue($this->getOldValue());
         }
 
@@ -76,7 +76,7 @@ class Bolt_Boltpay_Model_Admin_Form_ExtraOptions extends Mage_Core_Model_Config_
      *
      * @return bool     True if the $hexColor is a valid color hex value, otherwise false
      */
-    public function isValidBoltPrimaryColor($hexColor) {
+    public function hasValidBoltPrimaryColor($hexColor) {
         if ( !($isValid = (!empty($hexColor) && preg_match('/^#(([A-Fa-f0-9]{6})|([A-Fa-f0-9]{8}))$/', $hexColor))) ) {
             Mage::getSingleton('core/session')->addError(Mage::helper('boltpay')->__('Invalid hex color value for extra option `boltPrimaryColor`. It must be in 6 or 8 character hex format.  (e.g. #f00000 or #3af508a2)'));
         }
