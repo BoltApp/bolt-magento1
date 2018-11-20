@@ -78,7 +78,7 @@ class Bolt_Boltpay_Model_Admin_Form_ExtraOptions extends Mage_Core_Model_Config_
      */
     public function hasValidBoltPrimaryColor($hexColor) {
         if ( !($isValid = (!empty($hexColor) && preg_match('/^#(([A-Fa-f0-9]{6})|([A-Fa-f0-9]{8}))$/', $hexColor))) ) {
-            Mage::getSingleton('core/session')->addError(Mage::helper('boltpay')->__('Invalid hex color value for extra option `boltPrimaryColor`. It must be in 6 or 8 character hex format.  (e.g. #f00000 or #3af508a2)'));
+            Mage::getSingleton('core/session')->addError(Mage::helper('boltpay')->__('Invalid hex color value for extra option `boltPrimaryColor`. [%s] It must be in 6 or 8 character hex format.  (e.g. #f00000 or #3af508a2)', $hexColor));
         }
         return $isValid;
     }

@@ -39,12 +39,13 @@ if (count($colorSettings)) {
         if ($hexColor) {
             $extraOptionsJSON = json_encode(array('boltPrimaryColor' => $hexColor));
             $connection->query("INSERT INTO $configTable (scope, scope_id, path, value) VALUES ( {$colorDataRow->scope}, {$colorDataRow->scope_id}, 'payment/boltpay/extra_options', '$extraOptionsJSON')");
-            $connection->query("DELETE FROM $configTable WHERE path = 'payment/boltpay/color'");
         }
     }
 } else {
     Mage::log('Bolt 1.3.7.9: did not find a primary bolt color setting.', null, 'bolt_install.log');
 }
+
+$connection->query("DELETE FROM $configTable WHERE path = 'payment/boltpay/color'");
 
 Mage::log('Bolt 1.3.7.9 updates installation completed', null, 'bolt_install.log');
 
