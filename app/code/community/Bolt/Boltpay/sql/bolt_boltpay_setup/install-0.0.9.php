@@ -18,17 +18,18 @@
 /**
  * This installer does the following
  * 1. Creates a new attribute for customers entity called bolt_user_id
+ * 2. Adds Bolt custom order status and order state of deferred
  */
-$installer = $this;
-
-$installer->startSetup();
-
-$setup = new Mage_Eav_Model_Entity_Setup('core_setup');
-
 Mage::log('Installing Bolt 0.0.9 updates', null, 'bolt_install.log');
 
+$installer = $this;
+$installer->startSetup();
+$setup = new Mage_Eav_Model_Entity_Setup('core_setup');
+
 $installer->addAttribute(
-    "customer", "bolt_user_id", array(
+    "customer",
+    "bolt_user_id",
+    array(
         "type"       => "varchar",
         "label"      => "Bolt User Id",
         "input"      => "hidden",
@@ -36,17 +37,22 @@ $installer->addAttribute(
         "required"   => false,
         "unique"     => true,
         "note"       => "Bolt User Id Attribute"
-
     )
 );
+
+/** @var Magento_Db_Adapter_Pdo_Mysql $connection */
+$connection = $installer->getConnection();
 
 // Required tables
 $statusTable = $installer->getTable('sales/order_status');
 $statusStateTable = $installer->getTable('sales/order_status_state');
 
-try {
+$deferredStatusDoesntExists = !is_object($connection->query("SELECT status FROM $statusTable WHERE status = 'deferred'")->fetchObject());
+$deferredStateDoesntExists = !is_object($connection->query("SELECT status FROM $statusStateTable WHERE status = 'deferred' AND state = 'deferred'")->fetchObject());
+
+if ($deferredStatusDoesntExists) {
     // Insert statuses
-    $installer->getConnection()->insertArray(
+    $connection->insertArray(
         $statusTable,
         array(
             'status',
@@ -57,16 +63,11 @@ try {
         )
     );
 
-} catch (Zend_Db_Statement_Exception $e) {
-    // ignore duplicate key exception because the entry has already been inserted
-    if ( $e->getCode() != 23000 ) {
-        throw $e;
-    }
 }
 
-try {
+if ($deferredStateDoesntExists) {
     // Insert states and mapping of statuses to states
-    $installer->getConnection()->insertArray(
+    $connection->insertArray(
         $statusStateTable,
         array(
             'status',
@@ -81,11 +82,6 @@ try {
             ),
         )
     );
-} catch (Zend_Db_Statement_Exception $e) {
-    // ignore duplicate key exception because the entry has already been inserted
-    if ( $e->getCode() != 23000 ) {
-        throw $e;
-    }
 }
 
 Mage::log('Bolt 0.0.9 update installation completed', null, 'bolt_install.log');
