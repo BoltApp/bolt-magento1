@@ -148,9 +148,7 @@ class Bolt_Boltpay_Helper_Data extends Mage_Core_Helper_Abstract
      */
     public function getBoltPrimaryColor()
     {
-        $extraOptions = (array) json_decode(Mage::getStoreConfig('payment/boltpay/extra_options'), true);
-
-        return @$extraOptions['boltPrimaryColor'] ?: '';
+        return $this->getExtraConfig('boltPrimaryColor');
     }
 
     /**
@@ -386,5 +384,27 @@ class Bolt_Boltpay_Helper_Data extends Mage_Core_Helper_Abstract
         if ($customerId) {
             Mage::getSingleton('customer/session')->loginById($customerId);
         }
+    }
+
+
+    /**
+     * Gets the value of a Bolt non-publicized or non-emphasized
+     * configuration value after passing it through an optionally
+     * defined filter method.
+     *
+     * @param string $configName        The name of the config as defined
+     *                                  the configuration JSON
+     * @param array $filterParameters   Optional set of parameters passed to
+     *                                  the optionally defined filter method
+     *                                  of the config
+     *
+     * @return mixed    Typically a string representing the config value, but
+     *                  is not limited to this type.  If the config is not defined,
+     *                  an empty string is returned
+     */
+    public function getExtraConfig($configName, $filterParameters = array() ) {
+        /** @var Bolt_Boltpay_Model_Admin_ExtraConfig $extraConfigModel */
+        $extraConfigModel = Mage::getSingleton('boltpay/admin_extraConfig');
+        return $extraConfigModel->getExtraConfig($configName, $filterParameters);
     }
 }

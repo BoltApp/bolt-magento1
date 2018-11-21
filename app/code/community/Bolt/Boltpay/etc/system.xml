@@ -407,13 +407,13 @@ This function is called when the Bolt checkout modal is closed.
               <frontend_class>validate-number</frontend_class>
             </sort_order>
             <extra_options translate="label">
-              <label>Extra options</label>
+              <label>Extra config</label>
               <frontend_type>textarea</frontend_type>
               <sort_order>150</sort_order>
               <show_in_default>1</show_in_default>
               <show_in_website>1</show_in_website>
               <show_in_store>1</show_in_store>
-              <backend_model>boltpay/admin_form_extraOptions</backend_model>
+              <backend_model>boltpay/admin_extraConfig</backend_model>
             </extra_options>
             <checkapi translate="label">
               <label>Check Boltpay API</label>
