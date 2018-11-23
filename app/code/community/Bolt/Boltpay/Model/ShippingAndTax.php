@@ -77,8 +77,6 @@ class Bolt_Boltpay_Model_ShippingAndTax extends Mage_Core_Model_Abstract
                     ->save();
             }
         }
-        $quote->removeAllAddresses();
-        $quote->save();
         $quote->getShippingAddress()->addData($addressData)->save();
 
         $billingAddress = $quote->getBillingAddress();
