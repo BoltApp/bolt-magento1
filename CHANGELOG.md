@@ -40,6 +40,7 @@
 ## [v1.2.2](https://s3-us-west-1.amazonaws.com/bolt-public/magento-integration-release/bolt-magento1_v1.2.2.zip) 2018-08-28
  - Fixed off-by-one error
  - Optimize loading
+ - Support discount hook
 
 ## [v1.2.1](https://s3-us-west-1.amazonaws.com/bolt-public/magento-integration-release/bolt-magento1_v1.2.1.zip) 2018-08-17
  - Introduced modman
