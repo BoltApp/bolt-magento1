@@ -47,14 +47,14 @@ class Bolt_Boltpay_Model_ShippingAndTax extends Mage_Core_Model_Abstract
             . (@$shippingAddress->street_address2 ?: '') . "\n"
             . (@$shippingAddress->street_address3 ?: '') . "\n"
             . (@$shippingAddress->street_address4 ?: '');
-
+            
         $addressData = array(
-            'email' => $shippingAddress->email ?: $shippingAddress->email_address,
-            'firstname' => $shippingAddress->first_name,
-            'lastname' => $shippingAddress->last_name,
+            'email' => @$shippingAddress->email ?: $shippingAddress->email_address,
+            'firstname' => @$shippingAddress->first_name,
+            'lastname' => @$shippingAddress->last_name,
             'street' => $shippingStreet,
-            'company' => $shippingAddress->company,
-            'city' => $shippingAddress->locality,
+            'company' => @$shippingAddress->company,
+            'city' => @$shippingAddress->locality,
             'region' => $region,
             'region_id' => $regionId,
             'postcode' => $shippingAddress->postal_code,
@@ -102,7 +102,8 @@ class Bolt_Boltpay_Model_ShippingAndTax extends Mage_Core_Model_Abstract
                 'email' => $billingAddress->getEmail() ?: (@$shippingAddress->email ?: @$shippingAddress->email_address),
                 'firstname' => $billingAddress->getFirstname() ?: @$shippingAddress->first_name,
                 'lastname' => $billingAddress->getLastname() ?: @$shippingAddress->last_name,
-                'street' => implode("\n", $billingAddress->getStreet()) ?: $shippingStreet,                'company' => $billingAddress->getCompany() ?: @$shippingAddress->company,
+                'street' => implode("\n", $billingAddress->getStreet()) ?: $shippingStreet,
+                'company' => $billingAddress->getCompany() ?: @$shippingAddress->company,
                 'city' => $billingAddress->getCity() ?: @$shippingAddress->locality,
                 'region' => $billingAddress->getRegion() ?: $region,
                 'region_id' => $billingAddress->getRegionId() ?: $regionId,
