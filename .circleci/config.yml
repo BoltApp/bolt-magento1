@@ -1,0 +1,77 @@
+version: 2
+jobs:
+  unit-php55-mage18:
+    docker:
+      - image: bylexus/apache-php55
+      - image: circleci/mysql:5.7
+    steps:
+      - checkout
+      - run:
+          name: PHP 5.5 Magento 1.8
+          command: |
+            PHPUNIT_PHAR=tests/unit/phpunit-4.8.36.phar MAGENTO_VERSION=magento-mirror-1.8.1.0 tests/scripts/ci.sh
+
+  unit-php55-mage19:
+    docker:
+      - image: bylexus/apache-php55
+      - image: circleci/mysql:5.7
+    steps:
+      - checkout
+      - run:
+          name: PHP 5.5 Magento 1.9
+          command: |
+            PHPUNIT_PHAR=tests/unit/phpunit-4.8.36.phar MAGENTO_VERSION=magento-mirror-1.9.3.6tests/scripts/ci.sh
+
+  unit-php56-mage18:
+    docker:
+      - image: bylexus/apache-php56
+      - image: circleci/mysql:5.7
+    steps:
+      - checkout
+      - run:
+          name: PHP 5.6 Magento 1.8
+          command: |
+            PHPUNIT_PHAR=tests/unit/phpunit-5.7.9.phar MAGENTO_VERSION=magento-mirror-1.8.1.0 tests/scripts/ci.sh
+
+  unit-php56-mage19:
+    docker:
+      - image: bylexus/apache-php56
+      - image: circleci/mysql:5.7
+    steps:
+      - checkout
+      - run:
+          name: PHP 5.6 Magento 1.9
+          command: |
+            PHPUNIT_PHAR=tests/unit/phpunit-5.7.9.phar MAGENTO_VERSION=magento-mirror-1.9.3.6 tests/scripts/ci.sh
+
+  integration-sandbox:
+    docker:
+      - image: circleci/node:carbon-browsers
+        environment:
+          SELENIUM_BROWSER: chrome
+          DBUS_SESSION_BUS_ADDRESS: /dev/null
+    steps:
+      - checkout
+      - run:
+          name: Integration test (only for master/develop/circleci branch)
+          command: |
+            if [ "$CIRCLE_BRANCH" = "master" ] || [ "$CIRCLE_BRANCH" = "develop" ] || [ "$CIRCLE_BRANCH" = "circleci" ]; then
+              echo "Running integraiton test"
+              git clone git@github.com:BoltApp/integration-tests.git
+              cd integration-tests
+              npm install
+              mkdir -p /tmp/screenshots
+              SCREENSHOT_DIR=/tmp/screenshots TEST_ENV=sandbox npm run test-checkout-magento1
+            fi
+      - store_artifacts:
+          path: /tmp/artifacts
+
+workflows:
+  version: 2
+  build:
+    jobs:
+      - unit-php55-mage18
+      - unit-php55-mage19
+      - unit-php56-mage18
+      - unit-php56-mage19
+      - integration-sandbox
