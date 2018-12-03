@@ -64,7 +64,7 @@ jobs:
               SCREENSHOT_DIR=/tmp/screenshots TEST_ENV=sandbox npm run test-checkout-magento1
             fi
       - store_artifacts:
-          path: /tmp/artifacts
+          path: /tmp/screenshots
 
 workflows:
   version: 2
