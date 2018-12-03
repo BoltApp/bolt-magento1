@@ -46,10 +46,9 @@ jobs:
 
   integration-sandbox:
     docker:
-      - image: circleci/node:carbon-browsers
-        environment:
-          SELENIUM_BROWSER: chrome
-          DBUS_SESSION_BUS_ADDRESS: /dev/null
+      - image: circleci/openjdk:latest-node
+      - image: selenium/standalone-chrome
+    parallelism: 2
     steps:
       - checkout
       - run:
