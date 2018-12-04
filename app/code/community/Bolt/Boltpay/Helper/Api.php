@@ -34,25 +34,13 @@ class Bolt_Boltpay_Helper_Api extends Bolt_Boltpay_Helper_Data
      * A call to Fetch Bolt API endpoint. Gets the transaction info.
      *
      * @param string $reference        Bolt transaction reference
-     * @param int $tries
      *
-     * @throws Exception     thrown if multiple (3) calls fail
+     * @throws Exception  thrown if a call fails
      * @return bool|mixed Transaction info
      */
-    public function fetchTransaction($reference, $tries = 3)
+    public function fetchTransaction($reference)
     {
-        try {
-            return $this->transmit($reference, null);
-        } catch (Exception $e) {
-            if (--$tries == 0) {
-                $message = Mage::helper('boltpay')->__("BoltPay Gateway error: Fetch Transaction call failed multiple times for transaction referenced: %s", $reference);
-                Mage::helper('boltpay/bugsnag')->notifyException(new Exception($message));
-                Mage::helper('boltpay/bugsnag')->notifyException($e);
-                throw $e;
-            }
-
-            return $this->fetchTransaction($reference, $tries);
-        }
+        return $this->transmit($reference, null);
     }
 
     /**
