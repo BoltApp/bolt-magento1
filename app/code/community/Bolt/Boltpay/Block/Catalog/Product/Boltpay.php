@@ -31,30 +31,30 @@ class Bolt_Boltpay_Block_Catalog_Product_Boltpay extends Mage_Core_Block_Templat
     const CHECKOUT_TYPE_MULTI_PAGE  = 'multi-page';
 
     /**
-     * Initiates sets up BoltCheckout. with generated data.
-     * In BoltCheckout.configureProductCheckout success callback the order is saved in additional ajax call to
-     * Bolt_Boltpay_OrderController save action.
+     * Initiates sets up BoltCheckout config.
      *
-     * @return string               BoltCheckout javascript
+     * @return string
      */
     public function getCartDataJsForProductPage()
     {
         try {
             // TODO: get store currency from config.
-//            $currency = $immutableQuote->getQuoteCurrencyCode();
             $currency = 'USD';
 
             $productCheckoutCartItem = [];
 
             $_product = Mage::registry('current_product');
             if (!$_product) {
-                throw new Exception('Bolt: Cannot find product info');
+                $msg = 'Bolt: Cannot find product info';
+                Mage::helper('boltpay/bugsnag')->notifyException($msg);
+
+                return '""';
             }
 
             $productCheckoutCartItem[] = [
                 'reference' => $_product->getId(),
                 'price'     => $_product->getPrice(),
-                'quantity'  => 1, // TODO: add determination the price by qty field
+                'quantity'  => 1,
                 'image'     => $_product->getImageUrl(),
                 'name'  => $_product->getName(),
             ];
@@ -66,32 +66,26 @@ class Bolt_Boltpay_Block_Catalog_Product_Boltpay extends Mage_Core_Block_Templat
                 'total' => $totalAmount,
             ];
 
-            return $this->configureProductCheckout(self::CHECKOUT_TYPE_MULTI_PAGE, $productCheckoutCart);
+             return json_encode($productCheckoutCart);
 
         } catch (Exception $e) {
             Mage::helper('boltpay/bugsnag')->notifyException($e);
         }
+
+        return '""';
     }
 
     /**
-     * @param      $checkoutType
-     * @param      $productCheckoutCart
+     * Collect callbacks for BoltCheckout.configureProductCheckout
      *
+     * @param string $checkoutType
      * @return string
      */
-    public function configureProductCheckout($checkoutType, $productCheckoutCart)
+    public function getBoltCallbacks($checkoutType = self::CHECKOUT_TYPE_MULTI_PAGE)
     {
         /* @var Bolt_Boltpay_Helper_Api $boltHelper */
         $boltHelper = Mage::helper('boltpay');
 
-        $jsonCart = json_encode($productCheckoutCart);
-
-        //////////////////////////////////////////////////////
-        // Collect the javascript events.
-        // We execute these events as early as possible, typically
-        // before Bolt defined event JS to give merchants the
-        // opportunity to do full overrides
-        //////////////////////////////////////////////////////
         $checkCustom = $boltHelper->getPaymentBoltpayConfig('check', $checkoutType);
         $onCheckoutStartCustom = $boltHelper->getPaymentBoltpayConfig('on_checkout_start', $checkoutType);
         $onShippingDetailsCompleteCustom = $boltHelper->getPaymentBoltpayConfig('on_shipping_details_complete', $checkoutType);
@@ -104,17 +98,7 @@ class Bolt_Boltpay_Block_Catalog_Product_Boltpay extends Mage_Core_Block_Templat
         $onSuccessCallback = $this->buildOnSuccessCallback($successCustom);
         $onCloseCallback = $this->buildOnCloseCallback($closeCustom);
 
-        return ("
-            var jsonProductCart = $jsonCart;
-            var jsonProductHints = null;
-
-            var productPageCheckoutSelector = '". $this->escapeHtml($this->getProductPageCheckoutSelector())."';
-            var order_completed = false;
-
-            BoltCheckout.configureProductCheckout(
-                jsonProductCart,
-                jsonProductHints,
-                {
+        return "{
                   check: function() {
                     $checkCustom
                     $onCheckCallback
@@ -148,9 +132,7 @@ class Bolt_Boltpay_Block_Catalog_Product_Boltpay extends Mage_Core_Block_Templat
                   close: function() {
                      $onCloseCallback
                   }
-                },
-                { checkoutButtonClassName: 'bolt-product-checkout-button' }
-        );");
+                }";
     }
 
     /**

@@ -1,16 +1,42 @@
 <?php /* @var $this Bolt_Boltpay_Block_Catalog_Product_Boltpay */ ?>
 <?php if ($this->isEnabledProductPageCheckout()): ?>
 <script type="text/javascript">
+var boltJsonProductCart = '';
+var boltJsonProductHints = null;
+var productPageCheckoutSelector = '<?php $this->escapeHtml($this->getProductPageCheckoutSelector()) ?>';
+var order_completed = false;
+
+var boltConfigPDP = {
+    _jsonProductCart: <?php echo $this->getCartDataJsForProductPage(); ?>,
+    increaseQty: function(number) {
+        if (this._jsonProductCart) {
+            this._jsonProductCart.items[0].quantity = parseInt(number);
+            this._jsonProductCart.total = parseFloat(this._jsonProductCart.total) * number;
+        } else {
+            console.log('There is no json product data');
+        }
+    },
+    init: function() {
+        boltJsonProductCart = this._jsonProductCart;
+        boltJsonProductHints = null;
+
+        BoltCheckout.configureProductCheckout(
+            boltJsonProductCart,
+            boltJsonProductHints,
+            <?php echo $this->getBoltCallbacks(); ?>,
+            { checkoutButtonClassName: 'bolt-product-checkout-button' }
+        );
+    }
+};
+
 document.addEventListener("DOMContentLoaded", function() {
     var processIntervalCounter = 0;
     var processIntervalProd = setInterval(
         function() {
             processIntervalCounter++;
-            console.log('BoltDebug: run', 'processIntervalProd');
             if (typeof BoltCheckout !== "undefined") {
                 clearInterval(processIntervalProd);
-                console.log('execute: getCartDataJsForProductPage()');
-                <?php echo $this->getCartDataJsForProductPage(); ?>
+                boltConfigPDP.init();
             }
 
             if (processIntervalCounter > 50) {
@@ -18,6 +44,12 @@ document.addEventListener("DOMContentLoaded", function() {
             }
         }, 50
     );
+
+    document.getElementById('qty').addEventListener('input', function() {
+        boltConfigPDP.increaseQty(parseInt(this.value));
+        boltConfigPDP.init();
+    });
 });
+
 </script>
 <?php endif; ?>
