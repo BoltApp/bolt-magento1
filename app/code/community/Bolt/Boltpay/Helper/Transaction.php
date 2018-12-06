@@ -1,5 +1,8 @@
 <?php
 
+/**
+ * Class Bolt_Boltpay_Helper_Transaction
+ */
 class Bolt_Boltpay_Helper_Transaction
 {
     /**
@@ -37,6 +40,15 @@ class Bolt_Boltpay_Helper_Transaction
             return max($potentialQuoteId, $associatedQuoteId);
         }
 
+    }
+
+    /**
+     * @param $mockTransaction
+     * @return int
+     */
+    public function getQuoteIdFromTransaction($mockTransaction)
+    {
+        return (int) $mockTransaction->order->cart->order_reference;
     }
 
     /**
