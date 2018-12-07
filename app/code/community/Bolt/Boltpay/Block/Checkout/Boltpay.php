@@ -304,7 +304,7 @@ PROMISE;
      */
     public function buildBoltCheckoutJavascript($checkoutType, $quote, $hintData, $cartData)
     {
-        /* @var Bolt_Boltpay_Helper_Api $boltHelper */
+        /* @var Bolt_Boltpay_Helper_Data $boltHelper */
         $boltHelper = Mage::helper('boltpay');
 
         $jsonCart = (is_string($cartData)) ? $cartData : json_encode($cartData);
@@ -342,9 +342,13 @@ PROMISE;
             "
         ;
 
+        $hintsTransformFunction = $boltHelper->getExtraConfig('hintsTransform');
+
         return ("
+            var \$hints_transform = $hintsTransformFunction;
+            
             var json_cart = $jsonCart;
-            var json_hints = $jsonHints;
+            var json_hints = \$hints_transform($jsonHints);
             var quote_id = '{$quote->getId()}';
             var order_completed = false;
 

@@ -156,15 +156,16 @@ class Bolt_Boltpay_Model_Payment extends Mage_Payment_Model_Method_Abstract
         }
     }
 
+    /**
+     * Method called upon pressing the "Get Payment Update" button from the Admin
+     *
+     * @param Mage_Payment_Model_Info $payment  Holds meta data about this payment
+     * @param string $transactionId  The transaction ID of the payment
+     * @throws Exception    thrown upon error in updating the status of an order
+     */
     public function fetchTransactionInfo(Mage_Payment_Model_Info $payment, $transactionId)
     {
-
         try {
-            //Mage::log(sprintf('Initiating fetch transaction info on payment id: %d', $payment->getId()), null, 'bolt.log');
-            if ($payment->getData('auto_capture')) {
-                //Mage::log('Skipping calls for fetch transaction in auto capture mode', null, 'bolt.log');
-                return;
-            }
 
             $merchantTransId = $payment->getAdditionalInformation('bolt_merchant_transaction_id');
             if ($merchantTransId == null) {
@@ -182,6 +183,12 @@ class Bolt_Boltpay_Model_Payment extends Mage_Payment_Model_Method_Abstract
 
             $transactionStatus = strtolower($response->status);
             $prevTransactionStatus = $payment->getAdditionalInformation('bolt_transaction_status');
+
+            if ($transactionStatus === self::TRANSACTION_PENDING) {
+                $message = Mage::helper('boltpay')->__('Bolt is still reviewing this transaction.  The order status will be updated automatically after review.');
+                Mage::getSingleton('adminhtml/session')->addNotice($message);
+            }
+
             $this->handleTransactionUpdate($payment, $transactionStatus, $prevTransactionStatus);
             //Mage::log(sprintf('Fetch transaction info completed for payment id: %d', $payment->getId()), null, 'bolt.log');
         } catch (Exception $e) {
