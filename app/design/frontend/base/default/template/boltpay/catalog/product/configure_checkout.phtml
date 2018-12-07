@@ -31,6 +31,10 @@ var boltConfigPDP = {
 
 document.addEventListener("DOMContentLoaded", function() {
     var processIntervalCounter = 0;
+    /*
+     * This Interval function prevents error or even the lack of a button.
+     * It is similar an Interval functionality in boltpay/replace.phtml
+     */
     var processIntervalProd = setInterval(
         function() {
             processIntervalCounter++;
