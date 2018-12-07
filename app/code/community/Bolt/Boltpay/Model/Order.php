@@ -23,6 +23,8 @@
  */
 class Bolt_Boltpay_Model_Order extends Mage_Core_Model_Abstract
 {
+    const MERCHANT_BACK_OFFICE = 'merchant_back_office';
+
     /**
      * Processes Magento order creation. Called from both frontend and API.
      *
@@ -78,7 +80,7 @@ class Bolt_Boltpay_Model_Order extends Mage_Core_Model_Abstract
                     Mage::helper('boltpay')->__("The parent quote %s is unexpectedly missing.",
                         $immutableQuote->getParentQuoteId() )
                 );
-            } else if (!$parentQuote->getIsActive() ) {
+            } else if (!$parentQuote->getIsActive() && $transaction->indemnification_reason !== self::MERCHANT_BACK_OFFICE) {
                 throw new Exception(
                     Mage::helper('boltpay')->__("The parent quote %s for immutable quote %s is currently being processed or has been processed for order #%s. Check quote %s for details.",
                         $parentQuote->getId(), $immutableQuote->getId(), $parentQuote->getReservedOrderId(), $parentQuote->getParentQuoteId() )
