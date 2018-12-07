@@ -38,8 +38,7 @@ class Bolt_Boltpay_Block_Catalog_Product_Boltpay extends Mage_Core_Block_Templat
     public function getCartDataJsForProductPage()
     {
         try {
-            // TODO: get store currency from config.
-            $currency = 'USD';
+            $currency = Mage::app()->getStore()->getCurrentCurrencyCode();
 
             $productCheckoutCartItem = [];
 
