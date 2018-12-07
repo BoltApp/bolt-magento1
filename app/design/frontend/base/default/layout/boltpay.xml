@@ -20,10 +20,7 @@
 
   <default>
     <reference name="head">
-	  <action method="addJs"><script>boltpay/jquery/jquery-1.11.3.min.js</script></action>
-      <action method="addJs"><script>boltpay/jquery/jquery-migrate-1.2.1.min.js</script></action>
-      <action method="addJs"><script>boltpay/jquery/jquery-noconflict.js</script></action>
-
+	    <block type="core/template" name="adding_jquery" template="boltpay/add_jquery.phtml"/>
       <block type="boltpay/checkout_boltpay" name="track_script" as="track_script" template="boltpay/track.phtml" />
       <block type="boltpay/checkout_boltpay" name="connect_js_script" as="connect_js" template="boltpay/connectjs.phtml"/>
       <block type="boltpay/checkout_boltpay" name="replace_script" as="replace_script" template="boltpay/replace.phtml"/>
