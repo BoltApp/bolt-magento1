@@ -19,8 +19,7 @@
 <layout version="0.1.0">
 
   <default>
-    <reference name="head">
-      <block type="core/template" name="adding_jquery" template="boltpay/add_jquery.phtml"/>
+    <reference name="head">      
       <block type="boltpay/checkout_boltpay" name="track_script" as="track_script" template="boltpay/track.phtml" />
       <block type="boltpay/checkout_boltpay" name="connect_js_script" as="connect_js" template="boltpay/connectjs.phtml"/>
       <block type="boltpay/checkout_boltpay" name="replace_script" as="replace_script" template="boltpay/replace.phtml"/>

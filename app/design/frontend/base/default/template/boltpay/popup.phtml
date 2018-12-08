@@ -16,37 +16,40 @@
         popupElmId: 'bolt-popup',
         popupElm: null,
         init: function() {
-            this.popupElm = jQuery('#'+this.popupElmId);
+            this.popupElm = document.getElementById(this.popupElmId);
             this.initPopupEvents()
         },
         initPopupEvents: function() {
             var self = this;
 
-            if (!this.popupElm.length) {
+            if (!this.popupElm) {
                 return false;
             }
 
-            this.popupElm.find('.popup-close').on('click', function(event) {
-                self.close();
-            });
+            var popup_close = this.popupElm.getElementsByClassName('popup-close')
+            for (var i = 0; i < popup_close.length; i++) {
+                popup_close[i].addEventListener( 'click', function() {
+                    self.close();
+                });
+            }
         },
         close: function() {
-            this.popupElm.removeClass('active');
-            this.popupElm.fadeOut();
+            this.popupElm.classList.remove('active');
+            this.popupElm.style.display = "none";
         },
         show: function() {
-            this.popupElm.addClass('active');
-            this.popupElm.show();
+            this.popupElm.classList.add('active');
+            this.popupElm.style.display = "block";
         },
         addMessage: function(message) {
-            this.popupElm.find('.popup-content').html(message);
+            this.popupElm.getElementsByClassName('popup-content')[0].innerHTML = message;
             return this;
         },
         setMessage: function(message) {
             this.addMessage(message);
         },
         setTitle: function(title) {
-            this.popupElm.find('.popup-title').html(title);
+            this.popupElm.getElementsByClassName('.popup-title').innerHTML = title;
             return this;
         }
     };
