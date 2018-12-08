@@ -67,17 +67,17 @@ class Bolt_Boltpay_Model_ShippingAndTax extends Mage_Core_Model_Abstract
         }
 
         $addressData = array(
-            'email' => $shipping_email,
+            'email' => @$shipping_email,
             'firstname' => $shippingAddress->first_name,
             'lastname' => $shippingAddress->last_name,
-            'street' => $shipping_street,
-            'company' => $shipping_company,
+            'street' => @$shipping_street,
+            'company' => @$shipping_company,
             'city' => $shippingAddress->locality,
             'region' => $region,
             'region_id' => $regionId,
             'postcode' => $shippingAddress->postal_code,
             'country_id' => $shippingAddress->country_code,
-            'telephone' => $shipping_telephone
+            'telephone' => @$shipping_telephone
         );
 
         if ($quote->getCustomerId()) {
@@ -110,24 +110,24 @@ class Bolt_Boltpay_Model_ShippingAndTax extends Mage_Core_Model_Abstract
             $quote->removeAllAddresses();
             $quote->save();
         }
-        
+
         $quote->getShippingAddress()->addData($addressData)->save();
 
         $billingAddress = $quote->getBillingAddress();
 
         $quote->getBillingAddress()->addData(
             array(
-                'email' => $billingAddress->getEmail() ?: $shipping_email,
+                'email' => $billingAddress->getEmail() ?: @$shipping_email,
                 'firstname' => $billingAddress->getFirstname() ?: $shippingAddress->first_name,
                 'lastname' => $billingAddress->getLastname() ?: $shippingAddress->last_name,
-                'street' => implode("\n", $billingAddress->getStreet()) ?: $shipping_street,
-                'company' => $billingAddress->getCompany() ?: $shipping_company,
+                'street' => implode("\n", $billingAddress->getStreet()) ?: @$shipping_street,
+                'company' => $billingAddress->getCompany() ?: @$shipping_company,
                 'city' => $billingAddress->getCity() ?: $shippingAddress->locality,
                 'region' => $billingAddress->getRegion() ?: $region,
                 'region_id' => $billingAddress->getRegionId() ?: $regionId,
                 'postcode' => $billingAddress->getPostcode() ?: $shippingAddress->postal_code,
                 'country_id' => $billingAddress->getCountryId() ?: $shippingAddress->country_code,
-                'telephone' => $billingAddress->getTelephone() ?: $shipping_telephone
+                'telephone' => $billingAddress->getTelephone() ?: @$shipping_telephone
             )
         )->save();
 
