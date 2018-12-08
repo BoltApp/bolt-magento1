@@ -54,6 +54,16 @@ class Bolt_Boltpay_TestHelper
     public function addTestFlatRateShippingAddress($addressData, $paymentMethod)
     {
         $checkout = Mage::getSingleton('checkout/type_onepage');
+        $addressData = array(
+                'firstname' => 'Luke',
+                'lastname' => 'Skywalker',
+                'street' => 'Sample Street 10',
+                'city' => 'Los Angeles',
+                'postcode' => '90014',
+                'telephone' => '+1 867 345 123 5681',
+                'country_id' => 'US',
+                'region_id' => 12
+            );
         $shippingAddress = $checkout->getQuote()->getShippingAddress()->addData($addressData);
         $shippingAddress
             ->setCollectShippingRates(true)
