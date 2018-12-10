@@ -100,7 +100,7 @@ class Bolt_Boltpay_Model_ShippingAndTax extends Mage_Core_Model_Abstract
                 $address->save();
 
                 $customer->addAddress($address)
-                    ->setDefaultShippingg($address->getId())
+                    ->setDefaultShipping($address->getId())
                     ->save();
             }
         }
