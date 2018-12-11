@@ -65,12 +65,10 @@ class Bolt_Boltpay_Block_Catalog_Product_Boltpay extends Mage_Core_Block_Templat
             ];
 
              return json_encode($productCheckoutCart);
-
         } catch (Exception $e) {
             Mage::helper('boltpay/bugsnag')->notifyException($e);
+            return '""';
         }
-
-        return '""';
     }
 
     /**
