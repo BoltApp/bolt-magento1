@@ -39,32 +39,17 @@ class Bolt_Boltpay_Model_ShippingAndTax extends Mage_Core_Model_Abstract
         $region = $directory->getName(); // For region field should be the name not a code.
         $regionId = $directory->getRegionId(); // This is require field for calculation: shipping, shopping price rules and etc.
 
-        $shipping_email = '';
-        if (isset($shippingAddress->email) && !empty($shippingAddress->email)){
-            $shipping_email = $shippingAddress->email;
-        }else if (isset($shippingAddress->email_address)){
-            $shipping_email = $shippingAddress->email_address;
+        $shipping_email = !isset($shippingAddress->email) ? $shippingAddress->email : $shippingAddress->email_address;
+
+        $shipping_street = !isset($shippingAddress->street_address1) ? $shippingAddress->street_address1 : NULL;
+        $shipping_street2 = !isset($shippingAddress->street_address2) ? $shippingAddress->street_address2 : NULL;
+
+        if ( !empty($shipping_street2) ){
+            $shipping_street .= $shipping_street2;
         }
 
-        $shipping_street = '';
-        if (isset($shippingAddress->street_address1) && !empty($shippingAddress->street_address1)){
-            $shipping_street = $shippingAddress->street_address1;
-        }
-        if (isset($shippingAddress->street_address2) && !empty($shippingAddress->street_address2)){
-            $shipping_street .= $shippingAddress->street_address2;
-        }
-
-        $shipping_telephone = '';
-        if (isset($shippingAddress->phone) && !empty($shippingAddress->phone)){
-            $shipping_telephone = $shippingAddress->phone;
-        }else if (isset($shippingAddress->phone_number) && !empty($shippingAddress->phone_number)){
-            $shipping_telephone = $shippingAddress->phone_number;
-        }
-
-        $shipping_company = '';
-        if (isset($shippingAddress->company) && !empty($shippingAddress->company)){
-            $shipping_company = $shippingAddress->company;
-        }
+        $shipping_telephone = !isset($shippingAddress->phone) ? $shippingAddress->phone : $shippingAddress->phone_number;
+        $shipping_company = !isset($shippingAddress->company) ? $shippingAddress->company : NULL;
 
         $addressData = array(
             'email' => @$shipping_email,
