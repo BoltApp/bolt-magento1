@@ -39,17 +39,17 @@ class Bolt_Boltpay_Model_ShippingAndTax extends Mage_Core_Model_Abstract
         $region = $directory->getName(); // For region field should be the name not a code.
         $regionId = $directory->getRegionId(); // This is require field for calculation: shipping, shopping price rules and etc.
 
-        $shipping_email = !isset($shippingAddress->email) ? $shippingAddress->email : $shippingAddress->email_address;
+        $shipping_email = isset($shippingAddress->email) ? $shippingAddress->email : $shippingAddress->email_address;
 
-        $shipping_street = !isset($shippingAddress->street_address1) ? $shippingAddress->street_address1 : NULL;
-        $shipping_street2 = !isset($shippingAddress->street_address2) ? $shippingAddress->street_address2 : NULL;
+        $shipping_street = isset($shippingAddress->street_address1) ? $shippingAddress->street_address1 : NULL;
+        $shipping_street2 = isset($shippingAddress->street_address2) ? $shippingAddress->street_address2 : NULL;
 
         if ( !empty($shipping_street2) ){
             $shipping_street .= $shipping_street2;
         }
 
-        $shipping_telephone = !isset($shippingAddress->phone) ? $shippingAddress->phone : $shippingAddress->phone_number;
-        $shipping_company = !isset($shippingAddress->company) ? $shippingAddress->company : NULL;
+        $shipping_telephone = isset($shippingAddress->phone) ? $shippingAddress->phone : $shippingAddress->phone_number;
+        $shipping_company = isset($shippingAddress->company) ? $shippingAddress->company : NULL;
 
         $addressData = array(
             'email' => @$shipping_email,
