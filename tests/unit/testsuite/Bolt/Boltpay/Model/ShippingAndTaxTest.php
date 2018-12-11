@@ -58,105 +58,8 @@ class Bolt_Boltpay_Model_ShippingAndTaxTest extends PHPUnit_Framework_TestCase
     */
     public function testApplyShippingAddressToQuote() {
 
-        $quote = Mage::getModel('checkout/cart')->getQuote();
-        $checkout = Mage::getSingleton('checkout/type_onepage');
-        $shippingAddress = $checkout->getQuote()->getShippingAddress();
-
-        $directory = Mage::getModel('directory/region')->loadByName($shippingAddress->region, $shippingAddress->country_code);
-        $region = $directory->getName(); // For region field should be the name not a code.
-        $regionId = $directory->getRegionId(); // This is require field for calculation: shipping, shopping price rules and etc.
-
-        $shipping_email = '';
-        if (isset($shippingAddress->email) && !empty($shippingAddress->email)){
-            $shipping_email = $shippingAddress->email;
-        }else if (isset($shippingAddress->email_address)){
-            $shipping_email = $shippingAddress->email_address;
-        }
-
-        $shipping_street = '';
-        if (isset($shippingAddress->street_address1) && !empty($shippingAddress->street_address1)){
-            $shipping_street = $shippingAddress->street_address1;
-        }
-        if (isset($shippingAddress->street_address2) && !empty($shippingAddress->street_address2)){
-            $shipping_street .= $shippingAddress->street_address2;
-        }
-
-        $shipping_telephone = '';
-        if (isset($shippingAddress->phone) && !empty($shippingAddress->phone)){
-            $shipping_telephone = $shippingAddress->phone;
-        }else if (isset($shippingAddress->phone_number) && !empty($shippingAddress->phone_number)){
-            $shipping_telephone = $shippingAddress->phone_number;
-        }
-
-        $shipping_company = '';
-        if (isset($shippingAddress->company) && !empty($shippingAddress->company)){
-            $shipping_company = $shippingAddress->company;
-        }
-
-        $addressData = array(
-            'email' => @$shipping_email,
-            'firstname' => $shippingAddress->first_name,
-            'lastname' => $shippingAddress->last_name,
-            'street' => @$shipping_street,
-            'company' => @$shipping_company,
-            'city' => $shippingAddress->locality,
-            'region' => $region,
-            'region_id' => $regionId,
-            'postcode' => $shippingAddress->postal_code,
-            'country_id' => $shippingAddress->country_code,
-            'telephone' => @$shipping_telephone
-        );
-
-        if ($quote->getCustomerId()) {
-            $customerSession = Mage::getSingleton('customer/session');
-            $customerSession->setCustomerGroupId($quote->getCustomerGroupId());
-            $customer = Mage::getModel("customer/customer")->load($quote->getCustomerId());
-            $address = $customer->getPrimaryShippingAddress();
-
-            if (!$address) {
-                $address = Mage::getModel('customer/address');
-
-                $address->setCustomerId($customer->getId())
-                    ->setCustomer($customer)
-                    ->setIsDefaultShipping('1')
-                    ->setSaveInAddressBook('1')
-                    ->save();
-
-
-                $address->addData($addressData);
-                $address->save();
-
-                $customer->addAddress($address)
-                    ->setDefaultShipping($address->getId())
-                    ->save();
-            }
-        }
-
-        // https://github.com/BoltApp/bolt-magento1/pull/255
-        if (strpos(Mage::getVersion(), '1.7') !== 0){
-            $quote->removeAllAddresses();
-            $quote->save();
-        }
-
-        $quote->getShippingAddress()->addData($addressData)->save();
-
-        $billingAddress = $quote->getBillingAddress();
-
-        $quote->getBillingAddress()->addData(
-            array(
-                'email' => $billingAddress->getEmail() ?: @$shipping_email,
-                'firstname' => $billingAddress->getFirstname() ?: $shippingAddress->first_name,
-                'lastname' => $billingAddress->getLastname() ?: $shippingAddress->last_name,
-                'street' => implode("\n", $billingAddress->getStreet()) ?: @$shipping_street,
-                'company' => $billingAddress->getCompany() ?: @$shipping_company,
-                'city' => $billingAddress->getCity() ?: $shippingAddress->locality,
-                'region' => $billingAddress->getRegion() ?: $region,
-                'region_id' => $billingAddress->getRegionId() ?: $regionId,
-                'postcode' => $billingAddress->getPostcode() ?: $shippingAddress->postal_code,
-                'country_id' => $billingAddress->getCountryId() ?: $shippingAddress->country_code,
-                'telephone' => $billingAddress->getTelephone() ?: @$shipping_telephone
-            )
-        )->save();
+        $cart = $this->testHelper->addProduct(self::$productId, 2);
+        $quote = $cart->getQuote();
 
         $expected = array(
                 'firstname' => 'Luke',
@@ -166,10 +69,14 @@ class Bolt_Boltpay_Model_ShippingAndTaxTest extends PHPUnit_Framework_TestCase
                 'postcode' => '90014',
                 'telephone' => '+1 867 345 123 5681',
                 'country_id' => 'US',
+                'region' => 'Missouri',
                 'region_id' => 12
             );
 
-        $this->assertEquals($expected, $addressData);
+        $shippingAddress = $quote->getShippingAddress()->addData($expected);
+        $result = $this->currentMock->applyShippingAddressToQuote($originalDiscountedSubtotal, $quote);
+        
+        $this->assertEquals($expected, $result);
     }
 
     /**
