@@ -74,7 +74,7 @@ class Bolt_Boltpay_Model_ShippingAndTaxTest extends PHPUnit_Framework_TestCase
             );
 
         $shippingAddress = $quote->getShippingAddress()->addData($expected);
-        $result = $this->currentMock->applyShippingAddressToQuote($originalDiscountedSubtotal, $quote);
+        $result = $this->currentMock->applyShippingAddressToQuote($quote, $shippingAddress);
         
         $this->assertEquals($expected, $result);
     }
