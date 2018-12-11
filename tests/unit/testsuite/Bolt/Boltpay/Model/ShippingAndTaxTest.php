@@ -58,22 +58,41 @@ class Bolt_Boltpay_Model_ShippingAndTaxTest extends PHPUnit_Framework_TestCase
     */
     public function testApplyShippingAddressToQuote() {
 
+        $this->testHelper->addTestBillingAddress();
+        $addressData = array(
+            'email' => 'test@gmail.com',
+            'first_name' => 'Luke',
+            'last_name' => 'Skywalker',
+            'street_address1' => 'Sample Street 10',
+            'locality' => 'Los Angeles',
+            'postal_code' => '90014',
+            'phone' => '+1 867 345 123 5681',
+            'country_code' => 'US',
+            'company' => 'company',
+            'region' => 'Missouri'
+        );
+
+        $this->testHelper->addTestFlatRateShippingAddress($addressData, 'checkmo');
+
         $cart = $this->testHelper->addProduct(self::$productId, 2);
+
         $quote = $cart->getQuote();
 
         $expected = array(
-                'firstname' => 'Luke',
-                'lastname' => 'Skywalker',
-                'street' => 'Sample Street 10',
-                'city' => 'Los Angeles',
-                'postcode' => '90014',
-                'telephone' => '+1 867 345 123 5681',
+                'email' => 'test@gmail.com',     
+                'firstname'  => 'Luke',
+                'lastname'   => 'Skywalker',
+                'street'     => 'Sample Street 10',
+                'city'       => 'Los Angeles',
+                'postcode'   => '90014',
+                'telephone'  => '+1 867 345 123 5681',
                 'country_id' => 'US',
-                'region' => 'Missouri',
-                'region_id' => 12
+                'company' => 'company',
+                'region_id'  => '12',
+                'region' => 'California'
             );
 
-        $shippingAddress = $quote->getShippingAddress()->addData($expected);
+        $shippingAddress = $quote->getShippingAddress();
         $result = $this->currentMock->applyShippingAddressToQuote($quote, $shippingAddress);
         
         $this->assertEquals($expected, $result);
