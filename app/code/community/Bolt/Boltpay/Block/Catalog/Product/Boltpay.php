@@ -46,7 +46,6 @@ class Bolt_Boltpay_Block_Catalog_Product_Boltpay extends Mage_Core_Block_Templat
             if (!$_product) {
                 $msg = 'Bolt: Cannot find product info';
                 Mage::helper('boltpay/bugsnag')->notifyException($msg);
-
                 return '""';
             }
 
@@ -93,41 +92,27 @@ class Bolt_Boltpay_Block_Catalog_Product_Boltpay extends Mage_Core_Block_Templat
         $successCustom = $boltHelper->getPaymentBoltpayConfig('success', $checkoutType);
         $closeCustom = $boltHelper->getPaymentBoltpayConfig('close', $checkoutType);
 
-        $onCheckCallback = '';
         $onSuccessCallback = $this->buildOnSuccessCallback($successCustom);
         $onCloseCallback = $this->buildOnCloseCallback($closeCustom);
 
         return "{
                   check: function() {
                     $checkCustom
-                    $onCheckCallback
                     return true;
                   },
-                  
                   onCheckoutStart: function() {
-                    // This function is called after the checkout form is presented to the user.
                     $onCheckoutStartCustom
                   },
-                  
                   onShippingDetailsComplete: function() {
-                    // This function is called when the user proceeds to the shipping options page.
-                    // This is applicable only to multi-step checkout.
                     $onShippingDetailsCompleteCustom
                   },
-                  
                   onShippingOptionsComplete: function() {
-                    // This function is called when the user proceeds to the payment details page.
-                    // This is applicable only to multi-step checkout.
                     $onShippingOptionsCompleteCustom
                   },
-                  
                   onPaymentSubmit: function() {
-                    // This function is called after the user clicks the pay button.
                     $onPaymentSubmitCustom
                   },
-                  
                   success: $onSuccessCallback,
-
                   close: function() {
                      $onCloseCallback
                   }
@@ -173,31 +158,6 @@ class Bolt_Boltpay_Block_Catalog_Product_Boltpay extends Mage_Core_Block_Templat
                 location.href = '$successUrl';
             }
             ";
-    }
-
-    /**
-     * Return the session object depending of checkout type.
-     *
-     * @param $checkoutType
-     * @return Mage_Checkout_Model_Session
-     */
-    protected function getSessionObject($checkoutType)
-    {
-        return Mage::getSingleton('checkout/session');
-    }
-
-    /**
-     * Get session quote regarding the checkout type
-     *
-     * @param $checkoutType
-     * @return Mage_Sales_Model_Quote
-     */
-    protected function getSessionQuote($checkoutType)
-    {
-        // Admin and Store front use different session objects.  We get the appropriate one here.
-        $session = $this->getSessionObject($checkoutType);
-
-        return $session->getQuote();
     }
 
     /**

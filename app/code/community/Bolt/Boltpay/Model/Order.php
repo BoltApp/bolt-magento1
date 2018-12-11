@@ -67,7 +67,6 @@ class Bolt_Boltpay_Model_Order extends Mage_Core_Model_Abstract
             /* @var Mage_Sales_Model_Quote $parentQuote */
             $parentQuote = Mage::getModel('sales/quote')->loadByIdWithoutStore($immutableQuote->getParentQuoteId());
 
-
             /*
              * left it here temporarily because we may have some merchants that
              * should have it or have some problems without it.
