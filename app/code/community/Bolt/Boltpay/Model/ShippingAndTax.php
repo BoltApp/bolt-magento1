@@ -40,7 +40,7 @@ class Bolt_Boltpay_Model_ShippingAndTax extends Mage_Core_Model_Abstract
         $regionId = $directory->getRegionId(); // This is require field for calculation: shipping, shopping price rules and etc.
 
         if (!property_exists($shippingAddress, 'postal_code') || !property_exists($shippingAddress, 'country_code')) {
-            throw new Exception(Mage::helper('boltpay')->__("Failed get postal code or country code."));
+            throw new Exception(Mage::helper('boltpay')->__("Address must contain postal_code and country_code."));
         }
 
         $addressData = array(
