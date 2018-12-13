@@ -44,9 +44,8 @@ document.addEventListener("DOMContentLoaded", function() {
             if (typeof BoltCheckout !== "undefined") {
                 clearInterval(processIntervalProd);
                 var qtyValue = parseInt(document.getElementById('qty').value);
-                console.log('Init qValue:', qtyValue);
+
                 if (qtyValue > 0 && !isNaN(qtyValue)) {
-                    console.log('Init qValue>0:', qtyValue);
                     boltConfigPDP.increaseQty(qtyValue);
                     boltConfigPDP.init();
                 } else {
@@ -63,10 +62,8 @@ document.addEventListener("DOMContentLoaded", function() {
 
     document.getElementById('qty').addEventListener('input', function() {
         var qtyValue = parseInt(this.value);
-        console.log('changeInput value:', this.value);
-        console.log('changeInput qtyValue:', qtyValue);
+
         if (qtyValue > 0 && !isNaN(qtyValue)) {
-            console.log('changeInput qtyValue>0:', qtyValue);
             boltConfigPDP.increaseQty(qtyValue);
             boltConfigPDP.init();
         } else {
