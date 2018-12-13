@@ -26,8 +26,10 @@ class Bolt_Boltpay_Model_BoltOrder extends Mage_Core_Model_Abstract
     const ITEM_TYPE_PHYSICAL = 'physical';
     const ITEM_TYPE_DIGITAL  = 'digital';
 
-    // Store discount types, internal and 3rd party.
-    // Can appear as keys in Quote::getTotals result array.
+    /**
+     * @var array  Store discount types, internal and 3rd party.
+     *             Can appear as keys in Quote::getTotals result array.
+     */
     protected $discountTypes = array(
         'discount',
         'giftcardcredit',
@@ -39,6 +41,13 @@ class Bolt_Boltpay_Model_BoltOrder extends Mage_Core_Model_Abstract
         'amgiftcard', // https://amasty.com/magento-gift-card.html
         'amstcred', // https://amasty.com/magento-store-credit.html
         'awraf',    //https://ecommerce.aheadworks.com/magento-extensions/refer-a-friend.html#magento1
+    );
+
+    /**
+     * @var array  list of country codes for which Bolt requires a region
+     */
+    protected $countriesRequiringRegion = array(
+        'US', 'CA',
     );
 
     /**
@@ -175,14 +184,11 @@ class Bolt_Boltpay_Model_BoltOrder extends Mage_Core_Model_Abstract
         } else {
 
             $billingAddress  = $quote->getBillingAddress();
+            $this->correctBillingAddress($quote);
+
             $shippingAddress = $quote->getShippingAddress();
 
             $customerEmail = $this->getCustomerEmail($quote);
-
-            $billingRegion = $billingAddress->getRegion();
-            if (empty($shippingRegion) && !in_array($billingAddress->getCountry(), array('US', 'CA'))) {
-                $billingRegion = $billingAddress->getCity();
-            }
 
             ///////////////////////////////////////////
             // Include billing address info if defined.
@@ -196,7 +202,7 @@ class Bolt_Boltpay_Model_BoltOrder extends Mage_Core_Model_Abstract
                     'first_name'      => $billingAddress->getFirstname(),
                     'last_name'       => $billingAddress->getLastname(),
                     'locality'        => $billingAddress->getCity(),
-                    'region'          => $billingRegion,
+                    'region'          => $billingAddress->getRegion(),
                     'postal_code'     => $billingAddress->getPostcode() ?: '-',
                     'country_code'    => $billingAddress->getCountry(),
                     'phone'           => $billingAddress->getTelephone(),
@@ -343,6 +349,55 @@ class Bolt_Boltpay_Model_BoltOrder extends Mage_Core_Model_Abstract
 
         // otherwise, we have no better thing to do than let the Bolt server do the checking
         return $magentoDerivedCartData;
+    }
+
+    /**
+     * Checks if billing address of a quote has all the expected fields.
+     * If not, the address is updated by using the provided shipping address.
+     *
+     * @param Mage_Sales_Model_Quote $quote Quote that is expected to contain both
+     *                                      a billing and shipping address.
+     *
+     * @return bool  true if a correction is made, otherwise false
+     */
+    public function correctBillingAddress($quote)
+    {
+        $billingAddress = $quote->getBillingAddress();
+        $wasCorrected = false;
+
+        /////////////////////////////////////////////
+        /// Changes persisted to Magento and Bolt
+        /////////////////////////////////////////////
+        if (
+            !$billingAddress->getStreet() ||
+            !$billingAddress->getCity() ||
+            !$billingAddress->getCountry()
+        )
+        {
+            $billingAddress->setData($quote->getShippingAddress()->getData());
+            $billingAddress
+                ->setAddressType(Mage_Sales_Model_Quote_Address::TYPE_BILLING)
+                ->save();
+            $quote->save();
+            $wasCorrected = true;
+        }
+        /////////////////////////////////////////////
+
+        /////////////////////////////////////////////
+        /// Changes persisted only to Bolt
+        /////////////////////////////////////////////
+        if (!$billingAddress->getRegion() && !in_array($billingAddress->getCountry(), $this->countriesRequiringRegion)) {
+            $billingAddress->setRegion($billingAddress->getCity());
+            $wasCorrected = true;
+        }
+
+        if (!$billingAddress->getPostcode()) {
+            $billingAddress->setPostcode('-');
+            $wasCorrected = true;
+        }
+        /////////////////////////////////////////////
+
+        return $wasCorrected;
     }
 
     /**
