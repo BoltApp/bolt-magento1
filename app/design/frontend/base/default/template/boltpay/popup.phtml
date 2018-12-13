@@ -55,14 +55,20 @@
             }, 50);
         },
         addMessage: function(message) {
-            this.popupElm.getElementsByClassName('popup-content')[0].innerHTML = message;
+            var elms = this.popupElm.getElementsByClassName('popup-content');
+            if (elms.length > 0) {
+                elms[0].innerHTML = message;
+            }
             return this;
         },
         setMessage: function(message) {
             this.addMessage(message);
         },
         setTitle: function(title) {
-            this.popupElm.getElementsByClassName('.popup-title')[0].innerHTML = title;
+            var elms = this.popupElm.getElementsByClassName('popup-title');
+            if (elms.length > 0) {
+                elms[0].innerHTML = title;
+            }
             return this;
         }
     };
