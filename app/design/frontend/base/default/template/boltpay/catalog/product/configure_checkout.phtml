@@ -1,8 +1,6 @@
 <?php /* @var $this Bolt_Boltpay_Block_Catalog_Product_Boltpay */ ?>
 <?php if ($this->isEnabledProductPageCheckout()): ?>
 <script type="text/javascript">
-var boltJsonProductCart = '';
-var boltJsonProductHints = null;
 var productPageCheckoutSelector = '<?php $this->escapeHtml($this->getProductPageCheckoutSelector()) ?>';
 var order_completed = false;
 
@@ -16,12 +14,17 @@ var boltConfigPDP = {
             console.log('There is no json product data');
         }
     },
-    init: function() {
-        boltJsonProductCart = this._jsonProductCart;
-        boltJsonProductHints = null;
+    init: function(removeItems) {
+        // copy object that we always have correct product data.
+        var jsonProductCart = Object.assign({}, this._jsonProductCart),
+            boltJsonProductHints = null;
+
+        if (removeItems === true) {
+            jsonProductCart.items = [];
+        }
 
         BoltCheckout.configureProductCheckout(
-            boltJsonProductCart,
+            jsonProductCart,
             boltJsonProductHints,
             <?php echo $this->getBoltCallbacks(); ?>,
             { checkoutButtonClassName: 'bolt-product-checkout-button' }
@@ -40,7 +43,16 @@ document.addEventListener("DOMContentLoaded", function() {
             processIntervalCounter++;
             if (typeof BoltCheckout !== "undefined") {
                 clearInterval(processIntervalProd);
-                boltConfigPDP.init();
+                var qtyValue = parseInt(document.getElementById('qty').value);
+                console.log('Init qValue:', qtyValue);
+                if (qtyValue > 0 && !isNaN(qtyValue)) {
+                    console.log('Init qValue>0:', qtyValue);
+                    boltConfigPDP.increaseQty(qtyValue);
+                    boltConfigPDP.init();
+                } else {
+                    boltConfigPDP.init(true);
+                }
+
             }
 
             if (processIntervalCounter > 50) {
@@ -50,8 +62,16 @@ document.addEventListener("DOMContentLoaded", function() {
     );
 
     document.getElementById('qty').addEventListener('input', function() {
-        boltConfigPDP.increaseQty(parseInt(this.value));
-        boltConfigPDP.init();
+        var qtyValue = parseInt(this.value);
+        console.log('changeInput value:', this.value);
+        console.log('changeInput qtyValue:', qtyValue);
+        if (qtyValue > 0 && !isNaN(qtyValue)) {
+            console.log('changeInput qtyValue>0:', qtyValue);
+            boltConfigPDP.increaseQty(qtyValue);
+            boltConfigPDP.init();
+        } else {
+            boltConfigPDP.init(true);
+        }
     });
 });
 

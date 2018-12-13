@@ -41,7 +41,9 @@ class Bolt_Boltpay_Block_Catalog_Product_Boltpay extends Mage_Core_Block_Templat
             $currency = Mage::app()->getStore()->getCurrentCurrencyCode();
 
             $productCheckoutCartItem = [];
+            $totalAmount = (float) 0;
 
+            /** @var Mage_Catalog_Model_Product $_product */
             $_product = Mage::registry('current_product');
             if (!$_product) {
                 $msg = 'Bolt: Cannot find product info';
@@ -49,14 +51,16 @@ class Bolt_Boltpay_Block_Catalog_Product_Boltpay extends Mage_Core_Block_Templat
                 return '""';
             }
 
-            $productCheckoutCartItem[] = [
-                'reference' => $_product->getId(),
-                'price'     => $_product->getPrice(),
-                'quantity'  => 1,
-                'image'     => $_product->getImageUrl(),
-                'name'  => $_product->getName(),
-            ];
-            $totalAmount = $_product->getPrice();
+            if ($_product->isInStock()) {
+                $productCheckoutCartItem[] = [
+                    'reference' => $_product->getId(),
+                    'price' => $_product->getPrice(),
+                    'quantity' => 1,
+                    'image' => $_product->getImageUrl(),
+                    'name' => $_product->getName(),
+                ];
+                $totalAmount = $_product->getPrice();
+            }
 
             $productCheckoutCart = [
                 'currency' => $currency,
