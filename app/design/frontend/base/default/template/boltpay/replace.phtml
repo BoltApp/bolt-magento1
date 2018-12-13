@@ -25,7 +25,6 @@
 if(!$this->isAllowedReplaceScriptOnCurrentPage()
    || !$this->canUseBolt()
    || !$this->getPublishableKeyForRoute()
-    || Mage::app()->getRequest()->getRouteName() === 'catalog' && Mage::app()->getRequest()->getControllerName() === 'product'
 ) {
     return;
 }
