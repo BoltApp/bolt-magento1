@@ -39,18 +39,22 @@ class Bolt_Boltpay_Model_ShippingAndTax extends Mage_Core_Model_Abstract
         $region = $directory->getName(); // For region field should be the name not a code.
         $regionId = $directory->getRegionId(); // This is require field for calculation: shipping, shopping price rules and etc.
 
+        if (!property_exists($shippingAddress, 'postal_code') || !property_exists($shippingAddress, 'country_code')) {
+            throw new Exception(Mage::helper('boltpay')->__("Address must contain postal_code and country_code."));
+        }
+
         $addressData = array(
-            'email' => $shippingAddress->email ?: $shippingAddress->email_address,
-            'firstname' => $shippingAddress->first_name,
-            'lastname' => $shippingAddress->last_name,
-            'street' => $shippingAddress->street_address1 . ($shippingAddress->street_address2 ? "\n" . $shippingAddress->street_address2 : ''),
-            'company' => $shippingAddress->company,
-            'city' => $shippingAddress->locality,
+            'email' => @$shippingAddress->email ?: $shippingAddress->email_address,
+            'firstname' => @$shippingAddress->first_name,
+            'lastname' => @$shippingAddress->last_name,
+            'street' => @$shippingAddress->street_address1 . ($shippingAddress->street_address2 ? "\n" . $shippingAddress->street_address2 : ''),
+            'company' => @$shippingAddress->company,
+            'city' => @$shippingAddress->locality,
             'region' => $region,
             'region_id' => $regionId,
             'postcode' => $shippingAddress->postal_code,
             'country_id' => $shippingAddress->country_code,
-            'telephone' => $shippingAddress->phone ?: $shippingAddress->phone_number
+            'telephone' => @$shippingAddress->phone ?: $shippingAddress->phone_number
         );
 
         if ($quote->getCustomerId()) {
@@ -90,17 +94,17 @@ class Bolt_Boltpay_Model_ShippingAndTax extends Mage_Core_Model_Abstract
 
         $quote->getBillingAddress()->addData(
             array(
-                'email' => $billingAddress->getEmail() ?: ($shippingAddress->email ?: $shippingAddress->email_address),
-                'firstname' => $billingAddress->getFirstname() ?: $shippingAddress->first_name,
-                'lastname' => $billingAddress->getLastname() ?: $shippingAddress->last_name,
-                'street' => implode("\n", $billingAddress->getStreet()) ?: $shippingAddress->street_address1 . ($shippingAddress->street_address2 ? "\n" . $shippingAddress->street_address2 : ''),
-                'company' => $billingAddress->getCompany() ?: $shippingAddress->company,
-                'city' => $billingAddress->getCity() ?: $shippingAddress->locality,
+                'email' => $billingAddress->getEmail() ?: (@$shippingAddress->email ?: @$shippingAddress->email_address),
+                'firstname' => $billingAddress->getFirstname() ?: @$shippingAddress->first_name,
+                'lastname' => $billingAddress->getLastname() ?: @$shippingAddress->last_name,
+                'street' => implode("\n", $billingAddress->getStreet()) ?: @$shippingAddress->street_address1 . ($shippingAddress->street_address2 ? "\n" . $shippingAddress->street_address2 : ''),
+                'company' => $billingAddress->getCompany() ?: @$shippingAddress->company,
+                'city' => $billingAddress->getCity() ?: @$shippingAddress->locality,
                 'region' => $billingAddress->getRegion() ?: $region,
                 'region_id' => $billingAddress->getRegionId() ?: $regionId,
-                'postcode' => $billingAddress->getPostcode() ?: $shippingAddress->postal_code,
-                'country_id' => $billingAddress->getCountryId() ?: $shippingAddress->country_code,
-                'telephone' => $billingAddress->getTelephone() ?: ($shippingAddress->phone ?: $shippingAddress->phone_number)
+                'postcode' => $billingAddress->getPostcode() ?: @$shippingAddress->postal_code,
+                'country_id' => $billingAddress->getCountryId() ?: @$shippingAddress->country_code,
+                'telephone' => $billingAddress->getTelephone() ?: (@$shippingAddress->phone ?: $shippingAddress->phone_number)
             )
         )->save();
 
