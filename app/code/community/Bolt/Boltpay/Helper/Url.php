@@ -89,13 +89,26 @@ class Bolt_Boltpay_Helper_Url extends Mage_Core_Helper_Abstract
     }
 
     /**
-     * Generate (if) secure url by route and parameters
-     * @param string $route
-     * @param array $params
-     * @return string
+     * Generates a magento URL by route and parameters,
+     * auto-detecting if it should secure or insecure
+     *
+     * @param string $route     magento path specified in XML configs
+     * @param array $params     directives for constructing the url
+     * @param bool $isAdmin     if true, constructs a backend URL, otherwise frontend
+     *
+     * @return string   constructed url with appropriate protocol
+     *
      * @throws Mage_Core_Model_Store_Exception
      */
-    public function getMagentoUrl($route = '', $params = array()){
+    public function getMagentoUrl($route = '', $params = array(), $isAdmin = false ){
+        if ($isAdmin) {
+            if ((Mage::app()->getStore()->isAdminUrlSecure()) &&
+                (Mage::app()->getRequest()->isSecure())) {
+                $params["_secure"] = true;
+            }
+            return Mage::helper("adminhtml")->getUrl($route, $params);
+        }
+
         if ((Mage::app()->getStore()->isFrontUrlSecure()) &&
             (Mage::app()->getRequest()->isSecure())) {
             $params["_secure"] = true;

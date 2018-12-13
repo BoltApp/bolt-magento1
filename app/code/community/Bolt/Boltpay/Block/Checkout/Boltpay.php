@@ -55,49 +55,22 @@ class Bolt_Boltpay_Block_Checkout_Boltpay extends Mage_Checkout_Block_Onepage_Re
     /**
      * Get an order token for a Bolt order either by creating it or making a Promise to create it
      *
-     * @param Mage_Sales_Model_Quote $quote         Magento quote object which represents order/cart data
-     * @param string                 $checkoutType  'multi-page' | 'one-page' | 'admin' | 'firecheckout'
+     * @param Mage_Sales_Model_Quote|null $quote            Magento quote object which represents
+     *                                                      order/cart data. Should be null if a
+     *                                                      Promise is desired
+     * @param string                      $checkoutType     'multi-page' | 'one-page' | 'admin' | 'firecheckout'
      *
-     * @return mixed json based PHP object or a javascript Promise string when initializing firecheckout
+     * @return object|string  json based PHP object or a javascript Promise string for initializing BoltCheckout
      */
     public function getBoltOrderToken($quote, $checkoutType)
     {
+        if ( !$quote ) {
+            return $this->getBoltOrderTokenPromise($checkoutType);
+        }
+
         /** @var Bolt_Boltpay_Helper_Api $boltHelper */
         $boltHelper = Mage::helper('boltpay/api');
         $isMultiPage = $checkoutType === self::CHECKOUT_TYPE_MULTI_PAGE;
-
-        if ($checkoutType === self::CHECKOUT_TYPE_FIRECHECKOUT) {
-            $firecheckoutTokenUrl = Mage::helper('boltpay/url')->getMagentoUrl('boltpay/order/firecheckoutcreate');
-            return <<<PROMISE
-                        new Promise( 
-                            function (resolve, reject) {
-                                var firecheckoutAjaxId = setInterval(
-                                    function() {
-                                         if (isFireCheckoutFormValid) {
-                                            new Ajax.Request('$firecheckoutTokenUrl', {
-                                                method:'post',
-                                                parameters: checkout.getFormData ? checkout.getFormData() : Form.serialize(checkout.form, true),
-                                                onSuccess: function(response) {
-                                                    if(response.responseJSON.error) {                                                        
-                                                        reject(response.responseJSON.error_messages);
-                                                        
-                                                        // BoltCheckout is currently not doing anything reasonable to alert the user of a problem, so we will do something as a backup
-                                                        alert(response.responseJSON.error_messages);
-                                                        location.reload();
-                                                    } else {
-                                                        resolve(response.responseJSON.cart_data);
-                                                    }                   
-                                                },
-                                                 onFailure: function(error) { reject(error) }
-                                            });
-                                            clearInterval(firecheckoutAjaxId);
-                                         }
-                                    }, 300
-                                );
-                            }
-                        )
-PROMISE;
-        }
 
         $items = $quote->getAllVisibleItems();
 
@@ -132,6 +105,62 @@ PROMISE;
 
         // Calls Bolt create order API
         return $boltHelper->transmit('orders', $orderRequest);
+    }
+
+
+    /**
+     * Get Promise to create an order token
+     *
+     * @param string  $checkoutType  'multi-page' | 'one-page' | 'admin' | 'firecheckout'
+     *
+     * @return string javascript Promise string used for initializing BoltCheckout
+     */
+    protected function getBoltOrderTokenPromise($checkoutType) {
+
+        if ( $checkoutType === self::CHECKOUT_TYPE_FIRECHECKOUT ) {
+            $checkoutTokenUrl = Mage::helper('boltpay/url')->getMagentoUrl('boltpay/order/firecheckoutcreate');
+            $validPreconditionsCheck = 'isFireCheckoutFormValid';
+            $postData = 'checkout.getFormData ? checkout.getFormData() : Form.serialize(checkout.form, true)';
+        } else if ( $checkoutType === self::CHECKOUT_TYPE_ADMIN ) {
+            $checkoutTokenUrl = Mage::helper('boltpay/url')->getMagentoUrl("adminhtml/sales_order_create/create/checkoutType/$checkoutType", true);
+            $validPreconditionsCheck = ( $checkoutType === self::CHECKOUT_TYPE_ADMIN ) ? 'isAdminFormValid' : 'true';
+            $postData = "'true'";
+        } else {
+            $checkoutTokenUrl = Mage::helper('boltpay/url')->getMagentoUrl("boltpay/order/create/checkoutType/$checkoutType");
+            $validPreconditionsCheck = 'true';
+            $postData = "'true'";
+        }
+
+        return <<<PROMISE
+                    new Promise( 
+                        function (resolve, reject) {
+                            var checkoutAjaxId = setInterval(
+                                function() {
+                                     if ($validPreconditionsCheck) {
+                                        new Ajax.Request('$checkoutTokenUrl', {
+                                            method:'post',
+                                            parameters: $postData,
+                                            onSuccess: function(response) {
+                                                if(response.responseJSON.error) {                                                        
+                                                    reject(response.responseJSON.error_messages);
+                                                    
+                                                    // BoltCheckout is currently not doing anything reasonable to alert the user of a problem, so we will do something as a backup
+                                                    alert(response.responseJSON.error_messages);
+                                                    location.reload();
+                                                } else {
+                                                    resolve(response.responseJSON.cart_data);
+                                                }                   
+                                            },
+                                             onFailure: function(error) { reject(error) }
+                                        });
+                                        clearInterval(checkoutAjaxId);
+                                     }
+                                }, 300
+                            );
+                        }
+                    )
+PROMISE;
+
     }
 
     /**
@@ -197,18 +226,8 @@ PROMISE;
 
             // Call Bolt create order API
             try {
-                /////////////////////////////////////////////////////////////////////////////////
-                // We create a copy of the quote that is immutable by the customer/frontend
-                // Bolt saves this quote to the database at Magento-side order save time.
-                // This assures that the quote saved to Magento matches what is stored on Bolt
-                // Only shipping, tax and discounts can change, and only if the shipping, tax
-                // and discount calculations change on the Magento server
-                ////////////////////////////////////////////////////////////////////////////////
-                /** @var Mage_Sales_Model_Quote $immutableQuote */
-                $immutableQuote = $boltHelper->cloneQuote($sessionQuote, $checkoutType);
-                ////////////////////////////////////////////////////////////////////////////////
 
-                $orderCreationResponse = $this->getBoltOrderToken($immutableQuote, $checkoutType);
+                $orderCreationResponse = $this->getBoltOrderToken(null, $checkoutType);
 
                 if (@!$orderCreationResponse->error) {
                     ///////////////////////////////////////////////////////////////////////////////////////
@@ -246,9 +265,7 @@ PROMISE;
                 $shippingAndTaxModel->applyShippingRate($sessionQuote, $shippingMethod);
             }
 
-            $cartData = ($checkoutType === self::CHECKOUT_TYPE_FIRECHECKOUT) ? $orderCreationResponse : $this->buildCartData($orderCreationResponse, $checkoutType);
-
-            return $this->buildBoltCheckoutJavascript($checkoutType, $immutableQuote, $hintData, $cartData);
+            return $this->buildBoltCheckoutJavascript($checkoutType, $sessionQuote, $hintData, $orderCreationResponse);
 
         } catch (Exception $e) {
             Mage::helper('boltpay/bugsnag')->notifyException($e);
@@ -328,20 +345,6 @@ PROMISE;
         $onSuccessCallback = $this->buildOnSuccessCallback($successCustom, $checkoutType);
         $onCloseCallback = $this->buildOnCloseCallback($closeCustom, $checkoutType);
 
-        $requiredCheck = ($checkoutType === self::CHECKOUT_TYPE_FIRECHECKOUT)
-            ? ""
-            : "
-                    if (!json_cart.orderToken) {
-                        if (typeof BoltPopup !== \"undefined\") {
-                            BoltPopup.addMessage(json_cart.error).show();
-                        } else {
-                            alert(json_cart.error);
-                        }
-                        return false;
-                    }
-            "
-        ;
-
         $hintsTransformFunction = $boltHelper->getExtraConfig('hintsTransform');
 
         return ("
@@ -349,7 +352,6 @@ PROMISE;
             
             var json_cart = $jsonCart;
             var json_hints = \$hints_transform($jsonHints);
-            var quote_id = '{$quote->getId()}';
             var order_completed = false;
 
             BoltCheckout.configure(
@@ -357,7 +359,6 @@ PROMISE;
                 json_hints,
                 {
                   check: function() {
-                    $requiredCheck
                     $checkCustom
                     $onCheckCallback
                     return true;
@@ -423,7 +424,7 @@ PROMISE;
                         } "). "
         
                         bolt_hidden.classList.add('required-entry');
-                        return is_valid;
+                        return (isAdminFormValid = is_valid);
                     }
                     ";
             case self::CHECKOUT_TYPE_FIRECHECKOUT:
@@ -534,7 +535,7 @@ PROMISE;
      * @param $checkoutType
      * @return Mage_Sales_Model_Quote
      */
-    protected function getSessionQuote($checkoutType)
+    public function getSessionQuote($checkoutType)
     {
         // Admin and Store front use different session objects.  We get the appropriate one here.
         $session = $this->getSessionObject($checkoutType);
