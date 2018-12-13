@@ -54,6 +54,89 @@ class Bolt_Boltpay_Model_ShippingAndTaxTest extends PHPUnit_Framework_TestCase
     }
 
     /**
+     *Test ShippingAddresstoQuote
+     */
+    public function testApplyShippingAddressToQuote() {
+        $cart = $this->testHelper->addProduct(self::$productId, 2);
+        $quote = $cart->getQuote();
+        $shippingAddress = (object) array(
+            'email' => 'test@bolt.com',
+            'first_name' => 'Luke',
+            'last_name' => 'Skywalker',
+            'street_address1' => 'Sample Street 10',
+            'street_address2' => 'Apt 123',
+            'locality' => 'Los Angeles',
+            'postal_code' => '90014',
+            'phone' => '+1 867 345 123 5681',
+            'country_code' => 'US',
+            'company' => 'Bolt',
+            'region' => 'California'
+        );
+        $result = $this->currentMock->applyShippingAddressToQuote($quote, $shippingAddress);
+
+        $expected = array(
+            'email' => 'test@bolt.com',
+            'firstname'  => 'Luke',
+            'lastname'   => 'Skywalker',
+            'street'     => 'Sample Street 10' . "\n" . 'Apt 123',
+            'city'       => 'Los Angeles',
+            'postcode'   => '90014',
+            'telephone'  => '+1 867 345 123 5681',
+            'country_id' => 'US',
+            'company' => 'Bolt',
+            'region_id'  => '12',
+            'region' => 'California'
+        );
+        $this->assertEquals($expected, $result);
+    }
+
+    public function testApplyShippingAddressToQuote_withsomefieldmissing() {
+        $cart = $this->testHelper->addProduct(self::$productId, 2);
+        $quote = $cart->getQuote();
+        $shippingAddress = (object) array(
+            'email' => 'test@bolt.com',
+            'first_name' => 'Luke',
+            'last_name' => 'Skywalker',
+            'postal_code' => '90014',
+            'phone' => '+1 867 345 123 5681',
+            'country_code' => 'US',
+            'region' => 'California'
+        );
+        $result = $this->currentMock->applyShippingAddressToQuote($quote, $shippingAddress);
+
+        $expected = array(
+            'email' => 'test@bolt.com',
+            'firstname'  => 'Luke',
+            'lastname'   => 'Skywalker',
+            'street'     => '',
+            'city'       => null,
+            'postcode'   => '90014',
+            'telephone'  => '+1 867 345 123 5681',
+            'country_id' => 'US',
+            'company'    => null,
+            'region_id'  => '12',
+            'region' => 'California'
+        );
+        $this->assertEquals($expected, $result);
+    }
+
+    public function testApplyShippingAddressToQuote_throwsForBadInput() {
+        $cart = $this->testHelper->addProduct(self::$productId, 2);
+        $quote = $cart->getQuote();
+        $shippingAddress = (object) array(
+            'email' => 'test@bolt.com'
+        );
+        try {
+            $this->currentMock->applyShippingAddressToQuote($quote, $shippingAddress);
+        } catch (Exception $e) {
+            $this->assertEquals('Address must contain postal_code and country_code.', $e->getMessage());
+            return;
+        }
+
+        $this->fail('applyShippingAddressToQuote did not throw');
+    }
+
+    /**
      * Unit test for get adjusted shipping amount with no discount
      * - subtotal : $100
      * - shipping amount: $50
