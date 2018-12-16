@@ -90,7 +90,7 @@ class Bolt_Boltpay_Model_ShippingAndTax extends Mage_Core_Model_Abstract
 
         $quote->getShippingAddress()->addData($addressData)->save();
         Mage::getModel('boltpay/boltOrder')->correctBillingAddress($quote);
-        
+
         return $addressData;
     }
 

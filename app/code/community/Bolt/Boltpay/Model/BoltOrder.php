@@ -363,6 +363,7 @@ class Bolt_Boltpay_Model_BoltOrder extends Mage_Core_Model_Abstract
     public function correctBillingAddress($quote)
     {
         $billingAddress = $quote->getBillingAddress();
+        $shippingAddress = $quote->getShippingAddress();
         $wasCorrected = false;
 
         /////////////////////////////////////////////
@@ -374,12 +375,32 @@ class Bolt_Boltpay_Model_BoltOrder extends Mage_Core_Model_Abstract
             !$billingAddress->getCountry()
         )
         {
-            $billingAddress->setData($quote->getShippingAddress()->getData());
+            $oldPrefix = $billingAddress->getPrefix();
+            $oldFirstName = $billingAddress->getFirstname();
+            $oldMiddleName = $billingAddress->getMiddlename();
+            $oldLastName = $billingAddress->getLastname();
+            $oldSuffix = $billingAddress->getSuffix();
+
+            $billingAddress->setData($shippingAddress->getData());
             $billingAddress
+                ->setPrefix($oldPrefix)
+                ->setFirstname($oldFirstName)
+                ->setMiddlename($oldMiddleName)
+                ->setLastname($oldLastName)
+                ->setSuffix($oldSuffix)
                 ->setAddressType(Mage_Sales_Model_Quote_Address::TYPE_BILLING)
                 ->save();
             $quote->save();
             $wasCorrected = true;
+        }
+
+        if (!$billingAddress->getName()) {
+            $billingAddress
+                ->setPrefix($shippingAddress->getPrefix())
+                ->setFirstname($shippingAddress->getFirstname())
+                ->setMiddlename($shippingAddress->getMiddlename())
+                ->setLastname($shippingAddress->getLastname())
+                ->setSuffix($shippingAddress->getSuffix());
         }
         /////////////////////////////////////////////
 
