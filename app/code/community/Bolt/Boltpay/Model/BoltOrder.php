@@ -407,7 +407,11 @@ class Bolt_Boltpay_Model_BoltOrder extends Mage_Core_Model_Abstract
         /////////////////////////////////////////////
         /// Changes persisted only to Bolt
         /////////////////////////////////////////////
-        if (!$billingAddress->getRegion() && !in_array($billingAddress->getCountry(), $this->countriesRequiringRegion)) {
+        if (
+            !$billingAddress->getRegion() &&
+            !in_array($billingAddress->getCountry(), $this->countriesRequiringRegion)
+        )
+        {
             $billingAddress->setRegion($billingAddress->getCity());
             $wasCorrected = true;
         }
