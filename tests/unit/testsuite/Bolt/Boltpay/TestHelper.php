@@ -144,7 +144,6 @@ class Bolt_Boltpay_TestHelper
             
             var json_cart = $jsonCart;
             var json_hints = \$hints_transform($jsonHints);
-            var quote_id = '{$immutableQuoteId}';
             var order_completed = false;
 
             BoltCheckout.configure(
@@ -152,14 +151,6 @@ class Bolt_Boltpay_TestHelper
                 json_hints,
                 {
                   check: function() {
-                    if (!json_cart.orderToken) {
-                        if (typeof BoltPopup !== \"undefined\") {
-                            BoltPopup.addMessage(json_cart.error).show();
-                        } else {
-                            alert(json_cart.error);
-                        }
-                        return false;
-                    }
                     $checkCustom
                     $onCheckCallbackAdmin
                     return true;

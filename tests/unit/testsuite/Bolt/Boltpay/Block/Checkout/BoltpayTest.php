@@ -172,10 +172,22 @@ class Bolt_Boltpay_Block_Checkout_BoltpayTest extends PHPUnit_Framework_TestCase
         $autoCapture = true;
         $this->app->getStore()->setConfig('payment/boltpay/auto_capture', $autoCapture);
 
-        $cartData = array(
-            'authcapture' => $autoCapture,
-            'orderToken' => md5('bolt')
+        $cartData = json_encode (
+            array(
+                'authcapture' => $autoCapture,
+                'orderToken' => md5('bolt')
+            )
         );
+
+        $promiseOfCartData =
+            "
+            new Promise( 
+                function (resolve, reject) {
+                    resolve($cartData);
+                }
+            )
+            "
+        ;
 
         $hintData = array();
 
@@ -192,11 +204,10 @@ class Bolt_Boltpay_Block_Checkout_BoltpayTest extends PHPUnit_Framework_TestCase
         $quote = Mage::getModel('sales/quote');
         $quote->setId(6);
 
-        $jsonCart = json_encode($cartData);
         $jsonHints = json_encode($hintData, JSON_FORCE_OBJECT);
         $onSuccessCallback = 'function(transaction, callback) { console.log(test) }';
 
-        $expected = $this->testHelper->buildCartDataJs($jsonCart, $quote->getId(), $jsonHints, array(
+        $expected = $this->testHelper->buildCartDataJs($promiseOfCartData, $quote->getId(), $jsonHints, array(
             'onSuccessCallback' => $onSuccessCallback
         ));
 
@@ -210,7 +221,7 @@ class Bolt_Boltpay_Block_Checkout_BoltpayTest extends PHPUnit_Framework_TestCase
             ->method('buildOnCloseCallback')
             ->will($this->returnValue(''));
 
-        $result = $this->currentMock->buildBoltCheckoutJavascript($checkoutType, $quote, $hintData, $cartData);
+        $result = $this->currentMock->buildBoltCheckoutJavascript($checkoutType, $quote, $hintData, $promiseOfCartData);
 
         $this->assertEquals(preg_replace('/\s/', '', $expected), preg_replace('/\s/', '', $result));
     }
@@ -234,6 +245,11 @@ class Bolt_Boltpay_Block_Checkout_BoltpayTest extends PHPUnit_Framework_TestCase
      */
     public function testBuildOnCheckCallbackIfAdminArea()
     {
+        /** @var Mage_Sales_Model_Quote $quote */
+        $quote = Mage::getModel('sales/quote');
+        $quote->setId(6);
+        $quote->setIsVirtual(0);
+
         $checkoutType = Bolt_Boltpay_Block_Checkout_Boltpay::CHECKOUT_TYPE_ADMIN;
         $checkCallback = "
              if ((typeof editForm !== 'undefined') && (typeof editForm.validate === 'function')) {
@@ -253,12 +269,9 @@ class Bolt_Boltpay_Block_Checkout_BoltpayTest extends PHPUnit_Framework_TestCase
                 }
 
                 bolt_hidden.classList.add('required-entry');
-                return is_valid;
+                return (isAdminFormValid = is_valid);
             }
         ";
-
-        $quote = Mage::getModel('sales/quote');
-        $quote->setId(6);
 
         $result = $this->currentMock->buildOnCheckCallback($checkoutType, $quote);
 
