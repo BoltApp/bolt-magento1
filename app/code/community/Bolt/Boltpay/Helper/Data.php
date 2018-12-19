@@ -203,7 +203,6 @@ class Bolt_Boltpay_Helper_Data extends Mage_Core_Helper_Abstract
         $checkoutType = Bolt_Boltpay_Block_Checkout_Boltpay::CHECKOUT_TYPE_MULTI_PAGE
     )
     {
-
         /* @var Mage_Sales_Model_Quote $clonedQuote */
         $clonedQuote = Mage::getSingleton('sales/quote');
 

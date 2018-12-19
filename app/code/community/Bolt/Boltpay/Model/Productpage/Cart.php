@@ -52,6 +52,7 @@ class Bolt_Boltpay_Model_Productpage_Cart extends Mage_Core_Model_Abstract
         try {
             $this->validateCartRequest();
             $this->createCart();
+            $this->createImmutableQuote();
             $this->setCartResponse();
         } catch (\Bolt_Boltpay_BadInputException $e) {
             return false;
@@ -211,6 +212,23 @@ class Bolt_Boltpay_Model_Productpage_Cart extends Mage_Core_Model_Abstract
         $cart->save();
 
         return $cart;
+    }
+
+    /**
+     * The cloned copy of the source quote
+     *
+     * @return Mage_Sales_Model_Quote
+     * @throws Exception
+     */
+    protected function createImmutableQuote()
+    {
+        $cart = $this->getSessionCart();
+        $sessionQuote = $cart->getQuote();
+
+        /* @var Bolt_Boltpay_Helper_Api $boltHelper */
+        $boltHelper = Mage::helper('boltpay/api');
+
+        return $boltHelper->cloneQuote($sessionQuote);
     }
 
     /**
