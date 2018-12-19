@@ -91,11 +91,9 @@ class Bolt_Boltpay_Model_Order extends Mage_Core_Model_Abstract
                 $immutableQuote->setCustomerEmail($email);
             }
 
-            if ($parentQuote) {
                 // explicitly set quote belong to guest if customer id does not exist
-                $immutableQuote
-                    ->setCustomerIsGuest((($parentQuote->getCustomerId()) ? false : true));
-            }
+            $immutableQuote
+                ->setCustomerIsGuest((($parentQuote && $parentQuote->getCustomerId()) ? false : true));
 
             // Set the firstname and lastname if guest customer.
             if ($immutableQuote->getCustomerIsGuest()) {
@@ -259,10 +257,8 @@ class Bolt_Boltpay_Model_Order extends Mage_Core_Model_Abstract
         // This creates a circular reference so that we can use the parent quote
         // to look up the used immutable quote
         ///////////////////////////////////////////////////////
-        if ($parentQuote) {
-            $parentQuote->setParentQuoteId($immutableQuote->getId())
-                ->save();
-        }
+        $parentQuote->setParentQuoteId($immutableQuote->getId())
+            ->save();
         ///////////////////////////////////////////////////////
 
         Mage::getModel('boltpay/payment')->handleOrderUpdate($order);
