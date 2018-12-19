@@ -73,12 +73,13 @@ class Bolt_Boltpay_Model_ShippingAndTaxTest extends PHPUnit_Framework_TestCase
             'region' => 'California'
         );
         $result = $this->currentMock->applyShippingAddressToQuote($quote, $shippingAddress);
-
+        array_walk( $result, function(&$value, $key){ $value = trim($value); } );
+            
         $expected = array(
             'email' => 'test@bolt.com',
             'firstname'  => 'Luke',
             'lastname'   => 'Skywalker',
-            'street'     => 'Sample Street 10' . "\n" . 'Apt 123' . "\n\n",
+            'street'     => 'Sample Street 10' . "\n" . 'Apt 123',
             'city'       => 'Los Angeles',
             'postcode'   => '90014',
             'telephone'  => '+1 867 345 123 5681',
@@ -103,12 +104,13 @@ class Bolt_Boltpay_Model_ShippingAndTaxTest extends PHPUnit_Framework_TestCase
             'region' => 'California'
         );
         $result = $this->currentMock->applyShippingAddressToQuote($quote, $shippingAddress);
-
+        array_walk( $result, function(&$value, $key){ $value = trim($value); } );
+        
         $expected = array(
             'email' => 'test@bolt.com',
             'firstname'  => 'Luke',
             'lastname'   => 'Skywalker',
-            'street'     => "\n\n\n",
+            'street'     => "",
             'city'       => null,
             'postcode'   => '90014',
             'telephone'  => '+1 867 345 123 5681',
