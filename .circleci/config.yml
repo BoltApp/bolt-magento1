@@ -20,7 +20,7 @@ jobs:
       - run:
           name: PHP 5.5 Magento 1.9
           command: |
-            PHPUNIT_PHAR=tests/unit/phpunit-4.8.36.phar MAGENTO_VERSION=magento-mirror-1.9.3.6tests/scripts/ci.sh
+            PHPUNIT_PHAR=tests/unit/phpunit-4.8.36.phar MAGENTO_VERSION=magento-mirror-1.9.3.6 tests/scripts/ci.sh
 
   unit-php56-mage18:
     docker:
