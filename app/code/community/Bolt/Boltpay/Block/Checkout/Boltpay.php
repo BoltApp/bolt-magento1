@@ -56,17 +56,13 @@ class Bolt_Boltpay_Block_Checkout_Boltpay extends Mage_Checkout_Block_Onepage_Re
      * Get an order token for a Bolt order either by creating it or making a Promise to create it
      *
      * @param Mage_Sales_Model_Quote|null $quote            Magento quote object which represents
-     *                                                      order/cart data. Should be null if a
-     *                                                      Promise is desired
+     *                                                      order/cart data.
      * @param string                      $checkoutType     'multi-page' | 'one-page' | 'admin' | 'firecheckout'
      *
      * @return object|string  json based PHP object or a javascript Promise string for initializing BoltCheckout
      */
     public function getBoltOrderToken($quote, $checkoutType)
     {
-        if ( !$quote ) {
-            return $this->getBoltOrderTokenPromise($checkoutType);
-        }
 
         /** @var Bolt_Boltpay_Helper_Api $boltHelper */
         $boltHelper = Mage::helper('boltpay/api');
@@ -119,16 +115,13 @@ class Bolt_Boltpay_Block_Checkout_Boltpay extends Mage_Checkout_Block_Onepage_Re
 
         if ( $checkoutType === self::CHECKOUT_TYPE_FIRECHECKOUT ) {
             $checkoutTokenUrl = Mage::helper('boltpay/url')->getMagentoUrl('boltpay/order/firecheckoutcreate');
-            $validPreconditionsCheck = 'isFireCheckoutFormValid';
-            $postData = 'checkout.getFormData ? checkout.getFormData() : Form.serialize(checkout.form, true)';
+            $parameters = 'checkout.getFormData ? checkout.getFormData() : Form.serialize(checkout.form, true)';
         } else if ( $checkoutType === self::CHECKOUT_TYPE_ADMIN ) {
-            $checkoutTokenUrl = Mage::helper('boltpay/url')->getMagentoUrl("adminhtml/sales_order_create/create/checkoutType/$checkoutType", true);
-            $validPreconditionsCheck = ( $checkoutType === self::CHECKOUT_TYPE_ADMIN ) ? 'isAdminFormValid' : 'true';
-            $postData = "'true'";
+            $checkoutTokenUrl = Mage::helper('boltpay/url')->getMagentoUrl("adminhtml/sales_order_create/create/checkoutType/$checkoutType", array(), true);
+            $parameters = "''";
         } else {
             $checkoutTokenUrl = Mage::helper('boltpay/url')->getMagentoUrl("boltpay/order/create/checkoutType/$checkoutType");
-            $validPreconditionsCheck = 'true';
-            $postData = "'true'";
+            $parameters = "''";
         }
 
         return <<<PROMISE
@@ -136,10 +129,10 @@ class Bolt_Boltpay_Block_Checkout_Boltpay extends Mage_Checkout_Block_Onepage_Re
                         function (resolve, reject) {
                             var checkoutAjaxId = setInterval(
                                 function() {
-                                     if ($validPreconditionsCheck) {
+                                     if (isReadyToCreateBoltOrder) {
                                         new Ajax.Request('$checkoutTokenUrl', {
                                             method:'post',
-                                            parameters: $postData,
+                                            parameters: $parameters,
                                             onSuccess: function(response) {
                                                 if(response.responseJSON.error) {                                                        
                                                     reject(response.responseJSON.error_messages);
@@ -214,7 +207,7 @@ PROMISE;
 
             $hintData = $this->getAddressHints($sessionQuote, $checkoutType);
 
-            $orderCreationResponse = json_decode('{"token" : "", "error": "'.Mage::helper('boltpay')->__('Unexpected error.  Please contact support for assistance.').'"}');
+            $cartData = json_decode('{"token" : "", "error": "'.Mage::helper('boltpay')->__('Unexpected error.  Please contact support for assistance.').'"}');
 
             $isMultiPage = ($checkoutType === self::CHECKOUT_TYPE_MULTI_PAGE);
             // For multi-page, remove shipping that may have been added by Magento shipping and tax estimate interface
@@ -227,9 +220,9 @@ PROMISE;
             // Call Bolt create order API
             try {
 
-                $orderCreationResponse = $this->getBoltOrderToken(null, $checkoutType);
+                $cartData = $this->getBoltOrderTokenPromise($checkoutType);
 
-                if (@!$orderCreationResponse->error) {
+                if (@!$cartData->error) {
                     ///////////////////////////////////////////////////////////////////////////////////////
                     // Merchant scope: get "bolt_user_id" if the user is logged in or should be registered,
                     // sign it and add to hints.
@@ -265,7 +258,7 @@ PROMISE;
                 $shippingAndTaxModel->applyShippingRate($sessionQuote, $shippingMethod);
             }
 
-            return $this->buildBoltCheckoutJavascript($checkoutType, $sessionQuote, $hintData, $orderCreationResponse);
+            return $this->buildBoltCheckoutJavascript($checkoutType, $sessionQuote, $hintData, $cartData);
 
         } catch (Exception $e) {
             Mage::helper('boltpay/bugsnag')->notifyException($e);
@@ -424,13 +417,14 @@ PROMISE;
                         } "). "
         
                         bolt_hidden.classList.add('required-entry');
-                        return (isAdminFormValid = is_valid);
+                        isReadyToCreateBoltOrder = is_valid;
+                        return is_valid;
                     }
                     ";
             case self::CHECKOUT_TYPE_FIRECHECKOUT:
                 return
                     "
-                    return (isFireCheckoutFormValid = checkout.validate());
+                    return (isReadyToCreateBoltOrder = checkout.validate());
                     ";
             default:
                 return '';
@@ -502,7 +496,7 @@ PROMISE;
             case self::CHECKOUT_TYPE_FIRECHECKOUT:
                 $javascript =
                     "
-                    isFireCheckoutFormValid = false;
+                    isReadyToCreateBoltOrder = false;
                     initBoltButtons();
                     ";
             default:

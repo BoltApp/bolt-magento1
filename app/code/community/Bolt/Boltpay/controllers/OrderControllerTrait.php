@@ -30,7 +30,7 @@ trait Bolt_Boltpay_OrderControllerTrait {
 
         try {
             if (!$this->getRequest()->isAjax()) {
-                Mage::throwException(Mage::helper('boltpay')->__("Bolt_Boltpay_Adminhtml_Sales_Order_CreateController::createAction called with a non AJAX call"));
+                Mage::throwException(Mage::helper('boltpay')->__(get_class()."::createAction called with a non AJAX call"));
             }
 
             /** @var Bolt_Boltpay_Block_Checkout_Boltpay $block */
