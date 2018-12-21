@@ -43,10 +43,12 @@ class Bolt_Boltpay_Model_ShippingAndTax extends Mage_Core_Model_Abstract
             throw new Exception(Mage::helper('boltpay')->__("Address must contain postal_code and country_code."));
         }
 
-        $shippingStreet = (@$shippingAddress->street_address1 ?: '') . "\n"
+        $shippingStreet = trim(
+            (@$shippingAddress->street_address1 ?: '') . "\n"
             . (@$shippingAddress->street_address2 ?: '') . "\n"
             . (@$shippingAddress->street_address3 ?: '') . "\n"
-            . (@$shippingAddress->street_address4 ?: '');
+            . (@$shippingAddress->street_address4 ?: '')
+        );
             
         $addressData = array(
             'email' => @$shippingAddress->email ?: $shippingAddress->email_address,
