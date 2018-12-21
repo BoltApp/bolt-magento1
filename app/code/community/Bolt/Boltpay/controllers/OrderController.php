@@ -36,7 +36,7 @@ class Bolt_Boltpay_OrderController extends Mage_Core_Controller_Front_Action
         try {
 
             if (!$this->getRequest()->isAjax()) {
-                Mage::throwException(Mage::helper('boltpay')->__("OrderController::saveAction called with a non AJAX call"));
+                Mage::throwException(Mage::helper('boltpay')->__("Bolt_Boltpay_OrderController::saveAction called with a non AJAX call"));
             }
 
             /** @var Bolt_Boltpay_Helper_Api $boltHelper */
