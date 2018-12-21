@@ -64,7 +64,8 @@ class Bolt_Boltpay_ShippingController extends Mage_Core_Controller_Front_Action
 
             /** @var Bolt_Boltpay_Helper_Transaction $transactionHelper */
             $transactionHelper = Mage::helper('boltpay/transaction');
-            $quoteId = $transactionHelper->getQuoteIdFromTransaction($mockTransaction);
+//            $quoteId = $transactionHelper->getQuoteIdFromTransaction($mockTransaction);
+            $quoteId = $transactionHelper->getImmutableQuoteIdFromTransaction($mockTransaction);
 
             /* @var Mage_Sales_Model_Quote $quote */
             $quote = Mage::getModel('sales/quote')->loadByIdWithoutStore($quoteId);
