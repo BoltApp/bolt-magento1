@@ -79,7 +79,7 @@ class Bolt_Boltpay_Model_Order extends Mage_Core_Model_Abstract
              * left it here temporarily because we may have some merchants that
              * should have it or have some problems without it.
              **/
-            /*if ($parentQuote->isEmpty() ) {
+            if ($parentQuote->isEmpty() ) {
                 throw new Exception(
                     Mage::helper('boltpay')->__("The parent quote %s is unexpectedly missing.",
                         $immutableQuote->getParentQuoteId() )
@@ -91,7 +91,7 @@ class Bolt_Boltpay_Model_Order extends Mage_Core_Model_Abstract
                 );
             } else {
                 $parentQuote->setIsActive(false)->save();
-            }*/
+            }
 
             // adding guest user email to order
             if (!$immutableQuote->getCustomerEmail()) {
@@ -110,6 +110,7 @@ class Bolt_Boltpay_Model_Order extends Mage_Core_Model_Abstract
                     ->setCustomerFirstname($consumerData->first_name)
                     ->setCustomerLastname($consumerData->last_name);
             }
+
             $immutableQuote->save();
 
             //////////////////////////////////////////////////////////////////////////////////
