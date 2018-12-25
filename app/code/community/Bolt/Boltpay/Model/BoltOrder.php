@@ -183,9 +183,9 @@ class Bolt_Boltpay_Model_BoltOrder extends Mage_Core_Model_Abstract
             /////////////////////////////////////////////////////////////////////////////////////////
         } else {
 
-            $billingAddress  = $quote->getBillingAddress();
             $this->correctBillingAddress($quote);
 
+            $billingAddress  = $quote->getBillingAddress();
             $shippingAddress = $quote->getShippingAddress();
 
             $customerEmail = $this->getCustomerEmail($quote);
@@ -353,7 +353,8 @@ class Bolt_Boltpay_Model_BoltOrder extends Mage_Core_Model_Abstract
 
     /**
      * Checks if billing address of a quote has all the expected fields.
-     * If not, the address is updated by using the provided shipping address.
+     * If not, and therefore invalid, the address is replaced by using the
+     * provided shipping address.
      *
      * @param Mage_Sales_Model_Quote $quote Quote that is expected to contain both
      *                                      a billing and shipping address.
@@ -390,7 +391,7 @@ class Bolt_Boltpay_Model_BoltOrder extends Mage_Core_Model_Abstract
                 ->setSuffix($oldSuffix)
                 ->setAddressType(Mage_Sales_Model_Quote_Address::TYPE_BILLING)
                 ->save();
-            $quote->save();
+
             $wasCorrected = true;
         }
 
@@ -400,12 +401,21 @@ class Bolt_Boltpay_Model_BoltOrder extends Mage_Core_Model_Abstract
                 ->setFirstname($shippingAddress->getFirstname())
                 ->setMiddlename($shippingAddress->getMiddlename())
                 ->setLastname($shippingAddress->getLastname())
-                ->setSuffix($shippingAddress->getSuffix());
+                ->setSuffix($shippingAddress->getSuffix())
+                ->save();
+
+            $wasCorrected = true;
         }
+
+        if ($wasCorrected) $quote->save();
         /////////////////////////////////////////////
 
         /////////////////////////////////////////////
         /// Changes persisted only to Bolt
+        /// These are workarounds that deal with the
+        /// Bolt requirements for fields that are not
+        /// required by Magento and should not be
+        /// persisted in Magento
         /////////////////////////////////////////////
         if (
             !$billingAddress->getRegion() &&
