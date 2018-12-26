@@ -183,10 +183,10 @@ class Bolt_Boltpay_Model_BoltOrder extends Mage_Core_Model_Abstract
             /////////////////////////////////////////////////////////////////////////////////////////
         } else {
 
-            $this->correctBillingAddress($quote);
-
             $billingAddress  = $quote->getBillingAddress();
             $shippingAddress = $quote->getShippingAddress();
+
+            $this->correctBillingAddress($billingAddress, $shippingAddress);
 
             $customerEmail = $this->getCustomerEmail($quote);
 
@@ -356,57 +356,54 @@ class Bolt_Boltpay_Model_BoltOrder extends Mage_Core_Model_Abstract
      * If not, and therefore invalid, the address is replaced by using the
      * provided shipping address.
      *
-     * @param Mage_Sales_Model_Quote $quote Quote that is expected to contain both
-     *                                      a billing and shipping address.
+     * @param Mage_Sales_Model_Quote_Address $billingAddress   The billing address
+     *                                                         to be checked
+     * @param Mage_Sales_Model_Quote_Address $fallbackAddress  The address to fallback
+     *                                                         to in case of invalid billing
+     *                                                         address
+     *
      *
      * @return bool  true if a correction is made, otherwise false
      */
-    public function correctBillingAddress($quote)
+    public function correctBillingAddress(&$billingAddress, $fallbackAddress)
     {
-        $billingAddress = $quote->getBillingAddress();
-        $shippingAddress = $quote->getShippingAddress();
+        $quote = $billingAddress->getQuote();
+
         $wasCorrected = false;
 
         /////////////////////////////////////////////
         /// Changes persisted to Magento and Bolt
         /////////////////////////////////////////////
-        if (
-            !$billingAddress->getStreet() ||
-            !$billingAddress->getCity() ||
-            !$billingAddress->getCountry()
-        )
-        {
-            $oldPrefix = $billingAddress->getPrefix();
-            $oldFirstName = $billingAddress->getFirstname();
-            $oldMiddleName = $billingAddress->getMiddlename();
-            $oldLastName = $billingAddress->getLastname();
-            $oldSuffix = $billingAddress->getSuffix();
+        if ($fallbackAddress) {
+            if (
+                !trim($billingAddress->getStreetFull()) ||
+                !$billingAddress->getCity() ||
+                !$billingAddress->getCountry()
+            )
+            {
+                $billingAddress
+                    ->setCity($fallbackAddress->getCity())
+                    ->setRegion($fallbackAddress->getRegion())
+                    ->setPostcode($fallbackAddress->getPostcode())
+                    ->setCountryId($fallbackAddress->getCountryId())
+                    ->setStreet($fallbackAddress->getStreet())
+                    ->save();
 
-            $billingAddress->setData($shippingAddress->getData());
-            $billingAddress
-                ->setPrefix($oldPrefix)
-                ->setFirstname($oldFirstName)
-                ->setMiddlename($oldMiddleName)
-                ->setLastname($oldLastName)
-                ->setSuffix($oldSuffix)
-                ->setAddressType(Mage_Sales_Model_Quote_Address::TYPE_BILLING)
-                ->save();
+                $wasCorrected = true;
+            }
 
-            $wasCorrected = true;
+            if (!trim($billingAddress->getName())) {
+                $billingAddress
+                    ->setPrefix($fallbackAddress->getPrefix())
+                    ->setFirstname($fallbackAddress->getFirstname())
+                    ->setMiddlename($fallbackAddress->getMiddlename())
+                    ->setLastname($fallbackAddress->getLastname())
+                    ->setSuffix($fallbackAddress->getSuffix())
+                    ->save();
+
+                $wasCorrected = true;
+            }
         }
-
-        if (!$billingAddress->getName()) {
-            $billingAddress
-                ->setPrefix($shippingAddress->getPrefix())
-                ->setFirstname($shippingAddress->getFirstname())
-                ->setMiddlename($shippingAddress->getMiddlename())
-                ->setLastname($shippingAddress->getLastname())
-                ->setSuffix($shippingAddress->getSuffix())
-                ->save();
-
-            $wasCorrected = true;
-        }
-
         if ($wasCorrected) $quote->save();
         /////////////////////////////////////////////
 
