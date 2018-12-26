@@ -63,14 +63,6 @@ class Bolt_Boltpay_Model_Order extends Mage_Core_Model_Abstract
                 throw new Exception(Mage::helper('boltpay')->__("Not all items are available in the requested quantities."));
             }
 
-            // check if the quotes matches, frontend only
-            if ( $sessionQuoteId && ($sessionQuoteId != $immutableQuote->getParentQuoteId()) ) {
-                throw new Exception(
-                    Mage::helper('boltpay')->__("The Bolt order reference does not match the current cart ID. Cart ID: [%s]  Bolt Reference: [%s]",
-                        $sessionQuoteId , $immutableQuote->getParentQuoteId())
-                );
-            }
-
             // check if this order is currently being processed.
             /* @var Mage_Sales_Model_Quote $parentQuote */
             $parentQuote = Mage::getModel('sales/quote')->loadByIdWithoutStore($immutableQuote->getParentQuoteId());
@@ -79,7 +71,7 @@ class Bolt_Boltpay_Model_Order extends Mage_Core_Model_Abstract
              * left it here temporarily because we may have some merchants that
              * should have it or have some problems without it.
              **/
-            if ($parentQuote->isEmpty() ) {
+            /*if ($parentQuote->isEmpty() ) {
                 throw new Exception(
                     Mage::helper('boltpay')->__("The parent quote %s is unexpectedly missing.",
                         $immutableQuote->getParentQuoteId() )
@@ -91,7 +83,7 @@ class Bolt_Boltpay_Model_Order extends Mage_Core_Model_Abstract
                 );
             } else {
                 $parentQuote->setIsActive(false)->save();
-            }
+            }*/
 
             // adding guest user email to order
             if (!$immutableQuote->getCustomerEmail()) {
@@ -110,7 +102,6 @@ class Bolt_Boltpay_Model_Order extends Mage_Core_Model_Abstract
                     ->setCustomerFirstname($consumerData->first_name)
                     ->setCustomerLastname($consumerData->last_name);
             }
-
             $immutableQuote->save();
 
             //////////////////////////////////////////////////////////////////////////////////
