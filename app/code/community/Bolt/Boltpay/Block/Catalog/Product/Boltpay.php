@@ -79,46 +79,16 @@ class Bolt_Boltpay_Block_Catalog_Product_Boltpay extends Mage_Core_Block_Templat
      * Collect callbacks for BoltCheckout.configureProductCheckout
      *
      * @param string $checkoutType
+     * @param bool   $isVirtualQuote
+     *
      * @return string
      */
-    public function getBoltCallbacks($checkoutType = self::CHECKOUT_TYPE_MULTI_PAGE)
+    public function getBoltCallbacks($checkoutType = self::CHECKOUT_TYPE_MULTI_PAGE, $isVirtualQuote = false )
     {
         /* @var Bolt_Boltpay_Helper_Api $boltHelper */
         $boltHelper = Mage::helper('boltpay');
 
-        $checkCustom = $boltHelper->getPaymentBoltpayConfig('check', $checkoutType);
-        $onCheckoutStartCustom = $boltHelper->getPaymentBoltpayConfig('on_checkout_start', $checkoutType);
-        $onShippingDetailsCompleteCustom = $boltHelper->getPaymentBoltpayConfig('on_shipping_details_complete', $checkoutType);
-        $onShippingOptionsCompleteCustom = $boltHelper->getPaymentBoltpayConfig('on_shipping_options_complete', $checkoutType);
-        $onPaymentSubmitCustom = $boltHelper->getPaymentBoltpayConfig('on_payment_submit', $checkoutType);
-        $successCustom = $boltHelper->getPaymentBoltpayConfig('success', $checkoutType);
-        $closeCustom = $boltHelper->getPaymentBoltpayConfig('close', $checkoutType);
-
-        $onSuccessCallback = $this->buildOnSuccessCallback($successCustom);
-        $onCloseCallback = $this->buildOnCloseCallback($closeCustom);
-
-        return "{
-                  check: function() {
-                    $checkCustom
-                    return true;
-                  },
-                  onCheckoutStart: function() {
-                    $onCheckoutStartCustom
-                  },
-                  onShippingDetailsComplete: function() {
-                    $onShippingDetailsCompleteCustom
-                  },
-                  onShippingOptionsComplete: function() {
-                    $onShippingOptionsCompleteCustom
-                  },
-                  onPaymentSubmit: function() {
-                    $onPaymentSubmitCustom
-                  },
-                  success: $onSuccessCallback,
-                  close: function() {
-                     $onCloseCallback
-                  }
-                }";
+        return $boltHelper->getBoltCallbacks($checkoutType, $isVirtualQuote);
     }
 
     /**
