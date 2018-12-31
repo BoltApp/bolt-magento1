@@ -127,7 +127,7 @@ class Bolt_Boltpay_TestHelper
     public function buildCartDataJs($jsonCart, $immutableQuoteId, $jsonHints, $callbacks = array())
     {
         $checkCustom = (isset($callbacks['checkCustom'])) ? $callbacks['checkCustom'] : '';
-        $onCheckCallbackAdmin = (isset($callbacks['onCheckCallbackAdmin'])) ? $callbacks['onCheckCallbackAdmin'] : '';
+        $onCheckCallback = (isset($callbacks['onCheckCallback'])) ? $callbacks['onCheckCallback'] : '';
         $onCheckoutStartCustom = (isset($callbacks['onCheckoutStartCustom'])) ? $callbacks['onCheckoutStartCustom'] : '';
         $onShippingDetailsCompleteCustom = (isset($callbacks['onShippingDetailsCompleteCustom'])) ? $callbacks['onShippingDetailsCompleteCustom'] : '';
         $onShippingOptionsCompleteCustom = (isset($callbacks['onShippingOptionsCompleteCustom'])) ? $callbacks['onShippingOptionsCompleteCustom'] : '';
@@ -139,51 +139,64 @@ class Bolt_Boltpay_TestHelper
         $boltHelper = Mage::helper('boltpay');
         $hintsTransformFunction = $boltHelper->getExtraConfig('hintsTransform');
 
-        return ("
+        return
+        (
+         "
             var \$hints_transform = $hintsTransformFunction;
             
             var json_cart = $jsonCart;
             var json_hints = \$hints_transform($jsonHints);
             var order_completed = false;
 
-            BoltCheckout.configure(
-                json_cart,
-                json_hints,
-                {
-                  check: function() {
-                    $checkCustom
-                    $onCheckCallbackAdmin
-                    return true;
-                  },
-                  
-                  onCheckoutStart: function() {
-                    // This function is called after the checkout form is presented to the user.
-                    $onCheckoutStartCustom
-                  },
-                  
-                  onShippingDetailsComplete: function() {
-                    // This function is called when the user proceeds to the shipping options page.
-                    // This is applicable only to multi-step checkout.
-                    $onShippingDetailsCompleteCustom
-                  },
-                  
-                  onShippingOptionsComplete: function() {
-                    // This function is called when the user proceeds to the payment details page.
-                    // This is applicable only to multi-step checkout.
-                    $onShippingOptionsCompleteCustom
-                  },
-                  
-                  onPaymentSubmit: function() {
-                    // This function is called after the user clicks the pay button.
-                    $onPaymentSubmitCustom
-                  },
-                  
-                  success: $onSuccessCallback,
-
-                  close: function() {
-                     $onCloseCallback
-                  }
-                }
-        );");
+            var configureIntervalId = setInterval(
+                function() {
+                     if (isReadyToCreateBoltOrder) {
+                     
+                        clearInterval(configureIntervalId);
+                        
+                        BoltCheckout.configure(
+                            json_cart,
+                            json_hints,
+                            {
+                              check: function() {
+                                $checkCustom
+                                $onCheckCallback
+                                return true;
+                              },
+                              
+                              onCheckoutStart: function() {
+                                // This function is called after the checkout form is presented to the user.
+                                $onCheckoutStartCustom
+                              },
+                              
+                              onShippingDetailsComplete: function() {
+                                // This function is called when the user proceeds to the shipping options page.
+                                // This is applicable only to multi-step checkout.
+                                $onShippingDetailsCompleteCustom
+                              },
+                              
+                              onShippingOptionsComplete: function() {
+                                // This function is called when the user proceeds to the payment details page.
+                                // This is applicable only to multi-step checkout.
+                                $onShippingOptionsCompleteCustom
+                              },
+                              
+                              onPaymentSubmit: function() {
+                                // This function is called after the user clicks the pay button.
+                                $onPaymentSubmitCustom
+                              },
+                              
+                              success: $onSuccessCallback,
+            
+                              close: function() {
+                                 $onCloseCallback
+                              }
+                            }
+                        );
+                     }
+                }, 300
+            );
+        "
+        );
     }
 }
