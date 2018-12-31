@@ -54,7 +54,48 @@ class Bolt_Boltpay_Model_ShippingAndTaxTest extends PHPUnit_Framework_TestCase
     }
 
     /**
-     *Test ShippingAddresstoQuote
+     * Test ShippingAddresstoQuote standard with all four address lines
+     * Non-sequential, associative array used as input
+     */
+    public function testApplyShippingAddressToQuoteFourLineAddress() {
+        $cart = $this->testHelper->addProduct(self::$productId, 2);
+        $quote = $cart->getQuote();
+        $shippingAddress = (object) array(
+            'email' => 'test@bolt.com',
+            'first_name' => 'Luke',
+            'last_name' => 'Skywalker',
+            'street_address1' => 'Sample Street 10',
+            'street_address3' => 'Apt 123',
+            'street_address2' => '4th Floor',
+            'street_address4' => 'Attention: Jedi Knights',
+            'locality' => 'Los Angeles',
+            'postal_code' => '90014',
+            'phone' => '+1 867 345 123 5681',
+            'country_code' => 'US',
+            'company' => 'Bolt',
+            'region' => 'California'
+        );
+        $result = $this->currentMock->applyShippingAddressToQuote($quote, $shippingAddress);
+
+        $expected = array(
+            'email' => 'test@bolt.com',
+            'firstname'  => 'Luke',
+            'lastname'   => 'Skywalker',
+            'street'     => 'Sample Street 10' . "\n" . '4th Floor' . "\n" . 'Apt 123' . "\n" . 'Attention: Jedi Knights',
+            'city'       => 'Los Angeles',
+            'postcode'   => '90014',
+            'telephone'  => '+1 867 345 123 5681',
+            'country_id' => 'US',
+            'company' => 'Bolt',
+            'region_id'  => '12',
+            'region' => 'California'
+        );
+        $this->assertEquals($expected, $result);
+    }
+
+    /**
+     * Test ShippingAddresstoQuote standard two line address with empty
+     * address line 3 and address line 4 values
      */
     public function testApplyShippingAddressToQuote() {
         $cart = $this->testHelper->addProduct(self::$productId, 2);
@@ -65,6 +106,8 @@ class Bolt_Boltpay_Model_ShippingAndTaxTest extends PHPUnit_Framework_TestCase
             'last_name' => 'Skywalker',
             'street_address1' => 'Sample Street 10',
             'street_address2' => 'Apt 123',
+            'street_address3' => '',
+            'street_address4' => null,
             'locality' => 'Los Angeles',
             'postal_code' => '90014',
             'phone' => '+1 867 345 123 5681',
@@ -108,12 +151,50 @@ class Bolt_Boltpay_Model_ShippingAndTaxTest extends PHPUnit_Framework_TestCase
             'email' => 'test@bolt.com',
             'firstname'  => 'Luke',
             'lastname'   => 'Skywalker',
-            'street'     => '',
+            'street'     => "",
             'city'       => null,
             'postcode'   => '90014',
             'telephone'  => '+1 867 345 123 5681',
             'country_id' => 'US',
             'company'    => null,
+            'region_id'  => '12',
+            'region' => 'California'
+        );
+        $this->assertEquals($expected, $result);
+    }
+
+    /**
+     * Test ShippingAddresstoQuote with a skipped internal address field
+     */
+    public function testApplyShippingAddressToQuoteWithSkippedAddressFields() {
+        $cart = $this->testHelper->addProduct(self::$productId, 2);
+        $quote = $cart->getQuote();
+        $shippingAddress = (object) array(
+            'email' => 'test@bolt.com',
+            'first_name' => 'Luke',
+            'last_name' => 'Skywalker',
+            'street_address1' => 'Sample Street 10',
+            'street_address2' => 'Apt 123',
+            'street_address4' => 'Skipped Address 3',
+            'locality' => 'Los Angeles',
+            'postal_code' => '90014',
+            'phone' => '+1 867 345 123 5681',
+            'country_code' => 'US',
+            'company' => 'Bolt',
+            'region' => 'California'
+        );
+        $result = $this->currentMock->applyShippingAddressToQuote($quote, $shippingAddress);
+
+        $expected = array(
+            'email' => 'test@bolt.com',
+            'firstname'  => 'Luke',
+            'lastname'   => 'Skywalker',
+            'street'     => 'Sample Street 10' . "\n" . 'Apt 123' . "\n\n". 'Skipped Address 3',
+            'city'       => 'Los Angeles',
+            'postcode'   => '90014',
+            'telephone'  => '+1 867 345 123 5681',
+            'country_id' => 'US',
+            'company' => 'Bolt',
             'region_id'  => '12',
             'region' => 'California'
         );
