@@ -381,8 +381,12 @@ class Bolt_Boltpay_Model_BoltOrder extends Mage_Core_Model_Abstract
      * If it has not been triggered by April 2019, this code may be safely removed.
      *
      */
-    public function correctBillingAddress(&$billingAddress, $fallbackAddress)
+    public function correctBillingAddress(&$billingAddress, $fallbackAddress = null )
     {
+        if (!$fallbackAddress) {
+            return false;
+        }
+
         /** @var Bolt_Boltpay_Helper_Bugsnag $bugsnag */
         $bugsnag = Mage::helper('boltpay/bugsnag');
 
@@ -390,58 +394,53 @@ class Bolt_Boltpay_Model_BoltOrder extends Mage_Core_Model_Abstract
 
         $wasCorrected = false;
 
-        /////////////////////////////////////////////
-        /// Changes persisted to Magento and Bolt
-        /////////////////////////////////////////////
-        if ($fallbackAddress) {
-            if (
-                !trim($billingAddress->getStreetFull()) ||
-                !$billingAddress->getCity() ||
-                !$billingAddress->getCountry()
-            )
-            {
-                $bugsnag->notifyException(
-                    new Exception("Missing critical billing data. "
-                        ." Street: ". $billingAddress->getStreetFull()
-                        ." City: ". $billingAddress->getCity()
-                        ." Country: ". $billingAddress->getCountry()
-                    ),
-                    array(),
-                    "info"
-                );
+        if (
+            !trim($billingAddress->getStreetFull()) ||
+            !$billingAddress->getCity() ||
+            !$billingAddress->getCountry()
+        )
+        {
+            $bugsnag->notifyException(
+                new Exception("Missing critical billing data. "
+                    ." Street: ". $billingAddress->getStreetFull()
+                    ." City: ". $billingAddress->getCity()
+                    ." Country: ". $billingAddress->getCountry()
+                ),
+                array(),
+                "info"
+            );
 
-                $billingAddress
-                    ->setCity($fallbackAddress->getCity())
-                    ->setRegion($fallbackAddress->getRegion())
-                    ->setPostcode($fallbackAddress->getPostcode())
-                    ->setCountryId($fallbackAddress->getCountryId())
-                    ->setStreet($fallbackAddress->getStreet())
-                    ->save();
+            $billingAddress
+                ->setCity($fallbackAddress->getCity())
+                ->setRegion($fallbackAddress->getRegion())
+                ->setPostcode($fallbackAddress->getPostcode())
+                ->setCountryId($fallbackAddress->getCountryId())
+                ->setStreet($fallbackAddress->getStreet())
+                ->save();
 
-                $wasCorrected = true;
-            }
-
-            if (!trim($billingAddress->getName())) {
-
-                $bugsnag->notifyException(
-                    new Exception("Missing billing name."),
-                    array(),
-                    "info"
-                );
-
-                $billingAddress
-                    ->setPrefix($fallbackAddress->getPrefix())
-                    ->setFirstname($fallbackAddress->getFirstname())
-                    ->setMiddlename($fallbackAddress->getMiddlename())
-                    ->setLastname($fallbackAddress->getLastname())
-                    ->setSuffix($fallbackAddress->getSuffix())
-                    ->save();
-
-                $wasCorrected = true;
-            }
+            $wasCorrected = true;
         }
+
+        if (!trim($billingAddress->getName())) {
+
+            $bugsnag->notifyException(
+                new Exception("Missing billing name."),
+                array(),
+                "info"
+            );
+
+            $billingAddress
+                ->setPrefix($fallbackAddress->getPrefix())
+                ->setFirstname($fallbackAddress->getFirstname())
+                ->setMiddlename($fallbackAddress->getMiddlename())
+                ->setLastname($fallbackAddress->getLastname())
+                ->setSuffix($fallbackAddress->getSuffix())
+                ->save();
+
+            $wasCorrected = true;
+        }
+
         if ($wasCorrected) $quote->save();
-        /////////////////////////////////////////////
 
         return $wasCorrected;
     }
