@@ -44,7 +44,7 @@ class Bolt_Boltpay_Model_BoltOrder extends Mage_Core_Model_Abstract
     );
 
     /**
-     * @var array  list of country codes for which Bolt requires a region
+     * @var array  list of country codes for which we will require a region for validation to succeed.
      */
     protected $countriesRequiringRegion = array(
         'US', 'CA',
@@ -190,6 +190,15 @@ class Bolt_Boltpay_Model_BoltOrder extends Mage_Core_Model_Abstract
 
             $customerEmail = $this->getCustomerEmail($quote);
 
+            $billingRegion = $billingAddress->getRegion();
+            if (
+                empty($billingRegion) &&
+                !in_array($billingAddress->getCountry(), $this->countriesRequiringRegion)
+            )
+            {
+                $billingRegion = $billingAddress->getCity();
+            }
+
             ///////////////////////////////////////////
             // Include billing address info if defined.
             ///////////////////////////////////////////
@@ -202,7 +211,7 @@ class Bolt_Boltpay_Model_BoltOrder extends Mage_Core_Model_Abstract
                     'first_name'      => $billingAddress->getFirstname(),
                     'last_name'       => $billingAddress->getLastname(),
                     'locality'        => $billingAddress->getCity(),
-                    'region'          => $billingAddress->getRegion(),
+                    'region'          => $billingRegion,
                     'postal_code'     => $billingAddress->getPostcode() ?: '-',
                     'country_code'    => $billingAddress->getCountry(),
                     'phone'           => $billingAddress->getTelephone(),
@@ -222,7 +231,10 @@ class Bolt_Boltpay_Model_BoltOrder extends Mage_Core_Model_Abstract
             }
 
             $shippingRegion = $shippingAddress->getRegion();
-            if (empty($shippingRegion) && !in_array($shippingAddress->getCountry(), array('US', 'CA'))) {
+            if (
+                empty($shippingRegion) &&
+                !in_array($shippingAddress->getCountry(), $this->countriesRequiringRegion)
+            ) {
                 $shippingRegion = $shippingAddress->getCity();
             }
 
@@ -364,9 +376,16 @@ class Bolt_Boltpay_Model_BoltOrder extends Mage_Core_Model_Abstract
      *
      *
      * @return bool  true if a correction is made, otherwise false
+     * 
+     * TODO: evaluate necessity of this code by auditing Bugsnag for corrections made.
+     * If it has not been triggered by April 2019, this code may be safely removed.
+     *
      */
     public function correctBillingAddress(&$billingAddress, $fallbackAddress)
     {
+        /** @var Bolt_Boltpay_Helper_Bugsnag $bugsnag */
+        $bugsnag = Mage::helper('boltpay/bugsnag');
+
         $quote = $billingAddress->getQuote();
 
         $wasCorrected = false;
@@ -381,6 +400,16 @@ class Bolt_Boltpay_Model_BoltOrder extends Mage_Core_Model_Abstract
                 !$billingAddress->getCountry()
             )
             {
+                $bugsnag->notifyException(
+                    new Exception("Missing critical billing data. "
+                        ." Street: ". $billingAddress->getStreetFull()
+                        ." City: ". $billingAddress->getCity()
+                        ." Country: ". $billingAddress->getCountry()
+                    ),
+                    array(),
+                    "info"
+                );
+
                 $billingAddress
                     ->setCity($fallbackAddress->getCity())
                     ->setRegion($fallbackAddress->getRegion())
@@ -393,6 +422,13 @@ class Bolt_Boltpay_Model_BoltOrder extends Mage_Core_Model_Abstract
             }
 
             if (!trim($billingAddress->getName())) {
+
+                $bugsnag->notifyException(
+                    new Exception("Missing billing name."),
+                    array(),
+                    "info"
+                );
+
                 $billingAddress
                     ->setPrefix($fallbackAddress->getPrefix())
                     ->setFirstname($fallbackAddress->getFirstname())
@@ -405,28 +441,6 @@ class Bolt_Boltpay_Model_BoltOrder extends Mage_Core_Model_Abstract
             }
         }
         if ($wasCorrected) $quote->save();
-        /////////////////////////////////////////////
-
-        /////////////////////////////////////////////
-        /// Changes persisted only to Bolt
-        /// These are workarounds that deal with the
-        /// Bolt requirements for fields that are not
-        /// required by Magento and should not be
-        /// persisted in Magento
-        /////////////////////////////////////////////
-        if (
-            !$billingAddress->getRegion() &&
-            !in_array($billingAddress->getCountry(), $this->countriesRequiringRegion)
-        )
-        {
-            $billingAddress->setRegion($billingAddress->getCity());
-            $wasCorrected = true;
-        }
-
-        if (!$billingAddress->getPostcode()) {
-            $billingAddress->setPostcode('-');
-            $wasCorrected = true;
-        }
         /////////////////////////////////////////////
 
         return $wasCorrected;
