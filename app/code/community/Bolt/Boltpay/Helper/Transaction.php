@@ -43,15 +43,6 @@ class Bolt_Boltpay_Helper_Transaction
     }
 
     /**
-     * @param $mockTransaction
-     * @return int
-     */
-    public function getQuoteIdFromTransaction($mockTransaction)
-    {
-        return (int) $mockTransaction->order->cart->order_reference;
-    }
-
-    /**
      * Gets the increment id stored in the Bolt transaction.  This is backwards
      * compatible with older versions of the plugin and is suitable for transition
      * installations.

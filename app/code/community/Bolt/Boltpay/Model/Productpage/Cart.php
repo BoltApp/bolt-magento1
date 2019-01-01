@@ -52,8 +52,8 @@ class Bolt_Boltpay_Model_Productpage_Cart extends Mage_Core_Model_Abstract
         try {
             $this->validateCartRequest();
             $this->createCart();
-            $this->createImmutableQuote();
-            $this->setCartResponse();
+            $immutableQuote = $this->createImmutableQuote();
+            $this->setCartResponse($immutableQuote);
         } catch (\Bolt_Boltpay_BadInputException $e) {
             return false;
         } catch (\Exception $e) {
@@ -232,16 +232,16 @@ class Bolt_Boltpay_Model_Productpage_Cart extends Mage_Core_Model_Abstract
     }
 
     /**
+     * @param Mage_Sales_Model_Quote $quote
      * @return array
      */
-    protected function setCartResponse()
+    protected function setCartResponse($quote)
     {
-        $quote = $this->getSessionQuote();
         $this->cartResponse = array(
             'order_reference' => $quote->getId(),
             'currency'        => $quote->getQuoteCurrencyCode(),
-            'items'           => $this->getGeneratedItems(),
-            'total_amount'           => $this->getGeneratedTotal()
+            'items'           => $this->getGeneratedItems($quote),
+            'total_amount'    => $this->getGeneratedTotal()
         );
         $this->httpCode = 200;
 
@@ -265,14 +265,15 @@ class Bolt_Boltpay_Model_Productpage_Cart extends Mage_Core_Model_Abstract
      *
      * @return array
      */
-    protected function getGeneratedItems()
+    protected function getGeneratedItems($quote)
     {
-        $items = $this->getSessionQuote()->getAllVisibleItems();
+        $items = $quote->getAllVisibleItems();
+        $quoteId = $quote->getId();
         /** @var Bolt_Boltpay_Helper_Data $boltHelper */
         $boltHelper = Mage::helper('boltpay');
 
         return array_map(
-            function ($item) use ($boltHelper) {
+            function ($item) use ($boltHelper, $quoteId) {
                 $imageUrl = $boltHelper->getItemImageUrl($item);
                 $product = $this->getProductById($item->getProductId());
                 $type = $product->getTypeId() == 'virtual' ? self::ITEM_TYPE_DIGITAL : self::ITEM_TYPE_PHYSICAL;
@@ -282,7 +283,7 @@ class Bolt_Boltpay_Model_Productpage_Cart extends Mage_Core_Model_Abstract
                 $totalAmount = (int)round($unitPrice * $quantity);
 
                 return array(
-                    'reference'    => $this->getSessionQuote()->getId(),
+                    'reference'    => $quoteId,
                     'image_url'    => $imageUrl,
                     'name'         => $item->getName(),
                     'sku'          => $item->getSku(),
