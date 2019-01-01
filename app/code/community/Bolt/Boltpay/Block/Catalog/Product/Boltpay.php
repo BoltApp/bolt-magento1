@@ -51,16 +51,19 @@ class Bolt_Boltpay_Block_Catalog_Product_Boltpay extends Mage_Core_Block_Templat
                 return '""';
             }
 
-            if ($_product->isInStock()) {
-                $productCheckoutCartItem[] = [
-                    'reference' => $_product->getId(),
-                    'price' => $_product->getPrice(),
-                    'quantity' => 1,
-                    'image' => $_product->getImageUrl(),
-                    'name' => $_product->getName(),
-                ];
-                $totalAmount = $_product->getPrice();
+            if (!$_product->isInStock()) {
+                return '""';
             }
+
+            $productCheckoutCartItem[] = [
+                'reference' => $_product->getId(),
+                'price' => $_product->getPrice(),
+                'quantity' => 1,
+                'image' => $_product->getImageUrl(),
+                'name' => $_product->getName(),
+            ];
+            $totalAmount = $_product->getPrice();
+
 
             $productCheckoutCart = [
                 'currency' => $currency,
