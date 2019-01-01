@@ -94,10 +94,13 @@ class Bolt_Boltpay_ApiController extends Mage_Core_Controller_Front_Action
                 $newTransactionStatus = Bolt_Boltpay_Model_Payment::translateHookTypeToTransactionStatus($hookType, $transaction);
                 $prevTransactionStatus = $orderPayment->getAdditionalInformation('bolt_transaction_status');
 
-                // Update the transaction id as it may change, particularly with refunds
-                $orderPayment
-                    ->setAdditionalInformation('bolt_merchant_transaction_id', $transaction->id)
-                    ->setTransactionId($transaction->id);
+                // Update the transaction id as it may change, ignore the credit hook type,
+                // cause the partial refund need original transaction id to process.
+                if($hookType !== 'credit'){
+                    $orderPayment
+                        ->setAdditionalInformation('bolt_merchant_transaction_id', $transaction->id)
+                        ->setTransactionId($transaction->id);
+                }
 
                 /******************************************************************************************************
                  * TODO: Check the validity of this code.  It has been known to get out of sync and
@@ -116,19 +119,21 @@ class Bolt_Boltpay_ApiController extends Mage_Core_Controller_Front_Action
                     );
                 }
 
-                if($hookType == 'credit'){
-                    $transactionAmount = $bodyParams['amount']/100;
-                }
-                else{
-                    $transactionAmount = $this->getCaptureAmount($transaction);
-                }
-
                 $orderPayment->setData('auto_capture', $newTransactionStatus == 'completed');
                 $orderPayment->save();
-                $orderPayment->getMethodInstance()
-                    ->setStore($order->getStoreId())
-                    ->handleTransactionUpdate($orderPayment, $newTransactionStatus, $prevTransactionStatus, $transactionAmount);
-
+                
+                if($hookType == 'credit'){
+                    $transactionAmount = $bodyParams['amount']/100;
+                    $orderPayment->getMethodInstance()
+                        ->setStore($order->getStoreId())
+                        ->handleRefundTransactionUpdate($orderPayment, $newTransactionStatus, $prevTransactionStatus, $transactionAmount, $transaction);
+                }
+                else{
+                    $orderPayment->getMethodInstance()
+                        ->setStore($order->getStoreId())
+                        ->handleTransactionUpdate($orderPayment, $newTransactionStatus, $prevTransactionStatus);
+                }
+                
                 $this->getResponse()->setBody(
                     json_encode(
                         array(
