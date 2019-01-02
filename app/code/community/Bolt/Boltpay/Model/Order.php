@@ -63,14 +63,18 @@ class Bolt_Boltpay_Model_Order extends Mage_Core_Model_Abstract
                 throw new Exception(Mage::helper('boltpay')->__("Not all items are available in the requested quantities."));
             }
 
-                // check if this order is currently being processed.
+            // check if the quotes matches, frontend only
+            if ( $sessionQuoteId && ($sessionQuoteId != $immutableQuote->getParentQuoteId()) ) {
+                throw new Exception(
+                    Mage::helper('boltpay')->__("The Bolt order reference does not match the current cart ID. Cart ID: [%s]  Bolt Reference: [%s]",
+                        $sessionQuoteId , $immutableQuote->getParentQuoteId())
+                );
+            }
+
+            // check if this order is currently being processed.
             /* @var Mage_Sales_Model_Quote $parentQuote */
             $parentQuote = Mage::getModel('sales/quote')->loadByIdWithoutStore($immutableQuote->getParentQuoteId());
 
-            /*
-             * left it here temporarily because we may have some merchants that
-             * should have it or have some problems without it.
-             **/
             if ($parentQuote->isEmpty() ) {
                 throw new Exception(
                     Mage::helper('boltpay')->__("The parent quote %s is unexpectedly missing.",
@@ -91,7 +95,7 @@ class Bolt_Boltpay_Model_Order extends Mage_Core_Model_Abstract
                 $immutableQuote->setCustomerEmail($email);
             }
 
-                // explicitly set quote belong to guest if customer id does not exist
+            // explicitly set quote belong to guest if customer id does not exist
             $immutableQuote
                 ->setCustomerIsGuest((($parentQuote && $parentQuote->getCustomerId()) ? false : true));
 
@@ -275,15 +279,7 @@ class Bolt_Boltpay_Model_Order extends Mage_Core_Model_Abstract
             $checkoutSession = Mage::getSingleton('checkout/session');
             $checkoutSession
                 ->clearHelperData();
-//            if ($parentQuote) {
-//                $checkoutSession
-//                    ->setLastQuoteId($parentQuote->getId())
-//                    ->setLastSuccessQuoteId($parentQuote->getId());
-//            } else {
-//                $checkoutSession
-//                    ->setLastQuoteId($immutableQuote->getId())
-//                    ->setLastSuccessQuoteId($immutableQuote->getId());
-//            }
+
             $checkoutSession
                 ->setLastQuoteId($parentQuote->getId())
                 ->setLastSuccessQuoteId($parentQuote->getId());
