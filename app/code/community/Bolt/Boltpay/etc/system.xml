@@ -66,30 +66,31 @@
               <show_in_website>1</show_in_website>
               <show_in_store>1</show_in_store>
             </api_key>
-            <publishable_key_onepage translate="label">
-              <label> Publishable Key - One Page Checkout</label>
+            <publishable_key_multipage translate="label">
+              <label> Publishable Key - Multi Step Checkout (default)</label>
               <frontend_type>text</frontend_type>
               <sort_order>11</sort_order>
               <show_in_default>1</show_in_default>
               <show_in_website>1</show_in_website>
               <show_in_store>1</show_in_store>
-            </publishable_key_onepage>
-            <publishable_key_multipage translate="label">
-              <label> Publishable Key - Multi-Page Checkout</label>
+            </publishable_key_multipage>
+            <publishable_key_admin translate="label">
+              <label> Publishable Key - Backoffice (optional)</label>
+              <comment>This key is required to process payment from magento admin. Please consult with your account manager if you don't have the key.</comment>
               <frontend_type>text</frontend_type>
               <sort_order>12</sort_order>
               <show_in_default>1</show_in_default>
               <show_in_website>1</show_in_website>
               <show_in_store>1</show_in_store>
-            </publishable_key_multipage>
-            <publishable_key_admin translate="label">
-              <label> Publishable Key - Backoffice</label>
+            </publishable_key_admin>
+            <publishable_key_onepage translate="label">
+              <label> Publishable Key - One Page Checkout (optional)</label>
               <frontend_type>text</frontend_type>
               <sort_order>13</sort_order>
               <show_in_default>1</show_in_default>
               <show_in_website>1</show_in_website>
               <show_in_store>1</show_in_store>
-            </publishable_key_admin>
+            </publishable_key_onepage>
             <!--
                 The Bolt Signing Secret Key configuration, used to verify web hook request signature.
              -->
@@ -126,15 +127,14 @@
               <show_in_website>1</show_in_website>
               <show_in_store>1</show_in_store>
             </title>
-            <theme translate="label">
-              <label>Button Theme</label>
-              <frontend_type>select</frontend_type>
-              <source_model>boltpay/source_themes</source_model>
+            <button_classes translate="label">
+              <label>Additional button CSS classes</label>
+              <frontend_type>text</frontend_type>
               <sort_order>22</sort_order>
               <show_in_default>1</show_in_default>
               <show_in_website>1</show_in_website>
               <show_in_store>1</show_in_store>
-            </theme>
+            </button_classes>
 
             <selectors translate="label">
               <label>Replace Button Selectors</label>
@@ -195,7 +195,7 @@
               <show_in_website>1</show_in_website>
               <show_in_store>1</show_in_store>
             </successpage>
-            
+
             <hide_on_checkout>
               <label>Hide On Checkout Page</label>
               <sort_order>42</sort_order>
@@ -215,7 +215,7 @@
               <show_in_website>1</show_in_website>
               <show_in_store>1</show_in_store>
             </disable_complete_authorize>
-            
+
             <enable_merchant_scoped_account translate="label">
               <label>Enable merchant scoped account</label>
               <frontend_type>select</frontend_type>
@@ -406,6 +406,15 @@ This function is called when the Bolt checkout modal is closed.
               <show_in_store>1</show_in_store>
               <frontend_class>validate-number</frontend_class>
             </sort_order>
+            <extra_options translate="label">
+              <label>Extra config</label>
+              <frontend_type>textarea</frontend_type>
+              <sort_order>150</sort_order>
+              <show_in_default>1</show_in_default>
+              <show_in_website>1</show_in_website>
+              <show_in_store>1</show_in_store>
+              <backend_model>boltpay/admin_extraConfig</backend_model>
+            </extra_options>
             <checkapi translate="label">
               <label>Check Boltpay API</label>
               <frontend_type>button</frontend_type>

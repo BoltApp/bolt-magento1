@@ -72,7 +72,6 @@ class Bolt_Boltpay_Model_Observer
      */
     public function verifyOrderContents($observer) 
     {
-        $boltHelper = $this->getBoltApiHelper();
         /* @var Mage_Sales_Model_Quote $quote */
         $quote = $observer->getEvent()->getQuote();
         /* @var Mage_Sales_Model_Order $order */
@@ -137,7 +136,17 @@ class Bolt_Boltpay_Model_Observer
      */
     public function sendOrderEmail($order)
     {
-        $order->sendNewOrderEmail();
+        try {
+            $order->sendNewOrderEmail();
+        } catch (Exception $e) {
+            // Catches errors that occur when sending order email confirmation (e.g. external API is down)
+            // and allows order creation to complete.
+
+            $error = new Exception('Failed to send order email', 0, $e);
+            Mage::helper('boltpay/bugsnag')->notifyException($error);
+            return;
+        }
+
         $history = $order->addStatusHistoryComment( Mage::helper('boltpay')->__('Email sent for order %s', $order->getIncrementId()) );
         $history->setIsCustomerNotified(true);
     }
@@ -188,7 +197,7 @@ class Bolt_Boltpay_Model_Observer
                     $payment->setAdditionalInformation('bolt_transaction_status', Bolt_Boltpay_Model_Payment::TRANSACTION_COMPLETED);
                     break;
                 case Mage_Sales_Model_Order::STATE_PROCESSING:
-                    if ($order->getTotalPaid() >= .01) {
+                    if (!$order->getTotalDue()) {
                         $payment->setAdditionalInformation('bolt_transaction_status', Bolt_Boltpay_Model_Payment::TRANSACTION_COMPLETED);
                     } else {
                         $payment->setAdditionalInformation('bolt_transaction_status', Bolt_Boltpay_Model_Payment::TRANSACTION_AUTHORIZED);

@@ -135,22 +135,33 @@ class Bolt_Boltpay_TestHelper
         $onSuccessCallback = (isset($callbacks['onSuccessCallback'])) ? $callbacks['onSuccessCallback'] : '';
         $onCloseCallback = (isset($callbacks['onCloseCallback'])) ? $callbacks['onCloseCallback'] : '';
 
+        /* @var Bolt_Boltpay_Helper_Data $boltHelper */
+        $boltHelper = Mage::helper('boltpay');
+        $hintsTransformFunction = $boltHelper->getExtraConfig('hintsTransform');
+
         return ("
+            var \$hints_transform = $hintsTransformFunction;
+            
             var json_cart = $jsonCart;
+            var json_hints = \$hints_transform($jsonHints);
             var quote_id = '{$immutableQuoteId}';
             var order_completed = false;
 
             BoltCheckout.configure(
                 json_cart,
-                $jsonHints,
+                json_hints,
                 {
                   check: function() {
-                    $checkCustom
-                    $onCheckCallbackAdmin
                     if (!json_cart.orderToken) {
-                        alert(json_cart.error);
+                        if (typeof BoltPopup !== \"undefined\") {
+                            BoltPopup.addMessage(json_cart.error).show();
+                        } else {
+                            alert(json_cart.error);
+                        }
                         return false;
                     }
+                    $checkCustom
+                    $onCheckCallbackAdmin
                     return true;
                   },
                   

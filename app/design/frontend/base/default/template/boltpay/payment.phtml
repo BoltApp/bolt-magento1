@@ -22,8 +22,15 @@ $publishableKey = Mage::helper('boltpay')->getPublishableKeyOnePage();
 
 if(($quote->getPayment()->getMethodInstance()->getCode() == 'boltpay') && $publishableKey): ?>
 
-    <?php $theme = Mage::getStoreConfig('payment/boltpay/theme'); ?>
-    <div class="bolt-checkout-button with-cards <?= $theme; ?>"></div>
+    <?php
+    $additionalClasses = Mage::helper('boltpay')->getAdditionalButtonClasses();
+    $buttonColor = Mage::helper('boltpay')->getBoltPrimaryColor();
+    ?>
+    <div class="bolt-checkout-button <?php echo $additionalClasses; ?>"
+        <?php if($buttonColor): ?>
+            style="--bolt-primary-action-color:<?php echo $buttonColor?>"
+        <?php endif;?>
+    ></div>
     <script type="text/javascript">
         (function() {
 
@@ -48,8 +55,7 @@ if(($quote->getPayment()->getMethodInstance()->getCode() == 'boltpay') && $publi
                     }
                 }
 
-                var parent = document.getElementsByTagName(parent)[0];
-                parent.appendChild(el);
+                document.getElementsByTagName(parent)[0].appendChild(el);
             };
 
             var loadConnectJS = function(key) {

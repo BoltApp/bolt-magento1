@@ -98,7 +98,7 @@ class Bolt_Boltpay_Helper_Data extends Mage_Core_Helper_Abstract
      */
     public function collectTotals($quote, $clearTotalsCollectedFlag = false)
     {
-        Mage::getSingleton('boltpay/validator')->resetRoundingDeltas();
+        Mage::getSingleton('salesrule/validator')->resetRoundingDeltas();
 
         if($clearTotalsCollectedFlag) {
             $quote->setTotalsCollectedFlag(false);
@@ -142,6 +142,16 @@ class Bolt_Boltpay_Helper_Data extends Mage_Core_Helper_Abstract
     }
 
     /**
+     *  Returns the primary color customized for Bolt
+     *
+     * @return string   If set, a 6 or 8 digit hexadecimal color value preceded by a '#' character, otherwise an empty string
+     */
+    public function getBoltPrimaryColor()
+    {
+        return $this->getExtraConfig('boltPrimaryColor');
+    }
+
+    /**
      * Get publishable key used in magento admin.
      *
      * @return string
@@ -153,15 +163,29 @@ class Bolt_Boltpay_Helper_Data extends Mage_Core_Helper_Abstract
     }
 
     /**
+     *
+     * @return string
+     */
+    public function getAdditionalButtonClasses()
+    {
+        return Mage::getStoreConfig('payment/boltpay/button_classes');
+    }
+
+    /**
      * Creates a clone of a quote including items, addresses, customer details,
      * and shipping and tax options when
      *
-     * @param Mage_Sales_Model_Quote $sourceQuote   The quote to be cloned
-     * @param bool $isForMultipage    Determines if the quote is for payment only, (i.e. with address and shipping data), or multi-page, (i.e. without address and shipping data)
+     * @param Mage_Sales_Model_Quote $sourceQuote The quote to be cloned
+     *
+     * @param string                 $checkoutType
      *
      * @return Mage_Sales_Model_Quote  The cloned copy of the source quote
+     * @throws \Exception
      */
-    public function cloneQuote(Mage_Sales_Model_Quote $sourceQuote, $isForMultipage = false )
+    public function cloneQuote(
+        Mage_Sales_Model_Quote $sourceQuote,
+        $checkoutType = Bolt_Boltpay_Block_Checkout_Boltpay::CHECKOUT_TYPE_MULTI_PAGE
+    )
     {
 
         /* @var Mage_Sales_Model_Quote $clonedQuote */
@@ -175,14 +199,24 @@ class Bolt_Boltpay_Helper_Data extends Mage_Core_Helper_Abstract
             Mage::helper('boltpay/bugsnag')->notifyException($e);
         }
 
-        if (!$isForMultipage) {
+        if ($checkoutType != Bolt_Boltpay_Block_Checkout_Boltpay::CHECKOUT_TYPE_MULTI_PAGE ) {
             // For the checkout page we want to set the
             // billing and shipping, and shipping method at this time.
             // For multi-page, we add the addresses during the shipping and tax hook
             // and the chosen shipping method at order save time.
+
+            $shippingAddress = $sourceQuote->getShippingAddress();
+            $billingAddress = $sourceQuote->getBillingAddress();
+
+            if ($checkoutType == Bolt_Boltpay_Block_Checkout_Boltpay::CHECKOUT_TYPE_ADMIN){
+                $shippingData = $shippingAddress->getData();
+                unset($shippingData['address_id']);
+                $shippingAddress = Mage::getSingleton('sales/quote_address')->setData($shippingData);
+            }
+
             $clonedQuote
-                ->setBillingAddress($sourceQuote->getBillingAddress())
-                ->setShippingAddress($sourceQuote->getShippingAddress())
+                ->setBillingAddress($billingAddress)
+                ->setShippingAddress($shippingAddress)
                 ->getShippingAddress()
                 ->setShippingMethod($sourceQuote->getShippingAddress()->getShippingMethod())
                 ->save();
@@ -238,6 +272,7 @@ class Bolt_Boltpay_Helper_Data extends Mage_Core_Helper_Abstract
         Mage::getSingleton('core/session')->setReservedOrderId($reservedOrderId);
 
         $clonedQuote
+            ->setIsActive(false)
             ->setCustomer($sourceQuote->getCustomer())
             ->setCustomerGroupId($sourceQuote->getCustomerGroupId())
             ->setCustomerIsGuest((($sourceQuote->getCustomerId()) ? false : true))
@@ -245,6 +280,10 @@ class Bolt_Boltpay_Helper_Data extends Mage_Core_Helper_Abstract
             ->setStoreId($sourceQuote->getStoreId())
             ->setParentQuoteId($sourceQuote->getId())
             ->save();
+
+        if ($checkoutType == Bolt_Boltpay_Block_Checkout_Boltpay::CHECKOUT_TYPE_ADMIN){
+            $clonedQuote->getShippingAddress()->setCollectShippingRates(true)->collectShippingRates()->save();
+        }
 
         return $clonedQuote;
     }
@@ -313,8 +352,59 @@ class Bolt_Boltpay_Helper_Data extends Mage_Core_Helper_Abstract
         /** @var Mage_Catalog_Model_Product $_product */
         $_product = $item->getProduct();
 
-        $image = $imageHelper->init($_product, 'thumbnail', $_product->getThumbnail());
+        $image = '';
+        try {
+            if ($_product->getThumbnail()) {
+                /** @var Mage_Catalog_Helper_Image $image */
+                $image = $imageHelper->init($_product, 'thumbnail', $_product->getThumbnail());
+            }
+        } catch (Exception $e) {  }
 
         return (string) $image;
+    }
+
+    /**
+     * Set customer session based on the quote id passed in
+     *
+     * @param $quoteId
+     */
+    public function setCustomerSessionByQuoteId($quoteId)
+    {
+        $customerId = Mage::getModel('sales/quote')->loadByIdWithoutStore($quoteId)->getCustomerId();
+        $this->setCustomerSessionById($customerId);
+    }
+
+    /**
+     * Set customer session based on the customer id passed in
+     *
+     * @param $customerId
+     */
+    public function setCustomerSessionById($customerId)
+    {
+        if ($customerId) {
+            Mage::getSingleton('customer/session')->loginById($customerId);
+        }
+    }
+
+
+    /**
+     * Gets the value of a Bolt non-publicized or non-emphasized
+     * configuration value after passing it through an optionally
+     * defined filter method.
+     *
+     * @param string $configName        The name of the config as defined
+     *                                  the configuration JSON
+     * @param array $filterParameters   Optional set of parameters passed to
+     *                                  the optionally defined filter method
+     *                                  of the config
+     *
+     * @return mixed    Typically a string representing the config value, but
+     *                  is not limited to this type.  If the config is not defined,
+     *                  an empty string is returned
+     */
+    public function getExtraConfig($configName, $filterParameters = array() ) {
+        /** @var Bolt_Boltpay_Model_Admin_ExtraConfig $extraConfigModel */
+        $extraConfigModel = Mage::getSingleton('boltpay/admin_extraConfig');
+        return $extraConfigModel->getExtraConfig($configName, $filterParameters);
     }
 }

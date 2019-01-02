@@ -24,17 +24,19 @@ $installer->startSetup();
 
 Mage::log('Installing Bolt 1.1.0 updates', null, 'bolt_install.log');
 
-$installer->addAttribute(
-    "quote", "parent_quote_id", array(
-        "type"       => "int",
-        "label"      => "Original Quote ID",
-        "input"      => "hidden",
-        "visible"    => false,
-        "required"   => false,
-        "unique"     => false,
-        "note"       => "Original Quote ID"
-    )
-);
+if (!$installer->getConnection()->tableColumnExists($installer->getTable('sales/quote'), "parent_quote_id")) {
+    $installer->addAttribute(
+        "quote", "parent_quote_id", array(
+            "type"       => "int",
+            "label"      => "Original Quote ID",
+            "input"      => "hidden",
+            "visible"    => false,
+            "required"   => false,
+            "unique"     => false,
+            "note"       => "Original Quote ID"
+        )
+    );
+}
 
 Mage::log('Bolt 1.1.0 updates installation completed', null, 'bolt_install.log');
 

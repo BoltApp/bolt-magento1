@@ -46,6 +46,7 @@ class Bolt_Boltpay_ShippingController extends Mage_Core_Controller_Front_Action
 
             /* @var Bolt_Boltpay_Helper_Api $boltHelper */
             $boltHelper = Mage::helper('boltpay/api');
+
             if (!$boltHelper->verify_hook($requestJson, $hmacHeader)) {
                 throw new Exception(Mage::helper('boltpay')->__("Failed HMAC Authentication"));
             }
@@ -58,29 +59,16 @@ class Bolt_Boltpay_ShippingController extends Mage_Core_Controller_Front_Action
                     ->setBody(json_encode(array('status' => 'failure','error' => $errorDetails)));
             }
 
-            $directory = Mage::getModel('directory/region')->loadByName($shippingAddress->region, $shippingAddress->country_code);
-            $region = $directory->getName(); // For region field should be the name not a code.
-            $regionId = $directory->getRegionId(); // This is require field for calculation: shipping, shopping price rules and etc.
-
-            $addressData = array(
-                'email' => $shippingAddress->email,
-                'firstname' => $shippingAddress->first_name,
-                'lastname' => $shippingAddress->last_name,
-                'street' => $shippingAddress->street_address1 . ($shippingAddress->street_address2 ? "\n" . $shippingAddress->street_address2 : ''),
-                'company' => $shippingAddress->company,
-                'city' => $shippingAddress->locality,
-                'region' => $region,
-                'region_id' => $regionId,
-                'postcode' => $shippingAddress->postal_code,
-                'country_id' => $shippingAddress->country_code,
-                'telephone' => $shippingAddress->phone
-            );
-
             $mockTransaction = (object) array("order" => $requestData );
-            $quoteId = $boltHelper->getImmutableQuoteIdFromTransaction($mockTransaction);
+
+            /** @var Bolt_Boltpay_Helper_Transaction $transactionHelper */
+            $transactionHelper = Mage::helper('boltpay/transaction');
+            $quoteId = $transactionHelper->getImmutableQuoteIdFromTransaction($mockTransaction);
 
             /* @var Mage_Sales_Model_Quote $quote */
             $quote = Mage::getModel('sales/quote')->loadByIdWithoutStore($quoteId);
+
+            Mage::helper('boltpay')->setCustomerSessionById($quote->getCustomerId());
 
             /***********************/
             // Set session quote to real customer quote
@@ -88,50 +76,9 @@ class Bolt_Boltpay_ShippingController extends Mage_Core_Controller_Front_Action
             $session->setQuoteId($quoteId);
             /**************/
 
-            if ($quote->getCustomerId()) {
-                $customerSession = Mage::getSingleton('customer/session');
-                $customerSession->setCustomerGroupId($quote->getCustomerGroupId());
-                $customer = Mage::getModel("customer/customer")->load($quote->getCustomerId());
-                $address = $customer->getPrimaryShippingAddress();
-
-                if (!$address) {
-                    $address = Mage::getModel('customer/address');
-
-                    $address->setCustomerId($customer->getId())
-                        ->setCustomer($customer)
-                        ->setIsDefaultShipping('1')
-                        ->setSaveInAddressBook('1')
-                        ->save();
-
-
-                    $address->addData($addressData);
-                    $address->save();
-
-                    $customer->addAddress($address)
-                        ->setDefaultShippingg($address->getId())
-                        ->save();
-                }
-            }
-            $quote->removeAllAddresses();
-            $quote->save();
-            $quote->getShippingAddress()->addData($addressData)->save();
-
-            $billingAddress = $quote->getBillingAddress();
-
-            $quote->getBillingAddress()->addData(
-                array(
-                'email' => $billingAddress->getEmail() ?: $shippingAddress->email,
-                'firstname' => $billingAddress->getFirstname() ?: $shippingAddress->first_name,
-                'lastname' => $billingAddress->getLastname() ?: $shippingAddress->last_name,
-                'street' => implode("\n", $billingAddress->getStreet()) ?: $shippingAddress->street_address1 . ($shippingAddress->street_address2 ? "\n" . $shippingAddress->street_address2 : ''),
-                'company' => $billingAddress->getCompany() ?: $shippingAddress->company,
-                'city' => $billingAddress->getCity() ?: $shippingAddress->locality,
-                'region' => $billingAddress->getRegion() ?: $region,
-                'postcode' => $billingAddress->getPostcode() ?: $shippingAddress->postal_code,
-                'country_id' => $billingAddress->getCountryId() ?: $shippingAddress->country_code,
-                'telephone' => $billingAddress->getTelephone() ?: $shippingAddress->phone
-                )
-            )->save();
+            /* @var Bolt_Boltpay_Model_ShippingAndTax $shippingAndTaxModel */
+            $shippingAndTaxModel = Mage::getModel('boltpay/shippingAndTax');
+            $addressData = $shippingAndTaxModel->applyShippingAddressToQuote($quote, $shippingAddress);
 
             ////////////////////////////////////////////////////////////////////////////////////////
             // Check session cache for estimate.  If the shipping city or postcode, and the country code match,
@@ -152,13 +99,13 @@ class Bolt_Boltpay_ShippingController extends Mage_Core_Controller_Front_Action
                 $response = unserialize($this->_cache->load($prefetchCacheKey));
                 $cacheBoltHeader = 'HIT';
                 if (!$response) {
-                    $response = Mage::helper('boltpay/api')->getShippingAndTaxEstimate($quote);
+                    $response = $shippingAndTaxModel->getShippingAndTaxEstimate($quote);
                     $cacheBoltHeader = 'MISS';
                 }
             } else {
                 //Mage::log('Generating address from quote', null, 'shipping_and_tax.log');
                 //Mage::log('Live address: '.var_export($address_data, true), null, 'shipping_and_tax.log');
-                $response = Mage::helper('boltpay/api')->getShippingAndTaxEstimate($quote);
+                $response = $shippingAndTaxModel->getShippingAndTaxEstimate($quote);
                 $cacheBoltHeader = 'MISS';
             }
 
@@ -236,9 +183,9 @@ class Bolt_Boltpay_ShippingController extends Mage_Core_Controller_Front_Action
                 $quote->getBillingAddress()->addData($addressData);
 
                 try {
-                    /** @var Bolt_Boltpay_Helper_Api $helper */
-                    $helper = Mage::helper('boltpay/api');
-                    $estimateResponse = $helper->getShippingAndTaxEstimate($quote);
+                    /** @var Bolt_Boltpay_Model_ShippingAndTax $shippingAndTaxModel */
+                    $shippingAndTaxModel = Mage::getModel('boltpay/shippingAndTax');
+                    $estimateResponse = $shippingAndTaxModel->getShippingAndTaxEstimate($quote);
 
                     $this->cacheShippingAndTaxEstimate($estimateResponse, $cacheIdentifier);
                 } catch (Exception $e) {
@@ -405,26 +352,26 @@ class Bolt_Boltpay_ShippingController extends Mage_Core_Controller_Front_Action
     }
 
     /**
-     * @return mixed
+     * Returns a whether P.O. box addresses are allowed for this store
+     *
+     * @return bool     true if P.O. boxes are allowed.  Otherwise, false.
      */
     protected function isPOBoxAllowed()
     {
-        return Mage::getStoreConfig('payment/boltpay/allow_po_box');
+        return Mage::getStoreConfigFlag('payment/boltpay/allow_po_box');
     }
 
     /**
-     * @param $address1
-     * @param $address2
-     * @return mixed
+     * Checks wheather a P.O. Box exist in the addresses given
+     *
+     * @param $address1      The address to be checked for a P.O. Box matching string
+     * @param $address2      If set, second address to be checked.  Useful for checking both shipping and billing in on call.
+     *
+     * @return bool     returns true only if any of the provided addresses contain a P.O. Box.  Otherwise, false
      */
-    public function doesAddressContainPOBox($address1, $address2 = null)
+    protected function doesAddressContainPOBox($address1, $address2 = null)
     {
         $poBoxRegex = '/^\s*((P(OST)?.?\s*(O(FF(ICE)?)?|B(IN|OX))+.?\s+(B(IN|OX))?)|B(IN|OX))/i';
-
-        if (preg_match($poBoxRegex, $address1) || preg_match($poBoxRegex, $address2)) {
-            return true;
-        }
-
-        return false;
+        return (preg_match($poBoxRegex, $address1) || preg_match($poBoxRegex, $address2));
     }
 }

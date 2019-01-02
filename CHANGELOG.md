@@ -1,4 +1,55 @@
 # Changelog
+## [V1.3.7](https://s3-us-west-1.amazonaws.com/bolt-public/magento-integration-release/bolt-magento1_v1.3.7.zip) 2018-11-08
+ - Implement support for multiple capture
+ - Bug fixes around admin order
+
+## [V1.3.6](https://s3-us-west-1.amazonaws.com/bolt-public/magento-integration-release/bolt-magento1_v1.3.6.zip) 2018-10-21
+ - Bug fixes
+
+## [V1.3.5](https://s3-us-west-1.amazonaws.com/bolt-public/magento-integration-release/bolt-magento1_v1.3.5.zip) 2018-10-15
+ - Fix session related bug
+ - Add user name to order
+ - Tweak bugsnag
+
+## [v1.3.4](https://s3-us-west-1.amazonaws.com/bolt-public/magento-integration-release/bolt-magento1_v1.3.4.zip) 2018-10-08
+ - Cleanup
+ - Tweak logic of quote cleanup - keep quotes that tied to orders
+
+## [v1.3.3](https://s3-us-west-1.amazonaws.com/bolt-public/magento-integration-release/bolt-magento1_v1.3.3.zip) 2018-10-02
+ - Fix for not including JavaScript when not needed
+ - Bugfix around shipping&tax
+
+## [v1.3.2](https://s3-us-west-1.amazonaws.com/bolt-public/magento-integration-release/bolt-magento1_v1.3.2.zip) 2018-09-29
+ - Refactoring
+ - Minor bugfix
+
+## [v1.3.1](https://s3-us-west-1.amazonaws.com/bolt-public/magento-integration-release/bolt-magento1_v1.3.1.zip) 2018-09-25
+ - Refactoring
+ - Fix issue with firecheckout
+ - Allow merchants to edit orders
+
+## [v1.3.0](https://s3-us-west-1.amazonaws.com/bolt-public/magento-integration-release/bolt-magento1_v1.3.0.zip) 2018-09-17
+ - Add cron to cleanup expired immutable quotes
+ - Remove JS alert and replaced with custom UI
+
+## [v1.2.3](https://s3-us-west-1.amazonaws.com/bolt-public/magento-integration-release/bolt-magento1_v1.2.3.zip) 2018-09-12
+ - Improved firecheckout loading performance
+ - Fix issue with webhook and user session
+ - Fix issue with missing region
+
+## [v1.2.2](https://s3-us-west-1.amazonaws.com/bolt-public/magento-integration-release/bolt-magento1_v1.2.2.zip) 2018-08-28
+ - Fixed off-by-one error
+ - Optimize loading
+ - Support discount hook
+
+## [v1.2.1](https://s3-us-west-1.amazonaws.com/bolt-public/magento-integration-release/bolt-magento1_v1.2.1.zip) 2018-08-17
+ - Introduced modman
+ - Tweaked explanation of publishable keys
+ - Bugfix for:
+  - shipping discount
+  - refund hook
+  - region_id
+
 ## [v1.2.0](https://s3-us-west-1.amazonaws.com/bolt-public/magento-integration-release/bolt-magento1_v1.2.0.zip) 2018-07-29
  - Bugfix around duplicate orders
  - Admin order creation bugfix
