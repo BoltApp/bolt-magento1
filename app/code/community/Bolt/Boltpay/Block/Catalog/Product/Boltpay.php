@@ -159,4 +159,25 @@ class Bolt_Boltpay_Block_Catalog_Product_Boltpay extends Mage_Core_Block_Templat
     {
         return $this->helper('boltpay')->getProductPageCheckoutSelector();
     }
+
+    /**
+     * @return bool
+     */
+    public function isSupportedProductType()
+    {
+        /** @var Mage_Catalog_Model_Product $product */
+        $product = Mage::registry('current_product');
+
+        return ($product && in_array($product->getTypeId(), $this->getProductSupportedTypes()));
+    }
+
+    /**
+     * @return array
+     */
+    protected function getProductSupportedTypes()
+    {
+        return [
+            Mage_Catalog_Model_Product_Type::TYPE_SIMPLE
+        ];
+    }
 }
