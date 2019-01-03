@@ -97,7 +97,7 @@ class Bolt_Boltpay_Adminhtml_Sales_Order_CreateControllerTest extends PHPUnit_Fr
         ];
 
         $this->currentMock = $this->getMockBuilder('Bolt_Boltpay_Adminhtml_Sales_Order_CreateController')
-            ->setMethodsExcept(['prepareAddressData'])
+            ->setMethods(['getRequest'])
             ->enableOriginalConstructor()
             ->getMock();
 
