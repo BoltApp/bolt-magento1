@@ -14,14 +14,15 @@ class Bolt_Boltpay_Adminhtml_Sales_Order_CreateControllerTest extends PHPUnit_Fr
 
     public function setUp()
     {
-        $this->currentMock = $this->getMockBuilder('Bolt_Boltpay_Adminhtml_Sales_Order_CreateController')
-            ->setMethods(['getRequest', 'getLayout', 'getResponse', 'prepareAddressData'])
-            ->enableOriginalConstructor()
-            ->getMock();
     }
 
     public function testLoadBlockAction()
     {
+        $this->currentMock = $this->getMockBuilder('Bolt_Boltpay_Adminhtml_Sales_Order_CreateController')
+            ->setMethods(['getRequest', 'getLayout', 'getResponse', 'prepareAddressData'])
+            ->enableOriginalConstructor()
+            ->getMock();
+
         $request = new Mage_Core_Controller_Request_Http();
         $request->setPost('order', ['some' => 'value1']);
 
@@ -103,5 +104,31 @@ class Bolt_Boltpay_Adminhtml_Sales_Order_CreateControllerTest extends PHPUnit_Fr
         $result = $this->currentMock->prepareAddressData($postData);
 
         $this->assertEquals($actual, $result);
+    }
+
+    public function testSaveActionWhereBoltReferenceIsFalse()
+    {
+        $this->currentMock = $this->getMockBuilder('Bolt_Boltpay_Adminhtml_Sales_Order_CreateController')
+            ->setMethods(['getRequest', 'getResponse', '_redirect'])
+            ->enableOriginalConstructor()
+            ->getMock();
+
+        $request = new Mage_Core_Controller_Request_Http();
+        $request->setPost('bolt_reference', false);
+
+        $response = new Mage_Core_Controller_Response_Http();
+
+        $this->currentMock->method('getRequest')
+            ->willReturn($request);
+
+        $this->currentMock->method('getResponse')
+            ->willReturn($response);
+
+        $this->currentMock->method('_redirect')
+            ->willReturn(false);
+
+        $result = $this->currentMock->saveAction();
+
+        $this->assertNull($result);
     }
 }
