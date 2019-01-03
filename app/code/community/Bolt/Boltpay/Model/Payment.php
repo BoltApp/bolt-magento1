@@ -317,35 +317,8 @@ class Bolt_Boltpay_Model_Payment extends Mage_Payment_Model_Method_Abstract
                 $message = Mage::helper('boltpay')->__('Bad refund response. Empty transaction id');
                 Mage::throwException($message);
             }
-
-            $refundTransactionId = $response->id;
-            $refundTransactionStatus = $response->status;
-            $refundReference = $response->reference;
-            $refundTransactionStatuses = $payment->getAdditionalInformation('bolt_refund_transaction_statuses');
-            $refundTransactionIds = $payment->getAdditionalInformation('bolt_refund_merchant_transaction_ids');
-            if (is_null($refundTransactionStatuses)) {
-                $refundTransactionStatuses = array();
-            } else {
-                $refundTransactionStatuses = unserialize($refundTransactionStatuses);
-            }
-
-            if (is_null($refundTransactionIds)) {
-                $refundTransactionIds = array();
-            } else {
-                $refundTransactionIds = unserialize($refundTransactionIds);
-            }
-
-            array_push($refundTransactionStatuses, $refundTransactionStatus);
-            array_push($refundTransactionIds, $refundTransactionId);
-            $msg = Mage::helper('boltpay')->__(
-                "Bolt Operation: \"Refund\". Bolt Reference: \"%s\".\nBolt Transaction: \"%s\"",
-                $refundReference,
-                $refundTransactionId
-            );
-            $payment->getOrder()->addStatusHistoryComment($msg);
-            $payment->setAdditionalInformation('bolt_refund_transaction_statuses', serialize($refundTransactionStatuses));
-            $payment->setAdditionalInformation('bolt_refund_merchant_transaction_ids', serialize($refundTransactionIds));
-            $payment->setTransactionId(sprintf("%s-refund", $refundReference));
+            
+            $this->setRefundPaymentInfo($payment,$response);
 
             //Mage::log(sprintf('Refund completed for payment id: %d', $payment->getId()), null, 'bolt.log');
             return $this;
@@ -429,8 +402,13 @@ class Bolt_Boltpay_Model_Payment extends Mage_Payment_Model_Method_Abstract
         }
     }
 
-    public function handleTransactionUpdate(Mage_Payment_Model_Info $payment, $newTransactionStatus, $prevTransactionStatus)
-    {
+    public function handleTransactionUpdate(
+        Mage_Payment_Model_Info $payment,
+        $newTransactionStatus,
+        $prevTransactionStatus,
+        $transactionAmount = null,
+        $transaction = null
+    ) {
         try {
             $newTransactionStatus = strtolower($newTransactionStatus);
 
@@ -493,6 +471,8 @@ class Bolt_Boltpay_Model_Payment extends Mage_Payment_Model_Method_Abstract
                     $message = Mage::helper('boltpay')->__('BOLT notification: Transaction reference "%s" has been rejected by Bolt internal review but is eligible for force approval on Bolt\'s merchant dashboard', $reference);
                     $order->setState(self::ORDER_DEFERRED, true, $message);
                     $order->save();
+                } elseif ($newTransactionStatus == self::TRANSACTION_REFUND) {
+                    $this->handleRefundTransactionUpdate($payment, $newTransactionStatus, $prevTransactionStatus, $transactionAmount, $transaction);
                 }
             } else {
                 $payment->setShouldCloseParentTransaction(true);
@@ -519,17 +499,10 @@ class Bolt_Boltpay_Model_Payment extends Mage_Payment_Model_Method_Abstract
         Mage_Payment_Model_Info $payment,
         $newTransactionStatus,
         $prevTransactionStatus,
-        $transactionAmount = null,
+        $transactionAmount,
         $transaction
     ) {
         try {
-            $newTransactionStatus = strtolower($newTransactionStatus);
-            if ($prevTransactionStatus == null || $newTransactionStatus !== self::TRANSACTION_REFUND) {
-                return;
-            }
-            $prevTransactionStatus = strtolower($prevTransactionStatus);
-            $this->validateWebHook($newTransactionStatus, $prevTransactionStatus);
-
             $order             = $payment->getOrder();
             $transactionAmount = Mage::app()->getStore()->roundPrice($transactionAmount);
             $totalRefunded     = $order->getTotalRefunded() ?: 0;
@@ -548,37 +521,8 @@ class Bolt_Boltpay_Model_Payment extends Mage_Payment_Model_Method_Abstract
             $isPartialRefund = false;
             //actually for order with bolt payment, there is only one invoice can refund
             if ($invoiceIds && isset($invoiceIds[0])) {
-                $refundTransactionId       = $transaction->id;
-                $refundTransactionStatus   = $transaction->status;
-                $refundReference           = $transaction->reference;
-                $refundTransactionStatuses = $payment->getAdditionalInformation('bolt_refund_transaction_statuses');
-                $refundTransactionIds      = $payment->getAdditionalInformation('bolt_refund_merchant_transaction_ids');
-                if (is_null($refundTransactionStatuses)) {
-                    $refundTransactionStatuses = array();
-                } else {
-                    $refundTransactionStatuses = unserialize($refundTransactionStatuses);
-                }
-
-                if (is_null($refundTransactionIds)) {
-                    $refundTransactionIds = array();
-                } else {
-                    $refundTransactionIds = unserialize($refundTransactionIds);
-                }
-
-                array_push($refundTransactionStatuses, $refundTransactionStatus);
-                array_push($refundTransactionIds, $refundTransactionId);
-                $msg = Mage::helper('boltpay')->__(
-                    "Bolt Operation: \"Refund\". Bolt Reference: \"%s\".\nBolt Transaction: \"%s\"",
-                    $refundReference,
-                    $refundTransactionId
-                );
-                $payment->getOrder()->addStatusHistoryComment($msg);
-                $payment->setAdditionalInformation('bolt_refund_transaction_statuses',
-                    serialize($refundTransactionStatuses));
-                $payment->setAdditionalInformation('bolt_refund_merchant_transaction_ids',
-                    serialize($refundTransactionIds));
-                $payment->setTransactionId(sprintf("%s-refund", $refundReference));
-                $payment->setAdditionalInformation('bolt_transaction_status', $newTransactionStatus);
+                $this->setRefundPaymentInfo($payment,$transaction);             
+                
                 // flag refund as already being set on Bolt to prevent a duplicate call by Magento to Bolt
                 $payment->setAdditionalInformation('bolt_transaction_was_refunded_by_webhook', '1');
 
@@ -684,19 +628,49 @@ class Bolt_Boltpay_Model_Payment extends Mage_Payment_Model_Method_Abstract
             }
 
         } catch (Exception $e) {
-            $error = array('error' => $e->getMessage());
-            Mage::helper('boltpay/bugsnag')->addBreadcrumb(
-                array(
-                    "handle transaction update" => array(
-                        "message" => $error['error'],
-                        "class"   => __CLASS__,
-                        "method"  => __METHOD__,
-                    )
-                )
-            );
-
             throw $e;
         }
+    }
+    
+    /**
+     * Set related info for refund payment.
+     *
+     * @param  $payment Mage_Payment_Model_Info
+     * @param  $transaction   Object derived from the response of the Bolt API endpoint
+     *
+     */
+    protected function setRefundPaymentInfo(Mage_Payment_Model_Info $payment,$transaction){
+        $refundTransactionId       = $transaction->id;
+        $refundTransactionStatus   = $transaction->status;
+        $refundReference           = $transaction->reference;
+        $refundTransactionStatuses = $payment->getAdditionalInformation('bolt_refund_transaction_statuses');
+        $refundTransactionIds      = $payment->getAdditionalInformation('bolt_refund_merchant_transaction_ids');
+        if (is_null($refundTransactionStatuses)) {
+            $refundTransactionStatuses = array();
+        } else {
+            $refundTransactionStatuses = unserialize($refundTransactionStatuses);
+        }
+
+        if (is_null($refundTransactionIds)) {
+            $refundTransactionIds = array();
+        } else {
+            $refundTransactionIds = unserialize($refundTransactionIds);
+        }
+
+        array_push($refundTransactionStatuses, $refundTransactionStatus);
+        array_push($refundTransactionIds, $refundTransactionId);
+        $msg = Mage::helper('boltpay')->__(
+            "Bolt Operation: \"Refund\". Bolt Reference: \"%s\".\nBolt Transaction: \"%s\"",
+            $refundReference,
+            $refundTransactionId
+        );
+        $payment->getOrder()->addStatusHistoryComment($msg);
+        $payment->setAdditionalInformation('bolt_refund_transaction_statuses',
+            serialize($refundTransactionStatuses));
+        $payment->setAdditionalInformation('bolt_refund_merchant_transaction_ids',
+            serialize($refundTransactionIds));
+        $payment->setTransactionId(sprintf("%s-refund", $refundReference));
+        $payment->setAdditionalInformation('bolt_transaction_status', $newTransactionStatus);
     }
 
     /**
