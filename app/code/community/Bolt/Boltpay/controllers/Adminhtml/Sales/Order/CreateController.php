@@ -44,8 +44,16 @@ class Bolt_Boltpay_Adminhtml_Sales_Order_CreateController extends Mage_Adminhtml
      */
     public function loadBlockAction()
     {
-        $quote = $this->_getQuote();
         $postData = $this->getRequest()->getPost('order');
+        $addressData = $this->prepareAddressData($postData);
+
+        Mage::getSingleton('admin/session')->setOrderShippingAddress($addressData);
+
+        parent::loadBlockAction();
+    }
+
+    public function prepareAddressData($postData)
+    {
         $shippingAddress = $postData['shipping_address'];
 
         $addressData = array(
@@ -67,11 +75,8 @@ class Bolt_Boltpay_Adminhtml_Sales_Order_CreateController extends Mage_Adminhtml
             $addressData['email'] = $addressData['email_address'] = @$postData['account']['email'];
         }
 
-        Mage::getSingleton('admin/session')->setOrderShippingAddress($addressData);
-
-        parent::loadBlockAction();
+        return $addressData;
     }
-
 
     /**
      * Saving quote and create order.  We add the Bolt reference to the session
@@ -190,8 +195,8 @@ class Bolt_Boltpay_Adminhtml_Sales_Order_CreateController extends Mage_Adminhtml
      * This method normalizes it to the expected format for underlying Magento code to handle our
      * data properly
      */
-    protected function _normalizeOrderData() {
-
+    protected function _normalizeOrderData()
+    {
         if ($this->getRequest()->getPost('shipping_method')) {
             $_POST['order']['shipping_method'] = $this->getRequest()->getPost('shipping_method');
         }
@@ -250,8 +255,8 @@ class Bolt_Boltpay_Adminhtml_Sales_Order_CreateController extends Mage_Adminhtml
      *
      * @var Mage_Sales_Model_Order $order  the recently created order
      */
-    protected function _postOrderCreateProcessing($order) {
-
+    protected function _postOrderCreateProcessing($order)
+    {
         ///////////////////////////////////////////////////////
         // Close out session by
         // 1.) deactivating the immutable quote so it can no longer be used
