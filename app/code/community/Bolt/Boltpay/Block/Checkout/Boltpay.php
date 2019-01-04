@@ -35,6 +35,9 @@ class Bolt_Boltpay_Block_Checkout_Boltpay extends Mage_Checkout_Block_Onepage_Re
 
     const CSS_SUFFIX = 'bolt-css-suffix';
 
+    /** @var int The amount of time in seconds that an order token is preserved in cache */
+    public static $cached_token_expiration_time = 60 * 60;
+
     /**
      * Set the connect javascript url to production or sandbox based on store config settings
      */
@@ -185,79 +188,80 @@ PROMISE;
 
             $hintData = $this->getAddressHints($sessionQuote, $checkoutType);
 
-            $orderCreationResponse = json_decode('{"token" : "", "error": "'.Mage::helper('boltpay')->__('Unexpected error.  Please contact support for assistance.').'"}');
+            $cachedCartData = $this->getCachedCartData($sessionQuote, $checkoutType);
 
-            $isMultiPage = ($checkoutType === self::CHECKOUT_TYPE_MULTI_PAGE);
-            // For multi-page, remove shipping that may have been added by Magento shipping and tax estimate interface
-            if ($isMultiPage) {
-                // Resets shipping rate
-                $shippingMethod = $sessionQuote->getShippingAddress()->getShippingMethod();
-                $shippingAndTaxModel->applyShippingRate($sessionQuote, null);
-            }
+            if ($cachedCartData) {
+                $orderCreationResponse = $cachedCartData;
+                $immutableQuote = $sessionQuote;
+            } else {
 
-            $cachedCartDataJS = $this->getCachedCartJS($sessionQuote, $checkoutType);
+                // Call Bolt create order API
+                try {
 
-            if ($cachedCartDataJS) {
-                return $cachedCartDataJS;
-            }
-
-            // Call Bolt create order API
-            try {
-                /////////////////////////////////////////////////////////////////////////////////
-                // We create a copy of the quote that is immutable by the customer/frontend
-                // Bolt saves this quote to the database at Magento-side order save time.
-                // This assures that the quote saved to Magento matches what is stored on Bolt
-                // Only shipping, tax and discounts can change, and only if the shipping, tax
-                // and discount calculations change on the Magento server
-                ////////////////////////////////////////////////////////////////////////////////
-                /** @var Mage_Sales_Model_Quote $immutableQuote */
-                $immutableQuote = $boltHelper->cloneQuote($sessionQuote, $checkoutType);
-                ////////////////////////////////////////////////////////////////////////////////
-
-                $orderCreationResponse = $this->getBoltOrderToken($immutableQuote, $checkoutType);
-
-                if (@!$orderCreationResponse->error) {
-                    ///////////////////////////////////////////////////////////////////////////////////////
-                    // Merchant scope: get "bolt_user_id" if the user is logged in or should be registered,
-                    // sign it and add to hints.
-                    ///////////////////////////////////////////////////////////////////////////////////////
-                    $reservedUserId = $this->getReservedUserId($sessionQuote);
-                    if ($reservedUserId && $this->isEnableMerchantScopedAccount()) {
-                        $signRequest = array(
-                            'merchant_user_id' => $reservedUserId,
-                        );
-
-                        $signResponse = $boltHelper->transmit('sign', $signRequest);
-
-                        if ($signResponse != null) {
-                            $hintData['signed_merchant_user_id'] = array(
-                                "merchant_user_id" => $signResponse->merchant_user_id,
-                                "signature" => $signResponse->signature,
-                                "nonce" => $signResponse->nonce,
-                            );
-                        }
+                    $isMultiPage = ($checkoutType === self::CHECKOUT_TYPE_MULTI_PAGE);
+                    // For multi-page, remove shipping that may have been added by Magento shipping and tax estimate interface
+                    if ($isMultiPage) {
+                        // Resets shipping rate
+                        $shippingMethod = $sessionQuote->getShippingAddress()->getShippingMethod();
+                        $shippingAndTaxModel->applyShippingRate($sessionQuote, null);
                     }
-                    ///////////////////////////////////////////////////////////////////////////////////////
+
+                    /////////////////////////////////////////////////////////////////////////////////
+                    // We create a copy of the quote that is immutable by the customer/frontend
+                    // Bolt saves this quote to the database at Magento-side order save time.
+                    // This assures that the quote saved to Magento matches what is stored on Bolt
+                    // Only shipping, tax and discounts can change, and only if the shipping, tax
+                    // and discount calculations change on the Magento server
+                    ////////////////////////////////////////////////////////////////////////////////
+                    /** @var Mage_Sales_Model_Quote $immutableQuote */
+                    $immutableQuote = $boltHelper->cloneQuote($sessionQuote, $checkoutType);
+                    ////////////////////////////////////////////////////////////////////////////////
+
+                    $orderCreationResponse = $this->getBoltOrderToken($immutableQuote, $checkoutType);
+
+                    // For multi-page, reapply shipping to quote that may be used for shipping and tax estimate
+                    if ($isMultiPage) {
+                        $shippingAndTaxModel->applyShippingRate($sessionQuote, $shippingMethod);
+                    }
+
+                    if (@!$orderCreationResponse->error) {
+                        ///////////////////////////////////////////////////////////////////////////////////////
+                        // Merchant scope: get "bolt_user_id" if the user is logged in or should be registered,
+                        // sign it and add to hints.
+                        ///////////////////////////////////////////////////////////////////////////////////////
+                        $reservedUserId = $this->getReservedUserId($sessionQuote);
+                        if ($reservedUserId && $this->isEnableMerchantScopedAccount()) {
+                            $signRequest = array(
+                                'merchant_user_id' => $reservedUserId,
+                            );
+
+                            $signResponse = $boltHelper->transmit('sign', $signRequest);
+
+                            if ($signResponse != null) {
+                                $hintData['signed_merchant_user_id'] = array(
+                                    "merchant_user_id" => $signResponse->merchant_user_id,
+                                    "signature" => $signResponse->signature,
+                                    "nonce" => $signResponse->nonce,
+                                );
+                            }
+                        }
+                        ///////////////////////////////////////////////////////////////////////////////////////
+                    }
+
+                } catch (Exception $e) {
+                    $metaData = array('quote' => var_export($sessionQuote->debug(), true));
+                    Mage::helper('boltpay/bugsnag')->notifyException(
+                        new Exception($e),
+                        $metaData
+                    );
                 }
-            } catch (Exception $e) {
-                $metaData = array('quote' => var_export($sessionQuote->debug(), true));
-                Mage::helper('boltpay/bugsnag')->notifyException(
-                    new Exception($e),
-                    $metaData
-                );
+
             }
 
-            // For multi-page, reapply shipping to quote that may be used for shipping and tax estimate
-            if ($isMultiPage) {
-                $shippingAndTaxModel->applyShippingRate($sessionQuote, $shippingMethod);
-            }
-
-            $cartData = ($checkoutType === self::CHECKOUT_TYPE_FIRECHECKOUT) ? $orderCreationResponse : $this->buildCartData($orderCreationResponse, $checkoutType);
+            $cartData = ($cachedCartData || ($checkoutType === self::CHECKOUT_TYPE_FIRECHECKOUT)) ? $orderCreationResponse : $this->buildCartData($orderCreationResponse, $checkoutType);
+            $this->cacheCartData($cartData, $sessionQuote, $checkoutType);
 
             $checkoutJS = $this->buildBoltCheckoutJavascript($checkoutType, $immutableQuote, $hintData, $cartData);
-
-            $this->cacheCartJS($checkoutJS, $sessionQuote, $checkoutType);
-
             return $checkoutJS;
 
         } catch (Exception $e) {
@@ -267,16 +271,19 @@ PROMISE;
 
 
     /**
-     * Calculates and returns the key for storing a quote's Bolt cart
+     * Calculates and returns the key for storing a Bolt order token
      *
-     * @param Mage_Sales_Model_Quote $quote         The quote whose key that will be generated
-     * @param string                 $checkoutType  'multi-page' | 'one-page' | 'admin'
+     * @param Mage_Sales_Model_Quote|array $quote         The quote whose key that will be
+     *                                                    generated or the bolt cart array
+     *                                                    repesentation of the quote.
      *
-     * @return string   The calculated key for this quote's cart.  Format is {quote id}_{md5 hash of cart content}
+     * @param string                       $checkoutType  'multi-page' | 'one-page' | 'admin'
+     *
+     * @return string   The calculated key for this quote's cart.
+     *                  Format is {quote id}_{md5 hash of cart content}
      */
     protected function calculateCartCacheKey( $quote, $checkoutType ) {
-        $boltHelper = Mage::helper('boltpay/api');
-        $boltCartArray = $boltHelper->buildOrder($quote, $checkoutType === 'multi-page');
+        $boltCartArray = is_array($quote) ?: Mage::getModel('boltpay/boltOrder')->buildOrder($quote, $checkoutType === 'multi-page');
         if ($boltCartArray['cart']) {
             unset($boltCartArray['cart']['display_id']);
             unset($boltCartArray['cart']['order_reference']);
@@ -286,43 +293,45 @@ PROMISE;
 
 
     /**
-     * Get cached copy of cart JS if it exist and has not expired
+     * Get cached copy of the Bolt order token if it exist and has not expired
      *
-     * @param Mage_Sales_Model_Quote $quote         The quote for which the cached cart is sought
+     * @param Mage_Sales_Model_Quote $quote         The quote for which the cached token is sought
      * @param string                 $checkoutType  'multi-page' | 'one-page' | 'admin'
      *
-     * @return string|null  If it exist, the cached cart JS as a string
+     * @return string|null  If it exist, the cached order token
      */
-    protected function getCachedCartJS($quote, $checkoutType) {
+    protected function getCachedCartData($quote, $checkoutType) {
 
-        $cachedCartDataJS = Mage::getSingleton('core/session')->getCachedBoltCartDataJS();
+        $cachedCartDataJS = Mage::getSingleton('core/session')->getCachedCartData();
 
         if (
             $cachedCartDataJS
-            && (($cachedCartDataJS['creation_time'] + 60*60) > time())
+            && (($cachedCartDataJS['creation_time'] + self::$cached_token_expiration_time) > time())
             && ($cachedCartDataJS['key'] === $this->calculateCartCacheKey($quote, $checkoutType))
         )
         {
-            return $cachedCartDataJS["js"];
+            return unserialize($cachedCartDataJS["cart_data"]);
         }
 
-        Mage::getSingleton('core/session')->unsCachedBoltCartDataJS();
+        Mage::getSingleton('core/session')->unsCachedCartData();
         return null;
 
     }
 
 
     /**
-     * Caches the javascript that is sent to the front end to be used for duplicate request
+     * Caches cart data that is sent to the front end to be used for duplicate request
      *
-     * @param string $boltCartJS  The complete Bolt Checkout JS code to be executed on the frontend
+     * @param array $cartData  The cart data containing the bolt order token.  This is the
+     *                         php representation of the 'cart' parameter passed to the
+     *                         javascript Bolt.configure method
      */
-    protected function cacheCartJS($boltCartJS, $quote, $checkoutType) {
-        Mage::getSingleton('core/session')->setCachedBoltCartDataJS(
+    protected function cacheCartData($cartData, $quote, $checkoutType) {
+        Mage::getSingleton('core/session')->setCachedCartData(
             array(
                 'creation_time' => time(),
                 'key' => $this->calculateCartCacheKey($quote, $checkoutType),
-                'js' => $boltCartJS
+                'cart_data' => serialize($cartData)
             )
         );
     }
