@@ -266,6 +266,10 @@
         <skip_confirm>1</skip_confirm>
         <use_javascript_in_admin>0</use_javascript_in_admin>
         <add_button_everywhere>0</add_button_everywhere>
+        <allow_out_of_stock_orders>0</allow_out_of_stock_orders>
+        <allow_disabled_sku_orders>0</allow_disabled_sku_orders>
+        <override_magento_order_on_mismatch>0</override_magento_order_on_mismatch>
+        <mismatch_price_tolerance>0</mismatch_price_tolerance>
         <sort_order>0</sort_order>
       </boltpay>
     </payment>
