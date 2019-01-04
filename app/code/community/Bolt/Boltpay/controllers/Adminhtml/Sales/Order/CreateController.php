@@ -52,6 +52,10 @@ class Bolt_Boltpay_Adminhtml_Sales_Order_CreateController extends Mage_Adminhtml
         parent::loadBlockAction();
     }
 
+    /**
+     * @param $postData
+     * @return array
+     */
     public function prepareAddressData($postData)
     {
         $shippingAddress = $postData['shipping_address'];
@@ -103,13 +107,7 @@ class Bolt_Boltpay_Adminhtml_Sales_Order_CreateController extends Mage_Adminhtml
         /// For Bolt orders, we must use the immutable quote to create
         /// this order for subsequent webhooks to succeed.
         ///////////////////////////////////////////////////
-        /** @var Bolt_Boltpay_Helper_Api $boltHelper */
-        $boltHelper = Mage::helper('boltpay/api');
-        $transaction = $boltHelper->fetchTransaction($boltReference);
-
-        /** @var Bolt_Boltpay_Helper_Transaction $transactionHelper */
-        $transactionHelper = Mage::helper('boltpay/transaction');
-        $immutableQuoteId = $transactionHelper->getImmutableQuoteIdFromTransaction($transaction);
+        $immutableQuoteId = $this->getImmutableQuoteIdFromTransaction($boltReference);
 
         $this->_getSession()->setQuoteId($immutableQuoteId);
         
@@ -187,6 +185,23 @@ class Bolt_Boltpay_Adminhtml_Sales_Order_CreateController extends Mage_Adminhtml
         }
     }
 
+    /**
+     * @param $boltReference
+     * @return string
+     * @throws Exception
+     */
+    protected function getImmutableQuoteIdFromTransaction($boltReference)
+    {
+        /** @var Bolt_Boltpay_Helper_Api $boltHelper */
+        $boltHelper = Mage::helper('boltpay/api');
+        $transaction = $boltHelper->fetchTransaction($boltReference);
+
+        /** @var Bolt_Boltpay_Helper_Transaction $transactionHelper */
+        $transactionHelper = Mage::helper('boltpay/transaction');
+        $immutableQuoteId = $transactionHelper->getImmutableQuoteIdFromTransaction($transaction);
+
+        return $immutableQuoteId;
+    }
 
     /**
      * Some versions of Magento store post data for the form with slightly different names
