@@ -137,7 +137,7 @@ class Bolt_Boltpay_Block_Checkout_Boltpay extends Mage_Checkout_Block_Onepage_Re
                                         // BoltCheckout is currently not doing anything reasonable to alert the user of a problem, so we will do something as a backup
                                         alert(response.responseJSON.error_messages);
                                         location.reload();
-                                    } else {
+                                    } else {                                     
                                         resolve(response.responseJSON.cart_data);
                                     }                   
                                 },
@@ -333,6 +333,49 @@ PROMISE;
 
         $hintsTransformFunction = $boltHelper->getExtraConfig('hintsTransform');
 
+        $boltConfigureCall =
+        "
+            BoltCheckout.configure(
+                json_cart,
+                json_hints,
+                {
+                  check: function() {
+                    $checkCustom
+                    $onCheckCallback
+                    return true;
+                  },
+                  
+                  onCheckoutStart: function() {
+                    // This function is called after the checkout form is presented to the user.
+                    $onCheckoutStartCustom
+                  },
+                  
+                  onShippingDetailsComplete: function() {
+                    // This function is called when the user proceeds to the shipping options page.
+                    // This is applicable only to multi-step checkout.
+                    $onShippingDetailsCompleteCustom
+                  },
+                  
+                  onShippingOptionsComplete: function() {
+                    // This function is called when the user proceeds to the payment details page.
+                    // This is applicable only to multi-step checkout.
+                    $onShippingOptionsCompleteCustom
+                  },
+                  
+                  onPaymentSubmit: function() {
+                    // This function is called after the user clicks the pay button.
+                    $onPaymentSubmitCustom
+                  },
+                  
+                  success: $onSuccessCallback,
+
+                  close: function() {
+                     $onCloseCallback
+                  }
+                }   
+            );
+        ";
+
         return
         ("
             var \$hints_transform = $hintsTransformFunction;
@@ -340,54 +383,29 @@ PROMISE;
             var json_cart = $jsonCart;
             var json_hints = \$hints_transform($jsonHints);
             var order_completed = false;
+            var configure_bolt = function() {
+                $boltConfigureCall
+            };
 
-            var configureIntervalId = setInterval(
-                function() {
-                     if (isReadyToCreateBoltOrder) {
-                     
-                        clearInterval(configureIntervalId);
-                        
-                        BoltCheckout.configure(
-                            json_cart,
-                            json_hints,
-                            {
-                              check: function() {
-                                $checkCustom
-                                $onCheckCallback
-                                return true;
-                              },
-                              
-                              onCheckoutStart: function() {
-                                // This function is called after the checkout form is presented to the user.
-                                $onCheckoutStartCustom
-                              },
-                              
-                              onShippingDetailsComplete: function() {
-                                // This function is called when the user proceeds to the shipping options page.
-                                // This is applicable only to multi-step checkout.
-                                $onShippingDetailsCompleteCustom
-                              },
-                              
-                              onShippingOptionsComplete: function() {
-                                // This function is called when the user proceeds to the payment details page.
-                                // This is applicable only to multi-step checkout.
-                                $onShippingOptionsCompleteCustom
-                              },
-                              
-                              onPaymentSubmit: function() {
-                                // This function is called after the user clicks the pay button.
-                                $onPaymentSubmitCustom
-                              },
-                              
-                              success: $onSuccessCallback,
+            BoltCheckout.open = function() {
+                document.getElementsByClassName('bolt-checkout-button-button')[0].click();
+            };
             
-                              close: function() {
-                                 $onCloseCallback
-                              }
-                            }
-                        );
-                     }
-                }, 300
+            BoltCheckout.configure(
+                new Promise( 
+                    function (resolve, reject) {
+                        // Store state must be validated prior to open                          
+                    }
+                ),
+                json_hints,
+                {
+                    check: function() {
+                        $checkCustom
+                        $onCheckCallback
+                        configure_bolt();
+                        BoltCheckout.open();
+                    }
+                }
             );
         "
         );
@@ -422,14 +440,14 @@ PROMISE;
                         } "). "
         
                         bolt_hidden.classList.add('required-entry');
-                        isReadyToCreateBoltOrder = is_valid;
-                        return is_valid;
+                        if (!is_valid) return false;
                     }
                     ";
             case self::CHECKOUT_TYPE_FIRECHECKOUT:
                 return
                     "
-                    return (isReadyToCreateBoltOrder = checkout.validate());
+                    var is_valid = checkout.validate();
+                    if (!is_valid) return false;
                     ";
             default:
                 return '';

@@ -269,8 +269,7 @@ class Bolt_Boltpay_Block_Checkout_BoltpayTest extends PHPUnit_Framework_TestCase
                 }
 
                 bolt_hidden.classList.add('required-entry');
-                isReadyToCreateBoltOrder = is_valid;
-                return is_valid;
+                if (!is_valid) return false;
             }
         ";
 
