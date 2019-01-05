@@ -385,10 +385,7 @@ PROMISE;
             var order_completed = false;
             var configure_bolt = function() {
                 $boltConfigureCall
-            };
-
-            BoltCheckout.open = function() {
-                document.getElementsByClassName('bolt-checkout-button-button')[0].click();
+                return true;
             };
             
             BoltCheckout.configure(
@@ -402,8 +399,7 @@ PROMISE;
                     check: function() {
                         $checkCustom
                         $onCheckCallback
-                        configure_bolt();
-                        BoltCheckout.open();
+                        return configure_bolt();
                     }
                 }
             );

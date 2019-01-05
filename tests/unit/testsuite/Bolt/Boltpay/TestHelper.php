@@ -140,7 +140,7 @@ class Bolt_Boltpay_TestHelper
         $hintsTransformFunction = $boltHelper->getExtraConfig('hintsTransform');
 
         $boltConfigureCall =
-         "
+        "
             BoltCheckout.configure(
                 json_cart,
                 json_hints,
@@ -191,16 +191,13 @@ class Bolt_Boltpay_TestHelper
             var order_completed = false;
             var configure_bolt = function() {
                 $boltConfigureCall
-            };
-
-            BoltCheckout.open = function() {
-                document.getElementsByClassName('bolt-checkout-button-button')[0].click();
+                return true;
             };
             
             BoltCheckout.configure(
                 new Promise( 
                     function (resolve, reject) {
-                         // Store state must be validated prior to open                          
+                        // Store state must be validated prior to open                          
                     }
                 ),
                 json_hints,
@@ -208,8 +205,7 @@ class Bolt_Boltpay_TestHelper
                     check: function() {
                         $checkCustom
                         $onCheckCallback
-                        configure_bolt();
-                        BoltCheckout.open();
+                        return configure_bolt();
                     }
                 }
             );
