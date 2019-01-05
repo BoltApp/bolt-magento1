@@ -16,7 +16,14 @@
     "ext-PDO": "*"
   },
   "require-dev": {
+    "squizlabs/php_codesniffer": "3.*",
+    "magento/marketplace-eqp": "2.*",
     "phpunit/phpunit": "^4.8"
+  },
+  "scripts": {
+    "post-install-cmd": [
+      "bash tools/setup.sh"
+    ]
   },
   "repositories": [
     {

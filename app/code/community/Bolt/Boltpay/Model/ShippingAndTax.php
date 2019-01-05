@@ -43,11 +43,18 @@ class Bolt_Boltpay_Model_ShippingAndTax extends Mage_Core_Model_Abstract
             throw new Exception(Mage::helper('boltpay')->__("Address must contain postal_code and country_code."));
         }
 
+        $shippingStreet = trim(
+            (@$shippingAddress->street_address1 ?: '') . "\n"
+            . (@$shippingAddress->street_address2 ?: '') . "\n"
+            . (@$shippingAddress->street_address3 ?: '') . "\n"
+            . (@$shippingAddress->street_address4 ?: '')
+        );
+            
         $addressData = array(
             'email' => @$shippingAddress->email ?: $shippingAddress->email_address,
             'firstname' => @$shippingAddress->first_name,
             'lastname' => @$shippingAddress->last_name,
-            'street' => @$shippingAddress->street_address1 . ($shippingAddress->street_address2 ? "\n" . $shippingAddress->street_address2 : ''),
+            'street' => $shippingStreet,
             'company' => @$shippingAddress->company,
             'city' => @$shippingAddress->locality,
             'region' => $region,
@@ -88,8 +95,11 @@ class Bolt_Boltpay_Model_ShippingAndTax extends Mage_Core_Model_Abstract
             $quote->save();
         }
 
-        $quote->getShippingAddress()->addData($addressData)->save();
-        Mage::getModel('boltpay/boltOrder')->correctBillingAddress($quote);
+        $billingAddress = $quote->getBillingAddress();
+        $shippingAddress = $quote->getShippingAddress();
+
+        $shippingAddress->addData($addressData)->save();
+        Mage::getModel('boltpay/boltOrder')->correctBillingAddress($billingAddress, $shippingAddress, false);
 
         return $addressData;
     }

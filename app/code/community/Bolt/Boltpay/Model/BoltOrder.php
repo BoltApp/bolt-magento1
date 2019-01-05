@@ -381,7 +381,7 @@ class Bolt_Boltpay_Model_BoltOrder extends Mage_Core_Model_Abstract
      * If it has not been triggered by April 2019, this code may be safely removed.
      *
      */
-    public function correctBillingAddress(&$billingAddress, $fallbackAddress = null )
+    public function correctBillingAddress(&$billingAddress, $fallbackAddress = null, $notifyBugsnag = true )
     {
         if (!$fallbackAddress) {
             return false;
@@ -400,19 +400,22 @@ class Bolt_Boltpay_Model_BoltOrder extends Mage_Core_Model_Abstract
             !$billingAddress->getCountry()
         )
         {
-            $bugsnag->notifyException(
-                new Exception("Missing critical billing data. "
-                    ." Street: ". $billingAddress->getStreetFull()
-                    ." City: ". $billingAddress->getCity()
-                    ." Country: ". $billingAddress->getCountry()
-                ),
-                array(),
-                "info"
-            );
+            if ($notifyBugsnag) {
+                $bugsnag->notifyException(
+                    new Exception("Missing critical billing data. "
+                        ." Street: ". $billingAddress->getStreetFull()
+                        ." City: ". $billingAddress->getCity()
+                        ." Country: ". $billingAddress->getCountry()
+                    ),
+                    array(),
+                    "info"
+                );
+            }
 
             $billingAddress
                 ->setCity($fallbackAddress->getCity())
                 ->setRegion($fallbackAddress->getRegion())
+                ->setRegionId($fallbackAddress->getRegionId())
                 ->setPostcode($fallbackAddress->getPostcode())
                 ->setCountryId($fallbackAddress->getCountryId())
                 ->setStreet($fallbackAddress->getStreet())
@@ -423,11 +426,13 @@ class Bolt_Boltpay_Model_BoltOrder extends Mage_Core_Model_Abstract
 
         if (!trim($billingAddress->getName())) {
 
-            $bugsnag->notifyException(
-                new Exception("Missing billing name."),
-                array(),
-                "info"
-            );
+            if ($notifyBugsnag) {
+                $bugsnag->notifyException(
+                    new Exception("Missing billing name."),
+                    array(),
+                    "info"
+                );
+            }
 
             $billingAddress
                 ->setPrefix($fallbackAddress->getPrefix())
@@ -440,7 +445,26 @@ class Bolt_Boltpay_Model_BoltOrder extends Mage_Core_Model_Abstract
             $wasCorrected = true;
         }
 
-        if ($wasCorrected) $quote->save();
+        if (!trim($billingAddress->getTelephone())) {
+            if ($notifyBugsnag) {
+                $bugsnag->notifyException(
+                    new Exception("Missing billing telephone."),
+                    array(),
+                    "info"
+                );
+            }
+            $billingAddress->setTelephone($fallbackAddress->getTelephone());
+            $wasCorrected = true;
+        }
+
+        if ( $wasCorrected && !trim($billingAddress->getCompany())) {
+            $billingAddress->setCompany($fallbackAddress->getCompany());
+        }
+
+        if ($wasCorrected) {
+            $billingAddress->save();
+            $quote->save();
+        }
 
         return $wasCorrected;
     }

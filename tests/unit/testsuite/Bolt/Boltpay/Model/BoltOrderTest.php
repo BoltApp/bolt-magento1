@@ -194,6 +194,7 @@ class Bolt_Boltpay_Model_BoltOrderTest extends PHPUnit_Framework_TestCase
             'company' => 'ShoeShine Inc.',
             'city' => 'An Unnamed City',
             'region' => 'An Unnamed Region',
+            'region_id' => null,
             'postcode' => '12345',
             'country_id' => 'US',
             'telephone' => '555-555-5555',
@@ -208,7 +209,7 @@ class Bolt_Boltpay_Model_BoltOrderTest extends PHPUnit_Framework_TestCase
         $shippingAddress = $mockQuote->getShippingAddress()
             ->addData($shippingAddressData);
 
-        $this->assertTrue($this->currentMock->correctBillingAddress($billingAddress, $shippingAddress));
+        $this->assertTrue($this->currentMock->correctBillingAddress($billingAddress, $shippingAddress, false));
 
         $result = $billingAddress->getData();
         unset($result['customer_id']);
@@ -259,7 +260,7 @@ class Bolt_Boltpay_Model_BoltOrderTest extends PHPUnit_Framework_TestCase
         $shippingAddress = $mockQuote->getShippingAddress()
             ->addData($shippingAddressData);
 
-        $this->assertTrue($this->currentMock->correctBillingAddress($billingAddress, $shippingAddress));
+        $this->assertTrue($this->currentMock->correctBillingAddress($billingAddress, $shippingAddress, false));
 
         $result = $billingAddress->getData();
         unset($result['customer_id']);
@@ -285,8 +286,8 @@ class Bolt_Boltpay_Model_BoltOrderTest extends PHPUnit_Framework_TestCase
             'email' => 'reporter@general_mills.com',
             'firstname' => 'Polly',
             'lastname' => 'Purebred',
-            'street' => '4 Ever In Distress',
             'company' => 'TV Studio',
+            'street' => '4 Ever In Distress',
             'city' => 'An Unnamed City',
             'region' => 'An Unnamed Region',
             'postcode' => '12345',
@@ -297,11 +298,14 @@ class Bolt_Boltpay_Model_BoltOrderTest extends PHPUnit_Framework_TestCase
         $expected = array(
             'firstname' => 'Polly',
             'lastname' => 'Purebred',
+            'company' => 'TV Studio',
             'street' => '4 Ever In Distress',
             'city' => 'An Unnamed City',
             'region' => 'An Unnamed Region',
+            'region_id' => null,
             'postcode' => '12345',
             'country_id' => 'US',
+            'telephone' => '555-123-5555',
             'address_type' => 'billing',
             'prefix' => null,
             'middlename' => null,
@@ -315,7 +319,7 @@ class Bolt_Boltpay_Model_BoltOrderTest extends PHPUnit_Framework_TestCase
         $shippingAddress = $mockQuote->getShippingAddress()
             ->addData($shippingAddressData);
 
-        $this->assertTrue($this->currentMock->correctBillingAddress($billingAddress, $shippingAddress));
+        $this->assertTrue($this->currentMock->correctBillingAddress($billingAddress, $shippingAddress, false));
 
         $result = $billingAddress->getData();
         unset($result['customer_id']);
