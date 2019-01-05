@@ -146,8 +146,10 @@ class Bolt_Boltpay_TestHelper
                 json_hints,
                 {
                   check: function() {
-                    $checkCustom
-                    $onCheckCallback
+                    if (check_count++) {
+                        $checkCustom
+                        $onCheckCallback
+                    }    
                     return true;
                   },
                   
@@ -189,6 +191,7 @@ class Bolt_Boltpay_TestHelper
             var json_cart = $jsonCart;
             var json_hints = \$hints_transform($jsonHints);
             var order_completed = false;
+            var check_count = 0;
             var configure_bolt = function() {
                 $boltConfigureCall
                 return true;
