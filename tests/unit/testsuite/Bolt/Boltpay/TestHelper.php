@@ -128,6 +128,7 @@ class Bolt_Boltpay_TestHelper
     {
         $checkCustom = (isset($callbacks['checkCustom'])) ? $callbacks['checkCustom'] : '';
         $onCheckCallbackAdmin = (isset($callbacks['onCheckCallbackAdmin'])) ? $callbacks['onCheckCallbackAdmin'] : '';
+        $onEmailEnterCustom = (isset($callbacks['onEmailEnter'])) ? $callbacks['onEmailEnter'] : '';
         $onCheckoutStartCustom = (isset($callbacks['onCheckoutStartCustom'])) ? $callbacks['onCheckoutStartCustom'] : '';
         $onShippingDetailsCompleteCustom = (isset($callbacks['onShippingDetailsCompleteCustom'])) ? $callbacks['onShippingDetailsCompleteCustom'] : '';
         $onShippingOptionsCompleteCustom = (isset($callbacks['onShippingOptionsCompleteCustom'])) ? $callbacks['onShippingOptionsCompleteCustom'] : '';
@@ -163,13 +164,18 @@ class Bolt_Boltpay_TestHelper
                     $checkCustom
                     $onCheckCallbackAdmin
                     return true;
-                  },
+                  },     
                   
                   onCheckoutStart: function() {
                     // This function is called after the checkout form is presented to the user.
                     $onCheckoutStartCustom
                   },
                   
+                  onEmailEnter: function(email) {
+                    // This function is called after the user enters their email address.
+                    $onEmailEnterCustom
+                  },
+                                   
                   onShippingDetailsComplete: function() {
                     // This function is called when the user proceeds to the shipping options page.
                     // This is applicable only to multi-step checkout.
