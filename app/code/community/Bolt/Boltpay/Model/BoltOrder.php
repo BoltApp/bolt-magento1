@@ -392,7 +392,7 @@ class Bolt_Boltpay_Model_BoltOrder extends Mage_Core_Model_Abstract
      *                  Format is {quote id}_{md5 hash of cart content}
      */
     private function calculateCartCacheKey( $quote, $checkoutType ) {
-        $boltCartArray = is_array($quote) ?: $this->buildOrder($quote, $checkoutType === 'multi-page');
+        $boltCartArray = is_array($quote) ? $quote : $this->buildOrder($quote, $checkoutType === 'multi-page');
         if ($boltCartArray['cart']) {
             unset($boltCartArray['cart']['display_id']);
             unset($boltCartArray['cart']['order_reference']);
