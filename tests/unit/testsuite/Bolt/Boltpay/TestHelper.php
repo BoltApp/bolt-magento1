@@ -127,7 +127,7 @@ class Bolt_Boltpay_TestHelper
     public function buildCartDataJs($jsonCart, $immutableQuoteId, $jsonHints, $callbacks = array())
     {
         $checkCustom = (isset($callbacks['checkCustom'])) ? $callbacks['checkCustom'] : '';
-        $onCheckCallbackAdmin = (isset($callbacks['onCheckCallbackAdmin'])) ? $callbacks['onCheckCallbackAdmin'] : '';
+        $onCheckCallback = (isset($callbacks['onCheckCallback'])) ? $callbacks['onCheckCallback'] : '';
         $onCheckoutStartCustom = (isset($callbacks['onCheckoutStartCustom'])) ? $callbacks['onCheckoutStartCustom'] : '';
         $onShippingDetailsCompleteCustom = (isset($callbacks['onShippingDetailsCompleteCustom'])) ? $callbacks['onShippingDetailsCompleteCustom'] : '';
         $onShippingOptionsCompleteCustom = (isset($callbacks['onShippingOptionsCompleteCustom'])) ? $callbacks['onShippingOptionsCompleteCustom'] : '';
@@ -139,29 +139,17 @@ class Bolt_Boltpay_TestHelper
         $boltHelper = Mage::helper('boltpay');
         $hintsTransformFunction = $boltHelper->getExtraConfig('hintsTransform');
 
-        return ("
-            var \$hints_transform = $hintsTransformFunction;
-            
-            var json_cart = $jsonCart;
-            var json_hints = \$hints_transform($jsonHints);
-            var quote_id = '{$immutableQuoteId}';
-            var order_completed = false;
-
+        $boltConfigureCall =
+        "
             BoltCheckout.configure(
                 json_cart,
                 json_hints,
                 {
                   check: function() {
-                    if (!json_cart.orderToken) {
-                        if (typeof BoltPopup !== \"undefined\") {
-                            BoltPopup.addMessage(json_cart.error).show();
-                        } else {
-                            alert(json_cart.error);
-                        }
-                        return false;
-                    }
-                    $checkCustom
-                    $onCheckCallbackAdmin
+                    if (check_count++) {
+                        $checkCustom
+                        $onCheckCallback
+                    }    
                     return true;
                   },
                   
@@ -192,7 +180,39 @@ class Bolt_Boltpay_TestHelper
                   close: function() {
                      $onCloseCallback
                   }
+                }   
+            );
+        ";
+
+        return
+        ("
+            var \$hints_transform = $hintsTransformFunction;
+            
+            var json_cart = $jsonCart;
+            var json_hints = \$hints_transform($jsonHints);
+            var order_completed = false;
+            var check_count = 0;
+            var configure_bolt = function() {
+                $boltConfigureCall
+                return true;
+            };
+            
+            BoltCheckout.configure(
+                new Promise( 
+                    function (resolve, reject) {
+                        // Store state must be validated prior to open                          
+                    }
+                ),
+                json_hints,
+                {
+                    check: function() {
+                        $checkCustom
+                        $onCheckCallback
+                        return configure_bolt();
+                    }
                 }
-        );");
+            );
+        "
+        );
     }
 }

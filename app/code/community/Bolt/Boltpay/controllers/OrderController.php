@@ -15,6 +15,8 @@
  * @license    http://opensource.org/licenses/osl-3.0.php  Open Software License (OSL 3.0)
  */
 
+require_once(Mage::getModuleDir('controllers','Bolt_Boltpay').DS.'OrderControllerTrait.php');
+
 /**
  * Class Bolt_Boltpay_OrderController
  *
@@ -22,6 +24,8 @@
  */
 class Bolt_Boltpay_OrderController extends Mage_Core_Controller_Front_Action
 {
+
+    use Bolt_Boltpay_OrderControllerTrait;
 
     /**
      * Frontend save order action. Called from BoltCheckout.configure success callback.
@@ -32,7 +36,7 @@ class Bolt_Boltpay_OrderController extends Mage_Core_Controller_Front_Action
         try {
 
             if (!$this->getRequest()->isAjax()) {
-                Mage::throwException(Mage::helper('boltpay')->__("OrderController::saveAction called with a non AJAX call"));
+                Mage::throwException(Mage::helper('boltpay')->__("Bolt_Boltpay_OrderController::saveAction called with a non AJAX call"));
             }
 
             /** @var Bolt_Boltpay_Helper_Api $boltHelper */
@@ -84,7 +88,7 @@ class Bolt_Boltpay_OrderController extends Mage_Core_Controller_Front_Action
     {
         try {
             if (!$this->getRequest()->isAjax()) {
-                Mage::throwException(Mage::helper('boltpay')->__("OrderController::createAction called with a non AJAX call"));
+                Mage::throwException(Mage::helper('boltpay')->__("OrderController::firecheckoutcreateAction called with a non AJAX call"));
             }
 
             $checkout = Mage::getSingleton('firecheckout/type_standard');
@@ -150,22 +154,15 @@ class Bolt_Boltpay_OrderController extends Mage_Core_Controller_Front_Action
 
             Mage::helper('boltpay')->collectTotals($quote)->save();
 
-            /** @var Bolt_Boltpay_Block_Checkout_Boltpay $block */
-            $block = $this->getLayout()->createBlock('boltpay/checkout_boltpay');
-
             $result = array();
+            $result['cart_data'] = $this->getCartData($quote, Bolt_Boltpay_Block_Checkout_Boltpay::CHECKOUT_TYPE_ONE_PAGE);
 
-            /** @var Mage_Sales_Model_Quote $immutableQuote */
-            $immutableQuote = Mage::helper('boltpay')->cloneQuote($quote, Bolt_Boltpay_Block_Checkout_Boltpay::CHECKOUT_TYPE_ONE_PAGE);
-            $result['cart_data'] = $block->buildCartData(($block->getBoltOrderToken($immutableQuote, Bolt_Boltpay_Block_Checkout_Boltpay::CHECKOUT_TYPE_ONE_PAGE)));
-
-            if (!$result['cart_data']) {
+            if (@$result['cart_data']['error']) {
                 $result['success'] = false;
                 $result['error']   = true;
-                $result['error_messages'] = Mage::helper('boltpay')->__("Your shopping cart is empty.  Your session may have expired.");
+                $result['error_messages'] = $result['cart_data']['error'];
             }
 
-            $this->getResponse()->setHeader('Content-type', 'application/json', true);
             $this->getResponse()->setBody(Mage::helper('core')->jsonEncode($result));
         } catch (Exception $e) {
             Mage::helper('boltpay/bugsnag')->notifyException($e);
@@ -218,4 +215,5 @@ class Bolt_Boltpay_OrderController extends Mage_Core_Controller_Front_Action
             }
         }
     }
+
 }

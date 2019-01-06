@@ -26,6 +26,9 @@ class Bolt_Boltpay_Model_BoltOrder extends Mage_Core_Model_Abstract
     const ITEM_TYPE_PHYSICAL = 'physical';
     const ITEM_TYPE_DIGITAL  = 'digital';
 
+    /** @var int The amount of time in seconds that an order token is preserved in cache */
+    public static $cached_token_expiration_time = 60 * 60;
+
     // Store discount types, internal and 3rd party.
     // Can appear as keys in Quote::getTotals result array.
     protected $discountTypes = array(
@@ -370,5 +373,168 @@ class Bolt_Boltpay_Model_BoltOrder extends Mage_Core_Model_Abstract
         }
 
         return $customerEmail;
+    }
+
+    /**
+     * Calculates and returns the key for storing a Bolt order token
+     *
+     * @param Mage_Sales_Model_Quote|array $quote         The quote whose key that will be
+     *                                                    generated or the bolt cart array
+     *                                                    repesentation of the quote.
+     *
+     * @param string                       $checkoutType  'multi-page' | 'one-page' | 'admin'
+     *
+     * @return string   The calculated key for this quote's cart.
+     *                  Format is {quote id}_{md5 hash of cart content}
+     */
+    private function calculateCartCacheKey( $quote, $checkoutType ) {
+        $boltCartArray = is_array($quote) ?: $this->buildOrder($quote, $checkoutType === 'multi-page');
+        if ($boltCartArray['cart']) {
+            unset($boltCartArray['cart']['display_id']);
+            unset($boltCartArray['cart']['order_reference']);
+        }
+        return $quote->getId().'_'.md5(json_encode($boltCartArray));
+    }
+
+
+    /**
+     * Get cached copy of the Bolt order token if it exist and has not expired
+     *
+     * @param Mage_Sales_Model_Quote $quote         The quote for which the cached token is sought
+     * @param string                 $checkoutType  'multi-page' | 'one-page' | 'admin'
+     *
+     * @return string|null  If it exist, the cached order token
+     */
+    public function getCachedCartData($quote, $checkoutType) {
+
+        $cachedCartDataJS = Mage::getSingleton('core/session')->getCachedCartData();
+
+        if (
+            $cachedCartDataJS
+            && (($cachedCartDataJS['creation_time'] + self::$cached_token_expiration_time) > time())
+            && ($cachedCartDataJS['key'] === $this->calculateCartCacheKey($quote, $checkoutType))
+        )
+        {
+            return unserialize($cachedCartDataJS["cart_data"]);
+        }
+
+        Mage::getSingleton('core/session')->unsCachedCartData();
+        return null;
+
+    }
+
+
+    /**
+     * Caches cart data that is sent to the front end to be used for duplicate request
+     *
+     * @param array $cartData  The cart data containing the bolt order token.  This is the
+     *                         php representation of the 'cart' parameter passed to the
+     *                         javascript Bolt.configure method
+     */
+    public function cacheCartData($cartData, $quote, $checkoutType) {
+        Mage::getSingleton('core/session')->setCachedCartData(
+            array(
+                'creation_time' => time(),
+                'key' => $this->calculateCartCacheKey($quote, $checkoutType),
+                'cart_data' => serialize($cartData)
+            )
+        );
+    }
+
+
+    /**
+     * Get an order token for a Bolt order either by creating it or making a Promise to create it
+     *
+     * @param Mage_Sales_Model_Quote|null $quote            Magento quote object which represents
+     *                                                      order/cart data.
+     * @param string                      $checkoutType     'multi-page' | 'one-page' | 'admin' | 'firecheckout'
+     *
+     * @return object|string  json based PHP object or a javascript Promise string for initializing BoltCheckout
+     */
+    public function getBoltOrderToken($quote, $checkoutType)
+    {
+
+        /** @var Bolt_Boltpay_Helper_Api $boltHelper */
+        $boltHelper = Mage::helper('boltpay/api');
+        $isMultiPage = $checkoutType === Bolt_Boltpay_Block_Checkout_Boltpay::CHECKOUT_TYPE_MULTI_PAGE;
+
+        $items = $quote->getAllVisibleItems();
+
+        $hasAdminShipping = false;
+        if (Mage::app()->getStore()->isAdmin()) {
+            /* @var Mage_Adminhtml_Block_Sales_Order_Create_Shipping_Method_Form $shippingMethodBlock */
+            $shippingMethodBlock = Mage::app()->getLayout()->createBlock("adminhtml/sales_order_create_shipping_method_form");
+            $hasAdminShipping = $shippingMethodBlock->getActiveMethodRate();
+        }
+
+        if (empty($items)) {
+
+            return json_decode('{"token" : "", "error": "'.Mage::helper('boltpay')->__('Your shopping cart is empty. Please add products to the cart.').'"}');
+
+        } else if (
+            !$isMultiPage
+            && !$quote->getShippingAddress()->getShippingMethod()
+            && !$hasAdminShipping
+        ) {
+
+            if (!$quote->isVirtual()){
+                return json_decode('{"token" : "", "error": "'.Mage::helper('boltpay')->__('A valid shipping method must be selected.  Please check your address data and that you have selected a shipping method, then, refresh to try again.').'"}');
+            }
+
+            if (!$this->validateVirtualQuote($quote)){
+                return json_decode('{"token" : "", "error": "'.Mage::helper('boltpay')->__('Billing address is required.').'"}');
+            }
+        }
+
+        // Generates order data for sending to Bolt create order API.
+        $orderRequest = Mage::getModel('boltpay/boltOrder')->buildOrder($quote, $isMultiPage);
+
+        // Calls Bolt create order API
+        return $boltHelper->transmit('orders', $orderRequest);
+    }
+
+    /**
+     * Get Promise to create an order token
+     *
+     * @param string  $checkoutType  'multi-page' | 'one-page' | 'admin' | 'firecheckout'
+     *
+     * @return string javascript Promise string used for initializing BoltCheckout
+     */
+    public function getBoltOrderTokenPromise($checkoutType) {
+
+        if ( $checkoutType === Bolt_Boltpay_Block_Checkout_Boltpay::CHECKOUT_TYPE_FIRECHECKOUT ) {
+            $checkoutTokenUrl = Mage::helper('boltpay/url')->getMagentoUrl('boltpay/order/firecheckoutcreate');
+            $parameters = 'checkout.getFormData ? checkout.getFormData() : Form.serialize(checkout.form, true)';
+        } else if ( $checkoutType === Bolt_Boltpay_Block_Checkout_Boltpay::CHECKOUT_TYPE_ADMIN ) {
+            $checkoutTokenUrl = Mage::helper('boltpay/url')->getMagentoUrl("adminhtml/sales_order_create/create/checkoutType/$checkoutType", array(), true);
+            $parameters = "''";
+        } else {
+            $checkoutTokenUrl = Mage::helper('boltpay/url')->getMagentoUrl("boltpay/order/create/checkoutType/$checkoutType");
+            $parameters = "''";
+        }
+
+        return <<<PROMISE
+                    new Promise( 
+                        function (resolve, reject) {
+                            new Ajax.Request('$checkoutTokenUrl', {
+                                method:'post',
+                                parameters: $parameters,
+                                onSuccess: function(response) {
+                                    if(response.responseJSON.error) {                                                        
+                                        reject(response.responseJSON.error_messages);
+                                        
+                                        // BoltCheckout is currently not doing anything reasonable to alert the user of a problem, so we will do something as a backup
+                                        alert(response.responseJSON.error_messages);
+                                        location.reload();
+                                    } else {                                     
+                                        resolve(response.responseJSON.cart_data);
+                                    }                   
+                                },
+                                 onFailure: function(error) { reject(error); }
+                            });                            
+                        }
+                    )
+PROMISE;
+
     }
 }
