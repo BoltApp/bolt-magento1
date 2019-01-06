@@ -95,25 +95,11 @@ class Bolt_Boltpay_Model_ShippingAndTax extends Mage_Core_Model_Abstract
             $quote->save();
         }
 
-        $quote->getShippingAddress()->addData($addressData)->save();
-
         $billingAddress = $quote->getBillingAddress();
+        $shippingAddress = $quote->getShippingAddress();
 
-        $quote->getBillingAddress()->addData(
-            array(
-                'email' => $billingAddress->getEmail() ?: (@$shippingAddress->email ?: @$shippingAddress->email_address),
-                'firstname' => $billingAddress->getFirstname() ?: @$shippingAddress->first_name,
-                'lastname' => $billingAddress->getLastname() ?: @$shippingAddress->last_name,
-                'street' => implode("\n", $billingAddress->getStreet()) ?: $shippingStreet,
-                'company' => $billingAddress->getCompany() ?: @$shippingAddress->company,
-                'city' => $billingAddress->getCity() ?: @$shippingAddress->locality,
-                'region' => $billingAddress->getRegion() ?: $region,
-                'region_id' => $billingAddress->getRegionId() ?: $regionId,
-                'postcode' => $billingAddress->getPostcode() ?: @$shippingAddress->postal_code,
-                'country_id' => $billingAddress->getCountryId() ?: @$shippingAddress->country_code,
-                'telephone' => $billingAddress->getTelephone() ?: (@$shippingAddress->phone ?: $shippingAddress->phone_number)
-            )
-        )->save();
+        $shippingAddress->addData($addressData)->save();
+        Mage::getModel('boltpay/boltOrder')->correctBillingAddress($billingAddress, $shippingAddress, false);
 
         return $addressData;
     }

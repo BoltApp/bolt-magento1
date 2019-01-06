@@ -97,4 +97,235 @@ class Bolt_Boltpay_Model_BoltOrderTest extends PHPUnit_Framework_TestCase
 
         $this->assertEquals($expected, $result);
     }
+
+
+    /**
+     * Test that complete address data is not overwritten by correction
+     */
+    public function testCorrectBillingAddressWithNoCorrectionNeeded() {
+
+        $mockQuote = $this->testHelper->getCheckoutQuote();
+        $mockQuote->removeAllAddresses();
+
+        $billingAddressData = array(
+            'email' => 'hero@general_mills.com',
+            'firstname' => 'Under',
+            'lastname' => 'Dog',
+            'street' => '15th Phone Booth',
+            'company' => 'ShoeShine Inc.',
+            'city' => 'Unnamed City',
+            'region' => 'Unnamed Region',
+            'postcode' => '12345',
+            'country_id' => 'US',
+            'telephone' => '555-555-5555',
+            'address_type' => 'billing'
+        );
+
+        $shippingAddressData = array(
+            'email' => 'hero@general_mills.com',
+            'firstname' => 'Polly',
+            'lastname' => 'Purebred',
+            'street' => '4 Ever In Distress',
+            'company' => 'TV Studio',
+            'city' => 'A Second Unnamed City',
+            'region' => 'A Second Unnamed Region',
+            'postcode' => '54321',
+            'country_id' => 'US',
+            'telephone' => '555-123-5555'
+        );
+
+        $billingAddress = $mockQuote->getBillingAddress()
+            ->addData($billingAddressData);
+        $billingAddressData['quote_id'] = $mockQuote->getId();
+        $billingAddressData['address_id'] = $billingAddress->getId();
+
+        $shippingAddress = $mockQuote->getShippingAddress()
+            ->addData($shippingAddressData);
+
+        $this->assertFalse($this->currentMock->correctBillingAddress($billingAddress, $shippingAddress));
+
+        $result = $billingAddress->getData();
+        unset($result['customer_id']);
+        unset($result['created_at']);
+        unset($result['updated_at']);
+
+        $this->assertEquals($billingAddressData, $result);
+    }
+
+    /**
+     * Test that if an imperative piece of data is missing, like the street
+     * the address is replaced by shipping.
+     */
+    public function testCorrectBillingAddressWithMissingStreet() {
+
+        $mockQuote = $this->testHelper->getCheckoutQuote();
+        $mockQuote->removeAllAddresses();
+
+        $billingAddressData = array(
+            'email' => 'hero@general_mills.com',
+            'firstname' => 'Under',
+            'lastname' => 'Dog',
+            'company' => 'ShoeShine Inc.',
+            'city' => 'Incomplete Address City',
+            'region' => 'Incomplete Address Region',
+            'postcode' => '54321-Incomplete',
+            'country_id' => 'US',
+            'telephone' => '555-555-5555'
+        );
+
+        $shippingAddressData = array(
+            'email' => 'reporter@general_mills.com',
+            'firstname' => 'Polly',
+            'lastname' => 'Purebred',
+            'street' => '4 Ever In Distress',
+            'company' => 'TV Studio',
+            'city' => 'An Unnamed City',
+            'region' => 'An Unnamed Region',
+            'postcode' => '12345',
+            'country_id' => 'US',
+            'telephone' => '555-123-5555'
+        );
+
+        $expected = array(
+            'email' => 'hero@general_mills.com',
+            'firstname' => 'Under',
+            'lastname' => 'Dog',
+            'street' => '4 Ever In Distress',
+            'company' => 'ShoeShine Inc.',
+            'city' => 'An Unnamed City',
+            'region' => 'An Unnamed Region',
+            'region_id' => null,
+            'postcode' => '12345',
+            'country_id' => 'US',
+            'telephone' => '555-555-5555',
+            'address_type' => 'billing'
+        );
+
+        $billingAddress = $mockQuote->getBillingAddress()
+            ->addData($billingAddressData);
+        $expected['quote_id'] = $mockQuote->getId();
+        $expected['address_id'] = $billingAddress->getId();
+
+        $shippingAddress = $mockQuote->getShippingAddress()
+            ->addData($shippingAddressData);
+
+        $this->assertTrue($this->currentMock->correctBillingAddress($billingAddress, $shippingAddress, false));
+
+        $result = $billingAddress->getData();
+        unset($result['customer_id']);
+        unset($result['created_at']);
+        unset($result['updated_at']);
+
+        $this->assertEquals($expected, $result);
+    }
+
+    /**
+     * Test for name update from shipping when missing from billing
+     */
+    public function testCorrectBillingAddressWithNoName() {
+
+        $mockQuote = $this->testHelper->getCheckoutQuote();
+        $mockQuote->removeAllAddresses();
+
+        $billingAddressData = array(
+            'email' => 'hero@general_mills.com',
+            'street' => '15th Phone Booth',
+            'company' => 'ShoeShine Inc.',
+            'city' => 'Unnamed City',
+            'region' => 'Unnamed Region',
+            'postcode' => '12345',
+            'country_id' => 'US',
+            'telephone' => '555-555-5555',
+            'address_type' => 'billing'
+        );
+
+        $shippingAddressData = array(
+            'email' => 'hero@general_mills.com',
+            'firstname' => 'Polly',
+            'lastname' => 'Purebred',
+            'street' => '4 Ever In Distress',
+            'company' => 'TV Studio',
+            'city' => 'A Second Unnamed City',
+            'region' => 'A Second Unnamed Region',
+            'postcode' => '54321',
+            'country_id' => 'US',
+            'telephone' => '555-123-5555'
+        );
+
+        $billingAddress = $mockQuote->getBillingAddress()
+            ->addData($billingAddressData);
+        $billingAddressData['quote_id'] = $mockQuote->getId();
+        $billingAddressData['address_id'] = $billingAddress->getId();
+
+        $shippingAddress = $mockQuote->getShippingAddress()
+            ->addData($shippingAddressData);
+
+        $this->assertTrue($this->currentMock->correctBillingAddress($billingAddress, $shippingAddress, false));
+
+        $result = $billingAddress->getData();
+        unset($result['customer_id']);
+        unset($result['created_at']);
+        unset($result['updated_at']);
+
+        $billingAddressData['firstname'] = 'Polly';
+        $billingAddressData['lastname'] = 'Purebred';
+        $billingAddressData['prefix'] = $billingAddressData['middlename'] = $billingAddressData['suffix'] = null;
+        $this->assertEquals($billingAddressData, $result);
+    }
+
+    /**
+     * Test that if an imperative piece of data is missing, like the street
+     * the address is replaced by shipping.
+     */
+    public function testCorrectBillingAddressWithNoBillingAddress() {
+
+        $mockQuote = $this->testHelper->getCheckoutQuote();
+        $mockQuote->removeAllAddresses();
+
+        $shippingAddressData = array(
+            'email' => 'reporter@general_mills.com',
+            'firstname' => 'Polly',
+            'lastname' => 'Purebred',
+            'company' => 'TV Studio',
+            'street' => '4 Ever In Distress',
+            'city' => 'An Unnamed City',
+            'region' => 'An Unnamed Region',
+            'postcode' => '12345',
+            'country_id' => 'US',
+            'telephone' => '555-123-5555'
+        );
+
+        $expected = array(
+            'firstname' => 'Polly',
+            'lastname' => 'Purebred',
+            'company' => 'TV Studio',
+            'street' => '4 Ever In Distress',
+            'city' => 'An Unnamed City',
+            'region' => 'An Unnamed Region',
+            'region_id' => null,
+            'postcode' => '12345',
+            'country_id' => 'US',
+            'telephone' => '555-123-5555',
+            'address_type' => 'billing',
+            'prefix' => null,
+            'middlename' => null,
+            'suffix' => null
+        );
+
+        $billingAddress = $mockQuote->getBillingAddress();
+        $expected['quote_id'] = $mockQuote->getId();
+        $expected['address_id'] = $billingAddress->getId();
+
+        $shippingAddress = $mockQuote->getShippingAddress()
+            ->addData($shippingAddressData);
+
+        $this->assertTrue($this->currentMock->correctBillingAddress($billingAddress, $shippingAddress, false));
+
+        $result = $billingAddress->getData();
+        unset($result['customer_id']);
+        unset($result['created_at']);
+        unset($result['updated_at']);
+
+        $this->assertEquals($expected, $result);
+    }
 }
