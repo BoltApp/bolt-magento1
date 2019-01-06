@@ -29,7 +29,7 @@ class Bolt_Boltpay_Model_BoltOrder extends Mage_Core_Model_Abstract
     /**
      * @var int The amount of time in seconds that an order token is preserved in cache
      */
-    public static $cached_token_expiration_time = 60 * 60;
+    public static $cached_token_expiration_time = 360;
 
     /**
      * @var array  Store discount types, internal and 3rd party.
