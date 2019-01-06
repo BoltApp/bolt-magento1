@@ -26,11 +26,15 @@ class Bolt_Boltpay_Model_BoltOrder extends Mage_Core_Model_Abstract
     const ITEM_TYPE_PHYSICAL = 'physical';
     const ITEM_TYPE_DIGITAL  = 'digital';
 
-    /** @var int The amount of time in seconds that an order token is preserved in cache */
+    /**
+     * @var int The amount of time in seconds that an order token is preserved in cache
+     */
     public static $cached_token_expiration_time = 60 * 60;
 
-    // Store discount types, internal and 3rd party.
-    // Can appear as keys in Quote::getTotals result array.
+    /**
+     * @var array  Store discount types, internal and 3rd party.
+     *             Can appear as keys in Quote::getTotals result array.
+     */
     protected $discountTypes = array(
         'discount',
         'giftcardcredit',
