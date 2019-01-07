@@ -318,6 +318,7 @@ PROMISE;
         //////////////////////////////////////////////////////
         $checkCustom = $boltHelper->getPaymentBoltpayConfig('check', $checkoutType);
         $onCheckoutStartCustom = $boltHelper->getPaymentBoltpayConfig('on_checkout_start', $checkoutType);
+        $onEmailEnterCustom = $boltHelper->getPaymentBoltpayConfig('on_email_enter', $checkoutType);
         $onShippingDetailsCompleteCustom = $boltHelper->getPaymentBoltpayConfig('on_shipping_details_complete', $checkoutType);
         $onShippingOptionsCompleteCustom = $boltHelper->getPaymentBoltpayConfig('on_shipping_options_complete', $checkoutType);
         $onPaymentSubmitCustom = $boltHelper->getPaymentBoltpayConfig('on_payment_submit', $checkoutType);
@@ -366,6 +367,11 @@ PROMISE;
                   onCheckoutStart: function() {
                     // This function is called after the checkout form is presented to the user.
                     $onCheckoutStartCustom
+                  },
+                  
+                  onEmailEnter: function(email) {
+                    // This function is called after the user enters their email address.
+                    $onEmailEnterCustom
                   },
                   
                   onShippingDetailsComplete: function() {
