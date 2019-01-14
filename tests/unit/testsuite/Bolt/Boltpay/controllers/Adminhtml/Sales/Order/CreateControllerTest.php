@@ -114,7 +114,6 @@ class Bolt_Boltpay_Adminhtml_Sales_Order_CreateControllerTest extends PHPUnit_Fr
             ->getMock();
 
         $request = new Mage_Core_Controller_Request_Http();
-        $request->setPost('bolt_reference', false);
 
         $response = new Mage_Core_Controller_Response_Http();
 
@@ -145,7 +144,7 @@ class Bolt_Boltpay_Adminhtml_Sales_Order_CreateControllerTest extends PHPUnit_Fr
 
         $session = new Mage_Adminhtml_Model_Session_Quote();
         $request = new Mage_Core_Controller_Request_Http();
-        $request->setPost('bolt_reference', true);
+        $request->setPost('bolt_reference', 'AAAA-BBBB-1234');
         $request->setPost('payment', false);
 
         $this->currentMock->method('getRequest')
