@@ -542,7 +542,6 @@ class Bolt_Boltpay_Model_Payment extends Mage_Payment_Model_Method_Abstract
                     }
                 } else { // partial refund
                     $isPartialRefund   = true;
-                    $isShippingInclTax = Mage::getSingleton('tax/config')->displaySalesShippingInclTax($order->getStoreId());
                     //actually for order with bolt payment, there is only one invoice can refund
                     foreach ($invoiceIds as $k => $invoiceId) {
                         $invoice = Mage::getModel('sales/order_invoice')
@@ -557,26 +556,14 @@ class Bolt_Boltpay_Model_Payment extends Mage_Payment_Model_Method_Abstract
                             $data = array(
                                 'qtys' => $qtys
                             );
-
-                            if ($isShippingInclTax) {
-                                $shipppingAllowedAmount = $order->getShippingInclTax()
-                                                          - $order->getShippingRefunded()
-                                                          - $order->getShippingTaxRefunded();
-                            } else {
-                                $shipppingAllowedAmount = $order->getShippingAmount() - $order->getShippingRefunded();
-                                $shipppingAllowedAmount = min($shipppingAllowedAmount, $invoice->getShippingAmount());
-                            }
-                            if ($shipppingAllowedAmount > 0) {
-                                if ($transactionAmount >= $shipppingAllowedAmount) {
-                                    $data['shipping_amount'] = $shipppingAllowedAmount;
-                                    $transactionAmount       = $transactionAmount - $shipppingAllowedAmount;
-                                } else {
-                                    $data['shipping_amount'] = $transactionAmount;
-                                    $transactionAmount       = 0;
-                                }
-                            }
-
+                            
+                            // When doing a refund from Bolt dashboard, it is hard to detect what the refund is for, actually the refund could be shipping, tax, item fee or any part of them,
+                            // therefore we have to reply on "Adjustment Refund", using this field the refund in magento can keep pace with exact amount from Bolt server, also avoid complicated calculation
+                            // and conflicts with other plugins.
                             $data['adjustment_positive'] = $transactionAmount;
+                            // By default magento would always send all the available shipping amount to refund,
+                            // so we need to set the shipping amount to zero to avoid overcharging.
+                            $data['shipping_amount'] = 0;
 
                             $creditmemo = $service->prepareInvoiceCreditmemo($invoice, $data);
                             $creditmemo->setRefundRequested(true);
