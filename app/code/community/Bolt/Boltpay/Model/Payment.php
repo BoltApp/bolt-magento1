@@ -317,35 +317,8 @@ class Bolt_Boltpay_Model_Payment extends Mage_Payment_Model_Method_Abstract
                 $message = Mage::helper('boltpay')->__('Bad refund response. Empty transaction id');
                 Mage::throwException($message);
             }
-
-            $refundTransactionId = $response->id;
-            $refundTransactionStatus = $response->status;
-            $refundReference = $response->reference;
-            $refundTransactionStatuses = $payment->getAdditionalInformation('bolt_refund_transaction_statuses');
-            $refundTransactionIds = $payment->getAdditionalInformation('bolt_refund_merchant_transaction_ids');
-            if (is_null($refundTransactionStatuses)) {
-                $refundTransactionStatuses = array();
-            } else {
-                $refundTransactionStatuses = unserialize($refundTransactionStatuses);
-            }
-
-            if (is_null($refundTransactionIds)) {
-                $refundTransactionIds = array();
-            } else {
-                $refundTransactionIds = unserialize($refundTransactionIds);
-            }
-
-            array_push($refundTransactionStatuses, $refundTransactionStatus);
-            array_push($refundTransactionIds, $refundTransactionId);
-            $msg = Mage::helper('boltpay')->__(
-                "Bolt Operation: \"Refund\". Bolt Reference: \"%s\".\nBolt Transaction: \"%s\"",
-                $refundReference,
-                $refundTransactionId
-            );
-            $payment->getOrder()->addStatusHistoryComment($msg);
-            $payment->setAdditionalInformation('bolt_refund_transaction_statuses', serialize($refundTransactionStatuses));
-            $payment->setAdditionalInformation('bolt_refund_merchant_transaction_ids', serialize($refundTransactionIds));
-            $payment->setTransactionId(sprintf("%s-refund", $refundReference));
+            
+            $this->setRefundPaymentInfo($payment,$response);
 
             //Mage::log(sprintf('Refund completed for payment id: %d', $payment->getId()), null, 'bolt.log');
             return $this;
@@ -429,8 +402,13 @@ class Bolt_Boltpay_Model_Payment extends Mage_Payment_Model_Method_Abstract
         }
     }
 
-    public function handleTransactionUpdate(Mage_Payment_Model_Info $payment, $newTransactionStatus, $prevTransactionStatus, $transactionAmount = null)
-    {
+    public function handleTransactionUpdate(
+        Mage_Payment_Model_Info $payment,
+        $newTransactionStatus,
+        $prevTransactionStatus,
+        $transactionAmount = null,
+        $transaction = null
+    ) {
         try {
             $newTransactionStatus = strtolower($newTransactionStatus);
 
@@ -494,124 +472,7 @@ class Bolt_Boltpay_Model_Payment extends Mage_Payment_Model_Method_Abstract
                     $order->setState(self::ORDER_DEFERRED, true, $message);
                     $order->save();
                 } elseif ($newTransactionStatus == self::TRANSACTION_REFUND) {
-                    // flag refund as already being set on Bolt to prevent a duplicate call by Magento to Bolt
-                    $payment->setAdditionalInformation('bolt_transaction_was_refunded_by_webhook', '1');
-                    $order = $payment->getOrder();
-                    $transactionAmount = Mage::app()->getStore()->roundPrice($transactionAmount);
-                    $totalRefunded = $order->getTotalRefunded()?:0;
-                    $totalPaid = $order->getTotalPaid();
-                    $availableRefund = Mage::app()->getStore()->roundPrice(
-                        $totalPaid - $totalRefunded
-                    );
-                    if($availableRefund < $transactionAmount){
-                        $message = Mage::helper('boltpay')->__('Maximum amount available %s is less than requested %s', $availableRefund, $transactionAmount);
-                        Mage::throwException($message);
-                    }
-                    
-                    $service = Mage::getModel('sales/service_order', $order);
-                    $invoiceIds = $order->getInvoiceCollection()->getAllIds();
-                    $isPartialRefund = false;
-                    //actually for order with bolt payment, there is only one invoice can refund
-                    if($invoiceIds && isset($invoiceIds[0])){
-                        $invoiceId = $invoiceIds[0];
-                        // full refund
-                        if($totalPaid == $availableRefund && $transactionAmount == $availableRefund){
-                            $invoice = Mage::getModel('sales/order_invoice')
-                                        ->load($invoiceId)
-                                        ->setOrder($order);
-                            if ($order->canCreditmemo() && $invoice->canRefund()) {                                
-                                $data = array();
-                                $creditmemo = $service->prepareInvoiceCreditmemo($invoice, $data);
-                                $creditmemo->setRefundRequested(true);
-                                $creditmemo->setOfflineRequested(false);
-                                $creditmemo->setPaymentRefundDisallowed(false);
-                                $creditmemo->register()->save();
-                            }
-                        }
-                        else{ // partial refund
-                            $isPartialRefund = true;
-                            $isShippingInclTax = Mage::getSingleton('tax/config')->displaySalesShippingInclTax($order->getStoreId());
-                            //actually for order with bolt payment, there is only one invoice can refund
-                            foreach($invoiceIds as $k=>$invoiceId){
-                                $invoice = Mage::getModel('sales/order_invoice')
-                                            ->load($invoiceId)
-                                            ->setOrder($order);
-                                if ($order->canCreditmemo() && $invoice->canRefund()) {                                
-                                    $qtys = array();
-                                    foreach($order->getAllItems() as $item) {
-                                        $qtys[$item->getId()] = 0;
-                                    }           
-                            
-                                    $data = array(
-                                        'qtys' => $qtys
-                                    );
-                                    
-                                    if ($isShippingInclTax) {
-                                        $shipppingAllowedAmount = $order->getShippingInclTax()
-                                                - $order->getShippingRefunded()
-                                                - $order->getShippingTaxRefunded();
-                                    } else {
-                                        $shipppingAllowedAmount = $order->getShippingAmount() - $order->getShippingRefunded();
-                                        $shipppingAllowedAmount = min($shipppingAllowedAmount, $invoice->getShippingAmount());
-                                    }
-                                    if($shipppingAllowedAmount > 0){
-                                        if($transactionAmount >= $shipppingAllowedAmount){
-                                            $data['shipping_amount'] = $shipppingAllowedAmount;
-                                            $transactionAmount = $transactionAmount - $shipppingAllowedAmount;
-                                        }
-                                        else{
-                                            $data['shipping_amount'] = $transactionAmount;
-                                            $transactionAmount = 0;
-                                        }
-                                    }
-                                    
-                                    $data['adjustment_positive'] = $transactionAmount;
-                                    
-                                    $creditmemo = $service->prepareInvoiceCreditmemo($invoice, $data);
-                                    $creditmemo->setRefundRequested(true);
-                                    $creditmemo->setOfflineRequested(false);
-                                    $creditmemo->setPaymentRefundDisallowed(false);
-                                    $creditmemo->register()->save();
-                                }
-                            }  
-                        }
-                        $order->save();
-                    
-                        $totalRefunded = $order->getTotalRefunded()?:0;
-                        $availableRefund = Mage::app()->getStore()->roundPrice(
-                            $totalPaid - $totalRefunded
-                        );
-    
-                        if($availableRefund < 0.01){
-                            //for partial refund, after all the paid amount is refuned
-                            //we need to restore the items in cart separately
-                            if($isPartialRefund){
-                                $invoice = Mage::getModel('sales/order_invoice')
-                                            ->load($invoiceId)
-                                            ->setOrder($order);
-                                $qtys = array();
-                                foreach($order->getAllItems() as $item) {
-                                    $qtys[$item->getId()] = $item->getData('qty_ordered');
-                                }   
-                        
-                                $data = array(
-                                    'qtys' => $qtys
-                                );
-                                $creditmemo = $service->prepareInvoiceCreditmemo($invoice, $data);
-                                $creditmemo->setSubtotal(0);
-                                $creditmemo->setShippingAmount(0);
-                                $creditmemo->setBaseGrandTotal(0);
-                                $creditmemo->setGrandTotal(0);
-                                $creditmemo->setRefundRequested(false);
-                                $creditmemo->setOfflineRequested(false);
-                                $creditmemo->setPaymentRefundDisallowed(true);
-                                $creditmemo->register()->save();
-                            }
-                            $payment->setIsTransactionClosed(true);
-                            $payment->setShouldCloseParentTransaction(true);          
-                            $order->save();
-                        }
-                    }
+                    $this->handleRefundTransactionUpdate($payment, $newTransactionStatus, $prevTransactionStatus, $transactionAmount, $transaction);
                 }
             } else {
                 $payment->setShouldCloseParentTransaction(true);
@@ -632,6 +493,184 @@ class Bolt_Boltpay_Model_Payment extends Mage_Payment_Model_Method_Abstract
 
             throw $e;
         }
+    }
+    
+    public function handleRefundTransactionUpdate(
+        Mage_Payment_Model_Info $payment,
+        $newTransactionStatus,
+        $prevTransactionStatus,
+        $transactionAmount,
+        $transaction
+    ) {
+        try {
+            $order             = $payment->getOrder();
+            $transactionAmount = Mage::app()->getStore()->roundPrice($transactionAmount);
+            $totalRefunded     = $order->getTotalRefunded() ?: 0;
+            $totalPaid         = $order->getTotalPaid();
+            $availableRefund   = Mage::app()->getStore()->roundPrice(
+                $totalPaid - $totalRefunded
+            );
+            if ($availableRefund < $transactionAmount) {
+                $message = Mage::helper('boltpay')->__('Maximum amount available %s is less than requested %s',
+                    $availableRefund, $transactionAmount);
+                Mage::throwException($message);
+            }
+
+            $service         = Mage::getModel('sales/service_order', $order);
+            $invoiceIds      = $order->getInvoiceCollection()->getAllIds();
+            $isPartialRefund = false;
+            //actually for order with bolt payment, there is only one invoice can refund
+            if ($invoiceIds && isset($invoiceIds[0])) {
+                $this->setRefundPaymentInfo($payment,$transaction);             
+                
+                // flag refund as already being set on Bolt to prevent a duplicate call by Magento to Bolt
+                $payment->setAdditionalInformation('bolt_transaction_was_refunded_by_webhook', '1');
+
+                $invoiceId = $invoiceIds[0];
+                // full refund
+                if ($totalPaid == $availableRefund && $transactionAmount == $availableRefund) {
+                    $invoice = Mage::getModel('sales/order_invoice')
+                                   ->load($invoiceId)
+                                   ->setOrder($order);
+                    if ($order->canCreditmemo() && $invoice->canRefund()) {
+                        $data       = array();
+                        $creditmemo = $service->prepareInvoiceCreditmemo($invoice, $data);
+                        $creditmemo->setRefundRequested(true);
+                        $creditmemo->setOfflineRequested(false);
+                        $creditmemo->setPaymentRefundDisallowed(false);
+                        $creditmemo->register()->save();
+                    }
+                } else { // partial refund
+                    $isPartialRefund   = true;
+                    $isShippingInclTax = Mage::getSingleton('tax/config')->displaySalesShippingInclTax($order->getStoreId());
+                    //actually for order with bolt payment, there is only one invoice can refund
+                    foreach ($invoiceIds as $k => $invoiceId) {
+                        $invoice = Mage::getModel('sales/order_invoice')
+                                       ->load($invoiceId)
+                                       ->setOrder($order);
+                        if ($order->canCreditmemo() && $invoice->canRefund()) {
+                            $qtys = array();
+                            foreach ($order->getAllItems() as $item) {
+                                $qtys[$item->getId()] = 0;
+                            }
+
+                            $data = array(
+                                'qtys' => $qtys
+                            );
+
+                            if ($isShippingInclTax) {
+                                $shipppingAllowedAmount = $order->getShippingInclTax()
+                                                          - $order->getShippingRefunded()
+                                                          - $order->getShippingTaxRefunded();
+                            } else {
+                                $shipppingAllowedAmount = $order->getShippingAmount() - $order->getShippingRefunded();
+                                $shipppingAllowedAmount = min($shipppingAllowedAmount, $invoice->getShippingAmount());
+                            }
+                            if ($shipppingAllowedAmount > 0) {
+                                if ($transactionAmount >= $shipppingAllowedAmount) {
+                                    $data['shipping_amount'] = $shipppingAllowedAmount;
+                                    $transactionAmount       = $transactionAmount - $shipppingAllowedAmount;
+                                } else {
+                                    $data['shipping_amount'] = $transactionAmount;
+                                    $transactionAmount       = 0;
+                                }
+                            }
+
+                            $data['adjustment_positive'] = $transactionAmount;
+
+                            $creditmemo = $service->prepareInvoiceCreditmemo($invoice, $data);
+                            $creditmemo->setRefundRequested(true);
+                            $creditmemo->setOfflineRequested(false);
+                            $creditmemo->setPaymentRefundDisallowed(false);
+                            $creditmemo->register()->save();
+                        }
+                    }
+                    // For partial refund, the next refund can be called by Magento or Bolt
+                    $payment->setAdditionalInformation('bolt_transaction_was_refunded_by_webhook', '0');
+                }
+
+                $order->save();
+
+                $totalRefunded   = $order->getTotalRefunded() ?: 0;
+                $availableRefund = Mage::app()->getStore()->roundPrice(
+                    $totalPaid - $totalRefunded
+                );
+
+                if ($availableRefund < 0.01) {
+                    //for partial refund, after all the paid amount is refuned
+                    //we need to restore the items in cart separately
+                    if ($isPartialRefund) {
+                        $invoice = Mage::getModel('sales/order_invoice')
+                                       ->load($invoiceId)
+                                       ->setOrder($order);
+                        $qtys    = array();
+                        foreach ($order->getAllItems() as $item) {
+                            $qtys[$item->getId()] = $item->getData('qty_ordered');
+                        }
+
+                        $data       = array(
+                            'qtys' => $qtys
+                        );
+                        $creditmemo = $service->prepareInvoiceCreditmemo($invoice, $data);
+                        $creditmemo->setSubtotal(0);
+                        $creditmemo->setShippingAmount(0);
+                        $creditmemo->setBaseGrandTotal(0);
+                        $creditmemo->setGrandTotal(0);
+                        $creditmemo->setRefundRequested(false);
+                        $creditmemo->setOfflineRequested(false);
+                        $creditmemo->setPaymentRefundDisallowed(true);
+                        $creditmemo->register()->save();
+                    }
+                    $payment->setIsTransactionClosed(true);
+                    $payment->setShouldCloseParentTransaction(true);
+                    $order->save();
+                }
+            }
+
+        } catch (Exception $e) {
+            throw $e;
+        }
+    }
+    
+    /**
+     * Set related info for refund payment.
+     *
+     * @param  $payment Mage_Payment_Model_Info
+     * @param  $transaction   Object derived from the response of the Bolt API endpoint
+     *
+     */
+    protected function setRefundPaymentInfo(Mage_Payment_Model_Info $payment,$transaction){
+        $refundTransactionId       = $transaction->id;
+        $refundTransactionStatus   = $transaction->status;
+        $refundReference           = $transaction->reference;
+        $refundTransactionStatuses = $payment->getAdditionalInformation('bolt_refund_transaction_statuses');
+        $refundTransactionIds      = $payment->getAdditionalInformation('bolt_refund_merchant_transaction_ids');
+        if (is_null($refundTransactionStatuses)) {
+            $refundTransactionStatuses = array();
+        } else {
+            $refundTransactionStatuses = unserialize($refundTransactionStatuses);
+        }
+
+        if (is_null($refundTransactionIds)) {
+            $refundTransactionIds = array();
+        } else {
+            $refundTransactionIds = unserialize($refundTransactionIds);
+        }
+
+        array_push($refundTransactionStatuses, $refundTransactionStatus);
+        array_push($refundTransactionIds, $refundTransactionId);
+        $msg = Mage::helper('boltpay')->__(
+            "Bolt Operation: \"Refund\". Bolt Reference: \"%s\".\nBolt Transaction: \"%s\"",
+            $refundReference,
+            $refundTransactionId
+        );
+        $payment->getOrder()->addStatusHistoryComment($msg);
+        $payment->setAdditionalInformation('bolt_refund_transaction_statuses',
+            serialize($refundTransactionStatuses));
+        $payment->setAdditionalInformation('bolt_refund_merchant_transaction_ids',
+            serialize($refundTransactionIds));
+        $payment->setTransactionId(sprintf("%s-refund", $refundReference));
+        $payment->setAdditionalInformation('bolt_transaction_status', $newTransactionStatus);
     }
 
     /**

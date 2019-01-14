@@ -317,8 +317,23 @@ This function is called after the checkout form is presented to the user.
               <show_in_default>1</show_in_default>
               <show_in_website>1</show_in_website>
               <show_in_store>1</show_in_store>
-              <sort_order>101</sort_order>
+              <sort_order>103</sort_order>
             </on_checkout_start>
+            <on_email_enter translate="label">
+              <label>Javascript: onEmailEnter</label>
+              <comment>
+                <![CDATA[
+                    <p>
+This function is called after the user enters their email address.
+                    </p>
+                    ]]>
+              </comment>
+              <frontend_type>textarea</frontend_type>
+              <show_in_default>1</show_in_default>
+              <show_in_website>1</show_in_website>
+              <show_in_store>1</show_in_store>
+              <sort_order>106</sort_order>
+            </on_email_enter>
             <on_shipping_details_complete translate="label">
               <label>Javascript: onShippingDetailsComplete</label>
               <comment>
@@ -333,7 +348,7 @@ This is applicable only to multi-step checkout.
               <show_in_default>1</show_in_default>
               <show_in_website>1</show_in_website>
               <show_in_store>1</show_in_store>
-              <sort_order>102</sort_order>
+              <sort_order>109</sort_order>
             </on_shipping_details_complete>
             <on_shipping_options_complete translate="label">
               <label>Javascript: onShippingOptionsComplete</label>
@@ -349,7 +364,7 @@ This is applicable only to multi-step checkout.
               <show_in_default>1</show_in_default>
               <show_in_website>1</show_in_website>
               <show_in_store>1</show_in_store>
-              <sort_order>103</sort_order>
+              <sort_order>112</sort_order>
             </on_shipping_options_complete>
             <on_payment_submit translate="label">
               <label>onPaymentSubmit</label>
@@ -364,7 +379,7 @@ This function is called after the user clicks the pay button.
               <show_in_default>1</show_in_default>
               <show_in_website>1</show_in_website>
               <show_in_store>1</show_in_store>
-              <sort_order>104</sort_order>
+              <sort_order>115</sort_order>
             </on_payment_submit>
             <success translate="label">
               <label>Javascript: success</label>
@@ -379,7 +394,7 @@ This function is called when the Bolt checkout transaction is successful.
               <show_in_default>1</show_in_default>
               <show_in_website>1</show_in_website>
               <show_in_store>1</show_in_store>
-              <sort_order>105</sort_order>
+              <sort_order>117</sort_order>
             </success>
             <close translate="label">
               <label>Javascript: close</label>
@@ -394,14 +409,14 @@ This function is called when the Bolt checkout modal is closed.
               <show_in_default>1</show_in_default>
               <show_in_website>1</show_in_website>
               <show_in_store>1</show_in_store>
-              <sort_order>106</sort_order>
+              <sort_order>120</sort_order>
             </close>
             <use_javascript_in_admin translate="label">
               <label>Use Custom Javascript in Admin Order Creation?</label>
               <frontend_type>select</frontend_type>
               <source_model>adminhtml/system_config_source_yesno</source_model>
               <comment>The javascript events above are usually intended for the frontend store pages.  Enable this option if you also want them applied to the admin order creation interface.</comment>
-              <sort_order>111</sort_order>
+              <sort_order>123</sort_order>
               <show_in_default>1</show_in_default>
               <show_in_website>1</show_in_website>
               <show_in_store>1</show_in_store>
@@ -411,7 +426,7 @@ This function is called when the Bolt checkout modal is closed.
               <frontend_type>select</frontend_type>
               <source_model>adminhtml/system_config_source_yesno</source_model>
               <comment>By default, Bolt checkout button is displayed in cart page. Enable this option if you plan to display Bolt checkout outside of cart page, such as mini cart.</comment>
-              <sort_order>120</sort_order>
+              <sort_order>130</sort_order>
               <show_in_default>1</show_in_default>
               <show_in_website>1</show_in_website>
               <show_in_store>1</show_in_store>
@@ -420,7 +435,7 @@ This function is called when the Bolt checkout modal is closed.
               <label>Sort Order</label>
               <frontend_type>text</frontend_type>
               <comment>Influences display order on checkout pages relative to other payment options.  This does not affect any other pages including the shopping cart and product pages.</comment>
-              <sort_order>150</sort_order>
+              <sort_order>140</sort_order>
               <show_in_default>1</show_in_default>
               <show_in_website>1</show_in_website>
               <show_in_store>1</show_in_store>
@@ -439,7 +454,7 @@ This function is called when the Bolt checkout modal is closed.
               <label>Check Boltpay API</label>
               <frontend_type>button</frontend_type>
               <frontend_model>boltpay/adminhtml_system_config_form_button</frontend_model>
-              <sort_order>151</sort_order>
+              <sort_order>160</sort_order>
               <show_in_default>1</show_in_default>
               <show_in_website>1</show_in_website>
               <show_in_store>1</show_in_store>

@@ -351,7 +351,7 @@ class Bolt_Boltpay_Helper_Data extends Mage_Core_Helper_Abstract
         /** @var string $configValue */
         $configValue = Mage::getStoreConfig('payment/boltpay/'.$configPath);
 
-        return ($checkoutType === Bolt_Boltpay_Block_Checkout_Boltpay::CHECKOUT_TYPE_ADMIN) ? '' : $configValue;
+        return ($checkoutType === Bolt_Boltpay_Block_Checkout_Boltpay::CHECKOUT_TYPE_ADMIN) && !Mage::getStoreConfig('payment/boltpay/use_javascript_in_admin') ? '' : $configValue;
     }
 
     /**

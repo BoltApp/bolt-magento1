@@ -26,8 +26,10 @@ class Bolt_Boltpay_Model_BoltOrder extends Mage_Core_Model_Abstract
     const ITEM_TYPE_PHYSICAL = 'physical';
     const ITEM_TYPE_DIGITAL  = 'digital';
 
-    // Store discount types, internal and 3rd party.
-    // Can appear as keys in Quote::getTotals result array.
+    /**
+     * @var array  Store discount types, internal and 3rd party.
+     *             Can appear as keys in Quote::getTotals result array.
+     */
     protected $discountTypes = array(
         'discount',
         'giftcardcredit',
@@ -39,6 +41,13 @@ class Bolt_Boltpay_Model_BoltOrder extends Mage_Core_Model_Abstract
         'amgiftcard', // https://amasty.com/magento-gift-card.html
         'amstcred', // https://amasty.com/magento-store-credit.html
         'awraf',    //https://ecommerce.aheadworks.com/magento-extensions/refer-a-friend.html#magento1
+    );
+
+    /**
+     * @var array  list of country codes for which we will require a region for validation to succeed.
+     */
+    protected $countriesRequiringRegion = array(
+        'US', 'CA',
     );
 
     /**
@@ -177,10 +186,16 @@ class Bolt_Boltpay_Model_BoltOrder extends Mage_Core_Model_Abstract
             $billingAddress  = $quote->getBillingAddress();
             $shippingAddress = $quote->getShippingAddress();
 
+            $this->correctBillingAddress($billingAddress, $shippingAddress);
+
             $customerEmail = $this->getCustomerEmail($quote);
 
             $billingRegion = $billingAddress->getRegion();
-            if (empty($shippingRegion) && !in_array($billingAddress->getCountry(), array('US', 'CA'))) {
+            if (
+                empty($billingRegion) &&
+                !in_array($billingAddress->getCountry(), $this->countriesRequiringRegion)
+            )
+            {
                 $billingRegion = $billingAddress->getCity();
             }
 
@@ -216,7 +231,10 @@ class Bolt_Boltpay_Model_BoltOrder extends Mage_Core_Model_Abstract
             }
 
             $shippingRegion = $shippingAddress->getRegion();
-            if (empty($shippingRegion) && !in_array($shippingAddress->getCountry(), array('US', 'CA'))) {
+            if (
+                empty($shippingRegion) &&
+                !in_array($shippingAddress->getCountry(), $this->countriesRequiringRegion)
+            ) {
                 $shippingRegion = $shippingAddress->getCity();
             }
 
@@ -343,6 +361,112 @@ class Bolt_Boltpay_Model_BoltOrder extends Mage_Core_Model_Abstract
 
         // otherwise, we have no better thing to do than let the Bolt server do the checking
         return $magentoDerivedCartData;
+    }
+
+    /**
+     * Checks if billing address of a quote has all the expected fields.
+     * If not, and therefore invalid, the address is replaced by using the
+     * provided shipping address.
+     *
+     * @param Mage_Sales_Model_Quote_Address $billingAddress   The billing address
+     *                                                         to be checked
+     * @param Mage_Sales_Model_Quote_Address $fallbackAddress  The address to fallback
+     *                                                         to in case of invalid billing
+     *                                                         address
+     *
+     *
+     * @return bool  true if a correction is made, otherwise false
+     * 
+     * TODO: evaluate necessity of this code by auditing Bugsnag for corrections made.
+     * If it has not been triggered by April 2019, this code may be safely removed.
+     *
+     */
+    public function correctBillingAddress(&$billingAddress, $fallbackAddress = null, $notifyBugsnag = true )
+    {
+        if (!$fallbackAddress) {
+            return false;
+        }
+
+        /** @var Bolt_Boltpay_Helper_Bugsnag $bugsnag */
+        $bugsnag = Mage::helper('boltpay/bugsnag');
+
+        $quote = $billingAddress->getQuote();
+
+        $wasCorrected = false;
+
+        if (
+            !trim($billingAddress->getStreetFull()) ||
+            !$billingAddress->getCity() ||
+            !$billingAddress->getCountry()
+        )
+        {
+            if ($notifyBugsnag) {
+                $bugsnag->notifyException(
+                    new Exception("Missing critical billing data. "
+                        ." Street: ". $billingAddress->getStreetFull()
+                        ." City: ". $billingAddress->getCity()
+                        ." Country: ". $billingAddress->getCountry()
+                    ),
+                    array(),
+                    "info"
+                );
+            }
+
+            $billingAddress
+                ->setCity($fallbackAddress->getCity())
+                ->setRegion($fallbackAddress->getRegion())
+                ->setRegionId($fallbackAddress->getRegionId())
+                ->setPostcode($fallbackAddress->getPostcode())
+                ->setCountryId($fallbackAddress->getCountryId())
+                ->setStreet($fallbackAddress->getStreet())
+                ->save();
+
+            $wasCorrected = true;
+        }
+
+        if (!trim($billingAddress->getName())) {
+
+            if ($notifyBugsnag) {
+                $bugsnag->notifyException(
+                    new Exception("Missing billing name."),
+                    array(),
+                    "info"
+                );
+            }
+
+            $billingAddress
+                ->setPrefix($fallbackAddress->getPrefix())
+                ->setFirstname($fallbackAddress->getFirstname())
+                ->setMiddlename($fallbackAddress->getMiddlename())
+                ->setLastname($fallbackAddress->getLastname())
+                ->setSuffix($fallbackAddress->getSuffix())
+                ->save();
+
+            $wasCorrected = true;
+        }
+
+        if (!trim($billingAddress->getTelephone())) {
+            if ($notifyBugsnag) {
+                $bugsnag->notifyException(
+                    new Exception("Missing billing telephone."),
+                    array(),
+                    "info"
+                );
+            }
+            $billingAddress->setTelephone($fallbackAddress->getTelephone());
+            $wasCorrected = true;
+        }
+
+        if ( $wasCorrected && !trim($billingAddress->getCompany())) {
+            $billingAddress->setCompany($fallbackAddress->getCompany());
+        }
+
+        if ($wasCorrected) {
+            $billingAddress->save();
+            $quote->save();
+        }
+
+        return $wasCorrected;
     }
 
     /**
