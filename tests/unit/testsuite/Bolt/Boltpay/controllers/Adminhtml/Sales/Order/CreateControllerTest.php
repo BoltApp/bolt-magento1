@@ -16,7 +16,10 @@ class Bolt_Boltpay_Adminhtml_Sales_Order_CreateControllerTest extends PHPUnit_Fr
     {
     }
 
-    public function testLoadBlockAction()
+    /**
+     * @inheritdoc
+     */
+    public function testLoadBlockAction_returnsAddressFromPrepareAddressData()
     {
         $this->currentMock = $this->getMockBuilder('Bolt_Boltpay_Adminhtml_Sales_Order_CreateController')
             ->setMethods(['getRequest', 'getLayout', 'getResponse', 'prepareAddressData'])
@@ -106,6 +109,10 @@ class Bolt_Boltpay_Adminhtml_Sales_Order_CreateControllerTest extends PHPUnit_Fr
         $this->assertEquals($actual, $result);
     }
 
+    /**
+     * if Bolt reference is undefined, we don't create order and return null;
+     * @inheritdoc
+     */
     public function testSaveActionWhereBoltReferenceIsFalse()
     {
         $this->currentMock = $this->getMockBuilder('Bolt_Boltpay_Adminhtml_Sales_Order_CreateController')
