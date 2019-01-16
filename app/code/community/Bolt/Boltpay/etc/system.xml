@@ -411,6 +411,45 @@ This function is called when the Bolt checkout modal is closed.
               <show_in_website>1</show_in_website>
               <show_in_store>1</show_in_store>
             </add_button_everywhere>
+            <allow_out_of_stock_orders translate="label">
+              <label>Allow Out of Stock Orders</label>
+              <frontend_type>select</frontend_type>
+              <source_model>adminhtml/system_config_source_yesno</source_model>
+              <comment>Allows an order to be created even if the customer submits an order that has an item that is out of stock. Backorders will still process as expected.</comment>
+              <sort_order>130</sort_order>
+              <show_in_default>1</show_in_default>
+              <show_in_website>1</show_in_website>
+              <show_in_store>1</show_in_store>
+            </allow_out_of_stock_orders>
+            <allow_disabled_sku_orders translate="label">
+              <label>Allow Disabled SKU Orders</label>
+              <frontend_type>select</frontend_type>
+              <source_model>adminhtml/system_config_source_yesno</source_model>
+              <comment>Allows an order to be created even if the customer submits an order that has an item that is disabled.</comment>
+              <sort_order>130</sort_order>
+              <show_in_default>1</show_in_default>
+              <show_in_website>1</show_in_website>
+              <show_in_store>1</show_in_store>
+            </allow_disabled_sku_orders>
+            <override_magento_order_on_mismatch translate="label">
+              <label>Override Magento Order On Mismatch</label>
+              <frontend_type>select</frontend_type>
+              <source_model>adminhtml/system_config_source_yesno</source_model>
+              <comment>Overrides the Magento order with the order details from Bolt if the Bolt order doesn't match the Magento order.</comment>
+              <sort_order>140</sort_order>
+              <show_in_default>1</show_in_default>
+              <show_in_website>1</show_in_website>
+              <show_in_store>1</show_in_store>
+            </override_magento_order_on_mismatch>
+            <mismatch_price_tolerance translate="label">
+              <label>Mismatch Price Tolerance ($)</label>
+              <frontend_type>text</frontend_type>
+              <sort_order>145</sort_order>
+              <show_in_default>1</show_in_default>
+              <show_in_website>1</show_in_website>
+              <show_in_store>1</show_in_store>
+              <frontend_class>validate-number</frontend_class>
+            </mismatch_price_tolerance>
             <sort_order translate="label">
               <label>Sort Order</label>
               <frontend_type>text</frontend_type>

@@ -383,7 +383,9 @@ class Bolt_Boltpay_Model_Payment extends Mage_Payment_Model_Method_Abstract
             $order->save();
 
             $orderPayment->setData('auto_capture', $transactionStatus == self::TRANSACTION_COMPLETED);
-            $this->handleTransactionUpdate($orderPayment, $transactionStatus, null);
+            if($order->getState() !== Mage_Sales_Model_Order::STATE_HOLDED){
+                $this->handleTransactionUpdate($orderPayment, $transactionStatus, null);
+            }
         } catch (Exception $e) {
             $error = array('error' => $e->getMessage());
             //Mage::log($error, null, 'bolt.log');

@@ -55,6 +55,8 @@ class Bolt_Boltpay_TestHelper
     {
         $checkout = Mage::getSingleton('checkout/type_onepage');
         $shippingAddress = $checkout->getQuote()->getShippingAddress()->addData($addressData);
+        Mage::app('default')->getStore()->setConfig('carriers/flatrate/active', 1);
+
         $shippingAddress
             ->setCollectShippingRates(true)
             ->setShippingMethod('flatrate_flatrate')
