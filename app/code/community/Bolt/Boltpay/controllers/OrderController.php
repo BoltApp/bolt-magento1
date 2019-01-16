@@ -61,15 +61,12 @@ class Bolt_Boltpay_OrderController extends Mage_Core_Controller_Front_Action
             /////////////////////////////////////////////////////////
             /** @var Bolt_Boltpay_Helper_Transaction $transactionHelper */
             $transactionHelper = Mage::helper('boltpay/transaction');
-            $immutableQuoteId = $transactionHelper->getImmutableQuoteIdFromTransaction($transaction);
-            /** @var Bolt_Boltpay_Model_Order $orderModel */
+            /** @var  Bolt_Boltpay_Model_Order $orderModel */
             $orderModel = Mage::getModel('boltpay/order');
-            $order = $orderModel->getOrderByQuoteId($immutableQuoteId);
+            $order = $orderModel->getOrderByQuoteId($transactionHelper->getImmutableQuoteIdFromTransaction($transaction));
 
             if ($order->isObjectNew()) {
-                $sessionQuote = $checkoutSession->getQuote();
-                $sessionQuoteId = $sessionQuote->getId();
-                $orderModel->createOrder($reference, $sessionQuoteId, true, $transaction);
+                $orderModel->createOrder($reference, $checkoutSession->getQuoteId(), true, $transaction);
             }
 
         } catch (Exception $e) {
