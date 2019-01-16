@@ -25,6 +25,7 @@ class Bolt_Boltpay_Model_BoltOrder extends Mage_Core_Model_Abstract
 {
     const ITEM_TYPE_PHYSICAL = 'physical';
     const ITEM_TYPE_DIGITAL  = 'digital';
+    protected $itemOptionKeys = array('attributes_info', 'options', 'additional_options', 'bundle_options');
 
     /**
      * @var array  Store discount types, internal and 3rd party.
@@ -138,7 +139,8 @@ class Bolt_Boltpay_Model_BoltOrder extends Mage_Core_Model_Abstract
                         'total_amount' => round($item->getCalculationPrice() * 100) * $item->getQty(),
                         'unit_price'   => round($item->getCalculationPrice() * 100),
                         'quantity'     => $item->getQty(),
-                        'type'         => $type
+                        'type'         => $type,
+                        'properties' => $this->getItemProperties($item)
                     );
                 }, $items
             ),
@@ -376,7 +378,7 @@ class Bolt_Boltpay_Model_BoltOrder extends Mage_Core_Model_Abstract
      *
      *
      * @return bool  true if a correction is made, otherwise false
-     * 
+     *
      * TODO: evaluate necessity of this code by auditing Bugsnag for corrections made.
      * If it has not been triggered by April 2019, this code may be safely removed.
      *
@@ -496,5 +498,73 @@ class Bolt_Boltpay_Model_BoltOrder extends Mage_Core_Model_Abstract
         }
 
         return $customerEmail;
+    }
+
+    /**
+     * Item properties are the order options selected by the customer e.g. color and size
+     * @param Mage_Sales_Model_Quote_Item $item
+     * @return array
+     */
+    protected function getItemProperties(Mage_Sales_Model_Quote_Item $item)
+    {
+        $properties = array();
+        foreach($this->getProductOptions($item) as $option) {
+            $optionValue = $this->getOptionValue($option);
+
+            if ($optionValue) {
+                $properties[] = array('name' => $option['label'], 'value' => $optionValue);
+            }
+        }
+
+        return $properties;
+    }
+
+    /**
+     * @param Mage_Sales_Model_Quote_Item $item
+     * @return array
+     */
+    protected function getProductOptions(Mage_Sales_Model_Quote_Item $item)
+    {
+        $options = $item->getProductOrderOptions();
+        if (!$options) {
+            $options = $item->getProduct()->getTypeInstance(true)->getOrderOptions($item->getProduct());
+        }
+
+        $productOptions = array();
+        if ($options) {
+            foreach ($this->itemOptionKeys as $itemOptionKey) {
+                if (isset($options[$itemOptionKey])) {
+                    $productOptions = array_merge($productOptions, $options[$itemOptionKey]);
+                }
+            }
+        }
+        return $productOptions;
+    }
+
+    /**
+     * @param $option
+     * @return bool|string
+     */
+    protected function getOptionValue($option)
+    {
+        if (is_array(@$option['value'])) {
+            return $this->getBundleProductOptionValue($option);
+        }
+        return @$option['value'];
+    }
+
+    /**
+     * @param $option
+     * @return string
+     */
+    protected function getBundleProductOptionValue($option)
+    {
+        $optionValues = array();
+        foreach ($option['value'] as $value) {
+            if ((@$value['qty']) && (@$value['title']) && (@$value['price'])) {
+                $optionValues[] = @$value['qty'] . ' x ' . @$value['title'] . " " . Mage::helper('core')->currency(@$value['price'], true, false);
+            }
+        }
+        return join(', ', $optionValues);
     }
 }
