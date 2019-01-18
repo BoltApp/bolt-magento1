@@ -25,7 +25,7 @@ if(!Mage::helper('boltpay')->canUseBolt($this->getQuote(), false) || Mage::getSt
 <script>
 
     var isFireCheckoutFormValid = false;
-    var bolt_buttons = null;
+    var bolt_buttons = [];
     var place_order_buttons = null;
 
     var initBoltButtons = function() {
@@ -37,23 +37,21 @@ if(!Mage::helper('boltpay')->canUseBolt($this->getQuote(), false) || Mage::getSt
         var addBoltButtons = function() {
             place_order_buttons = document.querySelectorAll('<?=Mage::getStoreConfig('payment/boltpay/selectors');?>');
 
-            place_order_buttons.forEach(
-                function(place_order_button) {
-                    var bolt_button =  document.createElement("div");
-                    bolt_button.setAttribute("class", "bolt-checkout-button <?=$this->getCssSuffix(); ?> <?=Mage::helper('boltpay')->getAdditionalButtonClasses() ?>");
+            for (var i = 0; i < place_order_buttons.length; i++) {
+                place_order_button = place_order_buttons[i];
+                var bolt_button =  document.createElement("div");
+                bolt_button.setAttribute("class", "bolt-checkout-button <?=$this->getCssSuffix(); ?> <?=Mage::helper('boltpay')->getAdditionalButtonClasses() ?>");
 
-                    <?php $buttonColor = Mage::helper('boltpay')->getBoltPrimaryColor();?>
-                    <?php if($buttonColor):?>
-                    bolt_button.setAttribute("style", "--bolt-primary-action-color:<?php echo $buttonColor?>");
-                    <?php endif; ?>
+                <?php $buttonColor = Mage::helper('boltpay')->getBoltPrimaryColor();?>
+                <?php if($buttonColor):?>
+                bolt_button.setAttribute("style", "--bolt-primary-action-color:<?php echo $buttonColor?>");
+                <?php endif; ?>
 
-                    bolt_button.style.display = "none";
+                bolt_button.style.display = "none";
 
-                    place_order_button.parentNode.insertBefore(bolt_button, place_order_button);
-                }
-            );
-
-            bolt_buttons = document.querySelectorAll('.bolt-checkout-button');
+                place_order_button.parentNode.insertBefore(bolt_button, place_order_button);
+                bolt_buttons.push(bolt_button);
+            }
         };
 
         // Render Bolt button.
@@ -66,27 +64,23 @@ if(!Mage::helper('boltpay')->canUseBolt($this->getQuote(), false) || Mage::getSt
          */
         var toggleBoltButton = function () {
             if (this.id == "p_method_boltpay") {
-                bolt_buttons.forEach(
-                    function (bolt_button) {
-                        bolt_button.style.display = "";
-                    }
-                );
-                place_order_buttons.forEach(
-                    function (place_order_button) {
-                        place_order_button.style.display="none";
-                    }
-                );
+                for (var i = 0; i < bolt_buttons.length; i++)
+                {
+                    bolt_buttons[i].style.display = "";
+                }
+                for (var i = 0; i < place_order_buttons.length; i++)
+                {
+                    place_order_buttons[i].style.display="none";
+                }
             } else {
-                bolt_buttons.forEach(
-                    function (bolt_button) {
-                        bolt_button.style.display = "none";
-                    }
-                );
-                place_order_buttons.forEach(
-                    function (place_order_button) {
-                        place_order_button.style.display="";
-                    }
-                );
+                for (var i = 0; i < bolt_buttons.length; i++)
+                {
+                    bolt_buttons[i].style.display = "none";
+                }
+                for (var i = 0; i < place_order_buttons.length; i++)
+                {
+                    place_order_buttons[i].style.display="";
+                }
             }
         };
 
@@ -102,7 +96,7 @@ if(!Mage::helper('boltpay')->canUseBolt($this->getQuote(), false) || Mage::getSt
         var attachClickEvents = function(mutationList) {
 
             var payment_radios = document.querySelectorAll('[name="payment[method]"]');
-            for (i = 0, length = payment_radios.length; i < length; i++) {
+            for (var i = 0, length = payment_radios.length; i < length; i++) {
 
                 var payment_radio = payment_radios[i];
 
@@ -125,7 +119,7 @@ if(!Mage::helper('boltpay')->canUseBolt($this->getQuote(), false) || Mage::getSt
             var shipping_selected = false;
             var shipping_methods  = document.querySelectorAll('input[name=shipping_method]');
 
-            for (i = 0; i < shipping_methods.length; i++) {
+            for (var i = 0; i < shipping_methods.length; i++) {
                 var shipping_method = shipping_methods[i];
                 if (shipping_method.checked) {
                     shipping_selected = true;
