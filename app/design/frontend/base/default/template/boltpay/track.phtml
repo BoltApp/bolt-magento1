@@ -19,6 +19,8 @@
 <?php
 $versionElm =  Mage::getConfig()->getModuleConfig("Bolt_Boltpay")->xpath("version");
 $version = (string)$versionElm[0];
+$routeName = $this->getRequest()->getRouteName();
+$controllerName = $this->getRequest()->getControllerName();
 /* TODO: extend key selection for mini-cart if necessary */
 ?>
 <?php if($this->isBoltActive()): ?>
@@ -26,7 +28,9 @@ $version = (string)$versionElm[0];
             id="bolt-track"
             type="text/javascript"
             src="<?= $this->getTrackJsUrl(); ?>"
-            data-publishable-key="<?=$this->getPublishableKey((Mage::app()->getRequest()->getControllerName() === 'cart') ? 'multi-page' : 'one-page'); ?>">
+            data-publishable-key="<?=$this->getPublishableKey((Mage::app()->getRequest()->getControllerName() === 'cart'
+                || ($routeName === 'catalog' && $controllerName === 'product'))
+                ? 'multi-page' : 'one-page'); ?>">
     </script>
     <script>console.log("Bolt Version: <?=$version?>");</script>
 <?php endif; ?>
