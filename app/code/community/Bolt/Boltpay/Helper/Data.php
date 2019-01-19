@@ -420,6 +420,7 @@ class Bolt_Boltpay_Helper_Data extends Mage_Core_Helper_Abstract
 
         $checkCustom = $this->getPaymentBoltpayConfig('check', $checkoutType);
         $onCheckoutStartCustom = $this->getPaymentBoltpayConfig('on_checkout_start', $checkoutType);
+        $onEmailEnterCustom = $this->getPaymentBoltpayConfig('on_email_enter', $checkoutType);
         $onShippingDetailsCompleteCustom = $this->getPaymentBoltpayConfig('on_shipping_details_complete', $checkoutType);
         $onShippingOptionsCompleteCustom = $this->getPaymentBoltpayConfig('on_shipping_options_complete', $checkoutType);
         $onPaymentSubmitCustom = $this->getPaymentBoltpayConfig('on_payment_submit', $checkoutType);
@@ -454,6 +455,10 @@ class Bolt_Boltpay_Helper_Data extends Mage_Core_Helper_Abstract
                   onCheckoutStart: function() {
                     // This function is called after the checkout form is presented to the user.
                     $onCheckoutStartCustom
+                  },
+                  onEmailEnter: function(email) {
+                    // This function is called after the user enters their email address.
+                    $onEmailEnterCustom
                   },
                   onShippingDetailsComplete: function() {
                     // This function is called when the user proceeds to the shipping options page.
