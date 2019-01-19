@@ -54,12 +54,12 @@ class Bolt_Boltpay_Model_OrderTest extends PHPUnit_Framework_TestCase
         Bolt_Boltpay_ProductProvider::deleteDummyProduct(self::$productId);
     }
 
-    public function testStoreHasAllCartItems()
+    public function testGetOutOfStockSKUs()
     {
         $cart = $this->testHelper->addProduct(self::$productId, 2);
 
-        $result = $this->currentMock->storeHasAllCartItems($cart->getQuote());
+        $result = (bool)$this->currentMock->getOutOfStockSKUs($cart->getQuote());
 
-        $this->assertTrue($result);
+        $this->assertFalse($result);
     }
 }
