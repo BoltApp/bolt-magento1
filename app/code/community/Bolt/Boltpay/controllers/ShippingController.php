@@ -41,6 +41,7 @@ class Bolt_Boltpay_ShippingController extends Mage_Core_Controller_Front_Action
     protected function _construct()
     {
         $this->_cache = Mage::app()->getCache();
+        $this->_shippingAndTaxModel = Mage::getModel("boltpay/shippingAndTax");
     }
 
     /**
