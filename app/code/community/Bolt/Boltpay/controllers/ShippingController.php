@@ -177,16 +177,14 @@ class Bolt_Boltpay_ShippingController extends Mage_Core_Controller_Front_Action
         if ($estimate) {
             $addressData = $shippingAddress;
         } else {
-
-            $addressData = array_merge(array_filter($this->getGeoIpAddress()), array_filter($shippingAddress));
-
-            $cacheIdentifier = $this->getEstimateCacheIdentifier($quote, $addressData);
+            $addressData = count($shippingAddress) === 5 ? $shippingAddress : array_merge(array_filter($this->getGeoIpAddress()), array_filter($shippingAddress));
 
             $quote->getShippingAddress()->addData($addressData);
             $quote->getBillingAddress()->addData($addressData);
 
             try {
                 $estimateResponse = $this->_shippingAndTaxModel->getShippingAndTaxEstimate($quote);
+                $cacheIdentifier = $this->getEstimateCacheIdentifier($quote, $addressData);
                 $this->cacheShippingAndTaxEstimate($estimateResponse, $cacheIdentifier);
             } catch (Exception $e) {
                 $metaData = array();
@@ -274,7 +272,7 @@ class Bolt_Boltpay_ShippingController extends Mage_Core_Controller_Front_Action
      */
     protected function getEstimateCacheIdentifier($quote, $addressData)
     {
-        $cacheIdentifier = $quote->getId() . '_' . round($quote->getGrandTotal()*100);
+        $cacheIdentifier = $quote->getId() . '_' . round($quote->getBaseSubtotal()*100);
 
         $cacheIdentifier .= '_' . ($quote->getCustomerId() ?: 0);
 

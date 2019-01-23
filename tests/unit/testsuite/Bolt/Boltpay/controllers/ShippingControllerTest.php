@@ -2,13 +2,32 @@
 
 require_once 'Bolt/Boltpay/controllers/ShippingController.php';
 
+/**
+ * Class Bolt_Boltpay_ShippingControllerTest
+ *
+ * Test the shipping controller, particularly with shipping and tax estimates and caching
+ */
 class Bolt_Boltpay_ShippingControllerTest extends PHPUnit_Framework_TestCase
 {
-    /** @var Bolt_Boltpay_ShippingController $_shippingController */
-    protected $_shippingController;
+    /**
+     * @var Bolt_Boltpay_ShippingController The stubbed shipping controller
+     */
+    private $_shippingController;
 
     /**
-     * Sets up a shipping controller that mocks Bolt HMAC request validation.
+     * @var array ids of temporary products used for testing
+     */
+    private static $_productIds = array();
+
+    /**
+     * @var Bolt_Boltpay_TestHelper  Used for working with the shopping cart
+     */
+    private $testHelper;
+
+
+    /**
+     * Sets up a shipping controller that mocks Bolt HMAC request validation with all helper
+     * classes and and mocked states
      *
      * @throws ReflectionException                  on unexpected problems with reflection
      * @throws Zend_Controller_Request_Exception    on unexpected problem in creating the controller
@@ -30,8 +49,37 @@ class Bolt_Boltpay_ShippingControllerTest extends PHPUnit_Framework_TestCase
 
         $reflectedBoltApiHelper = $reflectedShippingController->getProperty('_boltApiHelper');
         $reflectedBoltApiHelper->setAccessible(true);
-        $reflectedBoltApiHelper->setValue($stubbedBoltApiHelper);
+        $reflectedBoltApiHelper->setValue($this->_shippingController, $stubbedBoltApiHelper);
 
+        $this->testHelper = new Bolt_Boltpay_TestHelper();
+
+    }
+
+
+
+    /**
+     * Generate dummy products for testing purposes before test
+     */
+    public static function setUpBeforeClass()
+    {
+        // Create some dummy product:
+        self::$_productIds = array
+        (
+            Bolt_Boltpay_ProductProvider::createDummyProduct('PHPUNIT_SC_TEST_PROD_01'),
+            Bolt_Boltpay_ProductProvider::createDummyProduct('PHPUNIT_SC_TEST_PROD_02'),
+            Bolt_Boltpay_ProductProvider::createDummyProduct('PHPUNIT_SC_TEST_PROD_03'),
+        );
+
+    }
+
+    /**
+     * Delete dummy products after the test
+     */
+    public static function tearDownAfterClass()
+    {
+        foreach (self::$_productIds as $productId) {
+            Bolt_Boltpay_ProductProvider::deleteDummyProduct($productId);
+        }
     }
 
     /**
@@ -49,56 +97,58 @@ class Bolt_Boltpay_ShippingControllerTest extends PHPUnit_Framework_TestCase
         /** @var Mage_Sales_Model_Quote $quote */
         $quote = Mage::getSingleton('checkout/session')->getQuote();
 
-        $quote->setCustomerId(25)
-            ->setCustomerTaxClassId(3)
-            ->setGrandTotal(63.48);
+        $quote
+            ->removeAllAddresses()
+            ->removeAllItems()
+            ->setCustomerId(25)
+            ->setCustomerTaxClassId(3);
 
+        foreach(self::$_productIds as $productId) {
+            $this->testHelper->addProduct($productId, rand(1,3));
+        }
+
+        $quote->setTotalsCollectedFlag(false);
+        $quote->collectTotals()->save();
 
         $reflectedShippingController = new ReflectionClass($this->_shippingController);
-
-        $reflectedRequestJson = $reflectedShippingController->getProperty('_requestJSON');
-        $reflectedRequestJson->setAccessible(true);
-
-        $addressData = array(
-            'email' => 'test_shipping_and_tax_cache@bolt.com',
-            'firstname'  => 'Post',
-            'lastname'   => 'Man',
-            'street'     => 'Blues Street 10' . "\n" . '65th Floor' . "\n" . 'Apt 657' . "\n" . 'Attention: Tax Man',
-            'city'       => 'Beverly Hills',
-            'telephone'  => '+1 877 345 123 5681',
-            'country_id' => 'US',
-            'company' => 'Bolt',
-            'region_id'  => '12',
-            'region' => 'California'
-        );
-
-        $reflectedRequestJson->setValue(json_encode($addressData));
-
         $reflectedGetEstimateCacheIdentifier = $reflectedShippingController->getMethod('getEstimateCacheIdentifier');
         $reflectedGetEstimateCacheIdentifier->setAccessible(true);
 
-        $preCacheId = $reflectedGetEstimateCacheIdentifier->invoke($this->_shippingController, $quote, $addressData);
+        echo "preFetch call:\n";
+        $expectedAddressData = array(
+            'city'       => 'Beverly Hills',
+            'country_id' => 'US',
+            'region_id'  => '12',
+            'region' => 'California',
+            'postcode' => '90210'
+        );
+        $expectedCacheId = $reflectedGetEstimateCacheIdentifier->invoke($this->_shippingController, $quote, $expectedAddressData);
+        $estimatePreCall = unserialize(Mage::app()->getCache()->load($expectedCacheId));
 
-        $estimatePreCall = unserialize(Mage::app()->getCache()->load($preCacheId));
 
-        try {
-            $this->_shippingController->prefetchEstimateAction();
-        } catch (Zend_Controller_Response_Exception $e ) {
-            // we are not interested in server responses in this context, so we can ignore
-            // test environment HTTP Response errors.
-        }
+        $geoIpAddressData = array(
+            'city'       => 'Beverly Hills',
+            'country_code' => 'US',
+            'region_code'  => 'CA',
+            'region_name' => 'California',
+            'zip_code' => '90210'
+        );
+        $reflectedRequestJson = $reflectedShippingController->getProperty('_requestJSON');
+        $reflectedRequestJson->setAccessible(true);
+        $reflectedRequestJson->setValue($this->_shippingController, json_encode($geoIpAddressData));
 
-        $postCacheId = $reflectedGetEstimateCacheIdentifier->invoke($this->_shippingController, $quote, $addressData);
+        $this->_shippingController->prefetchEstimateAction();
 
-        $estimatePostCall = unserialize(Mage::app()->getCache()->load($postCacheId));
+        $actualAddressData = json_decode($this->_shippingController->getResponse()->getBody(), true)['address_data'];
+
+        $actualCacheId = $reflectedGetEstimateCacheIdentifier->invoke($this->_shippingController, $quote, $actualAddressData);
+        $estimatePostCall = unserialize(Mage::app()->getCache()->load($actualCacheId));
 
         Mage::app()->getCache()->clean('matchingAnyTag', array('BOLT_QUOTE_PREFETCH'));
 
-        $this->assertEquals($preCacheId, $postCacheId);
-
-        $this->assertEmpty( $estimatePreCall, 'A value is cached but there should be no cached value for the id '.$preCacheId);
-
-        $this->assertNotEmpty( $estimatePostCall, 'A value should be cached but it is empty for the id '.$postCacheId.': '.var_export($estimatePostCall, true));
+        $this->assertEquals($expectedCacheId, $actualCacheId);
+        $this->assertEmpty( $estimatePreCall, 'A value is cached but there should be no cached value for the id '.$expectedCacheId);
+        $this->assertNotEmpty( $estimatePostCall, 'A value should be cached but it is empty for the id '.$actualCacheId.': '.var_export($estimatePostCall, true));
 
     }
 }
