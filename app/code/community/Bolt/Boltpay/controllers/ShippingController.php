@@ -36,12 +36,24 @@ class Bolt_Boltpay_ShippingController extends Mage_Core_Controller_Front_Action
     protected $_shippingAndTaxModel;
 
     /**
+     * @var string  The request body of the post made to this controller, expected to be in JSON
+     */
+    protected $_requestJSON;
+
+    /**
+     * @var Bolt_Boltpay_Helper_Api  Helper for Bolt API funcitionality
+     */
+    protected $_boltApiHelper;
+
+    /**
      * Initializes Controller member variables
      */
     protected function _construct()
     {
         $this->_cache = Mage::app()->getCache();
         $this->_shippingAndTaxModel = Mage::getModel("boltpay/shippingAndTax");
+        $this->_requestJSON = file_get_contents('php://input');
+        $this->_boltApiHelper = Mage::helper('boltpay/api');
     }
 
     /**
@@ -58,13 +70,9 @@ class Bolt_Boltpay_ShippingController extends Mage_Core_Controller_Front_Action
 
             $hmacHeader = $_SERVER['HTTP_X_BOLT_HMAC_SHA256'];
 
-            $requestJson = file_get_contents('php://input');
-            $requestData = json_decode($requestJson);
+            $requestData = json_decode($this->_requestJSON);
 
-            /* @var Bolt_Boltpay_Helper_Api $boltHelper */
-            $boltHelper = Mage::helper('boltpay/api');
-
-            if (!$boltHelper->verify_hook($requestJson, $hmacHeader)) {
+            if (!$this->_boltApiHelper->verify_hook($this->_requestJSON, $hmacHeader)) {
                 throw new Exception(Mage::helper('boltpay')->__("Failed HMAC Authentication"));
             }
 
@@ -127,7 +135,7 @@ class Bolt_Boltpay_ShippingController extends Mage_Core_Controller_Front_Action
 
             $this->getResponse()->setHeader('X-Bolt-Cache-Hit', $cacheBoltHeader);
 
-            Mage::helper('boltpay/api')->setResponseContextHeaders();
+            $this->_boltApiHelper->setResponseContextHeaders();
 
             $this->getResponse()->setBody($responseJSON);
         } catch (Exception $e) {
@@ -211,7 +219,7 @@ class Bolt_Boltpay_ShippingController extends Mage_Core_Controller_Front_Action
      * @param string   $quoteCacheKey   unique key identifying the quote whose estimate is cached
      * @param int      $lifeTime        duration the the cached value should remain in seconds
      */
-    public function cacheShippingAndTaxEstimate($estimate, $quoteCacheKey, $lifeTime = 600)
+    protected function cacheShippingAndTaxEstimate($estimate, $quoteCacheKey, $lifeTime = 600)
     {
         $this->_cache->save(
             serialize($estimate),
@@ -227,10 +235,9 @@ class Bolt_Boltpay_ShippingController extends Mage_Core_Controller_Front_Action
      *
      * @return array    The address prediction identified ipstack in Magento format
      */
-    private function getGeoIpAddress()
+    protected function getGeoIpAddress()
     {
-        $requestJson = file_get_contents('php://input');
-        $requestData = json_decode($requestJson);
+        $requestData = json_decode($this->_requestJSON);
 
         $addressData = array(
             'city'          => isset($requestData->city) ?$requestData->city: '',
@@ -268,7 +275,7 @@ class Bolt_Boltpay_ShippingController extends Mage_Core_Controller_Front_Action
      *
      * @return string   The uniquely identifying key calculated from the provided data
      */
-    public function getEstimateCacheIdentifier($quote, $addressData)
+    protected function getEstimateCacheIdentifier($quote, $addressData)
     {
         $cacheIdentifier = $quote->getId() . '_' . round($quote->getGrandTotal()*100);
 
