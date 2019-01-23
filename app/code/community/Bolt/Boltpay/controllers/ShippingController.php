@@ -22,9 +22,6 @@
  */
 class Bolt_Boltpay_ShippingController extends Mage_Core_Controller_Front_Action
 {
-    const CACHE_PREFETCH_ADDRESS_PREFIX = 'BOLT_PREFETCH_ADDRESS_';
-    const CACHE_ESTIMATE_PREFIX = 'BOLT_PREFETCH_ESTIMATE_';
-
     /**
      * @var Mage_Core_Model_Cache  The Magento cache where the shipping and tax estimate is stored
      */
