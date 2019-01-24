@@ -251,7 +251,7 @@ class Bolt_Boltpay_Model_Payment extends Mage_Payment_Model_Method_Abstract
             if ($transactionStatus == self::TRANSACTION_AUTHORIZED) {
                 $captureRequest = array(
                     'transaction_id' => $merchantTransId,
-                    'amount'         => (int)(round($amount, 2) * 100),
+                    'amount'         => (int)round($amount * 100),
                     'currency'       => $payment->getOrder()->getOrderCurrencyCode(),
                     'skip_hook_notification' => true
                 );
@@ -302,7 +302,7 @@ class Bolt_Boltpay_Model_Payment extends Mage_Payment_Model_Method_Abstract
 
             $data = array(
                 'transaction_id' => $transId,
-                'amount' => (int)(round($amount, 2) * 100),
+                'amount' => (int)round($amount * 100),
                 'currency' => $order->getOrderCurrencyCode(),
                 'skip_hook_notification' => true,
             );
