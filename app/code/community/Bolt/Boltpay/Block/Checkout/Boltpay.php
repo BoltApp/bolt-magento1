@@ -387,7 +387,7 @@ PROMISE;
         }
 
         // If address value exists populate the hints array with existing address data.
-        if ( $address instanceof Mage_Sales_Model_Quote_Address) {
+        if ($address instanceof Mage_Customer_Model_Address_Abstract) {
             if ($address->getEmail())     $hints['email']        = $address->getEmail();
             if ($address->getFirstname()) $hints['firstName']    = $address->getFirstname();
             if ($address->getLastname())  $hints['lastName']     = $address->getLastname();
