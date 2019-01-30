@@ -25,7 +25,9 @@
 if(!$this->isAllowedReplaceScriptOnCurrentPage()
    || !$this->canUseBolt()
    || !$this->getPublishableKeyForRoute()
-) return;
+) {
+    return;
+}
 
 $additionalClasses = Mage::helper('boltpay')->getAdditionalButtonClasses();
 ?>

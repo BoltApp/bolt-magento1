@@ -85,7 +85,8 @@ class Bolt_Boltpay_Model_BoltOrderTest extends PHPUnit_Framework_TestCase
                             'total_amount' => round($item->getCalculationPrice() * 100 * $item->getQty()),
                             'unit_price' => round($item->getCalculationPrice() * 100),
                             'quantity' => $item->getQty(),
-                            'type' => 'physical'
+                            'type' => 'physical',
+                            'properties' => array ()
                         ),
                 ),
             'currency' => $_quote->getQuoteCurrencyCode(),
