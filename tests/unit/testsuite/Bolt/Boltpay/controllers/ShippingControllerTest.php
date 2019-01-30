@@ -112,10 +112,6 @@ class Bolt_Boltpay_ShippingControllerTest extends PHPUnit_Framework_TestCase
         $quote->setTotalsCollectedFlag(false);
         $quote->collectTotals()->save();
 
-        $reflectedShippingController = new ReflectionClass($this->_shippingController);
-        $reflectedGetEstimateCacheIdentifier = $reflectedShippingController->getMethod('getEstimateCacheIdentifier');
-        $reflectedGetEstimateCacheIdentifier->setAccessible(true);
-
         $expectedAddressData = array(
             'city'       => 'Beverly Hills',
             'country_id' => 'US',
@@ -123,7 +119,7 @@ class Bolt_Boltpay_ShippingControllerTest extends PHPUnit_Framework_TestCase
             'region' => 'California',
             'postcode' => '90210'
         );
-        $expectedCacheId = $reflectedGetEstimateCacheIdentifier->invoke($this->_shippingController, $quote, $expectedAddressData);
+        $expectedCacheId = $this->_shippingController->getEstimateCacheIdentifier($quote, $expectedAddressData);
         $estimatePreCall = unserialize(Mage::app()->getCache()->load($expectedCacheId));
 
 
@@ -134,6 +130,8 @@ class Bolt_Boltpay_ShippingControllerTest extends PHPUnit_Framework_TestCase
             'region_name' => 'California',
             'zip_code' => '90210'
         );
+
+        $reflectedShippingController = new ReflectionClass($this->_shippingController);
         $reflectedRequestJson = $reflectedShippingController->getProperty('_requestJSON');
         $reflectedRequestJson->setAccessible(true);
         $reflectedRequestJson->setValue($this->_shippingController, json_encode($geoIpAddressData));
@@ -142,14 +140,14 @@ class Bolt_Boltpay_ShippingControllerTest extends PHPUnit_Framework_TestCase
 
         $actualAddressData = json_decode($this->_shippingController->getResponse()->getBody(), true)['address_data'];
 
-        $actualCacheId = $reflectedGetEstimateCacheIdentifier->invoke($this->_shippingController, $quote, $actualAddressData);
+        $actualCacheId = $this->_shippingController->getEstimateCacheIdentifier($quote, $actualAddressData);
         $estimatePostCall = unserialize(Mage::app()->getCache()->load($actualCacheId));
-
-        Mage::app()->getCache()->clean('matchingAnyTag', array('BOLT_QUOTE_PREFETCH'));
 
         $this->assertEquals($expectedCacheId, $actualCacheId);
         $this->assertEmpty( $estimatePreCall, 'A value is cached but there should be no cached value for the id '.$expectedCacheId);
         $this->assertNotEmpty( $estimatePostCall, 'A value should be cached but it is empty for the id '.$actualCacheId.': '.var_export($estimatePostCall, true));
+        $this->assertArrayHasKey('tax_result', $estimatePostCall);
+        $this->assertArrayHasKey('shipping_options', $estimatePostCall );
 
     }
 
@@ -185,9 +183,6 @@ class Bolt_Boltpay_ShippingControllerTest extends PHPUnit_Framework_TestCase
         $quote->collectTotals()->save();
 
         $reflectedShippingController = new ReflectionClass($this->_shippingController);
-        $reflectedGetEstimateCacheIdentifier = $reflectedShippingController->getMethod('getEstimateCacheIdentifier');
-        $reflectedGetEstimateCacheIdentifier->setAccessible(true);
-
 
         $boltFormatShippingAddress = array(
             'email' => 'test-shipping-cache@bolt.com',
@@ -210,7 +205,7 @@ class Bolt_Boltpay_ShippingControllerTest extends PHPUnit_Framework_TestCase
             'postcode' => '94121'
         );
 
-        $originalAddressExpectedCacheId = $reflectedGetEstimateCacheIdentifier->invoke($this->_shippingController, $quote, $originalMagentoFormatAddressData);
+        $originalAddressExpectedCacheId = $this->_shippingController->getEstimateCacheIdentifier($quote, $originalMagentoFormatAddressData);
 
         $mockBoltRequestData = $originalMockBoltRequestData = array(
             'cart' =>
@@ -269,7 +264,7 @@ class Bolt_Boltpay_ShippingControllerTest extends PHPUnit_Framework_TestCase
             'region' => 'Ohio',
             'postcode' => '43235'
         );
-        $modifiedAddressExpectedCacheId = $reflectedGetEstimateCacheIdentifier->invoke($this->_shippingController, $quote, $modifiedMagentoFormatAddressData);
+        $modifiedAddressExpectedCacheId = $this->_shippingController->getEstimateCacheIdentifier($quote, $modifiedMagentoFormatAddressData);
 
 
         $reflectedRequestJson->setValue($this->_shippingController, json_encode($mockBoltRequestData));
@@ -300,9 +295,6 @@ class Bolt_Boltpay_ShippingControllerTest extends PHPUnit_Framework_TestCase
             }
         }
         ////////////////////////////////////////////////////////
-
-
-        Mage::app()->getCache()->clean('matchingAnyTag', array('BOLT_QUOTE_PREFETCH'));
 
         $this->assertNotEmpty( $firstCallEstimate );
         $this->assertNotEmpty( $secondCallEstimate );

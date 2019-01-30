@@ -162,18 +162,23 @@ class Bolt_Boltpay_ShippingController extends Mage_Core_Controller_Front_Action
             return;
         }
 
-        $shippingAddress = array_intersect_key(
+        $requiredAddressFields = array('city'=>'','region'=>'','region_id'=>'','postcode'=>'','country_id'=>'');
+
+        $filteredShippingAddress = array_intersect_key(
             $quote->getShippingAddress()->getData(),
-            array('city'=>'','region'=>'','region_id'=>'','postcode'=>'','country_id'=>'')
+            $requiredAddressFields
         );
 
-        $cachedIdentifier = $this->getEstimateCacheIdentifier($quote, $shippingAddress);
+        $cachedIdentifier = $this->getEstimateCacheIdentifier($quote, $filteredShippingAddress);
         $estimate = $this->_cache->load($cachedIdentifier);
 
         if ($estimate) {
-            $addressData = $shippingAddress;
+            $addressData = $filteredShippingAddress;
         } else {
-            $addressData = count($shippingAddress) === 5 ? $shippingAddress : array_merge(array_filter($this->getGeoIpAddress()), array_filter($shippingAddress));
+            $addressData = count($filteredShippingAddress) === count($requiredAddressFields)
+                ? $filteredShippingAddress
+                : array_merge(array_filter($this->getGeoIpAddress()), array_filter($filteredShippingAddress))
+            ;
 
             $quote->getShippingAddress()->addData($addressData);
             $quote->getBillingAddress()->addData($addressData);
@@ -258,45 +263,46 @@ class Bolt_Boltpay_ShippingController extends Mage_Core_Controller_Front_Action
     }
 
     /**
-     * Caches the shipping and tax estimate based on cart price, cart content, customer,
-     * tax class, and when provided, country_id, postcode, region, region_id, and city
+     * Generates caching key for  the shipping and tax estimate based on cart price,
+     * cart content, customer, tax class, applied rules and discounts, and when provided,
+     * country_id, postcode, region, region_id, and city
      *
      * @param Mage_Sales_Model_Quote    $quote          Quote containing cart content and price info
      * @param array                     $addressData    optionally provided address data
      *
      * @return string   The uniquely identifying key calculated from the provided data
      */
-    protected function getEstimateCacheIdentifier($quote, $addressData)
+    public function getEstimateCacheIdentifier($quote, $addressData)
     {
-        $cacheIdentifier = $quote->getId() . '_' . round($quote->getBaseSubtotalWithDiscount()*100);
+        $cacheIdentifier = $quote->getId() . '_subtotal-' . round($quote->getBaseSubtotalWithDiscount()*100);
 
-        $cacheIdentifier .= '_' . ($quote->getCustomerId() ?: 0);
+        $cacheIdentifier .= '_customer-' . ($quote->getCustomerId() ?: 0);
 
-        $cacheIdentifier .= '_' . ($quote->getCustomerTaxClassId() ?: 0);
+        $cacheIdentifier .= '_tax-class-' . ($quote->getCustomerTaxClassId() ?: 0);
 
         if (isset($addressData['country_id'])) {
-            $cacheIdentifier .= '_' . $addressData['country_id'];
+            $cacheIdentifier .= '_country-id-' . $addressData['country_id'];
         }
 
         if (isset($addressData['postcode'])) {
-            $cacheIdentifier .= '_' . $addressData['postcode'];
+            $cacheIdentifier .= '_postcode-' . $addressData['postcode'];
         }
 
         if (isset($addressData['city'])) {
-            $cacheIdentifier .= '_' . $addressData['city'];
+            $cacheIdentifier .= '_city-' . $addressData['city'];
         }
 
         if (isset($addressData['region'])) {
-            $cacheIdentifier .= '_' . $addressData['region'];
+            $cacheIdentifier .= '_region-' . $addressData['region'];
         }
 
         if (isset($addressData['region_id'])) {
-            $cacheIdentifier .= '_' . $addressData['region_id'];
+            $cacheIdentifier .= '_region-id-' . $addressData['region_id'];
         }
 
         // include products in cache key
         foreach($quote->getAllVisibleItems() as $item) {
-            $cacheIdentifier .= '_'.$item->getProductId().'_'.$item->getQty();
+            $cacheIdentifier .= '_item-'.$item->getProductId().'-quantity-'.$item->getQty();
         }
 
         // include any discounts or gift card rules because they may affect shipping
