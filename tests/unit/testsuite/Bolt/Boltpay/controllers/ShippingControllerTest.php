@@ -80,6 +80,8 @@ class Bolt_Boltpay_ShippingControllerTest extends PHPUnit_Framework_TestCase
         foreach (self::$_productIds as $productId) {
             Bolt_Boltpay_ProductProvider::deleteDummyProduct($productId);
         }
+
+        Mage::app()->getCache()->clean('matchingAnyTag', array('BOLT_QUOTE_PREFETCH'));
     }
 
     /**
@@ -114,7 +116,6 @@ class Bolt_Boltpay_ShippingControllerTest extends PHPUnit_Framework_TestCase
         $reflectedGetEstimateCacheIdentifier = $reflectedShippingController->getMethod('getEstimateCacheIdentifier');
         $reflectedGetEstimateCacheIdentifier->setAccessible(true);
 
-        echo "preFetch call:\n";
         $expectedAddressData = array(
             'city'       => 'Beverly Hills',
             'country_id' => 'US',
@@ -149,6 +150,170 @@ class Bolt_Boltpay_ShippingControllerTest extends PHPUnit_Framework_TestCase
         $this->assertEquals($expectedCacheId, $actualCacheId);
         $this->assertEmpty( $estimatePreCall, 'A value is cached but there should be no cached value for the id '.$expectedCacheId);
         $this->assertNotEmpty( $estimatePostCall, 'A value should be cached but it is empty for the id '.$actualCacheId.': '.var_export($estimatePostCall, true));
+
+    }
+
+
+    /**
+     * Test to see if cache is in a valid state call to get estimate.  Prior to
+     * the call, there should be no cache data (i.e. MISS).  After the call, with the same
+     * data, the response should come from the cache (i.e. HIT).  After the third call,
+     * with address data changed, there should be a MISS.  A fourth call with the original address
+     * data should yield a HIT.
+     *
+     * @throws ReflectionException      on unexpected problems with reflection
+     * @throws Zend_Cache_Exception     on unexpected problems reading or writing to Magento cache
+     */
+    public function testIfEstimateIsCachedDirectCall() {
+
+        Mage::app()->getCache()->clean('matchingAnyTag', array('BOLT_QUOTE_PREFETCH'));
+
+        /** @var Mage_Sales_Model_Quote $quote */
+        $quote = Mage::getSingleton('checkout/session')->getQuote();
+
+        $quote
+            ->removeAllAddresses()
+            ->removeAllItems()
+            ->setCustomerId(32)
+            ->setCustomerTaxClassId(2);
+
+        foreach(self::$_productIds as $productId) {
+            $this->testHelper->addProduct($productId, rand(1,3));
+        }
+
+        $quote->setTotalsCollectedFlag(false);
+        $quote->collectTotals()->save();
+
+        $reflectedShippingController = new ReflectionClass($this->_shippingController);
+        $reflectedGetEstimateCacheIdentifier = $reflectedShippingController->getMethod('getEstimateCacheIdentifier');
+        $reflectedGetEstimateCacheIdentifier->setAccessible(true);
+
+
+        $boltFormatShippingAddress = array(
+            'email' => 'test-shipping-cache@bolt.com',
+            'first_name' => 'Don',
+            'last_name' => 'Quijote',
+            'street_address1' => '1000 Golpes',
+            'street_address2' => 'Windmill C',
+            'locality' => 'San Francisco',
+            'postal_code' => '94121',
+            'phone' => '+1 867 888 338 3903',
+            'country_code' => 'US',
+            'company' => 'Bolt',
+            'region' => 'California'
+        );
+        $originalMagentoFormatAddressData = array(
+            'city'       => 'San Francisco',
+            'country_id' => 'US',
+            'region_id'  => '12',
+            'region' => 'California',
+            'postcode' => '94121'
+        );
+
+        $originalAddressExpectedCacheId = $reflectedGetEstimateCacheIdentifier->invoke($this->_shippingController, $quote, $originalMagentoFormatAddressData);
+
+        $mockBoltRequestData = $originalMockBoltRequestData = array(
+            'cart' =>
+                array(
+                    'display_id' => 'mock quote id |'.$quote->getId()
+                ),
+            'shipping_address' => $boltFormatShippingAddress
+        );
+
+
+        $reflectedRequestJson = $reflectedShippingController->getProperty('_requestJSON');
+        $reflectedRequestJson->setAccessible(true);
+        $reflectedRequestJson->setValue($this->_shippingController, json_encode($mockBoltRequestData));
+
+        ////////////////////////////////////////////////////////
+        // Make first call that should not have a cache value
+        ////////////////////////////////////////////////////////
+        $this->_shippingController->indexAction();
+        $firstCallEstimate = json_decode($this->_shippingController->getResponse()->getBody(), true);
+        $firstCallHeaders = $this->_shippingController->getResponse()->getHeaders();
+        foreach($firstCallHeaders as $callHeader) {
+            if ($callHeader['name'] === 'X-Bolt-Cache-Hit') {
+                $firstCallHitOrMiss = $callHeader['value'];
+            }
+        }
+        ////////////////////////////////////////////////////////
+
+
+        ////////////////////////////////////////////////////////
+        // Make a second call that should be read from the cache
+        ////////////////////////////////////////////////////////
+        $this->_shippingController->indexAction();
+        $secondCallEstimate = json_decode($this->_shippingController->getResponse()->getBody(), true);
+        $secondCallHeaders = $this->_shippingController->getResponse()->getHeaders();
+        foreach($secondCallHeaders as $callHeader) {
+            if ($callHeader['name'] === 'X-Bolt-Cache-Hit') {
+                $secondCallHitOrMiss = $callHeader['value'];
+            }
+        }
+        ////////////////////////////////////////////////////////
+
+
+        ////////////////////////////////////////////////////////
+        // Make a third call with a different address.
+        // It should not be read from the cache
+        ////////////////////////////////////////////////////////
+        $boltFormatShippingAddress['locality'] = 'Columbus';
+        $boltFormatShippingAddress['region'] = 'Ohio';
+        $boltFormatShippingAddress['postal_code'] = '43235';
+        $mockBoltRequestData['shipping_address'] = $boltFormatShippingAddress;
+
+        $modifiedMagentoFormatAddressData = array(
+            'city'       => 'Columbus',
+            'country_id' => 'US',
+            'region_id'  => '47',
+            'region' => 'Ohio',
+            'postcode' => '43235'
+        );
+        $modifiedAddressExpectedCacheId = $reflectedGetEstimateCacheIdentifier->invoke($this->_shippingController, $quote, $modifiedMagentoFormatAddressData);
+
+
+        $reflectedRequestJson->setValue($this->_shippingController, json_encode($mockBoltRequestData));
+
+        $this->_shippingController->indexAction();
+        $thirdCallEstimate = json_decode($this->_shippingController->getResponse()->getBody(), true);
+        $thirdCallHeaders = $this->_shippingController->getResponse()->getHeaders();
+        foreach($thirdCallHeaders as $callHeader) {
+            if ($callHeader['name'] === 'X-Bolt-Cache-Hit') {
+                $thirdCallHitOrMiss = $callHeader['value'];
+            }
+        }
+        ////////////////////////////////////////////////////////
+
+
+        ////////////////////////////////////////////////////////
+        // Make a fourth call with the original data
+        // It should be read from the cache
+        ////////////////////////////////////////////////////////
+        $reflectedRequestJson->setValue($this->_shippingController, json_encode($originalMockBoltRequestData));
+
+        $this->_shippingController->indexAction();
+        $fourthCallEstimate = json_decode($this->_shippingController->getResponse()->getBody(), true);
+        $fourthCallHeaders = $this->_shippingController->getResponse()->getHeaders();
+        foreach($fourthCallHeaders as $callHeader) {
+            if ($callHeader['name'] === 'X-Bolt-Cache-Hit') {
+                $fourthCallHitOrMiss = $callHeader['value'];
+            }
+        }
+        ////////////////////////////////////////////////////////
+
+
+        Mage::app()->getCache()->clean('matchingAnyTag', array('BOLT_QUOTE_PREFETCH'));
+
+        $this->assertNotEmpty( $firstCallEstimate );
+        $this->assertNotEmpty( $secondCallEstimate );
+        $this->assertNotEmpty( $thirdCallEstimate) ;
+        $this->assertEquals( $firstCallEstimate, $secondCallEstimate );
+        $this->assertEquals( $firstCallEstimate, $fourthCallEstimate );
+        $this->assertNotEquals( $originalAddressExpectedCacheId, $modifiedAddressExpectedCacheId );
+        $this->assertEquals( $firstCallHitOrMiss, 'MISS' );
+        $this->assertEquals( $secondCallHitOrMiss, 'HIT' );
+        $this->assertEquals( $thirdCallHitOrMiss, 'MISS' );
+        $this->assertEquals( $fourthCallHitOrMiss, 'HIT' );
 
     }
 }

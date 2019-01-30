@@ -272,7 +272,7 @@ class Bolt_Boltpay_ShippingController extends Mage_Core_Controller_Front_Action
      */
     protected function getEstimateCacheIdentifier($quote, $addressData)
     {
-        $cacheIdentifier = $quote->getId() . '_' . round($quote->getBaseSubtotal()*100);
+        $cacheIdentifier = $quote->getId() . '_' . round($quote->getBaseSubtotalWithDiscount()*100);
 
         $cacheIdentifier .= '_' . ($quote->getCustomerId() ?: 0);
 
@@ -301,6 +301,11 @@ class Bolt_Boltpay_ShippingController extends Mage_Core_Controller_Front_Action
         // include products in cache key
         foreach($quote->getAllVisibleItems() as $item) {
             $cacheIdentifier .= '_'.$item->getProductId().'_'.$item->getQty();
+        }
+
+        // include any discounts or gift card rules because they may affect shipping
+        foreach($quote->getAppliedRuleIds() as $ruleId) {
+            $cacheIdentifier .= '_applied-rule-'.$ruleId;
         }
 
         return md5($cacheIdentifier);
