@@ -1,0 +1,7 @@
+<?xml version="1.0"?>
+<ruleset name="MEQP1">
+    <description>Code Sniffer Configuration</description>
+    <file>app/</file>
+    <arg name="extensions" value="php"/>
+    <rule ref="MEQP1" />
+</ruleset>
