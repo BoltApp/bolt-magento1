@@ -1,4 +1,5 @@
-# Bolt Magento1 Plugin [![Build Status](https://travis-ci.org/BoltApp/bolt-magento1.svg?branch=develop)](https://travis-ci.org/BoltApp/bolt-magento1)
+# Bolt Magento1 Plugin [![CircleCI](https://circleci.com/gh/BoltApp/bolt-magento1.svg?style=shield)](https://circleci.com/gh/BoltApp/bolt-magento1)
+
 Plugin to integrate Bolt with Magento
 
 See [CHANGELOG.md](./CHANGELOG.md) for change history.

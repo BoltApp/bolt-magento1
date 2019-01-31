@@ -177,11 +177,31 @@
               <show_in_store>1</show_in_store>
             </selector_styles>
 
+            <enable_product_page_checkout>
+              <label>[Experimental] Enable Product Page Checkout</label>
+              <comment></comment>
+              <frontend_type>select</frontend_type>
+              <source_model>adminhtml/system_config_source_yesno</source_model>
+              <sort_order>40</sort_order>
+              <show_in_default>1</show_in_default>
+              <show_in_website>1</show_in_website>
+              <show_in_store>1</show_in_store>
+            </enable_product_page_checkout>
+            <product_page_checkout_selector>
+              <label>[Experimental] Product Page Checkout Selector</label>
+              <frontend_type>text</frontend_type>
+              <comment>CSS selectors of buttons to be replaced by Bolt.  Selectors are comma delimited, default: .btn-cart</comment>
+              <sort_order>43</sort_order>
+              <show_in_default>1</show_in_default>
+              <show_in_website>1</show_in_website>
+              <show_in_store>1</show_in_store>
+            </product_page_checkout_selector>
+
             <additional_css translate="label">
               <label>Global CSS</label>
               <comment>Any CSS that is to be added to pages when any Bolt button selector is found</comment>
               <frontend_type>textarea</frontend_type>
-              <sort_order>38</sort_order>
+              <sort_order>45</sort_order>
               <show_in_default>1</show_in_default>
               <show_in_website>1</show_in_website>
               <show_in_store>1</show_in_store>
@@ -190,7 +210,7 @@
             <successpage translate="label">
               <label>Success Page Redirect</label>
               <frontend_type>text</frontend_type>
-              <sort_order>40</sort_order>
+              <sort_order>50</sort_order>
               <show_in_default>1</show_in_default>
               <show_in_website>1</show_in_website>
               <show_in_store>1</show_in_store>
@@ -198,7 +218,7 @@
 
             <hide_on_checkout>
               <label>Hide On Checkout Page</label>
-              <sort_order>42</sort_order>
+              <sort_order>55</sort_order>
               <frontend_type>select</frontend_type>
               <source_model>adminhtml/system_config_source_yesno</source_model>
               <show_in_default>1</show_in_default>
@@ -210,7 +230,7 @@
               <label>Disable Complete Authorize</label>
               <frontend_type>select</frontend_type>
               <source_model>adminhtml/system_config_source_yesno</source_model>
-              <sort_order>46</sort_order>
+              <sort_order>60</sort_order>
               <show_in_default>1</show_in_default>
               <show_in_website>1</show_in_website>
               <show_in_store>1</show_in_store>
@@ -220,7 +240,7 @@
               <label>Enable merchant scoped account</label>
               <frontend_type>select</frontend_type>
               <source_model>adminhtml/system_config_source_yesno</source_model>
-              <sort_order>48</sort_order>
+              <sort_order>65</sort_order>
               <show_in_default>1</show_in_default>
               <show_in_website>1</show_in_website>
               <show_in_store>1</show_in_store>
@@ -230,7 +250,7 @@
               <label>Allow Shipping To PO Box</label>
               <frontend_type>select</frontend_type>
               <source_model>adminhtml/system_config_source_yesno</source_model>
-              <sort_order>49</sort_order>
+              <sort_order>70</sort_order>
               <show_in_default>1</show_in_default>
               <show_in_website>1</show_in_website>
               <show_in_store>1</show_in_store>
@@ -241,7 +261,7 @@
               <frontend_type>select</frontend_type>
               <source_model>adminhtml/system_config_source_yesno</source_model>
               <comment>Makes Bolt the only payment method when available</comment>
-              <sort_order>50</sort_order>
+              <sort_order>75</sort_order>
               <show_in_default>1</show_in_default>
               <show_in_website>1</show_in_website>
               <show_in_store>1</show_in_store>
@@ -250,7 +270,7 @@
             <allowspecific translate="label">
               <label>Payment from Applicable Countries</label>
               <frontend_type>allowspecific</frontend_type>
-              <sort_order>70</sort_order>
+              <sort_order>80</sort_order>
               <source_model>adminhtml/system_config_source_payment_allspecificcountries</source_model>
               <show_in_default>1</show_in_default>
               <show_in_website>1</show_in_website>
@@ -260,7 +280,7 @@
             <specificcountry translate="label">
               <label>Payment from Specific Countries</label>
               <frontend_type>multiselect</frontend_type>
-              <sort_order>80</sort_order>
+              <sort_order>90</sort_order>
               <source_model>adminhtml/system_config_source_country</source_model>
               <show_in_default>1</show_in_default>
               <show_in_website>1</show_in_website>
@@ -297,8 +317,23 @@ This function is called after the checkout form is presented to the user.
               <show_in_default>1</show_in_default>
               <show_in_website>1</show_in_website>
               <show_in_store>1</show_in_store>
-              <sort_order>101</sort_order>
+              <sort_order>103</sort_order>
             </on_checkout_start>
+            <on_email_enter translate="label">
+              <label>Javascript: onEmailEnter</label>
+              <comment>
+                <![CDATA[
+                    <p>
+This function is called after the user enters their email address.
+                    </p>
+                    ]]>
+              </comment>
+              <frontend_type>textarea</frontend_type>
+              <show_in_default>1</show_in_default>
+              <show_in_website>1</show_in_website>
+              <show_in_store>1</show_in_store>
+              <sort_order>106</sort_order>
+            </on_email_enter>
             <on_shipping_details_complete translate="label">
               <label>Javascript: onShippingDetailsComplete</label>
               <comment>
@@ -313,7 +348,7 @@ This is applicable only to multi-step checkout.
               <show_in_default>1</show_in_default>
               <show_in_website>1</show_in_website>
               <show_in_store>1</show_in_store>
-              <sort_order>102</sort_order>
+              <sort_order>109</sort_order>
             </on_shipping_details_complete>
             <on_shipping_options_complete translate="label">
               <label>Javascript: onShippingOptionsComplete</label>
@@ -329,7 +364,7 @@ This is applicable only to multi-step checkout.
               <show_in_default>1</show_in_default>
               <show_in_website>1</show_in_website>
               <show_in_store>1</show_in_store>
-              <sort_order>103</sort_order>
+              <sort_order>112</sort_order>
             </on_shipping_options_complete>
             <on_payment_submit translate="label">
               <label>onPaymentSubmit</label>
@@ -344,7 +379,7 @@ This function is called after the user clicks the pay button.
               <show_in_default>1</show_in_default>
               <show_in_website>1</show_in_website>
               <show_in_store>1</show_in_store>
-              <sort_order>104</sort_order>
+              <sort_order>115</sort_order>
             </on_payment_submit>
             <success translate="label">
               <label>Javascript: success</label>
@@ -359,7 +394,7 @@ This function is called when the Bolt checkout transaction is successful.
               <show_in_default>1</show_in_default>
               <show_in_website>1</show_in_website>
               <show_in_store>1</show_in_store>
-              <sort_order>105</sort_order>
+              <sort_order>117</sort_order>
             </success>
             <close translate="label">
               <label>Javascript: close</label>
@@ -374,14 +409,14 @@ This function is called when the Bolt checkout modal is closed.
               <show_in_default>1</show_in_default>
               <show_in_website>1</show_in_website>
               <show_in_store>1</show_in_store>
-              <sort_order>106</sort_order>
+              <sort_order>120</sort_order>
             </close>
             <use_javascript_in_admin translate="label">
               <label>Use Custom Javascript in Admin Order Creation?</label>
               <frontend_type>select</frontend_type>
               <source_model>adminhtml/system_config_source_yesno</source_model>
               <comment>The javascript events above are usually intended for the frontend store pages.  Enable this option if you also want them applied to the admin order creation interface.</comment>
-              <sort_order>111</sort_order>
+              <sort_order>123</sort_order>
               <show_in_default>1</show_in_default>
               <show_in_website>1</show_in_website>
               <show_in_store>1</show_in_store>
@@ -391,36 +426,74 @@ This function is called when the Bolt checkout modal is closed.
               <frontend_type>select</frontend_type>
               <source_model>adminhtml/system_config_source_yesno</source_model>
               <comment>By default, Bolt checkout button is displayed in cart page. Enable this option if you plan to display Bolt checkout outside of cart page, such as mini cart.</comment>
-              <sort_order>120</sort_order>
+              <sort_order>130</sort_order>
               <show_in_default>1</show_in_default>
               <show_in_website>1</show_in_website>
               <show_in_store>1</show_in_store>
             </add_button_everywhere>
+            <allow_out_of_stock_orders translate="label">
+              <label>Allow Out of Stock Orders</label>
+              <frontend_type>select</frontend_type>
+              <source_model>adminhtml/system_config_source_yesno</source_model>
+              <comment>Allows an order to be created even if the customer submits an order that has an item that is out of stock. Backorders will still process as expected.</comment>
+              <sort_order>130</sort_order>
+              <show_in_default>1</show_in_default>
+              <show_in_website>1</show_in_website>
+              <show_in_store>1</show_in_store>
+            </allow_out_of_stock_orders>
+            <allow_disabled_sku_orders translate="label">
+              <label>Allow Disabled SKU Orders</label>
+              <frontend_type>select</frontend_type>
+              <source_model>adminhtml/system_config_source_yesno</source_model>
+              <comment>Allows an order to be created even if the customer submits an order that has an item that is disabled.</comment>
+              <sort_order>130</sort_order>
+              <show_in_default>1</show_in_default>
+              <show_in_website>1</show_in_website>
+              <show_in_store>1</show_in_store>
+            </allow_disabled_sku_orders>
+            <override_magento_order_on_mismatch translate="label">
+              <label>Override Magento Order On Mismatch</label>
+              <frontend_type>select</frontend_type>
+              <source_model>adminhtml/system_config_source_yesno</source_model>
+              <comment>Overrides the Magento order with the order details from Bolt if the Bolt order doesn't match the Magento order.</comment>
+              <sort_order>140</sort_order>
+              <show_in_default>1</show_in_default>
+              <show_in_website>1</show_in_website>
+              <show_in_store>1</show_in_store>
+            </override_magento_order_on_mismatch>
+            <mismatch_price_tolerance translate="label">
+              <label>Mismatch Price Tolerance ($)</label>
+              <frontend_type>text</frontend_type>
+              <sort_order>145</sort_order>
+              <show_in_default>1</show_in_default>
+              <show_in_website>1</show_in_website>
+              <show_in_store>1</show_in_store>
+              <frontend_class>validate-number</frontend_class>
+            </mismatch_price_tolerance>
             <sort_order translate="label">
               <label>Sort Order</label>
               <frontend_type>text</frontend_type>
               <comment>Influences display order on checkout pages relative to other payment options.  This does not affect any other pages including the shopping cart and product pages.</comment>
-              <sort_order>150</sort_order>
+              <sort_order>140</sort_order>
               <show_in_default>1</show_in_default>
               <show_in_website>1</show_in_website>
               <show_in_store>1</show_in_store>
               <frontend_class>validate-number</frontend_class>
             </sort_order>
-            <color translate="label">
-              <label>Bolt primary color</label>
-              <frontend_type>text</frontend_type>
-              <comment>Hex color. Ex: #f00</comment>
+            <extra_options translate="label">
+              <label>Extra config</label>
+              <frontend_type>textarea</frontend_type>
               <sort_order>150</sort_order>
               <show_in_default>1</show_in_default>
               <show_in_website>1</show_in_website>
               <show_in_store>1</show_in_store>
-              <backend_model>boltpay/admin_form_color</backend_model>
-            </color>
+              <backend_model>boltpay/admin_extraConfig</backend_model>
+            </extra_options>
             <checkapi translate="label">
               <label>Check Boltpay API</label>
               <frontend_type>button</frontend_type>
               <frontend_model>boltpay/adminhtml_system_config_form_button</frontend_model>
-              <sort_order>151</sort_order>
+              <sort_order>160</sort_order>
               <show_in_default>1</show_in_default>
               <show_in_website>1</show_in_website>
               <show_in_store>1</show_in_store>

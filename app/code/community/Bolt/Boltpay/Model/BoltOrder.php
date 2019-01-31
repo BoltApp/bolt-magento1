@@ -25,9 +25,12 @@ class Bolt_Boltpay_Model_BoltOrder extends Mage_Core_Model_Abstract
 {
     const ITEM_TYPE_PHYSICAL = 'physical';
     const ITEM_TYPE_DIGITAL  = 'digital';
+    protected $itemOptionKeys = array('attributes_info', 'options', 'additional_options', 'bundle_options');
 
-    // Store discount types, internal and 3rd party.
-    // Can appear as keys in Quote::getTotals result array.
+    /**
+     * @var array  Store discount types, internal and 3rd party.
+     *             Can appear as keys in Quote::getTotals result array.
+     */
     protected $discountTypes = array(
         'discount',
         'giftcardcredit',
@@ -39,6 +42,13 @@ class Bolt_Boltpay_Model_BoltOrder extends Mage_Core_Model_Abstract
         'amgiftcard', // https://amasty.com/magento-gift-card.html
         'amstcred', // https://amasty.com/magento-store-credit.html
         'awraf',    //https://ecommerce.aheadworks.com/magento-extensions/refer-a-friend.html#magento1
+    );
+
+    /**
+     * @var array  list of country codes for which we will require a region for validation to succeed.
+     */
+    protected $countriesRequiringRegion = array(
+        'US', 'CA',
     );
 
     /**
@@ -129,7 +139,8 @@ class Bolt_Boltpay_Model_BoltOrder extends Mage_Core_Model_Abstract
                         'total_amount' => round($item->getCalculationPrice() * 100) * $item->getQty(),
                         'unit_price'   => round($item->getCalculationPrice() * 100),
                         'quantity'     => $item->getQty(),
-                        'type'         => $type
+                        'type'         => $type,
+                        'properties' => $this->getItemProperties($item)
                     );
                 }, $items
             ),
@@ -177,10 +188,16 @@ class Bolt_Boltpay_Model_BoltOrder extends Mage_Core_Model_Abstract
             $billingAddress  = $quote->getBillingAddress();
             $shippingAddress = $quote->getShippingAddress();
 
+            $this->correctBillingAddress($billingAddress, $shippingAddress);
+
             $customerEmail = $this->getCustomerEmail($quote);
 
             $billingRegion = $billingAddress->getRegion();
-            if (empty($shippingRegion) && !in_array($billingAddress->getCountry(), array('US', 'CA'))) {
+            if (
+                empty($billingRegion) &&
+                !in_array($billingAddress->getCountry(), $this->countriesRequiringRegion)
+            )
+            {
                 $billingRegion = $billingAddress->getCity();
             }
 
@@ -216,7 +233,10 @@ class Bolt_Boltpay_Model_BoltOrder extends Mage_Core_Model_Abstract
             }
 
             $shippingRegion = $shippingAddress->getRegion();
-            if (empty($shippingRegion) && !in_array($shippingAddress->getCountry(), array('US', 'CA'))) {
+            if (
+                empty($shippingRegion) &&
+                !in_array($shippingAddress->getCountry(), $this->countriesRequiringRegion)
+            ) {
                 $shippingRegion = $shippingAddress->getCity();
             }
 
@@ -346,6 +366,112 @@ class Bolt_Boltpay_Model_BoltOrder extends Mage_Core_Model_Abstract
     }
 
     /**
+     * Checks if billing address of a quote has all the expected fields.
+     * If not, and therefore invalid, the address is replaced by using the
+     * provided shipping address.
+     *
+     * @param Mage_Sales_Model_Quote_Address $billingAddress   The billing address
+     *                                                         to be checked
+     * @param Mage_Sales_Model_Quote_Address $fallbackAddress  The address to fallback
+     *                                                         to in case of invalid billing
+     *                                                         address
+     *
+     *
+     * @return bool  true if a correction is made, otherwise false
+     *
+     * TODO: evaluate necessity of this code by auditing Bugsnag for corrections made.
+     * If it has not been triggered by April 2019, this code may be safely removed.
+     *
+     */
+    public function correctBillingAddress(&$billingAddress, $fallbackAddress = null, $notifyBugsnag = true )
+    {
+        if (!$fallbackAddress) {
+            return false;
+        }
+
+        /** @var Bolt_Boltpay_Helper_Bugsnag $bugsnag */
+        $bugsnag = Mage::helper('boltpay/bugsnag');
+
+        $quote = $billingAddress->getQuote();
+
+        $wasCorrected = false;
+
+        if (
+            !trim($billingAddress->getStreetFull()) ||
+            !$billingAddress->getCity() ||
+            !$billingAddress->getCountry()
+        )
+        {
+            if ($notifyBugsnag) {
+                $bugsnag->notifyException(
+                    new Exception("Missing critical billing data. "
+                        ." Street: ". $billingAddress->getStreetFull()
+                        ." City: ". $billingAddress->getCity()
+                        ." Country: ". $billingAddress->getCountry()
+                    ),
+                    array(),
+                    "info"
+                );
+            }
+
+            $billingAddress
+                ->setCity($fallbackAddress->getCity())
+                ->setRegion($fallbackAddress->getRegion())
+                ->setRegionId($fallbackAddress->getRegionId())
+                ->setPostcode($fallbackAddress->getPostcode())
+                ->setCountryId($fallbackAddress->getCountryId())
+                ->setStreet($fallbackAddress->getStreet())
+                ->save();
+
+            $wasCorrected = true;
+        }
+
+        if (!trim($billingAddress->getName())) {
+
+            if ($notifyBugsnag) {
+                $bugsnag->notifyException(
+                    new Exception("Missing billing name."),
+                    array(),
+                    "info"
+                );
+            }
+
+            $billingAddress
+                ->setPrefix($fallbackAddress->getPrefix())
+                ->setFirstname($fallbackAddress->getFirstname())
+                ->setMiddlename($fallbackAddress->getMiddlename())
+                ->setLastname($fallbackAddress->getLastname())
+                ->setSuffix($fallbackAddress->getSuffix())
+                ->save();
+
+            $wasCorrected = true;
+        }
+
+        if (!trim($billingAddress->getTelephone())) {
+            if ($notifyBugsnag) {
+                $bugsnag->notifyException(
+                    new Exception("Missing billing telephone."),
+                    array(),
+                    "info"
+                );
+            }
+            $billingAddress->setTelephone($fallbackAddress->getTelephone());
+            $wasCorrected = true;
+        }
+
+        if ( $wasCorrected && !trim($billingAddress->getCompany())) {
+            $billingAddress->setCompany($fallbackAddress->getCompany());
+        }
+
+        if ($wasCorrected) {
+            $billingAddress->save();
+            $quote->save();
+        }
+
+        return $wasCorrected;
+    }
+
+    /**
      * Get's the customer's email from the given quote, if provided.  Otherwise, attempts
      * to retrieve it via contextual hints from the session
      *
@@ -372,5 +498,73 @@ class Bolt_Boltpay_Model_BoltOrder extends Mage_Core_Model_Abstract
         }
 
         return $customerEmail;
+    }
+
+    /**
+     * Item properties are the order options selected by the customer e.g. color and size
+     * @param Mage_Sales_Model_Quote_Item $item
+     * @return array
+     */
+    protected function getItemProperties(Mage_Sales_Model_Quote_Item $item)
+    {
+        $properties = array();
+        foreach($this->getProductOptions($item) as $option) {
+            $optionValue = $this->getOptionValue($option);
+
+            if ($optionValue) {
+                $properties[] = array('name' => $option['label'], 'value' => $optionValue);
+            }
+        }
+
+        return $properties;
+    }
+
+    /**
+     * @param Mage_Sales_Model_Quote_Item $item
+     * @return array
+     */
+    protected function getProductOptions(Mage_Sales_Model_Quote_Item $item)
+    {
+        $options = $item->getProductOrderOptions();
+        if (!$options) {
+            $options = $item->getProduct()->getTypeInstance(true)->getOrderOptions($item->getProduct());
+        }
+
+        $productOptions = array();
+        if ($options) {
+            foreach ($this->itemOptionKeys as $itemOptionKey) {
+                if (isset($options[$itemOptionKey])) {
+                    $productOptions = array_merge($productOptions, $options[$itemOptionKey]);
+                }
+            }
+        }
+        return $productOptions;
+    }
+
+    /**
+     * @param $option
+     * @return bool|string
+     */
+    protected function getOptionValue($option)
+    {
+        if (is_array(@$option['value'])) {
+            return $this->getBundleProductOptionValue($option);
+        }
+        return @$option['value'];
+    }
+
+    /**
+     * @param $option
+     * @return string
+     */
+    protected function getBundleProductOptionValue($option)
+    {
+        $optionValues = array();
+        foreach ($option['value'] as $value) {
+            if ((@$value['qty']) && (@$value['title']) && (@$value['price'])) {
+                $optionValues[] = @$value['qty'] . ' x ' . @$value['title'] . " " . Mage::helper('core')->currency(@$value['price'], true, false);
+            }
+        }
+        return join(', ', $optionValues);
     }
 }

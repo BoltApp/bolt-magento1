@@ -297,217 +297,36 @@ PROMISE;
      * Generate BoltCheckout Javascript for output.
      *
      * @param string $checkoutType  'multi-page' | 'one-page' | 'admin' | 'firecheckout'
-     * @param $quote
+     * @param Mage_Sales_Model_Quote $quote
      * @param $hintData
      * @param $cartData
      * @return string
      */
     public function buildBoltCheckoutJavascript($checkoutType, $quote, $hintData, $cartData)
     {
-        /* @var Bolt_Boltpay_Helper_Api $boltHelper */
+        /* @var Bolt_Boltpay_Helper_Data $boltHelper */
         $boltHelper = Mage::helper('boltpay');
 
         $jsonCart = (is_string($cartData)) ? $cartData : json_encode($cartData);
         $jsonHints = json_encode($hintData, JSON_FORCE_OBJECT);
 
-        //////////////////////////////////////////////////////
-        // Collect the event Javascripts
-        // We execute these events as early as possible, typically
-        // before Bolt defined event JS to give merchants the
-        // opportunity to do full overrides
-        //////////////////////////////////////////////////////
-        $checkCustom = $boltHelper->getPaymentBoltpayConfig('check', $checkoutType);
-        $onCheckoutStartCustom = $boltHelper->getPaymentBoltpayConfig('on_checkout_start', $checkoutType);
-        $onShippingDetailsCompleteCustom = $boltHelper->getPaymentBoltpayConfig('on_shipping_details_complete', $checkoutType);
-        $onShippingOptionsCompleteCustom = $boltHelper->getPaymentBoltpayConfig('on_shipping_options_complete', $checkoutType);
-        $onPaymentSubmitCustom = $boltHelper->getPaymentBoltpayConfig('on_payment_submit', $checkoutType);
-        $successCustom = $boltHelper->getPaymentBoltpayConfig('success', $checkoutType);
-        $closeCustom = $boltHelper->getPaymentBoltpayConfig('close', $checkoutType);
+        $callbacks = $boltHelper->getBoltCallbacks($checkoutType, $quote->isVirtual());
 
-        $onCheckCallback = $this->buildOnCheckCallback($checkoutType, $quote);
-        $onSuccessCallback = $this->buildOnSuccessCallback($successCustom, $checkoutType);
-        $onCloseCallback = $this->buildOnCloseCallback($closeCustom, $checkoutType);
-
-        $requiredCheck = ($checkoutType === self::CHECKOUT_TYPE_FIRECHECKOUT)
-            ? ""
-            : "
-                    if (!json_cart.orderToken) {
-                        if (typeof BoltPopup !== \"undefined\") {
-                            BoltPopup.addMessage(json_cart.error).show();
-                        } else {
-                            alert(json_cart.error);
-                        }
-                        return false;
-                    }
-            "
-        ;
+        $hintsTransformFunction = $boltHelper->getExtraConfig('hintsTransform');
 
         return ("
+            var \$hints_transform = $hintsTransformFunction;
+            
             var json_cart = $jsonCart;
-            var json_hints = $jsonHints;
+            var json_hints = \$hints_transform($jsonHints);
             var quote_id = '{$quote->getId()}';
             var order_completed = false;
 
             BoltCheckout.configure(
                 json_cart,
                 json_hints,
-                {
-                  check: function() {
-                    $requiredCheck
-                    $checkCustom
-                    $onCheckCallback
-                    return true;
-                  },
-                  
-                  onCheckoutStart: function() {
-                    // This function is called after the checkout form is presented to the user.
-                    $onCheckoutStartCustom
-                  },
-                  
-                  onShippingDetailsComplete: function() {
-                    // This function is called when the user proceeds to the shipping options page.
-                    // This is applicable only to multi-step checkout.
-                    $onShippingDetailsCompleteCustom
-                  },
-                  
-                  onShippingOptionsComplete: function() {
-                    // This function is called when the user proceeds to the payment details page.
-                    // This is applicable only to multi-step checkout.
-                    $onShippingOptionsCompleteCustom
-                  },
-                  
-                  onPaymentSubmit: function() {
-                    // This function is called after the user clicks the pay button.
-                    $onPaymentSubmitCustom
-                  },
-                  
-                  success: $onSuccessCallback,
-
-                  close: function() {
-                     $onCloseCallback
-                  }
-                }
+                $callbacks
         );");
-    }
-
-    /**
-     * @param $checkoutType
-     * @param $quote
-     *
-     * @return string
-     */
-    public function buildOnCheckCallback($checkoutType, $quote)
-    {
-        switch ($checkoutType) {
-            case self::CHECKOUT_TYPE_ADMIN:
-                return
-                    "
-                    if ((typeof editForm !== 'undefined') && (typeof editForm.validate === 'function')) {
-                        var bolt_hidden = document.getElementById('boltpay_payment_button');
-                        bolt_hidden.classList.remove('required-entry');
-        
-                        var is_valid = true;
-        
-                        if (!editForm.validate()) {
-                            is_valid = false;
-                        } ". ($quote->isVirtual() ? "" : " else {
-                            var shipping_method = $$('input:checked[type=\"radio\"][name=\"order[shipping_method]\"]')[0] || $$('input:checked[type=\"radio\"][name=\"shipping_method\"]')[0];
-                            if (typeof shipping_method === 'undefined') {
-                                alert('".Mage::helper('boltpay')->__('Please select a shipping method.')."');
-                                is_valid = false;
-                            }
-                        } "). "
-        
-                        bolt_hidden.classList.add('required-entry');
-                        return is_valid;
-                    }
-                    ";
-            case self::CHECKOUT_TYPE_FIRECHECKOUT:
-                return
-                    "
-                    return (isFireCheckoutFormValid = checkout.validate());
-                    ";
-            default:
-                return '';
-        }
-    }
-
-    /**
-     * @param string $successCustom
-     * @param $checkoutType
-     * @return string
-     */
-    public function buildOnSuccessCallback($successCustom = '', $checkoutType)
-    {
-        $saveOrderUrl = Mage::helper('boltpay/url')->getMagentoUrl('boltpay/order/save');
-
-        return ($checkoutType === self::CHECKOUT_TYPE_ADMIN) ?
-            "function(transaction, callback) {
-                $successCustom
-
-                var input = document.createElement('input');
-                input.setAttribute('type', 'hidden');
-                input.setAttribute('name', 'bolt_reference');
-                input.setAttribute('value', transaction.reference);
-                document.getElementById('edit_form').appendChild(input);
-
-                // order and order.submit should exist for admin
-                if ((typeof order !== 'undefined' ) && (typeof order.submit === 'function')) {
-                    order_completed = true;
-                    callback();
-                }
-            }"
-            : "function(transaction, callback) {
-                new Ajax.Request(
-                    '$saveOrderUrl',
-                    {
-                        method:'post',
-                        onSuccess:
-                            function() {
-                                $successCustom
-                                order_completed = true;
-                                callback();
-                            },
-                        parameters: 'reference='+transaction.reference
-                    }
-                );
-            }";
-    }
-
-    /**
-     * @param $closeCustom
-     * @param $checkoutType
-     * @return string
-     */
-    public function buildOnCloseCallback($closeCustom, $checkoutType)
-    {
-        $successUrl = Mage::helper('boltpay/url')->getMagentoUrl(Mage::getStoreConfig('payment/boltpay/successpage'));
-        $javascript = "";
-        switch ($checkoutType) {
-            case self::CHECKOUT_TYPE_ADMIN:
-                return
-                    "
-                    if (order_completed && (typeof order !== 'undefined' ) && (typeof order.submit === 'function')) {
-                        $closeCustom
-                        var bolt_hidden = document.getElementById('boltpay_payment_button');
-                        bolt_hidden.classList.remove('required-entry');
-                        order.submit();
-                    }
-                    ";
-            case self::CHECKOUT_TYPE_FIRECHECKOUT:
-                $javascript =
-                    "
-                    isFireCheckoutFormValid = false;
-                    initBoltButtons();
-                    ";
-            default:
-                return $javascript.
-                    "
-                    if (order_completed) {
-                        location.href = '$successUrl';
-                    }
-                    ";
-        }
     }
 
     /**
@@ -568,7 +387,7 @@ PROMISE;
         }
 
         // If address value exists populate the hints array with existing address data.
-        if ( $address instanceof Mage_Sales_Model_Quote_Address) {
+        if ($address instanceof Mage_Customer_Model_Address_Abstract) {
             if ($address->getEmail())     $hints['email']        = $address->getEmail();
             if ($address->getFirstname()) $hints['firstName']    = $address->getFirstname();
             if ($address->getLastname())  $hints['lastName']     = $address->getLastname();
@@ -879,8 +698,11 @@ PROMISE;
         $routeName = $this->getRequest()->getRouteName();
         $controllerName = $this->getRequest()->getControllerName();
 
+        $isEnabledProductPageCheckout = $this->helper('boltpay')->isEnabledProductPageCheckout();
+
         $isAllowed = ($routeName === 'checkout' && $controllerName === 'cart')
-            || ($routeName == 'firecheckout')
+            || ($routeName === 'firecheckout')
+            || ($isEnabledProductPageCheckout && $routeName === 'catalog' && $controllerName === 'product')
             || ($routeName === 'adminhtml' && in_array($controllerName, array('sales_order_create', 'sales_order_edit')));
 
         return $isAllowed;

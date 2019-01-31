@@ -1,0 +1,51 @@
+#!/bin/bash
+# Adapted from https://robjmills.co.uk/2018/01/14/automatic-psr2-coding-standard.html
+
+PROJECT=`php -r "echo dirname(dirname(dirname(realpath('$0'))));"`
+STAGED_FILES_CMD=`git diff --cached --name-only --diff-filter=ACMR HEAD | grep \\\\.php`
+CODING_STANDARD=vendor/magento/marketplace-eqp/MEQP1
+
+# Determine if a file list is passed
+if [ "$#" -eq 1 ]; then
+    oIFS=$IFS
+    IFS='
+    '
+    SFILES="$1"
+    IFS=${oIFS}
+fi
+SFILES=${SFILES:-$STAGED_FILES_CMD}
+
+echo "Checking PHP Lint..."
+for FILE in ${SFILES}
+do
+    php -l -d display_errors=0 ${PROJECT}/${FILE}
+    if [ $? != 0 ]; then
+        echo "PHP Lint failed. Please fix all syntax errors and try again."
+        exit 1
+    fi
+    FILES="${FILES} $PROJECT/$FILE"
+done
+
+# Run the code style fixes if phpcs exists and environment variable is set
+if [[ -f "vendor/bin/phpcs" ]]; then
+    if [ "${FILES}" != "" ]; then
+        echo "Running phpcs (with warnings), standard:MEQP1"
+        ./vendor/bin/phpcs --standard=${CODING_STANDARD} --encoding=utf-8 -p ${FILES}
+        if [ $? != 0 ]; then
+            exec < /dev/tty
+            echo "PSR-2 issues found. Fix automatically (where possible)? [y/N]"
+            read proceed
+            if [[ ! ("$proceed" == 'y' || "$proceed" == 'Y' || "$proceed" == '') ]]; then
+                echo "Skipping autofixing.."
+            else
+                echo "Automagically fixing files: (⋆._.)⊃―━━☆⌒*."
+                ./vendor/bin/phpcbf --standard=${CODING_STANDARD} ${FILES}
+	            echo "Re-staging updated files"
+                git add ${FILES}
+            fi
+            echo "Committing if no errors remaining..."
+            ./vendor/bin/phpcs --standard=${CODING_STANDARD} --encoding=utf-8 -n -p ${FILES}
+            exit $?
+        fi
+    fi
+fi
