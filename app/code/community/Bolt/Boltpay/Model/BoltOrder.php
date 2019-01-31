@@ -366,16 +366,131 @@ class Bolt_Boltpay_Model_BoltOrder extends Mage_Core_Model_Abstract
     }
 
     /**
+     * Corrects the address format by assuring no lines exceed 50 characters.
+     * This character restriction seems to affect several merchants
+     *
+     * @param array $streetAddress     The street address to potentially correct
+     *
+     * @return bool true if a correction was made, otherwise false
+     *
+     * @throws Mage_Core_Exception  thrown if there is no natural to correct an erroneous address
+     */
+    public function correctStreetAddress(&$streetAddress) {
+        $originalStreetAddress = $streetAddress;
+        $this->reallocateAddressLines($streetAddress);
+        return $streetAddress === $originalStreetAddress;
+    }
+
+    /**
+     * If any address line is longer than 50, this adjust the array by shifting or concatenating
+     * the lines to accommodate.  If the fourth line is reached and the problem has not been
+     * remedied, the tail end of that address line is truncated to satisfy the restraint
+     *
+     * @param array $streetAddressArray   The street address data to be adjusted
+     * @param int $startingIndex
+     *
+     * @throws Mage_Core_Exception  thrown if there is no natural place break up the address,
+     */
+    private function reallocateAddressLines(&$streetAddressArray, $startingIndex=0){
+
+        /** @var Bolt_Boltpay_Helper_Bugsnag $bugsnag */
+        $bugsnag = Mage::helper('boltpay/bugsnag');
+
+        $startingIndex = min($startingIndex, 3);
+
+        ///////////////////////////////////////////
+        /// Make sure we have an array of length 4
+        ///////////////////////////////////////////
+        while (count($streetAddressArray) < 4) $streetAddressArray[] = '';
+        ///////////////////////////////////////////
+
+        $tempLine = $streetAddressArray[$startingIndex] = preg_replace('/\h+/', ' ', $streetAddressArray[$startingIndex]);
+
+        if ( strlen($tempLine) > 50 ) {
+            // The length of this line is too long.  We must try to correct it
+
+            if ( $startingIndex >= 3) {
+                // Since this is address line 4, the last available line, we will truncate the string
+                // to meet requirements and send a warning to Bugsnag
+                $streetAddressArray[$startingIndex] = substr($tempLine, 0, 50);
+
+                $message = "Cropped address line '$tempLine' to '".$streetAddressArray[$startingIndex]."'\nOriginal Address: ".var_export($streetAddressArray, true);
+                $bugsnag->notifyException(new Exception($message), array(), 'warning');
+
+                return;
+            }
+
+            ///////////////////////////////////////////////////////////
+            /// Try to find a natural splitting point in address line,
+            /// then split the string
+            ///////////////////////////////////////////////////////////
+            $breakPoint = strrpos(substr($tempLine, 0, 50), ' ');
+
+            if ( $breakPoint === false ) {
+                $message = "No natural break was found in address line '$tempLine'"."\nOriginal Address: ".var_export($streetAddressArray, true);
+                $bugsnag->notifyException(new Exception($message));
+                Mage::throwException($message);
+            }
+
+            $correctedAddressLine = substr($tempLine, 0, $breakPoint);
+            $extraAddressInfo = substr($tempLine, $breakPoint + 1);
+            ///////////////////////////////////////////////////////////
+
+            $streetAddressArray[$startingIndex] = $correctedAddressLine;
+
+            if ($this->hasEmptyAddressLine($streetAddressArray, $startingIndex)) {
+
+                // Since there is an empty space, we fill it by shifting
+
+                for ($i = $startingIndex + 1; $i < count($streetAddressArray); $i++) {
+                    $nextAddressLine = $streetAddressArray[$i];
+                    if ($extraAddressInfo) $streetAddressArray[$i] = $extraAddressInfo;
+
+                    $extraAddressInfo = preg_replace('/\n/', '', $nextAddressLine);
+                }
+
+            } else {
+                // Otherwise, we prepend it to the next address line
+
+                $streetAddressArray[$startingIndex+1] = $extraAddressInfo . ' ' . $streetAddressArray[$startingIndex+1];
+            }
+
+        }
+
+        if ( $startingIndex < (count($streetAddressArray) - 1) ) {
+            // Check from the next line for address reallocation needs
+            $this->reallocateAddressLines($streetAddressArray, $startingIndex + 1);
+        }
+    }
+
+    /**
+     * Checks if there is an empty entry trailing in the array
+     *
+     * @param array $array          An array to check for empty entry
+     * @param int   $startingIndex  Index to start checking for empty space
+     *
+     * @return bool     true if their is an empty entry in the array after
+     *                  the specified starting point, otherwise false
+     */
+    private function hasEmptyAddressLine($array, $startingIndex=0) {
+        for ($i = $startingIndex + 1; $i < count($array); $i++) {
+            if ( empty( preg_replace('/\s+/', '', $array[$i]) ) ) return true;
+        }
+        return false;
+    }
+
+    /**
      * Checks if billing address of a quote has all the expected fields.
      * If not, and therefore invalid, the address is replaced by using the
      * provided shipping address.
      *
-     * @param Mage_Sales_Model_Quote_Address $billingAddress   The billing address
-     *                                                         to be checked
-     * @param Mage_Sales_Model_Quote_Address $fallbackAddress  The address to fallback
-     *                                                         to in case of invalid billing
-     *                                                         address
+     * @param Mage_Customer_Model_Address_Abstract $billingAddress   The billing address
+     *                                                               to be checked
+     * @param Mage_Customer_Model_Address_Abstract $fallbackAddress  The address to fallback
+     *                                                               to in case of invalid billing
+     *                                                               address
      *
+     * @param bool $notifyBugsnag   if true, Bugsnag is notified when a correction is made
      *
      * @return bool  true if a correction is made, otherwise false
      *

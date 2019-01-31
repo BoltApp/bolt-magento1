@@ -329,4 +329,156 @@ class Bolt_Boltpay_Model_BoltOrderTest extends PHPUnit_Framework_TestCase
 
         $this->assertEquals($expected, $result);
     }
+
+    /**
+     * Test that an "address line 1' longer than 50 characters is broken into two
+     * address lines
+     */
+    function testCorrectStreetAddressLongAddress1() {
+        $originalStreetAddressData = $streetAddressData = array(
+            '1900 F Street NW Room 928, Thurston Hall George Washington University'
+        );
+
+        $this->currentMock->correctStreetAddress($streetAddressData);
+
+        $this->assertEquals(count($streetAddressData), 4);
+        $this->assertNotEmpty($streetAddressData[0]);
+        $this->assertLessThan(50, strlen($streetAddressData[0]));
+        $this->assertNotEmpty($streetAddressData[1]);
+        $this->assertLessThan(50, strlen($streetAddressData[1]));
+        $this->assertEmpty($streetAddressData[2]);
+        $this->assertEmpty($streetAddressData[3]);
+        $this->assertNotEquals($originalStreetAddressData, $streetAddressData);
+        $this->assertEquals(
+            trim(implode(' ', $originalStreetAddressData)),
+            trim(implode(' ', $streetAddressData))
+        );
+    }
+
+    /**
+     * Test that when an address line is broken and there is an empty address
+     * field, the address field is shifted to make room
+     */
+    function testCorrectStreetAddressByShifting() {
+        $originalStreetAddressData = $streetAddressData = array(
+            '32 Fox Hut Drive',
+            'Attention: Velvet Fox Group, Thurston Hall George Washington University',
+            'Shifted To Line 4',
+            ''
+        );
+
+        $this->currentMock->correctStreetAddress($streetAddressData);
+
+        $this->assertEquals(count($streetAddressData), 4);
+        $this->assertNotEmpty($streetAddressData[0]);
+        $this->assertLessThan(50, strlen($streetAddressData[0]));
+        $this->assertNotEmpty($streetAddressData[1]);
+        $this->assertLessThan(50, strlen($streetAddressData[1]));
+        $this->assertNotEmpty($streetAddressData[2]);
+        $this->assertLessThan(50, strlen($streetAddressData[2]));
+        $this->assertNotEmpty($streetAddressData[3]);
+        $this->assertLessThan(50, strlen($streetAddressData[3]));
+        $this->assertEquals('Shifted To Line 4', $streetAddressData[3]);
+        $this->assertNotEquals($originalStreetAddressData, $streetAddressData);
+        $this->assertEquals(
+            trim(implode(' ', $originalStreetAddressData)),
+            trim(implode(' ', $streetAddressData))
+        );
+    }
+
+    /**
+     * Test that when an address line is broken and there is an empty address
+     * field that contains newline delimiter, the address field is shifted
+     * to make room
+     */
+    function testCorrectStreetAddressWithNewLineByShifting() {
+        $originalStreetAddressData = $streetAddressData = array(
+            'Attention: Velvet Fox Group, Thurston Hall George Washington University',
+            'Shifted To Line 3',
+            "\n",
+            'Line 4 Remains The Same'
+        );
+
+        $this->currentMock->correctStreetAddress($streetAddressData);
+
+        $this->assertEquals(count($streetAddressData), 4);
+        $this->assertNotEmpty($streetAddressData[0]);
+        $this->assertLessThan(50, strlen($streetAddressData[0]));
+        $this->assertNotEmpty($streetAddressData[1]);
+        $this->assertLessThan(50, strlen($streetAddressData[1]));
+        $this->assertNotEmpty($streetAddressData[2]);
+        $this->assertLessThan(50, strlen($streetAddressData[2]));
+        $this->assertEquals('Shifted To Line 3', $streetAddressData[2]);
+        $this->assertNotEmpty($streetAddressData[3]);
+        $this->assertLessThan(50, strlen($streetAddressData[3]));
+        $this->assertEquals('Line 4 Remains The Same', $streetAddressData[3]);
+        $this->assertNotEquals($originalStreetAddressData, $streetAddressData);
+        $this->assertEquals(
+            trim(implode(' ', array_filter($originalStreetAddressData, function($v){return $v!=="\n";}))),
+            trim(implode(' ', $streetAddressData))
+        );
+    }
+
+    /**
+     * Test that when and address line must be broken, and there is no empty address
+     * fields, then wrapping and concatenation is used to correct the problem
+     */
+    function testCorrectStreetAddressByWrappingAndConcatenation() {
+        $originalStreetAddressData = $streetAddressData = array(
+            '32 Fox Hut Drive',
+            'Special Care: Velvet Fox Group, Thurston Hall George Washington University',
+            '3rd Floor',
+            'Black Door'
+        );
+
+        $this->currentMock->correctStreetAddress($streetAddressData);
+
+
+        $this->assertEquals(count($streetAddressData), 4);
+        $this->assertNotEmpty($streetAddressData[0]);
+        $this->assertLessThan(51, strlen($streetAddressData[0]));
+        $this->assertNotEmpty($streetAddressData[1]);
+        $this->assertLessThan(51, strlen($streetAddressData[1]));
+        $this->assertNotEmpty($streetAddressData[2]);
+        $this->assertLessThan(51, strlen($streetAddressData[2]));
+        $this->assertEquals('George Washington University 3rd Floor', $streetAddressData[2]);
+        $this->assertNotEmpty($streetAddressData[3]);
+        $this->assertLessThan(51, strlen($streetAddressData[3]));
+        $this->assertEquals('Black Door', $streetAddressData[3]);
+        $this->assertNotEquals($originalStreetAddressData, $streetAddressData);
+        $this->assertEquals(
+            trim(implode(' ', $originalStreetAddressData)),
+            trim(implode(' ', $streetAddressData))
+        );
+
+    }
+
+
+    /**
+     * Test that when the last address line is too long, then truncation is performed
+     * to resolve the issue
+     */
+    function testCorrectStreetAddressByTruncation() {
+        $streetAddressData = array(
+            '32 Fox Hut Drive',
+            '3rd Floor',
+            'Black Door',
+            'Special Attention: Velvet Fox Group, Thurston Hall George Washington University'
+        );
+
+        $this->currentMock->correctStreetAddress($streetAddressData);
+
+        $this->assertEquals(count($streetAddressData), 4);
+        $this->assertNotEmpty($streetAddressData[0]);
+        $this->assertLessThan(51, strlen($streetAddressData[0]));
+        $this->assertNotEmpty($streetAddressData[1]);
+        $this->assertLessThan(51, strlen($streetAddressData[1]));
+        $this->assertNotEmpty($streetAddressData[2]);
+        $this->assertLessThan(51, strlen($streetAddressData[2]));
+        $this->assertNotEmpty($streetAddressData[3]);
+        $this->assertLessThan(51, strlen($streetAddressData[3]));
+        $this->assertEquals('Special Attention: Velvet Fox Group, Thurston Hall', $streetAddressData[3]);
+
+    }
+
 }
