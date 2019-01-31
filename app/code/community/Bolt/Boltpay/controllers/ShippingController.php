@@ -39,6 +39,9 @@ class Bolt_Boltpay_ShippingController extends Mage_Core_Controller_Front_Action
     public function indexAction()
     {
         try {
+            set_time_limit(30);
+            ignore_user_abort(true);
+
             $hmacHeader = $_SERVER['HTTP_X_BOLT_HMAC_SHA256'];
 
             $requestJson = file_get_contents('php://input');
@@ -141,6 +144,9 @@ class Bolt_Boltpay_ShippingController extends Mage_Core_Controller_Front_Action
      */
     public function prefetchEstimateAction()
     {
+        set_time_limit(30);
+        ignore_user_abort(true);
+        
         $this->_cache = Mage::app()->getCache();
 
         /** @var Mage_Sales_Model_Quote $quote */
