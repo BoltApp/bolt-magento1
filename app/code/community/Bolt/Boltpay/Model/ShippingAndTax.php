@@ -273,4 +273,28 @@ class Bolt_Boltpay_Model_ShippingAndTax extends Mage_Core_Model_Abstract
         }
         return $carrier . " - " . $title;
     }
+
+    /**
+     * Returns a whether P.O. box addresses are allowed for this store
+     *
+     * @return bool     true if P.O. boxes are allowed.  Otherwise, false.
+     */
+    public function isPOBoxAllowed()
+    {
+        return Mage::getStoreConfigFlag('payment/boltpay/allow_po_box');
+    }
+
+    /**
+     * Checks wheather a P.O. Box exist in the addresses given
+     *
+     * @param $address1      The address to be checked for a P.O. Box matching string
+     * @param $address2      If set, second address to be checked.  Useful for checking both shipping and billing in on call.
+     *
+     * @return bool     returns true only if any of the provided addresses contain a P.O. Box.  Otherwise, false
+     */
+    public function doesAddressContainPOBox($address1, $address2 = null)
+    {
+        $poBoxRegex = '/^\s*((P(OST)?.?\s*(O(FF(ICE)?)?|B(IN|OX))+.?\s+(B(IN|OX))?)|B(IN|OX))/i';
+        return (preg_match($poBoxRegex, $address1) || preg_match($poBoxRegex, $address2));
+    }
 }

@@ -425,10 +425,6 @@ class Bolt_Boltpay_Model_Payment extends Mage_Payment_Model_Method_Abstract
             if ($this->isTransactionStatusChanged($newTransactionStatus, $prevTransactionStatus)) {
                 $reference = $payment->getAdditionalInformation('bolt_reference');
 
-                $this->_handleBoltTransactionStatus($payment, $newTransactionStatus);
-                $payment->setAdditionalInformation('bolt_transaction_status', $newTransactionStatus);
-                $payment->save();
-
                 if ($this->isCaptureRequest($newTransactionStatus, $prevTransactionStatus)) {
                     $this->createInvoiceForHookRequest($payment);
                 }elseif ($newTransactionStatus == self::TRANSACTION_AUTHORIZED) {
@@ -476,6 +472,10 @@ class Bolt_Boltpay_Model_Payment extends Mage_Payment_Model_Method_Abstract
                 } elseif ($newTransactionStatus == self::TRANSACTION_REFUND) {
                     $this->handleRefundTransactionUpdate($payment, $newTransactionStatus, $prevTransactionStatus, $transactionAmount, $transaction);
                 }
+
+                $this->_handleBoltTransactionStatus($payment, $newTransactionStatus);
+                $payment->setAdditionalInformation('bolt_transaction_status', $newTransactionStatus);
+                $payment->save();
             } else {
                 $payment->setShouldCloseParentTransaction(true);
             }
