@@ -22,13 +22,36 @@
  */
 class Bolt_Boltpay_ShippingController extends Mage_Core_Controller_Front_Action
 {
-    const CACHE_PREFETCH_ADDRESS_PREFIX = 'BOLT_PREFETCH_ADDRESS_';
-    const CACHE_ESTIMATE_PREFIX = 'BOLT_PREFETCH_ESTIMATE_';
-
     /**
-     * @var Mage_Core_Model_Cache
+     * @var Mage_Core_Model_Cache  The Magento cache where the shipping and tax estimate is stored
      */
     protected $_cache;
+
+    /**
+     * @var Bolt_Boltpay_Model_ShippingAndTax  Object that performs shipping and tax business logic
+     */
+    protected $_shippingAndTaxModel;
+
+    /**
+     * @var string  The request body of the post made to this controller, expected to be in JSON
+     */
+    protected $_requestJSON;
+
+    /**
+     * @var Bolt_Boltpay_Helper_Api  Helper for Bolt API funcitionality
+     */
+    protected $_boltApiHelper;
+
+    /**
+     * Initializes Controller member variables
+     */
+    protected function _construct()
+    {
+        $this->_cache = Mage::app()->getCache();
+        $this->_shippingAndTaxModel = Mage::getModel("boltpay/shippingAndTax");
+        $this->_requestJSON = file_get_contents('php://input');
+        $this->_boltApiHelper = Mage::helper('boltpay/api');
+    }
 
     /**
      * Receives json formated request from Bolt,
@@ -39,24 +62,24 @@ class Bolt_Boltpay_ShippingController extends Mage_Core_Controller_Front_Action
     public function indexAction()
     {
         try {
+          
             set_time_limit(30);
             ignore_user_abort(true);
 
             $hmacHeader = $_SERVER['HTTP_X_BOLT_HMAC_SHA256'];
 
-            $requestJson = file_get_contents('php://input');
-            $requestData = json_decode($requestJson);
+            $requestData = json_decode($this->_requestJSON);
 
-            /* @var Bolt_Boltpay_Helper_Api $boltHelper */
-            $boltHelper = Mage::helper('boltpay/api');
-
-            if (!$boltHelper->verify_hook($requestJson, $hmacHeader)) {
+            if (!$this->_boltApiHelper->verify_hook($this->_requestJSON, $hmacHeader)) {
                 throw new Exception(Mage::helper('boltpay')->__("Failed HMAC Authentication"));
             }
 
             $shippingAddress = $requestData->shipping_address;
 
-            if (!$this->isPOBoxAllowed() && $this->doesAddressContainPOBox($shippingAddress->street_address1, $shippingAddress->street_address2)) {
+            if (
+                !$this->_shippingAndTaxModel->isPOBoxAllowed()
+                && $this->_shippingAndTaxModel->doesAddressContainPOBox($shippingAddress->street_address1, $shippingAddress->street_address2)
+            ) {
                 $errorDetails = array('code' => 6101, 'message' => Mage::helper('boltpay')->__('Address with P.O. Box is not allowed.'));
                 return $this->getResponse()->setHttpResponseCode(403)
                     ->setBody(json_encode(array('status' => 'failure','error' => $errorDetails)));
@@ -79,42 +102,28 @@ class Bolt_Boltpay_ShippingController extends Mage_Core_Controller_Front_Action
             $session->setQuoteId($quoteId);
             /**************/
 
-            /* @var Bolt_Boltpay_Model_ShippingAndTax $shippingAndTaxModel */
-            $shippingAndTaxModel = Mage::getModel('boltpay/shippingAndTax');
-            $addressData = $shippingAndTaxModel->applyShippingAddressToQuote($quote, $shippingAddress);
+            $addressData = $this->_shippingAndTaxModel->applyShippingAddressToQuote($quote, $shippingAddress);
 
             ////////////////////////////////////////////////////////////////////////////////////////
             // Check session cache for estimate.  If the shipping city or postcode, and the country code match,
             // then use the cached version.  Otherwise, we have to do another calculation
             ////////////////////////////////////////////////////////////////////////////////////////
-            $this->_cache = Mage::app()->getCache();
-            $cachedIdentifier = $this->getPrefetchCacheIdentifier($quote, $addressData);
-            $addressCacheKey  = $this->getAddressCacheKey($cachedIdentifier);
-            $prefetchCacheKey = $this->getEstimateCacheKey($cachedIdentifier);
+            $cachedIdentifier = $this->getEstimateCacheIdentifier($quote, $addressData);
 
-            $cachedAddress = unserialize($this->_cache->load($addressCacheKey));
+            $estimate = unserialize($this->_cache->load($cachedIdentifier));
 
-            if ($cachedAddress &&
-                ($cachedAddress['postcode'] == $addressData['postcode']) &&
-                ($cachedAddress['country_id'] == $addressData['country_id'])
-            ) {
-                //Mage::log('Using cached address: '.var_export($cached_address, true), null, 'shipping_and_tax.log');
-                $response = unserialize($this->_cache->load($prefetchCacheKey));
+            if ($estimate) {
                 $cacheBoltHeader = 'HIT';
-                if (!$response) {
-                    $response = $shippingAndTaxModel->getShippingAndTaxEstimate($quote);
-                    $cacheBoltHeader = 'MISS';
-                }
             } else {
                 //Mage::log('Generating address from quote', null, 'shipping_and_tax.log');
                 //Mage::log('Live address: '.var_export($address_data, true), null, 'shipping_and_tax.log');
-                $response = $shippingAndTaxModel->getShippingAndTaxEstimate($quote);
+                $estimate = $this->_shippingAndTaxModel->getShippingAndTaxEstimate($quote);
+                $this->cacheShippingAndTaxEstimate($estimate, $cachedIdentifier);
                 $cacheBoltHeader = 'MISS';
             }
-
             ////////////////////////////////////////////////////////////////////////////////////////
 
-            $response = json_encode($response, JSON_PRETTY_PRINT);
+            $responseJSON = json_encode($estimate, JSON_PRETTY_PRINT);
 
             //Mage::log('SHIPPING AND TAX RESPONSE: ' . $response, null, 'shipping_and_tax.log');
 
@@ -124,9 +133,9 @@ class Bolt_Boltpay_ShippingController extends Mage_Core_Controller_Front_Action
 
             $this->getResponse()->setHeader('X-Bolt-Cache-Hit', $cacheBoltHeader);
 
-            Mage::helper('boltpay/api')->setResponseContextHeaders();
+            $this->_boltApiHelper->setResponseContextHeaders();
 
-            $this->getResponse()->setBody($response);
+            $this->getResponse()->setBody($responseJSON);
         } catch (Exception $e) {
             $metaData = array();
             if (isset($quote)){
@@ -139,15 +148,16 @@ class Bolt_Boltpay_ShippingController extends Mage_Core_Controller_Front_Action
     }
 
     /**
-     * @return mixed
-     * @throws Varien_Exception
+     * Initiates caching of the shipping and tax estimate if none exist base on the
+     * quote address data and then as backup, GeoIP predicted address data.  Upon conclusion,
+     * responds to the HTTP client with the address used to derive the estimate.  This may
+     * be used to fill client forms and trigger frontend events upon address changes.
      */
     public function prefetchEstimateAction()
     {
+
         set_time_limit(30);
         ignore_user_abort(true);
-        
-        $this->_cache = Mage::app()->getCache();
 
         /** @var Mage_Sales_Model_Quote $quote */
         $quote = Mage::getSingleton('checkout/session')->getQuote();
@@ -158,45 +168,43 @@ class Bolt_Boltpay_ShippingController extends Mage_Core_Controller_Front_Action
             return;
         }
 
-        $shippingAddressOriginal = $quote->getShippingAddress()->getData();
+        $requiredAddressFields = array('city'=>'','region'=>'','region_id'=>'','postcode'=>'','country_id'=>'');
 
-        $cacheIdentifier = $this->getPrefetchCacheIdentifier($quote, $shippingAddressOriginal);
-        $addressCacheKey = $this->getAddressCacheKey($cacheIdentifier);
+        $filteredShippingAddress = array_intersect_key(
+            $quote->getShippingAddress()->getData(),
+            $requiredAddressFields
+        );
 
-        if ($serialized = $this->_cache->load($addressCacheKey)) {
-            $addressData = unserialize($serialized);
+        $cachedIdentifier = $this->getEstimateCacheIdentifier($quote, $filteredShippingAddress);
+        $estimate = $this->_cache->load($cachedIdentifier);
+
+        if ($estimate) {
+            $addressData = $filteredShippingAddress;
         } else {
-            $geoLocationAddress = $this->getGeoIpAddress();
-            $geoLocationAddress = $this->cleanEmptyAddressField($geoLocationAddress);
+            $addressData = count($filteredShippingAddress) === count($requiredAddressFields)
+                ? $filteredShippingAddress
+                : array_merge(array_filter($this->getGeoIpAddress()), array_filter($filteredShippingAddress))
+            ;
 
-            // ----------^_^----------- //
-            $shippingAddress = array(
-                'city'       => @($shippingAddressOriginal['city']),
-                'region'     => @($shippingAddressOriginal['region']),
-                'region_id'  => @($shippingAddressOriginal['region_id']),
-                'postcode'   => @($shippingAddressOriginal['postcode']),
-                'country_id' => @($shippingAddressOriginal['country_id']),
-            );
-            unset($shippingAddressOriginal);
+            $quote->getShippingAddress()->addData($addressData);
+            $quote->getBillingAddress()->addData($addressData);
 
-            $addressData = $this->mergeAddressData($geoLocationAddress, $shippingAddress);
+            try {
+                $estimateResponse = $this->_shippingAndTaxModel->getShippingAndTaxEstimate($quote);
+                $cacheIdentifier = $this->getEstimateCacheIdentifier($quote, $addressData);
+                $this->cacheShippingAndTaxEstimate($estimateResponse, $cacheIdentifier);
+            } catch (Exception $e) {
+                $metaData = array();
+                $metaData['quote'] = var_export($quote->debug(), true);
+                $metaData['address_data'] = var_export($addressData, true);
+                $metaData['cache_key'] = $cachedIdentifier;
+                $metaData['estimate'] = isset($estimateResponse) ? var_export($estimateResponse, true) : '';
 
-            if(isset($addressData['postcode'])) {
-                $cacheIdentifier = $this->getPrefetchCacheIdentifier($quote, $addressData);
-                $this->saveAddressCache($addressData, $cacheIdentifier);
-
-                $quote->getShippingAddress()->addData($addressData);
-                $quote->getBillingAddress()->addData($addressData);
-
-                try {
-                    /** @var Bolt_Boltpay_Model_ShippingAndTax $shippingAndTaxModel */
-                    $shippingAndTaxModel = Mage::getModel('boltpay/shippingAndTax');
-                    $estimateResponse = $shippingAndTaxModel->getShippingAndTaxEstimate($quote);
-
-                    $this->cacheShippingAndTaxEstimate($estimateResponse, $cacheIdentifier);
-                } catch (Exception $e) {
-                    $estimateResponse = null;
-                }
+                Mage::helper('boltpay/bugsnag')->notifyException(
+                    $e,
+                    $metaData,
+                    "info"
+                );
             }
         }
 
@@ -205,82 +213,33 @@ class Bolt_Boltpay_ShippingController extends Mage_Core_Controller_Front_Action
         $this->getResponse()->setBody($response);
     }
 
-    /**
-     * @param array $geoAddress
-     * @param array $shippingAddress
-     * @return array
-     */
-    public function mergeAddressData($geoAddress = array(), $shippingAddress = array())
-    {
-        if (!count($geoAddress)) {
-            return $shippingAddress;
-        }
-
-        if (!count($shippingAddress)) {
-            return $geoAddress;
-        }
-
-        foreach ($shippingAddress as $key => $value) {
-            if (isset($geoAddress[$key]) && empty($value)) {
-                $shippingAddress[$key] = $geoAddress[$key];
-            }
-        }
-
-        return $shippingAddress;
-    }
 
     /**
-     * @param     $estimate
-     * @param     $cacheKey
-     * @param int $lifeTime
+     * Caches the shipping and tax estimate
+     *
+     * @param array    $estimate        shipping and tax estimates to be returned to Bolt
+     * @param string   $quoteCacheKey   unique key identifying the quote whose estimate is cached
+     * @param int      $lifeTime        duration the the cached value should remain in seconds
      */
-    public function cacheShippingAndTaxEstimate($estimate, $cacheKey, $lifeTime = 600)
+    protected function cacheShippingAndTaxEstimate($estimate, $quoteCacheKey, $lifeTime = 600)
     {
         $this->_cache->save(
             serialize($estimate),
-            $this->getEstimateCacheKey($cacheKey),
+            $quoteCacheKey,
             array('BOLT_QUOTE_PREFETCH'),
             $lifeTime
         );
     }
 
-    /**
-     * @param     $addressData
-     * @param     $cacheKey
-     * @param int $lifeTime
-     */
-    public function saveAddressCache($addressData, $cacheKey, $lifeTime = 3600)
-    {
-        $this->_cache->save(
-            serialize($addressData),
-            $this->getAddressCacheKey($cacheKey),
-            array('BOLT_QUOTE_PREFETCH'),
-            $lifeTime
-        );
-    }
 
     /**
-     * @param $addressData
-     * @return mixed
+     * Converts address data read from the request from ipstack format to Magento address format
+     *
+     * @return array    The address prediction identified ipstack in Magento format
      */
-    public function cleanEmptyAddressField($addressData)
+    protected function getGeoIpAddress()
     {
-        foreach ($addressData as $key => $value) {
-            if (empty($value)) {
-                unset($addressData[$key]);
-            }
-        }
-
-        return $addressData;
-    }
-
-    /**
-     * @return array
-     */
-    public function getGeoIpAddress()
-    {
-        $requestJson = file_get_contents('php://input');
-        $requestData = json_decode($requestJson);
+        $requestData = json_decode($this->_requestJSON);
 
         $addressData = array(
             'city'          => isset($requestData->city) ?$requestData->city: '',
@@ -293,9 +252,8 @@ class Bolt_Boltpay_ShippingController extends Mage_Core_Controller_Front_Action
         if(!empty($addressData['country_id'])){
             /** @var Mage_Directory_Model_Country $countryObj */
             $countryObj = Mage::getModel('directory/country')->loadByCode($addressData['country_id']);
-            $isRegionAvailable = ($countryObj->getRegionCollection()->getSize() > 0);
     
-            if (!$isRegionAvailable) {
+            if (!$countryObj->getRegionCollection()->getSize()) {
                 // If country does not have region options for dropdown.
                 $addressData['region'] = $addressData['region_name'];
             }
@@ -311,73 +269,53 @@ class Bolt_Boltpay_ShippingController extends Mage_Core_Controller_Front_Action
     }
 
     /**
-     * @param $cacheIdentifier
-     * @return string
+     * Generates caching key for  the shipping and tax estimate based on cart price,
+     * cart content, customer, tax class, applied rules and discounts, and when provided,
+     * country_id, postcode, region, region_id, and city
+     *
+     * @param Mage_Sales_Model_Quote    $quote          Quote containing cart content and price info
+     * @param array                     $addressData    optionally provided address data
+     *
+     * @return string   The uniquely identifying key calculated from the provided data
      */
-    public function getAddressCacheKey($cacheIdentifier)
+    public function getEstimateCacheIdentifier($quote, $addressData)
     {
-        return self::CACHE_PREFETCH_ADDRESS_PREFIX . $cacheIdentifier;
-    }
+        $cacheIdentifier = $quote->getId() . '_subtotal-' . round($quote->getBaseSubtotalWithDiscount()*100);
 
-    /**
-     * @param $cacheIdentifier
-     * @return string
-     */
-    public function getEstimateCacheKey($cacheIdentifier)
-    {
-        return self::CACHE_ESTIMATE_PREFIX . $cacheIdentifier;
-    }
+        $cacheIdentifier .= '_customer-' . ($quote->getCustomerId() ?: 0);
 
-    /**
-     * @param $quote Mage_Sales_Model_Quote
-     * @param $addressData array
-     * @return string
-     */
-    public function getPrefetchCacheIdentifier($quote, $addressData)
-    {
-        $cacheIdentifier = $quote->getId() . '_' . round($quote->getGrandTotal()*100);
-
-        $cacheIdentifier .= '_' . ($quote->getCustomerId() ?: 0);
-
-        $cacheIdentifier .= '_' . ($quote->getCustomerTaxClassId() ?: 0);
+        $cacheIdentifier .= '_tax-class-' . ($quote->getCustomerTaxClassId() ?: 0);
 
         if (isset($addressData['country_id'])) {
-            $cacheIdentifier .= '_' . $addressData['country_id'];
+            $cacheIdentifier .= '_country-id-' . $addressData['country_id'];
         }
 
         if (isset($addressData['postcode'])) {
-            $cacheIdentifier .= '_' . $addressData['postcode'];
+            $cacheIdentifier .= '_postcode-' . $addressData['postcode'];
+        }
+
+        if (isset($addressData['city'])) {
+            $cacheIdentifier .= '_city-' . $addressData['city'];
+        }
+
+        if (isset($addressData['region'])) {
+            $cacheIdentifier .= '_region-' . $addressData['region'];
+        }
+
+        if (isset($addressData['region_id'])) {
+            $cacheIdentifier .= '_region-id-' . $addressData['region_id'];
         }
 
         // include products in cache key
         foreach($quote->getAllVisibleItems() as $item) {
-            $cacheIdentifier .= '_'.$item->getProductId().'_'.$item->getQty();
+            $cacheIdentifier .= '_item-'.$item->getProductId().'-quantity-'.$item->getQty();
+        }
+
+        // include any discounts or gift card rules because they may affect shipping
+        foreach($quote->getAppliedRuleIds() as $ruleId) {
+            $cacheIdentifier .= '_applied-rule-'.$ruleId;
         }
 
         return md5($cacheIdentifier);
-    }
-
-    /**
-     * Returns a whether P.O. box addresses are allowed for this store
-     *
-     * @return bool     true if P.O. boxes are allowed.  Otherwise, false.
-     */
-    protected function isPOBoxAllowed()
-    {
-        return Mage::getStoreConfigFlag('payment/boltpay/allow_po_box');
-    }
-
-    /**
-     * Checks wheather a P.O. Box exist in the addresses given
-     *
-     * @param $address1      The address to be checked for a P.O. Box matching string
-     * @param $address2      If set, second address to be checked.  Useful for checking both shipping and billing in on call.
-     *
-     * @return bool     returns true only if any of the provided addresses contain a P.O. Box.  Otherwise, false
-     */
-    protected function doesAddressContainPOBox($address1, $address2 = null)
-    {
-        $poBoxRegex = '/^\s*((P(OST)?.?\s*(O(FF(ICE)?)?|B(IN|OX))+.?\s+(B(IN|OX))?)|B(IN|OX))/i';
-        return (preg_match($poBoxRegex, $address1) || preg_match($poBoxRegex, $address2));
     }
 }
