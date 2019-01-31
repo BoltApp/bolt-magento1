@@ -251,7 +251,7 @@ class Bolt_Boltpay_Model_Payment extends Mage_Payment_Model_Method_Abstract
             if ($transactionStatus == self::TRANSACTION_AUTHORIZED) {
                 $captureRequest = array(
                     'transaction_id' => $merchantTransId,
-                    'amount'         => $amount * 100,
+                    'amount'         => (int)round($amount * 100),
                     'currency'       => $payment->getOrder()->getOrderCurrencyCode(),
                     'skip_hook_notification' => true
                 );
@@ -302,7 +302,7 @@ class Bolt_Boltpay_Model_Payment extends Mage_Payment_Model_Method_Abstract
 
             $data = array(
                 'transaction_id' => $transId,
-                'amount' => $amount * 100,
+                'amount' => (int)round($amount * 100),
                 'currency' => $order->getOrderCurrencyCode(),
                 'skip_hook_notification' => true,
             );
@@ -425,10 +425,6 @@ class Bolt_Boltpay_Model_Payment extends Mage_Payment_Model_Method_Abstract
             if ($this->isTransactionStatusChanged($newTransactionStatus, $prevTransactionStatus)) {
                 $reference = $payment->getAdditionalInformation('bolt_reference');
 
-                $this->_handleBoltTransactionStatus($payment, $newTransactionStatus);
-                $payment->setAdditionalInformation('bolt_transaction_status', $newTransactionStatus);
-                $payment->save();
-
                 if ($this->isCaptureRequest($newTransactionStatus, $prevTransactionStatus)) {
                     $this->createInvoiceForHookRequest($payment);
                 }elseif ($newTransactionStatus == self::TRANSACTION_AUTHORIZED) {
@@ -476,6 +472,10 @@ class Bolt_Boltpay_Model_Payment extends Mage_Payment_Model_Method_Abstract
                 } elseif ($newTransactionStatus == self::TRANSACTION_REFUND) {
                     $this->handleRefundTransactionUpdate($payment, $newTransactionStatus, $prevTransactionStatus, $transactionAmount, $transaction);
                 }
+
+                $this->_handleBoltTransactionStatus($payment, $newTransactionStatus);
+                $payment->setAdditionalInformation('bolt_transaction_status', $newTransactionStatus);
+                $payment->save();
             } else {
                 $payment->setShouldCloseParentTransaction(true);
             }
