@@ -155,7 +155,7 @@ class Bolt_Boltpay_Model_BoltOrder extends Mage_Core_Model_Abstract
 
         $cartSubmissionData['discounts'] = array();
 
-        foreach ($this->discountTypes as $discount) {
+        foreach ($this->getDiscountTypes() as $discount) {
             if (@$totals[$discount] && $amount = $totals[$discount]->getValue()) {
                 // Some extensions keep discount totals as positive values,
                 // others as negative, which is the Magento default.
@@ -469,6 +469,15 @@ class Bolt_Boltpay_Model_BoltOrder extends Mage_Core_Model_Abstract
         }
 
         return $wasCorrected;
+    }
+
+    /**
+     * Accessor to discount types supported by Bolt
+     *
+     * @return array    collection of strings used by Magento to specify type of discount
+     */
+    public function getDiscountTypes() {
+        return $this->discountTypes;
     }
 
     /**
