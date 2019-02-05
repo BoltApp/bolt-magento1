@@ -306,7 +306,7 @@ class Bolt_Boltpay_Model_BoltOrder extends Mage_Core_Model_Abstract
                         if($quote->isVirtual()){
                             $cartSubmissionData['shipments'] = array(array(
                                 'shipping_address' => $cartShippingAddress,
-                                'tax_amount'       => (int) round($shippingAddress->getShippingTaxAmount() * 100),
+                                'tax_amount'       => 0,
                                 'service'          => Mage::helper('boltpay')->__('No Shipping Required'),
                                 'reference'        => "noshipping",
                                 'cost'             => 0
