@@ -314,7 +314,7 @@ PROMISE;
 
         $hintsTransformFunction = $boltHelper->getExtraConfig('hintsTransform');
 
-        return ("
+        $boltCheckoutJavascript = "
             var \$hints_transform = $hintsTransformFunction;
             
             var json_cart = $jsonCart;
@@ -326,7 +326,11 @@ PROMISE;
                 json_cart,
                 json_hints,
                 $callbacks
-        );");
+            );
+        ";
+
+        return $boltHelper->doFilterEvent('bolt_boltpay_filter_bolt_checkout_javascript', $boltCheckoutJavascript);
+
     }
 
     /**
