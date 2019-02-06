@@ -128,6 +128,13 @@ class Bolt_Boltpay_Model_Order extends Mage_Core_Model_Abstract
 
             if ($shippingMethodCode) {
                 $immutableQuote->getShippingAddress()->setShippingMethod($shippingMethodCode)->save();
+                Mage::dispatchEvent(
+                    'bolt_boltpay_shipping_method_applied',
+                    array(
+                        'quote'=>$immutableQuote,
+                        'shippingMethodCode' => $shippingMethodCode
+                    )
+                );
             } else {
                 // Legacy transaction does not have shipments reference - fallback to $service field
                 $service = $transaction->order->cart->shipments[0]->service;
@@ -149,7 +156,15 @@ class Bolt_Boltpay_Model_Order extends Mage_Core_Model_Abstract
                     }
                 }
 
-                if (!$isShippingSet) {
+                if ($isShippingSet) {
+                    Mage::dispatchEvent(
+                        'bolt_boltpay_shipping_method_applied',
+                        array(
+                            'quote'=> $immutableQuote,
+                            'shippingMethodCode' => $shippingMethod
+                        )
+                    );
+                } else {
                     $errorMessage = Mage::helper('boltpay')->__('Shipping method not found');
                     $metaData = array(
                         'transaction'   => $transaction,
