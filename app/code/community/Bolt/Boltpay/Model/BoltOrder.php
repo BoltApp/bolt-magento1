@@ -154,6 +154,7 @@ class Bolt_Boltpay_Model_BoltOrder extends Mage_Core_Model_Abstract
         $this->addDiscounts($totals, $cartSubmissionData);
         $this->dispatchCartDataEvent('bolt_boltpay_discounts_applied_to_bolt_order', $quote, $cartSubmissionData);
         $totalDiscount = isset($cartSubmissionData['discounts']) ? array_sum(array_column($cartSubmissionData['discounts'], 'amount')) : 0;
+
         $calculatedTotal += $totalDiscount;
         /////////////////////////////////////////////////////////////////////////
 
@@ -280,7 +281,7 @@ class Bolt_Boltpay_Model_BoltOrder extends Mage_Core_Model_Abstract
                         if($quote->isVirtual()){
                             $cartSubmissionData['shipments'] = array(array(
                                 'shipping_address' => $cartShippingAddress,
-                                'tax_amount'       => (int) round($shippingAddress->getShippingTaxAmount() * 100),
+                                'tax_amount'       => 0,
                                 'service'          => Mage::helper('boltpay')->__('No Shipping Required'),
                                 'reference'        => "noshipping",
                                 'cost'             => 0
@@ -555,6 +556,15 @@ class Bolt_Boltpay_Model_BoltOrder extends Mage_Core_Model_Abstract
         return $wasCorrected;
     }
 
+
+    /**
+     * Accessor to discount types supported by Bolt
+     *
+     * @return array    collection of strings used by Magento to specify type of discount
+     */
+    public function getDiscountTypes() {
+        return $this->discountTypes;
+    }
 
     /**
      * Get's the customer's email from the given quote, if provided.  Otherwise, attempts
