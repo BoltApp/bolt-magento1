@@ -61,7 +61,7 @@ class Bolt_Boltpay_Model_Observer
         return Mage::helper('boltpay/api');
     }
 
-   /**
+    /**
      * Event handler called after a save event.
      * Calls the complete authorize Bolt end point to confirm the order is valid.
      * If the order has been changed between the creation on Bolt end and the save in Magento
@@ -70,7 +70,7 @@ class Bolt_Boltpay_Model_Observer
      * @param $observer
      * @throws Exception
      */
-    public function verifyOrderContents($observer) 
+    public function verifyOrderContents($observer)
     {
         /* @var Mage_Sales_Model_Quote $quote */
         $quote = $observer->getEvent()->getQuote();
@@ -85,8 +85,8 @@ class Bolt_Boltpay_Model_Observer
             if ($magentoTotal !== $transaction->amount->amount)  {
                 $message = Mage::helper('boltpay')->__("THERE IS A MISMATCH IN THE ORDER PAID AND ORDER RECORDED.<br>
                            PLEASE COMPARE THE ORDER DETAILS WITH THAT RECORD IN YOUR BOLT MERCHANT ACCOUNT AT: %s/transaction/%s<br/>
-                           Bolt reports %s. Magento expects %s", Mage::helper('boltpay/url')->getBoltMerchantUrl(), 
-                           $reference, ($transaction->amount->amount/100), ($magentoTotal/100) );
+                           Bolt reports %s. Magento expects %s", Mage::helper('boltpay/url')->getBoltMerchantUrl(),
+                    $reference, ($transaction->amount->amount/100), ($magentoTotal/100) );
 
                 # Adjust amount if it is off by only one cent, likely due to rounding
                 $difference = $transaction->amount->amount - $magentoTotal;
@@ -110,7 +110,7 @@ class Bolt_Boltpay_Model_Observer
                     'display_id' => $order->getIncrementId(),
                 );
                 Mage::helper('boltpay/bugsnag')->notifyException(new Exception($message), $metaData);
-           }
+            }
             $this->sendOrderEmail($order);
             $order->save();
         }

@@ -356,4 +356,57 @@ class Bolt_Boltpay_Model_ShippingAndTaxTest extends PHPUnit_Framework_TestCase
 
         $this->assertEquals('UPS Business 2 Days', $label);
     }
+
+    /**
+     * Test if P.O. boxes in address are successfully detected in various formats
+     */
+    public function testPOBoxMatchesCases()
+    {
+        $address1 = 'P.O. Box 66';
+        $address2 = 'Post Box 123';
+        $address3 = 'Post Office Box 456';
+        $address4 = 'PO Box 456';
+        $address5 = 'PO Box #456';
+        $address6 = 'Post Office Box #456';
+        $check1 = $this->currentMock->doesAddressContainPOBox($address1);
+        $check2 = $this->currentMock->doesAddressContainPOBox($address2);
+        $check3 = $this->currentMock->doesAddressContainPOBox($address3);
+        $check4 = $this->currentMock->doesAddressContainPOBox($address4);
+        $check5 = $this->currentMock->doesAddressContainPOBox($address5);
+        $check6 = $this->currentMock->doesAddressContainPOBox($address6);
+        $additionalCheck1 = $this->currentMock->doesAddressContainPOBox($address1, $address2);
+        $additionalCheck2 = $this->currentMock->doesAddressContainPOBox($address1, $address3);
+        $additionalCheck3 = $this->currentMock->doesAddressContainPOBox($address2, $address3);
+
+        $this->assertTrue($check1);
+        $this->assertTrue($check2);
+        $this->assertTrue($check3);
+        $this->assertTrue($check4);
+        $this->assertTrue($check5);
+        $this->assertTrue($check6);
+        $this->assertTrue($additionalCheck1);
+        $this->assertTrue($additionalCheck2);
+        $this->assertTrue($additionalCheck3);
+    }
+
+    /**
+     * Test that non-P.O. Box addresses do not trigger a false positive
+     */
+    public function testPOBoxDoesNotMatchCases()
+    {
+        $address1 = 'Post street';
+        $address2 = '2 Box';
+        $address3 = '425 Sesame St';
+        $check1 = $this->currentMock->doesAddressContainPOBox($address1);
+        $check2 = $this->currentMock->doesAddressContainPOBox($address2);
+        $check3 = $this->currentMock->doesAddressContainPOBox($address3);
+        $additionalCheck1 = $this->currentMock->doesAddressContainPOBox($address1, $address2);
+        $additionalCheck2 = $this->currentMock->doesAddressContainPOBox($address2, $address3);
+
+        $this->assertNotTrue($check1);
+        $this->assertNotTrue($check2);
+        $this->assertNotTrue($check3);
+        $this->assertNotTrue($additionalCheck1);
+        $this->assertNotTrue($additionalCheck2);
+    }
 }

@@ -1,4 +1,10 @@
 # Changelog
+## [V1.3.8](https://s3-us-west-1.amazonaws.com/bolt-public/magento-integration-release/bolt-magento1_v1.3.8.zip) 2019-01-31
+ - Apple Pay support
+ - Item properties support
+ - Product Page Checkout (beta)
+ - Bug fixes
+
 ## [V1.3.7](https://s3-us-west-1.amazonaws.com/bolt-public/magento-integration-release/bolt-magento1_v1.3.7.zip) 2018-11-08
  - Implement support for multiple capture
  - Bug fixes around admin order
