@@ -633,7 +633,7 @@ class Bolt_Boltpay_Helper_Data extends Mage_Core_Helper_Abstract
      * @param mixed                     $valueToFilter          The value to filter
      * @param array                     $additionalParameters   any extra parameters used in filtering
      *
-     * @return  the value after it has been filtered
+     * @return mixed   the value after it has been filtered
      */
     public function doFilterEvent($eventName, $valueToFilter, $additionalParameters = array()) {
         $valueWrapper = new Varien_Object();
