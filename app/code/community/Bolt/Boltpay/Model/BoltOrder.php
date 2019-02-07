@@ -155,7 +155,7 @@ class Bolt_Boltpay_Model_BoltOrder extends Mage_Core_Model_Abstract
         $this->dispatchCartDataEvent('bolt_boltpay_discounts_applied_to_bolt_order', $quote, $cartSubmissionData);
         $totalDiscount = isset($cartSubmissionData['discounts']) ? array_sum(array_column($cartSubmissionData['discounts'], 'amount')) : 0;
 
-        $calculatedTotal += $totalDiscount;
+        $calculatedTotal -= $totalDiscount;
         /////////////////////////////////////////////////////////////////////////
 
         if ($multipage) {
@@ -165,7 +165,7 @@ class Bolt_Boltpay_Model_BoltOrder extends Mage_Core_Model_Abstract
             $totalKey = @$totals['subtotal'] ? 'subtotal' : 'grand_total';
 
             $cartSubmissionData['total_amount'] = round($totals[$totalKey]->getValue() * 100);
-            $cartSubmissionData['total_amount'] += $totalDiscount;
+            $cartSubmissionData['total_amount'] -= $totalDiscount;
             /////////////////////////////////////////////////////////////////////////////////////////
         } else {
 
@@ -312,7 +312,7 @@ class Bolt_Boltpay_Model_BoltOrder extends Mage_Core_Model_Abstract
      * @param array                  $cartSubmissionData data to be sent to Bolt
      * @param Mage_Sales_Model_Quote $quote              the quote associated with the order
      *
-     * @return int    The total discount in cents
+     * @return int    The total discount in cents as a positive number
      */
     protected function addDiscounts( $totals, &$cartSubmissionData, $quote = null ) {
         $cartSubmissionData['discounts'] = array();
@@ -330,7 +330,7 @@ class Bolt_Boltpay_Model_BoltOrder extends Mage_Core_Model_Abstract
                     'description' => $totals[$discount]->getTitle(),
                     'type'        => 'fixed_amount',
                 );
-                $totalDiscount -= $discountAmount;
+                $totalDiscount += $discountAmount;
             }
         }
 
