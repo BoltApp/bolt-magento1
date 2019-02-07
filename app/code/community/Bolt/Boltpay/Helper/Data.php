@@ -624,4 +624,28 @@ class Bolt_Boltpay_Helper_Data extends Mage_Core_Helper_Abstract
         $extraConfigModel = Mage::getSingleton('boltpay/admin_extraConfig');
         return $extraConfigModel->getExtraConfig($configName, $filterParameters);
     }
+
+
+    /**
+     * Dispatches event to filter a value
+     *
+     * @param string                    $eventName              The name of the event to be dispatched
+     * @param mixed                     $valueToFilter          The value to filter
+     * @param array                     $additionalParameters   any extra parameters used in filtering
+     *
+     * @return mixed   the value after it has been filtered
+     */
+    public function doFilterEvent($eventName, $valueToFilter, $additionalParameters = array()) {
+        $valueWrapper = new Varien_Object();
+        $valueWrapper->setValue($valueToFilter);
+        Mage::dispatchEvent(
+            $eventName,
+            array(
+                'valueWrapper' => $valueWrapper,
+                'parameters' => $additionalParameters
+            )
+        );
+
+        return $valueWrapper->getValue();
+    }
 }
