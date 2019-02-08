@@ -322,7 +322,7 @@ PROMISE;
             var quote_id = '{$quote->getId()}';
             var order_completed = false;
 
-            BoltCheckout.configure(
+            window.BoltModal = BoltCheckout.configure(
                 json_cart,
                 json_hints,
                 $callbacks

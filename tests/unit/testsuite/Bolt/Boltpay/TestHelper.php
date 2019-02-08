@@ -148,7 +148,7 @@ class Bolt_Boltpay_TestHelper
             var quote_id = '{$immutableQuoteId}';
             var order_completed = false;
 
-            BoltCheckout.configure(
+            window.BoltModal = BoltCheckout.configure(
                 json_cart,
                 json_hints,
                 $configCallbacks

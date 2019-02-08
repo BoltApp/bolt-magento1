@@ -23,7 +23,7 @@ var boltConfigPDP = {
             jsonProductCart.items = [];
         }
 
-        BoltCheckout.configureProductCheckout(
+        window.BoltModal = BoltCheckout.configureProductCheckout(
             jsonProductCart,
             boltJsonProductHints,
             <?php echo $this->getBoltCallbacks(); ?>,
