@@ -123,11 +123,18 @@ class Bolt_Boltpay_Model_Order extends Mage_Core_Model_Abstract
                 $shippingMethodCode = $transaction->order->cart->shipments[0]->reference;
             }
 
-            $immutableQuote->getShippingAddress()->setShouldIgnoreValidation(true)->save();
             $immutableQuote->getBillingAddress()->setShouldIgnoreValidation(true)->save();
 
+            /** @var Mage_Sales_Model_Quote_Address $shippingAddress */
+            $shippingAddress = $immutableQuote
+                ->getShippingAddress()
+                ->setCollectShippingRates(true)
+                ->collectShippingRates()
+                ->setShouldIgnoreValidation(true)
+                ->save();
+
             if ($shippingMethodCode) {
-                $immutableQuote->getShippingAddress()->setShippingMethod($shippingMethodCode)->save();
+                $shippingAddress->setShippingMethod($shippingMethodCode)->save();
                 Mage::dispatchEvent(
                     'bolt_boltpay_shipping_method_applied',
                     array(
@@ -141,8 +148,6 @@ class Bolt_Boltpay_Model_Order extends Mage_Core_Model_Abstract
 
                 Mage::helper('boltpay')->collectTotals($immutableQuote);
 
-                $shippingAddress = $immutableQuote->getShippingAddress();
-                $shippingAddress->setCollectShippingRates(true)->collectShippingRates();
                 $rates = $shippingAddress->getAllShippingRates();
 
                 $isShippingSet = false;
@@ -150,7 +155,7 @@ class Bolt_Boltpay_Model_Order extends Mage_Core_Model_Abstract
                     if ($rate->getCarrierTitle() . ' - ' . $rate->getMethodTitle() == $service
                         || (!$rate->getMethodTitle() && $rate->getCarrierTitle() == $service)) {
                         $shippingMethod = $rate->getCarrier() . '_' . $rate->getMethod();
-                        $immutableQuote->getShippingAddress()->setShippingMethod($shippingMethod)->save();
+                        $shippingAddress->setShippingMethod($shippingMethod)->save();
                         $isShippingSet = true;
                         break;
                     }
