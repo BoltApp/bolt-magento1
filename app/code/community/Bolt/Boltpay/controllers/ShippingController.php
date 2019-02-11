@@ -314,7 +314,7 @@ class Bolt_Boltpay_ShippingController extends Mage_Core_Controller_Front_Action
         // include any discounts or gift card rules because they may affect shipping
         $rules = $quote->getAppliedRuleIds();
         if(!is_array($rules)) {
-            $rules = array($rules);
+            $rules = explode(",", $rules);
         }
         foreach($rules as $ruleId) {
             $cacheIdentifier .= '_applied-rule-'.$ruleId;
