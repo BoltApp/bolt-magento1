@@ -324,7 +324,7 @@ class Bolt_Boltpay_Model_Order extends Mage_Core_Model_Abstract
      *
      * @return \Mage_Sales_Model_Quote
      */
-    protected function getQuoteById($quoteId)
+    public function getQuoteById($quoteId)
     {
         /* @var Mage_Sales_Model_Quote $immutableQuote */
         $immutableQuote = Mage::getModel('sales/quote')
