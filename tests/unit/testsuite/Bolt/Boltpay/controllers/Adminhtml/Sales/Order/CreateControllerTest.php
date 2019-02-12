@@ -163,7 +163,11 @@ class Bolt_Boltpay_Adminhtml_Sales_Order_CreateControllerTest extends PHPUnit_Fr
             ->willReturn(true);
 
         $this->currentMock->method('_redirect')
-            ->willReturn(false);
+            ->will($this->returnValueMap([
+                ['*/sales_order/view', array('order_id' => 1000), true],
+                ['*/sales_order/index', true],
+                ['*/*/', false]
+            ]));
 
         $this->currentMock->method('_getSession')
             ->willReturn($session);
@@ -190,13 +194,8 @@ class Bolt_Boltpay_Adminhtml_Sales_Order_CreateControllerTest extends PHPUnit_Fr
         $this->currentMock->method('_postOrderCreateProcessing')
             ->willReturn(true);
 
-        $this->currentMock->saveAction();
+        $result = $this->currentMock->saveAction();
 
-        /** @var Mage_Core_Model_Session_Abstract $msg */
-        $adminSession = Mage::getSingleton('adminhtml/session');
-
-        $result = $adminSession->getMessages()->getItems();
-
-        $this->assertEquals('The order has been created.', $result[0]->getCode());
+        $this->assertTrue($result);
     }
 }

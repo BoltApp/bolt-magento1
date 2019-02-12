@@ -97,7 +97,7 @@ class Bolt_Boltpay_Adminhtml_Sales_Order_CreateController extends Mage_Adminhtml
         if (!$boltReference) {
             $this->_normalizeOrderData();  // We must re-normalize the data first
             parent::saveAction();
-            return;
+            return false;
         }
         /////////////////////////////////////////////////////////////////////////////
         
@@ -122,7 +122,6 @@ class Bolt_Boltpay_Adminhtml_Sales_Order_CreateController extends Mage_Adminhtml
         Mage::getSingleton('core/session')->setBoltReference($boltReference);
         Mage::getSingleton('core/session')->setWasCreatedByHook(false);
         //////////////////////////////////////////////////////////////
-
 
         try {
             $this->_processActionData('save');
@@ -156,6 +155,7 @@ class Bolt_Boltpay_Adminhtml_Sales_Order_CreateController extends Mage_Adminhtml
             }
             ///////////////////////////////////////////////////////
 
+            return true;
         } catch (Mage_Payment_Model_Info_Exception $e) {
             if ($paymentData['method'] == 'boltpay') {
                 Mage::helper('boltpay/bugsnag')->notifyException($e);
@@ -175,14 +175,15 @@ class Bolt_Boltpay_Adminhtml_Sales_Order_CreateController extends Mage_Adminhtml
                 $this->_getSession()->addError($message);
             }
             $this->_redirect('*/*/');
-        }
-        catch (Exception $e){
+        } catch (Exception $e) {
             if ($paymentData['method'] == 'boltpay') {
                 Mage::helper('boltpay/bugsnag')->notifyException($e);
             }
             $this->_getSession()->addException($e, $this->__('Order saving error: %s', $e->getMessage()));
             $this->_redirect('*/*/');
         }
+
+        return false;
     }
 
     /**
