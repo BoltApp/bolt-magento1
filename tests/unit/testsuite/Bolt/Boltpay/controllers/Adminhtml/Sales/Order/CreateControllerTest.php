@@ -131,11 +131,15 @@ class Bolt_Boltpay_Adminhtml_Sales_Order_CreateControllerTest extends PHPUnit_Fr
             ->willReturn($response);
 
         $this->currentMock->method('_redirect')
-            ->willReturn(false);
+            ->willReturn($this->returnValueMap([
+                ['*/sales_order/view', array('order_id' => 1000), true],
+                ['*/sales_order/index', true],
+                ['*/*/', false]
+            ]));
 
         $result = $this->currentMock->saveAction();
 
-        $this->assertNull($result);
+        $this->assertFalse($result);
     }
 
     public function testSaveAction()
