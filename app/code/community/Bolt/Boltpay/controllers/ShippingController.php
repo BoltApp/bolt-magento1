@@ -163,7 +163,7 @@ class Bolt_Boltpay_ShippingController extends Mage_Core_Controller_Front_Action
         $quote = Mage::getSingleton('checkout/session')->getQuote();
 
         if(!$quote->getId() || !$quote->getItemsCount()){
-            $this->getResponse()->setHeader('Content-type', 'application/json');
+            $this->getResponse()->clearHeaders()->setHeader('Content-type', 'application/json');
             $this->getResponse()->setBody("{}");
             return;
         }
@@ -209,7 +209,7 @@ class Bolt_Boltpay_ShippingController extends Mage_Core_Controller_Front_Action
         }
 
         $response = Mage::helper('core')->jsonEncode(array('address_data' => $addressData));
-        $this->getResponse()->setHeader('Content-type', 'application/json');
+        $this->getResponse()->clearHeaders()->setHeader('Content-type', 'application/json');
         $this->getResponse()->setBody($response);
     }
 
@@ -312,9 +312,7 @@ class Bolt_Boltpay_ShippingController extends Mage_Core_Controller_Front_Action
         }
 
         // include any discounts or gift card rules because they may affect shipping
-        foreach($quote->getAppliedRuleIds() as $ruleId) {
-            $cacheIdentifier .= '_applied-rule-'.$ruleId;
-        }
+        $cacheIdentifier .= '_applied-rules-'.json_encode($quote->getAppliedRuleIds());
 
         return md5($cacheIdentifier);
     }
