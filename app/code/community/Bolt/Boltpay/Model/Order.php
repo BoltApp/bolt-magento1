@@ -58,6 +58,14 @@ class Bolt_Boltpay_Model_Order extends Mage_Core_Model_Abstract
             $immutableQuoteId = $transactionHelper->getImmutableQuoteIdFromTransaction($transaction);
             $immutableQuote = $this->getQuoteById($immutableQuoteId);
 
+            if (!$sessionQuoteId){
+                /** @var Bolt_Boltpay_Helper_Data $boltHelperBase */
+                $boltHelperBase = Mage::helper('boltpay');
+                $sessionQuoteId = $immutableQuote->getParentQuoteId();
+
+                $boltHelperBase->setCustomerSessionByQuoteId($sessionQuoteId);
+            }
+
             // check that the order is in the system.  If not, we have an unexpected problem
             if ($immutableQuote->isEmpty()) {
                 throw new Exception(Mage::helper('boltpay')->__("The expected immutable quote [$immutableQuoteId] is missing from the Magento system.  Were old quotes recently removed from the database?"));
