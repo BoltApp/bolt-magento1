@@ -193,7 +193,7 @@ class Bolt_Boltpay_Model_ShippingAndTax extends Mage_Core_Model_Abstract
      * Applies shipping rate to quote. Clears previously calculated discounts by clearing address id.
      *
      * @param Mage_Sales_Model_Quote $quote    Quote which has been updated to use new shipping rate
-     * @param string $shippingRateCode    Shipping rate code
+     * @param string $shippingRateCode         Shipping rate code composed of {carrier}_{method}
      */
     public function applyShippingRate($quote, $shippingRateCode) {
         $shippingAddress = $quote->getShippingAddress();
@@ -203,7 +203,9 @@ class Bolt_Boltpay_Model_ShippingAndTax extends Mage_Core_Model_Abstract
             $shippingAddress->isObjectNew(true);
             $shippingAddressId = $shippingAddress->getData('address_id');
 
-            $shippingAddress->setShippingMethod($shippingRateCode);
+            $shippingAddress
+                ->setShippingMethod($shippingRateCode)
+                ->setCollectShippingRates(true);
 
             // When multiple shipping methods apply a discount to the sub-total, collect totals doesn't clear the
             // previously set discount, so the previous discount gets added to each subsequent shipping method that
@@ -219,6 +221,14 @@ class Bolt_Boltpay_Model_ShippingAndTax extends Mage_Core_Model_Abstract
             if(!empty($shippingAddressId) && $shippingAddressId != $shippingAddress->getData('address_id')) {
                 $shippingAddress->setData('address_id', $shippingAddressId);
             }
+
+            Mage::dispatchEvent(
+                'bolt_boltpay_shipping_method_applied',
+                array(
+                    'quote'=> $quote,
+                    'shippingMethodCode' => $shippingRateCode
+                )
+            );
         }
     }
 
