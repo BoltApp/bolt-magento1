@@ -136,7 +136,6 @@ class Bolt_Boltpay_Block_Checkout_Boltpay extends Mage_Checkout_Block_Onepage_Re
                                         
                                         // BoltCheckout is currently not doing anything reasonable to alert the user of a problem, so we will do something as a backup
                                         alert(response.responseJSON.error_messages);
-                                        location.reload();
                                     } else {                                     
                                         resolve(response.responseJSON.cart_data);
                                     }                   
@@ -215,29 +214,28 @@ PROMISE;
 
                 $cartData = $this->getBoltOrderTokenPromise($checkoutType);
 
-                if (@!$cartData->error) {
-                    ///////////////////////////////////////////////////////////////////////////////////////
-                    // Merchant scope: get "bolt_user_id" if the user is logged in or should be registered,
-                    // sign it and add to hints.
-                    ///////////////////////////////////////////////////////////////////////////////////////
-                    $reservedUserId = $this->getReservedUserId($sessionQuote);
-                    if ($reservedUserId && $this->isEnableMerchantScopedAccount()) {
-                        $signRequest = array(
-                            'merchant_user_id' => $reservedUserId,
+                ///////////////////////////////////////////////////////////////////////////////////////
+                // Merchant scope: get "bolt_user_id" if the user is logged in or should be registered,
+                // sign it and add to hints.
+                ///////////////////////////////////////////////////////////////////////////////////////
+                $reservedUserId = $this->getReservedUserId($sessionQuote);
+                if ($reservedUserId && $this->isEnableMerchantScopedAccount()) {
+                    $signRequest = array(
+                        'merchant_user_id' => $reservedUserId,
+                    );
+
+                    $signResponse = $boltHelper->transmit('sign', $signRequest);
+
+                    if ($signResponse != null) {
+                        $hintData['signed_merchant_user_id'] = array(
+                            "merchant_user_id" => $signResponse->merchant_user_id,
+                            "signature" => $signResponse->signature,
+                            "nonce" => $signResponse->nonce,
                         );
-
-                        $signResponse = $boltHelper->transmit('sign', $signRequest);
-
-                        if ($signResponse != null) {
-                            $hintData['signed_merchant_user_id'] = array(
-                                "merchant_user_id" => $signResponse->merchant_user_id,
-                                "signature" => $signResponse->signature,
-                                "nonce" => $signResponse->nonce,
-                            );
-                        }
                     }
-                    ///////////////////////////////////////////////////////////////////////////////////////
                 }
+                ///////////////////////////////////////////////////////////////////////////////////////
+
             } catch (Exception $e) {
                 $metaData = array('quote' => var_export($sessionQuote->debug(), true));
                 Mage::helper('boltpay/bugsnag')->notifyException(
@@ -340,7 +338,7 @@ PROMISE;
                 json_hints,
                 {
                   check: function() {
-                    if (check_count++) {
+                    if (do_check++) {
                         $checkCustom
                         $onCheckCallback
                     }
@@ -378,36 +376,63 @@ PROMISE;
             );
         ";
 
+        switch ($checkoutType) {
+            case self::CHECKOUT_TYPE_ADMIN:
+            case self::CHECKOUT_TYPE_FIRECHECKOUT:
+                $boltConfigureCall = "
+                    var do_check = 0;
+                    BoltCheckout.configure(
+                        new Promise( 
+                            function (resolve, reject) {
+                                // Store state must be validated prior to open                          
+                            }
+                        ),
+                        json_hints,
+                        {
+                            check: function() {
+                                $checkCustom
+                                $onCheckCallback
+                                $boltConfigureCall
+                                return true;
+                            }
+                        }
+                    ); 
+                ";
+                break;
+            default:
+                $boltConfigureCall = "
+                    var do_check = 1;
+                    BoltCheckout.configure(
+                        new Promise( 
+                            function (resolve, reject) {
+                                // Store state must be validated prior to open                          
+                            }
+                        ),
+                        json_hints,
+                        {
+                            check: function() {
+                                $checkCustom
+                                $onCheckCallback
+                                $boltConfigureCall
+                                return true;
+                            }
+                        }
+                    ); 
+                ";
+
+
+        }
+
         return
-        ("
+        "
             var \$hints_transform = $hintsTransformFunction;
             
             var json_cart = $jsonCart;
             var json_hints = \$hints_transform($jsonHints);
             var order_completed = false;
-            var check_count = 0;
-            var configure_bolt = function() {
-                $boltConfigureCall
-                return true;
-            };
-            
-            BoltCheckout.configure(
-                new Promise( 
-                    function (resolve, reject) {
-                        // Store state must be validated prior to open                          
-                    }
-                ),
-                json_hints,
-                {
-                    check: function() {
-                        $checkCustom
-                        $onCheckCallback
-                        return configure_bolt();
-                    }
-                }
-            );
-        "
-        );
+             
+            $boltConfigureCall   
+        ";
     }
 
     /**
@@ -445,8 +470,7 @@ PROMISE;
             case self::CHECKOUT_TYPE_FIRECHECKOUT:
                 return
                     "
-                    var is_valid = checkout.validate();
-                    if (!is_valid) return false;
+                    if (!checkout.validate()) return false;
                     ";
             default:
                 return '';
@@ -518,7 +542,6 @@ PROMISE;
             case self::CHECKOUT_TYPE_FIRECHECKOUT:
                 $javascript =
                     "
-                    isReadyToCreateBoltOrder = false;
                     initBoltButtons();
                     ";
             default:
