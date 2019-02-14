@@ -136,7 +136,6 @@ class Bolt_Boltpay_Block_Checkout_Boltpay extends Mage_Checkout_Block_Onepage_Re
                                         
                                         // BoltCheckout is currently not doing anything reasonable to alert the user of a problem, so we will do something as a backup
                                         alert(response.responseJSON.error_messages);
-                                        location.reload();
                                     } else {                                     
                                         resolve(response.responseJSON.cart_data);
                                     }                   
@@ -215,29 +214,28 @@ PROMISE;
 
                 $cartData = $this->getBoltOrderTokenPromise($checkoutType);
 
-                if (@!$cartData->error) {
-                    ///////////////////////////////////////////////////////////////////////////////////////
-                    // Merchant scope: get "bolt_user_id" if the user is logged in or should be registered,
-                    // sign it and add to hints.
-                    ///////////////////////////////////////////////////////////////////////////////////////
-                    $reservedUserId = $this->getReservedUserId($sessionQuote);
-                    if ($reservedUserId && $this->isEnableMerchantScopedAccount()) {
-                        $signRequest = array(
-                            'merchant_user_id' => $reservedUserId,
+                ///////////////////////////////////////////////////////////////////////////////////////
+                // Merchant scope: get "bolt_user_id" if the user is logged in or should be registered,
+                // sign it and add to hints.
+                ///////////////////////////////////////////////////////////////////////////////////////
+                $reservedUserId = $this->getReservedUserId($sessionQuote);
+                if ($reservedUserId && $this->isEnableMerchantScopedAccount()) {
+                    $signRequest = array(
+                        'merchant_user_id' => $reservedUserId,
+                    );
+
+                    $signResponse = $boltHelper->transmit('sign', $signRequest);
+
+                    if ($signResponse != null) {
+                        $hintData['signed_merchant_user_id'] = array(
+                            "merchant_user_id" => $signResponse->merchant_user_id,
+                            "signature" => $signResponse->signature,
+                            "nonce" => $signResponse->nonce,
                         );
-
-                        $signResponse = $boltHelper->transmit('sign', $signRequest);
-
-                        if ($signResponse != null) {
-                            $hintData['signed_merchant_user_id'] = array(
-                                "merchant_user_id" => $signResponse->merchant_user_id,
-                                "signature" => $signResponse->signature,
-                                "nonce" => $signResponse->nonce,
-                            );
-                        }
                     }
-                    ///////////////////////////////////////////////////////////////////////////////////////
                 }
+                ///////////////////////////////////////////////////////////////////////////////////////
+
             } catch (Exception $e) {
                 $metaData = array('quote' => var_export($sessionQuote->debug(), true));
                 Mage::helper('boltpay/bugsnag')->notifyException(
@@ -390,7 +388,7 @@ PROMISE;
                 $boltConfigureCall
                 return true;
             };
-            
+             
             BoltCheckout.configure(
                 new Promise( 
                     function (resolve, reject) {
@@ -405,7 +403,7 @@ PROMISE;
                         return configure_bolt();
                     }
                 }
-            );
+            );    
         "
         );
     }
@@ -445,8 +443,7 @@ PROMISE;
             case self::CHECKOUT_TYPE_FIRECHECKOUT:
                 return
                     "
-                    var is_valid = checkout.validate();
-                    if (!is_valid) return false;
+                    if (!checkout.validate()) return false;
                     ";
             default:
                 return '';
@@ -518,7 +515,6 @@ PROMISE;
             case self::CHECKOUT_TYPE_FIRECHECKOUT:
                 $javascript =
                     "
-                    isReadyToCreateBoltOrder = false;
                     initBoltButtons();
                     ";
             default:
