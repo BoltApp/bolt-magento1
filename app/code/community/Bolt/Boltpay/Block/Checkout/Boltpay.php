@@ -304,6 +304,13 @@ PROMISE;
      */
     public function buildBoltCheckoutJavascript($checkoutType, $quote, $hintData, $cartData)
     {
+        $filterParameters = array(
+          'checkoutType' => $checkoutType,
+          'quote' => $quote,
+          'hintData' => $hintData,
+          'cartData' => $cartData
+        );
+
         /* @var Bolt_Boltpay_Helper_Data $boltHelper */
         $boltHelper = Mage::helper('boltpay');
 
@@ -329,7 +336,7 @@ PROMISE;
             );
         ";
 
-        return $boltHelper->doFilterEvent('bolt_boltpay_filter_bolt_checkout_javascript', $boltCheckoutJavascript);
+        return $boltHelper->doFilterEvent('bolt_boltpay_filter_bolt_checkout_javascript', $boltCheckoutJavascript, $filterParameters);
 
     }
 
