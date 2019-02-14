@@ -134,6 +134,12 @@ class Bolt_Boltpay_Model_Order extends Mage_Core_Model_Abstract
             $immutableQuote->getShippingAddress()->setShouldIgnoreValidation(true)->save();
             $immutableQuote->getBillingAddress()->setShouldIgnoreValidation(true)->save();
 
+            // Explicitly set the billing name to the correct billing information saved in $transaction
+            $billingFirstName = $transaction->from_credit_card->billing_address->first_name;
+            $billingLastName = $transaction->from_credit_card->billing_address->last_name;
+            $immutableQuote->getBillingAddress()->setFirstname($billingFirstName)->save();
+            $immutableQuote->getBillingAddress()->setLastname($billingLastName)->save();
+
             if ($shippingMethodCode) {
                 $immutableQuote->getShippingAddress()->setShippingMethod($shippingMethodCode)->save();
                 Mage::dispatchEvent(
