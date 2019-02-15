@@ -120,7 +120,11 @@ class Bolt_Boltpay_Model_Order extends Mage_Core_Model_Abstract
             $immutableQuote->save();
 
             $immutableQuote->getShippingAddress()->setShouldIgnoreValidation(true)->save();
-            $immutableQuote->getBillingAddress()->setShouldIgnoreValidation(true)->save();
+            $immutableQuote->getBillingAddress()
+                ->setFirstname($transaction->from_credit_card->billing_address->first_name)
+                ->setLastname($transaction->from_credit_card->billing_address->last_name)
+                ->setShouldIgnoreValidation(true)
+                ->save();
 
             //////////////////////////////////////////////////////////////////////////////////
             ///  Apply shipping address and shipping method data to quote directly from
@@ -132,9 +136,9 @@ class Bolt_Boltpay_Model_Order extends Mage_Core_Model_Abstract
 
                 $shippingAddress = $immutableQuote->getShippingAddress();
                 $shippingMethodCode = null;
+              
                 /** @var Bolt_Boltpay_Model_ShippingAndTax $shippingAndTaxModel */
                 $shippingAndTaxModel = Mage::getModel("boltpay/shippingAndTax");
-
                 $shippingAndTaxModel->applyShippingAddressToQuote($immutableQuote, $packagesToShip[0]->shipping_address);
                 $shippingMethodCode = $packagesToShip[0]->reference;
 
