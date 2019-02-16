@@ -55,49 +55,18 @@ class Bolt_Boltpay_Block_Checkout_Boltpay extends Mage_Checkout_Block_Onepage_Re
     /**
      * Get an order token for a Bolt order either by creating it or making a Promise to create it
      *
-     * @param Mage_Sales_Model_Quote $quote         Magento quote object which represents order/cart data
-     * @param string                 $checkoutType  'multi-page' | 'one-page' | 'admin' | 'firecheckout'
+     * @param Mage_Sales_Model_Quote|null $quote            Magento quote object which represents
+     *                                                      order/cart data.
+     * @param string                      $checkoutType     'multi-page' | 'one-page' | 'admin' | 'firecheckout'
      *
-     * @return mixed json based PHP object or a javascript Promise string when initializing firecheckout
+     * @return object|string  json based PHP object or a javascript Promise string for initializing BoltCheckout
      */
     public function getBoltOrderToken($quote, $checkoutType)
     {
+
         /** @var Bolt_Boltpay_Helper_Api $boltHelper */
         $boltHelper = Mage::helper('boltpay/api');
         $isMultiPage = $checkoutType === self::CHECKOUT_TYPE_MULTI_PAGE;
-
-        if ($checkoutType === self::CHECKOUT_TYPE_FIRECHECKOUT) {
-            $firecheckoutTokenUrl = Mage::helper('boltpay/url')->getMagentoUrl('boltpay/order/firecheckoutcreate');
-            return <<<PROMISE
-                        new Promise( 
-                            function (resolve, reject) {
-                                var firecheckoutAjaxId = setInterval(
-                                    function() {
-                                         if (isFireCheckoutFormValid) {
-                                            new Ajax.Request('$firecheckoutTokenUrl', {
-                                                method:'post',
-                                                parameters: checkout.getFormData ? checkout.getFormData() : Form.serialize(checkout.form, true),
-                                                onSuccess: function(response) {
-                                                    if(response.responseJSON.error) {                                                        
-                                                        reject(response.responseJSON.error_messages);
-                                                        
-                                                        // BoltCheckout is currently not doing anything reasonable to alert the user of a problem, so we will do something as a backup
-                                                        alert(response.responseJSON.error_messages);
-                                                        location.reload();
-                                                    } else {
-                                                        resolve(response.responseJSON.cart_data);
-                                                    }                   
-                                                },
-                                                 onFailure: function(error) { reject(error) }
-                                            });
-                                            clearInterval(firecheckoutAjaxId);
-                                         }
-                                    }, 300
-                                );
-                            }
-                        )
-PROMISE;
-        }
 
         $items = $quote->getAllVisibleItems();
 
@@ -132,6 +101,55 @@ PROMISE;
 
         // Calls Bolt create order API
         return $boltHelper->transmit('orders', $orderRequest);
+    }
+
+
+    /**
+     * Get Promise to create an order token
+     *
+     * @param string  $checkoutType  'multi-page' | 'one-page' | 'admin' | 'firecheckout'
+     *
+     * @return string javascript Promise string used for initializing BoltCheckout
+     */
+    protected function getBoltOrderTokenPromise($checkoutType) {
+
+        if ( $checkoutType === self::CHECKOUT_TYPE_FIRECHECKOUT ) {
+            $checkoutTokenUrl = Mage::helper('boltpay/url')->getMagentoUrl('boltpay/order/firecheckoutcreate');
+            $parameters = 'checkout.getFormData ? checkout.getFormData() : Form.serialize(checkout.form, true)';
+        } else if ( $checkoutType === self::CHECKOUT_TYPE_ADMIN ) {
+            $checkoutTokenUrl = Mage::helper('boltpay/url')->getMagentoUrl("adminhtml/sales_order_create/create/checkoutType/$checkoutType", array(), true);
+            $parameters = "''";
+        } else {
+            $checkoutTokenUrl = Mage::helper('boltpay/url')->getMagentoUrl("boltpay/order/create/checkoutType/$checkoutType");
+            $parameters = "''";
+        }
+
+        return <<<PROMISE
+                    new Promise( 
+                        function (resolve, reject) {
+                            new Ajax.Request('$checkoutTokenUrl', {
+                                method:'post',
+                                parameters: $parameters,
+                                onSuccess: function(response) {
+                                    if(response.responseJSON.error) {                                                        
+                                        reject(response.responseJSON.error_messages);
+                                        
+                                        // BoltCheckout is currently not doing anything reasonable to alert the user of a problem, so we will do something as a backup
+                                        if (typeof BoltPopup !== "undefined") {
+                                            BoltPopup.addMessage(response.responseJSON.error_messages).show();
+                                        } else {
+                                            alert(response.responseJSON.error_messages);
+                                        }
+                                    } else {                                     
+                                        resolve(response.responseJSON.cart_data);
+                                    }                   
+                                },
+                                 onFailure: function(error) { reject(error) }
+                            });                            
+                        }
+                    )
+PROMISE;
+
     }
 
     /**
@@ -185,7 +203,7 @@ PROMISE;
 
             $hintData = $this->getAddressHints($sessionQuote, $checkoutType);
 
-            $orderCreationResponse = json_decode('{"token" : "", "error": "'.Mage::helper('boltpay')->__('Unexpected error.  Please contact support for assistance.').'"}');
+            $cartData = json_decode('{"token" : "", "error": "'.Mage::helper('boltpay')->__('Unexpected error.  Please contact support for assistance.').'"}');
 
             $isMultiPage = ($checkoutType === self::CHECKOUT_TYPE_MULTI_PAGE);
             // For multi-page, remove shipping that may have been added by Magento shipping and tax estimate interface
@@ -197,42 +215,31 @@ PROMISE;
 
             // Call Bolt create order API
             try {
-                /////////////////////////////////////////////////////////////////////////////////
-                // We create a copy of the quote that is immutable by the customer/frontend
-                // Bolt saves this quote to the database at Magento-side order save time.
-                // This assures that the quote saved to Magento matches what is stored on Bolt
-                // Only shipping, tax and discounts can change, and only if the shipping, tax
-                // and discount calculations change on the Magento server
-                ////////////////////////////////////////////////////////////////////////////////
-                /** @var Mage_Sales_Model_Quote $immutableQuote */
-                $immutableQuote = $boltHelper->cloneQuote($sessionQuote, $checkoutType);
-                ////////////////////////////////////////////////////////////////////////////////
 
-                $orderCreationResponse = $this->getBoltOrderToken($immutableQuote, $checkoutType);
+                $cartData = $this->getBoltOrderTokenPromise($checkoutType);
 
-                if (@!$orderCreationResponse->error) {
-                    ///////////////////////////////////////////////////////////////////////////////////////
-                    // Merchant scope: get "bolt_user_id" if the user is logged in or should be registered,
-                    // sign it and add to hints.
-                    ///////////////////////////////////////////////////////////////////////////////////////
-                    $reservedUserId = $this->getReservedUserId($sessionQuote);
-                    if ($reservedUserId && $this->isEnableMerchantScopedAccount()) {
-                        $signRequest = array(
-                            'merchant_user_id' => $reservedUserId,
+                ///////////////////////////////////////////////////////////////////////////////////////
+                // Merchant scope: get "bolt_user_id" if the user is logged in or should be registered,
+                // sign it and add to hints.
+                ///////////////////////////////////////////////////////////////////////////////////////
+                $reservedUserId = $this->getReservedUserId($sessionQuote);
+                if ($reservedUserId && $this->isEnableMerchantScopedAccount()) {
+                    $signRequest = array(
+                        'merchant_user_id' => $reservedUserId,
+                    );
+
+                    $signResponse = $boltHelper->transmit('sign', $signRequest);
+
+                    if ($signResponse != null) {
+                        $hintData['signed_merchant_user_id'] = array(
+                            "merchant_user_id" => $signResponse->merchant_user_id,
+                            "signature" => $signResponse->signature,
+                            "nonce" => $signResponse->nonce,
                         );
-
-                        $signResponse = $boltHelper->transmit('sign', $signRequest);
-
-                        if ($signResponse != null) {
-                            $hintData['signed_merchant_user_id'] = array(
-                                "merchant_user_id" => $signResponse->merchant_user_id,
-                                "signature" => $signResponse->signature,
-                                "nonce" => $signResponse->nonce,
-                            );
-                        }
                     }
-                    ///////////////////////////////////////////////////////////////////////////////////////
                 }
+                ///////////////////////////////////////////////////////////////////////////////////////
+
             } catch (Exception $e) {
                 $metaData = array('quote' => var_export($sessionQuote->debug(), true));
                 Mage::helper('boltpay/bugsnag')->notifyException(
@@ -246,9 +253,7 @@ PROMISE;
                 $shippingAndTaxModel->applyShippingRate($sessionQuote, $shippingMethod);
             }
 
-            $cartData = ($checkoutType === self::CHECKOUT_TYPE_FIRECHECKOUT) ? $orderCreationResponse : $this->buildCartData($orderCreationResponse, $checkoutType);
-
-            return $this->buildBoltCheckoutJavascript($checkoutType, $immutableQuote, $hintData, $cartData);
+            return $this->buildBoltCheckoutJavascript($checkoutType, $sessionQuote, $hintData, $cartData);
 
         } catch (Exception $e) {
             Mage::helper('boltpay/bugsnag')->notifyException($e);
@@ -317,9 +322,52 @@ PROMISE;
         $jsonCart = (is_string($cartData)) ? $cartData : json_encode($cartData);
         $jsonHints = json_encode($hintData, JSON_FORCE_OBJECT);
 
-        $callbacks = $boltHelper->getBoltCallbacks($checkoutType, $quote->isVirtual());
+        $callbacks = $boltHelper->getBoltCallbacks($checkoutType, $quote);
+        $checkCustom = $boltHelper->getPaymentBoltpayConfig('check', $checkoutType);
+        $onCheckCallback = $boltHelper->buildOnCheckCallback($checkoutType, $quote);
 
         $hintsTransformFunction = $boltHelper->getExtraConfig('hintsTransform');
+
+        $boltConfigureCall =
+        "
+            BoltCheckout.configure(
+                json_cart,
+                json_hints,
+                $callbacks  
+            );
+        ";
+
+        switch ($checkoutType) {
+            case self::CHECKOUT_TYPE_MULTI_PAGE:
+                // if it is a multipage checkout from the shopping cart,
+                // we will call configure immediately
+                if ($this->helper('boltpay')->isShoppingCartPage()) break;
+            case self::CHECKOUT_TYPE_ADMIN:
+            case self::CHECKOUT_TYPE_FIRECHECKOUT:
+                // We postpone calling configure until Bolt button clicked and form is ready
+                // This also allows us to save in cost of unnecessary quote creation
+                $doChecks = 'var do_checks = 0;';
+                $boltConfigureCall = "
+                    BoltCheckout.configure(
+                        new Promise( 
+                            function (resolve, reject) {
+                                // Store state must be validated prior to open                          
+                            }
+                        ),
+                        json_hints,
+                        {
+                            check: function() {
+                                $checkCustom
+                                $onCheckCallback
+                                $boltConfigureCall
+                                return true;
+                            }
+                        }
+                    ); 
+                ";
+        }
+
+        if (!isset($doChecks)) $doChecks = 'var do_checks = 1;';
 
         $boltCheckoutJavascript = "
             var \$hints_transform = $hintsTransformFunction;
@@ -328,16 +376,12 @@ PROMISE;
             var json_hints = \$hints_transform($jsonHints);
             var quote_id = '{$quote->getId()}';
             var order_completed = false;
+            $doChecks
 
-            window.BoltModal = BoltCheckout.configure(
-                json_cart,
-                json_hints,
-                $callbacks
-            );
+            window.BoltModal = $boltConfigureCall   
         ";
 
         return $boltHelper->doFilterEvent('bolt_boltpay_filter_bolt_checkout_javascript', $boltCheckoutJavascript, $filterParameters);
-
     }
 
     /**
@@ -360,7 +404,7 @@ PROMISE;
      * @param $checkoutType
      * @return Mage_Sales_Model_Quote
      */
-    protected function getSessionQuote($checkoutType)
+    public function getSessionQuote($checkoutType)
     {
         // Admin and Store front use different session objects.  We get the appropriate one here.
         $session = $this->getSessionObject($checkoutType);
