@@ -431,23 +431,8 @@ class Bolt_Boltpay_Helper_Data extends Mage_Core_Helper_Abstract
         $onSuccessCallback = $this->buildOnSuccessCallback($successCustom, $checkoutType);
         $onCloseCallback = $this->buildOnCloseCallback($closeCustom, $checkoutType);
 
-        $requiredCheck = ($checkoutType === Bolt_Boltpay_Block_Checkout_Boltpay::CHECKOUT_TYPE_FIRECHECKOUT)
-            ? ""
-            : "
-                    if (typeof json_cart !== 'undefined' && !json_cart.orderToken) {
-                        if (typeof BoltPopup !== \"undefined\") {
-                            BoltPopup.addMessage(json_cart.error).show();
-                        } else {
-                            alert(json_cart.error);
-                        }
-                        return false;
-                    }
-            "
-        ;
-
         return "{
                   check: function() {
-                    $requiredCheck
                     $checkCustom
                     $onCheckCallback
                     return true;
@@ -625,6 +610,18 @@ class Bolt_Boltpay_Helper_Data extends Mage_Core_Helper_Abstract
         return $extraConfigModel->getExtraConfig($configName, $filterParameters);
     }
 
+
+    /**
+     * Determines if the current page being displayed is the shopping cart
+     *
+     * @return bool true if the current page is the shopping cart, otherwise false
+     */
+    public function isShoppingCartPage()
+    {
+        return
+            (Mage::app()->getRequest()->getRouteName() === 'checkout')
+            && (Mage::app()->getRequest()->getControllerName() === 'cart');
+    }
 
     /**
      * Dispatches event to filter a value

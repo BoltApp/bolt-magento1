@@ -171,6 +171,7 @@ class Bolt_Boltpay_Block_Checkout_BoltpayTest extends PHPUnit_Framework_TestCase
 
         $autoCapture = true;
         $this->app->getStore()->setConfig('payment/boltpay/auto_capture', $autoCapture);
+        Mage::app()->getRequest()->setRouteName('checkout')->setControllerName('cart');
 
         $cartData = json_encode (
             array(
@@ -207,9 +208,7 @@ class Bolt_Boltpay_Block_Checkout_BoltpayTest extends PHPUnit_Framework_TestCase
         $jsonHints = json_encode($hintData, JSON_FORCE_OBJECT);
         $onSuccessCallback = 'function(transaction, callback) { console.log(test) }';
 
-        $expected = $this->testHelper->buildCartDataJs($promiseOfCartData, $quote->getId(), $jsonHints, array(
-            'onSuccessCallback' => $onSuccessCallback
-        ));
+        $expected = $this->testHelper->buildCartDataJs($checkoutType, $promiseOfCartData, $quote, $jsonHints);
 
         $this->currentMock
             ->method('buildOnCheckCallback')

@@ -338,8 +338,14 @@ PROMISE;
         ";
 
         switch ($checkoutType) {
+            case self::CHECKOUT_TYPE_MULTI_PAGE:
+                // if it is a multipage checkout from the shopping cart,
+                // we will call configure immediately
+                if ($this->helper('boltpay')->isShoppingCartPage()) break;
             case self::CHECKOUT_TYPE_ADMIN:
             case self::CHECKOUT_TYPE_FIRECHECKOUT:
+                // We postpone calling configure until Bolt button clicked and form is ready
+                // This also allows us to save in cost of unnecessary quote creation
                 $doChecks = 'var do_checks = 0;';
                 $boltConfigureCall = "
                     BoltCheckout.configure(
@@ -359,10 +365,9 @@ PROMISE;
                         }
                     ); 
                 ";
-                break;
-            default:
-                $doChecks = 'var do_checks = 1;';
         }
+
+        if (!isset($doChecks)) $doChecks = 'var do_checks = 1;';
 
         $boltCheckoutJavascript = "
             var \$hints_transform = $hintsTransformFunction;

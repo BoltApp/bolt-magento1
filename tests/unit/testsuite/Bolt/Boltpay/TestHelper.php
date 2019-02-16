@@ -129,17 +129,15 @@ class Bolt_Boltpay_TestHelper
     /**
      * @param $checkoutType
      * @param $jsonCart
-     * @param $immutableQuoteId
+     * @param $quote
      * @param $jsonHints
      * @return string
      */
-    public function buildCartDataJs($checkoutType, $jsonCart, $immutableQuoteId, $jsonHints)
+    public function buildCartDataJs($checkoutType, $jsonCart, $quote, $jsonHints)
     {
         /* @var Bolt_Boltpay_Helper_Data $boltHelper */
         $boltHelper = Mage::helper('boltpay');
-        /** @var Mage_Checkout_Model_Type_Onepage $checkout */
-        $checkout = Mage::getSingleton('checkout/type_onepage');
-        $quote = $checkout->getQuote()->setIsVirtual(false);
+        $quote->setIsVirtual(false);
 
         $hintsTransformFunction = $boltHelper->getExtraConfig('hintsTransform');
         $configCallbacks = $boltHelper->getBoltCallbacks($checkoutType, $quote);
@@ -149,8 +147,9 @@ class Bolt_Boltpay_TestHelper
             
             var json_cart = $jsonCart;
             var json_hints = \$hints_transform($jsonHints);
-            var quote_id = '{$immutableQuoteId}';
+            var quote_id = '{$quote->getId()}';
             var order_completed = false;
+            var do_checks = 1;
 
             window.BoltModal = BoltCheckout.configure(
                 json_cart,
