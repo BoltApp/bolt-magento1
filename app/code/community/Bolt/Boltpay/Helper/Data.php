@@ -433,8 +433,10 @@ class Bolt_Boltpay_Helper_Data extends Mage_Core_Helper_Abstract
 
         return "{
                   check: function() {
-                    $checkCustom
-                    $onCheckCallback
+                    if (do_checks++) {
+                        $checkCustom
+                        $onCheckCallback
+                    }
                     return true;
                   },
                   onCheckoutStart: function() {
@@ -485,23 +487,22 @@ class Bolt_Boltpay_Helper_Data extends Mage_Core_Helper_Abstract
                         var is_valid = true;
         
                         if (!editForm.validate()) {
-                            is_valid = false;
+                            return false;
                         } ". ($isVirtualQuote ? "" : " else {
                             var shipping_method = $$('input:checked[type=\"radio\"][name=\"order[shipping_method]\"]')[0] || $$('input:checked[type=\"radio\"][name=\"shipping_method\"]')[0];
                             if (typeof shipping_method === 'undefined') {
                                 alert('".Mage::helper('boltpay')->__('Please select a shipping method.')."');
-                                is_valid = false;
+                                return false;
                             }
                         } "). "
         
                         bolt_hidden.classList.add('required-entry');
-                        return is_valid;
                     }
                     ";
             case Bolt_Boltpay_Block_Checkout_Boltpay::CHECKOUT_TYPE_FIRECHECKOUT:
                 return
                     "
-                    return (isFireCheckoutFormValid = checkout.validate());
+                    if (!checkout.validate()) return false;
                     ";
             default:
                 return '';

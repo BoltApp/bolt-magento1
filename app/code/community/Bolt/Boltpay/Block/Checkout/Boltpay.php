@@ -53,106 +53,6 @@ class Bolt_Boltpay_Block_Checkout_Boltpay extends Mage_Checkout_Block_Onepage_Re
     }
 
     /**
-     * Get an order token for a Bolt order either by creating it or making a Promise to create it
-     *
-     * @param Mage_Sales_Model_Quote|null $quote            Magento quote object which represents
-     *                                                      order/cart data.
-     * @param string                      $checkoutType     'multi-page' | 'one-page' | 'admin' | 'firecheckout'
-     *
-     * @return object|string  json based PHP object or a javascript Promise string for initializing BoltCheckout
-     */
-    public function getBoltOrderToken($quote, $checkoutType)
-    {
-
-        /** @var Bolt_Boltpay_Helper_Api $boltHelper */
-        $boltHelper = Mage::helper('boltpay/api');
-        $isMultiPage = $checkoutType === self::CHECKOUT_TYPE_MULTI_PAGE;
-
-        $items = $quote->getAllVisibleItems();
-
-        $hasAdminShipping = false;
-        if (Mage::app()->getStore()->isAdmin()) {
-            /* @var Mage_Adminhtml_Block_Sales_Order_Create_Shipping_Method_Form $shippingMethodBlock */
-            $shippingMethodBlock = Mage::app()->getLayout()->createBlock("adminhtml/sales_order_create_shipping_method_form");
-            $hasAdminShipping = $shippingMethodBlock->getActiveMethodRate();
-        }
-
-        if (empty($items)) {
-
-            return json_decode('{"token" : "", "error": "'.Mage::helper('boltpay')->__('Your shopping cart is empty. Please add products to the cart.').'"}');
-
-        } else if (
-            !$isMultiPage
-            && !$quote->getShippingAddress()->getShippingMethod()
-            && !$hasAdminShipping
-        ) {
-
-            if (!$quote->isVirtual()){
-                return json_decode('{"token" : "", "error": "'.Mage::helper('boltpay')->__('A valid shipping method must be selected.  Please check your address data and that you have selected a shipping method, then, refresh to try again.').'"}');
-            }
-
-            if (!$this->validateVirtualQuote($quote)){
-                return json_decode('{"token" : "", "error": "'.Mage::helper('boltpay')->__('Billing address is required.').'"}');
-            }
-        }
-
-        // Generates order data for sending to Bolt create order API.
-        $orderRequest = Mage::getModel('boltpay/boltOrder')->buildOrder($quote, $items, $isMultiPage);
-
-        // Calls Bolt create order API
-        return $boltHelper->transmit('orders', $orderRequest);
-    }
-
-
-    /**
-     * Get Promise to create an order token
-     *
-     * @param string  $checkoutType  'multi-page' | 'one-page' | 'admin' | 'firecheckout'
-     *
-     * @return string javascript Promise string used for initializing BoltCheckout
-     */
-    protected function getBoltOrderTokenPromise($checkoutType) {
-
-        if ( $checkoutType === self::CHECKOUT_TYPE_FIRECHECKOUT ) {
-            $checkoutTokenUrl = Mage::helper('boltpay/url')->getMagentoUrl('boltpay/order/firecheckoutcreate');
-            $parameters = 'checkout.getFormData ? checkout.getFormData() : Form.serialize(checkout.form, true)';
-        } else if ( $checkoutType === self::CHECKOUT_TYPE_ADMIN ) {
-            $checkoutTokenUrl = Mage::helper('boltpay/url')->getMagentoUrl("adminhtml/sales_order_create/create/checkoutType/$checkoutType", array(), true);
-            $parameters = "''";
-        } else {
-            $checkoutTokenUrl = Mage::helper('boltpay/url')->getMagentoUrl("boltpay/order/create/checkoutType/$checkoutType");
-            $parameters = "''";
-        }
-
-        return <<<PROMISE
-                    new Promise( 
-                        function (resolve, reject) {
-                            new Ajax.Request('$checkoutTokenUrl', {
-                                method:'post',
-                                parameters: $parameters,
-                                onSuccess: function(response) {
-                                    if(response.responseJSON.error) {                                                        
-                                        reject(response.responseJSON.error_messages);
-                                        
-                                        // BoltCheckout is currently not doing anything reasonable to alert the user of a problem, so we will do something as a backup
-                                        if (typeof BoltPopup !== "undefined") {
-                                            BoltPopup.addMessage(response.responseJSON.error_messages).show();
-                                        } else {
-                                            alert(response.responseJSON.error_messages);
-                                        }
-                                    } else {                                     
-                                        resolve(response.responseJSON.cart_data);
-                                    }                   
-                                },
-                                 onFailure: function(error) { reject(error) }
-                            });                            
-                        }
-                    )
-PROMISE;
-
-    }
-
-    /**
      * Validate virtual quote
      *
      * @param Mage_Sales_Model_Quote $quote
@@ -198,47 +98,36 @@ PROMISE;
             /* @var Bolt_Boltpay_Helper_Api $boltHelper */
             $boltHelper = Mage::helper('boltpay/api');
 
-            /** @var Bolt_Boltpay_Model_ShippingAndTax $shippingAndTaxModel */
-            $shippingAndTaxModel = Mage::getModel('boltpay/shippingAndTax');
-
             $hintData = $this->getAddressHints($sessionQuote, $checkoutType);
-
-            $cartData = json_decode('{"token" : "", "error": "'.Mage::helper('boltpay')->__('Unexpected error.  Please contact support for assistance.').'"}');
-
-            $isMultiPage = ($checkoutType === self::CHECKOUT_TYPE_MULTI_PAGE);
-            // For multi-page, remove shipping that may have been added by Magento shipping and tax estimate interface
-            if ($isMultiPage) {
-                // Resets shipping rate
-                $shippingMethod = $sessionQuote->getShippingAddress()->getShippingMethod();
-                $shippingAndTaxModel->applyShippingRate($sessionQuote, null);
-            }
 
             // Call Bolt create order API
             try {
 
-                $cartData = $this->getBoltOrderTokenPromise($checkoutType);
+                $cartData = Mage::getModel('boltpay/boltOrder')->getBoltOrderTokenPromise($checkoutType);
 
-                ///////////////////////////////////////////////////////////////////////////////////////
-                // Merchant scope: get "bolt_user_id" if the user is logged in or should be registered,
-                // sign it and add to hints.
-                ///////////////////////////////////////////////////////////////////////////////////////
-                $reservedUserId = $this->getReservedUserId($sessionQuote);
-                if ($reservedUserId && $this->isEnableMerchantScopedAccount()) {
-                    $signRequest = array(
-                        'merchant_user_id' => $reservedUserId,
-                    );
-
-                    $signResponse = $boltHelper->transmit('sign', $signRequest);
-
-                    if ($signResponse != null) {
-                        $hintData['signed_merchant_user_id'] = array(
-                            "merchant_user_id" => $signResponse->merchant_user_id,
-                            "signature" => $signResponse->signature,
-                            "nonce" => $signResponse->nonce,
+                if (@!$cartData->error) {
+                    ///////////////////////////////////////////////////////////////////////////////////////
+                    // Merchant scope: get "bolt_user_id" if the user is logged in or should be registered,
+                    // sign it and add to hints.
+                    ///////////////////////////////////////////////////////////////////////////////////////
+                    $reservedUserId = $this->getReservedUserId($sessionQuote);
+                    if ($reservedUserId && $this->isEnableMerchantScopedAccount()) {
+                        $signRequest = array(
+                            'merchant_user_id' => $reservedUserId,
                         );
+
+                        $signResponse = $boltHelper->transmit('sign', $signRequest);
+
+                        if ($signResponse != null) {
+                            $hintData['signed_merchant_user_id'] = array(
+                                "merchant_user_id" => $signResponse->merchant_user_id,
+                                "signature" => $signResponse->signature,
+                                "nonce" => $signResponse->nonce,
+                            );
+                        }
                     }
+                    ///////////////////////////////////////////////////////////////////////////////////////
                 }
-                ///////////////////////////////////////////////////////////////////////////////////////
 
             } catch (Exception $e) {
                 $metaData = array('quote' => var_export($sessionQuote->debug(), true));
@@ -248,17 +137,13 @@ PROMISE;
                 );
             }
 
-            // For multi-page, reapply shipping to quote that may be used for shipping and tax estimate
-            if ($isMultiPage) {
-                $shippingAndTaxModel->applyShippingRate($sessionQuote, $shippingMethod);
-            }
-
             return $this->buildBoltCheckoutJavascript($checkoutType, $sessionQuote, $hintData, $cartData);
 
         } catch (Exception $e) {
             Mage::helper('boltpay/bugsnag')->notifyException($e);
         }
     }
+
 
     /**
      * @param $checkoutType
@@ -331,7 +216,7 @@ PROMISE;
         $boltConfigureCall =
         "
             BoltCheckout.configure(
-                json_cart,
+                get_json_cart(),
                 json_hints,
                 $callbacks  
             );
@@ -372,12 +257,12 @@ PROMISE;
         $boltCheckoutJavascript = "
             var \$hints_transform = $hintsTransformFunction;
             
-            var json_cart = $jsonCart;
+            var get_json_cart = function() { return $jsonCart };
             var json_hints = \$hints_transform($jsonHints);
             var quote_id = '{$quote->getId()}';
             var order_completed = false;
             $doChecks
-
+                
             window.BoltModal = $boltConfigureCall   
         ";
 

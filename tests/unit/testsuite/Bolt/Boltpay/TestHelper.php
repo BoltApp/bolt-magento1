@@ -145,14 +145,14 @@ class Bolt_Boltpay_TestHelper
         return ("
             var \$hints_transform = $hintsTransformFunction;
             
-            var json_cart = $jsonCart;
+            var get_json_cart = function() { return $jsonCart };
             var json_hints = \$hints_transform($jsonHints);
             var quote_id = '{$quote->getId()}';
             var order_completed = false;
             var do_checks = 1;
 
             window.BoltModal = BoltCheckout.configure(
-                json_cart,
+                get_json_cart(),
                 json_hints,
                 $configCallbacks
         );");

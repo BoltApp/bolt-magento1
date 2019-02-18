@@ -165,17 +165,16 @@ class Bolt_Boltpay_Helper_DataTest extends PHPUnit_Framework_TestCase
                         var is_valid = true;
         
                         if (!editForm.validate()) {
-                            is_valid = false;
+                            return false;
                         } ". ($isVirtualQuote ? "" : " else {
                             var shipping_method = $$('input:checked[type=\"radio\"][name=\"order[shipping_method]\"]')[0] || $$('input:checked[type=\"radio\"][name=\"shipping_method\"]')[0];
                             if (typeof shipping_method === 'undefined') {
                                 alert('".Mage::helper('boltpay')->__('Please select a shipping method.')."');
-                                is_valid = false;
+                                return false;
                             }
                         } "). "
         
                         bolt_hidden.classList.add('required-entry');
-                        return is_valid;
                     }
                     ";
 
