@@ -20,9 +20,7 @@
 $isAllowedConnectJs = $this->isAllowedConnectJsOnCurrentPage();
 ?>
 <?php if ($isAllowedConnectJs): ?>
-    <?php
-    $publishableKey = $this->getPublishableKeyForRoute();
-    ?>
+    <?php $publishableKey = $this->getPublishableKeyForRoute(); ?>
     <?php if ($publishableKey): ?>
     <script src="<?=$this->getJsUrl();?>" id="bolt-connect"
             type="text/javascript" data-shopping-cart-id="Magento"

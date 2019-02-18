@@ -1,5 +1,5 @@
 {
-  "name": "boltapp/bolt-magento1",
+  "name": "boltpay/bolt-magento1",
   "homepage": "https://bolt.com",
   "type": "magento-module",
   "license":"Open Software License (OSL 3.0)",
@@ -7,7 +7,7 @@
   "authors":[
     {
       "name": "Bolt Engineering",
-      "email": "dev@bolt.me"
+      "email": "dev@bolt.com"
     }
   ],
   "require": {

@@ -1,5 +1,8 @@
 <?php
 
+/**
+ * Class Bolt_Boltpay_Helper_Transaction
+ */
 class Bolt_Boltpay_Helper_Transaction
 {
     /**

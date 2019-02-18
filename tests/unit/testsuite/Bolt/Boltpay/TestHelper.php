@@ -55,6 +55,8 @@ class Bolt_Boltpay_TestHelper
     {
         $checkout = Mage::getSingleton('checkout/type_onepage');
         $shippingAddress = $checkout->getQuote()->getShippingAddress()->addData($addressData);
+        Mage::app('default')->getStore()->setConfig('carriers/flatrate/active', 1);
+
         $shippingAddress
             ->setCollectShippingRates(true)
             ->setShippingMethod('flatrate_flatrate')
@@ -124,95 +126,35 @@ class Bolt_Boltpay_TestHelper
         $this->app->getStore()->resetConfig();
     }
 
-    public function buildCartDataJs($jsonCart, $immutableQuoteId, $jsonHints, $callbacks = array())
+    /**
+     * @param $checkoutType
+     * @param $jsonCart
+     * @param $quote
+     * @param $jsonHints
+     * @return string
+     */
+    public function buildCartDataJs($checkoutType, $jsonCart, $quote, $jsonHints)
     {
-        $checkCustom = (isset($callbacks['checkCustom'])) ? $callbacks['checkCustom'] : '';
-        $onCheckCallback = (isset($callbacks['onCheckCallback'])) ? $callbacks['onCheckCallback'] : '';
-        $onCheckoutStartCustom = (isset($callbacks['onCheckoutStartCustom'])) ? $callbacks['onCheckoutStartCustom'] : '';
-        $onShippingDetailsCompleteCustom = (isset($callbacks['onShippingDetailsCompleteCustom'])) ? $callbacks['onShippingDetailsCompleteCustom'] : '';
-        $onShippingOptionsCompleteCustom = (isset($callbacks['onShippingOptionsCompleteCustom'])) ? $callbacks['onShippingOptionsCompleteCustom'] : '';
-        $onPaymentSubmitCustom = (isset($callbacks['onPaymentSubmitCustom'])) ? $callbacks['onPaymentSubmitCustom'] : '';
-        $onSuccessCallback = (isset($callbacks['onSuccessCallback'])) ? $callbacks['onSuccessCallback'] : '';
-        $onCloseCallback = (isset($callbacks['onCloseCallback'])) ? $callbacks['onCloseCallback'] : '';
-
         /* @var Bolt_Boltpay_Helper_Data $boltHelper */
         $boltHelper = Mage::helper('boltpay');
+        $quote->setIsVirtual(false);
+
         $hintsTransformFunction = $boltHelper->getExtraConfig('hintsTransform');
+        $configCallbacks = $boltHelper->getBoltCallbacks($checkoutType, $quote);
 
-        $boltConfigureCall =
-        "
-            BoltCheckout.configure(
-                json_cart,
-                json_hints,
-                {
-                  check: function() {
-                    if (check_count++) {
-                        $checkCustom
-                        $onCheckCallback
-                    }    
-                    return true;
-                  },
-                  
-                  onCheckoutStart: function() {
-                    // This function is called after the checkout form is presented to the user.
-                    $onCheckoutStartCustom
-                  },
-                  
-                  onShippingDetailsComplete: function() {
-                    // This function is called when the user proceeds to the shipping options page.
-                    // This is applicable only to multi-step checkout.
-                    $onShippingDetailsCompleteCustom
-                  },
-                  
-                  onShippingOptionsComplete: function() {
-                    // This function is called when the user proceeds to the payment details page.
-                    // This is applicable only to multi-step checkout.
-                    $onShippingOptionsCompleteCustom
-                  },
-                  
-                  onPaymentSubmit: function() {
-                    // This function is called after the user clicks the pay button.
-                    $onPaymentSubmitCustom
-                  },
-                  
-                  success: $onSuccessCallback,
-
-                  close: function() {
-                     $onCloseCallback
-                  }
-                }   
-            );
-        ";
-
-        return
-        ("
+        return ("
             var \$hints_transform = $hintsTransformFunction;
             
-            var json_cart = $jsonCart;
+            var get_json_cart = function() { return $jsonCart };
             var json_hints = \$hints_transform($jsonHints);
+            var quote_id = '{$quote->getId()}';
             var order_completed = false;
-            var check_count = 0;
-            var configure_bolt = function() {
-                $boltConfigureCall
-                return true;
-            };
-            
-            BoltCheckout.configure(
-                new Promise( 
-                    function (resolve, reject) {
-                        // Store state must be validated prior to open                          
-                    }
-                ),
+            var do_checks = 1;
+
+            window.BoltModal = BoltCheckout.configure(
+                get_json_cart(),
                 json_hints,
-                {
-                    check: function() {
-                        $checkCustom
-                        $onCheckCallback
-                        return configure_bolt();
-                    }
-                }
-            );
-        "
-        );
+                $configCallbacks
+        );");
     }
 }

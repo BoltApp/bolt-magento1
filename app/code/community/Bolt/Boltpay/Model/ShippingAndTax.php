@@ -95,25 +95,11 @@ class Bolt_Boltpay_Model_ShippingAndTax extends Mage_Core_Model_Abstract
             $quote->save();
         }
 
-        $quote->getShippingAddress()->addData($addressData)->save();
-
         $billingAddress = $quote->getBillingAddress();
+        $shippingAddress = $quote->getShippingAddress();
 
-        $quote->getBillingAddress()->addData(
-            array(
-                'email' => $billingAddress->getEmail() ?: (@$shippingAddress->email ?: @$shippingAddress->email_address),
-                'firstname' => $billingAddress->getFirstname() ?: @$shippingAddress->first_name,
-                'lastname' => $billingAddress->getLastname() ?: @$shippingAddress->last_name,
-                'street' => implode("\n", $billingAddress->getStreet()) ?: $shippingStreet,
-                'company' => $billingAddress->getCompany() ?: @$shippingAddress->company,
-                'city' => $billingAddress->getCity() ?: @$shippingAddress->locality,
-                'region' => $billingAddress->getRegion() ?: $region,
-                'region_id' => $billingAddress->getRegionId() ?: $regionId,
-                'postcode' => $billingAddress->getPostcode() ?: @$shippingAddress->postal_code,
-                'country_id' => $billingAddress->getCountryId() ?: @$shippingAddress->country_code,
-                'telephone' => $billingAddress->getTelephone() ?: (@$shippingAddress->phone ?: $shippingAddress->phone_number)
-            )
-        )->save();
+        $shippingAddress->addData($addressData)->save();
+        Mage::getModel('boltpay/boltOrder')->correctBillingAddress($billingAddress, $shippingAddress, false);
 
         return $addressData;
     }
@@ -207,7 +193,7 @@ class Bolt_Boltpay_Model_ShippingAndTax extends Mage_Core_Model_Abstract
      * Applies shipping rate to quote. Clears previously calculated discounts by clearing address id.
      *
      * @param Mage_Sales_Model_Quote $quote    Quote which has been updated to use new shipping rate
-     * @param string $shippingRateCode    Shipping rate code
+     * @param string $shippingRateCode         Shipping rate code composed of {carrier}_{method}
      */
     public function applyShippingRate($quote, $shippingRateCode) {
         $shippingAddress = $quote->getShippingAddress();
@@ -217,7 +203,9 @@ class Bolt_Boltpay_Model_ShippingAndTax extends Mage_Core_Model_Abstract
             $shippingAddress->isObjectNew(true);
             $shippingAddressId = $shippingAddress->getData('address_id');
 
-            $shippingAddress->setShippingMethod($shippingRateCode);
+            $shippingAddress
+                ->setShippingMethod($shippingRateCode)
+                ->setCollectShippingRates(true);
 
             // When multiple shipping methods apply a discount to the sub-total, collect totals doesn't clear the
             // previously set discount, so the previous discount gets added to each subsequent shipping method that
@@ -233,6 +221,14 @@ class Bolt_Boltpay_Model_ShippingAndTax extends Mage_Core_Model_Abstract
             if(!empty($shippingAddressId) && $shippingAddressId != $shippingAddress->getData('address_id')) {
                 $shippingAddress->setData('address_id', $shippingAddressId);
             }
+
+            Mage::dispatchEvent(
+                'bolt_boltpay_shipping_method_applied',
+                array(
+                    'quote'=> $quote,
+                    'shippingMethodCode' => $shippingRateCode
+                )
+            );
         }
     }
 
@@ -286,5 +282,29 @@ class Bolt_Boltpay_Model_ShippingAndTax extends Mage_Core_Model_Abstract
             return $title;
         }
         return $carrier . " - " . $title;
+    }
+
+    /**
+     * Returns a whether P.O. box addresses are allowed for this store
+     *
+     * @return bool     true if P.O. boxes are allowed.  Otherwise, false.
+     */
+    public function isPOBoxAllowed()
+    {
+        return Mage::getStoreConfigFlag('payment/boltpay/allow_po_box');
+    }
+
+    /**
+     * Checks wheather a P.O. Box exist in the addresses given
+     *
+     * @param $address1      The address to be checked for a P.O. Box matching string
+     * @param $address2      If set, second address to be checked.  Useful for checking both shipping and billing in on call.
+     *
+     * @return bool     returns true only if any of the provided addresses contain a P.O. Box.  Otherwise, false
+     */
+    public function doesAddressContainPOBox($address1, $address2 = null)
+    {
+        $poBoxRegex = '/^\s*((P(OST)?.?\s*(O(FF(ICE)?)?|B(IN|OX))+.?\s+(B(IN|OX))?)|B(IN|OX))/i';
+        return (preg_match($poBoxRegex, $address1) || preg_match($poBoxRegex, $address2));
     }
 }
