@@ -285,5 +285,4 @@ class Bolt_Boltpay_Helper_DataTest extends PHPUnit_Framework_TestCase
 
         $this->assertEquals(preg_replace('/\s/', '', $expect), preg_replace('/\s/', '', $result));
     }
-
 }

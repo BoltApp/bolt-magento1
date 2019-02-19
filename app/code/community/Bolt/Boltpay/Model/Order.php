@@ -53,9 +53,7 @@ class Bolt_Boltpay_Model_Order extends Mage_Core_Model_Abstract
 
             $transaction = $transaction ?: Mage::helper('boltpay/api')->fetchTransaction($reference);
 
-            /** @var Bolt_Boltpay_Helper_Transaction $transactionHelper */
-            $transactionHelper = Mage::helper('boltpay/transaction');
-            $immutableQuoteId = $transactionHelper->getImmutableQuoteIdFromTransaction($transaction);
+            $immutableQuoteId = $this->getImmutableQuoteIdFromTransaction($transaction);
             $immutableQuote = $this->getQuoteById($immutableQuoteId);
 
             if (!$sessionQuoteId){
@@ -343,6 +341,19 @@ class Bolt_Boltpay_Model_Order extends Mage_Core_Model_Abstract
         }
 
         return $immutableQuote;
+    }
+
+    /**
+     * @param $transaction
+     * @return string
+     */
+    protected function getImmutableQuoteIdFromTransaction($transaction)
+    {
+        /** @var Bolt_Boltpay_Helper_Transaction $transactionHelper */
+        $transactionHelper = Mage::helper('boltpay/transaction');
+        $immutableQuoteId = $transactionHelper->getImmutableQuoteIdFromTransaction($transaction);
+
+        return $immutableQuoteId;
     }
 
     /**
