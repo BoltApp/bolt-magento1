@@ -143,7 +143,7 @@ class Bolt_Boltpay_ShippingController extends Mage_Core_Controller_Front_Action
 
             //Mage::log('SHIPPING AND TAX RESPONSE: ' . $response, null, 'shipping_and_tax.log');
 
-            $this->getResponse()->clearHeaders()
+            $this->getResponse()->clearAllHeaders()
                 ->setHeader('Content-type', 'application/json', true)
                 ->setHeader('X-Nonce', rand(100000000, 999999999), true);
 
@@ -179,7 +179,7 @@ class Bolt_Boltpay_ShippingController extends Mage_Core_Controller_Front_Action
         $quote = Mage::getSingleton('checkout/session')->getQuote();
 
         if(!$quote->getId() || !$quote->getItemsCount()){
-            $this->getResponse()->clearHeaders()->setHeader('Content-type', 'application/json');
+            $this->getResponse()->clearAllHeaders()->setHeader('Content-type', 'application/json');
             $this->getResponse()->setBody("{}");
             return;
         }
@@ -225,7 +225,7 @@ class Bolt_Boltpay_ShippingController extends Mage_Core_Controller_Front_Action
         }
 
         $response = Mage::helper('core')->jsonEncode(array('address_data' => $addressData));
-        $this->getResponse()->clearHeaders()->setHeader('Content-type', 'application/json');
+        $this->getResponse()->clearAllHeaders()->setHeader('Content-type', 'application/json');
         $this->getResponse()->setBody($response);
     }
 
