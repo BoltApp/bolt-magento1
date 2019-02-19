@@ -74,17 +74,6 @@ class Bolt_Boltpay_ShippingController extends Mage_Core_Controller_Front_Action
                 throw new Exception(Mage::helper('boltpay')->__("Failed HMAC Authentication"));
             }
 
-            $shippingAddress = $requestData->shipping_address;
-
-            if (
-                !$this->_shippingAndTaxModel->isPOBoxAllowed()
-                && $this->_shippingAndTaxModel->doesAddressContainPOBox($shippingAddress->street_address1, $shippingAddress->street_address2)
-            ) {
-                $errorDetails = array('code' => 6101, 'message' => Mage::helper('boltpay')->__('Address with P.O. Box is not allowed.'));
-                return $this->getResponse()->setHttpResponseCode(403)
-                    ->setBody(json_encode(array('status' => 'failure','error' => $errorDetails)));
-            }
-
             $mockTransaction = (object) array("order" => $requestData );
 
             /** @var Bolt_Boltpay_Helper_Transaction $transactionHelper */
@@ -102,7 +91,34 @@ class Bolt_Boltpay_ShippingController extends Mage_Core_Controller_Front_Action
             $session->setQuoteId($quoteId);
             /**************/
 
-            $addressData = $this->_shippingAndTaxModel->applyShippingAddressToQuote($quote, $shippingAddress);
+            ////////////////////////////////////////////////////////////////////////////////
+            /// Apply shipping address with validation checks
+            ////////////////////////////////////////////////////////////////////////////////
+            $shippingAddress = $requestData->shipping_address;
+            $addressErrorDetails = array();
+
+            if (
+                !$this->_shippingAndTaxModel->isPOBoxAllowed()
+                && $this->_shippingAndTaxModel->doesAddressContainPOBox($shippingAddress->street_address1, $shippingAddress->street_address2)
+            ) {
+                $addressErrorDetails = array('code' => 6101, 'message' => Mage::helper('boltpay')->__('Address with P.O. Box is not allowed.'));
+            } else {
+                $addressData = $this->_shippingAndTaxModel->applyShippingAddressToQuote($quote, $shippingAddress);
+                $magentoAddressErrors = $quote->getShippingAddress()->validate();
+
+                if (is_array($magentoAddressErrors)) {
+                    $addressErrorDetails = array('code' => 6103, 'message' => $magentoAddressErrors[0]);
+                }
+            }
+
+            if ($addressErrorDetails) {
+                return $this->getResponse()
+                    ->clearAllHeaders()
+                    ->setHttpResponseCode(403)
+                    ->setBody(json_encode(array('status' => 'failure','error' => $addressErrorDetails)));
+            }
+            ////////////////////////////////////////////////////////////////////////////////
+
 
             ////////////////////////////////////////////////////////////////////////////////////////
             // Check session cache for estimate.  If the shipping city or postcode, and the country code match,
