@@ -212,6 +212,7 @@ class Bolt_Boltpay_Block_Checkout_Boltpay extends Mage_Checkout_Block_Onepage_Re
         $onCheckCallback = $boltHelper->buildOnCheckCallback($checkoutType, $quote);
 
         $hintsTransformFunction = $boltHelper->getExtraConfig('hintsTransform');
+        $shouldCloneImmediately = !$boltHelper->getExtraConfig( 'cloneOnClick' );
 
         $boltConfigureCall =
         "
@@ -225,8 +226,10 @@ class Bolt_Boltpay_Block_Checkout_Boltpay extends Mage_Checkout_Block_Onepage_Re
         switch ($checkoutType) {
             case self::CHECKOUT_TYPE_MULTI_PAGE:
                 // if it is a multipage checkout from the shopping cart,
-                // we will call configure immediately
-                if ($this->helper('boltpay')->isShoppingCartPage()) break;
+                // we will call configure immediately unless extra config 'cloneOnClick' overrides this
+                if ($this->helper('boltpay')->isShoppingCartPage() && $shouldCloneImmediately) break;
+            case self::CHECKOUT_TYPE_ONE_PAGE:
+                if ($shouldCloneImmediately) break;
             case self::CHECKOUT_TYPE_ADMIN:
             case self::CHECKOUT_TYPE_FIRECHECKOUT:
                 // We postpone calling configure until Bolt button clicked and form is ready
