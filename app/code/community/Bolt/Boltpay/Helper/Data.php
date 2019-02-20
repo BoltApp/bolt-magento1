@@ -431,25 +431,12 @@ class Bolt_Boltpay_Helper_Data extends Mage_Core_Helper_Abstract
         $onSuccessCallback = $this->buildOnSuccessCallback($successCustom, $checkoutType);
         $onCloseCallback = $this->buildOnCloseCallback($closeCustom, $checkoutType);
 
-        $requiredCheck = ($checkoutType === Bolt_Boltpay_Block_Checkout_Boltpay::CHECKOUT_TYPE_FIRECHECKOUT)
-            ? ""
-            : "
-                    if (typeof json_cart !== 'undefined' && !json_cart.orderToken) {
-                        if (typeof BoltPopup !== \"undefined\") {
-                            BoltPopup.addMessage(json_cart.error).show();
-                        } else {
-                            alert(json_cart.error);
-                        }
-                        return false;
-                    }
-            "
-        ;
-
         return "{
                   check: function() {
-                    $requiredCheck
-                    $checkCustom
-                    $onCheckCallback
+                    if (do_checks++) {
+                        $checkCustom
+                        $onCheckCallback
+                    }
                     return true;
                   },
                   onCheckoutStart: function() {
@@ -500,23 +487,22 @@ class Bolt_Boltpay_Helper_Data extends Mage_Core_Helper_Abstract
                         var is_valid = true;
         
                         if (!editForm.validate()) {
-                            is_valid = false;
+                            return false;
                         } ". ($isVirtualQuote ? "" : " else {
                             var shipping_method = $$('input:checked[type=\"radio\"][name=\"order[shipping_method]\"]')[0] || $$('input:checked[type=\"radio\"][name=\"shipping_method\"]')[0];
                             if (typeof shipping_method === 'undefined') {
                                 alert('".Mage::helper('boltpay')->__('Please select a shipping method.')."');
-                                is_valid = false;
+                                return false;
                             }
                         } "). "
         
                         bolt_hidden.classList.add('required-entry');
-                        return is_valid;
                     }
                     ";
             case Bolt_Boltpay_Block_Checkout_Boltpay::CHECKOUT_TYPE_FIRECHECKOUT:
                 return
                     "
-                    return (isFireCheckoutFormValid = checkout.validate());
+                    if (!checkout.validate()) return false;
                     ";
             default:
                 return '';
@@ -623,5 +609,41 @@ class Bolt_Boltpay_Helper_Data extends Mage_Core_Helper_Abstract
         /** @var Bolt_Boltpay_Model_Admin_ExtraConfig $extraConfigModel */
         $extraConfigModel = Mage::getSingleton('boltpay/admin_extraConfig');
         return $extraConfigModel->getExtraConfig($configName, $filterParameters);
+    }
+
+
+    /**
+     * Determines if the current page being displayed is the shopping cart
+     *
+     * @return bool true if the current page is the shopping cart, otherwise false
+     */
+    public function isShoppingCartPage()
+    {
+        return
+            (Mage::app()->getRequest()->getRouteName() === 'checkout')
+            && (Mage::app()->getRequest()->getControllerName() === 'cart');
+    }
+
+    /**
+     * Dispatches event to filter a value
+     *
+     * @param string                    $eventName              The name of the event to be dispatched
+     * @param mixed                     $valueToFilter          The value to filter
+     * @param array                     $additionalParameters   any extra parameters used in filtering
+     *
+     * @return mixed   the value after it has been filtered
+     */
+    public function doFilterEvent($eventName, $valueToFilter, $additionalParameters = array()) {
+        $valueWrapper = new Varien_Object();
+        $valueWrapper->setValue($valueToFilter);
+        Mage::dispatchEvent(
+            $eventName,
+            array(
+                'valueWrapper' => $valueWrapper,
+                'parameters' => $additionalParameters
+            )
+        );
+
+        return $valueWrapper->getValue();
     }
 }

@@ -171,11 +171,24 @@ class Bolt_Boltpay_Block_Checkout_BoltpayTest extends PHPUnit_Framework_TestCase
 
         $autoCapture = true;
         $this->app->getStore()->setConfig('payment/boltpay/auto_capture', $autoCapture);
+        Mage::app()->getRequest()->setRouteName('checkout')->setControllerName('cart');
 
-        $cartData = array(
-            'authcapture' => $autoCapture,
-            'orderToken' => md5('bolt')
+        $cartData = json_encode (
+            array(
+                'authcapture' => $autoCapture,
+                'orderToken' => md5('bolt')
+            )
         );
+
+        $promiseOfCartData =
+            "
+            new Promise( 
+                function (resolve, reject) {
+                    resolve($cartData);
+                }
+            )
+            "
+        ;
 
         $hintData = array();
 
@@ -192,11 +205,10 @@ class Bolt_Boltpay_Block_Checkout_BoltpayTest extends PHPUnit_Framework_TestCase
         $quote = Mage::getModel('sales/quote');
         $quote->setId(6);
 
-        $jsonCart = json_encode($cartData);
         $jsonHints = json_encode($hintData, JSON_FORCE_OBJECT);
         $onSuccessCallback = 'function(transaction, callback) { console.log(test) }';
 
-        $expected = $this->testHelper->buildCartDataJs($checkoutType, $jsonCart, $quote->getId(), $jsonHints);
+        $expected = $this->testHelper->buildCartDataJs($checkoutType, $promiseOfCartData, $quote, $jsonHints);
 
         $this->currentMock
             ->method('buildOnCheckCallback')
@@ -208,11 +220,10 @@ class Bolt_Boltpay_Block_Checkout_BoltpayTest extends PHPUnit_Framework_TestCase
             ->method('buildOnCloseCallback')
             ->will($this->returnValue(''));
 
-        $result = $this->currentMock->buildBoltCheckoutJavascript($checkoutType, $quote, $hintData, $cartData);
+        $result = $this->currentMock->buildBoltCheckoutJavascript($checkoutType, $quote, $hintData, $promiseOfCartData);
 
         $this->assertEquals(preg_replace('/\s/', '', $expected), preg_replace('/\s/', '', $result));
     }
-
 
     /**
      * @inheritdoc

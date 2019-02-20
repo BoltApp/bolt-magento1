@@ -58,6 +58,14 @@ class Bolt_Boltpay_Model_Order extends Mage_Core_Model_Abstract
             $immutableQuoteId = $transactionHelper->getImmutableQuoteIdFromTransaction($transaction);
             $immutableQuote = $this->getQuoteById($immutableQuoteId);
 
+            if (!$sessionQuoteId){
+                /** @var Bolt_Boltpay_Helper_Data $boltHelperBase */
+                $boltHelperBase = Mage::helper('boltpay');
+                $sessionQuoteId = $immutableQuote->getParentQuoteId();
+
+                $boltHelperBase->setCustomerSessionByQuoteId($sessionQuoteId);
+            }
+
             // check that the order is in the system.  If not, we have an unexpected problem
             if ($immutableQuote->isEmpty()) {
                 throw new Exception(Mage::helper('boltpay')->__("The expected immutable quote [$immutableQuoteId] is missing from the Magento system.  Were old quotes recently removed from the database?"));
@@ -111,45 +119,58 @@ class Bolt_Boltpay_Model_Order extends Mage_Core_Model_Abstract
             }
             $immutableQuote->save();
 
+            $immutableQuote->getShippingAddress()->setShouldIgnoreValidation(true)->save();
+            $immutableQuote->getBillingAddress()
+                ->setFirstname($transaction->from_credit_card->billing_address->first_name)
+                ->setLastname($transaction->from_credit_card->billing_address->last_name)
+                ->setShouldIgnoreValidation(true)
+                ->save();
+
             //////////////////////////////////////////////////////////////////////////////////
             ///  Apply shipping address and shipping method data to quote directly from
             ///  the Bolt transaction.
             //////////////////////////////////////////////////////////////////////////////////
-            $shippingMethodCode = null;
-            $shippingAndTaxModel = Mage::getModel("boltpay/shippingAndTax");
-            if ($transaction->order->cart->shipments) {
+            $packagesToShip = $transaction->order->cart->shipments;
 
-                $shippingAndTaxModel->applyShippingAddressToQuote($immutableQuote, $transaction->order->cart->shipments[0]->shipping_address);
-                $shippingMethodCode = $transaction->order->cart->shipments[0]->reference;
-            }
-
-            $immutableQuote->getShippingAddress()->setShouldIgnoreValidation(true)->save();
-            $immutableQuote->getBillingAddress()->setShouldIgnoreValidation(true)->save();
-
-            if ($shippingMethodCode) {
-                $immutableQuote->getShippingAddress()->setShippingMethod($shippingMethodCode)->save();
-            } else {
-                // Legacy transaction does not have shipments reference - fallback to $service field
-                $service = $transaction->order->cart->shipments[0]->service;
-
-                Mage::helper('boltpay')->collectTotals($immutableQuote);
+            if ($packagesToShip) {
 
                 $shippingAddress = $immutableQuote->getShippingAddress();
-                $shippingAddress->setCollectShippingRates(true)->collectShippingRates();
-                $rates = $shippingAddress->getAllShippingRates();
+                $shippingMethodCode = null;
+              
+                /** @var Bolt_Boltpay_Model_ShippingAndTax $shippingAndTaxModel */
+                $shippingAndTaxModel = Mage::getModel("boltpay/shippingAndTax");
+                $shippingAndTaxModel->applyShippingAddressToQuote($immutableQuote, $packagesToShip[0]->shipping_address);
+                $shippingMethodCode = $packagesToShip[0]->reference;
 
-                $isShippingSet = false;
-                foreach ($rates as $rate) {
-                    if ($rate->getCarrierTitle() . ' - ' . $rate->getMethodTitle() == $service
-                        || (!$rate->getMethodTitle() && $rate->getCarrierTitle() == $service)) {
-                        $shippingMethod = $rate->getCarrier() . '_' . $rate->getMethod();
-                        $immutableQuote->getShippingAddress()->setShippingMethod($shippingMethod)->save();
-                        $isShippingSet = true;
-                        break;
+                if (!$shippingMethodCode) {
+                    // Legacy transaction does not have shipments reference - fallback to $service field
+                    $service = $packagesToShip[0]->service;
+
+                    Mage::helper('boltpay')->collectTotals($immutableQuote);
+
+                    $shippingAddress->setCollectShippingRates(true)->collectShippingRates();
+                    $rates = $shippingAddress->getAllShippingRates();
+
+                    foreach ($rates as $rate) {
+                        if ($rate->getCarrierTitle() . ' - ' . $rate->getMethodTitle() == $service
+                            || (!$rate->getMethodTitle() && $rate->getCarrierTitle() == $service)) {
+                            $shippingMethodCode = $rate->getCarrier() . '_' . $rate->getMethod();
+                            break;
+                        }
                     }
                 }
 
-                if (!$isShippingSet) {
+                if ($shippingMethodCode) {
+                    $shippingAndTaxModel->applyShippingRate($immutableQuote, $shippingMethodCode);
+                    $shippingAddress->save();
+                    Mage::dispatchEvent(
+                        'bolt_boltpay_order_creation_shipping_method_applied',
+                        array(
+                            'quote'=> $immutableQuote,
+                            'shippingMethodCode' => $shippingMethodCode
+                        )
+                    );
+                } else {
                     $errorMessage = Mage::helper('boltpay')->__('Shipping method not found');
                     $metaData = array(
                         'transaction'   => $transaction,
