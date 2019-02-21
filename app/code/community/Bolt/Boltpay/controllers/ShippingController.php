@@ -327,8 +327,16 @@ class Bolt_Boltpay_ShippingController extends Mage_Core_Controller_Front_Action
             $cacheIdentifier .= '_item-'.$item->getProductId().'-quantity-'.$item->getQty();
         }
 
+        ////////////////////////////////////////////////////////////////////////////////////
         // include any discounts or gift card rules because they may affect shipping
-        $cacheIdentifier .= '_applied-rules-'.json_encode($quote->getAppliedRuleIds());
+        ////////////////////////////////////////////////////////////////////////////////////
+        /** @var Mage_Sales_Model_Quote $rulesReferenceQuote */
+        $rulesReferenceQuote = $quote->getParentQuoteId()
+            ? Mage::getModel('sales/quote')->loadByIdWithoutStore($quote->getParentQuoteId())
+            : $quote;
+
+        $cacheIdentifier .= '_applied-rules-'.json_encode($rulesReferenceQuote->getAppliedRuleIds());
+        ////////////////////////////////////////////////////////////////////////////////////
 
         return md5($cacheIdentifier);
     }
