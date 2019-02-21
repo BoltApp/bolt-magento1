@@ -581,17 +581,24 @@ class Bolt_Boltpay_Model_BoltOrder extends Mage_Core_Model_Abstract
         $customerEmail = $quote ? $quote->getCustomerEmail() : "";
         if (!$customerEmail && Mage::app()->getStore()->isAdmin()) {
             //////////////////////////////////////////////////
-            // In the admin, guest customer's email will be stored in the order for
-            // order edits and reorders
+            // In the admin, we first check form session data.
+            // For order edits or reorders, the guest customer's email
+            // will be stored in the order 
             //////////////////////////////////////////////////
-            /** @var Mage_Adminhtml_Model_Session_Quote $session */
-            $session = Mage::getSingleton('adminhtml/session_quote');
-            $orderId = $session->getOrderId() ?: $session->getReordered();
+            $shippingAddressData = Mage::getSingleton('admin/session')->getOrderShippingAddress() ?: array( 'email_address' => '', 'email' => '' );
+            $customerEmail = $shippingAddressData['email_address'] ?: $shippingAddressData['email'];
 
-            if ($orderId) {
-                /** @var Mage_Sales_Model_Order $order */
-                $order = Mage::getModel('sales/order')->load($orderId);
-                $customerEmail = $order->getCustomerEmail();
+            if (empty($customerEmail)) {
+                /** @var Mage_Adminhtml_Model_Session_Quote $session */
+                $session = Mage::getSingleton('adminhtml/session_quote');
+
+                $orderId = $session->getOrderId() ?: $session->getReordered();
+
+                if ($orderId) {
+                    /** @var Mage_Sales_Model_Order $order */
+                    $order = Mage::getModel('sales/order')->load($orderId);
+                    $customerEmail = $order->getCustomerEmail();
+                }
             }
         }
 
@@ -712,7 +719,7 @@ class Bolt_Boltpay_Model_BoltOrder extends Mage_Core_Model_Abstract
         }
 
         // Generates order data for sending to Bolt create order API.
-        $orderRequest = Mage::getModel('boltpay/boltOrder')->buildOrder($quote, $isMultiPage);
+        $orderRequest = $this->buildOrder($quote, $isMultiPage);
 
         // Calls Bolt create order API
         return $boltHelper->transmit('orders', $orderRequest);
