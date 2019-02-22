@@ -61,6 +61,13 @@ class Bolt_Boltpay_Model_Admin_ExtraConfig extends Mage_Core_Model_Config_Data
      */
     public function save()
     {
+        // when json_decode an empty string, PHP7 will trigger an Syntax error, so directly return without json_decode for empty string value
+        if(trim($this->getValue()) === ''){
+            // Just in case the value only contains the white space input.
+            $this->setValue(trim($this->getValue()));
+            return parent::save();
+        }
+        
         $optionsJson = (array) json_decode($this->normalizeJSON($this->getValue()));
         $areAllOptionsValid = true;
 
