@@ -29,7 +29,7 @@
  * is capitalized, and then prepended with the string 'hasValid' or 'filter',
  * respectively.
  *
- * (e.g. The config `boltPrimaryColor` would have optionally have a
+ * (e.g. The config `boltPrimaryColor` would optionally have a
  * corresponding validation method named `hasValidBoltPrimaryColor` and
  * an optional filter method named `filterBoltPrimaryColor`)
  *
@@ -191,6 +191,6 @@ JS;
      * @return string|null    The string stripped of newline characters or null on error
      */
     private function normalizeJSON($string) {
-        return trim(preg_replace( '/(\r\n)|\n|\r/', '', $string )) ?: null;
+        return trim(preg_replace( '/(\r\n)|\n|\r/', '', $string )) ?: array();
     }
 }
