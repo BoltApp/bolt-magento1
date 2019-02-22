@@ -191,6 +191,6 @@ JS;
      * @return string|null    The string stripped of newline characters or null on error
      */
     private function normalizeJSON($string) {
-        return trim(preg_replace( '/(\r\n)|\n|\r/', '', $string )) ?: null;
+        return trim(preg_replace( '/(\r\n)|\n|\r/', '', $string )) ?: array();
     }
 }
