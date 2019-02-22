@@ -304,16 +304,21 @@ class Bolt_Boltpay_Model_ShippingAndTax extends Mage_Core_Model_Abstract
     }
 
     /**
-     * Checks wheather a P.O. Box exist in the addresses given
+     * Checks whether a P.O. Box exist in the addresses given
      *
      * @param $address1      The address to be checked for a P.O. Box matching string
-     * @param $address2      If set, second address to be checked.  Useful for checking both shipping and billing in on call.
+     * @param $address2      If set, second address to be checked.  Useful for checking both shipping and billing in one call.
      *
      * @return bool     returns true only if any of the provided addresses contain a P.O. Box.  Otherwise, false
      */
     public function doesAddressContainPOBox($address1, $address2 = null)
     {
         $poBoxRegex = '/^\s*((P(OST)?.?\s*(O(FF(ICE)?)?|B(IN|OX))+.?\s+(B(IN|OX))?)|B(IN|OX))/i';
-        return (preg_match($poBoxRegex, $address1) || preg_match($poBoxRegex, $address2));
+        $poBoxRegexComprehensive = '/(?:P(?:ost(?:al)?)?[\.\-\s]*(?:(?:O(?:ffice)?[\.\-\s]*)?B(?:ox|in|\b|\d)|o(?:ffice|\b)(?:[-\s]*\d)|code)|box[-\s\b]*\d)/i';
+
+        return preg_match($poBoxRegex, $address1)
+            || preg_match($poBoxRegex, $address2)
+            || preg_match($poBoxRegexComprehensive, $address1)
+            || preg_match($poBoxRegexComprehensive, $address2);
     }
 }
