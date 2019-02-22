@@ -314,7 +314,7 @@ class Bolt_Boltpay_Model_ShippingAndTax extends Mage_Core_Model_Abstract
     public function doesAddressContainPOBox($address1, $address2 = null)
     {
         $poBoxRegex = '/^\s*((P(OST)?.?\s*(O(FF(ICE)?)?|B(IN|OX))+.?\s+(B(IN|OX))?)|B(IN|OX))/i';
-        $poBoxRegexComprehensive = '/(?:P(?:ost(?:al)?)?[\.\-\s]*(?:(?:O(?:ffice)?[\.\-\s]*)?B(?:ox|in|\b|\d)|o(?:ffice|\b)(?:[-\s]*\d)|code)|box[-\s\b]*\d)/i';
+        $poBoxRegexStrict = '/(?:P(?:ost(?:al)?)?[\.\-\s]*(?:(?:O(?:ffice)?[\.\-\s]*)?B(?:ox|in|\b|\d)|o(?:ffice|\b)(?:[-\s]*\d)|code)|box[-\s\b]*\d)/i';
 
         return preg_match($poBoxRegex, $address1)
             || preg_match($poBoxRegex, $address2)
