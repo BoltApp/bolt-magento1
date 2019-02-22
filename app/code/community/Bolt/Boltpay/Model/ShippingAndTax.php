@@ -318,7 +318,7 @@ class Bolt_Boltpay_Model_ShippingAndTax extends Mage_Core_Model_Abstract
 
         return preg_match($poBoxRegex, $address1)
             || preg_match($poBoxRegex, $address2)
-            || preg_match($poBoxRegexComprehensive, $address1)
-            || preg_match($poBoxRegexComprehensive, $address2);
+            || preg_match($poBoxRegexStrict, $address1)
+            || preg_match($poBoxRegexStrict, $address2);
     }
 }
