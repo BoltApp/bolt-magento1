@@ -368,12 +368,15 @@ class Bolt_Boltpay_Model_ShippingAndTaxTest extends PHPUnit_Framework_TestCase
         $address4 = 'PO Box 456';
         $address5 = 'PO Box #456';
         $address6 = 'Post Office Box #456';
+        $address7 = 'PO.BOX';
+
         $check1 = $this->currentMock->doesAddressContainPOBox($address1);
         $check2 = $this->currentMock->doesAddressContainPOBox($address2);
         $check3 = $this->currentMock->doesAddressContainPOBox($address3);
         $check4 = $this->currentMock->doesAddressContainPOBox($address4);
         $check5 = $this->currentMock->doesAddressContainPOBox($address5);
         $check6 = $this->currentMock->doesAddressContainPOBox($address6);
+        $check7 = $this->currentMock->doesAddressContainPOBox($address7);
         $additionalCheck1 = $this->currentMock->doesAddressContainPOBox($address1, $address2);
         $additionalCheck2 = $this->currentMock->doesAddressContainPOBox($address1, $address3);
         $additionalCheck3 = $this->currentMock->doesAddressContainPOBox($address2, $address3);
@@ -384,6 +387,7 @@ class Bolt_Boltpay_Model_ShippingAndTaxTest extends PHPUnit_Framework_TestCase
         $this->assertTrue($check4);
         $this->assertTrue($check5);
         $this->assertTrue($check6);
+        $this->assertTrue($check7);
         $this->assertTrue($additionalCheck1);
         $this->assertTrue($additionalCheck2);
         $this->assertTrue($additionalCheck3);
