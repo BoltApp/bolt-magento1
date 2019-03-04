@@ -76,7 +76,7 @@ trait Bolt_Boltpay_OrderControllerTrait {
 
         if (!$cart_data) {
             $immutableQuote = $this->cloneQuote($sessionQuote, $checkoutType);
-            $cart_data = $boltpayCheckout->buildCartData( $boltOrder->getBoltOrderToken($immutableQuote, $checkoutType) );
+            $cart_data = $boltpayCheckout->buildCartData($boltOrder->getBoltOrderToken($immutableQuote, $checkoutType),$checkoutType);
         }
 
         $boltOrder->cacheCartData($cart_data, $sessionQuote, $checkoutType);
