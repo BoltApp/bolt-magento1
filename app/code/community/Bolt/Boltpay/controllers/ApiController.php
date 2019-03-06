@@ -189,7 +189,7 @@ class Bolt_Boltpay_ApiController extends Mage_Core_Controller_Front_Action
             $parentQuote->removeAllItems()->save();
             //////////////////////////////////////////////
 
-        } catch (Bolt_Boltpay_InvalidTransitionException $boltPayInvalidTransitionException) {
+        } catch (Bolt_Boltpay_OrderCreationException $boltPayInvalidTransitionException) {
 
             if ($boltPayInvalidTransitionException->getOldStatus() == Bolt_Boltpay_Model_Payment::TRANSACTION_ON_HOLD) {
                 $this->getResponse()->setHttpResponseCode(503)
@@ -242,7 +242,96 @@ class Bolt_Boltpay_ApiController extends Mage_Core_Controller_Front_Action
         }
     }
 
-    protected function getCaptureAmount($transaction) {
+
+	public function create_orderAction() {
+
+		$hmacHeader = @$_SERVER['HTTP_X_BOLT_HMAC_SHA256'];
+
+		$requestJson = file_get_contents('php://input');
+		$transaction = json_decode($requestJson);
+
+		/** @var Bolt_Boltpay_Helper_Data $boltHelperBase */
+		$boltHelperBase = Mage::helper('boltpay');
+
+		$boltHelper = Mage::helper('boltpay/api');
+
+		Mage::helper('boltpay/api')->setResponseContextHeaders();
+
+		if (!$boltHelper->verify_hook($requestJson, $hmacHeader)) {
+			$exception = new Exception($boltHelperBase->__('Hook request failed validation.'));
+			$this->getResponse()->setHttpResponseCode(412);
+			$this->getResponse()->setBody(json_encode(array('status' => 'failure', 'error' => array('code' => 6001, 'message' => $exception->getMessage()))));
+
+			$this->getResponse()->setException($exception);
+			Mage::helper('boltpay/bugsnag')->notifyException($exception);
+			return;
+		}
+
+		/** @var  Bolt_Boltpay_Model_Order $orderModel */
+		$orderModel = Mage::getModel('boltpay/order');
+		/** @var Bolt_Boltpay_Helper_Transaction $transactionHelper */
+		$transactionHelper = Mage::helper('boltpay/transaction');
+
+		$immutableQuoteId = $transactionHelper->getImmutableQuoteIdFromTransaction($transaction);
+		$order = $orderModel->getOrderByQuoteId($immutableQuoteId);
+
+		if ($order->isObjectNew()) {
+			/** @var Mage_Sales_Model_Order $order */
+			$order = Mage::getModel('boltpay/order')->createOrder($reference = null, $sessionQuoteId = null, $isPreAuthCreation = true, json_decode($requestJson));
+		}
+
+		/* @var Mage_Sales_Model_Quote $immutableQuote */
+		$immutableQuote = Mage::getModel('sales/quote')->loadByIdWithoutStore($order->getQuoteId());
+		$recurringPaymentProfiles = $immutableQuote->collectTotals()->prepareRecurringPaymentProfiles();
+
+		/***********************/
+		// Set session quote to real customer quote
+		$session = Mage::getSingleton('checkout/session');
+		$session->setQuoteId($immutableQuoteId);
+		/**************/
+
+		$successUrlPath = Mage::helper('boltpay/url')->getMagentoUrl(Mage::getStoreConfig('payment/boltpay/successpage')) ?: '/';
+		if ($successUrlPath[strlen($successUrlPath) - 1] === '/' ) $successUrlPath = substr( $successUrlPath, 0, -1);
+
+		$successUrlQueryString = "?lastQuoteId={$immutableQuote->getParentQuoteId()}&lastSuccessQuoteId={$immutableQuote->getParentQuoteId()}&lastOrderId={$order->getId()}&lastRealOrderId={$order->getIncrementId()}";
+
+		$recurringPaymentProfilesIds = array();
+		/** @var Mage_Payment_Model_Recurring_Profile $profile */
+		foreach((array)$recurringPaymentProfiles as $profile) {
+			$recurringPaymentProfilesIds[] = $profile->getId();
+		}
+
+		if ($recurringPaymentProfilesIds) {
+			$successUrlQueryString .= "&lastRecurringProfileIds=" . implode(",", $recurringPaymentProfilesIds);
+		}
+
+		$orderSuccessUrl = $successUrlPath . $successUrlQueryString;
+
+		/* @var Mage_Sales_Model_Quote $parentQuote */
+		$parentQuote = Mage::getModel('sales/quote')->loadByIdWithoutStore($immutableQuote->getParentQuoteId());
+
+
+		if ($temp = $parentQuote->getExtShippingInfo()) {
+			if (!$immutableQuote->getExtShippingInfo()) {
+				$immutableQuote->setExtShippingInfo($temp)->save();
+			}
+		}
+
+		$parentQuote->setExtShippingInfo(substr($successUrlQueryString, 1))->save();
+
+		$this->getResponse()->setBody(
+			json_encode(
+				array(
+					'status' => 'success',
+					'display_id' => $order->getIncrementId(),
+					'total' => (int)($order->getGrandTotal() * 100),
+					'order_received_url' => $orderSuccessUrl
+				)
+			)
+		)->setHttpResponseCode(200);
+	}
+
+	protected function getCaptureAmount($transaction) {
         if(isset($transaction->capture->amount->amount) && is_numeric($transaction->capture->amount->amount)) {
             return $transaction->capture->amount->amount/100;
         }
