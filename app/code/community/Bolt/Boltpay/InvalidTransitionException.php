@@ -21,7 +21,7 @@
  * This exception is thrown when an attempt is made to change a transactions state through
  * and unsupported workflow.
  */
-class Bolt_Boltpay_InvalidTransitionException extends Exception
+class Bolt_Boltpay_InvalidTransitionException extends Bolt_Boltpay_BoltException
 {
     private $_oldStatus;
     private $_newStatus;

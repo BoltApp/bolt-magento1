@@ -31,7 +31,7 @@ class Bolt_Boltpay_Model_Observer
      * @param $observer
      * @throws Exception
      */
-    public function setBoltUserId($observer) 
+    public function setBoltUserId($observer)
     {
 
         $quote = $observer->getEvent()->getQuote();
@@ -249,29 +249,39 @@ class Bolt_Boltpay_Model_Observer
             return;
         }
 
-        $reference = Mage::getSingleton('core/session')->getBoltReference();
-        $transaction = Mage::getSingleton('core/session')->getBoltTransaction() ?: $this->boltHelper()->fetchTransaction($reference);
+        //$reference = Mage::getSingleton('core/session')->getBoltReference();
+        $transaction = Mage::getSingleton('core/session')->getBoltTransaction(); //?: Mage::helper('boltpay/api')->fetchTransaction($reference);
 
         $boltCartTotal = $transaction->amount->currency_symbol. ($transaction->amount->amount/100);
         $orderTotal = $order->getGrandTotal();
 
+        /*
         $msg = $this->boltHelper()->__(
             "BOLT notification: Authorization requested for %s.  Order total is %s. Bolt transaction: %s/transaction/%s.", 
             $boltCartTotal, $transaction->amount->currency_symbol.$orderTotal, $this->boltHelper()->getBoltMerchantUrl(), $transaction->reference
+        */
+        $msg = Mage::helper('boltpay')->__(
+            "BOLT notification: Authorization requested for %s.  Order total is %s.",
+            $boltCartTotal, $transaction->amount->currency_symbol.$orderTotal, Mage::helper('boltpay/url')->getBoltMerchantUrl()
         );
 
+        /*
         if(Mage::getSingleton('core/session')->getWasCreatedByHook()){ // order is create via AJAX call
             $msg .= $this->boltHelper()->__("  This order was created via webhook (Bolt traceId: <%s>)", $this->boltHelper()->getBoltTraceId());
         }
+        */
 
-        $order->setState(Bolt_Boltpay_Model_Payment::transactionStatusToOrderStatus($transaction->status), true, $msg)
+        $order
+            ->setState('new', 'pending_bolt', $msg)
             ->save();
 
+        /*
         $order->getPayment()
             ->setAdditionalInformation('bolt_transaction_status', $transaction->status)
             ->setAdditionalInformation('bolt_reference', $transaction->reference)
             ->setAdditionalInformation('bolt_merchant_transaction_id', $transaction->id)
             ->setTransactionId($transaction->id)
             ->save();
+        */
     }
 }

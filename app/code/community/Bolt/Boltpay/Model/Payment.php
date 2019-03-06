@@ -933,7 +933,7 @@ class Bolt_Boltpay_Model_Payment extends Mage_Payment_Model_Method_Abstract
      * @param $prevTransactionStatus
      *
      * @return bool
-     * @throws \Bolt_Boltpay_InvalidTransitionException
+     * @throws \Bolt_Boltpay_OrderCreationException
      * @throws \Mage_Core_Exception
      */
     protected function validateWebHook($newTransactionStatus, $prevTransactionStatus)
@@ -955,7 +955,8 @@ class Bolt_Boltpay_Model_Payment extends Mage_Payment_Model_Method_Abstract
 
         if (!array_intersect($requestedStateOrAll, $validNextStatuses)) {
             throw new Bolt_Boltpay_InvalidTransitionException(
-                $prevTransactionStatus, $newTransactionStatus, $this->boltHelper()->__("Cannot transition a transaction from %s to %s", $prevTransactionStatus, $newTransactionStatus));
+                $prevTransactionStatus, $newTransactionStatus, $this->boltHelper()->__("Cannot transition a transaction from %s to %s", $prevTransactionStatus, $newTransactionStatus)
+            );
         }
 
         return true;
