@@ -16,17 +16,20 @@
  */
 
 /**
- * Class Bolt_Boltpay_Helper_Api
+ * Trait Bolt_Boltpay_Helper_ApiTrait
  *
- * The Magento Helper class that provides utility methods for the following operations:
+ * Provides utility methods related to the Bolt and Merchant side API's including:
  *
  * 1. Fetching the transaction info by calling the Fetch Bolt API endpoint.
  * 2. Verifying Hook Requests.
- * 3. Makes the calls towards Bolt API.
+ * 3. Making the calls towards Bolt API.
  * 4. Generates Bolt order submission data.
+ *
  */
-class Bolt_Boltpay_Helper_Api extends Bolt_Boltpay_Helper_Data
-{
+trait Bolt_Boltpay_Helper_ApiTrait {
+
+    use Bolt_Boltpay_Helper_UrlTrait;
+
     protected $curlHeaders;
     protected $curlBody;
 
@@ -68,7 +71,7 @@ class Bolt_Boltpay_Helper_Api extends Bolt_Boltpay_Helper_Data
     private function verify_hook_api($payload, $hmacHeader)
     {
         try {
-            $url = Mage::helper('boltpay/url')->getApiUrl() . "/v1/merchant/verify_signature";
+            $url = $this->getApiUrl() . "/v1/merchant/verify_signature";
 
             $key = Mage::helper('core')->decrypt(Mage::getStoreConfig('payment/boltpay/api_key'));
 
@@ -83,19 +86,19 @@ class Bolt_Boltpay_Helper_Api extends Bolt_Boltpay_Helper_Data
             curl_setopt($ch, CURLOPT_HTTPHEADER, $httpHeader);
             curl_setopt($ch, CURLOPT_POST, true);
             curl_setopt($ch, CURLOPT_POSTFIELDS, $payload);
-            Mage::helper('boltpay/bugsnag')->addMetaData(array('BOLT API REQUEST' => array('verify-hook-api-header'=>$httpHeader)),true);
-            Mage::helper('boltpay/bugsnag')->addMetaData(array('BOLT API REQUEST' => array('verify-hook-api-data'=>$payload)),true);
+            $this->addMetaData(array('BOLT API REQUEST' => array('verify-hook-api-header'=>$httpHeader)),true);
+            $this->addMetaData(array('BOLT API REQUEST' => array('verify-hook-api-data'=>$payload)),true);
             $result = curl_exec($ch);
 
             $response = curl_getinfo($ch, CURLINFO_HTTP_CODE);
             $this->setCurlResultWithHeader($ch, $result);
 
             $resultJSON = $this->getCurlJSONBody();
-            Mage::helper('boltpay/bugsnag')->addMetaData(array('BOLT API RESPONSE' => array('verify-hook-api-response'=>$resultJSON)),true);
+            $this->addMetaData(array('BOLT API RESPONSE' => array('verify-hook-api-response'=>$resultJSON)),true);
 
             return $response == 200;
         } catch (Exception $e) {
-            Mage::helper('boltpay/bugsnag')->notifyException($e);
+            $this->notifyException($e);
             return false;
         }
 
@@ -126,7 +129,7 @@ class Bolt_Boltpay_Helper_Api extends Bolt_Boltpay_Helper_Data
      */
     public function transmit($command, $data, $object='merchant', $type='transactions', $storeId = null)
     {
-        $url = Mage::helper('boltpay/url')->getApiUrl($storeId) . 'v1/';
+        $url = $this->getApiUrl($storeId) . 'v1/';
 
         if($command == 'sign' || $command == 'orders') {
             $url .= $object . '/' . $command;
@@ -151,9 +154,7 @@ class Bolt_Boltpay_Helper_Api extends Bolt_Boltpay_Helper_Data
             $key = Mage::getStoreConfig('payment/boltpay/api_key', $storeId);
         }
 
-        //Mage::log('KEY: ' . Mage::helper('core')->decrypt($key), null, 'bolt.log');
-
-        $contextInfo = Mage::helper('boltpay/bugsnag')->getContextInfo();
+        $contextInfo = $this->getContextInfo();
         $headerInfo = array(
             'Content-Type: application/json',
             'Content-Length: ' . strlen($params),
@@ -163,8 +164,8 @@ class Bolt_Boltpay_Helper_Api extends Bolt_Boltpay_Helper_Data
             'X-Bolt-Plugin-Version: ' . $contextInfo["Bolt-Plugin-Version"]
         );
         curl_setopt($ch, CURLOPT_HTTPHEADER, $headerInfo);
-        Mage::helper('boltpay/bugsnag')->addMetaData(array('BOLT API REQUEST' => array('header'=>$headerInfo)));
-        Mage::helper('boltpay/bugsnag')->addMetaData(array('BOLT API REQUEST' => array('data'=>$data)),true);
+        $this->addMetaData(array('BOLT API REQUEST' => array('header'=>$headerInfo)));
+        $this->addMetaData(array('BOLT API REQUEST' => array('data'=>$data)),true);
         curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
         curl_setopt($ch, CURLOPT_HEADER, true);
 
@@ -181,7 +182,7 @@ class Bolt_Boltpay_Helper_Api extends Bolt_Boltpay_Helper_Data
         $this->setCurlResultWithHeader($ch, $result);
 
         $resultJSON = $this->getCurlJSONBody();
-        Mage::helper('boltpay/bugsnag')->addMetaData(array('BOLT API RESPONSE' => array('BOLT-RESPONSE'=>$resultJSON)),true);
+        $this->addMetaData(array('BOLT API RESPONSE' => array('BOLT-RESPONSE'=>$resultJSON)),true);
         $jsonError = $this->handleJSONParseError();
         if ($jsonError != null) {
             curl_close($ch);
@@ -200,7 +201,7 @@ class Bolt_Boltpay_Helper_Api extends Bolt_Boltpay_Helper_Data
      */
     public function setResponseContextHeaders()
     {
-        $contextInfo = Mage::helper('boltpay/bugsnag')->getContextInfo();
+        $contextInfo = $this->getContextInfo();
 
         Mage::app()->getResponse()
             ->setHeader('User-Agent', 'BoltPay/Magento-' . $contextInfo["Magento-Version"] . '/' . $contextInfo["Bolt-Plugin-Version"], true)
@@ -225,7 +226,7 @@ class Bolt_Boltpay_Helper_Api extends Bolt_Boltpay_Helper_Data
         foreach(explode("\r\n", $this->curlHeaders) as $row) {
             if(preg_match('/(.*?): (.*)/', $row, $matches)) {
                 if(count($matches) == 3 && $matches[1] == 'X-Bolt-Trace-Id') {
-                    Mage::helper('boltpay/bugsnag')->setBoltTraceId($matches[2]);
+                    $this->setBoltTraceId($matches[2]);
                     break;
                 }
             }
@@ -249,7 +250,7 @@ class Bolt_Boltpay_Helper_Api extends Bolt_Boltpay_Helper_Data
     private function _handleErrorResponse($response, $url, $request)
     {
         if (is_null($response)) {
-            $message = Mage::helper('boltpay')->__("BoltPay Gateway error: No response from Bolt. Please re-try again");
+            $message = $this->__("BoltPay Gateway error: No response from Bolt. Please re-try again");
             Mage::throwException($message);
         } elseif (self::isResponseError($response)) {
             if (property_exists($response, 'errors')) {
@@ -257,9 +258,9 @@ class Bolt_Boltpay_Helper_Api extends Bolt_Boltpay_Helper_Data
                 Mage::register("bolt_api_error", $response->errors[0]->message);
             }
 
-            $message = Mage::helper('boltpay')->__("BoltPay Gateway error for %s: Request: %s, Response: %s", $url, $request, json_encode($response, true));
+            $message = $this->__("BoltPay Gateway error for %s: Request: %s, Response: %s", $url, $request, json_encode($response, true));
 
-            Mage::helper('boltpay/bugsnag')->notifyException(new Exception($message));
+            $this->notifyException(new Exception($message));
             Mage::throwException($message);
         }
 
@@ -278,22 +279,22 @@ class Bolt_Boltpay_Helper_Api extends Bolt_Boltpay_Helper_Data
                 return null;
 
             case JSON_ERROR_DEPTH:
-                return Mage::helper('boltpay')->__('Maximum stack depth exceeded');
+                return $this->__('Maximum stack depth exceeded');
 
             case JSON_ERROR_STATE_MISMATCH:
-                return Mage::helper('boltpay')->__('Underflow or the modes mismatch');
+                return $this->__('Underflow or the modes mismatch');
 
             case JSON_ERROR_CTRL_CHAR:
-                return Mage::helper('boltpay')->__('Unexpected control character found');
+                return $this->__('Unexpected control character found');
 
             case JSON_ERROR_SYNTAX:
-                return Mage::helper('boltpay')->__('Syntax error, malformed JSON');
+                return $this->__('Syntax error, malformed JSON');
 
             case JSON_ERROR_UTF8:
-                return Mage::helper('boltpay')->__('Malformed UTF-8 characters, possibly incorrectly encoded');
+                return $this->__('Malformed UTF-8 characters, possibly incorrectly encoded');
 
             default:
-                return Mage::helper('boltpay')->__('Unknown error');
+                return $this->__('Unknown error');
         }
     }
 
@@ -307,4 +308,5 @@ class Bolt_Boltpay_Helper_Api extends Bolt_Boltpay_Helper_Data
     {
         return property_exists($response, 'errors') || property_exists($response, 'error_code');
     }
+
 }

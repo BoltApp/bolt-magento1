@@ -16,25 +16,12 @@
  */
 
 /**
- * Class Bolt_Boltpay_Model_Source_Themes
+ * Class Bolt_Boltpay_Model_Abstract
  *
- * This class defines options for themes
+ * The Bolt Model superclass
+ *
  */
-class Bolt_Boltpay_Model_Source_Themes
+class Bolt_Boltpay_Model_Abstract extends Mage_Core_Model_Abstract
 {
     use Bolt_Boltpay_BoltGlobalTrait;
-
-    public function toOptionArray()
-    {
-        return array(
-            array(
-                'value' => 'light',
-                'label' => static::helper()->__('Light, for dark backgrounds')
-            ),
-            array(
-                'value' => 'dark',
-                'label' => static::helper()->__('Dark, for light backgrounds')
-            ),
-        );
-    }
 }

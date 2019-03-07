@@ -21,7 +21,7 @@
  * The Magento Model class that provides shipping and tax related utility methods
  *
  */
-class Bolt_Boltpay_Model_ShippingAndTax extends Mage_Core_Model_Abstract
+class Bolt_Boltpay_Model_ShippingAndTax extends Bolt_Boltpay_Model_Abstract
 {
     /**
      *  Updates the shipping address data and, if necessary, the fills in missing
@@ -40,7 +40,7 @@ class Bolt_Boltpay_Model_ShippingAndTax extends Mage_Core_Model_Abstract
         $regionId = $directory->getRegionId(); // This is require field for calculation: shipping, shopping price rules and etc.
 
         if (!property_exists($shippingAddress, 'postal_code') || !property_exists($shippingAddress, 'country_code')) {
-            throw new Exception(Mage::helper('boltpay')->__("Address must contain postal_code and country_code."));
+            throw new Exception(static::helper()->__("Address must contain postal_code and country_code."));
         }
 
         $shippingStreet = trim(
@@ -126,16 +126,16 @@ class Bolt_Boltpay_Model_ShippingAndTax extends Mage_Core_Model_Abstract
         );
 
         try {
-            Mage::helper('boltpay')->collectTotals(Mage::getModel('sales/quote')->load($quote->getId()));
+            static::helper()->collectTotals(Mage::getModel('sales/quote')->load($quote->getId()));
             $originalCouponCode = $quote->getCouponCode();
 
             if ($parentQuote) $quote->setCouponCode($parentQuote->getCouponCode());
 
             //we should first determine if the cart is virtual
             if($quote->isVirtual()){
-                Mage::helper('boltpay')->collectTotals($quote, true);
+                static::helper()->collectTotals($quote, true);
                 $option = array(
-                    "service"   => Mage::helper('boltpay')->__('No Shipping Required'),
+                    "service"   => static::helper()->__('No Shipping Required'),
                     "reference" => 'noshipping',
                     "cost" => 0,
                     "tax_amount" => abs(round($quote->getBillingAddress()->getTaxAmount() * 100))
@@ -158,9 +158,9 @@ class Bolt_Boltpay_Model_ShippingAndTax extends Mage_Core_Model_Abstract
 
                 if ($rate->getErrorMessage()) {
                     $metaData = array('quote' => var_export($quote->debug(), true));
-                    Mage::helper('boltpay/bugsnag')->notifyException(
+                    static::helper()->notifyException(
                         new Exception(
-                            Mage::helper('boltpay')->__("Error getting shipping option for %s: %s", $rate->getCarrierTitle(), $rate->getErrorMessage())
+                            static::helper()->__("Error getting shipping option for %s: %s", $rate->getCarrierTitle(), $rate->getErrorMessage())
                         ),
                         $metaData
                     );
@@ -174,8 +174,8 @@ class Bolt_Boltpay_Model_ShippingAndTax extends Mage_Core_Model_Abstract
                 if (empty($rateCode)) {
                     $metaData = array('quote' => var_export($quote->debug(), true));
 
-                    Mage::helper('boltpay/bugsnag')->notifyException(
-                        new Exception( Mage::helper('boltpay')->__('Rate code is empty. ') . var_export($rate->debug(), true) ),
+                    static::helper()->notifyException(
+                        new Exception( static::helper()->__('Rate code is empty. ') . var_export($rate->debug(), true) ),
                         $metaData
                     );
                 }
@@ -225,7 +225,7 @@ class Bolt_Boltpay_Model_ShippingAndTax extends Mage_Core_Model_Abstract
                 $item->setData('base_discount_amount', $item->getOrigData('base_discount_amount'));
             }
 
-            Mage::helper('boltpay')->collectTotals($quote, true);
+            static::helper()->collectTotals($quote, true);
 
             if(!empty($shippingAddressId) && $shippingAddressId != $shippingAddress->getData('address_id')) {
                 $shippingAddress->setData('address_id', $shippingAddressId);

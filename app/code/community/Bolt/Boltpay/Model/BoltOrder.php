@@ -21,7 +21,7 @@
  * The Magento Model class that provides order related utility methods
  *
  */
-class Bolt_Boltpay_Model_BoltOrder extends Mage_Core_Model_Abstract
+class Bolt_Boltpay_Model_BoltOrder extends Bolt_Boltpay_Model_Abstract
 {
     const ITEM_TYPE_PHYSICAL = 'physical';
     const ITEM_TYPE_DIGITAL  = 'digital';
@@ -82,8 +82,6 @@ class Bolt_Boltpay_Model_BoltOrder extends Mage_Core_Model_Abstract
      */
     public function buildCart($quote, $multipage)
     {
-        /** @var Bolt_Boltpay_Helper_Data $boltHelper */
-        $boltHelper = Mage::helper('boltpay');
 
         ///////////////////////////////////////////////////////////////////////////////////
         // Get quote totals
@@ -115,7 +113,7 @@ class Bolt_Boltpay_Model_BoltOrder extends Mage_Core_Model_Abstract
          */
         /***************************************************/
 
-        $boltHelper->collectTotals($quote)->save();
+        static::helper()->collectTotals($quote)->save();
 
         $totals = $quote->getTotals();
         ///////////////////////////////////////////////////////////////////////////////////
@@ -127,8 +125,8 @@ class Bolt_Boltpay_Model_BoltOrder extends Mage_Core_Model_Abstract
             'order_reference' => $quote->getParentQuoteId(),
             'display_id'      => $quote->getReservedOrderId().'|'.$quote->getId(),
             'items'           => array_map(
-                function ($item) use ($quote, &$calculatedTotal, $boltHelper) {
-                    $imageUrl = $boltHelper->getItemImageUrl($item);
+                function ($item) use ($quote, &$calculatedTotal) {
+                    $imageUrl = static::helper()->getItemImageUrl($item);
                     $product   = Mage::getModel('catalog/product')->load($item->getProductId());
                     $type = $product->getTypeId() == 'virtual' ? self::ITEM_TYPE_DIGITAL : self::ITEM_TYPE_PHYSICAL;
 
@@ -285,7 +283,7 @@ class Bolt_Boltpay_Model_BoltOrder extends Mage_Core_Model_Abstract
                             $cartSubmissionData['shipments'] = array(array(
                                 'shipping_address' => $cartShippingAddress,
                                 'tax_amount'       => 0,
-                                'service'          => Mage::helper('boltpay')->__('No Shipping Required'),
+                                'service'          => static::helper()->__('No Shipping Required'),
                                 'reference'        => "noshipping",
                                 'cost'             => 0
                             ));
@@ -477,9 +475,6 @@ class Bolt_Boltpay_Model_BoltOrder extends Mage_Core_Model_Abstract
             return false;
         }
 
-        /** @var Bolt_Boltpay_Helper_Bugsnag $bugsnag */
-        $bugsnag = Mage::helper('boltpay/bugsnag');
-
         $quote = $billingAddress->getQuote();
 
         $wasCorrected = false;
@@ -491,7 +486,7 @@ class Bolt_Boltpay_Model_BoltOrder extends Mage_Core_Model_Abstract
         )
         {
             if ($notifyBugsnag) {
-                $bugsnag->notifyException(
+                static::helper()->notifyException(
                     new Exception("Missing critical billing data. "
                         ." Street: ". $billingAddress->getStreetFull()
                         ." City: ". $billingAddress->getCity()
@@ -517,7 +512,7 @@ class Bolt_Boltpay_Model_BoltOrder extends Mage_Core_Model_Abstract
         if (!trim($billingAddress->getName())) {
 
             if ($notifyBugsnag) {
-                $bugsnag->notifyException(
+                static::helper()->notifyException(
                     new Exception("Missing billing name."),
                     array(),
                     "info"
@@ -537,7 +532,7 @@ class Bolt_Boltpay_Model_BoltOrder extends Mage_Core_Model_Abstract
 
         if (!trim($billingAddress->getTelephone())) {
             if ($notifyBugsnag) {
-                $bugsnag->notifyException(
+                static::helper()->notifyException(
                     new Exception("Missing billing telephone."),
                     array(),
                     "info"
@@ -685,9 +680,6 @@ class Bolt_Boltpay_Model_BoltOrder extends Mage_Core_Model_Abstract
      */
     public function getBoltOrderToken($quote, $checkoutType)
     {
-
-        /** @var Bolt_Boltpay_Helper_Api $boltHelper */
-        $boltHelper = Mage::helper('boltpay/api');
         $isMultiPage = $checkoutType === Bolt_Boltpay_Block_Checkout_Boltpay::CHECKOUT_TYPE_MULTI_PAGE;
 
         $items = $quote->getAllVisibleItems();
@@ -701,7 +693,7 @@ class Bolt_Boltpay_Model_BoltOrder extends Mage_Core_Model_Abstract
 
         if (empty($items)) {
 
-            return json_decode('{"token" : "", "error": "'.Mage::helper('boltpay')->__('Your shopping cart is empty. Please add products to the cart.').'"}');
+            return json_decode('{"token" : "", "error": "'.static::helper()->__('Your shopping cart is empty. Please add products to the cart.').'"}');
 
         } else if (
             !$isMultiPage
@@ -710,11 +702,11 @@ class Bolt_Boltpay_Model_BoltOrder extends Mage_Core_Model_Abstract
         ) {
 
             if (!$quote->isVirtual()){
-                return json_decode('{"token" : "", "error": "'.Mage::helper('boltpay')->__('A valid shipping method must be selected.  Please check your address data and that you have selected a shipping method, then, refresh to try again.').'"}');
+                return json_decode('{"token" : "", "error": "'.static::helper()->__('A valid shipping method must be selected.  Please check your address data and that you have selected a shipping method, then, refresh to try again.').'"}');
             }
 
             if (!$this->validateVirtualQuote($quote)){
-                return json_decode('{"token" : "", "error": "'.Mage::helper('boltpay')->__('Billing address is required.').'"}');
+                return json_decode('{"token" : "", "error": "'.static::helper()->__('Billing address is required.').'"}');
             }
         }
 
@@ -722,7 +714,7 @@ class Bolt_Boltpay_Model_BoltOrder extends Mage_Core_Model_Abstract
         $orderRequest = $this->buildOrder($quote, $isMultiPage);
 
         // Calls Bolt create order API
-        return $boltHelper->transmit('orders', $orderRequest);
+        return static::helper()->transmit('orders', $orderRequest);
     }
 
 
@@ -736,13 +728,13 @@ class Bolt_Boltpay_Model_BoltOrder extends Mage_Core_Model_Abstract
     public function getBoltOrderTokenPromise($checkoutType) {
 
         if ( $checkoutType === Bolt_Boltpay_Block_Checkout_Boltpay::CHECKOUT_TYPE_FIRECHECKOUT ) {
-            $checkoutTokenUrl = Mage::helper('boltpay/url')->getMagentoUrl('boltpay/order/firecheckoutcreate');
+            $checkoutTokenUrl = static::helper()->getMagentoUrl('boltpay/order/firecheckoutcreate');
             $parameters = 'checkout.getFormData ? checkout.getFormData() : Form.serialize(checkout.form, true)';
         } else if ( $checkoutType === Bolt_Boltpay_Block_Checkout_Boltpay::CHECKOUT_TYPE_ADMIN ) {
-            $checkoutTokenUrl = Mage::helper('boltpay/url')->getMagentoUrl("adminhtml/sales_order_create/create/checkoutType/$checkoutType", array(), true);
+            $checkoutTokenUrl = static::helper()->getMagentoUrl("adminhtml/sales_order_create/create/checkoutType/$checkoutType", array(), true);
             $parameters = "''";
         } else {
-            $checkoutTokenUrl = Mage::helper('boltpay/url')->getMagentoUrl("boltpay/order/create/checkoutType/$checkoutType");
+            $checkoutTokenUrl = static::helper()->getMagentoUrl("boltpay/order/create/checkoutType/$checkoutType");
             $parameters = "''";
         }
 
@@ -771,6 +763,121 @@ PROMISE;
 
     }
 
+    /**
+     * Creates a clone of a quote including items, addresses, customer details,
+     * and shipping and tax options when
+     *
+     * @param Mage_Sales_Model_Quote $sourceQuote The quote to be cloned
+     *
+     * @param string                 $checkoutType
+     *
+     * @return Mage_Sales_Model_Quote  The cloned copy of the source quote
+     * @throws \Exception
+     */
+    public function cloneQuote(
+        Mage_Sales_Model_Quote $sourceQuote,
+        $checkoutType = Bolt_Boltpay_Block_Checkout_Boltpay::CHECKOUT_TYPE_MULTI_PAGE
+    )
+    {
+        /* @var Mage_Sales_Model_Quote $clonedQuote */
+        $clonedQuote = Mage::getSingleton('sales/quote');
+
+        try {
+            // overridden quote classes may throw exceptions in post merge events.  We report
+            // these in bugsnag, but these are non-fatal exceptions, so, we continue processing
+            $clonedQuote->merge($sourceQuote);
+        } catch (Exception $e) {
+            static::helper()->notifyException($e);
+        }
+
+        if ($checkoutType != Bolt_Boltpay_Block_Checkout_Boltpay::CHECKOUT_TYPE_MULTI_PAGE ) {
+            // For the checkout page we want to set the
+            // billing and shipping, and shipping method at this time.
+            // For multi-page, we add the addresses during the shipping and tax hook
+            // and the chosen shipping method at order save time.
+
+            $shippingAddress = $sourceQuote->getShippingAddress();
+            $billingAddress = $sourceQuote->getBillingAddress();
+
+            if ($checkoutType == Bolt_Boltpay_Block_Checkout_Boltpay::CHECKOUT_TYPE_ADMIN){
+                $shippingData = $shippingAddress->getData();
+                unset($shippingData['address_id']);
+                $shippingAddress = Mage::getSingleton('sales/quote_address')->setData($shippingData);
+            }
+
+            $clonedQuote
+                ->setBillingAddress($billingAddress)
+                ->setShippingAddress($shippingAddress)
+                ->getShippingAddress()
+                ->setShippingMethod($sourceQuote->getShippingAddress()->getShippingMethod())
+                ->save();
+        }
+
+        //////////////////////////////////////////////////////////////////////////////////////////////////
+        // Attempting to reset some of the values already set by merge affects the totals passed to
+        // Bolt in such a way that the grand total becomes 0.  Since we do not need to reset these values
+        // we ignore them all.
+        //////////////////////////////////////////////////////////////////////////////////////////////////
+        $fieldsSetByMerge = array(
+            'coupon_code',
+            'subtotal',
+            'base_subtotal',
+            'subtotal_with_discount',
+            'base_subtotal_with_discount',
+            'grand_total',
+            'base_grand_total',
+            'auctaneapi_discounts',
+            'applied_rule_ids',
+            'items_count',
+            'items_qty',
+            'virtual_items_qty',
+            'trigger_recollect',
+            'can_apply_msrp',
+            'totals_collected_flag',
+            'global_currency_code',
+            'base_currency_code',
+            'store_currency_code',
+            'quote_currency_code',
+            'store_to_base_rate',
+            'store_to_quote_rate',
+            'base_to_global_rate',
+            'base_to_quote_rate',
+            'is_changed',
+            'created_at',
+            'updated_at',
+            'entity_id'
+        );
+
+        // Add all previously saved data that may have been added by other plugins
+        foreach ($sourceQuote->getData() as $key => $value) {
+            if (!in_array($key, $fieldsSetByMerge)) {
+                $clonedQuote->setData($key, $value);
+            }
+        }
+
+        /////////////////////////////////////////////////////////////////
+        // Generate new increment order id and associate it with current quote, if not already assigned
+        // Save the reserved order ID to the session to check order existence at frontend order save time
+        /////////////////////////////////////////////////////////////////
+        $reservedOrderId = $sourceQuote->reserveOrderId()->save()->getReservedOrderId();
+        Mage::getSingleton('core/session')->setReservedOrderId($reservedOrderId);
+
+        $clonedQuote
+            ->setIsActive(false)
+            ->setCustomer($sourceQuote->getCustomer())
+            ->setCustomerGroupId($sourceQuote->getCustomerGroupId())
+            ->setCustomerIsGuest((($sourceQuote->getCustomerId()) ? false : true))
+            ->setReservedOrderId($reservedOrderId)
+            ->setStoreId($sourceQuote->getStoreId())
+            ->setParentQuoteId($sourceQuote->getId())
+            ->save();
+
+        if ($checkoutType == Bolt_Boltpay_Block_Checkout_Boltpay::CHECKOUT_TYPE_ADMIN){
+            $clonedQuote->getShippingAddress()->setCollectShippingRates(true)->collectShippingRates()->save();
+        }
+
+        return $clonedQuote;
+    }
 
     /**
      * Item properties are the order options selected by the customer e.g. color and size

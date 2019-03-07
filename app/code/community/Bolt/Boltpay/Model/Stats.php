@@ -17,6 +17,7 @@
 
 class Bolt_Boltpay_Model_Stats extends Mage_Core_Model_Resource_Db_Abstract
 {
+    use Bolt_Boltpay_BoltGlobalTrait;
 
     protected function _construct() 
     {

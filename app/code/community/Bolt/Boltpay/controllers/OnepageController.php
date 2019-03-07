@@ -24,6 +24,8 @@ require_once 'Mage/Checkout/controllers/OnepageController.php';
  */
 class Bolt_Boltpay_OnepageController extends Mage_Checkout_OnepageController
 {
+    use Bolt_Boltpay_BoltGlobalTrait;
+
     public function saveShippingMethodAction() 
     {
         try {

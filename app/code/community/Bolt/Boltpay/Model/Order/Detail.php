@@ -15,7 +15,7 @@
  * @license    http://opensource.org/licenses/osl-3.0.php  Open Software License (OSL 3.0)
  */
 
-class Bolt_Boltpay_Model_Order_Detail extends Mage_Core_Model_Abstract
+class Bolt_Boltpay_Model_Order_Detail extends Bolt_Boltpay_Model_Abstract
 {
     const ITEM_TYPE_PHYSICAL = 'physical';
     const ITEM_TYPE_DIGITAL = 'digital';
@@ -78,13 +78,13 @@ class Bolt_Boltpay_Model_Order_Detail extends Mage_Core_Model_Abstract
     public function initWithPayment(Mage_Sales_Model_Order_Payment $orderPayment)
     {
         if (!$orderPayment->getId()) {
-            Mage::throwException(Mage::helper('boltpay')->__("No payment found"));
+            Mage::throwException(static::helper()->__("No payment found"));
         }
 
         $order = Mage::getModel('sales/order')->load($orderPayment->getParentId());
 
         if (!$order->getId()) {
-            Mage::throwException(Mage::helper('boltpay')->__("No order found with ID of {$orderPayment->getParentId()}"));
+            Mage::throwException(static::helper()->__("No order found with ID of {$orderPayment->getParentId()}"));
         }
 
         $this->order = $order;
@@ -100,17 +100,15 @@ class Bolt_Boltpay_Model_Order_Detail extends Mage_Core_Model_Abstract
      */
     public function initByReference($reference)
     {
-        /* @var Bolt_Boltpay_Helper_Api $boltHelper */
-        $boltHelper = Mage::helper('boltpay/api');
 
-        $transaction = $boltHelper->fetchTransaction($reference);
+        $transaction = static::helper()->fetchTransaction($reference);
 
         /* If display_id has been confirmed and updated on Bolt, then we should look up the order by display_id */
         $order = Mage::getModel('sales/order')->loadByIncrementId($transaction->order->cart->display_id);
 
         /* If it hasn't been confirmed, or could not be found, we use the quoteId as fallback */
         if ($order->isObjectNew()) {
-            $quoteId = Mage::helper('boltpay/transaction')->getImmutableQuoteIdFromTransaction($transaction);
+            $quoteId = static::helper()->getImmutableQuoteIdFromTransaction($transaction);
             $order = Mage::getModel('boltpay/order')->getOrderByQuoteId($quoteId);
         }
 
@@ -151,12 +149,12 @@ class Bolt_Boltpay_Model_Order_Detail extends Mage_Core_Model_Abstract
     protected function validateOrderDetail()
     {
         if (!$this->order->getId()) {
-            Mage::throwException(Mage::helper('boltpay')->__("No order found"));
+            Mage::throwException(static::helper()->__("No order found"));
 
         }
 
         if ($this->order->getPayment()->getMethod() != 'boltpay') {
-            Mage::throwException(Mage::helper('boltpay')->__("Payment method is not 'boltpay'"));
+            Mage::throwException(static::helper()->__("Payment method is not 'boltpay'"));
         }
 
         return true;
@@ -230,12 +228,10 @@ class Bolt_Boltpay_Model_Order_Detail extends Mage_Core_Model_Abstract
     protected function getGeneratedItems()
     {
         $items = $this->order->getAllVisibleItems();
-        /** @var Bolt_Boltpay_Helper_Data $boltHelper */
-        $boltHelper = Mage::helper('boltpay');
 
         return array_map(
-            function ($item) use ($boltHelper) {
-                $imageUrl = $boltHelper->getItemImageUrl($item);
+            function ($item) {
+                $imageUrl = static::helper()->getItemImageUrl($item);
                 /** @var Mage_Catalog_Model_Product $product */
                 $product = Mage::getModel('catalog/product')->load($item->getProductId());
                 $type = $product->getTypeId() == 'virtual' ? self::ITEM_TYPE_DIGITAL : self::ITEM_TYPE_PHYSICAL;
