@@ -113,6 +113,11 @@ class Bolt_Boltpay_Model_ShippingAndTax extends Mage_Core_Model_Abstract
      */
     public function getShippingAndTaxEstimate( $quote )
     {
+        /** @var Mage_Sales_Model_Quote $parentQuote */
+        $parentQuote = $quote->getParentQuoteId()
+            ? Mage::getModel('sales/quote')->loadByIdWithoutStore($quote->getParentQuoteId())
+            : null;
+
         $response = array(
             'shipping_options' => array(),
             'tax_result' => array(
@@ -120,70 +125,74 @@ class Bolt_Boltpay_Model_ShippingAndTax extends Mage_Core_Model_Abstract
             ),
         );
 
-        Mage::helper('boltpay')->collectTotals(Mage::getModel('sales/quote')->load($quote->getId()));
+        try {
+            Mage::helper('boltpay')->collectTotals(Mage::getModel('sales/quote')->load($quote->getId()));
+            $originalCouponCode = $quote->getCouponCode();
 
-        //we should first determine if the cart is virtual
-        if($quote->isVirtual()){
-            Mage::helper('boltpay')->collectTotals($quote, true);
-            $option = array(
-                "service"   => Mage::helper('boltpay')->__('No Shipping Required'),
-                "reference" => 'noshipping',
-                "cost" => 0,
-                "tax_amount" => abs(round($quote->getBillingAddress()->getTaxAmount() * 100))
-            );
-            $response['shipping_options'][] = $option;
-            $quote->setTotalsCollectedFlag(true);
-            return $response;
-        }
+            if ($parentQuote) $quote->setCouponCode($parentQuote->getCouponCode());
 
-        /*****************************************************************************************
-         * Calculate tax
-         *****************************************************************************************/
-        $this->applyShippingRate($quote, null);
-
-        $shippingAddress = $quote->getShippingAddress();
-        $shippingAddress->setCollectShippingRates(true)->collectShippingRates()->save();
-
-        $originalDiscountedSubtotal = $quote->getSubtotalWithDiscount();
-
-        $rates = $this->getSortedShippingRates($shippingAddress);
-
-        foreach ($rates as $rate) {
-
-            if ($rate->getErrorMessage()) {
-                $metaData = array('quote' => var_export($quote->debug(), true));
-                Mage::helper('boltpay/bugsnag')->notifyException(
-                    new Exception(
-                        Mage::helper('boltpay')->__("Error getting shipping option for %s: %s", $rate->getCarrierTitle(), $rate->getErrorMessage())
-                    ),
-                    $metaData
+            //we should first determine if the cart is virtual
+            if($quote->isVirtual()){
+                Mage::helper('boltpay')->collectTotals($quote, true);
+                $option = array(
+                    "service"   => Mage::helper('boltpay')->__('No Shipping Required'),
+                    "reference" => 'noshipping',
+                    "cost" => 0,
+                    "tax_amount" => abs(round($quote->getBillingAddress()->getTaxAmount() * 100))
                 );
-                continue;
+                $response['shipping_options'][] = $option;
+                $quote->setTotalsCollectedFlag(true);
+                return $response;
             }
 
-            $this->applyShippingRate($quote, $rate->getCode());
+            $this->applyShippingRate($quote, null);
 
-            $rateCode = $rate->getCode();
+            $shippingAddress = $quote->getShippingAddress();
+            $shippingAddress->setCollectShippingRates(true)->collectShippingRates()->save();
 
-            if (empty($rateCode)) {
-                $metaData = array('quote' => var_export($quote->debug(), true));
+            $originalDiscountedSubtotal = $quote->getSubtotalWithDiscount();
 
-                Mage::helper('boltpay/bugsnag')->notifyException(
-                    new Exception( Mage::helper('boltpay')->__('Rate code is empty. ') . var_export($rate->debug(), true) ),
-                    $metaData
+            $rates = $this->getSortedShippingRates($shippingAddress);
+
+            foreach ($rates as $rate) {
+
+                if ($rate->getErrorMessage()) {
+                    $metaData = array('quote' => var_export($quote->debug(), true));
+                    Mage::helper('boltpay/bugsnag')->notifyException(
+                        new Exception(
+                            Mage::helper('boltpay')->__("Error getting shipping option for %s: %s", $rate->getCarrierTitle(), $rate->getErrorMessage())
+                        ),
+                        $metaData
+                    );
+                    continue;
+                }
+
+                $this->applyShippingRate($quote, $rate->getCode());
+
+                $rateCode = $rate->getCode();
+
+                if (empty($rateCode)) {
+                    $metaData = array('quote' => var_export($quote->debug(), true));
+
+                    Mage::helper('boltpay/bugsnag')->notifyException(
+                        new Exception( Mage::helper('boltpay')->__('Rate code is empty. ') . var_export($rate->debug(), true) ),
+                        $metaData
+                    );
+                }
+
+                $adjustedShippingAmount = $this->getAdjustedShippingAmount($originalDiscountedSubtotal, $quote);
+
+                $option = array(
+                    "service" => $this->getShippingLabel($rate),
+                    "reference" => $rateCode,
+                    "cost" => round($adjustedShippingAmount * 100),
+                    "tax_amount" => abs(round($shippingAddress->getTaxAmount() * 100))
                 );
+
+                $response['shipping_options'][] = $option;
             }
-
-            $adjustedShippingAmount = $this->getAdjustedShippingAmount($originalDiscountedSubtotal, $quote);
-
-            $option = array(
-                "service" => $this->getShippingLabel($rate),
-                "reference" => $rateCode,
-                "cost" => round($adjustedShippingAmount * 100),
-                "tax_amount" => abs(round($shippingAddress->getTaxAmount() * 100))
-            );
-
-            $response['shipping_options'][] = $option;
+        } finally {
+            $quote->setCouponCode($originalCouponCode);
         }
 
         return $response;
@@ -295,16 +304,21 @@ class Bolt_Boltpay_Model_ShippingAndTax extends Mage_Core_Model_Abstract
     }
 
     /**
-     * Checks wheather a P.O. Box exist in the addresses given
+     * Checks whether a P.O. Box exist in the addresses given
      *
      * @param $address1      The address to be checked for a P.O. Box matching string
-     * @param $address2      If set, second address to be checked.  Useful for checking both shipping and billing in on call.
+     * @param $address2      If set, second address to be checked.  Useful for checking both shipping and billing in one call.
      *
      * @return bool     returns true only if any of the provided addresses contain a P.O. Box.  Otherwise, false
      */
     public function doesAddressContainPOBox($address1, $address2 = null)
     {
         $poBoxRegex = '/^\s*((P(OST)?.?\s*(O(FF(ICE)?)?|B(IN|OX))+.?\s+(B(IN|OX))?)|B(IN|OX))/i';
-        return (preg_match($poBoxRegex, $address1) || preg_match($poBoxRegex, $address2));
+        $poBoxRegexStrict = '/(?:P(?:ost(?:al)?)?[\.\-\s]*(?:(?:O(?:ffice)?[\.\-\s]*)?B(?:ox|in|\b|\d)|o(?:ffice|\b)(?:[-\s]*\d)|code)|box[-\s\b]*\d)/i';
+
+        return preg_match($poBoxRegex, $address1)
+            || preg_match($poBoxRegex, $address2)
+            || preg_match($poBoxRegexStrict, $address1)
+            || preg_match($poBoxRegexStrict, $address2);
     }
 }

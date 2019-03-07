@@ -3,6 +3,7 @@
 <script type="text/javascript">
 var productPageCheckoutSelector = '<?php $this->escapeHtml($this->getProductPageCheckoutSelector()) ?>';
 var order_completed = false;
+var do_checks = 1;
 
 var boltConfigPDP = {
     _jsonProductCart: <?php echo $this->getCartDataJsForProductPage(); ?>,

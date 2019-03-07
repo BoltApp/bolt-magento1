@@ -29,7 +29,7 @@
  * is capitalized, and then prepended with the string 'hasValid' or 'filter',
  * respectively.
  *
- * (e.g. The config `boltPrimaryColor` would have optionally have a
+ * (e.g. The config `boltPrimaryColor` would optionally have a
  * corresponding validation method named `hasValidBoltPrimaryColor` and
  * an optional filter method named `filterBoltPrimaryColor`)
  *
@@ -61,7 +61,7 @@ class Bolt_Boltpay_Model_Admin_ExtraConfig extends Mage_Core_Model_Config_Data
      */
     public function save()
     {
-        $optionsJson = (array) json_decode($this->stripNewLines($this->getValue()));
+        $optionsJson = (array) json_decode($this->normalizeJSON($this->getValue()));
         $areAllOptionsValid = true;
 
         if (json_last_error() === JSON_ERROR_NONE) {
@@ -173,7 +173,7 @@ JS;
         $methodPostfix = ucfirst($configName);
         $filterMethod = 'filter'.$methodPostfix;
 
-        $allExtraConfigs = (array) json_decode($this->stripNewLines(Mage::getStoreConfig('payment/boltpay/extra_options')), true);
+        $allExtraConfigs = (array) json_decode($this->normalizeJSON(Mage::getStoreConfig('payment/boltpay/extra_options')), true);
         $rawValue = @$allExtraConfigs[$configName] ?: '';
 
         return method_exists($this, $filterMethod)
@@ -183,14 +183,14 @@ JS;
 
 
     /**
-     * Strips new lines from the given string.  New line characters are added by the
-     * text area and this breaks JSON decoding
+     * Normalizes JSON by stripping new lines from the given string and returning null in the case of only white space.
+     * New line characters are added by the text area and this breaks JSON decoding
      *
      * @param $string   The string to be stripped of newlines
      *
      * @return string|null    The string stripped of newline characters or null on error
      */
-    private function stripNewLines($string) {
-        return preg_replace( '/(\r\n)|\n|\r/', '', $string );
+    private function normalizeJSON($string) {
+        return trim(preg_replace( '/(\r\n)|\n|\r/', '', $string )) ?: array();
     }
 }
