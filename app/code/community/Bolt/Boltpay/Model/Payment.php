@@ -104,7 +104,7 @@ class Bolt_Boltpay_Model_Payment extends Bolt_Boltpay_Model_Abstract
      */
     public function __construct()
     {
-        if (!Bolt_Boltpay_Helper_Api::$fromHooks) {
+        if (!Bolt_Boltpay_Helper_Data::$fromHooks) {
             $this->_validStateTransitions[self::TRANSACTION_ON_HOLD] = array(self::TRANSACTION_ALL_STATES);
         }
     }
