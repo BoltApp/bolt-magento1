@@ -34,22 +34,18 @@ class Bolt_Boltpay_ShippingControllerTest extends PHPUnit_Framework_TestCase
      */
     public function setUp()
     {
-        $this->_shippingController = new Bolt_Boltpay_ShippingController(
-            new Mage_Core_Controller_Request_Http(),
-            new Mage_Core_Controller_Response_Http()
-        );
+        $this->_shippingController = $this->getMockBuilder( "Bolt_Boltpay_ShippingController")
+            ->setConstructorArgs( array( new Mage_Core_Controller_Request_Http(), new Mage_Core_Controller_Response_Http()) )
+            ->setMethods(array('helper'))
+            ->getMock();
 
-        $stubbedBoltApiHelper = $this->getMockBuilder('Bolt_Boltpay_Helper_Api')
+        $stubbedBoltHelper = $this->getMockBuilder('Bolt_Boltpay_Helper_Data')
             ->setMethods(array('verify_hook'))
             ->getMock();
 
-        $stubbedBoltApiHelper->method('verify_hook')->willReturn(true);
+        $stubbedBoltHelper->method('verify_hook')->willReturn(true);
 
-        $reflectedShippingController = new ReflectionClass($this->_shippingController);
-
-        $reflectedBoltApiHelper = $reflectedShippingController->getProperty('_boltApiHelper');
-        $reflectedBoltApiHelper->setAccessible(true);
-        $reflectedBoltApiHelper->setValue($this->_shippingController, $stubbedBoltApiHelper);
+        $this->_shippingController->method('helper')->willReturn($stubbedBoltHelper);
 
         $this->testHelper = new Bolt_Boltpay_TestHelper();
 

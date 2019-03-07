@@ -15,8 +15,10 @@
  * @license    http://opensource.org/licenses/osl-3.0.php  Open Software License (OSL 3.0)
  */
 
-class Bolt_Boltpay_Model_Payment extends Bolt_Boltpay_Model_Abstract
+class Bolt_Boltpay_Model_Payment extends Mage_Payment_Model_Method_Abstract
 {
+    use Bolt_Boltpay_BoltGlobalTrait;
+
     const REQUEST_TYPE_AUTH_CAPTURE = 'AUTH_CAPTURE';
     const REQUEST_TYPE_AUTH_ONLY    = 'AUTH_ONLY';
     const REQUEST_TYPE_CAPTURE_ONLY = 'CAPTURE_ONLY';
@@ -151,7 +153,8 @@ class Bolt_Boltpay_Model_Payment extends Bolt_Boltpay_Model_Abstract
 
             return static::$_hookTypeToStatusTranslator[$hookType];
         } else {
-            $message = $this->helper()->__('Invalid hook type %s', $hookType);
+            $payment = new Bolt_Boltpay_Model_Payment();
+            $message = $payment->helper()->__('Invalid hook type %s', $hookType);
             Mage::throwException($message);
         }
     }
@@ -654,7 +657,7 @@ class Bolt_Boltpay_Model_Payment extends Bolt_Boltpay_Model_Abstract
         $payment->setAdditionalInformation('bolt_refund_merchant_transaction_ids',
             serialize($refundTransactionIds));
         $payment->setTransactionId(sprintf("%s-refund", $refundReference));
-        $payment->setAdditionalInformation('bolt_transaction_status', $newTransactionStatus);
+        $payment->setAdditionalInformation('bolt_transaction_status', $refundTransactionStatus);
     }
 
     /**
