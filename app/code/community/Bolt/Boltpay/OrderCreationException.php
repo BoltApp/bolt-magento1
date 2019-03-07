@@ -148,18 +148,30 @@ class Bolt_Boltpay_OrderCreationException extends Bolt_Boltpay_BoltException
     const E_BOLT_DISCOUNT_DOES_NOT_EXIST     = 2001007;
 
     /**
+     * @var string The json to be returned to Bolt associated with this exception
+     */
+    protected $json;
+
+    /**
      * Bolt_Boltpay_InvalidTransitionException constructor.
      *
      * @param string $json         		 JSON to be returned to Bolt
      * @param string $message           The exception message to throw.
-     * @param int $code                 The Bolt defined exception code.
+     * @param int $code                 The Bolt
+     * defined exception code.
      * @param Throwable|null $previous  [optional] The previously throwable used for exception chaining.
      */
     public function __construct($json = null, $message = null, $code = 0, Throwable $previous = null)
     {
-        if (empty($json)) {
-        }
         parent::__construct($message, $code, $previous);
+
+        if (empty($json)) {
+            $this->json = $this->helper->__( 'Unable to create order.' );
+        }
+
+        if (empty($message)) {
+            $this->message = $this->helper->__( 'Unable to create order.' );
+        }
     }
 
 }
