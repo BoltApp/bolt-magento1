@@ -66,17 +66,17 @@ class Bolt_Boltpay_ShippingController extends Mage_Core_Controller_Front_Action
 
             $requestData = json_decode($this->_requestJSON);
 
-            if (!static::helper()->verify_hook($this->_requestJSON, $hmacHeader)) {
-                throw new Exception(static::helper()->__("Failed HMAC Authentication"));
+            if (!$this->helper()->verify_hook($this->_requestJSON, $hmacHeader)) {
+                throw new Exception($this->helper()->__("Failed HMAC Authentication"));
             }
 
             $mockTransaction = (object) array("order" => $requestData );
-            $quoteId = static::helper()->getImmutableQuoteIdFromTransaction($mockTransaction);
+            $quoteId = $this->helper()->getImmutableQuoteIdFromTransaction($mockTransaction);
 
             /* @var Mage_Sales_Model_Quote $quote */
             $quote = Mage::getModel('sales/quote')->loadByIdWithoutStore($quoteId);
 
-            static::helper()->setCustomerSessionById($quote->getCustomerId());
+            $this->helper()->setCustomerSessionById($quote->getCustomerId());
 
             /***********************/
             // Set session quote to real customer quote
@@ -94,7 +94,7 @@ class Bolt_Boltpay_ShippingController extends Mage_Core_Controller_Front_Action
                 !$this->_shippingAndTaxModel->isPOBoxAllowed()
                 && $this->_shippingAndTaxModel->doesAddressContainPOBox($shippingAddress->street_address1, $shippingAddress->street_address2)
             ) {
-                $addressErrorDetails = array('code' => 6101, 'message' => static::helper()->__('Address with P.O. Box is not allowed.'));
+                $addressErrorDetails = array('code' => 6101, 'message' => $this->helper()->__('Address with P.O. Box is not allowed.'));
             } else {
                 $addressData = $this->_shippingAndTaxModel->applyShippingAddressToQuote($quote, $shippingAddress);
                 $magentoAddressErrors = $quote->getShippingAddress()->validate();
@@ -142,7 +142,7 @@ class Bolt_Boltpay_ShippingController extends Mage_Core_Controller_Front_Action
 
             $this->getResponse()->setHeader('X-Bolt-Cache-Hit', $cacheBoltHeader);
 
-            static::helper()->setResponseContextHeaders();
+            $this->helper()->setResponseContextHeaders();
 
             $this->getResponse()->setBody($responseJSON);
         } catch (Exception $e) {
@@ -151,7 +151,7 @@ class Bolt_Boltpay_ShippingController extends Mage_Core_Controller_Front_Action
                 $metaData['quote'] = var_export($quote->debug(), true);
             }
 
-            static::helper()->notifyException($e, $metaData);
+            $this->helper()->notifyException($e, $metaData);
             throw $e;
         }
     }
@@ -209,7 +209,7 @@ class Bolt_Boltpay_ShippingController extends Mage_Core_Controller_Front_Action
                 $metaData['cache_key'] = $cachedIdentifier;
                 $metaData['estimate'] = isset($estimateResponse) ? var_export($estimateResponse, true) : '';
 
-                static::helper()->notifyException(
+                $this->helper()->notifyException(
                     $e,
                     $metaData,
                     "info"

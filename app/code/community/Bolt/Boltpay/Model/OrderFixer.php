@@ -51,7 +51,7 @@ class Bolt_Boltpay_Model_OrderFixer extends Bolt_Boltpay_Model_Abstract
             $this->updateOrderTotals();
             $this->notifyAndSaveOrder();
         } catch (\Bolt_Boltpay_BadInputException $e) {
-            static::helper()->notifyException($e);
+            $this->helper()->notifyException($e);
             throw $e;
         }
     }
@@ -77,7 +77,7 @@ class Bolt_Boltpay_Model_OrderFixer extends Bolt_Boltpay_Model_Abstract
 
             return true;
         } catch (\Bolt_Boltpay_BadInputException $e) {
-            static::helper()->notifyException($e);
+            $this->helper()->notifyException($e);
             return false;
         }
     }
@@ -89,7 +89,7 @@ class Bolt_Boltpay_Model_OrderFixer extends Bolt_Boltpay_Model_Abstract
     {
         if (!$this->magentoOrder || !$this->magentoOrder->getId() || !$this->boltTransaction) {
             throw new \Bolt_Boltpay_BadInputException(
-                static::helper()->__('Need to set setup variables in order to use class %s', get_class($this))
+                $this->helper()->__('Need to set setup variables in order to use class %s', get_class($this))
             );
         }
     }
@@ -147,7 +147,7 @@ class Bolt_Boltpay_Model_OrderFixer extends Bolt_Boltpay_Model_Abstract
      */
     protected function notifyAndSaveOrder()
     {
-        $msg = static::helper()->__(
+        $msg = $this->helper()->__(
             "There is a price mismatch issue when saving the order, forcing the price from $%s to $%s",
             $this->originalMagentoGrandTotal,
             $this->getBoltGrandTotal());
@@ -186,9 +186,9 @@ class Bolt_Boltpay_Model_OrderFixer extends Bolt_Boltpay_Model_Abstract
      */
     protected function bugsnagTheItemChange(Mage_Sales_Model_Order_Item $magentoItem, $boltItem)
     {
-        static::helper()->notifyException(
+        $this->helper()->notifyException(
             new Exception(
-                static::helper()->__(
+                $this->helper()->__(
                     "The order item %s price of order #%s has been updated from %s to %s.",
                     $magentoItem->getSku(),
                     $this->magentoOrder->getIncrementId(),

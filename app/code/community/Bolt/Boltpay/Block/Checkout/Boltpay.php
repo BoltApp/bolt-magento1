@@ -43,7 +43,7 @@ class Bolt_Boltpay_Block_Checkout_Boltpay extends Mage_Checkout_Block_Onepage_Re
     public function _construct()
     {
         parent::_construct();
-        $this->_jsUrl = static::helper()->getJsUrl() . "/connect.js";
+        $this->_jsUrl = $this->helper()->getJsUrl() . "/connect.js";
     }
 
     /**
@@ -51,7 +51,7 @@ class Bolt_Boltpay_Block_Checkout_Boltpay extends Mage_Checkout_Block_Onepage_Re
      */
     public function getTrackJsUrl()
     {
-        return static::helper()->getJsUrl() . "/track.js";
+        return $this->helper()->getJsUrl() . "/track.js";
     }
 
     /**
@@ -115,7 +115,7 @@ class Bolt_Boltpay_Block_Checkout_Boltpay extends Mage_Checkout_Block_Onepage_Re
                             'merchant_user_id' => $reservedUserId,
                         );
 
-                        $signResponse = static::helper()->transmit('sign', $signRequest);
+                        $signResponse = $this->helper()->transmit('sign', $signRequest);
 
                         if ($signResponse != null) {
                             $hintData['signed_merchant_user_id'] = array(
@@ -130,7 +130,7 @@ class Bolt_Boltpay_Block_Checkout_Boltpay extends Mage_Checkout_Block_Onepage_Re
 
             } catch (Exception $e) {
                 $metaData = array('quote' => var_export($sessionQuote->debug(), true));
-                static::helper()->notifyException(
+                $this->helper()->notifyException(
                     new Exception($e),
                     $metaData
                 );
@@ -139,7 +139,7 @@ class Bolt_Boltpay_Block_Checkout_Boltpay extends Mage_Checkout_Block_Onepage_Re
             return $this->buildBoltCheckoutJavascript($checkoutType, $sessionQuote, $hintData, $cartData);
 
         } catch (Exception $e) {
-            static::helper()->notifyException($e);
+            $this->helper()->notifyException($e);
         }
     }
 
@@ -203,12 +203,12 @@ class Bolt_Boltpay_Block_Checkout_Boltpay extends Mage_Checkout_Block_Onepage_Re
         $jsonCart = (is_string($cartData)) ? $cartData : json_encode($cartData);
         $jsonHints = json_encode($hintData, JSON_FORCE_OBJECT);
 
-        $callbacks = static::helper()->getBoltCallbacks($checkoutType, $quote);
-        $checkCustom = static::helper()->getPaymentBoltpayConfig('check', $checkoutType);
-        $onCheckCallback = static::helper()->buildOnCheckCallback($checkoutType, $quote);
+        $callbacks = $this->helper()->getBoltCallbacks($checkoutType, $quote);
+        $checkCustom = $this->helper()->getPaymentBoltpayConfig('check', $checkoutType);
+        $onCheckCallback = $this->helper()->buildOnCheckCallback($checkoutType, $quote);
 
-        $hintsTransformFunction = static::helper()->getExtraConfig('hintsTransform');
-        $shouldCloneImmediately = !static::helper()->getExtraConfig( 'cloneOnClick' );
+        $hintsTransformFunction = $this->helper()->getExtraConfig('hintsTransform');
+        $shouldCloneImmediately = !$this->helper()->getExtraConfig( 'cloneOnClick' );
 
         $boltConfigureCall =
         "
@@ -223,7 +223,7 @@ class Bolt_Boltpay_Block_Checkout_Boltpay extends Mage_Checkout_Block_Onepage_Re
             case self::CHECKOUT_TYPE_MULTI_PAGE:
                 // if it is a multipage checkout from the shopping cart,
                 // we will call configure immediately unless extra config 'cloneOnClick' overrides this
-                if (static::helper()->isShoppingCartPage() && $shouldCloneImmediately) break;
+                if ($this->helper()->isShoppingCartPage() && $shouldCloneImmediately) break;
             case self::CHECKOUT_TYPE_ONE_PAGE:
                 if ($shouldCloneImmediately) break;
             case self::CHECKOUT_TYPE_ADMIN:
@@ -265,7 +265,7 @@ class Bolt_Boltpay_Block_Checkout_Boltpay extends Mage_Checkout_Block_Onepage_Re
             window.BoltModal = $boltConfigureCall   
         ";
 
-        return static::helper()->doFilterEvent('bolt_boltpay_filter_bolt_checkout_javascript', $boltCheckoutJavascript, $filterParameters);
+        return $this->helper()->doFilterEvent('bolt_boltpay_filter_bolt_checkout_javascript', $boltCheckoutJavascript, $filterParameters);
     }
 
     /**
@@ -488,7 +488,7 @@ class Bolt_Boltpay_Block_Checkout_Boltpay extends Mage_Checkout_Block_Onepage_Re
      */
     public function getSuccessURL()
     {
-        return static::helper()->getMagentoUrl(Mage::getStoreConfig('payment/boltpay/successpage'));
+        return $this->helper()->getMagentoUrl(Mage::getStoreConfig('payment/boltpay/successpage'));
     }
 
     /**
@@ -497,7 +497,7 @@ class Bolt_Boltpay_Block_Checkout_Boltpay extends Mage_Checkout_Block_Onepage_Re
      */
     public function getSaveOrderURL()
     {
-        return static::helper()->getMagentoUrl('boltpay/order/save');
+        return $this->helper()->getMagentoUrl('boltpay/order/save');
     }
 
     /**
@@ -506,7 +506,7 @@ class Bolt_Boltpay_Block_Checkout_Boltpay extends Mage_Checkout_Block_Onepage_Re
      */
     public function getCartURL()
     {
-        return static::helper()->getMagentoUrl('checkout/cart');
+        return $this->helper()->getMagentoUrl('checkout/cart');
     }
 
     /**
@@ -521,15 +521,15 @@ class Bolt_Boltpay_Block_Checkout_Boltpay extends Mage_Checkout_Block_Onepage_Re
         switch ($checkoutType) {
             case 'multi-page':
             case 'multipage':
-                return static::helper()->getPublishableKeyMultiPage();
+                return $this->helper()->getPublishableKeyMultiPage();
             case 'back-office':
             case 'backoffice':
             case 'admin':
-                return static::helper()->getPublishableKeyBackOffice();
+                return $this->helper()->getPublishableKeyBackOffice();
             case 'one-page':
             case 'onepage':
             default:
-                return static::helper()->getPublishableKeyOnePage();
+                return $this->helper()->getPublishableKeyOnePage();
         }
     }
 
@@ -539,7 +539,7 @@ class Bolt_Boltpay_Block_Checkout_Boltpay extends Mage_Checkout_Block_Onepage_Re
      */
     public function isBoltActive()
     {
-        return static::helper()->isBoltPayActive();
+        return $this->helper()->isBoltPayActive();
     }
 
     /**
@@ -617,7 +617,7 @@ class Bolt_Boltpay_Block_Checkout_Boltpay extends Mage_Checkout_Block_Onepage_Re
      */
     public function canUseBolt()
     {
-        return static::helper()->canUseBolt($this->getQuote(), false);
+        return $this->helper()->canUseBolt($this->getQuote(), false);
     }
 
     /**
@@ -631,7 +631,7 @@ class Bolt_Boltpay_Block_Checkout_Boltpay extends Mage_Checkout_Block_Onepage_Re
         $routeName = $this->getRequest()->getRouteName();
         $controllerName = $this->getRequest()->getControllerName();
 
-        $isEnabledProductPageCheckout = static::helper()->isEnabledProductPageCheckout();
+        $isEnabledProductPageCheckout = $this->helper()->isEnabledProductPageCheckout();
 
         $isAllowed = ($routeName === 'checkout' && $controllerName === 'cart')
             || ($routeName === 'firecheckout')
@@ -672,7 +672,7 @@ class Bolt_Boltpay_Block_Checkout_Boltpay extends Mage_Checkout_Block_Onepage_Re
      */
     public function isAllowedConnectJsOnCurrentPage()
     {
-        $canAddEverywhere = static::helper()->canUseEverywhere();
+        $canAddEverywhere = $this->helper()->canUseEverywhere();
 
         $isAllowedOnCurrentPage = $this->isAllowedOnCurrentPageByRoute();
 

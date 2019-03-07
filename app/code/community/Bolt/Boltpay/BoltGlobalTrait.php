@@ -28,7 +28,7 @@ trait Bolt_Boltpay_BoltGlobalTrait {
      *
      * @return Bolt_Boltpay_Helper_Data|Mage_Core_Helper_Abstract
      */
-    public static function helper() {
+    public function helper() {
         if (method_exists(get_parent_class(), 'helper') && ($args = func_get_args()) ) {
             return call_user_func_array(array(get_parent_class(), 'helper'), $args);
         }

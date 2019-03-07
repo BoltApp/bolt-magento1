@@ -79,7 +79,7 @@ class Bolt_Boltpay_Model_Coupon extends Bolt_Boltpay_Model_Abstract
         } catch (\Bolt_Boltpay_BadInputException $e){
             return false;
         } catch (\Exception $e) {
-            static::helper()->notifyException($e);
+            $this->helper()->notifyException($e);
             return false;
         }
         return true;
@@ -176,8 +176,8 @@ class Bolt_Boltpay_Model_Coupon extends Bolt_Boltpay_Model_Abstract
     public function validateCartIdentificationData()
     {
         $parentQuoteId = $this->getParentQuoteId();
-        $incrementId = static::helper()->getIncrementIdFromTransaction($this->mockTransaction);
-        $immutableQuoteId = static::helper()->getImmutableQuoteIdFromTransaction($this->mockTransaction);
+        $incrementId = $this->helper()->getIncrementIdFromTransaction($this->mockTransaction);
+        $immutableQuoteId = $this->helper()->getImmutableQuoteIdFromTransaction($this->mockTransaction);
 
         if (empty($parentQuoteId) || empty($incrementId) || empty($immutableQuoteId)) {
             $this->setErrorResponseAndThrowException(
@@ -195,7 +195,7 @@ class Bolt_Boltpay_Model_Coupon extends Bolt_Boltpay_Model_Abstract
      */
     public function validateOrderExists()
     {
-        $incrementId = static::helper()->getIncrementIdFromTransaction($this->mockTransaction);
+        $incrementId = $this->helper()->getIncrementIdFromTransaction($this->mockTransaction);
         /** @var Mage_Sales_Model_Order $order */
         $order = Mage::getModel('sales/order')->loadByIncrementId($incrementId);
         if ($order->getId()) {
@@ -405,7 +405,7 @@ class Bolt_Boltpay_Model_Coupon extends Bolt_Boltpay_Model_Abstract
         $quote->getShippingAddress()->setCollectShippingRates(true);
         $quote->setCouponCode($couponCode);
 
-        static::helper()->collectTotals($quote, true)->save();
+        $this->helper()->collectTotals($quote, true)->save();
     }
 
     /**
@@ -491,7 +491,7 @@ class Bolt_Boltpay_Model_Coupon extends Bolt_Boltpay_Model_Abstract
         $this->discountInfo = array(
             'discount_code'   => $this->getCouponCode(),
             'discount_amount' => abs(round($address->getDiscountAmount() * 100)),
-            'description'     => static::helper()->__('Discount ') . $address->getDiscountDescription(),
+            'description'     => $this->helper()->__('Discount ') . $address->getDiscountDescription(),
             'discount_type'   => $this->convertToBoltDiscountType($this->getRule()->getSimpleAction()),
         );
 
@@ -556,7 +556,7 @@ class Bolt_Boltpay_Model_Coupon extends Bolt_Boltpay_Model_Abstract
 
             /** @var Mage_Sales_Model_Quote $immutableQuote */
             $immutableQuote = Mage::getModel('sales/quote')->loadByIdWithoutStore(
-                static::helper()->getImmutableQuoteIdFromTransaction($this->mockTransaction)
+                $this->helper()->getImmutableQuoteIdFromTransaction($this->mockTransaction)
             );
             $this->immutableQuote = $immutableQuote;
         }

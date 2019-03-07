@@ -49,7 +49,7 @@ class Bolt_Boltpay_Block_Catalog_Product_Boltpay extends Mage_Core_Block_Templat
             $_product = Mage::registry('current_product');
             if (!$_product) {
                 $msg = 'Bolt: Cannot find product info';
-                static::helper()->notifyException($msg);
+                $this->helper()->notifyException($msg);
                 return '""';
             }
 
@@ -75,7 +75,7 @@ class Bolt_Boltpay_Block_Catalog_Product_Boltpay extends Mage_Core_Block_Templat
 
              return json_encode($productCheckoutCart);
         } catch (Exception $e) {
-            static::helper()->notifyException($e);
+            $this->helper()->notifyException($e);
             return '""';
         }
     }
@@ -90,7 +90,7 @@ class Bolt_Boltpay_Block_Catalog_Product_Boltpay extends Mage_Core_Block_Templat
      */
     public function getBoltCallbacks($checkoutType = self::CHECKOUT_TYPE_MULTI_PAGE, $isVirtualQuote = false )
     {
-        return static::helper()->getBoltCallbacks($checkoutType, $isVirtualQuote);
+        return $this->helper()->getBoltCallbacks($checkoutType, $isVirtualQuote);
     }
 
     /**
@@ -99,7 +99,7 @@ class Bolt_Boltpay_Block_Catalog_Product_Boltpay extends Mage_Core_Block_Templat
      */
     public function buildOnSuccessCallback($successCustom = '')
     {
-        $saveOrderUrl = static::helper()->getMagentoUrl('boltpay/order/save');
+        $saveOrderUrl = $this->helper()->getMagentoUrl('boltpay/order/save');
 
         return "function(transaction, callback) {
                 new Ajax.Request(
@@ -124,7 +124,7 @@ class Bolt_Boltpay_Block_Catalog_Product_Boltpay extends Mage_Core_Block_Templat
      */
     public function buildOnCloseCallback($closeCustom = '')
     {
-        $successUrl = static::helper()->getMagentoUrl(Mage::getStoreConfig('payment/boltpay/successpage'));
+        $successUrl = $this->helper()->getMagentoUrl(Mage::getStoreConfig('payment/boltpay/successpage'));
         $javascript = $closeCustom;
 
         return $javascript .
@@ -140,7 +140,7 @@ class Bolt_Boltpay_Block_Catalog_Product_Boltpay extends Mage_Core_Block_Templat
      */
     public function isBoltActive()
     {
-        return static::helper()->isBoltPayActive();
+        return $this->helper()->isBoltPayActive();
     }
 
     /**
@@ -148,7 +148,7 @@ class Bolt_Boltpay_Block_Catalog_Product_Boltpay extends Mage_Core_Block_Templat
      */
     public function isEnabledProductPageCheckout()
     {
-        return ($this->isBoltActive() && static::helper()->isEnabledProductPageCheckout());
+        return ($this->isBoltActive() && $this->helper()->isEnabledProductPageCheckout());
     }
 
     /**
@@ -156,7 +156,7 @@ class Bolt_Boltpay_Block_Catalog_Product_Boltpay extends Mage_Core_Block_Templat
      */
     public function getProductPageCheckoutSelector()
     {
-        return static::helper()->getProductPageCheckoutSelector();
+        return $this->helper()->getProductPageCheckoutSelector();
     }
 
     /**
