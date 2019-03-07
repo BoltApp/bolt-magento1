@@ -124,7 +124,7 @@ class Bolt_Boltpay_Block_Checkout_BoltpayTest extends PHPUnit_Framework_TestCase
      */
     public function testGetCartURL()
     {
-        $expect = Mage::helper('boltpay/url')->getMagentoUrl('checkout/cart');
+        $expect = Mage::helper('boltpay')->getMagentoUrl('checkout/cart');
 
         $result = $this->currentMock->getCartUrl();
 
@@ -149,7 +149,7 @@ class Bolt_Boltpay_Block_Checkout_BoltpayTest extends PHPUnit_Framework_TestCase
     {
         $url = 'checkout/onepage/success';
         $this->app->getStore()->setConfig('payment/boltpay/successpage', $url);
-        $expect = Mage::helper('boltpay/url')->getMagentoUrl($url);
+        $expect = Mage::helper('boltpay')->getMagentoUrl($url);
 
         $result = $this->currentMock->getSuccessUrl();
 
@@ -230,7 +230,7 @@ class Bolt_Boltpay_Block_Checkout_BoltpayTest extends PHPUnit_Framework_TestCase
      */
     public function testGetSaveOrderURL()
     {
-        $expect = Mage::helper('boltpay/url')->getMagentoUrl('boltpay/order/save');
+        $expect = Mage::helper('boltpay')->getMagentoUrl('boltpay/order/save');
 
         $result = $this->currentMock->getSaveOrderUrl();
 
