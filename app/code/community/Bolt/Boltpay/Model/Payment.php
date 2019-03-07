@@ -771,7 +771,8 @@ class Bolt_Boltpay_Model_Payment extends Bolt_Boltpay_Model_Abstract
                 $new_order_status = Mage_Sales_Model_Order::STATE_CANCELED;
                 break;
             default:
-                $this->helper()->notifyException(new Exception( $this->helper()->__("'%s' is not a recognized order status.  '%s' is being set instead.", $transactionStatus, $transactionStatus) ));
+                $payment = new Bolt_Boltpay_Model_Payment();
+                $payment->helper()->notifyException(new Exception( $payment->helper()->__("'%s' is not a recognized order status.  '%s' is being set instead.", $transactionStatus, $transactionStatus) ));
         }
 
         return $new_order_status;
