@@ -15,7 +15,7 @@
  * @license    http://opensource.org/licenses/osl-3.0.php  Open Software License (OSL 3.0)
  */
 
-class Bolt_Boltpay_Model_Productpage_Cart extends Mage_Core_Model_Abstract
+class Bolt_Boltpay_Model_Productpage_Cart extends Bolt_Boltpay_Model_Abstract
 {
     const ERR_CODE_OUT_OF_STOCKS = 6301;
     const ERR_CODE_INVALID_SIZE = 6302;
@@ -57,7 +57,7 @@ class Bolt_Boltpay_Model_Productpage_Cart extends Mage_Core_Model_Abstract
         } catch (\Bolt_Boltpay_BadInputException $e) {
             return false;
         } catch (\Exception $e) {
-            Mage::helper('boltpay/bugsnag')->notifyException($e);
+            $this->helper()->notifyException($e);
 
             return false;
         }
@@ -225,10 +225,7 @@ class Bolt_Boltpay_Model_Productpage_Cart extends Mage_Core_Model_Abstract
         $cart = $this->getSessionCart();
         $sessionQuote = $cart->getQuote();
 
-        /* @var Bolt_Boltpay_Helper_Api $boltHelper */
-        $boltHelper = Mage::helper('boltpay/api');
-
-        return $boltHelper->cloneQuote($sessionQuote);
+        return Mage::getModel('boltpay/boltOrder')->cloneQuote($sessionQuote);
     }
 
     /**
@@ -269,12 +266,10 @@ class Bolt_Boltpay_Model_Productpage_Cart extends Mage_Core_Model_Abstract
     {
         $items = $quote->getAllVisibleItems();
         $quoteId = $quote->getId();
-        /** @var Bolt_Boltpay_Helper_Data $boltHelper */
-        $boltHelper = Mage::helper('boltpay');
 
         return array_map(
-            function ($item) use ($boltHelper, $quoteId) {
-                $imageUrl = $boltHelper->getItemImageUrl($item);
+            function ($item) use ($quoteId) {
+                $imageUrl = $this->helper()->getItemImageUrl($item);
                 $product = $this->getProductById($item->getProductId());
                 $type = $product->getTypeId() == 'virtual' ? self::ITEM_TYPE_DIGITAL : self::ITEM_TYPE_PHYSICAL;
 

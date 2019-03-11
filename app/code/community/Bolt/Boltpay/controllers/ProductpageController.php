@@ -20,6 +20,8 @@
  */
 class Bolt_Boltpay_ProductpageController extends Mage_Core_Controller_Front_Action
 {
+    use Bolt_Boltpay_BoltGlobalTrait;
+
     public function createCartAction()
     {
         try {
@@ -27,11 +29,8 @@ class Bolt_Boltpay_ProductpageController extends Mage_Core_Controller_Front_Acti
 
             $requestJson = file_get_contents('php://input');
 
-            /* @var Bolt_Boltpay_Helper_Api $boltHelper */
-            $boltHelper = Mage::helper('boltpay/api');
-
-            if (!$boltHelper->verify_hook($requestJson, $hmacHeader)) {
-                throw new Exception(Mage::helper('boltpay')->__("Failed HMAC Authentication"));
+            if (!$this->helper()->verify_hook($requestJson, $hmacHeader)) {
+                throw new Exception($this->helper()->__("Failed HMAC Authentication"));
             }
 
             $request = json_decode($requestJson);
@@ -53,7 +52,7 @@ class Bolt_Boltpay_ProductpageController extends Mage_Core_Controller_Front_Acti
                     )
             ));
 
-            Mage::helper('boltpay/bugsnag')->notifyException($e);
+            $this->helper()->notifyException($e);
         }
     }
 
@@ -65,7 +64,7 @@ class Bolt_Boltpay_ProductpageController extends Mage_Core_Controller_Front_Acti
      */
     protected function sendResponse($httpCode, $data = array())
     {
-        Mage::helper('boltpay/api')->setResponseContextHeaders();
+        $this->helper()->setResponseContextHeaders();
         $this->getResponse()->setHeader('Content-type', 'application/json');
         $this->getResponse()->setHttpResponseCode($httpCode);
         $this->getResponse()->setBody(json_encode($data));

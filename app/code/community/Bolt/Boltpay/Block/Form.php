@@ -23,6 +23,8 @@
  */
 class Bolt_Boltpay_Block_Form extends Mage_Payment_Block_Form_Cc
 {
+    use Bolt_Boltpay_BoltGlobalTrait;
+
     protected function _construct()
     {
         if (!Mage::app()->getStore()->isAdmin()) {

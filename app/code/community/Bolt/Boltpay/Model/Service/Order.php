@@ -17,6 +17,8 @@
 
 class Bolt_Boltpay_Model_Service_Order extends Mage_Sales_Model_Service_Order
 {
+    use Bolt_Boltpay_BoltGlobalTrait;
+
     /**
      * Prepare order invoice without any items
      *
@@ -39,7 +41,7 @@ class Bolt_Boltpay_Model_Service_Order extends Mage_Sales_Model_Service_Order
                 'order' => var_export($this->_order->debug(), true)
             );
 
-            Mage::helper('boltpay/bugsnag')->notifyException($e, $metaData);
+            $this->helper()->notifyException($e, $metaData);
             throw $e;
         }
 

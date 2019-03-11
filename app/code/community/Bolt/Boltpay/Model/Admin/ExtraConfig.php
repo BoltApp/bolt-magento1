@@ -50,7 +50,7 @@
  */
 class Bolt_Boltpay_Model_Admin_ExtraConfig extends Mage_Core_Model_Config_Data
 {
-
+    use Bolt_Boltpay_BoltGlobalTrait;
 
     /**
      * Saves the Bolt extra options json string to the database after each option has been validated.
@@ -74,7 +74,7 @@ class Bolt_Boltpay_Model_Admin_ExtraConfig extends Mage_Core_Model_Config_Data
             }
         } else {
             $areAllOptionsValid = false;
-            Mage::getSingleton('core/session')->addError(Mage::helper('boltpay')->__('Invalid JSON for Bolt Extra Options. '.json_last_error_msg()));
+            Mage::getSingleton('core/session')->addError($this->helper()->__('Invalid JSON for Bolt Extra Options. '.json_last_error_msg()));
         }
 
         if (!$areAllOptionsValid) {
@@ -98,7 +98,7 @@ class Bolt_Boltpay_Model_Admin_ExtraConfig extends Mage_Core_Model_Config_Data
      */
     public function hasValidBoltPrimaryColor($hexColor) {
         if ( !($isValid = (!empty($hexColor) && preg_match('/^#(([A-Fa-f0-9]{6})|([A-Fa-f0-9]{8}))$/', $hexColor))) ) {
-            Mage::getSingleton('core/session')->addError(Mage::helper('boltpay')->__('Invalid hex color value for extra option `boltPrimaryColor`. [%s] It must be in 6 or 8 character hex format.  (e.g. #f00000 or #3af508a2)', $hexColor));
+            Mage::getSingleton('core/session')->addError($this->helper()->__('Invalid hex color value for extra option `boltPrimaryColor`. [%s] It must be in 6 or 8 character hex format.  (e.g. #f00000 or #3af508a2)', $hexColor));
         }
         return $isValid;
     }
