@@ -16,22 +16,22 @@
  */
 
 /**
- * Trait Bolt_Boltpay_Helper_UrlTrait
+ * Class Bolt_Boltpay_Helper_Url
  *
- * Defines URL related functions used by Bolt
+ * The Magento Helper class that provides utility methods for the following operations:
+ *
  */
-trait Bolt_Boltpay_Helper_UrlTrait {
-
+class Bolt_Boltpay_Helper_Url extends Mage_Core_Helper_Abstract
+{
     /**
      * @var string The Bolt sandbox url for the api
      */
     protected $apiUrlTest = 'https://api-sandbox.bolt.com/';
-
     /**
      * @var string The Bolt production url for the api
      */
     protected $apiUrlProd = 'https://api.bolt.com/';
-
+    
     /**
      * @var string The Bolt sandbox url for the javascript
      */
@@ -41,18 +41,17 @@ trait Bolt_Boltpay_Helper_UrlTrait {
      * @var string The Bolt production url for the javascript
      */
     protected $jsUrlProd = 'https://connect.bolt.com';
-
+    
     /**
      * @var string The Bolt sandbox url for the merchant
      */
     protected $merchantUrlSandbox = 'https://merchant-sandbox.bolt.com';
-
     /**
      * @var string The Bolt production url for the merchant
      */
     protected $merchantUrlProd = 'https://merchant.bolt.com';
-
-
+    
+    
     /**
      * Returns the Bolt merchant url, sandbox or production, depending on the store configuration.
      * @param null $storeId
@@ -61,10 +60,10 @@ trait Bolt_Boltpay_Helper_UrlTrait {
     public function getBoltMerchantUrl($storeId = null)
     {
         return  Mage::getStoreConfigFlag('payment/boltpay/test', $storeId) ?
-            $this->merchantUrlSandbox :
-            $this->merchantUrlProd ;
+                $this->merchantUrlSandbox :
+                $this->merchantUrlProd ;
     }
-
+    
     /**
      * Returns the Bolt API url, sandbox or production, depending on the store configuration.
      * @param null $storeId
@@ -73,8 +72,8 @@ trait Bolt_Boltpay_Helper_UrlTrait {
     public function getApiUrl($storeId = null)
     {
         return  Mage::getStoreConfigFlag('payment/boltpay/test', $storeId) ?
-            $this->apiUrlTest :
-            $this->apiUrlProd ;
+                $this->apiUrlTest :
+                $this->apiUrlProd ;
     }
 
     /**
@@ -85,18 +84,8 @@ trait Bolt_Boltpay_Helper_UrlTrait {
     public function getJsUrl($storeId = null)
     {
         return  Mage::getStoreConfigFlag('payment/boltpay/test', $storeId) ?
-            $this->jsUrlTest :
-            $this->jsUrlProd ;
-    }
-
-    /**
-     * Gets the connect.js url depending on the sandbox state of the application
-     *
-     * @return string  Sandbox connect.js URL for Sanbox mode, otherwise production
-     */
-    public function getConnectJsUrl()
-    {
-        return $this->getJsUrl() . "/connect.js";
+                $this->jsUrlTest :
+                $this->jsUrlProd ;
     }
 
     /**

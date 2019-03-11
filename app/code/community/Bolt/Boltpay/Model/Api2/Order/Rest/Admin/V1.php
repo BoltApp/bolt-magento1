@@ -160,7 +160,7 @@ class Bolt_Boltpay_Model_Api2_Order_Rest_Admin_V1 extends Bolt_Boltpay_Model_Api
             );
             //Mage::log('Order creation was successful', null, 'bolt.log');
             $this->_render($this->getResponse()->getMessages());
-        } catch (Bolt_Boltpay_OrderCreationException $invalid) {
+        } catch (Bolt_Boltpay_InvalidTransitionException $invalid) {
             // An invalid transition is treated as a late queue event and hence will be ignored
             $error = $invalid->getMessage();
             //Mage::log($error, null, 'bolt.log');

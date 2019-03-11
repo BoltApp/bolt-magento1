@@ -23,15 +23,13 @@
  */
 trait Bolt_Boltpay_OrderControllerTrait {
 
-    use Bolt_Boltpay_BoltGlobalTrait;
-
     /**
      * Creates the Bolt order and returns the Bolt.process javascript.
      */
     public function createAction() {
         try {
             if (!$this->getRequest()->isAjax()) {
-                Mage::throwException($this->helper()->__(get_class()."::createAction called with a non AJAX call"));
+                Mage::throwException(Mage::helper('boltpay')->__(get_class()."::createAction called with a non AJAX call"));
             }
 
             /** @var Bolt_Boltpay_Block_Checkout_Boltpay $block */
@@ -53,7 +51,7 @@ trait Bolt_Boltpay_OrderControllerTrait {
             $this->getResponse()->setHeader('Content-type', 'application/json', true);
             $this->getResponse()->setBody(Mage::helper('core')->jsonEncode($result));
         } catch (Exception $e) {
-            $this->helper()->notifyException($e);
+            Mage::helper('boltpay/bugsnag')->notifyException($e);
             throw $e;
         }
     }
@@ -109,7 +107,7 @@ trait Bolt_Boltpay_OrderControllerTrait {
         }
 
         /** @var Mage_Sales_Model_Quote $clonedQuote */
-        $clonedQuote = Mage::getSingleton('boltpay/boltOrder')->cloneQuote($sessionQuote, $checkoutType);
+        $clonedQuote = Mage::helper('boltpay')->cloneQuote($sessionQuote, $checkoutType);
 
         // For multi-page, reapply shipping to quote that may be used for shipping and tax estimate
         if ($isMultiPage) {

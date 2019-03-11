@@ -18,13 +18,13 @@
 <?php /* @var $this Bolt_Boltpay_Block_Checkout_Boltpay */?>
 <?php
 $quote = Mage::getSingleton('checkout/session')->getQuote();
-$publishableKey = $this->helper()->getPublishableKeyOnePage();
+$publishableKey = Mage::helper('boltpay')->getPublishableKeyOnePage();
 
 if(($quote->getPayment()->getMethodInstance()->getCode() == 'boltpay') && $publishableKey): ?>
 
     <?php
-    $additionalClasses = $this->helper()->getAdditionalButtonClasses();
-    $buttonColor = $this->helper()->getBoltPrimaryColor();
+    $additionalClasses = Mage::helper('boltpay')->getAdditionalButtonClasses();
+    $buttonColor = Mage::helper('boltpay')->getBoltPrimaryColor();
     ?>
     <div class="bolt-checkout-button <?php echo $additionalClasses; ?>"
         <?php if($buttonColor): ?>

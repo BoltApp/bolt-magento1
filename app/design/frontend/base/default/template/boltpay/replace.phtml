@@ -29,7 +29,7 @@ if(!$this->isAllowedReplaceScriptOnCurrentPage()
     return;
 }
 
-$additionalClasses = $this->helper()->getAdditionalButtonClasses();
+$additionalClasses = Mage::helper('boltpay')->getAdditionalButtonClasses();
 ?>
 <script>
 
@@ -86,7 +86,7 @@ $additionalClasses = $this->helper()->getAdditionalButtonClasses();
                                 var bolt_button =  document.createElement("div");
                                 bolt_button.setAttribute("class",selectors[selector]);
 
-                                <?php $buttonColor = $this->helper()->getBoltPrimaryColor();?>
+                                <?php $buttonColor = Mage::helper('boltpay')->getBoltPrimaryColor();?>
                                 <?php if($buttonColor):?>
                                     bolt_button.setAttribute("style", "--bolt-primary-action-color:<?php echo $buttonColor?>");
                                 <?php endif; ?>

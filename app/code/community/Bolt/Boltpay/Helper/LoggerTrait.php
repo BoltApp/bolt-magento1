@@ -19,9 +19,7 @@ class Bolt_Boltpay_Helper_LogLevel
  */
 trait Bolt_Boltpay_Helper_LoggerTrait
 {
-
-    use Bolt_Boltpay_Helper_BugsnagTrait;
-
+    
     public static $isLoggerEnabled = true;
     
     /**
@@ -37,7 +35,6 @@ trait Bolt_Boltpay_Helper_LoggerTrait
     {
         $this->log(Bolt_Boltpay_Helper_LogLevel::ERROR, $message, $context);
     }
-
     /**
      * Exceptional occurrences that are not errors.
      *
@@ -53,7 +50,6 @@ trait Bolt_Boltpay_Helper_LoggerTrait
     {
         $this->log(Bolt_Boltpay_Helper_LogLevel::WARNING, $message, $context);
     }
-
     /**
      * Interesting events.
      *
@@ -68,7 +64,6 @@ trait Bolt_Boltpay_Helper_LoggerTrait
     {
         $this->log(Bolt_Boltpay_Helper_LogLevel::INFO, $message, $context);
     }
-
     /**
      * Logs with an arbitrary level.
      *
@@ -78,16 +73,5 @@ trait Bolt_Boltpay_Helper_LoggerTrait
      *
      * @return void
      */
-    public function log($level, $message, array $context = array()) {
-        //example for now
-        if(Bolt_Boltpay_Helper_LoggerTrait::$isLoggerEnabled){
-            $this->addBreadcrumb(
-                array(
-                    'level'  => $level,
-                    'context'  => var_export($context, true),
-                )
-            );
-            $this->notifyException( new Exception((string)$message) );
-        }
-    }
+    abstract public function log($level, $message, array $context = array());
 }

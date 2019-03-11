@@ -23,8 +23,6 @@
  */
 class Bolt_Boltpay_Block_Rewrite_Onepage extends Mage_Checkout_Block_Onepage
 {
-    use Bolt_Boltpay_BoltGlobalTrait;
-
     /**
      * Get checkout steps codes
      *

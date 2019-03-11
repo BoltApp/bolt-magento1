@@ -22,8 +22,6 @@
  */
 class Bolt_Boltpay_ShippingController extends Mage_Core_Controller_Front_Action
 {
-    use Bolt_Boltpay_BoltGlobalTrait;
-
     /**
      * @var Mage_Core_Model_Cache  The Magento cache where the shipping and tax estimate is stored
      */
@@ -40,6 +38,11 @@ class Bolt_Boltpay_ShippingController extends Mage_Core_Controller_Front_Action
     protected $_requestJSON;
 
     /**
+     * @var Bolt_Boltpay_Helper_Api  Helper for Bolt API funcitionality
+     */
+    protected $_boltApiHelper;
+
+    /**
      * Initializes Controller member variables
      */
     protected function _construct()
@@ -47,6 +50,7 @@ class Bolt_Boltpay_ShippingController extends Mage_Core_Controller_Front_Action
         $this->_cache = Mage::app()->getCache();
         $this->_shippingAndTaxModel = Mage::getModel("boltpay/shippingAndTax");
         $this->_requestJSON = file_get_contents('php://input');
+        $this->_boltApiHelper = Mage::helper('boltpay/api');
     }
 
     /**
@@ -66,17 +70,20 @@ class Bolt_Boltpay_ShippingController extends Mage_Core_Controller_Front_Action
 
             $requestData = json_decode($this->_requestJSON);
 
-            if (!$this->helper()->verify_hook($this->_requestJSON, $hmacHeader)) {
-                throw new Exception($this->helper()->__("Failed HMAC Authentication"));
+            if (!$this->_boltApiHelper->verify_hook($this->_requestJSON, $hmacHeader)) {
+                throw new Exception(Mage::helper('boltpay')->__("Failed HMAC Authentication"));
             }
 
             $mockTransaction = (object) array("order" => $requestData );
-            $quoteId = $this->helper()->getImmutableQuoteIdFromTransaction($mockTransaction);
+
+            /** @var Bolt_Boltpay_Helper_Transaction $transactionHelper */
+            $transactionHelper = Mage::helper('boltpay/transaction');
+            $quoteId = $transactionHelper->getImmutableQuoteIdFromTransaction($mockTransaction);
 
             /* @var Mage_Sales_Model_Quote $quote */
             $quote = Mage::getModel('sales/quote')->loadByIdWithoutStore($quoteId);
 
-            $this->helper()->setCustomerSessionById($quote->getCustomerId());
+            Mage::helper('boltpay')->setCustomerSessionById($quote->getCustomerId());
 
             /***********************/
             // Set session quote to real customer quote
@@ -94,7 +101,7 @@ class Bolt_Boltpay_ShippingController extends Mage_Core_Controller_Front_Action
                 !$this->_shippingAndTaxModel->isPOBoxAllowed()
                 && $this->_shippingAndTaxModel->doesAddressContainPOBox($shippingAddress->street_address1, $shippingAddress->street_address2)
             ) {
-                $addressErrorDetails = array('code' => 6101, 'message' => $this->helper()->__('Address with P.O. Box is not allowed.'));
+                $addressErrorDetails = array('code' => 6101, 'message' => Mage::helper('boltpay')->__('Address with P.O. Box is not allowed.'));
             } else {
                 $addressData = $this->_shippingAndTaxModel->applyShippingAddressToQuote($quote, $shippingAddress);
                 $magentoAddressErrors = $quote->getShippingAddress()->validate();
@@ -142,7 +149,7 @@ class Bolt_Boltpay_ShippingController extends Mage_Core_Controller_Front_Action
 
             $this->getResponse()->setHeader('X-Bolt-Cache-Hit', $cacheBoltHeader);
 
-            $this->helper()->setResponseContextHeaders();
+            $this->_boltApiHelper->setResponseContextHeaders();
 
             $this->getResponse()->setBody($responseJSON);
         } catch (Exception $e) {
@@ -151,7 +158,7 @@ class Bolt_Boltpay_ShippingController extends Mage_Core_Controller_Front_Action
                 $metaData['quote'] = var_export($quote->debug(), true);
             }
 
-            $this->helper()->notifyException($e, $metaData);
+            Mage::helper('boltpay/bugsnag')->notifyException($e, $metaData);
             throw $e;
         }
     }
@@ -209,7 +216,7 @@ class Bolt_Boltpay_ShippingController extends Mage_Core_Controller_Front_Action
                 $metaData['cache_key'] = $cachedIdentifier;
                 $metaData['estimate'] = isset($estimateResponse) ? var_export($estimateResponse, true) : '';
 
-                $this->helper()->notifyException(
+                Mage::helper('boltpay/bugsnag')->notifyException(
                     $e,
                     $metaData,
                     "info"

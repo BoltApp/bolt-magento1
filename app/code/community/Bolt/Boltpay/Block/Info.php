@@ -22,8 +22,6 @@
  */
 class Bolt_Boltpay_Block_Info extends Mage_Payment_Block_Info
 {
-    use Bolt_Boltpay_BoltGlobalTrait;
-
     public function _construct() 
     {
         $this->setTemplate('boltpay/info.phtml');

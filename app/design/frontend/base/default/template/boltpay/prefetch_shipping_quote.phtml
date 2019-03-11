@@ -14,7 +14,6 @@
  * @copyright  Copyright (c) 2018 Bolt Financial, Inc (https://www.bolt.com)
  * @license    http://opensource.org/licenses/osl-3.0.php  Open Software License (OSL 3.0)
  */
-/* @var $this Bolt_Boltpay_Block_Checkout_Boltpay */
 
 if($this->isBoltActive()) {
     ?>
@@ -22,7 +21,7 @@ if($this->isBoltActive()) {
         (function () {
             var xmlhttp = new XMLHttpRequest();
 
-            xmlhttp.open("POST", "<?php echo $this->helper()->getMagentoUrl('boltpay/shipping/prefetchEstimate');?>", true);
+            xmlhttp.open("POST", "<?php echo Mage::helper('boltpay/url')->getMagentoUrl('boltpay/shipping/prefetchEstimate');?>", true);
             xmlhttp.setRequestHeader("Content-type", "application/json");
             xmlhttp.onreadystatechange = function() {
                 if (xmlhttp.readyState == XMLHttpRequest.DONE && xmlhttp.status == 200) {
