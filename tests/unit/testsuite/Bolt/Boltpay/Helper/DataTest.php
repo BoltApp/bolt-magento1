@@ -51,7 +51,7 @@ class Bolt_Boltpay_Helper_DataTest extends PHPUnit_Framework_TestCase
     {
         $this->app = Mage::app('default');
         $this->app->getStore()->resetConfig();
-        $this->dataHelper = Mage::helper('boltpay');
+        $this->dataHelper = Mage::helper('boltpay/data');
         $this->testHelper = new Bolt_Boltpay_TestHelper();
 
         $this->currentMock = $this->getMockBuilder('Bolt_Boltpay_Helper_Data')
@@ -190,7 +190,7 @@ class Bolt_Boltpay_Helper_DataTest extends PHPUnit_Framework_TestCase
     {
         $this->app->getStore()->setConfig('payment/boltpay/success', '');
         $successCustom = "console.log('test')";
-        $saveOrderUrl = Mage::helper('boltpay')->getMagentoUrl('boltpay/order/save');
+        $saveOrderUrl = Mage::helper('boltpay/url')->getMagentoUrl('boltpay/order/save');
         $checkoutType = Bolt_Boltpay_Block_Checkout_Boltpay::CHECKOUT_TYPE_MULTI_PAGE;
 
         $onSuccessCallback = "function(transaction, callback) {
@@ -249,7 +249,7 @@ class Bolt_Boltpay_Helper_DataTest extends PHPUnit_Framework_TestCase
      */
     public function testBuildOnCloseCallback()
     {
-        $successUrl = Mage::helper('boltpay')->getMagentoUrl('checkout/onepage/success');
+        $successUrl = Mage::helper('boltpay/url')->getMagentoUrl('checkout/onepage/success');
         $checkoutType = Bolt_Boltpay_Block_Checkout_Boltpay::CHECKOUT_TYPE_ONE_PAGE;
         $closeCustom = '';
 

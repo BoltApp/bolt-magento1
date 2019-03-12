@@ -22,7 +22,6 @@
  */
 class Bolt_Boltpay_IndexController extends Mage_Adminhtml_Controller_Action
 {
-    use Bolt_Boltpay_BoltGlobalTrait;
 
     protected function _isAllowed()
     {

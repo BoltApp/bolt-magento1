@@ -27,10 +27,10 @@
 <?php /* @var $this Bolt_Boltpay_Block_Checkout_Boltpay */?>
 <?php
 $quote = Mage::getSingleton('checkout/session')->getQuote();
-$additionalClasses = $this->helper()->getAdditionalButtonClasses();
-$buttonColor = $this->helper()->getBoltPrimaryColor();
+$additionalClasses = Mage::helper('boltpay')->getAdditionalButtonClasses();
+$buttonColor = Mage::helper('boltpay')->getBoltPrimaryColor();
 $_code = $this->getMethodCode();
-$fieldName = $this->helper()->__('Process Order Through Bolt');
+$fieldName = Mage::helper('boltpay')->__('Process Order Through Bolt');
 ?>
 <ul id="payment_form_<?php echo $_code ?>" style="display:none">
     <li>
@@ -60,7 +60,7 @@ $fieldName = $this->helper()->__('Process Order Through Bolt');
 
                 if (typeof BoltCheckout !== "undefined") {
                     clearInterval(interval);
-                    <?=$this->helper()->getCartDataJs('admin'); ?>
+                    <?=Mage::helper('boltpay')->getCartDataJs('admin'); ?>
                 }
             }, 200);
 

@@ -8,7 +8,7 @@ require_once('TestHelper.php');
 class Bolt_Boltpay_Helper_ApiTest extends PHPUnit_Framework_TestCase
 {
     /**
-     * @var Bolt_Boltpay_Helper_Data
+     * @var Bolt_Boltpay_Helper_Api
      */
     private $currentMock;
 
@@ -23,7 +23,7 @@ class Bolt_Boltpay_Helper_ApiTest extends PHPUnit_Framework_TestCase
         $appStore = $this->app->getStore();
         $appStore->resetConfig();
 
-        $this->currentMock = $this->getMockBuilder('Bolt_Boltpay_Helper_Data')
+        $this->currentMock = $this->getMockBuilder('Bolt_Boltpay_Helper_Api')
             ->setMethods(['verify_hook_secret', 'verify_hook_api', 'getBoltContextInfo'])
             ->enableOriginalConstructor()
             ->getMock();
