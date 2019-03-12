@@ -41,7 +41,7 @@ class Bolt_Boltpay_Model_Service_Order extends Mage_Sales_Model_Service_Order
                 'order' => var_export($this->_order->debug(), true)
             );
 
-            $this->helper()->notifyException($e, $metaData);
+            $this->boltHelper()->notifyException($e, $metaData);
             throw $e;
         }
 

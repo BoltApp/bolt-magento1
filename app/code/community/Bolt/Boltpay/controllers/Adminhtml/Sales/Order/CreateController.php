@@ -160,7 +160,7 @@ class Bolt_Boltpay_Adminhtml_Sales_Order_CreateController extends Mage_Adminhtml
             return true;
         } catch (Mage_Payment_Model_Info_Exception $e) {
             if ($paymentData['method'] == 'boltpay') {
-                $this->helper()->notifyException($e);
+                $this->boltHelper()->notifyException($e);
             }
             $this->_getOrderCreateModel()->saveQuote();
             $message = $e->getMessage();
@@ -170,7 +170,7 @@ class Bolt_Boltpay_Adminhtml_Sales_Order_CreateController extends Mage_Adminhtml
             $this->_redirect('*/*/');
         } catch (Mage_Core_Exception $e){
             if ($paymentData['method'] == 'boltpay') {
-                $this->helper()->notifyException($e);
+                $this->boltHelper()->notifyException($e);
             }
             $message = $e->getMessage();
             if( !empty($message) ) {
@@ -179,7 +179,7 @@ class Bolt_Boltpay_Adminhtml_Sales_Order_CreateController extends Mage_Adminhtml
             $this->_redirect('*/*/');
         } catch (Exception $e) {
             if ($paymentData['method'] == 'boltpay') {
-                $this->helper()->notifyException($e);
+                $this->boltHelper()->notifyException($e);
             }
             $this->_getSession()->addException($e, $this->__('Order saving error: %s', $e->getMessage()));
             $this->_redirect('*/*/');
@@ -195,8 +195,8 @@ class Bolt_Boltpay_Adminhtml_Sales_Order_CreateController extends Mage_Adminhtml
      */
     protected function getImmutableQuoteIdFromTransaction($boltReference)
     {
-        $transaction = $this->helper()->fetchTransaction($boltReference);
-        $immutableQuoteId = $this->helper()->getImmutableQuoteIdFromTransaction($transaction);
+        $transaction = $this->boltHelper()->fetchTransaction($boltReference);
+        $immutableQuoteId = $this->boltHelper()->getImmutableQuoteIdFromTransaction($transaction);
 
         return $immutableQuoteId;
     }

@@ -31,7 +31,7 @@ trait Bolt_Boltpay_OrderControllerTrait {
     public function createAction() {
         try {
             if (!$this->getRequest()->isAjax()) {
-                Mage::throwException($this->helper()->__(get_class()."::createAction called with a non AJAX call"));
+                Mage::throwException($this->boltHelper()->__(get_class()."::createAction called with a non AJAX call"));
             }
 
             /** @var Bolt_Boltpay_Block_Checkout_Boltpay $block */
@@ -53,7 +53,7 @@ trait Bolt_Boltpay_OrderControllerTrait {
             $this->getResponse()->setHeader('Content-type', 'application/json', true);
             $this->getResponse()->setBody(Mage::helper('core')->jsonEncode($result));
         } catch (Exception $e) {
-            $this->helper()->notifyException($e);
+            $this->boltHelper()->notifyException($e);
             throw $e;
         }
     }

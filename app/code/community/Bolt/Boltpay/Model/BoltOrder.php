@@ -113,7 +113,7 @@ class Bolt_Boltpay_Model_BoltOrder extends Bolt_Boltpay_Model_Abstract
          */
         /***************************************************/
 
-        $this->helper()->collectTotals($quote)->save();
+        $this->boltHelper()->collectTotals($quote)->save();
 
         $totals = $quote->getTotals();
         ///////////////////////////////////////////////////////////////////////////////////
@@ -126,7 +126,7 @@ class Bolt_Boltpay_Model_BoltOrder extends Bolt_Boltpay_Model_Abstract
             'display_id'      => $quote->getReservedOrderId().'|'.$quote->getId(),
             'items'           => array_map(
                 function ($item) use ($quote, &$calculatedTotal) {
-                    $imageUrl = $this->helper()->getItemImageUrl($item);
+                    $imageUrl = $this->boltHelper()->getItemImageUrl($item);
                     $product   = Mage::getModel('catalog/product')->load($item->getProductId());
                     $type = $product->getTypeId() == 'virtual' ? self::ITEM_TYPE_DIGITAL : self::ITEM_TYPE_PHYSICAL;
 
@@ -283,7 +283,7 @@ class Bolt_Boltpay_Model_BoltOrder extends Bolt_Boltpay_Model_Abstract
                             $cartSubmissionData['shipments'] = array(array(
                                 'shipping_address' => $cartShippingAddress,
                                 'tax_amount'       => 0,
-                                'service'          => $this->helper()->__('No Shipping Required'),
+                                'service'          => $this->boltHelper()->__('No Shipping Required'),
                                 'reference'        => "noshipping",
                                 'cost'             => 0
                             ));
@@ -486,7 +486,7 @@ class Bolt_Boltpay_Model_BoltOrder extends Bolt_Boltpay_Model_Abstract
         )
         {
             if ($notifyBugsnag) {
-                $this->helper()->notifyException(
+                $this->boltHelper()->notifyException(
                     new Exception("Missing critical billing data. "
                         ." Street: ". $billingAddress->getStreetFull()
                         ." City: ". $billingAddress->getCity()
@@ -512,7 +512,7 @@ class Bolt_Boltpay_Model_BoltOrder extends Bolt_Boltpay_Model_Abstract
         if (!trim($billingAddress->getName())) {
 
             if ($notifyBugsnag) {
-                $this->helper()->notifyException(
+                $this->boltHelper()->notifyException(
                     new Exception("Missing billing name."),
                     array(),
                     "info"
@@ -532,7 +532,7 @@ class Bolt_Boltpay_Model_BoltOrder extends Bolt_Boltpay_Model_Abstract
 
         if (!trim($billingAddress->getTelephone())) {
             if ($notifyBugsnag) {
-                $this->helper()->notifyException(
+                $this->boltHelper()->notifyException(
                     new Exception("Missing billing telephone."),
                     array(),
                     "info"
@@ -693,7 +693,7 @@ class Bolt_Boltpay_Model_BoltOrder extends Bolt_Boltpay_Model_Abstract
 
         if (empty($items)) {
 
-            return json_decode('{"token" : "", "error": "'.$this->helper()->__('Your shopping cart is empty. Please add products to the cart.').'"}');
+            return json_decode('{"token" : "", "error": "'.$this->boltHelper()->__('Your shopping cart is empty. Please add products to the cart.').'"}');
 
         } else if (
             !$isMultiPage
@@ -702,11 +702,11 @@ class Bolt_Boltpay_Model_BoltOrder extends Bolt_Boltpay_Model_Abstract
         ) {
 
             if (!$quote->isVirtual()){
-                return json_decode('{"token" : "", "error": "'.$this->helper()->__('A valid shipping method must be selected.  Please check your address data and that you have selected a shipping method, then, refresh to try again.').'"}');
+                return json_decode('{"token" : "", "error": "'.$this->boltHelper()->__('A valid shipping method must be selected.  Please check your address data and that you have selected a shipping method, then, refresh to try again.').'"}');
             }
 
             if (!$this->validateVirtualQuote($quote)){
-                return json_decode('{"token" : "", "error": "'.$this->helper()->__('Billing address is required.').'"}');
+                return json_decode('{"token" : "", "error": "'.$this->boltHelper()->__('Billing address is required.').'"}');
             }
         }
 
@@ -714,7 +714,7 @@ class Bolt_Boltpay_Model_BoltOrder extends Bolt_Boltpay_Model_Abstract
         $orderRequest = $this->buildOrder($quote, $isMultiPage);
 
         // Calls Bolt create order API
-        return $this->helper()->transmit('orders', $orderRequest);
+        return $this->boltHelper()->transmit('orders', $orderRequest);
     }
 
 
@@ -728,13 +728,13 @@ class Bolt_Boltpay_Model_BoltOrder extends Bolt_Boltpay_Model_Abstract
     public function getBoltOrderTokenPromise($checkoutType) {
 
         if ( $checkoutType === Bolt_Boltpay_Block_Checkout_Boltpay::CHECKOUT_TYPE_FIRECHECKOUT ) {
-            $checkoutTokenUrl = $this->helper()->getMagentoUrl('boltpay/order/firecheckoutcreate');
+            $checkoutTokenUrl = $this->boltHelper()->getMagentoUrl('boltpay/order/firecheckoutcreate');
             $parameters = 'checkout.getFormData ? checkout.getFormData() : Form.serialize(checkout.form, true)';
         } else if ( $checkoutType === Bolt_Boltpay_Block_Checkout_Boltpay::CHECKOUT_TYPE_ADMIN ) {
-            $checkoutTokenUrl = $this->helper()->getMagentoUrl("adminhtml/sales_order_create/create/checkoutType/$checkoutType", array(), true);
+            $checkoutTokenUrl = $this->boltHelper()->getMagentoUrl("adminhtml/sales_order_create/create/checkoutType/$checkoutType", array(), true);
             $parameters = "''";
         } else {
-            $checkoutTokenUrl = $this->helper()->getMagentoUrl("boltpay/order/create/checkoutType/$checkoutType");
+            $checkoutTokenUrl = $this->boltHelper()->getMagentoUrl("boltpay/order/create/checkoutType/$checkoutType");
             $parameters = "''";
         }
 
@@ -787,7 +787,7 @@ PROMISE;
             // these in bugsnag, but these are non-fatal exceptions, so, we continue processing
             $clonedQuote->merge($sourceQuote);
         } catch (Exception $e) {
-            $this->helper()->notifyException($e);
+            $this->boltHelper()->notifyException($e);
         }
 
         if ($checkoutType != Bolt_Boltpay_Block_Checkout_Boltpay::CHECKOUT_TYPE_MULTI_PAGE ) {

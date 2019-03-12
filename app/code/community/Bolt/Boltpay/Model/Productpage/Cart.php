@@ -57,7 +57,7 @@ class Bolt_Boltpay_Model_Productpage_Cart extends Bolt_Boltpay_Model_Abstract
         } catch (\Bolt_Boltpay_BadInputException $e) {
             return false;
         } catch (\Exception $e) {
-            $this->helper()->notifyException($e);
+            $this->boltHelper()->notifyException($e);
 
             return false;
         }
@@ -269,7 +269,7 @@ class Bolt_Boltpay_Model_Productpage_Cart extends Bolt_Boltpay_Model_Abstract
 
         return array_map(
             function ($item) use ($quoteId) {
-                $imageUrl = $this->helper()->getItemImageUrl($item);
+                $imageUrl = $this->boltHelper()->getItemImageUrl($item);
                 $product = $this->getProductById($item->getProductId());
                 $type = $product->getTypeId() == 'virtual' ? self::ITEM_TYPE_DIGITAL : self::ITEM_TYPE_PHYSICAL;
 

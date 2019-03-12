@@ -19,7 +19,7 @@
  * Bolt replace button JavaScript / CSS that's added to the firecheckout cart page
  ********************************************************************/
 /** @var Bolt_Boltpay_Block_Checkout_Boltpay $this */
-if(!$this->helper()->canUseBolt($this->getQuote(), false) || Mage::getStoreConfig('payment/boltpay/hide_on_checkout') ) return;
+if(!$this->boltHelper()->canUseBolt($this->getQuote(), false) || Mage::getStoreConfig('payment/boltpay/hide_on_checkout') ) return;
 
 ?>
 <script>
@@ -39,9 +39,9 @@ if(!$this->helper()->canUseBolt($this->getQuote(), false) || Mage::getStoreConfi
             for (var i = 0; i < place_order_buttons.length; i++) {
                 place_order_button = place_order_buttons[i];
                 var bolt_button =  document.createElement("div");
-                bolt_button.setAttribute("class", "bolt-checkout-button <?=$this->getCssSuffix(); ?> <?=$this->helper()->getAdditionalButtonClasses() ?>");
+                bolt_button.setAttribute("class", "bolt-checkout-button <?=$this->getCssSuffix(); ?> <?=$this->boltHelper()->getAdditionalButtonClasses() ?>");
 
-                <?php $buttonColor = $this->helper()->getBoltPrimaryColor();?>
+                <?php $buttonColor = $this->boltHelper()->getBoltPrimaryColor();?>
                 <?php if($buttonColor):?>
                 bolt_button.setAttribute("style", "--bolt-primary-action-color:<?php echo $buttonColor?>");
                 <?php endif; ?>

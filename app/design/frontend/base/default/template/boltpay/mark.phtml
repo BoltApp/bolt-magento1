@@ -17,12 +17,12 @@
 ?>
 <?php   /* @var $this Bolt_Boltpay_Block_Checkout_Boltpay */ ?>
 <div style="display:inline-block;">
-    <div><?php echo Mage::helper('core')->quoteEscape($this->helper()->__(Mage::getStoreConfig('payment/boltpay/title'))) ?></div>
+    <div><?php echo Mage::helper('core')->quoteEscape($this->boltHelper()->__(Mage::getStoreConfig('payment/boltpay/title'))) ?></div>
     <img id="bolt-credit-card-logos" style="width:175px;" src="https://s3-us-west-1.amazonaws.com/bolt-public/magento-integration-release/powered_by_bolt_cards.png"
       alt="Mark" class="v-middle" />
 </div>
 <?php
-$publishableKey = $this->helper()->getPublishableKeyOnePage();
+$publishableKey = $this->boltHelper()->getPublishableKeyOnePage();
 if (Mage::getStoreConfig('payment/boltpay/hide_on_checkout') || !$publishableKey) {
     ?>
 <script>

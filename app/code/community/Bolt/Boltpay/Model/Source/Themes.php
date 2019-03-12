@@ -29,11 +29,11 @@ class Bolt_Boltpay_Model_Source_Themes
         return array(
             array(
                 'value' => 'light',
-                'label' => $this->helper()->__('Light, for dark backgrounds')
+                'label' => $this->boltHelper()->__('Light, for dark backgrounds')
             ),
             array(
                 'value' => 'dark',
-                'label' => $this->helper()->__('Dark, for light backgrounds')
+                'label' => $this->boltHelper()->__('Dark, for light backgrounds')
             ),
         );
     }

@@ -48,7 +48,7 @@ class Bolt_Boltpay_Block_Adminhtml_System_Config_Form_Button extends Mage_Adminh
         $button = $this->getLayout()->createBlock('adminhtml/widget_button')
             ->setData(array(
                 'id' => 'boltpay_check_button',
-                'label' => $this->helper()->__('Check'),
+                'label' => $this->boltHelper()->__('Check'),
                 'onclick' => 'javascript:check(); return false;'
             ));
 
