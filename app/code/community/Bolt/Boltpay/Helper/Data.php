@@ -208,11 +208,7 @@ class Bolt_Boltpay_Helper_Data extends Mage_Core_Helper_Abstract
                     ";
                 break;
             default:
-                $javascript .= "
-                    if (order_completed) {
-                        location.href = '$successUrl';
-                    }
-                ";
+                $javascript .= "";
         }
 
         return $javascript;

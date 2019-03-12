@@ -933,7 +933,7 @@ class Bolt_Boltpay_Model_Payment extends Mage_Payment_Model_Method_Abstract
      * @param $prevTransactionStatus
      *
      * @return bool
-     * @throws \Bolt_Boltpay_OrderCreationException
+     * @throws \Bolt_Boltpay_InvalidTransitionException
      * @throws \Mage_Core_Exception
      */
     protected function validateWebHook($newTransactionStatus, $prevTransactionStatus)

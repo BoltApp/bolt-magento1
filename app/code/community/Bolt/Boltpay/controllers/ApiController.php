@@ -183,7 +183,7 @@ class Bolt_Boltpay_ApiController extends Mage_Core_Controller_Front_Action
             $parentQuote->removeAllItems()->save();
             //////////////////////////////////////////////
 
-        } catch (Bolt_Boltpay_OrderCreationException $boltPayInvalidTransitionException) {
+        } catch (Bolt_Boltpay_InvalidTransitionException $boltPayInvalidTransitionException) {
 
             if ($boltPayInvalidTransitionException->getOldStatus() == Bolt_Boltpay_Model_Payment::TRANSACTION_ON_HOLD) {
                 $this->getResponse()->setHttpResponseCode(503)
