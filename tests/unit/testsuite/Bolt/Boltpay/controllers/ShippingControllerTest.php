@@ -36,7 +36,7 @@ class Bolt_Boltpay_ShippingControllerTest extends PHPUnit_Framework_TestCase
     {
         $this->_shippingController = $this->getMockBuilder( "Bolt_Boltpay_ShippingController")
             ->setConstructorArgs( array( new Mage_Core_Controller_Request_Http(), new Mage_Core_Controller_Response_Http()) )
-            ->setMethods(array('helper'))
+            ->setMethods(array('boltHelper'))
             ->getMock();
 
         $stubbedBoltHelper = $this->getMockBuilder('Bolt_Boltpay_Helper_Data')
@@ -45,7 +45,7 @@ class Bolt_Boltpay_ShippingControllerTest extends PHPUnit_Framework_TestCase
 
         $stubbedBoltHelper->method('verify_hook')->willReturn(true);
 
-        $this->_shippingController->method('helper')->willReturn($stubbedBoltHelper);
+        $this->_shippingController->method('boltHelper')->willReturn($stubbedBoltHelper);
 
         $this->testHelper = new Bolt_Boltpay_TestHelper();
 
