@@ -67,10 +67,16 @@ jobs:
 
 workflows:
   version: 2
-  build:
+  tests:
     jobs:
+      - integration-sandbox:
+          filters:
+            branches:
+              only:
+                - master
+                - develop
+                - circleci
       - unit-php55-mage18
       - unit-php55-mage19
       - unit-php56-mage18
       - unit-php56-mage19
-      - integration-sandbox
