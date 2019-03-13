@@ -214,27 +214,6 @@ trait Bolt_Boltpay_Helper_ApiTrait {
 
         $this->curlHeaders = substr($result, 0, $curlHeaderSize);
         $this->curlBody = substr($result, $curlHeaderSize);
-
-        $this->applyBoltTraceId();
-    }
-
-    /**
-     * TODO: ??? This method does not appear to do anything.  Furthermore seems to create
-     * and infinite loop.  Consider removing
-     */
-    protected function applyBoltTraceId()
-    {
-        if(empty($this->curlHeaders)) { return;
-        }
-
-        foreach(explode("\r\n", $this->curlHeaders) as $row) {
-            if(preg_match('/(.*?): (.*)/', $row, $matches)) {
-                if(count($matches) == 3 && $matches[1] == 'X-Bolt-Trace-Id') {
-                    $this->applyBoltTraceId($matches[2]);
-                    break;
-                }
-            }
-        }
     }
 
     protected function getCurlJSONBody()
