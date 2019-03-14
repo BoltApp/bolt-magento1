@@ -362,7 +362,7 @@ class Bolt_Boltpay_Model_BoltOrder extends Bolt_Boltpay_Model_Abstract
      *
      * @return int    The total shipping in cents
      */
-    protected function addShipping( $totals, &$cartSubmissionData, $shippingAddress, $boltFormatAddress, $quote ) {
+    protected function addShipping( $totals, &$cartSubmissionData, $shippingAddress, $boltFormatAddress, $quote = null ) {
         $totalShipping = (int) round($totals['shipping']->getValue() * 100);
         $cartSubmissionData['shipments'] = array(array(
             'shipping_address' => $boltFormatAddress,

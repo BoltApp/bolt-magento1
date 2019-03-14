@@ -27,13 +27,15 @@ class Bolt_Boltpay_Block_Form extends Mage_Payment_Block_Form_Cc
 
     protected function _construct()
     {
-        if (!Mage::app()->getStore()->isAdmin()) {
-            $mark = Mage::getConfig()->getBlockClassName('core/template');
-            $mark = new $mark;
-            $mark->setTemplate('boltpay/mark.phtml');
-            $this->setMethodLabelAfterHtml($mark->toHtml());
-        }
         parent::_construct();
+
+        if (!Mage::app()->getStore()->isAdmin()) {
+            /** @var Bolt_Boltpay_Block_Checkout_Boltpay $markBlock */
+            $markBlock = Mage::app()->getLayout()->createBlock('boltpay/checkout_boltpay');
+            $markBlock->setTemplate('boltpay/mark.phtml');
+            $this->setMethodLabelAfterHtml($markBlock->toHtml());
+        }
+
         $this->setTemplate('boltpay/form.phtml')->setMethodTitle(Mage::getStoreConfig('payment/boltpay/title'));
     }
 }
