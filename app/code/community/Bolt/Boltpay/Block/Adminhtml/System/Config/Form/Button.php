@@ -23,6 +23,8 @@
  */
 class Bolt_Boltpay_Block_Adminhtml_System_Config_Form_Button extends Mage_Adminhtml_Block_System_Config_Form_Field
 {
+    use Bolt_Boltpay_BoltGlobalTrait;
+
     protected $_template = 'boltpay/system/config/button.phtml';
 
     /**
@@ -46,7 +48,7 @@ class Bolt_Boltpay_Block_Adminhtml_System_Config_Form_Button extends Mage_Adminh
         $button = $this->getLayout()->createBlock('adminhtml/widget_button')
             ->setData(array(
                 'id' => 'boltpay_check_button',
-                'label' => $this->helper('boltpay')->__('Check'),
+                'label' => $this->boltHelper()->__('Check'),
                 'onclick' => 'javascript:check(); return false;'
             ));
 

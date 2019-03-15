@@ -16,16 +16,12 @@
  */
 
 /**
- * Class Bolt_Boltpay_IndexController
+ * Class Bolt_Boltpay_Model_Abstract
  *
- * @deprecated OAuth will be removed in future versions
+ * The Bolt Model superclass
+ *
  */
-class Bolt_Boltpay_IndexController extends Mage_Adminhtml_Controller_Action
+class Bolt_Boltpay_Model_Abstract extends Mage_Core_Model_Abstract
 {
     use Bolt_Boltpay_BoltGlobalTrait;
-
-    protected function _isAllowed()
-    {
-        return Mage::getSingleton('admin/session')->isAllowed('admin');
-    }
 }

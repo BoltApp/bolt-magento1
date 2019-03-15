@@ -22,6 +22,8 @@
  */
 class Bolt_Boltpay_Model_Observer
 {
+    use Bolt_Boltpay_BoltGlobalTrait;
+
     /**
      * Event handler called after a save event.
      * Adds the Bolt User Id to the newly registered customer.
@@ -47,18 +49,10 @@ class Bolt_Boltpay_Model_Observer
                 }
             }
         } catch (Exception $e) {
-            Mage::helper('boltpay/bugsnag')->notifyException($e);
+            $this->boltHelper()->notifyException($e);
         }
 
         $session->unsBoltUserId();
-    }
-
-    /**
-     * @return Bolt_Boltpay_Helper_Api
-     */
-    private function getBoltApiHelper()
-    {
-        return Mage::helper('boltpay/api');
     }
 
     /**
@@ -83,9 +77,9 @@ class Bolt_Boltpay_Model_Observer
             $reference = $payment->getAdditionalInformation('bolt_reference');
             $magentoTotal = (int)(round($order->getGrandTotal() * 100));
             if ($magentoTotal !== $transaction->amount->amount)  {
-                $message = Mage::helper('boltpay')->__("THERE IS A MISMATCH IN THE ORDER PAID AND ORDER RECORDED.<br>
+                $message = $this->boltHelper()->__("THERE IS A MISMATCH IN THE ORDER PAID AND ORDER RECORDED.<br>
                            PLEASE COMPARE THE ORDER DETAILS WITH THAT RECORD IN YOUR BOLT MERCHANT ACCOUNT AT: %s/transaction/%s<br/>
-                           Bolt reports %s. Magento expects %s", Mage::helper('boltpay/url')->getBoltMerchantUrl(),
+                           Bolt reports %s. Magento expects %s", $this->boltHelper()->getBoltMerchantUrl(),
                     $reference, ($transaction->amount->amount/100), ($magentoTotal/100) );
 
                 # Adjust amount if it is off by only one cent, likely due to rounding
@@ -109,7 +103,7 @@ class Bolt_Boltpay_Model_Observer
                     'quote_id'   => $quote->getId(),
                     'display_id' => $order->getIncrementId(),
                 );
-                Mage::helper('boltpay/bugsnag')->notifyException(new Exception($message), $metaData);
+                $this->boltHelper()->notifyException(new Exception($message), $metaData);
             }
             $this->sendOrderEmail($order);
             $order->save();
@@ -128,7 +122,7 @@ class Bolt_Boltpay_Model_Observer
 
     public function sendCompleteAuthorizeRequest($request)
     {
-        return $this->getBoltApiHelper()->transmit('complete_authorize', $request);
+        return $this->boltHelper()->transmit('complete_authorize', $request);
     }
 
     /**
@@ -143,11 +137,11 @@ class Bolt_Boltpay_Model_Observer
             // and allows order creation to complete.
 
             $error = new Exception('Failed to send order email', 0, $e);
-            Mage::helper('boltpay/bugsnag')->notifyException($error);
+            $this->boltHelper()->notifyException($error);
             return;
         }
 
-        $history = $order->addStatusHistoryComment( Mage::helper('boltpay')->__('Email sent for order %s', $order->getIncrementId()) );
+        $history = $order->addStatusHistoryComment( $this->boltHelper()->__('Email sent for order %s', $order->getIncrementId()) );
         $history->setIsCustomerNotified(true);
     }
 
@@ -233,7 +227,7 @@ class Bolt_Boltpay_Model_Observer
     protected function _addMagentoOrderIdToMessage($incrementId)
     {
         if ($incrementId) {
-            return Mage::helper('boltpay')->__('Magento Order ID: "%s".', $incrementId);
+            return $this->boltHelper()->__('Magento Order ID: "%s".', $incrementId);
         }
 
         return '';
@@ -256,18 +250,18 @@ class Bolt_Boltpay_Model_Observer
         }
 
         $reference = Mage::getSingleton('core/session')->getBoltReference();
-        $transaction = Mage::getSingleton('core/session')->getBoltTransaction() ?: Mage::helper('boltpay/api')->fetchTransaction($reference);
+        $transaction = Mage::getSingleton('core/session')->getBoltTransaction() ?: $this->boltHelper()->fetchTransaction($reference);
 
         $boltCartTotal = $transaction->amount->currency_symbol. ($transaction->amount->amount/100);
         $orderTotal = $order->getGrandTotal();
 
-        $msg = Mage::helper('boltpay')->__(
+        $msg = $this->boltHelper()->__(
             "BOLT notification: Authorization requested for %s.  Order total is %s. Bolt transaction: %s/transaction/%s.", 
-            $boltCartTotal, $transaction->amount->currency_symbol.$orderTotal, Mage::helper('boltpay/url')->getBoltMerchantUrl(), $transaction->reference
+            $boltCartTotal, $transaction->amount->currency_symbol.$orderTotal, $this->boltHelper()->getBoltMerchantUrl(), $transaction->reference
         );
 
         if(Mage::getSingleton('core/session')->getWasCreatedByHook()){ // order is create via AJAX call
-            $msg .= Mage::helper('boltpay')->__("  This order was created via webhook (Bolt traceId: <%s>)", Mage::helper('boltpay/bugsnag')->getBoltTraceId());
+            $msg .= $this->boltHelper()->__("  This order was created via webhook (Bolt traceId: <%s>)", $this->boltHelper()->getBoltTraceId());
         }
 
         $order->setState(Bolt_Boltpay_Model_Payment::transactionStatusToOrderStatus($transaction->status), true, $msg)
