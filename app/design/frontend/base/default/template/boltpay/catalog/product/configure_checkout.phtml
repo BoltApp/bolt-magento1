@@ -4,13 +4,29 @@
 var productPageCheckoutSelector = '<?php $this->escapeHtml($this->getProductPageCheckoutSelector()) ?>';
 var order_completed = false;
 var do_checks = 1;
-
+<?php $productTierPrice = $this->getProductTierPrice(); ?>
 var boltConfigPDP = {
     _jsonProductCart: <?php echo $this->getCartDataJsForProductPage(); ?>,
+    _tierPrices : <?php echo json_encode($productTierPrice) ?>,
+    getPrice : function (qty) {
+        qty = Number(qty);
+        var i;
+        for (i = this._tierPrices.length; i > 0; --i) {
+            if (qty >= this._tierPrices[i-1]['price_qty']){
+                return this._tierPrices[i-1]['price'];
+            }
+        }
+
+        return this._jsonProductCart.items[0].price;
+    },
+
     increaseQty: function(number) {
         if (this._jsonProductCart) {
             this._jsonProductCart.items[0].quantity = parseInt(number);
-            this._jsonProductCart.total = parseFloat(this._jsonProductCart.total) * number;
+            if(this._tierPrices){
+                this._jsonProductCart.items[0].price = this.getPrice(number);
+            }
+            this._jsonProductCart.total = parseFloat(this._jsonProductCart.items[0].price) * number;
         } else {
             console.log('There is no json product data');
         }

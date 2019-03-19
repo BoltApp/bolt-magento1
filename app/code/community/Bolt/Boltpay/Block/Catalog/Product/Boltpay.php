@@ -30,7 +30,14 @@ class Bolt_Boltpay_Block_Catalog_Product_Boltpay extends Mage_Core_Block_Templat
 {
     use Bolt_Boltpay_BoltGlobalTrait;
 
-    const CHECKOUT_TYPE_MULTI_PAGE  = 'multi-page';
+    /**
+     * Get Product Tier Price
+     * @return mixed
+     */
+    public function getProductTierPrice()
+    {
+        return Mage::registry('current_product')->getData('tier_price');
+    }
 
     /**
      * Initiates sets up BoltCheckout config.
@@ -88,7 +95,7 @@ class Bolt_Boltpay_Block_Catalog_Product_Boltpay extends Mage_Core_Block_Templat
      *
      * @return string
      */
-    public function getBoltCallbacks($checkoutType = self::CHECKOUT_TYPE_MULTI_PAGE, $isVirtualQuote = false )
+    public function getBoltCallbacks($checkoutType = Bolt_Boltpay_Block_Checkout_Boltpay::CHECKOUT_TYPE_PRODUCT_PAGE, $isVirtualQuote = false )
     {
         return $this->boltHelper()->getBoltCallbacks($checkoutType, $isVirtualQuote);
     }
