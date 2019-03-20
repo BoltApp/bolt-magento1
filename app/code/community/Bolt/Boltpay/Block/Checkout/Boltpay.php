@@ -310,6 +310,7 @@ class Bolt_Boltpay_Block_Checkout_Boltpay extends Mage_Checkout_Block_Onepage_Re
 
         $session =  Mage::getSingleton('customer/session');
         $hints = array();
+        $prefill = array();
 
         /////////////////////////////////////////////////////////////////////////
         // Check if the quote shipping address is set,
@@ -321,30 +322,31 @@ class Bolt_Boltpay_Block_Checkout_Boltpay extends Mage_Checkout_Block_Onepage_Re
                 /** @var Mage_Customer_Model_Customer $customer */
                 $customer = Mage::getModel('customer/customer')->load($session->getId());
                 $address = $customer->getPrimaryShippingAddress();
-                $hints['email'] = $customer->getEmail();
+                $prefill['email'] = $customer->getEmail();
             }
         }
 
         // If address value exists populate the hints array with existing address data.
         if ($address instanceof Mage_Customer_Model_Address_Abstract) {
-            if ($address->getEmail())     $hints['email']        = $address->getEmail();
-            if ($address->getFirstname()) $hints['firstName']    = $address->getFirstname();
-            if ($address->getLastname())  $hints['lastName']     = $address->getLastname();
-            if ($address->getStreet1())   $hints['addressLine1'] = $address->getStreet1();
-            if ($address->getStreet2())   $hints['addressLine2'] = $address->getStreet2();
-            if ($address->getCity())      $hints['city']         = $address->getCity();
-            if ($address->getRegion())    $hints['state']        = $address->getRegion();
-            if ($address->getPostcode())  $hints['zip']          = $address->getPostcode();
-            if ($address->getTelephone()) $hints['phone']        = $address->getTelephone();
-            if ($address->getCountryId()) $hints['country']      = $address->getCountryId();
+            if ($address->getEmail())     $prefill['email']        = $address->getEmail();
+            if ($address->getFirstname()) $prefill['firstName']    = $address->getFirstname();
+            if ($address->getLastname())  $prefill['lastName']     = $address->getLastname();
+            if ($address->getStreet1())   $prefill['addressLine1'] = $address->getStreet1();
+            if ($address->getStreet2())   $prefill['addressLine2'] = $address->getStreet2();
+            if ($address->getCity())      $prefill['city']         = $address->getCity();
+            if ($address->getRegion())    $prefill['state']        = $address->getRegion();
+            if ($address->getPostcode())  $prefill['zip']          = $address->getPostcode();
+            if ($address->getTelephone()) $prefill['phone']        = $address->getTelephone();
+            if ($address->getCountryId()) $prefill['country']      = $address->getCountryId();
         }
 
         if ($checkoutType === 'admin') {
-            $hints['email'] = Mage::getSingleton('admin/session')->getOrderShippingAddress()['email'];
+            $prefill['email'] = Mage::getSingleton('admin/session')->getOrderShippingAddress()['email'];
             $hints['virtual_terminal_mode'] = true;
         }
 
-        return array( "prefill" => $hints );
+        $hints['prefill'] = $prefill;
+        return $hints;
     }
 
     /**
