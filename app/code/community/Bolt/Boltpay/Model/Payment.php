@@ -445,14 +445,7 @@ class Bolt_Boltpay_Model_Payment extends Mage_Payment_Model_Method_Abstract
                     $order->setState(Mage_Sales_Model_Order::STATE_PAYMENT_REVIEW, true, $message);
                     $order->save();
                 } elseif ($newTransactionStatus == self::TRANSACTION_CANCELLED) {
-                    $order = $payment->getOrder();
-                    $payment->setParentTransactionId($reference);
-                    $payment->setTransactionId(sprintf("%s-void", $reference));
-                    $payment->addTransaction(Mage_Sales_Model_Order_Payment_Transaction::TYPE_VOID, null, true);
-                    $message = $this->boltHelper()->__('BOLT notification: Transaction authorization has been voided');
-                    $order->setState(Mage_Sales_Model_Order::STATE_CANCELED, true, $message);
-                    $payment->save();
-                    $order->save();
+                      $this->handleVoidTransactionUpdate($payment);
                 } elseif ($newTransactionStatus == self::TRANSACTION_REJECTED_IRREVERSIBLE) {
                     $order = $payment->getOrder();
                     $payment->setParentTransactionId($reference);
@@ -971,5 +964,56 @@ class Bolt_Boltpay_Model_Payment extends Mage_Payment_Model_Method_Abstract
     {
         return $newTransactionStatus == self::TRANSACTION_COMPLETED ||
               ($newTransactionStatus == self::TRANSACTION_AUTHORIZED && $prevTransactionStatus == self::TRANSACTION_AUTHORIZED);
+    }
+
+    /**
+     *  Handles two void cases sent by Bolt.
+     *  1.) Complete void an order cancelling all funds
+     *  2.) Partial void where partial capture has occurred but authorization has expired
+     *
+     * @param Mage_Payment_Model_Info $payment
+     */
+    public function handleVoidTransactionUpdate(Mage_Payment_Model_Info $payment){
+
+        $authTransaction = $payment->getAuthorizationTransaction();
+        $order = $payment->getOrder();
+        $amount =  $order->getBaseGrandTotal() - $order->getBaseTotalPaid() ;
+
+        if ($authTransaction->canVoidAuthorizationCompletely()) {
+            // True void
+            $reference = $payment->getAdditionalInformation('bolt_reference');
+            $payment->setParentTransactionId($reference);
+            $payment->setTransactionId(sprintf("%s-void", $reference));
+            $payment->setShouldCloseParentTransaction(true);
+            $transaction = $payment->addTransaction(Mage_Sales_Model_Order_Payment_Transaction::TYPE_VOID, null, true);
+            $message = $this->getVoidMessage($payment, $transaction, $amount);
+            $order->setState(Mage_Sales_Model_Order::STATE_CANCELED, true, $message);
+        } else if (!$authTransaction->getIsClosed()) {
+            // Open authorization has expired and partial capture has taken place.
+            // We do not change the order state.  We only need to close the authorization.
+            $authTransaction->closeAuthorization();
+            $message = $this->getVoidMessage($payment, $authTransaction, $amount);
+            $order->addStatusHistoryComment($message);
+        }
+
+        $order->save();
+    }
+
+    /**
+     * @param Mage_Payment_Model_Info $payment
+     * @param $transaction
+     * @param null $amount
+     * @return string
+     */
+    protected function getVoidMessage(Mage_Payment_Model_Info $payment, $transaction, $amount = null)
+    {
+        $order = $payment->getOrder();
+        $message = $this->boltHelper()->__('BOLT notification: Transaction authorization has been voided.');
+        if (isset($amount)) {
+            $message .= ' ' . $this->boltHelper()->__('Amount: %s.', $order->getBaseCurrency()->formatTxt($amount, array()));
+        }
+        $message .= ' ' . $this->boltHelper()->__('Transaction ID: "%s".', $transaction->getHtmlTxnId());
+
+        return $message;
     }
 }
