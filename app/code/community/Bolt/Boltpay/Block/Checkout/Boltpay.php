@@ -34,7 +34,7 @@ class Bolt_Boltpay_Block_Checkout_Boltpay extends Mage_Checkout_Block_Onepage_Re
     const CHECKOUT_TYPE_MULTI_PAGE  = 'multi-page';
     const CHECKOUT_TYPE_ONE_PAGE    = 'one-page';
     const CHECKOUT_TYPE_FIRECHECKOUT = 'firecheckout';
-
+    const CHECKOUT_TYPE_PRODUCT_PAGE = 'product-page';
     const CSS_SUFFIX = 'bolt-css-suffix';
 
     /**

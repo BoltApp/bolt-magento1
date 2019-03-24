@@ -190,8 +190,8 @@ class Bolt_Boltpay_Helper_DataTest extends PHPUnit_Framework_TestCase
     {
         $this->app->getStore()->setConfig('payment/boltpay/success', '');
         $successCustom = "console.log('test')";
-        $saveOrderUrl = Mage::helper('boltpay')->getMagentoUrl('boltpay/order/save');
         $checkoutType = Bolt_Boltpay_Block_Checkout_Boltpay::CHECKOUT_TYPE_MULTI_PAGE;
+        $saveOrderUrl = Mage::helper('boltpay')->getMagentoUrl("boltpay/order/save/checkoutType/$checkoutType");
 
         $onSuccessCallback = "function(transaction, callback) {
                 new Ajax.Request(

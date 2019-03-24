@@ -144,7 +144,7 @@ class Bolt_Boltpay_Helper_Data extends Mage_Core_Helper_Abstract
      */
     public function buildOnSuccessCallback($successCustom, $checkoutType)
     {
-        $saveOrderUrl = $this->getMagentoUrl('boltpay/order/save');
+        $saveOrderUrl = $this->getMagentoUrl("boltpay/order/save/checkoutType/$checkoutType");
 
         return ($checkoutType === Bolt_Boltpay_Block_Checkout_Boltpay::CHECKOUT_TYPE_ADMIN) ?
             "function(transaction, callback) {
