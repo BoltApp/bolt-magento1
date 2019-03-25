@@ -157,4 +157,15 @@ class Bolt_Boltpay_TestHelper
                 $configCallbacks
         );");
     }
+
+    public function getTransactionMock($quoteId)
+    {
+        $transaction = new stdClass();
+        $transaction->indemnification_reason = '';
+        $transaction->order = new stdClass();
+        $transaction->order->cart = new stdClass();
+        $transaction->order->cart->display_id = '100050001 / ' . $quoteId;
+
+        return $transaction;
+    }
 }
