@@ -340,6 +340,7 @@ class Bolt_Boltpay_Model_Payment extends Mage_Payment_Model_Method_Abstract
 
             $data = array(
                 'transaction_id' => $transId,
+                'skip_hook_notification' => true
             );
             $response = $this->boltHelper()->transmit('void', $data);
             if (strlen($response->status) == 0) {
