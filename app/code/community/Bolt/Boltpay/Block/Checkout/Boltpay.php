@@ -636,7 +636,6 @@ class Bolt_Boltpay_Block_Checkout_Boltpay extends Mage_Checkout_Block_Onepage_Re
         $isEnabledProductPageCheckout = $this->boltHelper()->isEnabledProductPageCheckout();
 
         $customRoutes = $this->boltHelper()->getAllowedButtonByCustomRoutes();
-        Mage::log(var_export($customRoutes), true, 'bolt.log');
 
         $isAllowed = (in_array($routeName, $customRoutes) || ($routeName === 'checkout' && $controllerName === 'cart'))
             || ($routeName === 'firecheckout')
