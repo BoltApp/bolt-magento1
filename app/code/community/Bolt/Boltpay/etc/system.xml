@@ -177,6 +177,16 @@
               <show_in_store>1</show_in_store>
             </selector_styles>
 
+            <allowed_button_by_custom_routes>
+                <label>Allowed Button By Custom Route(s)</label>
+                <frontend_type>text</frontend_type>
+                <comment>Routes are comma delimited. Leave empty if not require additional custom route.</comment>
+                <sort_order>38</sort_order>
+                <show_in_default>1</show_in_default>
+                <show_in_website>1</show_in_website>
+                <show_in_store>0</show_in_store>
+            </allowed_button_by_custom_routes>
+
             <enable_product_page_checkout>
               <label>[Experimental] Enable Product Page Checkout</label>
               <comment></comment>
