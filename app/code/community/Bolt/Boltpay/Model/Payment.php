@@ -73,7 +73,7 @@ class Bolt_Boltpay_Model_Payment extends Mage_Payment_Model_Method_Abstract
     protected $_canUseForMultishipping      = false;
     protected $_canCreateBillingAgreement   = false;
     protected $_isGateway                   = false;
-    protected $_isInitializeNeeded          = false;
+    protected $_isInitializeNeeded          = true;
 
     protected $_validStateTransitions = array(
         self::TRANSACTION_AUTHORIZED => array(self::TRANSACTION_AUTHORIZED, self::TRANSACTION_COMPLETED, self::TRANSACTION_CANCELLED, self::TRANSACTION_REJECTED_REVERSIBLE, self::TRANSACTION_REJECTED_IRREVERSIBLE, self::TRANSACTION_PENDING),
@@ -109,6 +109,44 @@ class Bolt_Boltpay_Model_Payment extends Mage_Payment_Model_Method_Abstract
         if (!Bolt_Boltpay_Helper_Data::$fromHooks) {
             $this->_validStateTransitions[self::TRANSACTION_ON_HOLD] = array(self::TRANSACTION_ALL_STATES);
         }
+    }
+
+    /**
+     * We set the initial state to Bolt
+     * @param string $paymentAction
+     * @param object $stateObject
+     * @return Mage_Payment_Model_Abstract
+     */
+    public function initialize($paymentAction, $stateObject)
+    {
+        /*
+//$reference = Mage::getSingleton('core/session')->getBoltReference();
+$boltAuthCurrency = $payment->getAdditionalInformation('bolt_auth_currency' );
+$boltAuthAmount = $payment->getAdditionalInformation('bolt_auth_amount' );
+*/
+        /*
+        $msg = $this->boltHelper()->__(
+            "BOLT notification: Authorization requested for %s.  Order total is %s. Bolt transaction: %s/transaction/%s.",
+            $boltCartTotal, $transaction->amount->currency_symbol.$orderTotal, $this->boltHelper()->getBoltMerchantUrl(), $transaction->reference
+        */
+        /*
+        $msg = $this->boltHelper()->__(
+            "BOLT notification: Authorization requested for %s.  Order total is %s.",
+            $boltAuthCurrency.$boltAuthAmount, $order->getBaseCurrencyCode().$order->getBaseGrandTotal()
+        );
+        */
+        /*
+        if(Mage::getSingleton('core/session')->getWasCreatedByHook()){ // order is create via AJAX call
+            $msg .= $this->boltHelper()->__("  This order was created via webhook (Bolt traceId: <%s>)", $this->boltHelper()->getBoltTraceId());
+        }
+        */
+
+        $stateObject
+            ->setState(Mage_Sales_Model_Order::STATE_NEW)
+            ->setStatus('pending_bolt')
+            ->setIsNotified(false);
+
+        return parent::initialize($paymentAction, $stateObject);
     }
 
     /**
@@ -224,6 +262,7 @@ class Bolt_Boltpay_Model_Payment extends Mage_Payment_Model_Method_Abstract
         try {
             // Auth transactions need to be kept open to support cancelling/voiding transaction
             $payment->setIsTransactionClosed(false);
+            $payment->getOrder()->setState(Mage_Sales_Model_Order::STATE_NEW, true, "I am your gingerbread boy");
             return $this;
         } catch (Exception $e) {
             $this->boltHelper()->notifyException($e);

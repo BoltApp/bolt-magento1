@@ -23,34 +23,57 @@ require_once 'Mage/Checkout/controllers/OnepageController.php';
  */
 class Bolt_Boltpay_OnepageController extends Mage_Checkout_OnepageController
 {
-	/**
-	 * Order success action.  We need to set the session values that are normally set in
+    use Bolt_Boltpay_Controller_Traits_ApiControllerTrait;
+
+    /**
+     * Sets up the controller success page for non-Bolt orders.  For Bolt orders,
+     * we will call @see Bolt_Boltpay_Controller_Traits_ApiControllerTrait::preDispatch()
+     * explicitly in the action.
+     */
+    public function _construct()
+    {
+        $this->willReturnJson = false;
+        $this->requestMustBeSigned = false;
+
+        parent::_construct();
+    }
+
+
+    /**
+	 * Order success action.  For Bolt orders, we need to set the session values that are normally set in
 	 * a checkout session but are missed when we do pre-auth order creation in a separate
 	 * context.
 	 */
     public function successAction()
     {
+        $requestParams = $this->getRequest()->getParams();
 
-    	/** @var Mage_Checkout_Model_Session $checkoutSession */
-		$checkoutSession = Mage::getSingleton('checkout/session');
-		$checkoutSession
-			->clearHelperData();
+        if (isset($requestParams['bolt_payload'])) {
+            // Handle Bolt Orders only
 
-		$requestParams = $this->getRequest()->getParams();
+            $this->payload = base64_decode($requestParams['bolt_payload']);
+            $this->signature = $requestParams['bolt_signature'];
+            $this->preDispatch();  // this handles signature verification
 
-		$quote = $this->getOnepage()->getQuote();
+            /** @var Mage_Checkout_Model_Session $checkoutSession */
+            $checkoutSession = Mage::getSingleton('checkout/session');
+            $checkoutSession
+                ->clearHelperData();
 
-		/* @var Mage_Sales_Model_Quote $immutableQuote */
-		$immutableQuote = Mage::getModel('sales/quote')->loadByIdWithoutStore($quote->getParentQuoteId());
+            $quote = $this->getOnepage()->getQuote();
 
-		$checkoutSession
-			->setLastQuoteId($requestParams['lastQuoteId'])
-			->setLastSuccessQuoteId($requestParams['lastSuccessQuoteId'])
-			->setLastOrderId($requestParams['lastOrderId'])
-			->setLastRealOrderId($requestParams['lastRealOrderId'])
-			->setLastRecurringProfileIds(explode( ',', $requestParams['lastRecurringProfileIds']));
+            /* @var Mage_Sales_Model_Quote $immutableQuote */
+            $immutableQuote = Mage::getModel('sales/quote')->loadByIdWithoutStore($quote->getParentQuoteId());
 
-		$quote->setIsActive(false)->save();
+            $checkoutSession
+                ->setLastQuoteId($requestParams['lastQuoteId'])
+                ->setLastSuccessQuoteId($requestParams['lastSuccessQuoteId'])
+                ->setLastOrderId($requestParams['lastOrderId'])
+                ->setLastRealOrderId($requestParams['lastRealOrderId'])
+                ->setLastRecurringProfileIds(explode( ',', $requestParams['lastRecurringProfileIds']));
+
+            Mage::getModel('boltpay/order')->receiveOrder($requestParams['lastRealOrderId']);
+        }
 
 		parent::successAction();
     }

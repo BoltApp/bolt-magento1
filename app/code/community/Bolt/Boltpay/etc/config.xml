@@ -56,8 +56,8 @@
 
     <rewrite>
       <bolt_boltpay_onepage>
-        <from><![CDATA[#^/checkout/onepage/#]]></from>
-        <to>/boltpay/onepage/</to>
+        <from><![CDATA[#^/checkout/onepage/success#]]></from>
+        <to>/boltpay/onepage/success</to>
       </bolt_boltpay_onepage>
     </rewrite>
 

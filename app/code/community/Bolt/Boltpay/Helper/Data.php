@@ -158,24 +158,12 @@ class Bolt_Boltpay_Helper_Data extends Mage_Core_Helper_Abstract
 
                 // order and order.submit should exist for admin
                 if ((typeof order !== 'undefined' ) && (typeof order.submit === 'function')) {
-                    order_completed = true;
                     callback();
                 }
             }"
             : "function(transaction, callback) {
-                new Ajax.Request(
-                    '$saveOrderUrl',
-                    {
-                        method:'post',
-                        onSuccess:
-                            function() {
-                                $successCustom
-                                order_completed = true;
-                                callback();
-                            },
-                        parameters: 'reference='+transaction.reference
-                    }
-                );
+                $successCustom
+                callback();
             }";
     }
 

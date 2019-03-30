@@ -22,7 +22,18 @@
  */
 class Bolt_Boltpay_ApiController extends Mage_Core_Controller_Front_Action
 {
-    use Bolt_Boltpay_BoltGlobalTrait;
+    use Bolt_Boltpay_Controller_Traits_ApiControllerTrait;
+
+    /**
+     * Sets the request body sent to this controller for actions to use
+     */
+    protected function _construct()
+    {
+        $this->payload = file_get_contents('php://input');
+        $this->signature = @$_SERVER['HTTP_X_BOLT_HMAC_SHA256'];
+
+        parent::_construct();
+    }
 
     /**
      * The starting point for all Api hook request
@@ -31,25 +42,8 @@ class Bolt_Boltpay_ApiController extends Mage_Core_Controller_Front_Action
     {
 
         try {
-            $hmacHeader = @$_SERVER['HTTP_X_BOLT_HMAC_SHA256'];
 
-            $requestJson = file_get_contents('php://input');
-
-            $this->boltHelper()->setResponseContextHeaders();
-
-            if (!$this->boltHelper()->verify_hook($requestJson, $hmacHeader)) {
-                $exception = new Exception($this->boltHelper()->__('Hook request failed validation.'));
-                $this->getResponse()->setHttpResponseCode(412);
-                $this->getResponse()->setBody(json_encode(array('status' => 'failure', 'error' => array('code' => 6001, 'message' => $exception->getMessage()))));
-
-                $this->getResponse()->setException($exception);
-                $this->boltHelper()->notifyException($exception);
-                return;
-            }
-
-            //Mage::log('Initiating webhook call', null, 'bolt.log');
-
-            $bodyParams = json_decode(file_get_contents('php://input'), true);
+            $bodyParams = json_decode($this->payload, true);
 
             if (isset($bodyParams['type']) && $bodyParams['type'] == "discounts.code.apply") {
                 /** @var Bolt_Boltpay_Model_Coupon $couponModel */
@@ -183,6 +177,8 @@ class Bolt_Boltpay_ApiController extends Mage_Core_Controller_Front_Action
             $parentQuote->removeAllItems()->save();
             //////////////////////////////////////////////
 
+            return;
+
         } catch (Bolt_Boltpay_InvalidTransitionException $boltPayInvalidTransitionException) {
 
             if ($boltPayInvalidTransitionException->getOldStatus() == Bolt_Boltpay_Model_Payment::TRANSACTION_ON_HOLD) {
@@ -236,93 +232,48 @@ class Bolt_Boltpay_ApiController extends Mage_Core_Controller_Front_Action
         }
     }
 
-
 	public function create_orderAction() {
+        try {
+            $transaction = json_decode($this->payload);
+            $immutableQuoteId = $this->boltHelper()->getImmutableQuoteIdFromTransaction($transaction);
 
-		$hmacHeader = @$_SERVER['HTTP_X_BOLT_HMAC_SHA256'];
+            /** @var  Bolt_Boltpay_Model_Order $orderModel */
+            $orderModel = Mage::getModel('boltpay/order');
+            $order = $orderModel->getOrderByQuoteId($immutableQuoteId);
 
-		$requestJson = file_get_contents('php://input');
-		$transaction = json_decode($requestJson);
+            if ($order->isObjectNew()) {
+                /** @var Mage_Sales_Model_Order $order */
+                $order = Mage::getModel('boltpay/order')->createOrder($reference = null, $sessionQuoteId = null, $isPreAuthCreation = true, $transaction);
+            } else {
+                /*
+                throw new Bolt_Boltpay_OrderCreationException(
+                    Bolt_Boltpay_OrderCreationException::E_BOLT_ORDER_ALREADY_EXISTS,
+                    Bolt_Boltpay_OrderCreationException::E_BOLT_ORDER_ALREADY_EXISTS_TMPL,
+                    array($order->getIncrementId(), $order->getStatus()),
+                    "Order {$order->getIncrementId()} already exist."
+                );
+                */
+            }
 
-		/** @var Bolt_Boltpay_Helper_Data $boltHelperBase */
-		$boltHelperBase = Mage::helper('boltpay');
+            $orderSuccessUrl = $this->createSuccessUrl($order, $immutableQuoteId);
 
-		$boltHelper = Mage::helper('boltpay/api');
-
-		Mage::helper('boltpay/api')->setResponseContextHeaders();
-
-		if (!$boltHelper->verify_hook($requestJson, $hmacHeader)) {
-			$exception = new Exception($boltHelperBase->__('Hook request failed validation.'));
-			$this->getResponse()->setHttpResponseCode(412);
-			$this->getResponse()->setBody(json_encode(array('status' => 'failure', 'error' => array('code' => 6001, 'message' => $exception->getMessage()))));
-
-			$this->getResponse()->setException($exception);
-			Mage::helper('boltpay/bugsnag')->notifyException($exception);
-			return;
-		}
-
-		/** @var  Bolt_Boltpay_Model_Order $orderModel */
-		$orderModel = Mage::getModel('boltpay/order');
-		/** @var Bolt_Boltpay_Helper_Transaction $transactionHelper */
-		$transactionHelper = Mage::helper('boltpay/transaction');
-
-		$immutableQuoteId = $transactionHelper->getImmutableQuoteIdFromTransaction($transaction);
-		$order = $orderModel->getOrderByQuoteId($immutableQuoteId);
-
-		if ($order->isObjectNew()) {
-			/** @var Mage_Sales_Model_Order $order */
-			$order = Mage::getModel('boltpay/order')->createOrder($reference = null, $sessionQuoteId = null, $isPreAuthCreation = true, json_decode($requestJson));
-		}
-
-		/* @var Mage_Sales_Model_Quote $immutableQuote */
-		$immutableQuote = Mage::getModel('sales/quote')->loadByIdWithoutStore($order->getQuoteId());
-		$recurringPaymentProfiles = $immutableQuote->collectTotals()->prepareRecurringPaymentProfiles();
-
-		/***********************/
-		// Set session quote to real customer quote
-		$session = Mage::getSingleton('checkout/session');
-		$session->setQuoteId($immutableQuoteId);
-		/**************/
-
-		$successUrlPath = Mage::helper('boltpay/url')->getMagentoUrl(Mage::getStoreConfig('payment/boltpay/successpage')) ?: '/';
-		if ($successUrlPath[strlen($successUrlPath) - 1] === '/' ) $successUrlPath = substr( $successUrlPath, 0, -1);
-
-		$successUrlQueryString = "?lastQuoteId={$immutableQuote->getParentQuoteId()}&lastSuccessQuoteId={$immutableQuote->getParentQuoteId()}&lastOrderId={$order->getId()}&lastRealOrderId={$order->getIncrementId()}";
-
-		$recurringPaymentProfilesIds = array();
-		/** @var Mage_Payment_Model_Recurring_Profile $profile */
-		foreach((array)$recurringPaymentProfiles as $profile) {
-			$recurringPaymentProfilesIds[] = $profile->getId();
-		}
-
-		if ($recurringPaymentProfilesIds) {
-			$successUrlQueryString .= "&lastRecurringProfileIds=" . implode(",", $recurringPaymentProfilesIds);
-		}
-
-		$orderSuccessUrl = $successUrlPath . $successUrlQueryString;
-
-		/* @var Mage_Sales_Model_Quote $parentQuote */
-		$parentQuote = Mage::getModel('sales/quote')->loadByIdWithoutStore($immutableQuote->getParentQuoteId());
-
-
-		if ($temp = $parentQuote->getExtShippingInfo()) {
-			if (!$immutableQuote->getExtShippingInfo()) {
-				$immutableQuote->setExtShippingInfo($temp)->save();
-			}
-		}
-
-		$parentQuote->setExtShippingInfo(substr($successUrlQueryString, 1))->save();
-
-		$this->getResponse()->setBody(
-			json_encode(
-				array(
-					'status' => 'success',
-					'display_id' => $order->getIncrementId(),
-					'total' => (int)($order->getGrandTotal() * 100),
-					'order_received_url' => $orderSuccessUrl
-				)
-			)
-		)->setHttpResponseCode(200);
+            $this->sendResponse(
+                200,
+                array(
+                    'status' => 'success',
+                    'display_id' => $order->getIncrementId(),
+                    'total' => (int)($order->getGrandTotal() * 100),
+                    'order_received_url' => $orderSuccessUrl
+                )
+            );
+        } catch ( Bolt_Boltpay_OrderCreationException $orderCreationException ) {
+            $this->sendResponse(
+                $orderCreationException->getHttpCode(),
+                $orderCreationException->getJson(),
+                false
+            );
+            $this->boltHelper()->notifyException($orderCreationException);
+        }
 	}
 
 	protected function getCaptureAmount($transaction) {
@@ -334,14 +285,42 @@ class Bolt_Boltpay_ApiController extends Mage_Core_Controller_Front_Action
     }
 
     /**
-     * @param int $httpCode
-     * @param array $data
+     * POST data in response to a request
+     *
+     * @param int   $httpCode       standard HTTP response code
+     * @param array $data           a PHP array to be encoded as JSON and sent as a response body to Bolt
+     * @param bool  $doJsonEncode   instructs whether to JSON encode the data, true by default
+     *
+     * @throws Zend_Controller_Response_Exception if the error code is not within the valid range
      */
-    protected function sendResponse($httpCode, $data = array())
+    protected function sendResponse($httpCode, $data = array(), $doJsonEncode = true )
     {
-        $this->getResponse()->setHeader('Content-type', 'application/json');
         $this->getResponse()->setHttpResponseCode($httpCode);
-        $this->getResponse()->setBody(json_encode($data));
+        $this->getResponse()->setBody($doJsonEncode ? json_encode($data) : $data );
+    }
+
+
+    private function createSuccessUrl($order, $immutableQuoteId = null) {
+        /* @var Mage_Sales_Model_Quote $immutableQuote */
+        $immutableQuote = Mage::getModel('sales/quote')->loadByIdWithoutStore($immutableQuoteId);
+        $recurringPaymentProfiles = $immutableQuote->collectTotals()->prepareRecurringPaymentProfiles();
+        $successUrlPath = $this->boltHelper()->getMagentoUrl(Mage::getStoreConfig('payment/boltpay/successpage')) ?: '/';
+
+        if ($successUrlPath[strlen($successUrlPath) - 1] === '/' ) $successUrlPath = substr( $successUrlPath, 0, -1);
+
+        $successUrlQueryString = "?lastQuoteId={$immutableQuote->getParentQuoteId()}&lastSuccessQuoteId={$immutableQuote->getParentQuoteId()}&lastOrderId={$order->getId()}&lastRealOrderId={$order->getIncrementId()}";
+
+        $recurringPaymentProfilesIds = array();
+        /** @var Mage_Payment_Model_Recurring_Profile $profile */
+        foreach((array)$recurringPaymentProfiles as $profile) {
+            $recurringPaymentProfilesIds[] = $profile->getId();
+        }
+
+        if ($recurringPaymentProfilesIds) {
+            $successUrlQueryString .= "&lastRecurringProfileIds=" . implode(",", $recurringPaymentProfilesIds);
+        }
+
+        return $successUrlPath . $successUrlQueryString;
     }
 
 }

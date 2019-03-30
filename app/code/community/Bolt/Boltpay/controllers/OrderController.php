@@ -15,8 +15,6 @@
  * @license    http://opensource.org/licenses/osl-3.0.php  Open Software License (OSL 3.0)
  */
 
-require_once(Mage::getModuleDir('controllers','Bolt_Boltpay').DS.'OrderControllerTrait.php');
-
 /**
  * Class Bolt_Boltpay_OrderController
  *
@@ -24,7 +22,7 @@ require_once(Mage::getModuleDir('controllers','Bolt_Boltpay').DS.'OrderControlle
  */
 class Bolt_Boltpay_OrderController extends Mage_Core_Controller_Front_Action
 {
-    use Bolt_Boltpay_OrderControllerTrait;
+    use Bolt_Boltpay_Controller_Traits_OrderControllerTrait;
 
     /**
      * Frontend save order action. Called from BoltCheckout.configure success callback.

@@ -33,7 +33,7 @@ class Bolt_Boltpay_Model_Observer
      */
     public function setBoltUserId($observer)
     {
-
+/*
         $quote = $observer->getEvent()->getQuote();
         $session = Mage::getSingleton('customer/session');
 
@@ -53,6 +53,7 @@ class Bolt_Boltpay_Model_Observer
         }
 
         $session->unsBoltUserId();
+*/
     }
 
     /**
@@ -66,6 +67,7 @@ class Bolt_Boltpay_Model_Observer
      */
     public function verifyOrderContents($observer)
     {
+ return;
         /* @var Mage_Sales_Model_Quote $quote */
         $quote = $observer->getEvent()->getQuote();
         /* @var Mage_Sales_Model_Order $order */
@@ -120,16 +122,13 @@ class Bolt_Boltpay_Model_Observer
         $cartHelper->getCart()->truncate()->save();
     }
 
-    public function sendCompleteAuthorizeRequest($request)
-    {
-        return $this->boltHelper()->transmit('complete_authorize', $request);
-    }
 
     /**
      * @param $order Mage_Sales_Model_Order
      */
     public function sendOrderEmail($order)
     {
+return;
         try {
             $order->sendNewOrderEmail();
         } catch (Exception $e) {
@@ -176,6 +175,7 @@ class Bolt_Boltpay_Model_Observer
      */
     public function updateBoltTransactionStatus($observer)
     {
+return;
         /* @var Mage_Sales_Model_Order $order */
         $order = $observer->getOrder();
 
@@ -240,6 +240,8 @@ class Bolt_Boltpay_Model_Observer
      */
     public function setInitialOrderStatusAndDetails(Varien_Event_Observer $observer) {
 
+        return;
+
         /** @var Mage_Sales_Model_Order $order */
         $order = $observer->getEvent()->getOrder();
         $payment = $order->getPayment();
@@ -249,22 +251,22 @@ class Bolt_Boltpay_Model_Observer
             return;
         }
 
+        /*
         //$reference = Mage::getSingleton('core/session')->getBoltReference();
-        $transaction = Mage::getSingleton('core/session')->getBoltTransaction(); //?: Mage::helper('boltpay/api')->fetchTransaction($reference);
-
-        $boltCartTotal = $transaction->amount->currency_symbol. ($transaction->amount->amount/100);
-        $orderTotal = $order->getGrandTotal();
-
+        $boltAuthCurrency = $payment->getAdditionalInformation('bolt_auth_currency' );
+        $boltAuthAmount = $payment->getAdditionalInformation('bolt_auth_amount' );
+*/
         /*
         $msg = $this->boltHelper()->__(
             "BOLT notification: Authorization requested for %s.  Order total is %s. Bolt transaction: %s/transaction/%s.", 
             $boltCartTotal, $transaction->amount->currency_symbol.$orderTotal, $this->boltHelper()->getBoltMerchantUrl(), $transaction->reference
         */
-        $msg = Mage::helper('boltpay')->__(
+        /*
+        $msg = $this->boltHelper()->__(
             "BOLT notification: Authorization requested for %s.  Order total is %s.",
-            $boltCartTotal, $transaction->amount->currency_symbol.$orderTotal, Mage::helper('boltpay/url')->getBoltMerchantUrl()
+            $boltAuthCurrency.$boltAuthAmount, $order->getBaseCurrencyCode().$order->getBaseGrandTotal()
         );
-
+        */
         /*
         if(Mage::getSingleton('core/session')->getWasCreatedByHook()){ // order is create via AJAX call
             $msg .= $this->boltHelper()->__("  This order was created via webhook (Bolt traceId: <%s>)", $this->boltHelper()->getBoltTraceId());
@@ -272,7 +274,7 @@ class Bolt_Boltpay_Model_Observer
         */
 
         $order
-            ->setState('new', 'pending_bolt', $msg)
+            ->setState('new', 'pending_bolt', $msg = "one step at a time.")
             ->save();
 
         /*
