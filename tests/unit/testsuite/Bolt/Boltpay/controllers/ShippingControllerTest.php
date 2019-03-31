@@ -23,6 +23,11 @@ class Bolt_Boltpay_ShippingControllerTest extends PHPUnit_Framework_TestCase
      * @var Bolt_Boltpay_TestHelper  Used for working with the shopping cart
      */
     private $testHelper;
+    
+    /**
+     * @var string  Used for storing $cacheBoltHeader in the header of response
+     */
+    private $_cacheBoltHeader;
 
 
     /**
@@ -36,16 +41,36 @@ class Bolt_Boltpay_ShippingControllerTest extends PHPUnit_Framework_TestCase
     {
         $this->_shippingController = $this->getMockBuilder( "Bolt_Boltpay_ShippingController")
             ->setConstructorArgs( array( new Mage_Core_Controller_Request_Http(), new Mage_Core_Controller_Response_Http()) )
-            ->setMethods(array('boltHelper'))
+            ->setMethods(['boltHelper', 'getResponse'])
             ->getMock();
 
         $stubbedBoltHelper = $this->getMockBuilder('Bolt_Boltpay_Helper_Data')
-            ->setMethods(array('verify_hook'))
+            ->setMethods(array('verify_hook', 'setResponseContextHeaders'))
             ->getMock();
+        
+        $stubbedResponse = $this->getMockBuilder('Mage_Core_Controller_Response_Http')
+            ->setMethods(['setHeader'])
+            ->getMock();
+        
+        $stubbedResponse->method('setHeader')
+             ->with(
+                    $this->anything(),
+                    $this->callback(function($headerValue){
+                        if($headerValue === 'HIT' || $headerValue === 'MISS'){
+                            $this->_cacheBoltHeader = $headerValue;
+                        }
+                        return $headerValue;
+                    })
+                   )
+             ->willReturn($stubbedResponse);
 
         $stubbedBoltHelper->method('verify_hook')->willReturn(true);
+        
+        $stubbedBoltHelper->method('setResponseContextHeaders')->willReturn($stubbedResponse);
 
         $this->_shippingController->method('boltHelper')->willReturn($stubbedBoltHelper);
+        
+        $this->_shippingController->method('getResponse')->willReturn($stubbedResponse);
 
         $this->testHelper = new Bolt_Boltpay_TestHelper();
 
@@ -221,12 +246,8 @@ class Bolt_Boltpay_ShippingControllerTest extends PHPUnit_Framework_TestCase
         ////////////////////////////////////////////////////////
         $this->_shippingController->indexAction();
         $firstCallEstimate = json_decode($this->_shippingController->getResponse()->getBody(), true);
-        $firstCallHeaders = $this->_shippingController->getResponse()->getHeaders();
-        foreach($firstCallHeaders as $callHeader) {
-            if ($callHeader['name'] === 'X-Bolt-Cache-Hit') {
-                $firstCallHitOrMiss = $callHeader['value'];
-            }
-        }
+        $firstCallHeaders = $this->_shippingController->getResponse()->getHeaders();      
+        $firstCallHitOrMiss = $this->_cacheBoltHeader;
         ////////////////////////////////////////////////////////
 
 
@@ -236,11 +257,7 @@ class Bolt_Boltpay_ShippingControllerTest extends PHPUnit_Framework_TestCase
         $this->_shippingController->indexAction();
         $secondCallEstimate = json_decode($this->_shippingController->getResponse()->getBody(), true);
         $secondCallHeaders = $this->_shippingController->getResponse()->getHeaders();
-        foreach($secondCallHeaders as $callHeader) {
-            if ($callHeader['name'] === 'X-Bolt-Cache-Hit') {
-                $secondCallHitOrMiss = $callHeader['value'];
-            }
-        }
+        $secondCallHitOrMiss = $this->_cacheBoltHeader;
         ////////////////////////////////////////////////////////
 
 
@@ -268,11 +285,7 @@ class Bolt_Boltpay_ShippingControllerTest extends PHPUnit_Framework_TestCase
         $this->_shippingController->indexAction();
         $thirdCallEstimate = json_decode($this->_shippingController->getResponse()->getBody(), true);
         $thirdCallHeaders = $this->_shippingController->getResponse()->getHeaders();
-        foreach($thirdCallHeaders as $callHeader) {
-            if ($callHeader['name'] === 'X-Bolt-Cache-Hit') {
-                $thirdCallHitOrMiss = $callHeader['value'];
-            }
-        }
+        $thirdCallHitOrMiss = $this->_cacheBoltHeader;
         ////////////////////////////////////////////////////////
 
 
@@ -285,11 +298,7 @@ class Bolt_Boltpay_ShippingControllerTest extends PHPUnit_Framework_TestCase
         $this->_shippingController->indexAction();
         $fourthCallEstimate = json_decode($this->_shippingController->getResponse()->getBody(), true);
         $fourthCallHeaders = $this->_shippingController->getResponse()->getHeaders();
-        foreach($fourthCallHeaders as $callHeader) {
-            if ($callHeader['name'] === 'X-Bolt-Cache-Hit') {
-                $fourthCallHitOrMiss = $callHeader['value'];
-            }
-        }
+        $fourthCallHitOrMiss = $this->_cacheBoltHeader;
         ////////////////////////////////////////////////////////
 
         $this->assertNotEmpty( $firstCallEstimate );
