@@ -73,9 +73,13 @@ class Bolt_Boltpay_ApiController extends Mage_Core_Controller_Front_Action
                 $order =  Mage::getModel('boltpay/order')->getOrderByQuoteId($quoteId);
             }
 
+            /** @var Mage_Sales_Model_Order $order */
             if (!$order->isObjectNew()) {
                 //Mage::log('Order Found. Updating it', null, 'bolt.log');
                 $orderPayment = $order->getPayment();
+                if (!$orderPayment->getAdditionalInformation('bolt_reference')) {
+                    $orderPayment->setAdditionalInformation('bolt_reference', $reference);
+                }
 
                 $newTransactionStatus = Bolt_Boltpay_Model_Payment::translateHookTypeToTransactionStatus($hookType, $transaction);
                 $prevTransactionStatus = $orderPayment->getAdditionalInformation('bolt_transaction_status');
@@ -272,7 +276,13 @@ class Bolt_Boltpay_ApiController extends Mage_Core_Controller_Front_Action
                 $orderCreationException->getJson(),
                 false
             );
-            $this->boltHelper()->notifyException($orderCreationException);
+
+            //////////////////////////////////////////////////////
+            /// Send the computed cart to Bugsnag for comparison
+            //////////////////////////////////////////////////////
+            $immutableQuote = Mage::getModel('sales/quote')->loadByIdWithoutStore($order->getQuoteId());
+            $computedCart = Mage::getModel('boltpay/boltOrder')->buildCart($immutableQuote, false );
+            $this->boltHelper()->notifyException($orderCreationException, array( 'magento_order_details' => json_encode($computedCart)));
         }
 	}
 

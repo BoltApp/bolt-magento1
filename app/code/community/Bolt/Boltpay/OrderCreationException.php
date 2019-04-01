@@ -42,25 +42,30 @@ class Bolt_Boltpay_OrderCreationException extends Bolt_Boltpay_BoltException
      */
     const E_BOLT_CART_HAS_EXPIRED                         = 2001003;
     const E_BOLT_CART_HAS_EXPIRED_TMPL_EMPTY              = '{"reason": "Cart is empty"}';  // verified
-    const E_BOLT_CART_HAS_EXPIRED_TMPL_EXPIRED            = '{"reason": "Cart has expired"}'; // verified
-    const E_BOLT_CART_HAS_EXPIRED_TMPL_NOT_FOUND          = '{"reason": "Cart does not exist with reference", "reference": "%s"}'; // verified
-    const E_BOLT_CART_HAS_EXPIRED_TMPL_NOT_PURCHASABLE    = '{"reason": "The product is not purchasable", "product_id": "%d"}';  // verified
-    const E_BOLT_CART_HAS_EXPIRED_TMPL_SHIPPING           = '{"reason": "Shipping total has changed", "old_value": "%d", "new_value": "%d"}'; // verified
-    const E_BOLT_CART_HAS_EXPIRED_TMPL_DISCOUNT           = '{"reason": "Discount total has changed", "old_value": "%d", "new_value": "%d"}'; // verified
-    const E_BOLT_CART_HAS_EXPIRED_TMPL_TAX                = '{"reason": "Tax amount has changed", "old_value": "%d", "new_value": "%d"}'; // verified
-    const E_BOLT_CART_HAS_EXPIRED_TMPL_SHIPPING_TAX       = '{"reason": "Shipping tax amount has changed", "old_value": "%d", "new_value": "%d"}'; // not used
+    const E_BOLT_CART_HAS_EXPIRED_TMPL_EXPIRED            = '{"reason": "Cart has expired"}';
+    const E_BOLT_CART_HAS_EXPIRED_TMPL_NOT_FOUND          = '{"reason": "Cart does not exist with reference", "reference": "%s"}';
+    const E_BOLT_CART_HAS_EXPIRED_TMPL_NOT_PURCHASABLE    = '{"reason": "The product is not purchasable", "product_id": "%d"}';
+    const E_BOLT_CART_HAS_EXPIRED_TMPL_SHIPPING           = '{"reason": "Shipping total has changed", "old_value": "%d", "new_value": "%d"}';
+    const E_BOLT_CART_HAS_EXPIRED_TMPL_DISCOUNT           = '{"reason": "Discount total has changed", "old_value": "%d", "new_value": "%d"}';
+    const E_BOLT_CART_HAS_EXPIRED_TMPL_TAX                = '{"reason": "Tax amount has changed", "old_value": "%d", "new_value": "%d"}';
+
+    /**
+     * Currently not used -- shipping tax in M1 is used to fix rounding problems and reports the
+     * full cart tax.  Therefore, checking full tax is sufficient
+     */
+    const E_BOLT_CART_HAS_EXPIRED_TMPL_SHIPPING_TAX       = '{"reason": "Shipping tax amount has changed", "old_value": "%d", "new_value": "%d"}';
 
     /**
      * Item price changes
      */
     const E_BOLT_ITEM_PRICE_HAS_BEEN_UPDATED         = 2001004;
-    const E_BOLT_ITEM_PRICE_HAS_BEEN_UPDATED_TMPL    = '{"product_id": "%d", "old_price": "%d", "new_price": "%d"}'; // verified
+    const E_BOLT_ITEM_PRICE_HAS_BEEN_UPDATED_TMPL    = '{"product_id": "%d", "old_price": "%d", "new_price": "%d"}';
 
     /**
      * Items have become out of stock without back-orders enabled
      */
     const E_BOLT_OUT_OF_INVENTORY         = 2001005;
-    const E_BOLT_OUT_OF_INVENTORY_TMPL    = '{"product_id": "%d", "available_quantity": %d, "needed_quantity": %d}'; // verified
+    const E_BOLT_OUT_OF_INVENTORY_TMPL    = '{"product_id": "%d", "available_quantity": %d, "needed_quantity": %d}';
 
     /**
      * Error applying discount to the cart
@@ -177,7 +182,7 @@ class Bolt_Boltpay_OrderCreationException extends Bolt_Boltpay_BoltException
             "status": "failure",
             "error": [{
                 "code": $code,
-                "data": $dataJson
+                "data": [$dataJson]
             }]
         }
 JSON;

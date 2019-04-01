@@ -65,7 +65,7 @@ class Bolt_Boltpay_Model_Order extends Bolt_Boltpay_Model_Abstract
                 $this->boltHelper()->setCustomerSessionByQuoteId($sessionQuoteId);
             }
 
-            $this->doBeforeCreationValidation($immutableQuote, $parentQuote, $sessionQuoteId, $transaction);
+            $this->validateCartSessionData($immutableQuote, $parentQuote, $sessionQuoteId, $transaction);
 
             // adding guest user email to order
             if (!$immutableQuote->getCustomerEmail()) {
@@ -161,8 +161,8 @@ class Bolt_Boltpay_Model_Order extends Bolt_Boltpay_Model_Abstract
             //////////////////////////////////////////////////////////////////////////////////
 
             $this->boltHelper()->collectTotals($immutableQuote, true)->save();
+            $this->validateCoupons($immutableQuote, $transaction);
             $this->validateTotals($immutableQuote, $transaction);
-
 
             ////////////////////////////////////////////////////////////////////////////
             // reset increment id if needed
@@ -240,19 +240,6 @@ class Bolt_Boltpay_Model_Order extends Bolt_Boltpay_Model_Abstract
             }
         }
 
-        /*
-        if ($this->shouldPutOrderOnHold()) {
-            $this->setOrderOnHold($order);
-        }
-
-        /** @var Bolt_Boltpay_Model_OrderFixer $orderFixer * /
-        $orderFixer = Mage::getModel('boltpay/orderFixer');
-        $orderFixer->setupVariables($order, $transaction);
-        if($orderFixer->requiresOrderUpdateToMatchBolt()) {
-            $orderFixer->updateOrderToMatchBolt();
-        }
-        */
-
         ///////////////////////////////////////////////////////
         // Close out session by assigning the immutable quote
         // as the parent of its parent quote
@@ -263,15 +250,6 @@ class Bolt_Boltpay_Model_Order extends Bolt_Boltpay_Model_Abstract
         $parentQuote->setParentQuoteId($immutableQuote->getId())
             ->save();
         ///////////////////////////////////////////////////////
-
-        // Mage::getModel('boltpay/payment')->handleOrderUpdate($order);
-
-        ///////////////////////////////////////////////////////
-        /// Dispatch order save events
-        ///////////////////////////////////////////////////////
-        /*
-        Mage::dispatchEvent('bolt_boltpay_save_order_after', array('order'=>$order, 'quote'=>$immutableQuote, 'transaction' => $transaction));
-        */
 
         $recurringPaymentProfiles = $service->getRecurringPaymentProfiles();
 
@@ -292,7 +270,7 @@ class Bolt_Boltpay_Model_Order extends Bolt_Boltpay_Model_Abstract
      * @param $transaction
      * @throws Bolt_Boltpay_OrderCreationException
      */
-    protected function doBeforeCreationValidation($immutableQuote, $parentQuote, $sessionQuoteId, $transaction) {
+    protected function validateCartSessionData($immutableQuote, $parentQuote, $sessionQuoteId, $transaction) {
 
         if ($immutableQuote->isEmpty()) {
             throw new Bolt_Boltpay_OrderCreationException(
@@ -315,17 +293,6 @@ class Bolt_Boltpay_Model_Order extends Bolt_Boltpay_Model_Abstract
                 OCE::E_BOLT_CART_HAS_EXPIRED_TMPL_EXPIRED
             );
         }
-
-        if (@$transaction->order->cart->discounts) {
-            foreach($transaction->order->cart->discounts as $boltCoupon) {
-                if (@$boltCoupon->reference) {
-                    $magentoCoupon = $immutableQuote->getCouponCode();
-
-
-                }
-            }
-        }
-
 
         foreach ($immutableQuote->getAllItems() as $cartItem) {
             /** @var Mage_Sales_Model_Quote_Item $cartItem */
@@ -413,6 +380,11 @@ class Bolt_Boltpay_Model_Order extends Bolt_Boltpay_Model_Abstract
     public function receiveOrder( $orderIncrementId ) {
         $order = Mage::getModel('sales/order')->loadByIncrementId($orderIncrementId);
         $this->getParentQuoteFromOrder($order)->setIsActive(false)->save();
+
+        ///////////////////////////////////////////////////////
+        /// Dispatch order save events
+        ///////////////////////////////////////////////////////
+        //Mage::dispatchEvent('bolt_boltpay_save_order_after', array('order'=>$order, 'quote'=>$immutableQuote, 'transaction' => $transaction));
     }
 
     /**
@@ -431,6 +403,69 @@ class Bolt_Boltpay_Model_Order extends Bolt_Boltpay_Model_Abstract
         return $immutableQuote;
     }
 
+    /**
+     * Validates coupon codes
+     *
+     * @param Mage_Sales_Model_Quote $immutableQuote    Magento copy of Bolt order data
+     * @param object                 $transaction       Bolt copy of order data
+     *
+     * @throws Bolt_Boltpay_OrderCreationException  when coupon fails validation
+     */
+    protected function validateCoupons(Mage_Sales_Model_Quote $immutableQuote, $transaction) {
+
+        if (@$transaction->order->cart->discounts) {
+            /*
+             * Natively, Magento only supports one coupon code per order, but we can build
+             * basic support here for plugins like Amasty or custom solutions that implement
+             * multiple coupons.
+             *
+             * Here, we use "," to delimit multiple coupon codes like Amasty and popular multi-coupon
+             * custom code strategies.  This implementation also supports standard magento single coupon
+             * format.
+             */
+            foreach($transaction->order->cart->discounts as $boltCoupon) {
+
+                if (@$boltCoupon->reference) {
+                    $magentoCoupon = Mage::getModel('salesrule/coupon')->load($boltCoupon->reference, 'code');
+                    $couponExists = (bool) $magentoCoupon->getId();
+
+                    if ($couponExists) {
+
+                        $magentoCouponCodes = $immutableQuote->getCouponCode() ? explode(',', (string) $immutableQuote->getCouponCode()) : array();
+
+                        if (!in_array($boltCoupon->reference, $magentoCouponCodes)) {
+                            /** @var Mage_SalesRule_Model_Rule $rule */
+                            $rule = Mage::getModel('salesrule/rule')->load($magentoCoupon->getRuleId());
+                            $toTime = $rule->getToDate() ? ((int) strtotime($rule->getToDate()) + Mage_CatalogRule_Model_Resource_Rule::SECONDS_IN_DAY - 1) : 0;
+                            $now = Mage::getModel('core/date')->gmtTimestamp('Today');
+
+                            if ( $toTime && $toTime < $now ) {
+                                throw new Bolt_Boltpay_OrderCreationException(
+                                    OCE::E_BOLT_DISCOUNT_CANNOT_APPLY,
+                                    OCE::E_BOLT_DISCOUNT_CANNOT_APPLY_TMPL_EXPIRED,
+                                    array($boltCoupon->reference)
+                                );
+                            }
+
+                            throw new Bolt_Boltpay_OrderCreationException(
+                                OCE::E_BOLT_DISCOUNT_CANNOT_APPLY,
+                                OCE::E_BOLT_DISCOUNT_CANNOT_APPLY_TMPL_GENERIC,
+                                array("Coupon criteria was not met.", $boltCoupon->reference)
+                            );
+                        }
+
+                    } else {
+                        throw new Bolt_Boltpay_OrderCreationException(
+                            OCE::E_BOLT_DISCOUNT_DOES_NOT_EXIST,
+                            OCE::E_BOLT_DISCOUNT_DOES_NOT_EXIST_TMPL,
+                            array($boltCoupon->reference)
+                        );
+                    }
+                }
+
+            }
+        }
+    }
 
     /**
      * @param Mage_Sales_Model_Quote $quote
@@ -439,6 +474,31 @@ class Bolt_Boltpay_Model_Order extends Bolt_Boltpay_Model_Abstract
      */
     protected function validateTotals(Mage_Sales_Model_Quote $immutableQuote, $transaction)
     {
+
+        foreach ($transaction->order->cart->items as $boltCartItem) {
+
+            $cartItem = $immutableQuote->getItemById($boltCartItem->reference);
+            $boltPrice = (int)$boltCartItem->total_amount->amount;
+            $magentoPrice = (int) round($cartItem->getCalculationPrice() * 100 * $cartItem->getQty());
+
+            if ( $boltPrice !== $magentoPrice ) {
+                throw new Bolt_Boltpay_OrderCreationException(
+                    OCE::E_BOLT_ITEM_PRICE_HAS_BEEN_UPDATED,
+                    OCE::E_BOLT_ITEM_PRICE_HAS_BEEN_UPDATED_TMPL,
+                    array($cartItem->getProductId(), $boltPrice, $magentoPrice)
+                );
+            }
+        }
+
+        $magentoDiscountTotal = (int)(($immutableQuote->getBaseSubtotal() - $immutableQuote->getBaseSubtotalWithDiscount()) * 100);
+        $boltDiscountTotal = (int)$transaction->order->cart->discount_amount->amount;
+        if ($magentoDiscountTotal !== $boltDiscountTotal) {
+            throw new Bolt_Boltpay_OrderCreationException(
+                OCE::E_BOLT_CART_HAS_EXPIRED,
+                OCE::E_BOLT_CART_HAS_EXPIRED_TMPL_DISCOUNT,
+                array($boltDiscountTotal, $magentoDiscountTotal)
+            );
+        }
 
         if ( !$immutableQuote->isVirtual() ) {
             $shippingAddress = $immutableQuote->getShippingAddress();
@@ -456,16 +516,6 @@ class Bolt_Boltpay_Model_Order extends Bolt_Boltpay_Model_Abstract
             // we do not validate that total, but only the full tax total
         }
 
-        $magentoDiscountTotal = (int)(($immutableQuote->getBaseSubtotal() - $immutableQuote->getBaseSubtotalWithDiscount()) * 100);
-        $boltDiscountTotal = (int)$transaction->order->cart->discount_amount->amount;
-        if ($magentoDiscountTotal !== $boltDiscountTotal) {
-            throw new Bolt_Boltpay_OrderCreationException(
-                OCE::E_BOLT_CART_HAS_EXPIRED,
-                OCE::E_BOLT_CART_HAS_EXPIRED_TMPL_DISCOUNT,
-                array($boltDiscountTotal, $magentoDiscountTotal)
-            );
-        }
-
         $magentoTaxTotal = (int)(( $tax = @$immutableQuote->getTotals()['tax']) ? round($tax->getValue() * 100) : 0 );
         $boltTaxTotal = (int)$transaction->order->cart->tax_amount->amount;
         if ($magentoTaxTotal !== $boltTaxTotal) {
@@ -476,20 +526,6 @@ class Bolt_Boltpay_Model_Order extends Bolt_Boltpay_Model_Abstract
             );
         }
 
-        foreach ($transaction->order->cart->items as $boltCartItem) {
-
-            $cartItem = $immutableQuote->getItemById($boltCartItem->reference);
-            $boltPrice = (int)$boltCartItem->total_amount->amount;
-            $magentoPrice = (int) round($cartItem->getCalculationPrice() * 100 * $cartItem->getQty());
-
-            if ( $boltPrice !== $magentoPrice ) {
-                throw new Bolt_Boltpay_OrderCreationException(
-                    OCE::E_BOLT_ITEM_PRICE_HAS_BEEN_UPDATED,
-                    OCE::E_BOLT_ITEM_PRICE_HAS_BEEN_UPDATED_TMPL,
-                    array($cartItem->getProductId(), $boltPrice, $magentoPrice)
-                );
-            }
-        }
     }
 
 
@@ -573,14 +609,4 @@ class Bolt_Boltpay_Model_Order extends Bolt_Boltpay_Model_Abstract
         return $rateDebuggingData;
     }
 
-
-    /**
-     * @param \Mage_Sales_Model_Order $order
-     */
-    protected function setOrderOnHold(Mage_Sales_Model_Order $order)
-    {
-        $order->setHoldBeforeState($order->getState());
-        $order->setHoldBeforeStatus($order->getStatus());
-        $order->setState(Mage_Sales_Model_Order::STATE_HOLDED, true, $this->orderOnHoldMessage);
-    }
 }

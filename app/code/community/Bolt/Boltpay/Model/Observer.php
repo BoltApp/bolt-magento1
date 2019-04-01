@@ -33,7 +33,6 @@ class Bolt_Boltpay_Model_Observer
      */
     public function setBoltUserId($observer)
     {
-/*
         $quote = $observer->getEvent()->getQuote();
         $session = Mage::getSingleton('customer/session');
 
@@ -53,7 +52,6 @@ class Bolt_Boltpay_Model_Observer
         }
 
         $session->unsBoltUserId();
-*/
     }
 
     /**
@@ -128,7 +126,7 @@ class Bolt_Boltpay_Model_Observer
      */
     public function sendOrderEmail($order)
     {
-return;
+
         try {
             $order->sendNewOrderEmail();
         } catch (Exception $e) {
@@ -143,6 +141,7 @@ return;
         $history = $order->addStatusHistoryComment( $this->boltHelper()->__('Email sent for order %s', $order->getIncrementId()) );
         $history->setIsCustomerNotified(true);
     }
+
 
     /**
      * Event handler called when bolt payment capture.

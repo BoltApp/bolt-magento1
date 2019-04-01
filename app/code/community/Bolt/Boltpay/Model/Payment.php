@@ -465,7 +465,6 @@ $boltAuthAmount = $payment->getAdditionalInformation('bolt_auth_amount' );
                 if ($this->isCaptureRequest($newTransactionStatus, $prevTransactionStatus)) {
                     $this->createInvoiceForHookRequest($payment);
                 }elseif ($newTransactionStatus == self::TRANSACTION_AUTHORIZED) {
-                    $reference = $payment->getAdditionalInformation('bolt_reference');
                     if (empty($reference)) {
                         throw new Exception( $this->boltHelper()->__("Payment missing expected transaction ID.") );
                     }
