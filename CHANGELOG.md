@@ -1,4 +1,8 @@
 # Changelog
+## [V1.4.1](https://s3-us-west-1.amazonaws.com/bolt-public/magento-integration-release/bolt-magento1_v1.4.1.zip) 2019-04-02
+ - Various improvements to Bolt Order creation
+ - Bug fixes
+
 ## [V1.4.0](https://s3-us-west-1.amazonaws.com/bolt-public/magento-integration-release/bolt-magento1_v1.4.0.zip) 2019-02-21
  - Order creation refactor - now supports more granular calculation overides for easier future upgradability
  - Improved caching and DB resource consumption
