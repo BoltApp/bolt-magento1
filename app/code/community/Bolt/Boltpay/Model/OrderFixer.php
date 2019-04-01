@@ -11,11 +11,11 @@
  *
  * @category   Bolt
  * @package    Bolt_Boltpay
- * @copyright  Copyright (c) 2018 Bolt Financial, Inc (https://www.bolt.com)
+ * @copyright  Copyright (c) 2019 Bolt Financial, Inc (https://www.bolt.com)
  * @license    http://opensource.org/licenses/osl-3.0.php  Open Software License (OSL 3.0)
  */
 
-class Bolt_Boltpay_Model_OrderFixer extends Mage_Core_Model_Abstract
+class Bolt_Boltpay_Model_OrderFixer extends Bolt_Boltpay_Model_Abstract
 {
     protected $boltTransaction = null;
 
@@ -51,7 +51,7 @@ class Bolt_Boltpay_Model_OrderFixer extends Mage_Core_Model_Abstract
             $this->updateOrderTotals();
             $this->notifyAndSaveOrder();
         } catch (\Bolt_Boltpay_BadInputException $e) {
-            Mage::helper('boltpay/bugsnag')->notifyException($e);
+            $this->boltHelper()->notifyException($e);
             throw $e;
         }
     }
@@ -77,7 +77,7 @@ class Bolt_Boltpay_Model_OrderFixer extends Mage_Core_Model_Abstract
 
             return true;
         } catch (\Bolt_Boltpay_BadInputException $e) {
-            Mage::helper('boltpay/bugsnag')->notifyException($e);
+            $this->boltHelper()->notifyException($e);
             return false;
         }
     }
@@ -89,7 +89,7 @@ class Bolt_Boltpay_Model_OrderFixer extends Mage_Core_Model_Abstract
     {
         if (!$this->magentoOrder || !$this->magentoOrder->getId() || !$this->boltTransaction) {
             throw new \Bolt_Boltpay_BadInputException(
-                Mage::helper('boltpay')->__('Need to set setup variables in order to use class %s', get_class($this))
+                $this->boltHelper()->__('Need to set setup variables in order to use class %s', get_class($this))
             );
         }
     }
@@ -147,7 +147,7 @@ class Bolt_Boltpay_Model_OrderFixer extends Mage_Core_Model_Abstract
      */
     protected function notifyAndSaveOrder()
     {
-        $msg = Mage::helper('boltpay')->__(
+        $msg = $this->boltHelper()->__(
             "There is a price mismatch issue when saving the order, forcing the price from $%s to $%s",
             $this->originalMagentoGrandTotal,
             $this->getBoltGrandTotal());
@@ -186,9 +186,9 @@ class Bolt_Boltpay_Model_OrderFixer extends Mage_Core_Model_Abstract
      */
     protected function bugsnagTheItemChange(Mage_Sales_Model_Order_Item $magentoItem, $boltItem)
     {
-        Mage::helper('boltpay/bugsnag')->notifyException(
+        $this->boltHelper()->notifyException(
             new Exception(
-                Mage::helper('boltpay')->__(
+                $this->boltHelper()->__(
                     "The order item %s price of order #%s has been updated from %s to %s.",
                     $magentoItem->getSku(),
                     $this->magentoOrder->getIncrementId(),

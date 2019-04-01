@@ -11,7 +11,7 @@
  *
  * @category   Bolt
  * @package    Bolt_Boltpay
- * @copyright  Copyright (c) 2018 Bolt Financial, Inc (https://www.bolt.com)
+ * @copyright  Copyright (c) 2019 Bolt Financial, Inc (https://www.bolt.com)
  * @license    http://opensource.org/licenses/osl-3.0.php  Open Software License (OSL 3.0)
  */
 
@@ -21,7 +21,7 @@
  * The Magento Model class that provides order related utility methods
  *
  */
-class Bolt_Boltpay_Model_Order extends Mage_Core_Model_Abstract
+class Bolt_Boltpay_Model_Order extends Bolt_Boltpay_Model_Abstract
 {
     const MERCHANT_BACK_OFFICE = 'merchant_back_office';
 
@@ -48,19 +48,17 @@ class Bolt_Boltpay_Model_Order extends Mage_Core_Model_Abstract
 
         try {
             if (empty($reference)) {
-                throw new Exception(Mage::helper('boltpay')->__("Bolt transaction reference is missing in the Magento order creation process."));
+                throw new Exception($this->boltHelper()->__("Bolt transaction reference is missing in the Magento order creation process."));
             }
 
-            $transaction = $transaction ?: Mage::helper('boltpay/api')->fetchTransaction($reference);
+            $transaction = $transaction ?: $this->boltHelper()->fetchTransaction($reference);
 
-            /** @var Bolt_Boltpay_Helper_Transaction $transactionHelper */
-            $transactionHelper = Mage::helper('boltpay/transaction');
-            $immutableQuoteId = $transactionHelper->getImmutableQuoteIdFromTransaction($transaction);
+            $immutableQuoteId = $this->boltHelper()->getImmutableQuoteIdFromTransaction($transaction);
             $immutableQuote = $this->getQuoteById($immutableQuoteId);
 
             if (!$sessionQuoteId){
                 /** @var Bolt_Boltpay_Helper_Data $boltHelperBase */
-                $boltHelperBase = Mage::helper('boltpay');
+                $boltHelperBase = $this->boltHelper();
                 $sessionQuoteId = $immutableQuote->getParentQuoteId();
 
                 $boltHelperBase->setCustomerSessionByQuoteId($sessionQuoteId);
@@ -68,17 +66,17 @@ class Bolt_Boltpay_Model_Order extends Mage_Core_Model_Abstract
 
             // check that the order is in the system.  If not, we have an unexpected problem
             if ($immutableQuote->isEmpty()) {
-                throw new Exception(Mage::helper('boltpay')->__("The expected immutable quote [$immutableQuoteId] is missing from the Magento system.  Were old quotes recently removed from the database?"));
+                throw new Exception($this->boltHelper()->__("The expected immutable quote [$immutableQuoteId] is missing from the Magento system.  Were old quotes recently removed from the database?"));
             }
 
             if(!$this->allowOutOfStockOrders() && !empty($this->getOutOfStockSKUs($immutableQuote))){
-                throw new Exception(Mage::helper('boltpay')->__("Not all items are available in the requested quantities. Out of stock SKUs: %s", join(', ', $this->getOutOfStockSKUs($immutableQuote))));
+                throw new Exception($this->boltHelper()->__("Not all items are available in the requested quantities. Out of stock SKUs: %s", join(', ', $this->getOutOfStockSKUs($immutableQuote))));
             }
 
             // check if the quotes matches, frontend only
             if ( $sessionQuoteId && ($sessionQuoteId != $immutableQuote->getParentQuoteId()) ) {
                 throw new Exception(
-                    Mage::helper('boltpay')->__("The Bolt order reference does not match the current cart ID. Cart ID: [%s]  Bolt Reference: [%s]",
+                    $this->boltHelper()->__("The Bolt order reference does not match the current cart ID. Cart ID: [%s]  Bolt Reference: [%s]",
                         $sessionQuoteId , $immutableQuote->getParentQuoteId())
                 );
             }
@@ -87,12 +85,12 @@ class Bolt_Boltpay_Model_Order extends Mage_Core_Model_Abstract
             $parentQuote = $this->getQuoteById($immutableQuote->getParentQuoteId());
             if ($parentQuote->isEmpty()) {
                 throw new Exception(
-                    Mage::helper('boltpay')->__("The parent quote %s is unexpectedly missing.",
+                    $this->boltHelper()->__("The parent quote %s is unexpectedly missing.",
                         $immutableQuote->getParentQuoteId() )
                 );
             } else if (!$parentQuote->getIsActive() && $transaction->indemnification_reason !== self::MERCHANT_BACK_OFFICE) {
                 throw new Exception(
-                    Mage::helper('boltpay')->__("The parent quote %s for immutable quote %s is currently being processed or has been processed for order #%s. Check quote %s for details.",
+                    $this->boltHelper()->__("The parent quote %s for immutable quote %s is currently being processed or has been processed for order #%s. Check quote %s for details.",
                         $parentQuote->getId(), $immutableQuote->getId(), $parentQuote->getReservedOrderId(), $parentQuote->getParentQuoteId() )
                 );
             } else {
@@ -146,7 +144,7 @@ class Bolt_Boltpay_Model_Order extends Mage_Core_Model_Abstract
                     // Legacy transaction does not have shipments reference - fallback to $service field
                     $service = $packagesToShip[0]->service;
 
-                    Mage::helper('boltpay')->collectTotals($immutableQuote);
+                    $this->boltHelper()->collectTotals($immutableQuote);
 
                     $shippingAddress->setCollectShippingRates(true)->collectShippingRates();
                     $rates = $shippingAddress->getAllShippingRates();
@@ -171,7 +169,7 @@ class Bolt_Boltpay_Model_Order extends Mage_Core_Model_Abstract
                         )
                     );
                 } else {
-                    $errorMessage = Mage::helper('boltpay')->__('Shipping method not found');
+                    $errorMessage = $this->boltHelper()->__('Shipping method not found');
                     $metaData = array(
                         'transaction'   => $transaction,
                         'rates' => $this->getRatesDebuggingData($rates),
@@ -179,7 +177,7 @@ class Bolt_Boltpay_Model_Order extends Mage_Core_Model_Abstract
                         'shipping_address' => var_export($shippingAddress->debug(), true),
                         'quote' => var_export($immutableQuote->debug(), true)
                     );
-                    Mage::helper('boltpay/bugsnag')->notifyException(new Exception($errorMessage), $metaData);
+                    $this->boltHelper()->notifyException(new Exception($errorMessage), $metaData);
                 }
             }
             //////////////////////////////////////////////////////////////////////////////////
@@ -192,7 +190,7 @@ class Bolt_Boltpay_Model_Order extends Mage_Core_Model_Abstract
             $payment->setMethod(Bolt_Boltpay_Model_Payment::METHOD_CODE);
             //////////////////////////////////////////////////////////////////////////////////
 
-            Mage::helper('boltpay')->collectTotals($immutableQuote, true)->save();
+            $this->boltHelper()->collectTotals($immutableQuote, true)->save();
 
             ////////////////////////////////////////////////////////////////////////////
             // reset increment id if needed
@@ -207,8 +205,8 @@ class Bolt_Boltpay_Model_Order extends Mage_Core_Model_Abstract
                 ############################
                 $preExistingTransactionReference = $preExistingOrder->getPayment()->getAdditionalInformation('bolt_reference');
                 if ( $preExistingTransactionReference === $reference ) {
-                    Mage::helper('boltpay/bugsnag')->notifyException(
-                        new Exception( Mage::helper('boltpay')->__("The order #%s has already been processed for this quote.", $preExistingOrder->getIncrementId() ) ),
+                    $this->boltHelper()->notifyException(
+                        new Exception( $this->boltHelper()->__("The order #%s has already been processed for this quote.", $preExistingOrder->getIncrementId() ) ),
                         array(),
                         'warning'
                     );
@@ -252,7 +250,7 @@ class Bolt_Boltpay_Model_Order extends Mage_Core_Model_Abstract
                 Mage::getSingleton('core/session')->unsWasCreatedByHook();
                 ///////////////////////////////////////////////////////
 
-                Mage::helper('boltpay/bugsnag')->addBreadcrumb(
+                $this->boltHelper()->addBreadcrumb(
                     array(
                         'transaction'   => json_encode((array)$transaction),
                         'quote_address' => var_export($immutableQuote->getShippingAddress()->debug(), true)
@@ -372,7 +370,7 @@ class Bolt_Boltpay_Model_Order extends Mage_Core_Model_Abstract
         if ($outOfStockSKUs) {
             $this->enableOutOfStockOrderToBeCreated();
 
-            $errorMessage = Mage::helper('boltpay')->__("Product " .
+            $errorMessage = $this->boltHelper()->__("Product " .
                 join(", ", $outOfStockSKUs) .
                 (count($outOfStockSKUs) == 1 ? " is" : " are") .
                 " out of stock. ");
@@ -382,7 +380,7 @@ class Bolt_Boltpay_Model_Order extends Mage_Core_Model_Abstract
 
         $disabledSKUs = $this->getDisabledSKUs($quote);
         if ($disabledSKUs) {
-            $errorMessage = Mage::helper('boltpay')->__("Product " .
+            $errorMessage = $this->boltHelper()->__("Product " .
                 join(", ", $disabledSKUs) .
                 (count($disabledSKUs) == 1 ? " is" : " are") .
                 " disabled. ");
@@ -392,7 +390,7 @@ class Bolt_Boltpay_Model_Order extends Mage_Core_Model_Abstract
 
         if ($this->shouldPutOrderOnHold()) {
             $invalidSKUs = array_unique(array_merge($outOfStockSKUs, $outOfStockSKUs));
-            $errorMessage = Mage::helper('boltpay')->__("Please review " .
+            $errorMessage = $this->boltHelper()->__("Please review " .
                 (count($invalidSKUs) > 1 ? "them" : "it") .
                 " and un-hold the order. ");
 
@@ -488,7 +486,7 @@ class Bolt_Boltpay_Model_Order extends Mage_Core_Model_Abstract
         try{
             Mage::app()->getStore()->setId(Mage_Core_Model_App::ADMIN_STORE_ID);
         }catch (\Exception $e){
-            Mage::helper('boltpay/bugsnag')->notifyException($e);
+            $this->boltHelper()->notifyException($e);
         }
     }
 
@@ -548,14 +546,14 @@ class Bolt_Boltpay_Model_Order extends Mage_Core_Model_Abstract
 
     protected function validateSubmittedOrder($order, $quote) {
         if(empty($order)) {
-            Mage::helper('boltpay/bugsnag')->addBreadcrumb(
+            $this->boltHelper()->addBreadcrumb(
                 array(
                     'quote'  => var_export($quote->debug(), true),
                     'quote_address'  => var_export($quote->getShippingAddress()->debug(), true),
                 )
             );
 
-            throw new Exception(Mage::helper('boltpay')->__('Order is empty after call to Sales_Model_Service_Quote->submitAll()'));
+            throw new Exception($this->boltHelper()->__('Order is empty after call to Sales_Model_Service_Quote->submitAll()'));
         }
     }
 

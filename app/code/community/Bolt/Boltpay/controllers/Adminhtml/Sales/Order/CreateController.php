@@ -1,6 +1,6 @@
 <?php
 /**
- * Magento
+ * Bolt magento plugin
  *
  * NOTICE OF LICENSE
  *
@@ -8,19 +8,10 @@
  * that is bundled with this package in the file LICENSE.txt.
  * It is also available through the world-wide-web at this URL:
  * http://opensource.org/licenses/osl-3.0.php
- * If you did not receive a copy of the license and are unable to
- * obtain it through the world-wide-web, please send an email
- * to license@magento.com so we can send you a copy immediately.
  *
- * DISCLAIMER
- *
- * Do not edit or add to this file if you wish to upgrade Magento to newer
- * versions in the future. If you wish to customize Magento for your
- * needs please refer to http://www.magento.com for more information.
- *
- * @category    Mage
- * @package     Mage_Adminhtml
- * @copyright  Copyright (c) 2006-2016 X.commerce, Inc. and affiliates (http://www.magento.com)
+ * @category   Bolt
+ * @package    Bolt_Boltpay
+ * @copyright  Copyright (c) 2019 Bolt Financial, Inc (https://www.bolt.com)
  * @license    http://opensource.org/licenses/osl-3.0.php  Open Software License (OSL 3.0)
  */
 
@@ -36,7 +27,6 @@ require_once(Mage::getModuleDir('controllers','Bolt_Boltpay').DS.'OrderControlle
  */
 class Bolt_Boltpay_Adminhtml_Sales_Order_CreateController extends Mage_Adminhtml_Sales_Order_CreateController
 {
-
     use Bolt_Boltpay_OrderControllerTrait;
 
     /**
@@ -161,7 +151,7 @@ class Bolt_Boltpay_Adminhtml_Sales_Order_CreateController extends Mage_Adminhtml
             return true;
         } catch (Mage_Payment_Model_Info_Exception $e) {
             if ($paymentData['method'] == 'boltpay') {
-                Mage::helper('boltpay/bugsnag')->notifyException($e);
+                $this->boltHelper()->notifyException($e);
             }
             $this->_getOrderCreateModel()->saveQuote();
             $message = $e->getMessage();
@@ -171,7 +161,7 @@ class Bolt_Boltpay_Adminhtml_Sales_Order_CreateController extends Mage_Adminhtml
             $this->_redirect('*/*/');
         } catch (Mage_Core_Exception $e){
             if ($paymentData['method'] == 'boltpay') {
-                Mage::helper('boltpay/bugsnag')->notifyException($e);
+                $this->boltHelper()->notifyException($e);
             }
             $message = $e->getMessage();
             if( !empty($message) ) {
@@ -180,7 +170,7 @@ class Bolt_Boltpay_Adminhtml_Sales_Order_CreateController extends Mage_Adminhtml
             $this->_redirect('*/*/');
         } catch (Exception $e) {
             if ($paymentData['method'] == 'boltpay') {
-                Mage::helper('boltpay/bugsnag')->notifyException($e);
+                $this->boltHelper()->notifyException($e);
             }
             $this->_getSession()->addException($e, $this->__('Order saving error: %s', $e->getMessage()));
             $this->_redirect('*/*/');
@@ -196,13 +186,8 @@ class Bolt_Boltpay_Adminhtml_Sales_Order_CreateController extends Mage_Adminhtml
      */
     protected function getImmutableQuoteIdFromTransaction($boltReference)
     {
-        /** @var Bolt_Boltpay_Helper_Api $boltHelper */
-        $boltHelper = Mage::helper('boltpay/api');
-        $transaction = $boltHelper->fetchTransaction($boltReference);
-
-        /** @var Bolt_Boltpay_Helper_Transaction $transactionHelper */
-        $transactionHelper = Mage::helper('boltpay/transaction');
-        $immutableQuoteId = $transactionHelper->getImmutableQuoteIdFromTransaction($transaction);
+        $transaction = $this->boltHelper()->fetchTransaction($boltReference);
+        $immutableQuoteId = $this->boltHelper()->getImmutableQuoteIdFromTransaction($transaction);
 
         return $immutableQuoteId;
     }

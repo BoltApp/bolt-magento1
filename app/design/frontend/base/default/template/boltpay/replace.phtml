@@ -11,7 +11,7 @@
  *
  * @category   Bolt
  * @package    Bolt_Boltpay
- * @copyright  Copyright (c) 2018 Bolt Financial, Inc (https://www.bolt.com)
+ * @copyright  Copyright (c) 2019 Bolt Financial, Inc (https://www.bolt.com)
  * @license    http://opensource.org/licenses/osl-3.0.php  Open Software License (OSL 3.0)
  */
 
@@ -29,7 +29,7 @@ if(!$this->isAllowedReplaceScriptOnCurrentPage()
     return;
 }
 
-$additionalClasses = Mage::helper('boltpay')->getAdditionalButtonClasses();
+$additionalClasses = $this->boltHelper()->getAdditionalButtonClasses();
 ?>
 <script>
 
@@ -86,7 +86,7 @@ $additionalClasses = Mage::helper('boltpay')->getAdditionalButtonClasses();
                                 var bolt_button =  document.createElement("div");
                                 bolt_button.setAttribute("class",selectors[selector]);
 
-                                <?php $buttonColor = Mage::helper('boltpay')->getBoltPrimaryColor();?>
+                                <?php $buttonColor = $this->boltHelper()->getBoltPrimaryColor();?>
                                 <?php if($buttonColor):?>
                                     bolt_button.setAttribute("style", "--bolt-primary-action-color:<?php echo $buttonColor?>");
                                 <?php endif; ?>

@@ -11,7 +11,7 @@
  *
  * @category   Bolt
  * @package    Bolt_Boltpay
- * @copyright  Copyright (c) 2018 Bolt Financial, Inc (https://www.bolt.com)
+ * @copyright  Copyright (c) 2019 Bolt Financial, Inc (https://www.bolt.com)
  * @license    http://opensource.org/licenses/osl-3.0.php  Open Software License (OSL 3.0)
  */
 
@@ -24,6 +24,8 @@ require_once 'Mage/Checkout/controllers/OnepageController.php';
  */
 class Bolt_Boltpay_OnepageController extends Mage_Checkout_OnepageController
 {
+    use Bolt_Boltpay_BoltGlobalTrait;
+
     public function saveShippingMethodAction() 
     {
         try {

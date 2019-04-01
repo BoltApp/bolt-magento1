@@ -16,22 +16,20 @@
  */
 
 /**
- * @see Mage_Payment_Block_Info
+ * Trait Bolt_Boltpay_BoltGlobalTrait
+ *
+ * Defines interface global to all registered Bolt Objects
  */
-?>
-<?php echo $this->escapeHtml($this->getMethod()->getTitle()) ?>
+trait Bolt_Boltpay_BoltGlobalTrait {
 
-<?php if ($_specificInfo = $this->getSpecificInformation()):?>
-<table>
-<?php foreach ($_specificInfo as $_label => $_value):?>
-  <tr>
-    <td><?php echo $this->escapeHtml($_label)?>:</td>
-    <td>
-      <?php echo nl2br(implode($this->getValueAsArray($_value, true), "\n"))?>
-    </td>
-  </tr>
-<?php endforeach; ?>
-</table>
-<?php endif;?>
+    /**
+     * Returns the main helper class used by Bolt or if from a class that natively supports this function
+     * with a parameter, that helper
+     *
+     * @return Bolt_Boltpay_Helper_Data|Mage_Core_Helper_Abstract
+     */
+    public function boltHelper() {
+        return Mage::helper('boltpay');
+    }
 
-<?php echo $this->getChildHtml()?>
+}

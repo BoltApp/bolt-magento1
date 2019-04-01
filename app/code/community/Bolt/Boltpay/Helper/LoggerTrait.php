@@ -1,4 +1,19 @@
 <?php
+/**
+ * Bolt magento plugin
+ *
+ * NOTICE OF LICENSE
+ *
+ * This source file is subject to the Open Software License (OSL 3.0)
+ * that is bundled with this package in the file LICENSE.txt.
+ * It is also available through the world-wide-web at this URL:
+ * http://opensource.org/licenses/osl-3.0.php
+ *
+ * @category   Bolt
+ * @package    Bolt_Boltpay
+ * @copyright  Copyright (c) 2019 Bolt Financial, Inc (https://www.bolt.com)
+ * @license    http://opensource.org/licenses/osl-3.0.php  Open Software License (OSL 3.0)
+ */
 
 /**
  * Describes log levels.
@@ -19,7 +34,9 @@ class Bolt_Boltpay_Helper_LogLevel
  */
 trait Bolt_Boltpay_Helper_LoggerTrait
 {
-    
+
+    use Bolt_Boltpay_Helper_BugsnagTrait;
+
     public static $isLoggerEnabled = true;
     
     /**
@@ -35,6 +52,7 @@ trait Bolt_Boltpay_Helper_LoggerTrait
     {
         $this->log(Bolt_Boltpay_Helper_LogLevel::ERROR, $message, $context);
     }
+
     /**
      * Exceptional occurrences that are not errors.
      *
@@ -50,6 +68,7 @@ trait Bolt_Boltpay_Helper_LoggerTrait
     {
         $this->log(Bolt_Boltpay_Helper_LogLevel::WARNING, $message, $context);
     }
+
     /**
      * Interesting events.
      *
@@ -64,6 +83,7 @@ trait Bolt_Boltpay_Helper_LoggerTrait
     {
         $this->log(Bolt_Boltpay_Helper_LogLevel::INFO, $message, $context);
     }
+
     /**
      * Logs with an arbitrary level.
      *
@@ -73,5 +93,16 @@ trait Bolt_Boltpay_Helper_LoggerTrait
      *
      * @return void
      */
-    abstract public function log($level, $message, array $context = array());
+    public function log($level, $message, array $context = array()) {
+        //example for now
+        if(Bolt_Boltpay_Helper_LoggerTrait::$isLoggerEnabled){
+            $this->addBreadcrumb(
+                array(
+                    'level'  => $level,
+                    'context'  => var_export($context, true),
+                )
+            );
+            $this->notifyException( new Exception((string)$message) );
+        }
+    }
 }

@@ -11,7 +11,7 @@
  *
  * @category   Bolt
  * @package    Bolt_Boltpay
- * @copyright  Copyright (c) 2018 Bolt Financial, Inc (https://www.bolt.com)
+ * @copyright  Copyright (c) 2019 Bolt Financial, Inc (https://www.bolt.com)
  * @license    http://opensource.org/licenses/osl-3.0.php  Open Software License (OSL 3.0)
  */
 
@@ -28,7 +28,16 @@
  */
 class Bolt_Boltpay_Block_Catalog_Product_Boltpay extends Mage_Core_Block_Template
 {
-    const CHECKOUT_TYPE_MULTI_PAGE  = 'multi-page';
+    use Bolt_Boltpay_BoltGlobalTrait;
+
+    /**
+     * Get Product Tier Price
+     * @return mixed
+     */
+    public function getProductTierPrice()
+    {
+        return Mage::registry('current_product')->getData('tier_price');
+    }
 
     /**
      * Initiates sets up BoltCheckout config.
@@ -47,7 +56,7 @@ class Bolt_Boltpay_Block_Catalog_Product_Boltpay extends Mage_Core_Block_Templat
             $_product = Mage::registry('current_product');
             if (!$_product) {
                 $msg = 'Bolt: Cannot find product info';
-                Mage::helper('boltpay/bugsnag')->notifyException($msg);
+                $this->boltHelper()->notifyException($msg);
                 return '""';
             }
 
@@ -73,7 +82,7 @@ class Bolt_Boltpay_Block_Catalog_Product_Boltpay extends Mage_Core_Block_Templat
 
              return json_encode($productCheckoutCart);
         } catch (Exception $e) {
-            Mage::helper('boltpay/bugsnag')->notifyException($e);
+            $this->boltHelper()->notifyException($e);
             return '""';
         }
     }
@@ -86,12 +95,9 @@ class Bolt_Boltpay_Block_Catalog_Product_Boltpay extends Mage_Core_Block_Templat
      *
      * @return string
      */
-    public function getBoltCallbacks($checkoutType = self::CHECKOUT_TYPE_MULTI_PAGE, $isVirtualQuote = false )
+    public function getBoltCallbacks($checkoutType = Bolt_Boltpay_Block_Checkout_Boltpay::CHECKOUT_TYPE_PRODUCT_PAGE, $isVirtualQuote = false )
     {
-        /* @var Bolt_Boltpay_Helper_Api $boltHelper */
-        $boltHelper = Mage::helper('boltpay');
-
-        return $boltHelper->getBoltCallbacks($checkoutType, $isVirtualQuote);
+        return $this->boltHelper()->getBoltCallbacks($checkoutType, $isVirtualQuote);
     }
 
     /**
@@ -100,7 +106,7 @@ class Bolt_Boltpay_Block_Catalog_Product_Boltpay extends Mage_Core_Block_Templat
      */
     public function buildOnSuccessCallback($successCustom = '')
     {
-        $saveOrderUrl = Mage::helper('boltpay/url')->getMagentoUrl('boltpay/order/save');
+        $saveOrderUrl = $this->boltHelper()->getMagentoUrl('boltpay/order/save');
 
         return "function(transaction, callback) {
                 new Ajax.Request(
@@ -125,7 +131,7 @@ class Bolt_Boltpay_Block_Catalog_Product_Boltpay extends Mage_Core_Block_Templat
      */
     public function buildOnCloseCallback($closeCustom = '')
     {
-        $successUrl = Mage::helper('boltpay/url')->getMagentoUrl(Mage::getStoreConfig('payment/boltpay/successpage'));
+        $successUrl = $this->boltHelper()->getMagentoUrl(Mage::getStoreConfig('payment/boltpay/successpage'));
         $javascript = $closeCustom;
 
         return $javascript .
@@ -141,7 +147,7 @@ class Bolt_Boltpay_Block_Catalog_Product_Boltpay extends Mage_Core_Block_Templat
      */
     public function isBoltActive()
     {
-        return $this->helper('boltpay')->isBoltPayActive();
+        return $this->boltHelper()->isBoltPayActive();
     }
 
     /**
@@ -149,7 +155,7 @@ class Bolt_Boltpay_Block_Catalog_Product_Boltpay extends Mage_Core_Block_Templat
      */
     public function isEnabledProductPageCheckout()
     {
-        return ($this->isBoltActive() && $this->helper('boltpay')->isEnabledProductPageCheckout());
+        return ($this->isBoltActive() && $this->boltHelper()->isEnabledProductPageCheckout());
     }
 
     /**
@@ -157,7 +163,7 @@ class Bolt_Boltpay_Block_Catalog_Product_Boltpay extends Mage_Core_Block_Templat
      */
     public function getProductPageCheckoutSelector()
     {
-        return $this->helper('boltpay')->getProductPageCheckoutSelector();
+        return $this->boltHelper()->getProductPageCheckoutSelector();
     }
 
     /**

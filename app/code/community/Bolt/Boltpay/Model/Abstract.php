@@ -16,22 +16,12 @@
  */
 
 /**
- * @see Mage_Payment_Block_Info
+ * Class Bolt_Boltpay_Model_Abstract
+ *
+ * The Bolt Model superclass
+ *
  */
-?>
-<?php echo $this->escapeHtml($this->getMethod()->getTitle()) ?>
-
-<?php if ($_specificInfo = $this->getSpecificInformation()):?>
-<table>
-<?php foreach ($_specificInfo as $_label => $_value):?>
-  <tr>
-    <td><?php echo $this->escapeHtml($_label)?>:</td>
-    <td>
-      <?php echo nl2br(implode($this->getValueAsArray($_value, true), "\n"))?>
-    </td>
-  </tr>
-<?php endforeach; ?>
-</table>
-<?php endif;?>
-
-<?php echo $this->getChildHtml()?>
+class Bolt_Boltpay_Model_Abstract extends Mage_Core_Model_Abstract
+{
+    use Bolt_Boltpay_BoltGlobalTrait;
+}

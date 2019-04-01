@@ -11,7 +11,7 @@
  *
  * @category   Bolt
  * @package    Bolt_Boltpay
- * @copyright  Copyright (c) 2018 Bolt Financial, Inc (https://www.bolt.com)
+ * @copyright  Copyright (c) 2019 Bolt Financial, Inc (https://www.bolt.com)
  * @license    http://opensource.org/licenses/osl-3.0.php  Open Software License (OSL 3.0)
  */
 
@@ -21,7 +21,7 @@
  * Base Magento Bolt Coupon Model class
  *
  */
-class Bolt_Boltpay_Model_Coupon extends Mage_Core_Model_Abstract
+class Bolt_Boltpay_Model_Coupon extends Bolt_Boltpay_Model_Abstract
 {
     const ERR_INSUFFICIENT_INFORMATION = 6200;
     const ERR_CODE_INVALID = 6201;
@@ -50,16 +50,12 @@ class Bolt_Boltpay_Model_Coupon extends Mage_Core_Model_Abstract
     protected $requestObject = null;
     protected $mockTransaction = null;
 
-    /** @var Bolt_Boltpay_Helper_Transaction|null  */
-    protected $transactionHelper = null;
-
     /**
      * Bolt_Boltpay_Model_Coupon constructor.
      */
     public function __construct()
     {
         parent::__construct();
-        $this->transactionHelper = Mage::helper('boltpay/transaction');
     }
 
     /**
@@ -83,7 +79,7 @@ class Bolt_Boltpay_Model_Coupon extends Mage_Core_Model_Abstract
         } catch (\Bolt_Boltpay_BadInputException $e){
             return false;
         } catch (\Exception $e) {
-            Mage::helper('boltpay/bugsnag')->notifyException($e);
+            $this->boltHelper()->notifyException($e);
             return false;
         }
         return true;
@@ -180,8 +176,8 @@ class Bolt_Boltpay_Model_Coupon extends Mage_Core_Model_Abstract
     public function validateCartIdentificationData()
     {
         $parentQuoteId = $this->getParentQuoteId();
-        $incrementId = $this->transactionHelper->getIncrementIdFromTransaction($this->mockTransaction);
-        $immutableQuoteId = $this->transactionHelper->getImmutableQuoteIdFromTransaction($this->mockTransaction);
+        $incrementId = $this->boltHelper()->getIncrementIdFromTransaction($this->mockTransaction);
+        $immutableQuoteId = $this->boltHelper()->getImmutableQuoteIdFromTransaction($this->mockTransaction);
 
         if (empty($parentQuoteId) || empty($incrementId) || empty($immutableQuoteId)) {
             $this->setErrorResponseAndThrowException(
@@ -199,7 +195,7 @@ class Bolt_Boltpay_Model_Coupon extends Mage_Core_Model_Abstract
      */
     public function validateOrderExists()
     {
-        $incrementId = $this->transactionHelper->getIncrementIdFromTransaction($this->mockTransaction);
+        $incrementId = $this->boltHelper()->getIncrementIdFromTransaction($this->mockTransaction);
         /** @var Mage_Sales_Model_Order $order */
         $order = Mage::getModel('sales/order')->loadByIncrementId($incrementId);
         if ($order->getId()) {
@@ -409,7 +405,7 @@ class Bolt_Boltpay_Model_Coupon extends Mage_Core_Model_Abstract
         $quote->getShippingAddress()->setCollectShippingRates(true);
         $quote->setCouponCode($couponCode);
 
-        Mage::helper('boltpay')->collectTotals($quote, true)->save();
+        $this->boltHelper()->collectTotals($quote, true)->save();
     }
 
     /**
@@ -495,7 +491,7 @@ class Bolt_Boltpay_Model_Coupon extends Mage_Core_Model_Abstract
         $this->discountInfo = array(
             'discount_code'   => $this->getCouponCode(),
             'discount_amount' => abs(round($address->getDiscountAmount() * 100)),
-            'description'     => Mage::helper('boltpay')->__('Discount ') . $address->getDiscountDescription(),
+            'description'     => $this->boltHelper()->__('Discount ') . $address->getDiscountDescription(),
             'discount_type'   => $this->convertToBoltDiscountType($this->getRule()->getSimpleAction()),
         );
 
@@ -560,7 +556,7 @@ class Bolt_Boltpay_Model_Coupon extends Mage_Core_Model_Abstract
 
             /** @var Mage_Sales_Model_Quote $immutableQuote */
             $immutableQuote = Mage::getModel('sales/quote')->loadByIdWithoutStore(
-                $this->transactionHelper->getImmutableQuoteIdFromTransaction($this->mockTransaction)
+                $this->boltHelper()->getImmutableQuoteIdFromTransaction($this->mockTransaction)
             );
             $this->immutableQuote = $immutableQuote;
         }

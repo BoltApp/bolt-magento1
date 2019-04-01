@@ -11,12 +11,14 @@
  *
  * @category   Bolt
  * @package    Bolt_Boltpay
- * @copyright  Copyright (c) 2018 Bolt Financial, Inc (https://www.bolt.com)
+ * @copyright  Copyright (c) 2019 Bolt Financial, Inc (https://www.bolt.com)
  * @license    http://opensource.org/licenses/osl-3.0.php  Open Software License (OSL 3.0)
  */
 
 class Bolt_Boltpay_Model_Validator extends Mage_SalesRule_Model_Validator
 {
+    use Bolt_Boltpay_BoltGlobalTrait;
+    
     /**
      * Method for resetting rounding delta. Rounding deltas cause percentage discounts applied to an order to often get
      * off by $0.01 rounding errors because the validator used is a singleton. So every time collectTotals is called

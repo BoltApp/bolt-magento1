@@ -1,4 +1,19 @@
 <?php
+/**
+ * Bolt magento plugin
+ *
+ * NOTICE OF LICENSE
+ *
+ * This source file is subject to the Open Software License (OSL 3.0)
+ * that is bundled with this package in the file LICENSE.txt.
+ * It is also available through the world-wide-web at this URL:
+ * http://opensource.org/licenses/osl-3.0.php
+ *
+ * @category   Bolt
+ * @package    Bolt_Boltpay
+ * @copyright  Copyright (c) 2019 Bolt Financial, Inc (https://www.bolt.com)
+ * @license    http://opensource.org/licenses/osl-3.0.php  Open Software License (OSL 3.0)
+ */
 
 /**
  * Class Bolt_Boltpay_ConfigurationController
@@ -7,6 +22,7 @@
  */
 class Bolt_Boltpay_ConfigurationController extends Mage_Core_Controller_Front_Action
 {
+    use Bolt_Boltpay_BoltGlobalTrait;
 
     protected $_storeId = null;
 
@@ -26,29 +42,29 @@ class Bolt_Boltpay_ConfigurationController extends Mage_Core_Controller_Front_Ac
 
         // Validate for API key
         if (!($this->checkApiKey())) {
-            $this->setErrorResponseData($responseData, Mage::helper('boltpay')->__('Api Key is invalid'));
+            $this->setErrorResponseData($responseData, $this->boltHelper()->__('Api Key is invalid'));
         }
 
         // Validate for Signing Secret
         if (!($this->checkSigningSecret())) {
-            $this->setErrorResponseData($responseData, Mage::helper('boltpay')->__('Signing Secret is invalid'));
+            $this->setErrorResponseData($responseData, $this->boltHelper()->__('Signing Secret is invalid'));
         }
 
         // Validate Publishable Key - Multi-Page Checkout / Publishable Key - One Page Checkout
         if (!($this->checkPublishableKeyMultiPage())) {
-            $this->setErrorResponseData($responseData, Mage::helper('boltpay')->__('Publishable Key - Multi-Page Checkout is invalid'));
+            $this->setErrorResponseData($responseData, $this->boltHelper()->__('Publishable Key - Multi-Page Checkout is invalid'));
         }
         if (!($this->checkPublishableKeyOnePage())) {
-            $this->setErrorResponseData($responseData, Mage::helper('boltpay')->__('Publishable Key - One Page Checkout is invalid'));
+            $this->setErrorResponseData($responseData, $this->boltHelper()->__('Publishable Key - One Page Checkout is invalid'));
         }
 
         // Validate database schema
         if (!($this->checkSchema())) {
-            $this->setErrorResponseData($responseData, Mage::helper('boltpay')->__('Schema is invalid'));
+            $this->setErrorResponseData($responseData, $this->boltHelper()->__('Schema is invalid'));
         }
 
         if (!$responseData['result']){
-            Mage::helper('boltpay/bugsnag')->notifyException(new Exception(Mage::helper('boltpay')->__('Invalid configuration')), $responseData);
+            $this->boltHelper()->notifyException(new Exception($this->boltHelper()->__('Invalid configuration')), $responseData);
         }
 
         $response = Mage::helper('core')->jsonEncode($responseData);
@@ -63,15 +79,12 @@ class Bolt_Boltpay_ConfigurationController extends Mage_Core_Controller_Front_Ac
      */
     protected function checkApiKey()
     {
-        /** @var Bolt_Boltpay_Helper_Api $boltHelper */
-        $boltHelper = Mage::helper('boltpay/api');
-
         $signRequest = array(
             'merchant_user_id' => 'USER_ID_TEST_' . time(),
         );
 
         try {
-            $signResponse = $boltHelper->transmit('sign', $signRequest, 'merchant', 'merchant', $this->_storeId);
+            $signResponse = $this->boltHelper()->transmit('sign', $signRequest, 'merchant', 'merchant', $this->_storeId);
         } catch (\Exception $e) {
             return false;
         }
@@ -111,7 +124,7 @@ class Bolt_Boltpay_ConfigurationController extends Mage_Core_Controller_Front_Ac
      */
     protected function curlCheckPublishableKey($key)
     {
-        $url = Mage::helper('boltpay/url')->getApiUrl($this->_storeId) . 'v1/merchant';
+        $url = $this->boltHelper()->getApiUrl($this->_storeId) . 'v1/merchant';
 
         $ch = curl_init($url);
 
@@ -195,7 +208,7 @@ class Bolt_Boltpay_ConfigurationController extends Mage_Core_Controller_Front_Ac
     protected function setErrorResponseData(&$responseData, $message)
     {
         $responseData['result'] = false;
-        $responseData['message'][] = Mage::helper('boltpay')->__($message);
+        $responseData['message'][] = $this->boltHelper()->__($message);
     }
 
 }

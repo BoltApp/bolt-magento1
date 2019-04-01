@@ -11,7 +11,7 @@
  *
  * @category   Bolt
  * @package    Bolt_Boltpay
- * @copyright  Copyright (c) 2018 Bolt Financial, Inc (https://www.bolt.com)
+ * @copyright  Copyright (c) 2019 Bolt Financial, Inc (https://www.bolt.com)
  * @license    http://opensource.org/licenses/osl-3.0.php  Open Software License (OSL 3.0)
  */
 
@@ -22,6 +22,8 @@
  */
 class Bolt_Boltpay_Model_Cron
 {
+    use Bolt_Boltpay_BoltGlobalTrait;
+
     /**
      * After an immutable quote has existed for 2 weeks or more, we remove it from the system.
      * At this point, only the order object is relevant for converted orders and any immutable
