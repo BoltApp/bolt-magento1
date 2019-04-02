@@ -106,7 +106,9 @@ class Bolt_Boltpay_Model_ObserverTest extends PHPUnit_Framework_TestCase
      */
     public function testSetBoltUserId()
     {
+        /** @var Mage_Sales_Model_Order $order */
         $order = Mage::getModel('sales/order');
+        $order->setPayment(Mage::getModel('boltpay/payment'));
         $this->setEmptyQuoteWithCustomer();
 
         $this->session->setBoltUserId(self::CUSTOMER_BOLT_USER_ID);
