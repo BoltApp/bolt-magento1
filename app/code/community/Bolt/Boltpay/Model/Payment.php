@@ -671,6 +671,11 @@ class Bolt_Boltpay_Model_Payment extends Mage_Payment_Model_Method_Abstract
      */
     protected function createInvoice($order, $captureAmount) {
         if (isset($captureAmount)) {
+            $boltMaxCaptureAmountAfterRefunds = $this->getBoltMaxCaptureAmountAfterRefunds($order);
+            if($captureAmount > $boltMaxCaptureAmountAfterRefunds){
+                $captureAmount = $boltMaxCaptureAmountAfterRefunds;
+            }
+
             $this->validateCaptureAmount($order, $captureAmount);
 
             if($order->getGrandTotal() > $captureAmount) {
@@ -679,6 +684,21 @@ class Bolt_Boltpay_Model_Payment extends Mage_Payment_Model_Method_Abstract
         }
 
         return $order->prepareInvoice();
+    }
+
+    /**
+     * Handles case where Bolt didn't properly apply discount, and Magento grand total is now less than the Bolt capture amount.
+     * Reduces the Bolt capture amount by the Bolt refunded amount.
+     *
+     * @param $order
+     * @return float
+     */
+    protected function getBoltMaxCaptureAmountAfterRefunds($order){
+        $reference = $order->getPayment()->getAdditionalInformation('bolt_reference');
+        $transaction = $this->boltHelper()->fetchTransaction($reference);
+        $refundedAmount = (!empty($transaction->refunded_amount->amount)) ? $transaction->refunded_amount->amount : 0;
+
+        return ($transaction->amount->amount - $refundedAmount)/100;
     }
 
     /**
