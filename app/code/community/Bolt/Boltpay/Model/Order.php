@@ -371,20 +371,44 @@ class Bolt_Boltpay_Model_Order extends Bolt_Boltpay_Model_Abstract
         /////////////////////////////////////////////////////////////
     }
 
-
     /**
-     * Called after order is authorized on Bolt.  This transitions the order from pre-auth state to processing
+     * Called after order is authorized on Bolt.
      *
      * @param string $orderIncrementId  customer facing order id
+     * @param object $payload           payload sent from Bolt
      */
-    public function receiveOrder( $orderIncrementId ) {
+    public function receiveOrder( $orderIncrementId, $payload ) {
+        /** @var Mage_Sales_Model_Order $order */
         $order = Mage::getModel('sales/order')->loadByIncrementId($orderIncrementId);
-        $this->getParentQuoteFromOrder($order)->setIsActive(false)->save();
+        $payloadObject = json_decode($payload);
+        $immutableQuote = $this->getQuoteFromOrder($order);
 
         ///////////////////////////////////////////////////////
         /// Dispatch order save events
         ///////////////////////////////////////////////////////
-        //Mage::dispatchEvent('bolt_boltpay_save_order_after', array('order'=>$order, 'quote'=>$immutableQuote, 'transaction' => $transaction));
+        Mage::dispatchEvent('bolt_boltpay_authorization_after', array('order'=>$order, 'quote'=>$immutableQuote, 'reference' => $payloadObject->transaction_reference));
+    }
+
+    /**
+     * Sends an email if an order email has not already been sent.
+     *
+     * @param $order Mage_Sales_Model_Order     The order which has just been authorized
+     */
+    public function sendOrderEmail($order)
+    {
+        try {
+            $order->queueNewOrderEmail();
+        } catch (Exception $e) {
+            // Catches errors that occur when sending order email confirmation (e.g. external API is down)
+            // and allows order creation to complete.
+
+            $error = new Exception('Failed to send order email', 0, $e);
+            $this->boltHelper()->notifyException($error);
+            return;
+        }
+
+        $history = $order->addStatusHistoryComment( $this->boltHelper()->__('Email sent for order %s', $order->getIncrementId()) );
+        $history->setIsCustomerNotified(true);
     }
 
     /**

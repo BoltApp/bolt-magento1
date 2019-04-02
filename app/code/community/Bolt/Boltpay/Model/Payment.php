@@ -119,28 +119,6 @@ class Bolt_Boltpay_Model_Payment extends Mage_Payment_Model_Method_Abstract
      */
     public function initialize($paymentAction, $stateObject)
     {
-        /*
-//$reference = Mage::getSingleton('core/session')->getBoltReference();
-$boltAuthCurrency = $payment->getAdditionalInformation('bolt_auth_currency' );
-$boltAuthAmount = $payment->getAdditionalInformation('bolt_auth_amount' );
-*/
-        /*
-        $msg = $this->boltHelper()->__(
-            "BOLT notification: Authorization requested for %s.  Order total is %s. Bolt transaction: %s/transaction/%s.",
-            $boltCartTotal, $transaction->amount->currency_symbol.$orderTotal, $this->boltHelper()->getBoltMerchantUrl(), $transaction->reference
-        */
-        /*
-        $msg = $this->boltHelper()->__(
-            "BOLT notification: Authorization requested for %s.  Order total is %s.",
-            $boltAuthCurrency.$boltAuthAmount, $order->getBaseCurrencyCode().$order->getBaseGrandTotal()
-        );
-        */
-        /*
-        if(Mage::getSingleton('core/session')->getWasCreatedByHook()){ // order is create via AJAX call
-            $msg .= $this->boltHelper()->__("  This order was created via webhook (Bolt traceId: <%s>)", $this->boltHelper()->getBoltTraceId());
-        }
-        */
-
         $stateObject
             ->setState(Mage_Sales_Model_Order::STATE_NEW)
             ->setStatus('pending_bolt')
@@ -813,7 +791,7 @@ $boltAuthAmount = $payment->getAdditionalInformation('bolt_auth_amount' );
                 break;
             default:
                 $payment = new Bolt_Boltpay_Model_Payment();
-                $payment->boltHelper()->notifyException(new Exception( $payment->boltHelper()->__("'%s' is not a recognized order status.  '%s' is being set instead.", $transactionStatus, $transactionStatus) ));
+                $payment->boltHelper()->notifyException(new Exception( $payment->boltHelper()->__("'%s' is not a recognized order status.  '%s' is being set instead.", $transactionStatus, $new_order_status) ));
         }
 
         return $new_order_status;

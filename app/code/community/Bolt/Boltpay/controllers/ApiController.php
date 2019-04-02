@@ -40,9 +40,7 @@ class Bolt_Boltpay_ApiController extends Mage_Core_Controller_Front_Action
      */
     public function hookAction()
     {
-
         try {
-
             $bodyParams = json_decode($this->payload, true);
 
             if (isset($bodyParams['type']) && $bodyParams['type'] == "discounts.code.apply") {
@@ -78,7 +76,21 @@ class Bolt_Boltpay_ApiController extends Mage_Core_Controller_Front_Action
                 //Mage::log('Order Found. Updating it', null, 'bolt.log');
                 $orderPayment = $order->getPayment();
                 if (!$orderPayment->getAdditionalInformation('bolt_reference')) {
-                    $orderPayment->setAdditionalInformation('bolt_reference', $reference);
+                    /////////////////////////////////////////////////////////////////////////////
+                    /// We've reached a case where authorization was not finalized via the browser
+                    /// session.  We'll complete the post authorization steps prior to processing
+                    /// the webhook.
+                    /////////////////////////////////////////////////////////////////////////////
+                    $immutableQuote = Mage::getModel('sales/quote')->loadByIdWithoutStore($quoteId);
+                    Mage::dispatchEvent(
+                        'bolt_boltpay_authorization_after',
+                        array(
+                            'order'=> $order,
+                            'quote'=> $immutableQuote,
+                            'reference' => $reference
+                        )
+                    );
+                    /////////////////////////////////////////////////////////////////////////////
                 }
 
                 $newTransactionStatus = Bolt_Boltpay_Model_Payment::translateHookTypeToTransactionStatus($hookType, $transaction);
@@ -92,21 +104,10 @@ class Bolt_Boltpay_ApiController extends Mage_Core_Controller_Front_Action
                         ->setTransactionId($transaction->id);
                 }
 
-                /******************************************************************************************************
-                 * TODO: Check the validity of this code.  It has been known to get out of sync and
-                 * is not strictly necessary.  In fact, it is redundant with one-to-one quote to bolt order mapping
-                 * Therefore, throwing errors will be disabled until fully reviewed.
-                 ********************************************************************************************************/
                 $merchantTransactionId = $orderPayment->getAdditionalInformation('bolt_merchant_transaction_id');
                 if ($merchantTransactionId == null || $merchantTransactionId == '') {
                     $orderPayment->setAdditionalInformation('bolt_merchant_transaction_id', $transactionId);
                     $orderPayment->save();
-                } elseif ($merchantTransactionId != $transactionId && $hookType != 'credit') {
-                    $this->boltHelper()->notifyException(
-                        new Exception(
-                            $this->boltHelper()->__("Transaction id mismatch. Expected: %s got: %s", $merchantTransactionId, $transactionId)
-                        )
-                    );
                 }
 
                 $orderPayment->setData('auto_capture', $newTransactionStatus == 'completed');
@@ -137,51 +138,9 @@ class Bolt_Boltpay_ApiController extends Mage_Core_Controller_Front_Action
             }
 
             /////////////////////////////////////////////////////
-            /// Order was not found.  We will create it.
+            /// Order was not found.  Throw Exception
             /////////////////////////////////////////////////////
-
-            $this->boltHelper()->addBreadcrumb(
-                array(
-                    'reference'  => $reference,
-                    'quote_id'   => $quoteId,
-                )
-            );
-
-            if (empty($reference) || empty($transactionId)) {
-                $exception = new Exception($this->boltHelper()->__('Reference and/or transaction_id is missing'));
-
-                $this->getResponse()->setHttpResponseCode(400)
-                    ->setBody(json_encode(array('status' => 'failure', 'error' => array('code' => 6011, 'message' => $exception->getMessage()))));
-
-                $this->boltHelper()->notifyException($exception);
-                return;
-            }
-
-            /** @var Mage_Sales_Model_Order $order */
-            $order = Mage::getModel('boltpay/order')->createOrder($reference, $sessionQuoteId = null, false, $transaction);
-
-            $this->getResponse()->setBody(
-                json_encode(
-                    array(
-                        'status' => 'success',
-                        'display_id' => $order->getIncrementId(),
-                        'message' => $this->boltHelper()->__('Order creation was successful')
-                    )
-                )
-            );
-            $this->getResponse()
-                ->setHttpResponseCode(201)
-                ->sendResponse();
-
-            //////////////////////////////////////////////
-            //  Clear parent quote to empty the cart
-            //////////////////////////////////////////////
-            /** @var Mage_Sales_Model_Quote $parentQuote */
-            $parentQuote = Mage::getModel('boltpay/order')->getParentQuoteFromOrder($order);
-            $parentQuote->removeAllItems()->save();
-            //////////////////////////////////////////////
-
-            return;
+            throw new Exception("Could not find order ".$transaction->order->cart->display_id);
 
         } catch (Bolt_Boltpay_InvalidTransitionException $boltPayInvalidTransitionException) {
 
@@ -219,20 +178,15 @@ class Bolt_Boltpay_ApiController extends Mage_Core_Controller_Front_Action
                 }
             }
         } catch (Exception $e) {
-            if(stripos($e->getMessage(), 'Not all products are available in the requested quantity') !== false) {
-                $this->getResponse()->setHttpResponseCode(409)
-                    ->setBody(json_encode(array('status' => 'failure', 'error' => array('code' => 6003, 'message' => $e->getMessage()))));
-            }else{
-                $this->getResponse()->setHttpResponseCode(422)
-                    ->setBody(json_encode(array('status' => 'failure', 'error' => array('code' => 6009, 'message' => $e->getMessage()))));
+            $this->getResponse()->setHttpResponseCode(422)
+                ->setBody(json_encode(array('status' => 'failure', 'error' => array('code' => 6009, 'message' => $e->getMessage()))));
 
-                $metaData = array();
-                if (isset($quote)){
-                    $metaData['quote'] = var_export($quote->debug(), true);
-                }
-
-                $this->boltHelper()->notifyException($e, $metaData);
+            $metaData = array();
+            if (isset($quote)){
+                $metaData['quote'] = var_export($quote->debug(), true);
             }
+
+            $this->boltHelper()->notifyException($e, $metaData);
         }
     }
 
@@ -248,15 +202,6 @@ class Bolt_Boltpay_ApiController extends Mage_Core_Controller_Front_Action
             if ($order->isObjectNew()) {
                 /** @var Mage_Sales_Model_Order $order */
                 $order = Mage::getModel('boltpay/order')->createOrder($reference = null, $sessionQuoteId = null, $isPreAuthCreation = true, $transaction);
-            } else {
-                /*
-                throw new Bolt_Boltpay_OrderCreationException(
-                    Bolt_Boltpay_OrderCreationException::E_BOLT_ORDER_ALREADY_EXISTS,
-                    Bolt_Boltpay_OrderCreationException::E_BOLT_ORDER_ALREADY_EXISTS_TMPL,
-                    array($order->getIncrementId(), $order->getStatus()),
-                    "Order {$order->getIncrementId()} already exist."
-                );
-                */
             }
 
             $orderSuccessUrl = $this->createSuccessUrl($order, $immutableQuoteId);

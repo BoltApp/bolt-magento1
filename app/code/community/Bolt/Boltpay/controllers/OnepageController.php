@@ -26,9 +26,9 @@ class Bolt_Boltpay_OnepageController extends Mage_Checkout_OnepageController
     use Bolt_Boltpay_Controller_Traits_ApiControllerTrait;
 
     /**
-     * Sets up the controller success page for non-Bolt orders.  For Bolt orders,
+     * Sets up this  controller for non-Bolt orders.  For Bolt orders,
      * we will call @see Bolt_Boltpay_Controller_Traits_ApiControllerTrait::preDispatch()
-     * explicitly in the action.
+     * explicitly in the success action.
      */
     public function _construct()
     {
@@ -72,7 +72,7 @@ class Bolt_Boltpay_OnepageController extends Mage_Checkout_OnepageController
                 ->setLastRealOrderId($requestParams['lastRealOrderId'])
                 ->setLastRecurringProfileIds(explode( ',', $requestParams['lastRecurringProfileIds']));
 
-            Mage::getModel('boltpay/order')->receiveOrder($requestParams['lastRealOrderId']);
+            Mage::getModel('boltpay/order')->receiveOrder($requestParams['lastRealOrderId'], $this->payload);
         }
 
 		parent::successAction();
