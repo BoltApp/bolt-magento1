@@ -82,7 +82,7 @@ if ($canceledBoltStatusDoesntExists) {
             'label'
         ),
         array(
-            array('status' => 'canceled_bolt', 'label' => 'Bolt Declined'),
+            array('status' => 'canceled_bolt', 'label' => 'Canceled by Bolt'),
         )
     );
 

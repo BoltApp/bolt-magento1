@@ -29,7 +29,7 @@ class Bolt_Boltpay_Model_Observer
      *
      * event: bolt_boltpay_authorization_after
      *
-     * @param $observer  Observer event contains quote
+     * @param Varien_Event_Observer $observer  Observer event contains `quote`
      */
     public function setBoltUserId($observer)
     {
@@ -59,7 +59,7 @@ class Bolt_Boltpay_Model_Observer
      *
      * event: bolt_boltpay_authorization_after
      *
-     * @param $observer Observer event contains quote, order, and the bolt transaction reference
+     * @param Varien_Event_Observer $observer Observer event contains `quote`, `order`, and the bolt transaction `reference`
      *
      * @throws Mage_Core_Exception if the bolt transaction reference is an object instead of expected string
      */
@@ -80,9 +80,11 @@ class Bolt_Boltpay_Model_Observer
     /**
      * Clears the Shopping Cart after the success page
      *
+     * @param Varien_Event_Observer $observer   An Observer object with an empty event object
+     *
      * Event: checkout_onepage_controller_success_action
      */
-    public function clearShoppingCart() {
+    public function clearShoppingCart($observer) {
         $cartHelper = Mage::helper('checkout/cart');
         $cartHelper->getCart()->truncate()->save();
     }
@@ -93,35 +95,21 @@ class Bolt_Boltpay_Model_Observer
      *
      * event: sales_order_payment_capture
      *
-     * @param $observer Observer event contains payment object
+     * @param Varien_Event_Observer $observer Observer event contains payment object
      */
     public function addMessageWhenCapture($observer)
     {
         /** @var Mage_Sales_Model_Order_Payment $payment */
         $payment = $observer->getEvent()->getPayment();
         $order = $payment->getOrder();
-
         $method = $payment->getMethod();
+        $message = '';
+
         if (strtolower($method) == Bolt_Boltpay_Model_Payment::METHOD_CODE) {
-            $message = $this->_addMagentoOrderIdToMessage($order->getIncrementId());
+            $message .= ($incrementId = $order->getIncrementId()) ? $this->boltHelper()->__('Magento Order ID: "%s".', $incrementId) : "";
             if (!empty($message)) {
                 $observer->getEvent()->getPayment()->setPreparedMessage($message);
             }
         }
-    }
-
-    /**
-     * Add Magento Order ID to the prepared message.
-     *
-     * @param number|string $incrementId
-     * @return string
-     */
-    protected function _addMagentoOrderIdToMessage($incrementId)
-    {
-        if ($incrementId) {
-            return $this->boltHelper()->__('Magento Order ID: "%s".', $incrementId);
-        }
-
-        return '';
     }
 }

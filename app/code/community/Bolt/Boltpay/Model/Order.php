@@ -416,15 +416,15 @@ class Bolt_Boltpay_Model_Order extends Bolt_Boltpay_Model_Abstract
      *
      * @return \Mage_Sales_Model_Quote
      */
-    protected function getQuoteById($quoteId)
+    public function getQuoteById($quoteId)
     {
-        /* @var Mage_Sales_Model_Quote $immutableQuote */
-        $immutableQuote = Mage::getModel('sales/quote')
+        /* @var Mage_Sales_Model_Quote $quote */
+        $quote = Mage::getModel('sales/quote')
             ->getCollection()
             ->addFieldToFilter('entity_id', $quoteId)
             ->getFirstItem();
 
-        return $immutableQuote;
+        return $quote;
     }
 
     /**
@@ -552,8 +552,6 @@ class Bolt_Boltpay_Model_Order extends Bolt_Boltpay_Model_Abstract
 
     }
 
-
-
     /**
      * @var Mage_Sales_Model_Quote $quote The quote that defines the cart
      *
@@ -578,6 +576,17 @@ class Bolt_Boltpay_Model_Order extends Bolt_Boltpay_Model_Abstract
         return $this->cartProducts;
     }
 
+    /**
+     * Gets a an order by parent quote id/Bolt order reference
+     *
+     * @param int|string $quoteId  The quote id which this order was created from
+     *
+     * @return Mage_Sales_Model_Order   If found, and order with all the details, otherwise a new object order
+     */
+    public function getOrderByParentQuoteId($quoteId) {
+        $parentQuote = $this->getQuoteById($quoteId);
+        return $this->getOrderByQuoteId($parentQuote->getParentQuoteId());
+    }
 
     /**
      * Gets a an order by quote id/order reference
@@ -594,7 +603,6 @@ class Bolt_Boltpay_Model_Order extends Bolt_Boltpay_Model_Abstract
             ->addFieldToFilter('quote_id', $quoteId)
             ->getFirstItem();
     }
-
 
     /**
      * Retrieve the Quote object of an order
