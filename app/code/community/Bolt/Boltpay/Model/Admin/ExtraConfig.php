@@ -181,16 +181,16 @@ JS;
             : $rawValue;
     }
 
-
     /**
      * Normalizes JSON by stripping new lines from the given string and returning null in the case of only white space.
      * New line characters are added by the text area and this breaks JSON decoding
      *
-     * @param $string   The string to be stripped of newlines
+     * @param string $string    The string to be stripped of newlines
      *
-     * @return string|null    The string stripped of newline characters or null on error
+     * @return string|null      The string stripped of newline characters or null on error
      */
-    private function normalizeJSON($string) {
-        return trim(preg_replace( '/(\r\n)|\n|\r/', '', $string )) ?: array();
+    private function normalizeJSON($string)
+    {
+        return trim(preg_replace( '/(\r\n)|\n|\r/', '', $string )) ?: '';
     }
 }
