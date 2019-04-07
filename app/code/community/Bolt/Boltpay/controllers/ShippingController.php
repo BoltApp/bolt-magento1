@@ -97,14 +97,18 @@ class Bolt_Boltpay_ShippingController extends Mage_Core_Controller_Front_Action
                 $addressErrorDetails = array('code' => 6101, 'message' => $this->boltHelper()->__('Address with P.O. Box is not allowed.'));
             } else {
                 $addressData = $this->_shippingAndTaxModel->applyShippingAddressToQuote($quote, $shippingAddress);
-                $magentoAddressErrors = $quote->getShippingAddress()->validate();
 
-                if (is_array($magentoAddressErrors)) {
-                    $addressErrorDetails = array('code' => 6103, 'message' => $magentoAddressErrors[0]);
+                if ($this->shouldDoAddressValidation()) {
+                    $magentoAddressErrors = $quote->getShippingAddress()->validate();
+
+                    if (is_array($magentoAddressErrors)) {
+                        $addressErrorDetails = array('code' => 6103, 'message' => $magentoAddressErrors[0]);
+                    }
                 }
             }
 
             if ($addressErrorDetails) {
+                $this->boltHelper()->notifyException(new Exception(json_encode($addressErrorDetails)));
                 return $this->getResponse()
                     ->clearAllHeaders()
                     ->setHttpResponseCode(403)
@@ -332,5 +336,35 @@ class Bolt_Boltpay_ShippingController extends Mage_Core_Controller_Front_Action
         ////////////////////////////////////////////////////////////////////////////////////
 
         return md5($cacheIdentifier);
+    }
+
+    /**
+     * This function checks for all special cases in which address validation should not be
+     * performed before making shipping and tax estimates.
+     *
+     * While we currently only have one case, redacted address information from an Apple Pay request,
+     * this wrapper function is justified because there maybe future payment additions that do similar
+     * address data redaction like Google Pay, Samsung Pay, Paypal, etc.
+     */
+    protected function shouldDoAddressValidation() {
+        return !($this->isApplePayRequest());
+    }
+
+    /**
+     * Checks whether this is an Apple Pay request.  Currently, Apple Pay request are populated with
+     * "n/a" in several required address fields, particularly the "name" field, which is Bolt defined,
+     *  not customer defined.  Additionally, the "phone" field will be null.
+     *
+     * Standard Bolt request leave the "name" field as null while forcing the user to populate
+     * the phone field, and therefore is never null.
+     *
+     * We do anticipate Bolt server-side refinement for indicating Apple Pay request, likely via User-Agent
+     * or a custom HTTP request header.  For now, we'll rely on sentinel value detection.
+     */
+    private function isApplePayRequest() {
+        $requestData = json_decode($this->_requestJSON);
+        $shippingAddress = $requestData->shipping_address;
+
+        return ($shippingAddress->name === 'n/a') && is_null($shippingAddress->phone);
     }
 }
