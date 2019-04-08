@@ -112,4 +112,17 @@ class Bolt_Boltpay_Model_Observer
             }
         }
     }
+
+    /**
+     * Hides the Bolt Pre-auth order states from the admin->Sales->Order list
+     *
+     * event: sales_order_grid_collection_load_before
+     *
+     * @param Varien_Event_Observer $observer Observer event contains an orderGridCollection object
+     */
+    public function filterPreAuthOrders($observer) {
+        /** @var Mage_Sales_Model_Resource_Order_Grid_Collection $orderGridCollection */
+        $orderGridCollection = $observer->getEvent()->getOrderGridCollection();
+        $orderGridCollection->addFieldToFilter('status',array('nin'=>array('pending_bolt','canceled_bolt')));
+    }
 }
