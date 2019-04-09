@@ -364,7 +364,8 @@ class Bolt_Boltpay_ShippingController extends Mage_Core_Controller_Front_Action
     private function isApplePayRequest() {
         $requestData = json_decode($this->_requestJSON);
         $shippingAddress = $requestData->shipping_address;
-
-        return ($shippingAddress->name === 'n/a') && is_null($shippingAddress->phone);
+        
+        // For a more strict check, we would enable verifying the phone number is null
+        return ($shippingAddress->name === 'n/a') /* && is_null($shippingAddress->phone) */;
     }
 }
