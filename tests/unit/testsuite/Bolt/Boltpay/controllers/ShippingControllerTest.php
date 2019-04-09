@@ -23,6 +23,16 @@ class Bolt_Boltpay_ShippingControllerTest extends PHPUnit_Framework_TestCase
      * @var Bolt_Boltpay_TestHelper  Used for working with the shopping cart
      */
     private $testHelper;
+    
+    /**
+     * @var string  Used for storing $cacheBoltHeader in the header of response
+     */
+    private $_cacheBoltHeader;
+    
+    /**
+     * @var Mage_Customer_Model_Customer
+     */
+    private $_customer;
 
 
     /**
@@ -36,20 +46,59 @@ class Bolt_Boltpay_ShippingControllerTest extends PHPUnit_Framework_TestCase
     {
         $this->_shippingController = $this->getMockBuilder( "Bolt_Boltpay_ShippingController")
             ->setConstructorArgs( array( new Mage_Core_Controller_Request_Http(), new Mage_Core_Controller_Response_Http()) )
-            ->setMethods(array('boltHelper'))
+            ->setMethods(['boltHelper', 'getResponse'])
             ->getMock();
 
         $stubbedBoltHelper = $this->getMockBuilder('Bolt_Boltpay_Helper_Data')
-            ->setMethods(array('verify_hook'))
+            ->setMethods(array('verify_hook', 'setResponseContextHeaders'))
             ->getMock();
+        
+        $stubbedResponse = $this->getMockBuilder('Mage_Core_Controller_Response_Http')
+            ->setMethods(['setHeader'])
+            ->getMock();
+        
+        $stubbedResponse->method('setHeader')
+            ->with(
+                    $this->anything(),
+                    $this->callback(function($headerValue){
+                        if($headerValue === 'HIT' || $headerValue === 'MISS'){
+                            $this->_cacheBoltHeader = $headerValue;
+                        }
+                        return $headerValue;
+                    })
+                   )
+            ->willReturn($stubbedResponse);
 
         $stubbedBoltHelper->method('verify_hook')->willReturn(true);
+        
+        $stubbedBoltHelper->method('setResponseContextHeaders')->willReturn($stubbedResponse);
 
         $this->_shippingController->method('boltHelper')->willReturn($stubbedBoltHelper);
+        
+        $this->_shippingController->method('getResponse')->willReturn($stubbedResponse);
 
         $this->testHelper = new Bolt_Boltpay_TestHelper();
+        
+        $websiteId = Mage::app()->getWebsite()->getId();
+        $store = Mage::app()->getStore();
+         
+        $this->_customer = Mage::getModel("customer/customer");
+        $this->_customer   ->setWebsiteId($websiteId)
+                    ->setStore($store)
+                    ->setFirstname('Don')
+                    ->setLastname('Quijote')
+                    ->setEmail('test-shipping-cache@bolt.com')
+                    ->setPassword('somepassword');
 
     }
+    
+    public function tearDown() {
+		Mage::register('isSecureArea', true);
+        $this->_customer->delete();
+        Mage::unregister('isSecureArea');
+        
+        Mage::getSingleton('checkout/session')->setQuoteId(null);
+	}
 
 
 
@@ -95,11 +144,20 @@ class Bolt_Boltpay_ShippingControllerTest extends PHPUnit_Framework_TestCase
         /** @var Mage_Sales_Model_Quote $quote */
         $quote = Mage::getSingleton('checkout/session')->getQuote();
 
-        $quote
-            ->removeAllAddresses()
-            ->removeAllItems()
-            ->setCustomerId(25)
-            ->setCustomerTaxClassId(3);
+        $shipping_address = array(
+            'firstname' => $this->_customer->getFirstname(),
+            'lastname' => $this->_customer->getLastname(),
+            'country_id' => 'US',
+            'region' => '12',
+            'city' => 'Beverly Hills',
+            'postcode' => '90210',
+            'save_in_address_book' => 1
+        );
+        $quote->getShippingAddress()->addData($shipping_address);
+
+        $quote->setCustomer($this->_customer);
+
+        $quote->setCustomerTaxClassId(3);
 
         foreach(self::$_productIds as $productId) {
             $this->testHelper->addProduct($productId, rand(1,3));
@@ -165,11 +223,9 @@ class Bolt_Boltpay_ShippingControllerTest extends PHPUnit_Framework_TestCase
         /** @var Mage_Sales_Model_Quote $quote */
         $quote = Mage::getSingleton('checkout/session')->getQuote();
 
-        $quote
-            ->removeAllAddresses()
-            ->removeAllItems()
-            ->setCustomerId(32)
-            ->setCustomerTaxClassId(2);
+        $quote->setCustomer($this->_customer);
+
+        $quote->setCustomerTaxClassId(2);
 
         foreach(self::$_productIds as $productId) {
             $this->testHelper->addProduct($productId, rand(1,3));
@@ -221,12 +277,8 @@ class Bolt_Boltpay_ShippingControllerTest extends PHPUnit_Framework_TestCase
         ////////////////////////////////////////////////////////
         $this->_shippingController->indexAction();
         $firstCallEstimate = json_decode($this->_shippingController->getResponse()->getBody(), true);
-        $firstCallHeaders = $this->_shippingController->getResponse()->getHeaders();
-        foreach($firstCallHeaders as $callHeader) {
-            if ($callHeader['name'] === 'X-Bolt-Cache-Hit') {
-                $firstCallHitOrMiss = $callHeader['value'];
-            }
-        }
+        $firstCallHeaders = $this->_shippingController->getResponse()->getHeaders();      
+        $firstCallHitOrMiss = $this->_cacheBoltHeader;
         ////////////////////////////////////////////////////////
 
 
@@ -236,11 +288,7 @@ class Bolt_Boltpay_ShippingControllerTest extends PHPUnit_Framework_TestCase
         $this->_shippingController->indexAction();
         $secondCallEstimate = json_decode($this->_shippingController->getResponse()->getBody(), true);
         $secondCallHeaders = $this->_shippingController->getResponse()->getHeaders();
-        foreach($secondCallHeaders as $callHeader) {
-            if ($callHeader['name'] === 'X-Bolt-Cache-Hit') {
-                $secondCallHitOrMiss = $callHeader['value'];
-            }
-        }
+        $secondCallHitOrMiss = $this->_cacheBoltHeader;
         ////////////////////////////////////////////////////////
 
 
@@ -268,11 +316,7 @@ class Bolt_Boltpay_ShippingControllerTest extends PHPUnit_Framework_TestCase
         $this->_shippingController->indexAction();
         $thirdCallEstimate = json_decode($this->_shippingController->getResponse()->getBody(), true);
         $thirdCallHeaders = $this->_shippingController->getResponse()->getHeaders();
-        foreach($thirdCallHeaders as $callHeader) {
-            if ($callHeader['name'] === 'X-Bolt-Cache-Hit') {
-                $thirdCallHitOrMiss = $callHeader['value'];
-            }
-        }
+        $thirdCallHitOrMiss = $this->_cacheBoltHeader;
         ////////////////////////////////////////////////////////
 
 
@@ -285,11 +329,7 @@ class Bolt_Boltpay_ShippingControllerTest extends PHPUnit_Framework_TestCase
         $this->_shippingController->indexAction();
         $fourthCallEstimate = json_decode($this->_shippingController->getResponse()->getBody(), true);
         $fourthCallHeaders = $this->_shippingController->getResponse()->getHeaders();
-        foreach($fourthCallHeaders as $callHeader) {
-            if ($callHeader['name'] === 'X-Bolt-Cache-Hit') {
-                $fourthCallHitOrMiss = $callHeader['value'];
-            }
-        }
+        $fourthCallHitOrMiss = $this->_cacheBoltHeader;
         ////////////////////////////////////////////////////////
 
         $this->assertNotEmpty( $firstCallEstimate );
