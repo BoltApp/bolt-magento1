@@ -52,30 +52,42 @@ class Bolt_Boltpay_ApiController extends Mage_Core_Controller_Front_Action
             /** @var Mage_Sales_Model_Order $order */
 
             if ($hookType === 'failed_payment') {
-                ////////////////////////////////////////////////////////////////////
-                /// We treat Bolt initiated cancels to be the same as a directive
-                /// to expire the session, otherwise, the Bolt checkout will be in a
-                /// locked state. However, since we are operating outside the session
-                /// we cannot use Mage::getSingleton('checkout/session')->setQuoteId(null);
-                ///
-                /// Instead, for the sake of abandoned cart reports, we do a trick by
-                /// deactivating the parent/session quote to force close the session and
-                /// then effectively convert the parent quote to appear as an unused
-                /// immutable quote while activating the parallel immutable quote and
-                /// effectively converting it into a parent quote
-                ////////////////////////////////////////////////////////////////////
                 $order =  Mage::getModel('boltpay/order')->getOrderByParentQuoteId($parentQuoteId);
 
                 if (!$order->isObjectNew()) {
                     $order->cancel()->setQuoteId(null)->setStatus('canceled_bolt')->save();
                 }
 
+                ////////////////////////////////////////////////////////////////////
+                /// We treat Bolt initiated cancels to be the same as a directive
+                /// to expire the cached immutable quote that is stored in the session,
+                /// otherwise, the Bolt checkout could result in a locked state where the end
+                /// user will repeatedly be told that his cart has expired and to refresh. However,
+                /// since we are operating outside the session we cannot directly clear
+                /// the cache session from data
+                ///
+                /// Instead, we mark the immutable quote cache to be expired by setting
+                /// the parent quote to be the parent quote of itself.  We take care of this
+                /// via an observer that watches for this condition.  This will preserve
+                /// native abandoned cart behavior while not marking the quote for
+                /// cleanup.
+                ////////////////////////////////////////////////////////////////////
+
+                $parentQuote = Mage::getModel('boltpay/order')->getQuoteById($parentQuoteId);
+                if ($parentQuote->getId()) {
+                    $parentQuote
+                        ->setParentQuoteId($parentQuote->getId())
+                        ->save();
+                }
+
+                /*
                 $parentQuote = Mage::getModel('boltpay/order')->getQuoteById($parentQuoteId);
                 if ($parentQuote->getId()) {
                     $parentQuote
                         ->setIsActive(false)
                         ->setParentQuoteId(0)
                         ->save();
+
 
                     $immutableQuote = Mage::getModel('boltpay/order')->getQuoteById($parentQuote->getParentQuoteId());
                     if ($immutableQuote->getId()) {
@@ -85,6 +97,7 @@ class Bolt_Boltpay_ApiController extends Mage_Core_Controller_Front_Action
                             ->save();
                     }
                 }
+                */
 
                 return $this->sendResponse(
                     200,

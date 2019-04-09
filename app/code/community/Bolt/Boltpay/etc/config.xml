@@ -116,6 +116,15 @@
               </bolt_boltpay_filter_preauth_orders>
           </observers>
       </sales_order_grid_collection_load_before>
+      <controller_front_init_before>
+          <observers>
+              <bolt_boltpay_check_if_order_canceled>
+                  <type>singleton</type>
+                  <class>Bolt_Boltpay_Model_Observer</class>
+                  <method>clearCartCacheOnOrderCanceled</method>
+              </bolt_boltpay_check_if_order_canceled>
+          </observers>
+      </controller_front_init_before>
     </events>
 
     <sales>

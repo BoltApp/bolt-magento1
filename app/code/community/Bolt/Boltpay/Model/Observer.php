@@ -90,6 +90,26 @@ class Bolt_Boltpay_Model_Observer
     }
 
     /**
+     * This will clear the cart cache, forcing creation of a new immutable quote, if
+     * the parent quote has been flagged by having a parent quote Id as its on
+     * id.
+     *
+     * event: controller_front_init_before
+     *
+     * @param Varien_Event_Observer $observer event contains front (Mage_Core_Controller_Varien_Front)
+     */
+    public function clearCartCacheOnOrderCanceled($observer) {
+        /** @var Mage_Sales_Model_Quote $quote */
+        $quote = Mage::getSingleton('checkout/session')->getQuote();
+
+        if ($quote->getId() === $quote->getParentQuoteId()) {
+            Mage::getSingleton('core/session')->unsCachedCartData();
+            // clear the parent quote ID to re-enable cart cache
+            $quote->setParentQuoteId(null);
+        }
+    }
+
+    /**
      * Event handler called when bolt payment capture.
      * Add the message Magento Order Id: "xxxxxxxxx" to the standard payment capture message.
      *
