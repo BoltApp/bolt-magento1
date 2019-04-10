@@ -11,7 +11,7 @@
  *
  * @category   Bolt
  * @package    Bolt_Boltpay
- * @copyright  Copyright (c) 2018 Bolt Financial, Inc (https://www.bolt.com)
+ * @copyright  Copyright (c) 2019 Bolt Financial, Inc (https://www.bolt.com)
  * @license    http://opensource.org/licenses/osl-3.0.php  Open Software License (OSL 3.0)
  */
 
@@ -62,7 +62,8 @@ class Bolt_Boltpay_OrderController extends Mage_Core_Controller_Front_Action
             $order = $orderModel->getOrderByQuoteId($this->boltHelper()->getImmutableQuoteIdFromTransaction($transaction));
 
             if ($order->isObjectNew()) {
-                $orderModel->createOrder($reference, $checkoutSession->getQuoteId(), true, $transaction);
+                $sessionQuoteId = ($this->getRequest()->getParam('checkoutType') == Bolt_Boltpay_Block_Checkout_Boltpay::CHECKOUT_TYPE_PRODUCT_PAGE) ? null : $checkoutSession->getQuoteId();
+                $orderModel->createOrder($reference,$sessionQuoteId, true, $transaction);
             }
 
         } catch (Exception $e) {
