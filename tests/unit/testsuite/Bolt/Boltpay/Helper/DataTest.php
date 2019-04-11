@@ -193,20 +193,10 @@ class Bolt_Boltpay_Helper_DataTest extends PHPUnit_Framework_TestCase
         $checkoutType = Bolt_Boltpay_Block_Checkout_Boltpay::CHECKOUT_TYPE_MULTI_PAGE;
         $saveOrderUrl = Mage::helper('boltpay')->getMagentoUrl("boltpay/order/save/checkoutType/$checkoutType");
 
-        $onSuccessCallback = "function(transaction, callback) {
-                new Ajax.Request(
-                    '$saveOrderUrl',
-                    {
-                        method:'post',
-                        onSuccess:
-                            function() {
-                                $successCustom
-                                order_completed = true;
-                                callback();
-                            },
-                        parameters: 'reference='+transaction.reference
-                    }
-                );
+        $onSuccessCallback =
+            "function(transaction, callback) {
+                $successCustom
+                callback();
             }";
 
         $result = $this->currentMock->buildOnSuccessCallback($successCustom, $checkoutType);
@@ -223,7 +213,7 @@ class Bolt_Boltpay_Helper_DataTest extends PHPUnit_Framework_TestCase
         $successCustom = "console.log('test')";
         $checkoutType = Bolt_Boltpay_Block_Checkout_Boltpay::CHECKOUT_TYPE_ADMIN;
 
-        $onSuccessCallback = "function(transaction, callback) {
+        $expected = "function(transaction, callback) {
                 $successCustom
 
                 var input = document.createElement('input');
@@ -234,14 +224,15 @@ class Bolt_Boltpay_Helper_DataTest extends PHPUnit_Framework_TestCase
 
                 // order and order.submit should exist for admin
                 if ((typeof order !== 'undefined' ) && (typeof order.submit === 'function')) {
-                    order_completed = true;
+                    window.order_completed = true;
                     callback();
                 }
             }";
 
         $result = $this->currentMock->buildOnSuccessCallback($successCustom, $checkoutType);
 
-        $this->assertEquals($onSuccessCallback, $result);
+        $this->assertEquals(preg_replace('/\s/', '', $expected), preg_replace('/\s/', '', $result));
+
     }
 
     /**
@@ -253,15 +244,11 @@ class Bolt_Boltpay_Helper_DataTest extends PHPUnit_Framework_TestCase
         $checkoutType = Bolt_Boltpay_Block_Checkout_Boltpay::CHECKOUT_TYPE_ONE_PAGE;
         $closeCustom = '';
 
-        $expect = "
-            if (order_completed) {
-                   location.href = '$successUrl';
-            }
-        ";
+        $expected = '';
 
         $result = $this->currentMock->buildOnCloseCallback($closeCustom, $checkoutType);
 
-        $this->assertEquals(preg_replace('/\s/', '', $expect), preg_replace('/\s/', '', $result));
+        $this->assertEquals(preg_replace('/\s/', '', $expected), preg_replace('/\s/', '', $result));
     }
 
     /**
@@ -272,8 +259,8 @@ class Bolt_Boltpay_Helper_DataTest extends PHPUnit_Framework_TestCase
         $checkoutType = Bolt_Boltpay_Block_Checkout_Boltpay::CHECKOUT_TYPE_ADMIN;
         $closeCustom = '';
 
-        $expect = "
-             if (order_completed && (typeof order !== 'undefined' ) && (typeof order.submit === 'function')) {
+        $expected = "
+             if (window.order_completed && (typeof order !== 'undefined' ) && (typeof order.submit === 'function')) {
                 $closeCustom
                 var bolt_hidden = document.getElementById('boltpay_payment_button');
                 bolt_hidden.classList.remove('required-entry');
@@ -283,7 +270,7 @@ class Bolt_Boltpay_Helper_DataTest extends PHPUnit_Framework_TestCase
 
         $result = $this->currentMock->buildOnCloseCallback($closeCustom, $checkoutType);
 
-        $this->assertEquals(preg_replace('/\s/', '', $expect), preg_replace('/\s/', '', $result));
+        $this->assertEquals(preg_replace('/\s/', '', $expected), preg_replace('/\s/', '', $result));
     }
 
 }

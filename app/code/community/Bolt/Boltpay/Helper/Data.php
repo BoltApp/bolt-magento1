@@ -157,7 +157,8 @@ class Bolt_Boltpay_Helper_Data extends Mage_Core_Helper_Abstract
                 document.getElementById('edit_form').appendChild(input);
 
                 // order and order.submit should exist for admin
-                if ((typeof order !== 'undefined' ) && (typeof order.submit === 'function')) {
+                if ((typeof order !== 'undefined' ) && (typeof order.submit === 'function')) { 
+                    window.order_completed = true;
                     callback();
                 }
             }"
@@ -180,7 +181,7 @@ class Bolt_Boltpay_Helper_Data extends Mage_Core_Helper_Abstract
             case Bolt_Boltpay_Block_Checkout_Boltpay::CHECKOUT_TYPE_ADMIN:
                 $javascript .=
                     "
-                    if (order_completed && (typeof order !== 'undefined' ) && (typeof order.submit === 'function')) {
+                    if (window.order_completed && (typeof order !== 'undefined' ) && (typeof order.submit === 'function')) {
                         $closeCustom
                         var bolt_hidden = document.getElementById('boltpay_payment_button');
                         bolt_hidden.classList.remove('required-entry');
@@ -194,9 +195,6 @@ class Bolt_Boltpay_Helper_Data extends Mage_Core_Helper_Abstract
                     isFireCheckoutFormValid = false;
                     initBoltButtons();
                     ";
-                break;
-            default:
-                $javascript .= "";
         }
 
         return $javascript;

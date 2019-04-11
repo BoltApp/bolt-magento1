@@ -76,11 +76,13 @@ class Bolt_Boltpay_Model_BoltOrder extends Bolt_Boltpay_Model_Abstract
      * Generates cart submission data for sending to Bolt order cart field.
      *
      * @param Mage_Sales_Model_Quote        $quote      Magento quote instance
-     * @param bool                          $multipage  Is checkout type Multi-Page Checkout, the default is true, set to false for One Page Checkout
+     * @param bool                          $isMultipage  Is checkout type Multi-Page Checkout, the default is true, set to false for One Page Checkout
      *
      * @return array            The cart data part of the order payload to be sent as to bolt in API call as a PHP array
+     *
+     * @throws Mage_Core_Model_Store_Exception if the store cannot be determined
      */
-    public function buildCart($quote, $multipage)
+    public function buildCart($quote, $isMultipage)
     {
 
         ///////////////////////////////////////////////////////////////////////////////////
@@ -159,7 +161,7 @@ class Bolt_Boltpay_Model_BoltOrder extends Bolt_Boltpay_Model_Abstract
         $calculatedTotal -= $totalDiscount;
         /////////////////////////////////////////////////////////////////////////
 
-        if ($multipage) {
+        if ($isMultipage) {
             /////////////////////////////////////////////////////////////////////////////////////////
             // For multi-page checkout type send only subtotal, do not include shipping and tax info.
             /////////////////////////////////////////////////////////////////////////////////////////
