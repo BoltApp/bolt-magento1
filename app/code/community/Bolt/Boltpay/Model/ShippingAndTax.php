@@ -141,7 +141,8 @@ class Bolt_Boltpay_Model_ShippingAndTax extends Bolt_Boltpay_Model_Abstract
                 );
                 $response['shipping_options'][] = $option;
                 $quote->setTotalsCollectedFlag(true);
-                return $response;
+
+                return $this->boltHelper()->doFilterEvent('bolt_boltpay_filter_shipping_and_tax_estimate', $response, $quote);
             }
 
             $this->applyShippingRate($quote, null);
@@ -190,12 +191,21 @@ class Bolt_Boltpay_Model_ShippingAndTax extends Bolt_Boltpay_Model_Abstract
                 );
 
                 $response['shipping_options'][] = $option;
+
+                Mage::dispatchEvent(
+                    'bolt_boltpay_shipping_option_added',
+                    array(
+                        'quote'=> $quote,
+                        'shippingMethodCode' => $rate->getCode()
+                    )
+                );
             }
+
         } finally {
             $quote->setCouponCode($originalCouponCode);
         }
 
-        return $response;
+        return $this->boltHelper()->doFilterEvent('bolt_boltpay_filter_shipping_and_tax_estimate', $response, $quote);
     }
 
     /**
@@ -205,9 +215,19 @@ class Bolt_Boltpay_Model_ShippingAndTax extends Bolt_Boltpay_Model_Abstract
      * @param string $shippingRateCode         Shipping rate code composed of {carrier}_{method}
      */
     public function applyShippingRate($quote, $shippingRateCode, $clearTotalsCollectedFlag = true ) {
+
         $shippingAddress = $quote->getShippingAddress();
 
         if (!empty($shippingAddress)) {
+
+            Mage::dispatchEvent(
+                'bolt_boltpay_shipping_method_applied_before',
+                array(
+                    'quote'=> $quote,
+                    'shippingMethodCode' => $shippingRateCode
+                )
+            );
+
             // Flagging address as new is required to force collectTotals to recalculate discounts
             $shippingAddress->isObjectNew(true);
             $shippingAddressId = $shippingAddress->getData('address_id');

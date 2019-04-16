@@ -58,6 +58,7 @@ trait Bolt_Boltpay_Controller_Traits_ApiControllerTrait {
      */
     public function preDispatch()
     {
+        @ob_start();
         if ($this->willReturnJson) {
             $this->getResponse()->clearAllHeaders()->clearBody();
             $this->boltHelper()->setResponseContextHeaders();
@@ -82,7 +83,7 @@ trait Bolt_Boltpay_Controller_Traits_ApiControllerTrait {
      *
      * @throws Zend_Controller_Response_Exception if an invalid HTTP response code is set
      */
-    function verifyBoltSignature($payload, $signature ) {
+    protected function verifyBoltSignature($payload, $signature ) {
         if (!$this->boltHelper()->verify_hook($payload, $signature)) {
             $exception = new Bolt_Boltpay_OrderCreationException(
                 Bolt_Boltpay_OrderCreationException::E_BOLT_GENERAL_ERROR,
@@ -98,5 +99,21 @@ trait Bolt_Boltpay_Controller_Traits_ApiControllerTrait {
             $this->boltHelper()->notifyException($exception, array(), 'warning');
             exit;
         }
+    }
+
+    /**
+     * POST data in response to a request
+     *
+     * @param int   $httpCode       standard HTTP response code
+     * @param array $data           a PHP array to be encoded as JSON and sent as a response body to Bolt
+     * @param bool  $doJsonEncode   instructs whether to JSON encode the data, true by default
+     *
+     * @throws Zend_Controller_Response_Exception if the error code is not within the valid range
+     */
+    protected function sendResponse($httpCode, $data = array(), $doJsonEncode = true )
+    {
+        @ob_end_clean();
+        $this->getResponse()->setHttpResponseCode($httpCode);
+        $this->getResponse()->setBody($doJsonEncode ? json_encode($data) : $data );
     }
 }

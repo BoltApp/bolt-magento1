@@ -321,22 +321,6 @@ class Bolt_Boltpay_ApiController extends Mage_Core_Controller_Front_Action
     }
 
     /**
-     * POST data in response to a request
-     *
-     * @param int   $httpCode       standard HTTP response code
-     * @param array $data           a PHP array to be encoded as JSON and sent as a response body to Bolt
-     * @param bool  $doJsonEncode   instructs whether to JSON encode the data, true by default
-     *
-     * @throws Zend_Controller_Response_Exception if the error code is not within the valid range
-     */
-    protected function sendResponse($httpCode, $data = array(), $doJsonEncode = true )
-    {
-        $this->getResponse()->setHttpResponseCode($httpCode);
-        $this->getResponse()->setBody($doJsonEncode ? json_encode($data) : $data );
-    }
-
-
-    /**
      * Creates the success url for Bolt to forward the customer browser to upon transaction authorization
      *
      * @param Mage_Sales_Model_Order    $order
