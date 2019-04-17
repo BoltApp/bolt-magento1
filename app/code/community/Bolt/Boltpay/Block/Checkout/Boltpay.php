@@ -130,6 +130,7 @@ class Bolt_Boltpay_Block_Checkout_Boltpay extends Mage_Checkout_Block_Onepage_Re
 
             } catch (Exception $e) {
                 $metaData = array('quote' => var_export($sessionQuote->debug(), true));
+                $this->boltHelper()->logError($e,$metaData);
                 $this->boltHelper()->notifyException(
                     new Exception($e),
                     $metaData
@@ -139,6 +140,7 @@ class Bolt_Boltpay_Block_Checkout_Boltpay extends Mage_Checkout_Block_Onepage_Re
             return $this->buildBoltCheckoutJavascript($checkoutType, $sessionQuote, $hintData, $cartData);
 
         } catch (Exception $e) {
+            $this->boltHelper()->logError($e);
             $this->boltHelper()->notifyException($e);
         }
     }

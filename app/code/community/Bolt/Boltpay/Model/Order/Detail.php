@@ -59,6 +59,7 @@ class Bolt_Boltpay_Model_Order_Detail extends Bolt_Boltpay_Model_Abstract
             $this->initWithPayment($orderPayment);
         } catch (Exception $e) {
             if (!$this->initByReference($reference)) {
+                $this->boltHelper()->logError($e);
                 throw $e;
             }
         }
@@ -78,13 +79,17 @@ class Bolt_Boltpay_Model_Order_Detail extends Bolt_Boltpay_Model_Abstract
     public function initWithPayment(Mage_Sales_Model_Order_Payment $orderPayment)
     {
         if (!$orderPayment->getId()) {
-            Mage::throwException($this->boltHelper()->__("No payment found"));
+            $msg = $this->boltHelper()->__("No payment found");
+            $this->boltHelper()->logWarning($msg);
+            Mage::throwException($msg);
         }
 
         $order = Mage::getModel('sales/order')->load($orderPayment->getParentId());
 
         if (!$order->getId()) {
-            Mage::throwException($this->boltHelper()->__("No order found with ID of {$orderPayment->getParentId()}"));
+            $msg = $this->boltHelper()->__("No order found with ID of {$orderPayment->getParentId()}");
+            $this->boltHelper()->logWarning($msg);
+            Mage::throwException($msg);
         }
 
         $this->order = $order;
@@ -149,12 +154,15 @@ class Bolt_Boltpay_Model_Order_Detail extends Bolt_Boltpay_Model_Abstract
     protected function validateOrderDetail()
     {
         if (!$this->order->getId()) {
-            Mage::throwException($this->boltHelper()->__("No order found"));
-
+            $msg = $this->boltHelper()->__("No order found");
+            $this->boltHelper()->logWarning($msg);
+            Mage::throwException($msg);
         }
 
         if ($this->order->getPayment()->getMethod() != 'boltpay') {
-            Mage::throwException($this->boltHelper()->__("Payment method is not 'boltpay'"));
+            $msg = $this->boltHelper()->__("Payment method is not 'boltpay'");
+            $this->boltHelper()->logWarning($msg);
+            Mage::throwException($msg);
         }
 
         return true;

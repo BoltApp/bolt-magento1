@@ -46,7 +46,9 @@ class Bolt_Boltpay_Model_Order extends Bolt_Boltpay_Model_Abstract
     {
         try {
             if (empty($reference) && !$isPreAuthCreation) {
-                throw new Exception($this->boltHelper()->__("Bolt transaction reference is missing in the Magento order creation process."));
+                $msg = $this->boltHelper()->__("Bolt transaction reference is missing in the Magento order creation process.");
+                $this->boltHelper()->logWarning($msg);
+                throw new Exception($msg);
             }
 
             $transaction = $transaction ?: $this->boltHelper()->fetchTransaction($reference);
@@ -152,6 +154,7 @@ class Bolt_Boltpay_Model_Order extends Bolt_Boltpay_Model_Abstract
                         'quote' => var_export($immutableQuote->debug(), true)
                     );
                     $this->boltHelper()->notifyException(new Exception($errorMessage), $metaData);
+                    $this->boltHelper()->logWarning($errorMessage);
                 }
             }
             //////////////////////////////////////////////////////////////////////////////////
@@ -180,8 +183,10 @@ class Bolt_Boltpay_Model_Order extends Bolt_Boltpay_Model_Abstract
                 # If so, we can return it as a the created order after notifying bugsnag
                 ############################
                 if ( $preExistingOrder->getQuoteId() === $immutableQuoteId ) {
+                    $msg = $this->boltHelper()->__("The order #%s has already been processed for this quote.", $preExistingOrder->getIncrementId() );
+                    $this->boltHelper()->logWarning($msg);
                     Mage::helper('boltpay/bugsnag')->notifyException(
-                        new Exception( Mage::helper('boltpay')->__("The order #%s has already been processed for this quote.", $preExistingOrder->getIncrementId() ) ),
+                        new Exception($msg),
                         array(),
                         'warning'
                     );
@@ -219,11 +224,13 @@ class Bolt_Boltpay_Model_Order extends Bolt_Boltpay_Model_Abstract
                         'quote_address' => var_export($immutableQuote->getShippingAddress()->debug(), true)
                     )
                 );
+                $this->boltHelper()->logError($e);
                 throw $e;
             }
             ////////////////////////////////////////////////////////////////////////////
 
         } catch ( Exception $oce ) {
+            $this->boltHelper()->logError($oce);
             // Order creation exception, so mark the parent quote as active so webhooks can retry it
             if (@$parentQuote) {
                 $parentQuote->setIsActive(true)->save();

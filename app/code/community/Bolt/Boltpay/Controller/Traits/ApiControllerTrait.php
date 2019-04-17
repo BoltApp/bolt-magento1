@@ -95,7 +95,7 @@ trait Bolt_Boltpay_Controller_Traits_ApiControllerTrait {
                 ->setBody($exception->getJson())
                 ->setException($exception)
                 ->sendResponse();
-
+            $this->boltHelper()->logError($exception);
             $this->boltHelper()->notifyException($exception, array(), 'warning');
             exit;
         }

@@ -84,7 +84,7 @@ class Bolt_Boltpay_ApiController extends Mage_Core_Controller_Front_Action
                 } else {
                     $this->boltHelper()->notifyException(new Exception("Could not find order $parentQuoteId to cancel"), array(), 'warning');
                 }
-
+                $this->boltHelper()->logInfo($this->boltHelper()->__('Pre-auth order was canceled'));
                 return $this->sendResponse(
                     200,
                     array(
@@ -167,7 +167,7 @@ class Bolt_Boltpay_ApiController extends Mage_Core_Controller_Front_Action
                 $orderPayment->getMethodInstance()
                     ->setStore($order->getStoreId())
                     ->handleTransactionUpdate($orderPayment, $newTransactionStatus, $prevTransactionStatus, $transactionAmount, $transaction);
-                
+                $this->boltHelper()->logInfo("Updated order #{$order->getIncrementId()}", array('order' => var_export($order->debug(), true)));
                 $this->getResponse()->setBody(
                     json_encode(
                         array(
@@ -188,8 +188,10 @@ class Bolt_Boltpay_ApiController extends Mage_Core_Controller_Front_Action
             throw new Exception("Could not find order ".$transaction->order->cart->display_id);
 
         } catch (Bolt_Boltpay_InvalidTransitionException $boltPayInvalidTransitionException) {
+            $this->boltHelper()->logError($boltPayInvalidTransitionException);
 
             if ($boltPayInvalidTransitionException->getOldStatus() == Bolt_Boltpay_Model_Payment::TRANSACTION_ON_HOLD) {
+                $this->boltHelper()->logWarning($this->boltHelper()->__('The order is on-hold and requires manual merchant update before this hook can be processed'));
                 $this->getResponse()->setHttpResponseCode(503)
                     ->setHeader("Retry-After", "86400")
                     ->setBody(json_encode(array('status' => 'failure', 'error' => array('code' => 6009, 'message' => $this->boltHelper()->__('The order is on-hold and requires manual merchant update before this hook can be processed') ))));
@@ -207,6 +209,7 @@ class Bolt_Boltpay_ApiController extends Mage_Core_Controller_Front_Action
 
                 if ( $canAssumeHookedIsHandled )
                 {
+                    $this->boltHelper()->logWarning($this->boltHelper()->__('Order already handled, so hook was ignored'));
                     $this->getResponse()->setBody(
                         json_encode(
                             array(
@@ -217,6 +220,7 @@ class Bolt_Boltpay_ApiController extends Mage_Core_Controller_Front_Action
                         )
                     )->setHttpResponseCode(200);
                 } else {
+                    $this->boltHelper()->logWarning($this->boltHelper()->__('Invalid webhook transition from %s to %s', $prevTransactionStatus, $newTransactionStatus) );
                     $this->getResponse()
                         ->setHttpResponseCode(422)
                         ->setBody(json_encode(array('status' => 'failure', 'error' => array('code' => 6009, 'message' => $this->boltHelper()->__('Invalid webhook transition from %s to %s', $prevTransactionStatus, $newTransactionStatus) ))));
@@ -231,6 +235,7 @@ class Bolt_Boltpay_ApiController extends Mage_Core_Controller_Front_Action
                 $metaData['quote'] = var_export($quote->debug(), true);
             }
 
+            $this->boltHelper()->logError($e, $metaData);
             $this->boltHelper()->notifyException($e, $metaData);
         }
     }
@@ -285,6 +290,7 @@ class Bolt_Boltpay_ApiController extends Mage_Core_Controller_Front_Action
             //////////////////////////////////////////////////////
             $immutableQuote = Mage::getModel('sales/quote')->loadByIdWithoutStore($order->getQuoteId());
             $computedCart = Mage::getModel('boltpay/boltOrder')->buildCart($immutableQuote, false );
+            $this->boltHelper()->logError($orderCreationException);
             $this->boltHelper()->notifyException($orderCreationException, array( 'magento_order_details' => json_encode($computedCart)));
         }
 	}

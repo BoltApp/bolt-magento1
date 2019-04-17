@@ -99,6 +99,7 @@ trait Bolt_Boltpay_Helper_ApiTrait {
             return $response == 200;
         } catch (Exception $e) {
             $this->notifyException($e);
+            $this->logError($e);
             return false;
         }
 
@@ -175,7 +176,7 @@ trait Bolt_Boltpay_Helper_ApiTrait {
             curl_close($ch);
 
             $message ="Curl info: " . $curlInfo;
-
+            $this->logWarning($message);
             Mage::throwException($message);
         }
 
@@ -187,6 +188,7 @@ trait Bolt_Boltpay_Helper_ApiTrait {
         if ($jsonError != null) {
             curl_close($ch);
             $message ="JSON Parse Type: " . $jsonError . " Response: " . $result;
+            $this->logWarning($message);
             Mage::throwException($message);
         }
 
@@ -234,6 +236,7 @@ trait Bolt_Boltpay_Helper_ApiTrait {
     {
         if (is_null($response)) {
             $message = $this->__("BoltPay Gateway error: No response from Bolt. Please re-try again");
+            $this->logWarning($message);
             Mage::throwException($message);
         } elseif (self::isResponseError($response)) {
             if (property_exists($response, 'errors')) {
@@ -244,6 +247,7 @@ trait Bolt_Boltpay_Helper_ApiTrait {
             $message = $this->__("BoltPay Gateway error for %s: Request: %s, Response: %s", $url, $request, json_encode($response, true));
 
             $this->notifyException(new Exception($message));
+            $this->logWarning($message);
             Mage::throwException($message);
         }
 

@@ -14,7 +14,7 @@
  * @copyright  Copyright (c) 2019 Bolt Financial, Inc (https://www.bolt.com)
  * @license    http://opensource.org/licenses/osl-3.0.php  Open Software License (OSL 3.0)
  */
-
+require_once(Mage::getBaseDir('lib') . DS .  'Boltpay/DataDog/ErrorTypes.php');
 /**
  * Class Bolt_Boltpay_Model_Admin_ExtraConfig
  *
@@ -131,6 +131,35 @@ class Bolt_Boltpay_Model_Admin_ExtraConfig extends Mage_Core_Model_Config_Data
         return $isValid;
     }
 
+    /**
+     * Validate datadog key severity
+     * @param $severityString
+     * @return mixed
+     */
+    public function hasValidDatadogKeySeverity($severityString) {
+
+        $severityString = preg_replace('/\s+/', '', $severityString);
+        $severities = explode(',',$severityString);
+        foreach ($severities as $severity){
+            if(!in_array($severity,[
+                DataDog_ErrorTypes::TYPE_ERROR,
+                DataDog_ErrorTypes::TYPE_WARNING,
+                DataDog_ErrorTypes::TYPE_INFO]
+            )){
+                Mage::getSingleton('core/session')->addError(
+                    Mage::helper('boltpay')->__(
+                        'Invalid datadog key severity value for extra option `datadogKeySeverity`.[%s]
+                         The valid values must be error or warning or info ', $severity
+                    )
+                );
+
+                return false;
+            }
+        }
+
+        return true;
+    }
+    
 
     /**
      * Makes hex letters all-caps or all lower case.
