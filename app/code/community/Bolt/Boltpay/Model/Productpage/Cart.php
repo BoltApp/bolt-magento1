@@ -58,7 +58,7 @@ class Bolt_Boltpay_Model_Productpage_Cart extends Bolt_Boltpay_Model_Abstract
             return false;
         } catch (\Exception $e) {
             $this->boltHelper()->notifyException($e);
-
+            $this->boltHelper()->logException($e);
             return false;
         }
 
@@ -343,9 +343,10 @@ class Bolt_Boltpay_Model_Productpage_Cart extends Bolt_Boltpay_Model_Abstract
         $this->cartResponse = $this->getCartTotals();
 
         if ($exception) {
+            $this->boltHelper()->logException($exception);
             throw $exception;
         }
-
+        $this->boltHelper()->logWarning($message);
         throw new \Bolt_Boltpay_BadInputException($message);
     }
 

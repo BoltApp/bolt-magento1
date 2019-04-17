@@ -141,6 +141,9 @@ class Bolt_Boltpay_Adminhtml_Sales_Order_CreateController extends Mage_Adminhtml
 
             $this->_getSession()->clear();
             Mage::getSingleton('adminhtml/session')->addSuccess($this->__('The order has been created.'));
+
+            $this->boltHelper()->logInfo("The order {$order->getIncrementId()} has been created.",array('order' => var_export($order->debug(), true)));
+
             if (Mage::getSingleton('admin/session')->isAllowed('sales/order/actions/view')) {
                 $this->_redirect('*/sales_order/view', array('order_id' => $order->getId()));
             } else {
@@ -152,6 +155,7 @@ class Bolt_Boltpay_Adminhtml_Sales_Order_CreateController extends Mage_Adminhtml
         } catch (Mage_Payment_Model_Info_Exception $e) {
             if ($paymentData['method'] == 'boltpay') {
                 $this->boltHelper()->notifyException($e);
+                $this->boltHelper()->logException($e);
             }
             $this->_getOrderCreateModel()->saveQuote();
             $message = $e->getMessage();
@@ -162,6 +166,7 @@ class Bolt_Boltpay_Adminhtml_Sales_Order_CreateController extends Mage_Adminhtml
         } catch (Mage_Core_Exception $e){
             if ($paymentData['method'] == 'boltpay') {
                 $this->boltHelper()->notifyException($e);
+                $this->boltHelper()->logException($e);
             }
             $message = $e->getMessage();
             if( !empty($message) ) {
@@ -171,6 +176,7 @@ class Bolt_Boltpay_Adminhtml_Sales_Order_CreateController extends Mage_Adminhtml
         } catch (Exception $e) {
             if ($paymentData['method'] == 'boltpay') {
                 $this->boltHelper()->notifyException($e);
+                $this->boltHelper()->logException($e);
             }
             $this->_getSession()->addException($e, $this->__('Order saving error: %s', $e->getMessage()));
             $this->_redirect('*/*/');

@@ -64,7 +64,9 @@ class Bolt_Boltpay_ConfigurationController extends Mage_Core_Controller_Front_Ac
         }
 
         if (!$responseData['result']){
-            $this->boltHelper()->notifyException(new Exception($this->boltHelper()->__('Invalid configuration')), $responseData);
+            $msg = $this->boltHelper()->__('Invalid configuration');
+            $this->boltHelper()->notifyException(new Exception($msg), $responseData);
+            $this->boltHelper()->logWarning($msg);
         }
 
         $response = Mage::helper('core')->jsonEncode($responseData);
