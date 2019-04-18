@@ -79,7 +79,7 @@ class Bolt_Boltpay_Model_Order extends Bolt_Boltpay_Model_Abstract
 
             // adding guest user email to order
             if (!$immutableQuote->getCustomerEmail()) {
-                $email = $transaction->from_credit_card->billing_address->email_address;
+                $email = $transaction->order->cart->billing_address->email_address;
                 $immutableQuote->setCustomerEmail($email);
                 $immutableQuote->save();
             }
@@ -90,17 +90,16 @@ class Bolt_Boltpay_Model_Order extends Bolt_Boltpay_Model_Abstract
 
             // Set the firstname and lastname if guest customer.
             if ($immutableQuote->getCustomerIsGuest()) {
-                $consumerData = $transaction->from_consumer;
                 $immutableQuote
-                    ->setCustomerFirstname($consumerData->first_name)
-                    ->setCustomerLastname($consumerData->last_name);
+                    ->setCustomerFirstname($transaction->order->cart->billing_address->first_name)
+                    ->setCustomerLastname($transaction->order->cart->billing_address->last_name);
             }
             $immutableQuote->save();
 
             $immutableQuote->getShippingAddress()->setShouldIgnoreValidation(true)->save();
             $immutableQuote->getBillingAddress()
-                ->setFirstname($transaction->from_credit_card->billing_address->first_name)
-                ->setLastname($transaction->from_credit_card->billing_address->last_name)
+                ->setFirstname($transaction->order->cart->billing_address->first_name)
+                ->setLastname($transaction->order->cart->billing_address->last_name)
                 ->setShouldIgnoreValidation(true)
                 ->save();
 
@@ -426,7 +425,7 @@ class Bolt_Boltpay_Model_Order extends Bolt_Boltpay_Model_Abstract
     public function sendOrderEmail($order)
     {
         try {
-            $order->queueNewOrderEmail();
+            $order->sendNewOrderEmail();
         } catch (Exception $e) {
             // Catches errors that occur when sending order email confirmation (e.g. external API is down)
             // and allows order creation to complete.
@@ -555,7 +554,7 @@ class Bolt_Boltpay_Model_Order extends Bolt_Boltpay_Model_Abstract
 
             $cartItem = $immutableQuote->getItemById($boltCartItem->reference);
             $boltPrice = (int)$boltCartItem->total_amount->amount;
-            $magentoPrice = (int) round($cartItem->getCalculationPrice() * 100 * $cartItem->getQty());
+            $magentoPrice = (int) round($cartItem->getRowTotalWithDiscount() * 100 );
 
             if ( $boltPrice !== $magentoPrice ) {
                 throw new Bolt_Boltpay_OrderCreationException(
@@ -608,20 +607,6 @@ class Bolt_Boltpay_Model_Order extends Bolt_Boltpay_Model_Abstract
                 OCE::E_BOLT_CART_HAS_EXPIRED,
                 OCE::E_BOLT_CART_HAS_EXPIRED_TMPL_TAX,
                 array($boltTaxTotal, $magentoTaxTotal)
-            );
-        }
-
-        ###############################################
-        # Catch all case anything that changes the price
-        # outside our expectations
-        ###############################################
-        $magentoGrandTotal = (int)($immutableQuote->getBaseGrandTotal()*100);
-        $boltGrandTotal = (int)$transaction->order->cart->total_amount->amount;
-        if(abs($magentoGrandTotal - $boltGrandTotal) > $priceFaultTolerance) {
-            throw new Bolt_Boltpay_OrderCreationException(
-                OCE::E_BOLT_CART_HAS_EXPIRED,
-                OCE::E_BOLT_CART_HAS_EXPIRED_TMPL_GRAND_TOTAL,
-                array($magentoGrandTotal, $boltGrandTotal)
             );
         }
         /////////////////////////////////////////////////////////////////////////

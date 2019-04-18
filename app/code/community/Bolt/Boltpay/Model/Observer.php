@@ -73,7 +73,6 @@ class Bolt_Boltpay_Model_Observer
 
         Mage::getModel('boltpay/order')->getParentQuoteFromOrder($order)->setIsActive(false)->save();
         $order->getPayment()->setAdditionalInformation('bolt_reference', $reference)->save();
-
         Mage::getModel('boltpay/order')->sendOrderEmail($order);
     }
 
