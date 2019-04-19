@@ -554,13 +554,14 @@ class Bolt_Boltpay_Model_Order extends Bolt_Boltpay_Model_Abstract
 
             $cartItem = $immutableQuote->getItemById($boltCartItem->reference);
             $boltPrice = (int)$boltCartItem->total_amount->amount;
-            $magentoPrice = (int) round($cartItem->getRowTotalWithDiscount() * 100 );
+            $magentoRowPrice = (int) ( $cartItem->getRowTotalWithDiscount() * 100 );
+            $magentoCalculatedPrice = (int) round($cartItem->getCalculationPrice() * 100 * $cartItem->getQty());
 
-            if ( $boltPrice !== $magentoPrice ) {
+            if ( !in_array($boltPrice, [$magentoRowPrice, $magentoCalculatedPrice]) ) {
                 throw new Bolt_Boltpay_OrderCreationException(
                     OCE::E_BOLT_ITEM_PRICE_HAS_BEEN_UPDATED,
                     OCE::E_BOLT_ITEM_PRICE_HAS_BEEN_UPDATED_TMPL,
-                    array($cartItem->getProductId(), $boltPrice, $magentoPrice)
+                    array($cartItem->getProductId(), $boltPrice, $magentoCalculatedPrice)
                 );
             }
         }
@@ -573,6 +574,7 @@ class Bolt_Boltpay_Model_Order extends Bolt_Boltpay_Model_Abstract
         /// will default to one cent unless a hidden option overrides this value
         /////////////////////////////////////////////////////////////////////////
         $priceFaultTolerance = $this->boltHelper()->getExtraConfig('priceFaultTolerance') ?: 1;
+        $totalMismatch = 0;
 
         $magentoDiscountTotal = (int)(($immutableQuote->getBaseSubtotal() - $immutableQuote->getBaseSubtotalWithDiscount()) * 100);
         $boltDiscountTotal = (int)$transaction->order->cart->discount_amount->amount;
@@ -583,6 +585,7 @@ class Bolt_Boltpay_Model_Order extends Bolt_Boltpay_Model_Abstract
                 array($boltDiscountTotal, $magentoDiscountTotal)
             );
         }
+        $totalMismatch += abs($magentoDiscountTotal - $boltDiscountTotal);
 
         if ( !$immutableQuote->isVirtual() ) {
             $shippingAddress = $immutableQuote->getShippingAddress();
@@ -595,6 +598,7 @@ class Bolt_Boltpay_Model_Order extends Bolt_Boltpay_Model_Abstract
                     array($boltShippingTotal, $magentoShippingTotal)
                 );
             }
+            $totalMismatch += abs($magentoShippingTotal - $boltShippingTotal);
 
             // Shipping Tax totals is used for to supply the total tax total for round error purposes.  Therefore,
             // we do not validate that total, but only the full tax total
@@ -607,6 +611,15 @@ class Bolt_Boltpay_Model_Order extends Bolt_Boltpay_Model_Abstract
                 OCE::E_BOLT_CART_HAS_EXPIRED,
                 OCE::E_BOLT_CART_HAS_EXPIRED_TMPL_TAX,
                 array($boltTaxTotal, $magentoTaxTotal)
+            );
+        }
+        $totalMismatch += abs($magentoTaxTotal - $boltTaxTotal);
+
+        if ($totalMismatch > $priceFaultTolerance) {
+            throw new Bolt_Boltpay_OrderCreationException(
+                OCE::E_BOLT_CART_HAS_EXPIRED,
+                OCE::E_BOLT_CART_HAS_EXPIRED_TMPL_GRAND_TOTAL,
+                array($totalMismatch)
             );
         }
         /////////////////////////////////////////////////////////////////////////

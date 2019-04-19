@@ -142,6 +142,6 @@ class Bolt_Boltpay_Model_Observer
     public function filterPreAuthOrders($observer) {
         /** @var Mage_Sales_Model_Resource_Order_Grid_Collection $orderGridCollection */
         $orderGridCollection = $observer->getEvent()->getOrderGridCollection();
-        $orderGridCollection->addFieldToFilter('status',array('nin'=>array('pending_bolt','canceled_bolt')));
+        $orderGridCollection->addFieldToFilter('main_table.status',array('nin'=>array('pending_bolt','canceled_bolt')));
     }
 }
