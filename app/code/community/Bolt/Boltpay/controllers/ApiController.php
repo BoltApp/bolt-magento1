@@ -43,6 +43,9 @@ class Bolt_Boltpay_ApiController extends Mage_Core_Controller_Front_Action
     public function hookAction()
     {
         try {
+            /* Allows this method to be used even if the Bolt plugin is disabled.  This accounts for orders that have already been processed by Bolt */
+            Bolt_Boltpay_Helper_Data::$fromHooks = true;
+
             $bodyParams = json_decode($this->payload, true);
             $reference = $bodyParams['reference'];
             $transactionId = @$bodyParams['transaction_id'] ?: $bodyParams['id'];
@@ -54,50 +57,33 @@ class Bolt_Boltpay_ApiController extends Mage_Core_Controller_Front_Action
             if ($hookType === 'failed_payment') {
                 $order =  Mage::getModel('boltpay/order')->getOrderByParentQuoteId($parentQuoteId);
 
-                if (!$order->isObjectNew()) {
+                if ($order->getId()) {
                     $order->cancel()->setQuoteId(null)->setStatus('canceled_bolt')->save();
-                }
 
-                ////////////////////////////////////////////////////////////////////
-                /// We treat Bolt initiated cancels to be the same as a directive
-                /// to expire the cached immutable quote that is stored in the session,
-                /// otherwise, the Bolt checkout could result in a locked state where the end
-                /// user will repeatedly be told that his cart has expired and to refresh. However,
-                /// since we are operating outside the session we cannot directly clear
-                /// the cache session from data
-                ///
-                /// Instead, we mark the immutable quote cache to be expired by setting
-                /// the parent quote to be the parent quote of itself.  We take care of this
-                /// via an observer that watches for this condition.  This will preserve
-                /// native abandoned cart behavior while not marking the quote for
-                /// cleanup.
-                ////////////////////////////////////////////////////////////////////
+                    ////////////////////////////////////////////////////////////////////
+                    /// We treat Bolt initiated cancels to be the same as a directive
+                    /// to expire the cached immutable quote that is stored in the session,
+                    /// otherwise, the Bolt checkout could result in a locked state where the end
+                    /// user will repeatedly be told that his cart has expired and to refresh. However,
+                    /// since we are operating outside the session we cannot directly clear
+                    /// the cache session from data
+                    ///
+                    /// Instead, we mark the immutable quote cache to be expired by setting
+                    /// the parent quote to be the parent quote of itself.  We take care of this
+                    /// via an observer that watches for this condition.  This will preserve
+                    /// native abandoned cart behavior while not marking the quote for
+                    /// cleanup.
+                    ////////////////////////////////////////////////////////////////////
 
-                $parentQuote = Mage::getModel('boltpay/order')->getQuoteById($parentQuoteId);
-                if ($parentQuote->getId()) {
-                    $parentQuote
-                        ->setParentQuoteId($parentQuote->getId())
-                        ->save();
-                }
-
-                /*
-                $parentQuote = Mage::getModel('boltpay/order')->getQuoteById($parentQuoteId);
-                if ($parentQuote->getId()) {
-                    $parentQuote
-                        ->setIsActive(false)
-                        ->setParentQuoteId(0)
-                        ->save();
-
-
-                    $immutableQuote = Mage::getModel('boltpay/order')->getQuoteById($parentQuote->getParentQuoteId());
-                    if ($immutableQuote->getId()) {
-                        $immutableQuote
-                            ->setIsActive(true)
-                            ->setParentQuoteId(null)
+                    $parentQuote = Mage::getModel('boltpay/order')->getQuoteById($parentQuoteId);
+                    if ($parentQuote->getId()) {
+                        $parentQuote
+                            ->setParentQuoteId($parentQuote->getId())
                             ->save();
                     }
+                } else {
+                    $this->boltHelper()->notifyException(new Exception("Could not find order $parentQuoteId to cancel"), array(), 'warning');
                 }
-                */
 
                 return $this->sendResponse(
                     200,
@@ -117,8 +103,6 @@ class Bolt_Boltpay_ApiController extends Mage_Core_Controller_Front_Action
                 return $this->sendResponse($couponModel->getHttpCode(), $couponModel->getResponseData());
             }
 
-            /* Allows this method to be used even if the Bolt plugin is disabled.  This accounts for orders that have already been processed by Bolt */
-            Bolt_Boltpay_Helper_Data::$fromHooks = true;
             $transaction = $this->boltHelper()->fetchTransaction($reference);
             $quoteId = $this->boltHelper()->getImmutableQuoteIdFromTransaction($transaction);
 
