@@ -98,6 +98,14 @@
           </bolt_boltpay_set_bolt_user_id>
         </observers>
       </bolt_boltpay_authorization_after>
+      <sales_model_service_quote_submit_before>
+        <observers>
+          <bolt_boltpay_validate_order_before_commit>
+            <class>Bolt_Boltpay_Model_Order</class>
+            <method>validateBeforeOrderCommit</method>
+          </bolt_boltpay_validate_order_before_commit>
+        </observers>
+      </sales_model_service_quote_submit_before>
       <sales_order_payment_capture>
         <observers>
           <boltpay_payment_capture_add_message>

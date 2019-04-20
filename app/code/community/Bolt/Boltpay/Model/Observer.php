@@ -145,7 +145,6 @@ class Bolt_Boltpay_Model_Observer
         $orderGridCollection->addFieldToFilter('main_table.status',array('nin'=>array('pending_bolt','canceled_bolt')));
     }
 
-
     /**
      * Prevents Magento from changing the Bolt preauth statuses
      *
