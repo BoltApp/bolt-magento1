@@ -382,7 +382,13 @@ class Bolt_Boltpay_Model_Order extends Bolt_Boltpay_Model_Abstract
      */
     public function validateBeforeOrderCommit($observer) {
         /** @var Mage_Sales_Model_Order $order */
-        $order = $observer->getOrder();
+        $order = $observer->getEvent()->getOrder();
+        $payment = $order->getPayment();
+
+        if ( strtolower($payment->getMethod()) !== Bolt_Boltpay_Model_Payment::METHOD_CODE ) {
+            return;
+        }
+
         /** @var Mage_Sales_Model_Quote $quote */
         $immutableQuote = $order->getQuote();
         $boltTransaction = $immutableQuote->getTransaction();
@@ -411,7 +417,7 @@ class Bolt_Boltpay_Model_Order extends Bolt_Boltpay_Model_Abstract
             throw new Bolt_Boltpay_OrderCreationException(
                 OCE::E_BOLT_CART_HAS_EXPIRED,
                 OCE::E_BOLT_CART_HAS_EXPIRED_TMPL_GRAND_TOTAL,
-                array($totalMismatch)
+                array($boltGrandTotal, $magentoGrandTotal)
             );
         } else if ($totalMismatch) {
             // Do order total correction if necessary so that the bottom line matches up
