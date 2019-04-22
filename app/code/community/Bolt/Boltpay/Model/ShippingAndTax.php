@@ -35,9 +35,21 @@ class Bolt_Boltpay_Model_ShippingAndTax extends Bolt_Boltpay_Model_Abstract
      */
     public function applyShippingAddressToQuote( $quote, $shippingAddress ) {
 
-        $directory = Mage::getModel('directory/region')->loadByName($shippingAddress->region, $shippingAddress->country_code);
-        $region = $directory->getName(); // For region field should be the name not a code.
-        $regionId = $directory->getRegionId(); // This is require field for calculation: shipping, shopping price rules and etc.
+        $region = $shippingAddress->region; // Initialize and set default value for region name
+
+        $directory = Mage::getModel('directory/region')->loadByName($region, $shippingAddress->country_code);
+
+        // If region_id is null, try to load by region code
+        if(!$directory->getRegionId()) {
+            $directory = Mage::getModel('directory/region')->loadByCode($region, $shippingAddress->country_code);
+        }
+
+        // If region_id is not null, use the name and region_id
+        if($directory->getRegionId()) {
+            $region = $directory->getName(); // For region field should be the name not a code.
+        }
+
+        $regionId = $directory->getRegionId(); // This is a required field for calculation: shipping, shopping price rules and etc.
 
         if (!property_exists($shippingAddress, 'postal_code') || !property_exists($shippingAddress, 'country_code')) {
             throw new Exception($this->boltHelper()->__("Address must contain postal_code and country_code."));
