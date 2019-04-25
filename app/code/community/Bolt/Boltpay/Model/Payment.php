@@ -462,6 +462,10 @@ class Bolt_Boltpay_Model_Payment extends Mage_Payment_Model_Method_Abstract
                     $order->setState(self::ORDER_DEFERRED, true, $message);
                     $order->save();
                 } elseif ($newTransactionStatus == self::TRANSACTION_REFUND) {
+                    // Ignore credit hook request if credit memos exist
+                    if ($this->ignoreCreditHookRequest($payment, $transactionAmount)) {
+                        return;
+                    }
                     $this->handleRefundTransactionUpdate($payment, $newTransactionStatus, $prevTransactionStatus, $transactionAmount, $transaction);
                 }
 
@@ -487,6 +491,73 @@ class Bolt_Boltpay_Model_Payment extends Mage_Payment_Model_Method_Abstract
 
             throw $e;
         }
+    }
+
+    /**
+     * @param \Mage_Payment_Model_Info $payment
+     * @param                          $transactionAmount
+     *
+     * @return bool
+     * @throws \Exception
+     */
+    protected function ignoreCreditHookRequest(Mage_Payment_Model_Info $payment, $transactionAmount)
+    {
+        $newRefunds = $this->getNewBoltRefunds($payment);
+        if (!in_array(round($transactionAmount * 100), $newRefunds)) {
+            return true;
+        }
+
+        return false;
+    }
+
+    /**
+     * @param Mage_Payment_Model_Info $payment
+     * @return array
+     */
+    protected function getNewBoltRefunds(Mage_Payment_Model_Info $payment)
+    {
+        $reference = $payment->getAdditionalInformation('bolt_reference');
+        $transaction = $this->boltHelper()->fetchTransaction($reference);
+        $boltRefunds = $this->getBoltRefunds($transaction);
+
+        return $this->removePriorRefunds($payment, $boltRefunds);
+    }
+
+    /**
+     * @param $transaction
+     * @return array
+     */
+    protected function getBoltRefunds($transaction)
+    {
+        $boltRefunds = array();
+        foreach (@$transaction->refund_transactions as $refund) {
+            if (@$refund->status == 'completed') {
+                $boltRefunds[] = $refund->amount->amount;
+            }
+        }
+
+        return $boltRefunds;
+    }
+
+    /**
+     * @param Mage_Payment_Model_Info $payment
+     * @param array $boltRefunds
+     * @return array
+     */
+    protected function removePriorRefunds(Mage_Payment_Model_Info $payment, $boltRefunds = array())
+    {
+        $order = $payment->getOrder();
+        /** @var Mage_Sales_Model_Order_Creditmemo $creditMemo */
+        foreach ($order->getCreditmemosCollection() as $creditMemo) {
+            $amount = round($creditMemo->getGrandTotal() * 100);
+            $index = array_search($amount, $boltRefunds);
+
+            if ($index !== false) {
+                unset($boltRefunds[$index]);
+            }
+        }
+
+        return $boltRefunds;
     }
     
     public function handleRefundTransactionUpdate(
