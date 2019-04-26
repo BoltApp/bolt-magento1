@@ -1048,8 +1048,11 @@ class Bolt_Boltpay_Model_Payment extends Mage_Payment_Model_Method_Abstract
         $reference = $order->getPayment()->getAdditionalInformation('bolt_reference');
         $transaction = $this->boltHelper()->fetchTransaction($reference);
         $boltTotal = $transaction->amount->amount / 100;
+        $magentoTotal =  Mage::app()->getStore()->roundPrice(
+            $order->getGrandTotal()
+        );
 
-        if($order->getGrandTotal() !== $boltTotal){
+        if($magentoTotal !== $boltTotal){
 
             $boltRefundedTotal = !empty($transaction->refunded_amount->amount) ? $transaction->refunded_amount->amount / 100 : 0;
             // Bolt refund amount includes the current hook amount that hasn't been applied to Magento yet, so subtracting current hook refund amount
