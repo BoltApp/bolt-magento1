@@ -183,13 +183,6 @@
 
   <admin>
     <routers>
-      <boltpayadmin>
-        <use>admin</use>
-        <args>
-          <module>Bolt_Boltpay</module>
-          <frontName>boltpay</frontName>
-        </args>
-      </boltpayadmin>
       <adminhtml>
         <args>
           <modules>
