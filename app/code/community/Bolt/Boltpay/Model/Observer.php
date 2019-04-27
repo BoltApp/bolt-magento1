@@ -90,7 +90,7 @@ class Bolt_Boltpay_Model_Observer
 
     /**
      * This will clear the cart cache, forcing creation of a new immutable quote, if
-     * the parent quote has been flagged by having a parent quote Id as its on
+     * the parent quote has been flagged by having a parent quote Id as its own
      * id.
      *
      * event: controller_front_init_before
@@ -101,7 +101,7 @@ class Bolt_Boltpay_Model_Observer
         /** @var Mage_Sales_Model_Quote $quote */
         $quote = Mage::getSingleton('checkout/session')->getQuote();
 
-        if ($quote->getId() === $quote->getParentQuoteId()) {
+        if ($quote && is_int($quote->getId()) && $quote->getId() === $quote->getParentQuoteId()) {
             Mage::getSingleton('core/session')->unsCachedCartData();
             // clear the parent quote ID to re-enable cart cache
             $quote->setParentQuoteId(null);
