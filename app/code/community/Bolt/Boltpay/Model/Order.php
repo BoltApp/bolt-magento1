@@ -320,29 +320,7 @@ class Bolt_Boltpay_Model_Order extends Bolt_Boltpay_Model_Abstract
         }
 
         /*
-        // check that the order is in the system.  If not, we have an unexpected problem
-        if ($immutableQuote->isEmpty()) {
-            throw new Exception($this->boltHelper()->__("The expected immutable quote [{$immutableQuote->getId()}] is missing from the Magento system.  Were old quotes recently removed from the database?"));
-        }
-
-        if(!$this->allowOutOfStockOrders() && !empty($this->getOutOfStockSKUs($immutableQuote))){
-            throw new Exception($this->boltHelper()->__("Not all items are available in the requested quantities. Out of stock SKUs: %s", join(', ', $this->getOutOfStockSKUs($immutableQuote))));
-        }
-
-        // check if the quotes matches, frontend only
-        if ( $sessionQuoteId && ($sessionQuoteId != $immutableQuote->getParentQuoteId()) ) {
-            throw new Exception(
-                $this->boltHelper()->__("The Bolt order reference does not match the current cart ID. Cart ID: [%s]  Bolt Reference: [%s]",
-                    $sessionQuoteId , $immutableQuote->getParentQuoteId())
-            );
-        }
-
-        if ($parentQuote->isEmpty()) {
-            throw new Exception(
-                $this->boltHelper()->__("The parent quote %s is unexpectedly missing.",
-                    $immutableQuote->getParentQuoteId() )
-            );
-        } else if (!$parentQuote->getIsActive() && $transaction->indemnification_reason !== self::MERCHANT_BACK_OFFICE) {
+        if (!$parentQuote->getIsActive() && $transaction->indemnification_reason !== self::MERCHANT_BACK_OFFICE) {
             throw new Exception(
                 $this->boltHelper()->__("The parent quote %s for immutable quote %s is currently being processed or has been processed for order #%s. Check quote %s for details.",
                     $parentQuote->getId(), $immutableQuote->getId(), $parentQuote->getReservedOrderId(), $parentQuote->getParentQuoteId() )
@@ -641,4 +619,34 @@ class Bolt_Boltpay_Model_Order extends Bolt_Boltpay_Model_Abstract
         return $rateDebuggingData;
     }
 
+
+    /**
+     * Removes a bolt order from the system.  The order is expected to be a Bolt order
+     *
+     * @param Mage_Sales_Model_Order $order
+     *
+     * @throws Mage_Core_Exception if the order cannot be canceled
+     */
+    public function removePreAuthOrder($order) {
+        if ($this->isBoltOrder($order)) {
+            if ($order->getStatus() !== 'canceled_bolt') {
+                $order->cancel()->setQuoteId(null)->setStatus('canceled_bolt')->save();
+            }
+            $previousStoreId = Mage::app()->getStore()->getId();
+            Mage::app()->setCurrentStore(Mage_Core_Model_App::ADMIN_STORE_ID);
+            $order->delete();
+            Mage::app()->setCurrentStore($previousStoreId);
+        }
+    }
+
+    /**
+     * Determines whether a given order is owned by Bolt
+     *
+     * @param Mage_Sales_Model_Order    $order  the magento order to be inspected
+     *
+     * @return bool true if the payment method for this order is currently set to Bolt, otherwise false
+     */
+    public function isBoltOrder($order) {
+        return (strtolower($order->getPayment()->getMethod()) === Bolt_Boltpay_Model_Payment::METHOD_CODE);
+    }
 }

@@ -43,6 +43,9 @@ class Bolt_Boltpay_ApiController extends Mage_Core_Controller_Front_Action
     public function hookAction()
     {
         try {
+            /* Allows this method to be used even if the Bolt plugin is disabled.  This accounts for orders that have already been processed by Bolt */
+            Bolt_Boltpay_Helper_Data::$fromHooks = true;
+
             $bodyParams = json_decode($this->payload, true);
             $reference = $bodyParams['reference'];
             $transactionId = @$bodyParams['transaction_id'] ?: $bodyParams['id'];
@@ -52,73 +55,13 @@ class Bolt_Boltpay_ApiController extends Mage_Core_Controller_Front_Action
             /** @var Mage_Sales_Model_Order $order */
 
             if ($hookType === 'failed_payment') {
-                $order =  Mage::getModel('boltpay/order')->getOrderByParentQuoteId($parentQuoteId);
-
-                if (!$order->isObjectNew()) {
-                    $order->cancel()->setQuoteId(null)->setStatus('canceled_bolt')->save();
-                }
-
-                ////////////////////////////////////////////////////////////////////
-                /// We treat Bolt initiated cancels to be the same as a directive
-                /// to expire the cached immutable quote that is stored in the session,
-                /// otherwise, the Bolt checkout could result in a locked state where the end
-                /// user will repeatedly be told that his cart has expired and to refresh. However,
-                /// since we are operating outside the session we cannot directly clear
-                /// the cache session from data
-                ///
-                /// Instead, we mark the immutable quote cache to be expired by setting
-                /// the parent quote to be the parent quote of itself.  We take care of this
-                /// via an observer that watches for this condition.  This will preserve
-                /// native abandoned cart behavior while not marking the quote for
-                /// cleanup.
-                ////////////////////////////////////////////////////////////////////
-
-                $parentQuote = Mage::getModel('boltpay/order')->getQuoteById($parentQuoteId);
-                if ($parentQuote->getId()) {
-                    $parentQuote
-                        ->setParentQuoteId($parentQuote->getId())
-                        ->save();
-                }
-
-                /*
-                $parentQuote = Mage::getModel('boltpay/order')->getQuoteById($parentQuoteId);
-                if ($parentQuote->getId()) {
-                    $parentQuote
-                        ->setIsActive(false)
-                        ->setParentQuoteId(0)
-                        ->save();
-
-
-                    $immutableQuote = Mage::getModel('boltpay/order')->getQuoteById($parentQuote->getParentQuoteId());
-                    if ($immutableQuote->getId()) {
-                        $immutableQuote
-                            ->setIsActive(true)
-                            ->setParentQuoteId(null)
-                            ->save();
-                    }
-                }
-                */
-
-                return $this->sendResponse(
-                    200,
-                    array(
-                        'status' => 'success',
-                        'message' => $this->boltHelper()->__('Pre-auth order was canceled')
-                    )
-                );
+                $this->handleFailedPaymentHook($parentQuoteId);
+                return;
+            } else if ($hookType === 'discounts.code.apply') {
+                $this->handleDiscountHook();
+                return;
             }
 
-            if ($hookType === 'discounts.code.apply') {
-                /** @var Bolt_Boltpay_Model_Coupon $couponModel */
-                $couponModel = Mage::getModel('boltpay/coupon');
-                $couponModel->setupVariables(json_decode(file_get_contents('php://input')));
-                $couponModel->applyCoupon();
-
-                return $this->sendResponse($couponModel->getHttpCode(), $couponModel->getResponseData());
-            }
-
-            /* Allows this method to be used even if the Bolt plugin is disabled.  This accounts for orders that have already been processed by Bolt */
-            Bolt_Boltpay_Helper_Data::$fromHooks = true;
             $transaction = $this->boltHelper()->fetchTransaction($reference);
             $quoteId = $this->boltHelper()->getImmutableQuoteIdFromTransaction($transaction);
 
@@ -327,7 +270,7 @@ class Bolt_Boltpay_ApiController extends Mage_Core_Controller_Front_Action
      * @param array $data           a PHP array to be encoded as JSON and sent as a response body to Bolt
      * @param bool  $doJsonEncode   instructs whether to JSON encode the data, true by default
      *
-     * @throws Zend_Controller_Response_Exception if the error code is not within the valid range
+     * @throws Zend_Controller_Response_Exception if the http code is not within the valid range
      */
     protected function sendResponse($httpCode, $data = array(), $doJsonEncode = true )
     {
@@ -370,4 +313,66 @@ class Bolt_Boltpay_ApiController extends Mage_Core_Controller_Front_Action
         return $successUrlPath . $successUrlQueryString;
     }
 
+    /**
+     * Handles failed payment web hooks.  It attempts to cancel a specified pre-auth order
+     * in addition to invalidating the cache associated with that orders session.
+     *
+     * @param int   $parentQuoteId  the ID of the session quote whose order should be cancelled.
+     *
+     * @throws Zend_Controller_Response_Exception if there is an unexpected error in sending a response
+     * @throws Mage_Core_Exception if the order cannot be canceled
+     */
+    private function handleFailedPaymentHook($parentQuoteId) {
+        /** @var Bolt_Boltpay_Model_Order $orderModel */
+        $orderModel = Mage::getModel('boltpay/order');
+        $order =  $orderModel->getOrderByParentQuoteId($parentQuoteId);
+
+        if (!$order->isObjectNew()) {
+            $orderModel->removePreAuthOrder($order);
+        }
+
+        ////////////////////////////////////////////////////////////////////
+        /// We treat Bolt initiated cancels to be the same as a directive
+        /// to expire the cached immutable quote that is stored in the session,
+        /// otherwise, the Bolt checkout could result in a locked state where the end
+        /// user will repeatedly be told that his cart has expired and to refresh. However,
+        /// since we are operating outside the session we cannot directly clear
+        /// the cache session from data
+        ///
+        /// Instead, we mark the immutable quote cache to be expired by setting
+        /// the parent quote to be the parent quote of itself.  We take care of this
+        /// via an observer that watches for this condition.  This will preserve
+        /// native abandoned cart behavior while not marking the quote for
+        /// cleanup.
+        ////////////////////////////////////////////////////////////////////
+
+        $parentQuote = $orderModel->getQuoteById($parentQuoteId);
+        if ($parentQuote->getId()) {
+            $parentQuote
+                ->setParentQuoteId($parentQuote->getId())
+                ->save();
+        }
+
+        $this->sendResponse(
+            200,
+            array(
+                'status' => 'success',
+                'message' => $this->boltHelper()->__('Pre-auth order was canceled')
+            )
+        );
+    }
+
+    /**
+     * Handles discount web hooks
+     *
+     * @throws Zend_Controller_Response_Exception if there is an unexpected error in sending a response
+     */
+    private function handleDiscountHook() {
+        /** @var Bolt_Boltpay_Model_Coupon $couponModel */
+        $couponModel = Mage::getModel('boltpay/coupon');
+        $couponModel->setupVariables(json_decode($this->payload));
+        $couponModel->applyCoupon();
+
+        $this->sendResponse($couponModel->getHttpCode(), $couponModel->getResponseData());
+    }
 }
