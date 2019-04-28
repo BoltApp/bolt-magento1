@@ -58,7 +58,7 @@ class Bolt_Boltpay_ShippingController extends Mage_Core_Controller_Front_Action
     public function indexAction()
     {
         try {
-          
+
             set_time_limit(30);
             ignore_user_abort(true);
 
@@ -87,6 +87,14 @@ class Bolt_Boltpay_ShippingController extends Mage_Core_Controller_Front_Action
             ////////////////////////////////////////////////////////////////////////////////
             /// Apply shipping address with validation checks
             ////////////////////////////////////////////////////////////////////////////////
+            Mage::dispatchEvent(
+                'bolt_boltpay_shipping_estimate_before',
+                array(
+                    'quote'=> $quote,
+                    'transaction' => $mockTransaction
+                )
+            );
+
             $shippingAddress = $requestData->shipping_address;
             $addressErrorDetails = array();
 
@@ -115,7 +123,6 @@ class Bolt_Boltpay_ShippingController extends Mage_Core_Controller_Front_Action
                     ->setBody(json_encode(array('status' => 'failure','error' => $addressErrorDetails)));
             }
             ////////////////////////////////////////////////////////////////////////////////
-
 
             ////////////////////////////////////////////////////////////////////////////////////////
             // Check session cache for estimate.  If the shipping city or postcode, and the country code match,
@@ -168,7 +175,6 @@ class Bolt_Boltpay_ShippingController extends Mage_Core_Controller_Front_Action
      */
     public function prefetchEstimateAction()
     {
-
         set_time_limit(30);
         ignore_user_abort(true);
 

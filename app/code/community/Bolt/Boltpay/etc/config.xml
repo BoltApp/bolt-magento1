@@ -98,6 +98,14 @@
           </bolt_boltpay_set_bolt_user_id>
         </observers>
       </bolt_boltpay_authorization_after>
+      <sales_model_service_quote_submit_before>
+        <observers>
+          <bolt_boltpay_validate_order_before_commit>
+            <class>Bolt_Boltpay_Model_Order</class>
+            <method>validateBeforeOrderCommit</method>
+          </bolt_boltpay_validate_order_before_commit>
+        </observers>
+      </sales_model_service_quote_submit_before>
       <sales_order_payment_capture>
         <observers>
           <boltpay_payment_capture_add_message>
@@ -116,15 +124,15 @@
               </bolt_boltpay_filter_preauth_orders>
           </observers>
       </sales_order_grid_collection_load_before>
-      <controller_front_init_before>
+      <sales_order_save_before>
           <observers>
-              <bolt_boltpay_check_if_order_canceled>
+              <bolt_boltpay_safeguard_preauth_status>
                   <type>singleton</type>
                   <class>Bolt_Boltpay_Model_Observer</class>
-                  <method>clearCartCacheOnOrderCanceled</method>
-              </bolt_boltpay_check_if_order_canceled>
+                  <method>safeguardPreAuthStatus</method>
+              </bolt_boltpay_safeguard_preauth_status>
           </observers>
-      </controller_front_init_before>
+      </sales_order_save_before>
     </events>
 
     <sales>
@@ -175,13 +183,6 @@
 
   <admin>
     <routers>
-      <boltpayadmin>
-        <use>admin</use>
-        <args>
-          <module>Bolt_Boltpay</module>
-          <frontName>boltpay</frontName>
-        </args>
-      </boltpayadmin>
       <adminhtml>
         <args>
           <modules>
@@ -228,6 +229,17 @@
         </boltpay>
       </updates>
     </layout>
+    <events>
+        <controller_front_init_before>
+            <observers>
+                <bolt_boltpay_check_if_order_canceled>
+                    <type>singleton</type>
+                    <class>Bolt_Boltpay_Model_Observer</class>
+                    <method>clearCartCacheOnOrderCanceled</method>
+                </bolt_boltpay_check_if_order_canceled>
+            </observers>
+        </controller_front_init_before>
+    </events>
   </frontend>
 
   <default>

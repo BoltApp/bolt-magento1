@@ -51,7 +51,7 @@ class Bolt_Boltpay_Model_Cron
      */
     public function cleanupOrders() {
         $expiration_time = Mage::getModel('core/date')->date('Y-m-d H:i:s', time()-(60*15));
-        
+
         /* @var Mage_Sales_Model_Resource_Order_Collection $orderCollection */
         $orderCollection = Mage::getResourceModel('sales/order_collection');
         $orderCollection

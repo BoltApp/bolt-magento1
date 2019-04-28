@@ -45,6 +45,7 @@ class Bolt_Boltpay_OrderCreationException extends Bolt_Boltpay_BoltException
     const E_BOLT_CART_HAS_EXPIRED_TMPL_EXPIRED            = '{"reason": "Cart has expired"}';
     const E_BOLT_CART_HAS_EXPIRED_TMPL_NOT_FOUND          = '{"reason": "Cart does not exist with reference", "reference": "%s"}';
     const E_BOLT_CART_HAS_EXPIRED_TMPL_NOT_PURCHASABLE    = '{"reason": "The product is not purchasable", "product_id": "%d"}';
+    const E_BOLT_CART_HAS_EXPIRED_TMPL_GRAND_TOTAL        = '{"reason": "Grand total has changed", "old_value": "%d", "new_value": "%d"}';
     const E_BOLT_CART_HAS_EXPIRED_TMPL_SHIPPING           = '{"reason": "Shipping total has changed", "old_value": "%d", "new_value": "%d"}';
     const E_BOLT_CART_HAS_EXPIRED_TMPL_DISCOUNT           = '{"reason": "Discount total has changed", "old_value": "%d", "new_value": "%d"}';
     const E_BOLT_CART_HAS_EXPIRED_TMPL_TAX                = '{"reason": "Tax amount has changed", "old_value": "%d", "new_value": "%d"}';

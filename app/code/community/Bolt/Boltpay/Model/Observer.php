@@ -73,7 +73,6 @@ class Bolt_Boltpay_Model_Observer
 
         Mage::getModel('boltpay/order')->getParentQuoteFromOrder($order)->setIsActive(false)->save();
         $order->getPayment()->setAdditionalInformation('bolt_reference', $reference)->save();
-
         Mage::getModel('boltpay/order')->sendOrderEmail($order);
     }
 
@@ -91,7 +90,7 @@ class Bolt_Boltpay_Model_Observer
 
     /**
      * This will clear the cart cache, forcing creation of a new immutable quote, if
-     * the parent quote has been flagged by having a parent quote Id as its on
+     * the parent quote has been flagged by having a parent quote Id as its own
      * id.
      *
      * event: controller_front_init_before
@@ -102,7 +101,7 @@ class Bolt_Boltpay_Model_Observer
         /** @var Mage_Sales_Model_Quote $quote */
         $quote = Mage::getSingleton('checkout/session')->getQuote();
 
-        if ($quote->getId() === $quote->getParentQuoteId()) {
+        if ($quote && is_int($quote->getId()) && $quote->getId() === $quote->getParentQuoteId()) {
             Mage::getSingleton('core/session')->unsCachedCartData();
             // clear the parent quote ID to re-enable cart cache
             $quote->setParentQuoteId(null);
@@ -143,6 +142,21 @@ class Bolt_Boltpay_Model_Observer
     public function filterPreAuthOrders($observer) {
         /** @var Mage_Sales_Model_Resource_Order_Grid_Collection $orderGridCollection */
         $orderGridCollection = $observer->getEvent()->getOrderGridCollection();
-        $orderGridCollection->addFieldToFilter('status',array('nin'=>array('pending_bolt','canceled_bolt')));
+        $orderGridCollection->addFieldToFilter('main_table.status',array('nin'=>array('pending_bolt','canceled_bolt')));
+    }
+
+    /**
+     * Prevents Magento from changing the Bolt preauth statuses
+     *
+     * event: sales_order_save_before
+     *
+     * @param Varien_Event_Observer $observer Observer event contains an order object
+     */
+    public function safeguardPreAuthStatus($observer) {
+        $order = $observer->getEvent()->getOrder();
+
+        if (!Bolt_Boltpay_Helper_Data::$fromHooks && in_array($order->getOrigData('status'), array('pending_bolt','canceled_bolt')) ) {
+            $order->setStatus($order->getOrigData('status'));
+        }
     }
 }

@@ -53,6 +53,34 @@ class Bolt_Boltpay_Model_Admin_ExtraConfig extends Mage_Core_Model_Config_Data
     use Bolt_Boltpay_BoltGlobalTrait;
 
     /**
+     * Gets the value of a Bolt non-publicized or non-emphasized
+     * configuration value after passing it through an optionally
+     * defined filter method.
+     *
+     * @param string $configName        The name of the config as defined
+     *                                  the configuration JSON
+     * @param array $filterParameters   Optional set of parameters passed to
+     *                                  the optionally defined filter method
+     *                                  of the config
+     *
+     * @return mixed    Typically a string representing the config value, but
+     *                  is not limited to this type.  If the config is not defined,
+     *                  an empty string is returned
+     */
+    public function getExtraConfig($configName, $filterParameters = array() ) {
+        $methodPostfix = ucfirst($configName);
+        $filterMethod = 'filter'.$methodPostfix;
+
+        $allExtraConfigs = (array) json_decode($this->normalizeJSON(Mage::getStoreConfig('payment/boltpay/extra_options')), true);
+        $rawValue = @$allExtraConfigs[$configName] ?: '';
+
+        return method_exists($this, $filterMethod)
+            ? $this->$filterMethod($rawValue, $filterParameters)
+            : $rawValue;
+    }
+
+
+    /**
      * Saves the Bolt extra options json string to the database after each option has been validated.
      * If any extra options fails validation, the entirety of the new value is ignored and
      * the old value is retained.
@@ -116,7 +144,7 @@ class Bolt_Boltpay_Model_Admin_ExtraConfig extends Mage_Core_Model_Config_Data
      * @param array  $additionalParams  Single parameter `case` that is 'UPPER'|'lower'.
      *                                  The default is 'UPPER'
      *
-     * @return string
+     * @return string   upper or lower case of hex value
      */
     public function filterBoltPrimaryColor($rawConfigValue, $additionalParams = array('case' => 'UPPER') ) {
         return (strtolower(@$additionalParams['case']) === 'lower')
@@ -153,37 +181,35 @@ JS;
             : $defaultFunction;
     }
 
-
     /**
-     * Gets the value of a Bolt non-publicized or non-emphasized
-     * configuration value after passing it through an optionally
-     * defined filter method.
+     * Validates whether value is an int
      *
-     * @param string $configName        The name of the config as defined
-     *                                  the configuration JSON
-     * @param array $filterParameters   Optional set of parameters passed to
-     *                                  the optionally defined filter method
-     *                                  of the config
+     * @param int $priceTolerance  The amount a Bolt order is allowed to differ
+     *                             from a the Magento order in cents
      *
-     * @return mixed    Typically a string representing the config value, but
-     *                  is not limited to this type.  If the config is not defined,
-     *                  an empty string is returned
+     * @return bool     True if the value is positive and integer
      */
-    public function getExtraConfig($configName, $filterParameters = array() ) {
-        $methodPostfix = ucfirst($configName);
-        $filterMethod = 'filter'.$methodPostfix;
-
-        $allExtraConfigs = (array) json_decode($this->normalizeJSON(Mage::getStoreConfig('payment/boltpay/extra_options')), true);
-        $rawValue = @$allExtraConfigs[$configName] ?: '';
-
-        return method_exists($this, $filterMethod)
-            ? $this->$filterMethod($rawValue, $filterParameters)
-            : $rawValue;
+    public function hasValidPriceFaultTolerance($priceTolerance) {
+        return is_int($priceTolerance) && ($priceTolerance > 0);
     }
 
+    /**
+     * Defines the default value as a 1 cent tolerance for Bolt and Magento grand total
+     * difference
+     *
+     * @param string $rawConfigValue    The config value pre-filter
+     * @param array  $additionalParams  unused for this filter
+     *
+     * @return int  the number defined in the extra config admin.  If not defined, the default of 1
+     */
+    public function filterPriceFaultTolerance($rawConfigValue, $additionalParams = array() ) {
+        return is_int($rawConfigValue) ? $rawConfigValue : 1;
+    }
 
     /**
-     * Normalizes JSON by stripping new lines from the given string and returning null in the case of only white space.
+     * Normalizes JSON by stripping new lines from the given string and returning null
+     * in the case of only white space.
+     *
      * New line characters are added by the text area and this breaks JSON decoding
      *
      * @param $string   The string to be stripped of newlines
