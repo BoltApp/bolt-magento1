@@ -308,7 +308,7 @@ class Bolt_Boltpay_Model_Order extends Bolt_Boltpay_Model_Abstract
             );
         }
 
-        if ($parentQuote->isEmpty() || !$parentQuote->getIsActive()) {
+        if ($parentQuote->isEmpty() || ($parentQuote->getParentQuoteId() === $immutableQuote->getId())) {
             throw new Bolt_Boltpay_OrderCreationException(
                 OCE::E_BOLT_CART_HAS_EXPIRED,
                 OCE::E_BOLT_CART_HAS_EXPIRED_TMPL_EXPIRED
