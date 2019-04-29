@@ -55,6 +55,15 @@ class Bolt_Boltpay_Model_Order extends Bolt_Boltpay_Model_Abstract
             $immutableQuote = $this->getQuoteById($immutableQuoteId);
             $parentQuote = $this->getQuoteById($immutableQuote->getParentQuoteId());
 
+            if (!$parentQuote->getIsActive()) {
+                throw new Exception(
+                    $this->boltHelper()->__("The parent quote %s for immutable quote %s is currently being processed or has been processed for order #%s. Check quote %s for details.",
+                        $parentQuote->getId(), $immutableQuote->getId(), $parentQuote->getReservedOrderId(), $parentQuote->getParentQuoteId() )
+                );
+            }
+
+            $parentQuote->setIsActive(false)->save();
+
             if (!$sessionQuoteId){
                 $sessionQuoteId = $immutableQuote->getParentQuoteId();
                 $this->boltHelper()->setCustomerSessionByQuoteId($sessionQuoteId);
@@ -330,15 +339,6 @@ class Bolt_Boltpay_Model_Order extends Bolt_Boltpay_Model_Abstract
                 );
             }
         }
-
-        /*
-        if (!$parentQuote->getIsActive() && $transaction->indemnification_reason !== self::MERCHANT_BACK_OFFICE) {
-            throw new Exception(
-                $this->boltHelper()->__("The parent quote %s for immutable quote %s is currently being processed or has been processed for order #%s. Check quote %s for details.",
-                    $parentQuote->getId(), $immutableQuote->getId(), $parentQuote->getReservedOrderId(), $parentQuote->getParentQuoteId() )
-            );
-        }
-        */
 
         Mage::dispatchEvent(
             'bolt_boltpay_validate_cart_session_after',
