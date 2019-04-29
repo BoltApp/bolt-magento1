@@ -63,7 +63,7 @@ class Bolt_Boltpay_OrderController extends Mage_Core_Controller_Front_Action
 
             if ($order->isObjectNew()) {
                 $sessionQuoteId = ($this->getRequest()->getParam('checkoutType') == Bolt_Boltpay_Block_Checkout_Boltpay::CHECKOUT_TYPE_PRODUCT_PAGE) ? null : $checkoutSession->getQuoteId();
-                $orderModel->createOrder($reference,$sessionQuoteId, true, $transaction);
+                $orderModel->createOrder($reference,$sessionQuoteId, false, $transaction);
             }
 
         } catch (Exception $e) {

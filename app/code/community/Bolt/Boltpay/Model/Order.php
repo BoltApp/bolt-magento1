@@ -367,8 +367,8 @@ class Bolt_Boltpay_Model_Order extends Bolt_Boltpay_Model_Abstract
      *                                        -  Mage_Sales_Model_Quote quote
      *
      *                                        The $quote, in turn holds
-     *                                        -  Mage_Sales_Model_Quote parent
-     *                                        -  object (bolt) transaction
+     *                                        -  Mage_Sales_Model_Quote parent (ONLY pre-auth; will be empty for admin)
+     *                                        -  object (bolt) transaction (ONLY pre-auth; will be empty for admin)
      *
      *
      * @throws Exception    if an unknown error occurs
@@ -380,13 +380,13 @@ class Bolt_Boltpay_Model_Order extends Bolt_Boltpay_Model_Abstract
         $order = $observer->getEvent()->getOrder();
         $payment = $order->getPayment();
 
-        if ( strtolower($payment->getMethod()) !== Bolt_Boltpay_Model_Payment::METHOD_CODE ) {
-            return;
-        }
-
         /** @var Mage_Sales_Model_Quote $quote */
         $immutableQuote = $order->getQuote();
         $boltTransaction = $immutableQuote->getTransaction();
+
+        if ( (strtolower($payment->getMethod()) !== Bolt_Boltpay_Model_Payment::METHOD_CODE) || empty($boltTransaction) ) {
+            return;
+        }
 
         /////////////////////////////////////////////////////////////
         /// When the order is empty, it did not save in Magento

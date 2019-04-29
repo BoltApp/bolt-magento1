@@ -50,10 +50,10 @@ class Bolt_Boltpay_Model_Cron
      * the anomaly cases where this mechanism fails.
      */
     public function cleanupOrders() {
-        $expiration_time = Mage::getModel('core/date')->date('Y-m-d H:i:s', time()-(60*15));
+        $expiration_time = date('Y-m-d H:i:s', time()-(60*15));  // Magento uses GMT to save in DB
 
         /* @var Mage_Sales_Model_Resource_Order_Collection $orderCollection */
-        $orderCollection = Mage::getResourceModel('sales/order_collection');
+        $orderCollection = Mage::getModel('sales/order')->getCollection();
         $orderCollection
             ->addFieldToFilter('created_at', array( 'lt' => $expiration_time))
             ->addFieldToFilter('status', array('in' => array('pending_bolt','canceled_bolt')))
