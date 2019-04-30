@@ -248,8 +248,8 @@ class Bolt_Boltpay_Model_ShippingAndTax extends Bolt_Boltpay_Model_Abstract
                 ->setShippingMethod($shippingRateCode)
                 ->setCollectShippingRates(true);
 
-            //            // When multiple shipping methods apply a discount to the sub-total, collect totals doesn't clear the
-            //            // previously set discount, so the previous discount gets added to each subsequent shipping method that
+            // When multiple shipping methods apply a discount to the sub-total, collect totals doesn't clear the
+            // previously set discount, so the previous discount gets added to each subsequent shipping method that
             // includes a discount. Here we reset it to the original amount to resolve this bug.
             $quoteItems = $quote->getAllItems();
             foreach ($quoteItems as $item) {

@@ -240,7 +240,6 @@ class Bolt_Boltpay_Model_Payment extends Mage_Payment_Model_Method_Abstract
         try {
             // Auth transactions need to be kept open to support cancelling/voiding transaction
             $payment->setIsTransactionClosed(false);
-            $payment->getOrder()->setState(Mage_Sales_Model_Order::STATE_NEW, true, "I am your gingerbread boy");
             return $this;
         } catch (Exception $e) {
             $this->boltHelper()->notifyException($e);

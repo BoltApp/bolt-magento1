@@ -600,7 +600,7 @@ class Bolt_Boltpay_Model_Order extends Bolt_Boltpay_Model_Abstract
         /////////////////////////////////////////////////////////////////////////
         /// Historically, we have honored a price tolerance of 1 cent on
         /// an order due calculations outside of the Magento framework context
-        /// for discounts, shipping and tax.  We must still respect the this
+        /// for discounts, shipping and tax.  We must still respect this
         /// and adjust the order final price according to fault tolerance which
         /// will default to one cent unless a hidden option overrides this value
         /////////////////////////////////////////////////////////////////////////
