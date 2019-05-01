@@ -262,6 +262,9 @@ class Bolt_Boltpay_Model_Order extends Bolt_Boltpay_Model_Abstract
             ->save();
         ///////////////////////////////////////////////////////
 
+        // We set the created_at and updated_at date to null to hide the order from ERPs
+        $order->setCreatedAt(null)->save();
+
         $recurringPaymentProfiles = $service->getRecurringPaymentProfiles();
 
         Mage::dispatchEvent(
@@ -389,8 +392,8 @@ class Bolt_Boltpay_Model_Order extends Bolt_Boltpay_Model_Abstract
         }
 
         /////////////////////////////////////////////////////////////
-        /// When the order is empty, it did not save in Magento
-        /// Here we attempt to discover the cause of the problem
+        /// When the order is empty, it will not be able to save
+        /// in Magento for an unknown reason.  Here we report the problem
         /////////////////////////////////////////////////////////////
         if(empty($order)) {
             throw new Exception("Order was not able to be saved");
@@ -419,8 +422,7 @@ class Bolt_Boltpay_Model_Order extends Bolt_Boltpay_Model_Abstract
             $order->setTaxAmount($order->getTaxAmount() + ($totalMismatch/100))
                 ->setBaseTaxAmount($order->getBaseTaxAmount() + ($totalMismatch/100))
                 ->setGrandTotal($order->getGrandTotal() + ($totalMismatch/100))
-                ->setBaseGrandTotal($order->getBaseGrandTotal() + ($totalMismatch/100))
-                ->save();
+                ->setBaseGrandTotal($order->getBaseGrandTotal() + ($totalMismatch/100));
         }
         /////////////////////////////////////////////////////////////////////////
     }

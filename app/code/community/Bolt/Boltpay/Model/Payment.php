@@ -120,7 +120,7 @@ class Bolt_Boltpay_Model_Payment extends Mage_Payment_Model_Method_Abstract
     public function initialize($paymentAction, $stateObject)
     {
         $stateObject
-            ->setState(Mage_Sales_Model_Order::STATE_NEW)
+            ->setState(Mage_Sales_Model_Order::STATE_PENDING_PAYMENT)
             ->setStatus('pending_bolt')
             ->setIsNotified(false);
 

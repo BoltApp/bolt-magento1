@@ -66,7 +66,7 @@ if ($pendingBoltMappingDoesntExists) {
         array(
             array(
                 'status' => 'pending_bolt',
-                'state' => 'new',
+                'state' => 'pending_payment',
                 'is_default' => 0
             ),
         )
