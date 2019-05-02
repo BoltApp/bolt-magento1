@@ -70,7 +70,7 @@ class Bolt_Boltpay_OnepageController extends Mage_Checkout_OnepageController
                 ->setLastSuccessQuoteId($requestParams['lastSuccessQuoteId'])
                 ->setLastOrderId($requestParams['lastOrderId'])
                 ->setLastRealOrderId($requestParams['lastRealOrderId'])
-                ->setLastRecurringProfileIds(explode( ',', $requestParams['lastRecurringProfileIds']));
+                ->setLastRecurringProfileIds(explode( ',', @$requestParams['lastRecurringProfileIds']?:''));
 
             Mage::getModel('boltpay/order')->receiveOrder($requestParams['lastRealOrderId'], $this->payload);
         }
