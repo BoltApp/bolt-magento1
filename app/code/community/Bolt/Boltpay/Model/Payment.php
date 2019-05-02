@@ -534,7 +534,7 @@ class Bolt_Boltpay_Model_Payment extends Mage_Payment_Model_Method_Abstract
                         $creditmemo->setPaymentRefundDisallowed(false);
                         $creditmemo->register()->save();
                     }
-                } else { // partial refund
+                } else if (!$this->isPartialRefundFixingMismatch($order, $transactionAmount)) { // partial refund
                     $isPartialRefund   = true;
                     //actually for order with bolt payment, there is only one invoice can refund
                     foreach ($invoiceIds as $k => $invoiceId) {
@@ -1036,5 +1036,39 @@ class Bolt_Boltpay_Model_Payment extends Mage_Payment_Model_Method_Abstract
         $message .= ' ' . $this->boltHelper()->__('Transaction ID: "%s".', $transaction->getHtmlTxnId());
 
         return $message;
+    }
+
+    /**
+     * @param Mage_Sales_Model_Order $order
+     * @param $hookAmount
+     * @return bool
+     * @throws Mage_Core_Model_Store_Exception
+     */
+    protected function isPartialRefundFixingMismatch(Mage_Sales_Model_Order $order, $hookAmount){
+        $reference = $order->getPayment()->getAdditionalInformation('bolt_reference');
+        $transaction = $this->boltHelper()->fetchTransaction($reference);
+        $boltTotal = $transaction->amount->amount / 100;
+        $magentoTotal =  Mage::app()->getStore()->roundPrice(
+            $order->getGrandTotal()
+        );
+
+        if($magentoTotal !== $boltTotal){
+
+            $boltRefundedTotal = !empty($transaction->refunded_amount->amount) ? $transaction->refunded_amount->amount / 100 : 0;
+            // Bolt refund amount includes the current hook amount that hasn't been applied to Magento yet, so subtracting current hook refund amount
+            // to get the amount that Magento should know about.
+            $boltRefundedTotal -= $hookAmount;
+
+            $magentoTotalAfterRefunds = Mage::app()->getStore()->roundPrice(
+                $order->getGrandTotal() - $order->getTotalRefunded()
+            );
+            $boltTotalAfterRefunds = Mage::app()->getStore()->roundPrice(
+                $boltTotal - $boltRefundedTotal
+            );
+
+            return $magentoTotalAfterRefunds != $boltTotalAfterRefunds;
+        }
+
+        return false;
     }
 }
