@@ -191,6 +191,6 @@ JS;
      */
     private function normalizeJSON($string)
     {
-        return trim(preg_replace( '/(\r\n)|\n|\r/', '', $string )) ?: '';
+        return trim(preg_replace( '/(\r\n)|\n|\r/', '', $string )) ?: json_encode(array());
     }
 }
