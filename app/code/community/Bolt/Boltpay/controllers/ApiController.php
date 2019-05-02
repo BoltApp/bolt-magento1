@@ -50,7 +50,7 @@ class Bolt_Boltpay_ApiController extends Mage_Core_Controller_Front_Action
             $reference = $bodyParams['reference'];
             $transactionId = @$bodyParams['transaction_id'] ?: $bodyParams['id'];
             $hookType = @$bodyParams['notification_type'] ?: $bodyParams['type'];
-            $parentQuoteId = $bodyParams['quote_id'];
+            $parentQuoteId = @$bodyParams['quote_id'];
 
             /** @var Mage_Sales_Model_Order $order */
 
