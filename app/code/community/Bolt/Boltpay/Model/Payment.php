@@ -1000,7 +1000,7 @@ class Bolt_Boltpay_Model_Payment extends Mage_Payment_Model_Method_Abstract
         $order = $payment->getOrder();
         $amount =  $order->getBaseGrandTotal() - $order->getBaseTotalPaid() ;
 
-        if ($authTransaction->canVoidAuthorizationCompletely()) {
+        if (!$authTransaction || $authTransaction->canVoidAuthorizationCompletely()) {
             // True void
             $reference = $payment->getAdditionalInformation('bolt_reference');
             $payment->setParentTransactionId($reference);
