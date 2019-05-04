@@ -149,7 +149,6 @@ class Bolt_Boltpay_Model_Coupon extends Bolt_Boltpay_Model_Abstract
         }
     }
 
-
     /**
      * Verifies the coupon rule exists.
      *
@@ -596,6 +595,7 @@ class Bolt_Boltpay_Model_Coupon extends Bolt_Boltpay_Model_Abstract
             }
 
             $coupon = $this->getCoupon();
+
             // Load the coupon discount rule
             /** @var Mage_SalesRule_Model_Rule $rule */
             $rule = Mage::getModel('salesrule/rule')->load($coupon->getRuleId());
