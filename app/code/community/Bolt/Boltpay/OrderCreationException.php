@@ -22,7 +22,6 @@
  */
 class Bolt_Boltpay_OrderCreationException extends Bolt_Boltpay_BoltException
 {
-    use Bolt_Boltpay_BoltGlobalTrait;
 
     /**
      * Database error or error in incoming request
