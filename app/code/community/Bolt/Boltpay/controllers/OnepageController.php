@@ -22,7 +22,8 @@ require_once 'Mage/Checkout/controllers/OnepageController.php';
  *
  * @deprecated This will be removed after the skip payment option is resolved.
  */
-class Bolt_Boltpay_OnepageController extends Mage_Checkout_OnepageController
+class Bolt_Boltpay_OnepageController
+    extends Mage_Checkout_OnepageController implements Bolt_Boltpay_Controller_Interface
 {
     use Bolt_Boltpay_BoltGlobalTrait;
 

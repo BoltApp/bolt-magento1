@@ -22,7 +22,8 @@ require_once(Mage::getModuleDir('controllers','Bolt_Boltpay').DS.'OrderControlle
  *
  * Saves the order in Magento system after successful Bolt transaction processing.
  */
-class Bolt_Boltpay_OrderController extends Mage_Core_Controller_Front_Action
+class Bolt_Boltpay_OrderController
+    extends Mage_Core_Controller_Front_Action implements Bolt_Boltpay_Controller_Interface
 {
     use Bolt_Boltpay_OrderControllerTrait;
 
