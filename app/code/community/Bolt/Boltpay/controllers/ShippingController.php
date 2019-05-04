@@ -111,7 +111,7 @@ class Bolt_Boltpay_ShippingController extends Mage_Core_Controller_Front_Action
                 $this->boltHelper()->notifyException(new Exception(json_encode($addressErrorDetails)));
                 return $this->getResponse()
                     ->clearAllHeaders()
-                    ->setHttpResponseCode(403)
+                    ->setHttpResponseCode(422)
                     ->setBody(json_encode(array('status' => 'failure','error' => $addressErrorDetails)));
             }
             ////////////////////////////////////////////////////////////////////////////////
