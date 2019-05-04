@@ -225,7 +225,7 @@ class Bolt_Boltpay_Model_BoltOrder extends Bolt_Boltpay_Model_Abstract
                 $cartSubmissionData['total_amount'] = (int) round($grandTotal->getValue() * 100);
 
                 /* @var Mage_Sales_Model_Quote_Address_Total $taxTotal */
-                $taxTotal = $totalsBlock->getTotals()['tax'];
+                $taxTotal = isset($totalsBlock->getTotals()['tax']) ? $totalsBlock->getTotals()['tax'] : 0;
                 $cartSubmissionData['tax_amount'] = $this->getTaxForAdmin($taxTotal);
             } else {
                 $cartSubmissionData['total_amount'] = round($totals["grand_total"]->getValue() * 100);
