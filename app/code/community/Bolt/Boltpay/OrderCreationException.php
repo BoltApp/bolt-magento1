@@ -46,7 +46,6 @@ class Bolt_Boltpay_OrderCreationException extends Bolt_Boltpay_BoltException
     const E_BOLT_CART_HAS_EXPIRED_TMPL_NOT_FOUND          = '{"reason": "Cart does not exist with reference", "reference": "%s"}';
     const E_BOLT_CART_HAS_EXPIRED_TMPL_NOT_PURCHASABLE    = '{"reason": "The product is not purchasable", "product_id": "%d"}';
     const E_BOLT_CART_HAS_EXPIRED_TMPL_GRAND_TOTAL        = '{"reason": "Grand total has changed", "old_value": "%d", "new_value": "%d"}';
-    const E_BOLT_CART_HAS_EXPIRED_TMPL_SHIPPING           = '{"reason": "Shipping total has changed", "old_value": "%d", "new_value": "%d"}';
     const E_BOLT_CART_HAS_EXPIRED_TMPL_DISCOUNT           = '{"reason": "Discount total has changed", "old_value": "%d", "new_value": "%d"}';
     const E_BOLT_CART_HAS_EXPIRED_TMPL_TAX                = '{"reason": "Tax amount has changed", "old_value": "%d", "new_value": "%d"}';
 
@@ -82,6 +81,12 @@ class Bolt_Boltpay_OrderCreationException extends Bolt_Boltpay_BoltException
     const E_BOLT_DISCOUNT_DOES_NOT_EXIST_TMPL   = '{"discount_code": "%s"}';
 
     /**
+     * Change in shipping price
+     */
+    const E_BOLT_SHIPPING_PRICE_HAS_BEEN_UPDATED           = 2001008;
+    const E_BOLT_SHIPPING_PRICE_HAS_BEEN_UPDATED_TMPL      = '{"reason": "Shipping total has changed", "old_value": "%d", "new_value": "%d"}';
+
+    /**
      * @var int http response code that is to be returned
      */
     protected $httpCode;
@@ -101,7 +106,8 @@ class Bolt_Boltpay_OrderCreationException extends Bolt_Boltpay_BoltException
         self::E_BOLT_ITEM_PRICE_HAS_BEEN_UPDATED,
         self::E_BOLT_OUT_OF_INVENTORY,
         self::E_BOLT_DISCOUNT_CANNOT_APPLY,
-        self::E_BOLT_DISCOUNT_DOES_NOT_EXIST
+        self::E_BOLT_DISCOUNT_DOES_NOT_EXIST,
+        self::E_BOLT_SHIPPING_PRICE_HAS_BEEN_UPDATED
     );
 
     /**
@@ -138,7 +144,7 @@ class Bolt_Boltpay_OrderCreationException extends Bolt_Boltpay_BoltException
      * @param int    $code         Bolt error code
      * @param string $dataTemplate specific Bolt error sub-category
      *
-     * @return the HTTP code that was set
+     * @return int The HTTP code that was set
      */
     private function setHttpCode( $code, $dataTemplate ) {
         // Select the http code

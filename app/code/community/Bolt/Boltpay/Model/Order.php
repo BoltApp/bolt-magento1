@@ -624,8 +624,8 @@ class Bolt_Boltpay_Model_Order extends Bolt_Boltpay_Model_Abstract
             $boltShippingTotal = (int)$transaction->order->cart->shipping_amount->amount;
             if (abs($magentoShippingTotal - $boltShippingTotal)  > $priceFaultTolerance) {
                 throw new Bolt_Boltpay_OrderCreationException(
-                    OCE::E_BOLT_CART_HAS_EXPIRED,
-                    OCE::E_BOLT_CART_HAS_EXPIRED_TMPL_SHIPPING,
+                    OCE::E_BOLT_SHIPPING_PRICE_HAS_BEEN_UPDATED,
+                    OCE::E_BOLT_SHIPPING_PRICE_HAS_BEEN_UPDATED_TMPL,
                     array($boltShippingTotal, $magentoShippingTotal)
                 );
             }
