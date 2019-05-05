@@ -333,10 +333,19 @@ class Bolt_Boltpay_Model_BoltOrder extends Bolt_Boltpay_Model_Abstract
                     'type'        => 'fixed_amount',
                 );
                 if ($discount === 'discount' && $quote->getCouponCode()) {
+                    /////////////////////////////////////////////////////////////
+                    /// We want to get the apply the coupon code as a reference.
+                    /// Potentially, we will have several 'discount' entries
+                    /// but only one coupon code, so we must find the right entry
+                    /// to map to.  Magento stores the coupon rule description in
+                    /// the totals object wrapped in the string "Discount()" and
+                    /// keeps no reference to the rule or coupon code. Here, we use
+                    /// the coupon code to look up the rule description and compare
+                    /// it to the total object's title.
+                    /////////////////////////////////////////////////////////////
                     $coupon = Mage::getModel('salesrule/coupon')->load($quote->getCouponCode(), 'code');
                     $rule = Mage::getModel('salesrule/rule')->load($coupon->getRuleId());
-
-                    if (strpos($totals[$discount]->getTitle(), $rule->getName()) !== false) {
+                    if ($totals[$discount]->getTitle() === Mage::helper('sales')->__('Discount (%s)', (string)$rule->getName()) ) {
                         $data['reference'] = $quote->getCouponCode();
                     }
                 }
