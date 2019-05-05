@@ -18,7 +18,8 @@
 /**
  * Class Bolt_Boltpay_ProductpageController
  */
-class Bolt_Boltpay_ProductpageController extends Mage_Core_Controller_Front_Action
+class Bolt_Boltpay_ProductpageController
+    extends Mage_Core_Controller_Front_Action implements Bolt_Boltpay_Controller_Interface
 {
     use Bolt_Boltpay_BoltGlobalTrait;
 

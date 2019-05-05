@@ -22,7 +22,7 @@ use Bolt_Boltpay_OrderCreationException as OCE;
  *
  * Webhook endpoint.
  */
-class Bolt_Boltpay_ApiController extends Mage_Core_Controller_Front_Action
+class Bolt_Boltpay_ApiController extends Mage_Core_Controller_Front_Action implements Bolt_Boltpay_Controller_Interface
 {
     use Bolt_Boltpay_Controller_Traits_ApiControllerTrait;
 

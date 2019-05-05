@@ -15,6 +15,8 @@
  * @license    http://opensource.org/licenses/osl-3.0.php  Open Software License (OSL 3.0)
  */
 
+use Bolt_Boltpay_Controller_Interface as RESPONSE_CODE;
+
 /**
  * Class Bolt_Boltpay_OrderCreationException
  *
@@ -26,21 +28,21 @@ class Bolt_Boltpay_OrderCreationException extends Bolt_Boltpay_BoltException
     /**
      * Database error or error in incoming request
      */
-    const E_BOLT_GENERAL_ERROR               = 2001001; // verified
-    const E_BOLT_GENERAL_ERROR_TMPL_HMAC     = '{"reason": "Invalid HMAC header"}'; // verified
-    const E_BOLT_GENERAL_ERROR_TMPL_GENERIC  = '{"reason": "%s"}'; // verified
+    const E_BOLT_GENERAL_ERROR               = 2001001;
+    const E_BOLT_GENERAL_ERROR_TMPL_HMAC     = '{"reason": "Invalid HMAC header"}';
+    const E_BOLT_GENERAL_ERROR_TMPL_GENERIC  = '{"reason": "%s"}';
 
     /**
      * The order already exist in the system
      */
-    const E_BOLT_ORDER_ALREADY_EXISTS        = 2001002; // verified
-    const E_BOLT_ORDER_ALREADY_EXISTS_TMPL   = '{"display_id": "%s", "order_status": "%s"}'; // verified
+    const E_BOLT_ORDER_ALREADY_EXISTS        = 2001002;
+    const E_BOLT_ORDER_ALREADY_EXISTS_TMPL   = '{"display_id": "%s", "order_status": "%s"}';
 
     /**
      * General non-item cart changes
      */
     const E_BOLT_CART_HAS_EXPIRED                         = 2001003;
-    const E_BOLT_CART_HAS_EXPIRED_TMPL_EMPTY              = '{"reason": "Cart is empty"}';  // verified
+    const E_BOLT_CART_HAS_EXPIRED_TMPL_EMPTY              = '{"reason": "Cart is empty"}';
     const E_BOLT_CART_HAS_EXPIRED_TMPL_EXPIRED            = '{"reason": "Cart has expired"}';
     const E_BOLT_CART_HAS_EXPIRED_TMPL_NOT_FOUND          = '{"reason": "Cart does not exist with reference", "reference": "%s"}';
     const E_BOLT_CART_HAS_EXPIRED_TMPL_NOT_PURCHASABLE    = '{"reason": "The product is not purchasable", "product_id": "%d"}';
@@ -110,7 +112,7 @@ class Bolt_Boltpay_OrderCreationException extends Bolt_Boltpay_BoltException
     );
 
     /**
-     * Bolt_Boltpay_InvalidTransitionException constructor.
+     * Bolt_Boltpay_OrderCreationException constructor.
      *
      * @param int    $code          The Bolt defined error code
      * @param string $dataTemplate  specific Bolt error sub-category
@@ -127,8 +129,8 @@ class Bolt_Boltpay_OrderCreationException extends Bolt_Boltpay_BoltException
             $dataValues = array(addcslashes($message, '"\\'));
         }
 
-        $this->setHttpCode($code, $dataTemplate);
-        $this->setJson($code, $dataTemplate, $dataValues);
+        $this->httpCode = $this->selectHttpCode($code, $dataTemplate);
+        $this->json = $this->createJson($code, $dataTemplate, $dataValues);
 
         if (empty($message)) {
             $message = $this->getJson();
@@ -138,40 +140,37 @@ class Bolt_Boltpay_OrderCreationException extends Bolt_Boltpay_BoltException
     }
 
     /**
-     * Sets the httpCode based on the error
+     * Finds the httpCode based on the error parameters
      *
      * @param int    $code         Bolt error code
      * @param string $dataTemplate specific Bolt error sub-category
      *
-     * @return int The HTTP code that was set
+     * @return int The HTTP code that was found which matches the provided error info
      */
-    private function setHttpCode( $code, $dataTemplate ) {
+    public function selectHttpCode( $code, $dataTemplate ) {
         // Select the http code
         switch ($code) {
             case self::E_BOLT_GENERAL_ERROR:
                 if ($dataTemplate === self::E_BOLT_GENERAL_ERROR_TMPL_HMAC) {
-                    $this->httpCode = 401;
-                    break;
+                    return RESPONSE_CODE::HTTP_UNAUTHORIZED; // 401
                 }
             case self::E_BOLT_ORDER_ALREADY_EXISTS:
-                $this->httpCode = 409;
-                break;
-            case self::E_BOLT_CART_HAS_EXPIRED_TMPL_NOT_FOUND:
-                $this->httpCode = 404;
-                break;
-            case self::E_BOLT_CART_HAS_EXPIRED_TMPL_EMPTY:
-            case self::E_BOLT_CART_HAS_EXPIRED_TMPL_EXPIRED:
-                $this->httpCode = 410;
-                break;
+                return RESPONSE_CODE::HTTP_CONFLICT; // 409
+            case self::E_BOLT_CART_HAS_EXPIRED:
+                switch ($dataTemplate) {
+                    case self::E_BOLT_CART_HAS_EXPIRED_TMPL_NOT_FOUND:
+                        return RESPONSE_CODE::HTTP_NOT_FOUND; // 404
+                    case self::E_BOLT_CART_HAS_EXPIRED_TMPL_EMPTY:
+                    case self::E_BOLT_CART_HAS_EXPIRED_TMPL_EXPIRED:
+                        return RESPONSE_CODE::HTTP_GONE;  // 410
+                }
             default:
-                $this->httpCode = 422;
+                return RESPONSE_CODE::HTTP_UNPROCESSABLE_ENTITY; // 422
         }
-
-        return $this->httpCode;
     }
 
     /**
-     * Creates and sets the JSON to be returned to the Bolt server
+     * Creates the JSON to be returned to the Bolt server
      *
      * @param int    $code         Bolt error code
      * @param string $dataTemplate specific Bolt error sub-category
@@ -179,11 +178,11 @@ class Bolt_Boltpay_OrderCreationException extends Bolt_Boltpay_BoltException
      *
      * @return string  The JSON that was created as part of this call
      */
-    private function setJson( $code, $dataTemplate, array $dataValues = array() )
+    private function createJson( $code, $dataTemplate, array $dataValues = array() )
     {
         array_unshift($dataValues, $dataTemplate);
         $dataJson = call_user_func_array(array($this->boltHelper(), '__'), $dataValues);
-        return $this->json = <<<JSON
+        return <<<JSON
         {
             "status": "failure",
             "error": [{

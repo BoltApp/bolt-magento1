@@ -21,7 +21,8 @@ require_once 'Mage/Checkout/controllers/OnepageController.php';
  * Class Bolt_Boltpay_OnepageController
  *
  */
-class Bolt_Boltpay_OnepageController extends Mage_Checkout_OnepageController
+class Bolt_Boltpay_OnepageController
+    extends Mage_Checkout_OnepageController implements Bolt_Boltpay_Controller_Interface
 {
     use Bolt_Boltpay_Controller_Traits_ApiControllerTrait;
 
