@@ -17,8 +17,8 @@
 
 /**
  * This installer does the following
- * 1. Creates a new attribute for customers entity called bolt_user_id
- * 2. Adds Bolt custom order status and order state of deferred
+ * 1. Creates the new statuses of "pending_bolt" and maps it to the standard Magento state of "pending_payment"
+ * 2. Creates the new statuses of "canceled_bolt" and maps it to the standard Magento state of "canceled"
  */
 Mage::log('Installing Bolt 2.0.0 updates', null, 'bolt_install.log');
 
@@ -34,7 +34,7 @@ $statusTable = $installer->getTable('sales/order_status');
 $statusStateTable = $installer->getTable('sales/order_status_state');
 
 $pendingBoltStatusDoesntExists = !is_object($connection->query("SELECT status FROM $statusTable WHERE status = 'pending_bolt'")->fetchObject());
-$pendingBoltMappingDoesntExists = !is_object($connection->query("SELECT status FROM $statusStateTable WHERE status = 'pending_bolt' AND state = 'new'")->fetchObject());
+$pendingBoltMappingDoesntExists = !is_object($connection->query("SELECT status FROM $statusStateTable WHERE status = 'pending_bolt' AND state = 'pending_payment'")->fetchObject());
 
 $canceledBoltStatusDoesntExists = !is_object($connection->query("SELECT status FROM $statusTable WHERE status = 'canceled_bolt'")->fetchObject());
 $canceledBoltMappingDoesntExists = !is_object($connection->query("SELECT status FROM $statusStateTable WHERE status = 'canceled_bolt' AND state = 'canceled'")->fetchObject());
@@ -48,7 +48,7 @@ if ($pendingBoltStatusDoesntExists) {
             'label'
         ),
         array(
-            array('status' => 'pending_bolt', 'label' => 'Pending Bolt Auth'),
+            array('status' => 'pending_bolt', 'label' => 'Pending Bolt Authorization'),
         )
     );
 
