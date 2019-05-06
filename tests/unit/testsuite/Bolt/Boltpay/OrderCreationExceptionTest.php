@@ -2,12 +2,13 @@
 
 use Bolt_Boltpay_Controller_Interface as RESPONSE_CODE;
 
+require_once('TestHelper.php');
+
 /**
  * Class Bolt_Boltpay_OrderCreationExceptionTest
  */
 class Bolt_Boltpay_OrderCreationExceptionTest extends PHPUnit_Framework_TestCase
 {
-
     /**
      * Test JSON response for general error with default parameters
      */
@@ -30,7 +31,7 @@ class Bolt_Boltpay_OrderCreationExceptionTest extends PHPUnit_Framework_TestCase
         $this->assertEquals(Bolt_Boltpay_OrderCreationException::E_BOLT_GENERAL_ERROR, $exception->error[0]->code);
         $this->assertEquals($reason, $exception->error[0]->data[0]->reason);
 
-        $this->assertEquals(RESPONSE_CODE::HTTP_CONFLICT, $boltOrderCreationException->getHttpCode());
+        $this->assertEquals(RESPONSE_CODE::HTTP_UNPROCESSABLE_ENTITY, $boltOrderCreationException->getHttpCode());
     }
 
     /**
@@ -327,7 +328,48 @@ class Bolt_Boltpay_OrderCreationExceptionTest extends PHPUnit_Framework_TestCase
         $this->assertEquals($reason, $exception->error[0]->data[0]->reason);
         $this->assertEquals($previousException, $boltOrderCreationException->getPrevious());
         $this->assertEquals('This is previous error', $boltOrderCreationException->getPrevious()->getMessage());
-        $this->assertEquals(RESPONSE_CODE::HTTP_CONFLICT, $boltOrderCreationException->getHttpCode());
+        $this->assertEquals(RESPONSE_CODE::HTTP_UNPROCESSABLE_ENTITY, $boltOrderCreationException->getHttpCode());
+    }
+
+    /**
+     * Test if special characters are escaped in JSON response
+     */
+    public function testEscapeSpecialCharacters()
+    {
+        $reason = 'test "error" \path\example';
+        $boltOrderCreationException = new Bolt_Boltpay_OrderCreationException(
+            Bolt_Boltpay_OrderCreationException::E_BOLT_GENERAL_ERROR,
+            Bolt_Boltpay_OrderCreationException::E_BOLT_GENERAL_ERROR_TMPL_GENERIC,
+            [$reason]
+        );
+        $exceptionJson = $boltOrderCreationException->getJson();
+        $exception = json_decode($exceptionJson);
+
+        $this->assertExceptionProperties($exception);
+        $this->assertEquals($reason, $exception->error[0]->data[0]->reason);
+
+        $this->assertEquals(RESPONSE_CODE::HTTP_UNPROCESSABLE_ENTITY, $boltOrderCreationException->getHttpCode());
+    }
+
+    /**
+     * If non-registered code is passed to a constructor it should generate generic exception
+     */
+    public function testNonRegisteredErrorCode()
+    {
+        $reason = 'test non-existing code';
+        $boltOrderCreationException = new Bolt_Boltpay_OrderCreationException(
+            12345,
+            Bolt_Boltpay_OrderCreationException::E_BOLT_GENERAL_ERROR_TMPL_GENERIC,
+            [$reason],
+            $reason
+        );
+        $exceptionJson = $boltOrderCreationException->getJson();
+        $exception = json_decode($exceptionJson);
+
+        $this->assertExceptionProperties($exception);
+        $this->assertEquals($reason, $exception->error[0]->data[0]->reason);
+
+        $this->assertEquals(RESPONSE_CODE::HTTP_UNPROCESSABLE_ENTITY, $boltOrderCreationException->getHttpCode());
     }
 
     /**
@@ -336,7 +378,7 @@ class Bolt_Boltpay_OrderCreationExceptionTest extends PHPUnit_Framework_TestCase
     public function testGeneralExceptionHttpCode()
     {
         $boltOrderCreationException = new Bolt_Boltpay_OrderCreationException();
-        $this->assertEquals(RESPONSE_CODE::HTTP_CONFLICT, $boltOrderCreationException->getHttpCode());
+        $this->assertEquals(RESPONSE_CODE::HTTP_UNPROCESSABLE_ENTITY, $boltOrderCreationException->getHttpCode());
     }
 
     /**
