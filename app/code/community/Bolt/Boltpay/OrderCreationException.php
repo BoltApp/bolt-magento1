@@ -154,10 +154,6 @@ class Bolt_Boltpay_OrderCreationException extends Bolt_Boltpay_BoltException
     public function selectHttpCode( $code, $dataTemplate ) {
         // Select the http code
         switch ($code) {
-            case self::E_BOLT_GENERAL_ERROR:
-                if ($dataTemplate === self::E_BOLT_GENERAL_ERROR_TMPL_HMAC) {
-                    return RESPONSE_CODE::HTTP_UNAUTHORIZED; // 401
-                }
             case self::E_BOLT_ORDER_ALREADY_EXISTS:
                 return RESPONSE_CODE::HTTP_CONFLICT; // 409
             case self::E_BOLT_CART_HAS_EXPIRED:
@@ -167,6 +163,10 @@ class Bolt_Boltpay_OrderCreationException extends Bolt_Boltpay_BoltException
                     case self::E_BOLT_CART_HAS_EXPIRED_TMPL_EMPTY:
                     case self::E_BOLT_CART_HAS_EXPIRED_TMPL_EXPIRED:
                         return RESPONSE_CODE::HTTP_GONE;  // 410
+                }
+            case self::E_BOLT_GENERAL_ERROR:
+                if ($dataTemplate === self::E_BOLT_GENERAL_ERROR_TMPL_HMAC) {
+                    return RESPONSE_CODE::HTTP_UNAUTHORIZED; // 401
                 }
             default:
                 return RESPONSE_CODE::HTTP_UNPROCESSABLE_ENTITY; // 422
