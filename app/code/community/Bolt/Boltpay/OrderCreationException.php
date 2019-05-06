@@ -126,7 +126,11 @@ class Bolt_Boltpay_OrderCreationException extends Bolt_Boltpay_BoltException
         if (!in_array($code, self::$validCodes)) {
             $code = self::E_BOLT_GENERAL_ERROR;
             $dataTemplate = self::E_BOLT_GENERAL_ERROR_TMPL_GENERIC;
-            $dataValues = array(addcslashes($message, '"\\'));
+            $dataValues = array($message);
+        }
+
+        foreach( $dataValues as $index => $value ) {
+            $dataValues[$index] = addcslashes($dataValues[$index], '"\\');
         }
 
         $this->httpCode = $this->selectHttpCode($code, $dataTemplate);
