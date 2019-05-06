@@ -20,7 +20,7 @@
  *
  * @deprecated OAuth will be removed in future versions
  */
-class Bolt_Boltpay_IndexController extends Mage_Adminhtml_Controller_Action
+class Bolt_Boltpay_IndexController extends Mage_Adminhtml_Controller_Action implements Bolt_Boltpay_Controller_Interface
 {
     use Bolt_Boltpay_BoltGlobalTrait;
 
