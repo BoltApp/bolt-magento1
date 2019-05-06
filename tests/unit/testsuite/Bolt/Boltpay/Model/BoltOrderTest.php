@@ -61,14 +61,16 @@ class Bolt_Boltpay_Model_BoltOrderTest extends PHPUnit_Framework_TestCase
 
         $_quote = $cart->getQuote();
         $_quote->reserveOrderId();
-        $_items = $_quote->getAllItems();
-        $_multipage = true;
+        $_items = $_quote->getAllVisibleItems();
+        $_isMultipage = true;
         $item = $_items[0];
         $product = $item->getProduct();
 
         /** @var Bolt_Boltpay_Helper_Data $helper */
         $helper = Mage::helper('boltpay');
         $imageUrl = $helper->getItemImageUrl($item);
+
+        $helper->collectTotals($_quote)->save();
 
         $expected = array (
             'order_reference' => $_quote->getParentQuoteId(),
@@ -77,7 +79,7 @@ class Bolt_Boltpay_Model_BoltOrderTest extends PHPUnit_Framework_TestCase
                 array (
                     0 =>
                         array (
-                            'reference' => $_quote->getId(),
+                            'reference' => $item->getId(),
                             'image_url' => (string) $imageUrl,
                             'name' => $item->getName(),
                             'sku' => $item->getSku(),
@@ -94,7 +96,7 @@ class Bolt_Boltpay_Model_BoltOrderTest extends PHPUnit_Framework_TestCase
             'total_amount' => round($_quote->getSubtotal() * 100),
         );
 
-        $result = $this->currentMock->buildCart($_quote, $_items, $_multipage);
+        $result = $this->currentMock->buildCart($_quote, $_items, $_isMultipage);
 
         $this->assertEquals($expected, $result);
     }
