@@ -1,332 +1,367 @@
 <?php
 
-require_once('TestHelper.php');
+use Bolt_Boltpay_Controller_Interface as RESPONSE_CODE;
 
 /**
- * Class Bolt_Boltpay_Model_BoltOrderTest
+ * Class Bolt_Boltpay_OrderCreationExceptionTest
  */
-class Bolt_Boltpay_Model_BoltOrderTest extends PHPUnit_Framework_TestCase
+class Bolt_Boltpay_OrderCreationExceptionTest extends PHPUnit_Framework_TestCase
 {
-    /**
-     * @var int|null
-     */
-    private static $productId = null;
 
     /**
-     * @var Bolt_Boltpay_TestHelper|null
+     * Test JSON response for general error with default parameters
      */
-    private $testHelper = null;
-
-    /**
-     * @var Bolt_Boltpay_Model_BoltOrder
-     */
-    private $currentMock;
-
-    private $app;
-
-    public function setUp()
+    public function testGeneralExceptionJson()
     {
-        $this->app = Mage::app('default');
-        $this->app->getStore()->resetConfig();
-        $this->currentMock = Mage::getModel('boltpay/boltOrder');
-        $this->testHelper = new Bolt_Boltpay_TestHelper();
+        $reason = 'test error';
+        $boltOrderCreationException = new Bolt_Boltpay_OrderCreationException(
+            Bolt_Boltpay_OrderCreationException::E_BOLT_GENERAL_ERROR,
+            Bolt_Boltpay_OrderCreationException::E_BOLT_GENERAL_ERROR_TMPL_GENERIC,
+            [$reason]
+        );
 
+        $exceptionJson = $boltOrderCreationException->getJson();
+        $exception = json_decode($exceptionJson);
+
+        $this->assertNotEmpty($exception->status);
+        $this->assertExceptionProperties($exception);
+        $this->assertNotEmpty($exception->error[0]->data[0]->reason);
+
+        $this->assertEquals(Bolt_Boltpay_OrderCreationException::E_BOLT_GENERAL_ERROR, $exception->error[0]->code);
+        $this->assertEquals($reason, $exception->error[0]->data[0]->reason);
+
+        $this->assertEquals(RESPONSE_CODE::HTTP_CONFLICT, $boltOrderCreationException->getHttpCode());
     }
 
-    protected function tearDown()
+    /**
+     * Test for correct data for existing order exception
+     */
+    public function testExistingCartExceptionJson()
     {
-        Mage::getSingleton('checkout/cart')->truncate()->save();
+        $dataValues = ['id_123', 'pending'];
+        $boltOrderCreationException = new Bolt_Boltpay_OrderCreationException(
+            Bolt_Boltpay_OrderCreationException::E_BOLT_ORDER_ALREADY_EXISTS,
+            Bolt_Boltpay_OrderCreationException::E_BOLT_ORDER_ALREADY_EXISTS_TMPL,
+            $dataValues);
+        $exceptionJson = $boltOrderCreationException->getJson();
+        $exception = json_decode($exceptionJson);
+
+        $this->assertExceptionProperties($exception);
+        $this->assertEquals($dataValues[0], $exception->error[0]->data[0]->display_id);
+        $this->assertEquals($dataValues[1], $exception->error[0]->data[0]->order_status);
+
+        $this->assertEquals(RESPONSE_CODE::HTTP_CONFLICT, $boltOrderCreationException->getHttpCode());
     }
 
     /**
-     * Generate dummy products for testing purposes
+     * Test for correct data for various cart exceptions
      */
-    public static function setUpBeforeClass()
+    public function testCartExceptionJson()
     {
-        // Create some dummy product:
-        self::$productId = Bolt_Boltpay_ProductProvider::createDummyProduct('PHPUNIT_TEST_1');
+        // Empty cart
+        $boltOrderCreationException = new Bolt_Boltpay_OrderCreationException(
+            Bolt_Boltpay_OrderCreationException::E_BOLT_CART_HAS_EXPIRED,
+            Bolt_Boltpay_OrderCreationException::E_BOLT_CART_HAS_EXPIRED_TMPL_EMPTY
+        );
+        $exceptionJson = $boltOrderCreationException->getJson();
+        $exception = json_decode($exceptionJson);
+
+        $this->assertExceptionProperties($exception);
+        $this->assertEquals('Cart is empty', $exception->error[0]->data[0]->reason);
+        $this->assertEquals(RESPONSE_CODE::HTTP_GONE, $boltOrderCreationException->getHttpCode());
+
+        // Expired cart
+        $boltOrderCreationException = new Bolt_Boltpay_OrderCreationException(
+            Bolt_Boltpay_OrderCreationException::E_BOLT_CART_HAS_EXPIRED,
+            Bolt_Boltpay_OrderCreationException::E_BOLT_CART_HAS_EXPIRED_TMPL_EXPIRED
+        );
+        $exceptionJson = $boltOrderCreationException->getJson();
+        $exception = json_decode($exceptionJson);
+
+        $this->assertExceptionProperties($exception);
+        $this->assertEquals('Cart has expired', $exception->error[0]->data[0]->reason);
+        $this->assertEquals(RESPONSE_CODE::HTTP_GONE, $boltOrderCreationException->getHttpCode());
+
+        // Cart does not exist
+        $dataValues = ['cart_reference_001'];
+        $boltOrderCreationException = new Bolt_Boltpay_OrderCreationException(
+            Bolt_Boltpay_OrderCreationException::E_BOLT_CART_HAS_EXPIRED,
+            Bolt_Boltpay_OrderCreationException::E_BOLT_CART_HAS_EXPIRED_TMPL_NOT_FOUND,
+            $dataValues
+        );
+        $exceptionJson = $boltOrderCreationException->getJson();
+        $exception = json_decode($exceptionJson);
+
+        $this->assertExceptionProperties($exception);
+        $this->assertEquals('Cart does not exist with reference', $exception->error[0]->data[0]->reason);
+        $this->assertEquals($dataValues[0], $exception->error[0]->data[0]->reference);
+        $this->assertEquals(RESPONSE_CODE::HTTP_NOT_FOUND, $boltOrderCreationException->getHttpCode());
+
+        // Cart is not purchasable
+        $dataValues = [905];
+        $boltOrderCreationException = new Bolt_Boltpay_OrderCreationException(
+            Bolt_Boltpay_OrderCreationException::E_BOLT_CART_HAS_EXPIRED,
+            Bolt_Boltpay_OrderCreationException::E_BOLT_CART_HAS_EXPIRED_TMPL_NOT_PURCHASABLE,
+            $dataValues
+        );
+        $exceptionJson = $boltOrderCreationException->getJson();
+        $exception = json_decode($exceptionJson);
+
+        $this->assertExceptionProperties($exception);
+        $this->assertEquals('The product is not purchasable', $exception->error[0]->data[0]->reason);
+        $this->assertEquals($dataValues[0], $exception->error[0]->data[0]->product_id);
+        $this->assertEquals(RESPONSE_CODE::HTTP_UNPROCESSABLE_ENTITY, $boltOrderCreationException->getHttpCode());
+
+        // Cart grand total has changed
+        $dataValues = [100, 150];
+        $boltOrderCreationException = new Bolt_Boltpay_OrderCreationException(
+            Bolt_Boltpay_OrderCreationException::E_BOLT_CART_HAS_EXPIRED,
+            Bolt_Boltpay_OrderCreationException::E_BOLT_CART_HAS_EXPIRED_TMPL_GRAND_TOTAL,
+            $dataValues
+        );
+        $exceptionJson = $boltOrderCreationException->getJson();
+        $exception = json_decode($exceptionJson);
+
+        $this->assertExceptionProperties($exception);
+        $this->assertEquals('Grand total has changed', $exception->error[0]->data[0]->reason);
+        $this->assertEquals($dataValues[0], $exception->error[0]->data[0]->old_value);
+        $this->assertEquals($dataValues[1], $exception->error[0]->data[0]->new_value);
+        $this->assertEquals(RESPONSE_CODE::HTTP_UNPROCESSABLE_ENTITY, $boltOrderCreationException->getHttpCode());
+
+        // Cart discount total has changed
+        $dataValues = [100, 150];
+        $boltOrderCreationException = new Bolt_Boltpay_OrderCreationException(
+            Bolt_Boltpay_OrderCreationException::E_BOLT_CART_HAS_EXPIRED,
+            Bolt_Boltpay_OrderCreationException::E_BOLT_CART_HAS_EXPIRED_TMPL_DISCOUNT,
+            $dataValues
+        );
+        $exceptionJson = $boltOrderCreationException->getJson();
+        $exception = json_decode($exceptionJson);
+
+        $this->assertExceptionProperties($exception);
+        $this->assertEquals('Discount total has changed', $exception->error[0]->data[0]->reason);
+        $this->assertEquals($dataValues[0], $exception->error[0]->data[0]->old_value);
+        $this->assertEquals($dataValues[1], $exception->error[0]->data[0]->new_value);
+        $this->assertEquals(RESPONSE_CODE::HTTP_UNPROCESSABLE_ENTITY, $boltOrderCreationException->getHttpCode());
+
+        // Chart tax has changed
+        $dataValues = [100, 150];
+        $boltOrderCreationException = new Bolt_Boltpay_OrderCreationException(
+            Bolt_Boltpay_OrderCreationException::E_BOLT_CART_HAS_EXPIRED,
+            Bolt_Boltpay_OrderCreationException::E_BOLT_CART_HAS_EXPIRED_TMPL_TAX,
+            $dataValues
+        );
+        $exceptionJson = $boltOrderCreationException->getJson();
+        $exception = json_decode($exceptionJson);
+
+        $this->assertExceptionProperties($exception);
+        $this->assertEquals('Tax amount has changed', $exception->error[0]->data[0]->reason);
+        $this->assertEquals($dataValues[0], $exception->error[0]->data[0]->old_value);
+        $this->assertEquals($dataValues[1], $exception->error[0]->data[0]->new_value);
+        $this->assertEquals(RESPONSE_CODE::HTTP_UNPROCESSABLE_ENTITY, $boltOrderCreationException->getHttpCode());
     }
 
     /**
-     * Delete dummy products after the test
+     * Test for correct data for cart items exception
      */
-    public static function tearDownAfterClass()
+    public function testItemPriceException()
     {
-        Bolt_Boltpay_ProductProvider::deleteDummyProduct(self::$productId);
+        $dataValues = [905, 100, 150];
+        $boltOrderCreationException = new Bolt_Boltpay_OrderCreationException(
+            Bolt_Boltpay_OrderCreationException::E_BOLT_ITEM_PRICE_HAS_BEEN_UPDATED,
+            Bolt_Boltpay_OrderCreationException::E_BOLT_ITEM_PRICE_HAS_BEEN_UPDATED_TMPL,
+            $dataValues
+        );
+        $exceptionJson = $boltOrderCreationException->getJson();
+        $exception = json_decode($exceptionJson);
+
+        $this->assertExceptionProperties($exception);
+        $this->assertEquals($dataValues[0], $exception->error[0]->data[0]->product_id);
+        $this->assertEquals($dataValues[1], $exception->error[0]->data[0]->old_price);
+        $this->assertEquals($dataValues[2], $exception->error[0]->data[0]->new_price);
+        $this->assertEquals(RESPONSE_CODE::HTTP_UNPROCESSABLE_ENTITY, $boltOrderCreationException->getHttpCode());
     }
 
-    public function testBuildCart()
+    /**
+     * Test for correct data for cart inventory exception
+     */
+    public function testCartInventoryException()
     {
-        $cart = $this->testHelper->addProduct(self::$productId, 2);
-
-        $_quote = $cart->getQuote();
-        $_quote->reserveOrderId();
-        $_items = $_quote->getAllItems();
-        $_multipage = true;
-        $item = $_items[0];
-        $product = $item->getProduct();
-
-        /** @var Bolt_Boltpay_Helper_Data $helper */
-        $helper = Mage::helper('boltpay');
-        $imageUrl = $helper->getItemImageUrl($item);
-
-        $expected = array (
-            'order_reference' => $_quote->getParentQuoteId(),
-            'display_id' => $_quote->getReservedOrderId()."|".$_quote->getId(),
-            'items' =>
-                array (
-                    0 =>
-                        array (
-                            'reference' => $_quote->getId(),
-                            'image_url' => (string) $imageUrl,
-                            'name' => $item->getName(),
-                            'sku' => $item->getSku(),
-                            'description' => substr($product->getDescription(), 0, 8182) ?: '',
-                            'total_amount' => round($item->getCalculationPrice() * 100 * $item->getQty()),
-                            'unit_price' => round($item->getCalculationPrice() * 100),
-                            'quantity' => $item->getQty(),
-                            'type' => 'physical',
-                            'properties' => array ()
-                        ),
-                ),
-            'currency' => $_quote->getQuoteCurrencyCode(),
-            'discounts' => array (),
-            'total_amount' => round($_quote->getSubtotal() * 100),
+        $dataValues = [905, 100, 150];
+        $boltOrderCreationException = new Bolt_Boltpay_OrderCreationException(
+            Bolt_Boltpay_OrderCreationException::E_BOLT_OUT_OF_INVENTORY,
+            Bolt_Boltpay_OrderCreationException::E_BOLT_OUT_OF_INVENTORY_TMPL,
+            $dataValues
         );
+        $exceptionJson = $boltOrderCreationException->getJson();
+        $exception = json_decode($exceptionJson);
 
-        $result = $this->currentMock->buildCart($_quote, $_items, $_multipage);
-
-        $this->assertEquals($expected, $result);
-    }
-
-
-    /**
-     * Test that complete address data is not overwritten by correction
-     */
-    public function testCorrectBillingAddressWithNoCorrectionNeeded() {
-
-        $mockQuote = $this->testHelper->getCheckoutQuote();
-        $mockQuote->removeAllAddresses();
-
-        $billingAddressData = array(
-            'email' => 'hero@general_mills.com',
-            'firstname' => 'Under',
-            'lastname' => 'Dog',
-            'street' => '15th Phone Booth',
-            'company' => 'ShoeShine Inc.',
-            'city' => 'Unnamed City',
-            'region' => 'Unnamed Region',
-            'postcode' => '12345',
-            'country_id' => 'US',
-            'telephone' => '555-555-5555',
-            'address_type' => 'billing'
-        );
-
-        $shippingAddressData = array(
-            'email' => 'hero@general_mills.com',
-            'firstname' => 'Polly',
-            'lastname' => 'Purebred',
-            'street' => '4 Ever In Distress',
-            'company' => 'TV Studio',
-            'city' => 'A Second Unnamed City',
-            'region' => 'A Second Unnamed Region',
-            'postcode' => '54321',
-            'country_id' => 'US',
-            'telephone' => '555-123-5555'
-        );
-
-        $billingAddress = $mockQuote->getBillingAddress()
-            ->addData($billingAddressData);
-        $billingAddressData['quote_id'] = $mockQuote->getId();
-        $billingAddressData['address_id'] = $billingAddress->getId();
-
-        $shippingAddress = $mockQuote->getShippingAddress()
-            ->addData($shippingAddressData);
-
-        $this->assertFalse($this->currentMock->correctBillingAddress($billingAddress, $shippingAddress));
-
-        $result = $billingAddress->getData();
-        unset($result['customer_id']);
-        unset($result['created_at']);
-        unset($result['updated_at']);
-
-        $this->assertEquals($billingAddressData, $result);
+        $this->assertExceptionProperties($exception);
+        $this->assertEquals($dataValues[0], $exception->error[0]->data[0]->product_id);
+        $this->assertEquals($dataValues[1], $exception->error[0]->data[0]->available_quantity);
+        $this->assertEquals($dataValues[2], $exception->error[0]->data[0]->needed_quantity);
+        $this->assertEquals(RESPONSE_CODE::HTTP_UNPROCESSABLE_ENTITY, $boltOrderCreationException->getHttpCode());
     }
 
     /**
-     * Test that if an imperative piece of data is missing, like the street
-     * the address is replaced by shipping.
+     * Test for correct exception data when discount can not be applied
      */
-    public function testCorrectBillingAddressWithMissingStreet() {
-
-        $mockQuote = $this->testHelper->getCheckoutQuote();
-        $mockQuote->removeAllAddresses();
-
-        $billingAddressData = array(
-            'email' => 'hero@general_mills.com',
-            'firstname' => 'Under',
-            'lastname' => 'Dog',
-            'company' => 'ShoeShine Inc.',
-            'city' => 'Incomplete Address City',
-            'region' => 'Incomplete Address Region',
-            'postcode' => '54321-Incomplete',
-            'country_id' => 'US',
-            'telephone' => '555-555-5555'
+    public function testDiscountCanNotBeAppliedException()
+    {
+        // Generic exception
+        $dataValues = ['Discount code too cool to be used', 'FREE_BEER_FOR_LIFE'];
+        $boltOrderCreationException = new Bolt_Boltpay_OrderCreationException(
+            Bolt_Boltpay_OrderCreationException::E_BOLT_DISCOUNT_CANNOT_APPLY,
+            Bolt_Boltpay_OrderCreationException::E_BOLT_DISCOUNT_CANNOT_APPLY_TMPL_GENERIC,
+            $dataValues
         );
+        $exceptionJson = $boltOrderCreationException->getJson();
+        $exception = json_decode($exceptionJson);
 
-        $shippingAddressData = array(
-            'email' => 'reporter@general_mills.com',
-            'firstname' => 'Polly',
-            'lastname' => 'Purebred',
-            'street' => '4 Ever In Distress',
-            'company' => 'TV Studio',
-            'city' => 'An Unnamed City',
-            'region' => 'An Unnamed Region',
-            'postcode' => '12345',
-            'country_id' => 'US',
-            'telephone' => '555-123-5555'
+        $this->assertExceptionProperties($exception);
+        $this->assertEquals($dataValues[0], $exception->error[0]->data[0]->reason);
+        $this->assertEquals($dataValues[1], $exception->error[0]->data[0]->discount_code);
+
+        // Discount code expired exception
+        $dataValues = ['FREE_BEER_FOR_1_SEC'];
+        $boltOrderCreationException = new Bolt_Boltpay_OrderCreationException(
+            Bolt_Boltpay_OrderCreationException::E_BOLT_DISCOUNT_CANNOT_APPLY,
+            Bolt_Boltpay_OrderCreationException::E_BOLT_DISCOUNT_CANNOT_APPLY_TMPL_EXPIRED,
+            $dataValues
         );
+        $exceptionJson = $boltOrderCreationException->getJson();
+        $exception = json_decode($exceptionJson);
 
-        $expected = array(
-            'email' => 'hero@general_mills.com',
-            'firstname' => 'Under',
-            'lastname' => 'Dog',
-            'street' => '4 Ever In Distress',
-            'company' => 'ShoeShine Inc.',
-            'city' => 'An Unnamed City',
-            'region' => 'An Unnamed Region',
-            'region_id' => null,
-            'postcode' => '12345',
-            'country_id' => 'US',
-            'telephone' => '555-555-5555',
-            'address_type' => 'billing'
-        );
-
-        $billingAddress = $mockQuote->getBillingAddress()
-            ->addData($billingAddressData);
-        $expected['quote_id'] = $mockQuote->getId();
-        $expected['address_id'] = $billingAddress->getId();
-
-        $shippingAddress = $mockQuote->getShippingAddress()
-            ->addData($shippingAddressData);
-
-        $this->assertTrue($this->currentMock->correctBillingAddress($billingAddress, $shippingAddress, false));
-
-        $result = $billingAddress->getData();
-        unset($result['customer_id']);
-        unset($result['created_at']);
-        unset($result['updated_at']);
-
-        $this->assertEquals($expected, $result);
+        $this->assertExceptionProperties($exception);
+        $this->assertEquals('This coupon has expired', $exception->error[0]->data[0]->reason);
+        $this->assertEquals($dataValues[0], $exception->error[0]->data[0]->discount_code);
+        $this->assertEquals(RESPONSE_CODE::HTTP_UNPROCESSABLE_ENTITY, $boltOrderCreationException->getHttpCode());
     }
 
     /**
-     * Test for name update from shipping when missing from billing
+     * Test for correct exception data when discount code is invalid
      */
-    public function testCorrectBillingAddressWithNoName() {
-
-        $mockQuote = $this->testHelper->getCheckoutQuote();
-        $mockQuote->removeAllAddresses();
-
-        $billingAddressData = array(
-            'email' => 'hero@general_mills.com',
-            'street' => '15th Phone Booth',
-            'company' => 'ShoeShine Inc.',
-            'city' => 'Unnamed City',
-            'region' => 'Unnamed Region',
-            'postcode' => '12345',
-            'country_id' => 'US',
-            'telephone' => '555-555-5555',
-            'address_type' => 'billing'
+    public function testInvalidDiscountCodeException()
+    {
+        $dataValues = ['GIVE_ME_FREE'];
+        $boltOrderCreationException = new Bolt_Boltpay_OrderCreationException(
+            Bolt_Boltpay_OrderCreationException::E_BOLT_DISCOUNT_DOES_NOT_EXIST,
+            Bolt_Boltpay_OrderCreationException::E_BOLT_DISCOUNT_DOES_NOT_EXIST_TMPL,
+            $dataValues
         );
+        $exceptionJson = $boltOrderCreationException->getJson();
+        $exception = json_decode($exceptionJson);
 
-        $shippingAddressData = array(
-            'email' => 'hero@general_mills.com',
-            'firstname' => 'Polly',
-            'lastname' => 'Purebred',
-            'street' => '4 Ever In Distress',
-            'company' => 'TV Studio',
-            'city' => 'A Second Unnamed City',
-            'region' => 'A Second Unnamed Region',
-            'postcode' => '54321',
-            'country_id' => 'US',
-            'telephone' => '555-123-5555'
-        );
-
-        $billingAddress = $mockQuote->getBillingAddress()
-            ->addData($billingAddressData);
-        $billingAddressData['quote_id'] = $mockQuote->getId();
-        $billingAddressData['address_id'] = $billingAddress->getId();
-
-        $shippingAddress = $mockQuote->getShippingAddress()
-            ->addData($shippingAddressData);
-
-        $this->assertTrue($this->currentMock->correctBillingAddress($billingAddress, $shippingAddress, false));
-
-        $result = $billingAddress->getData();
-        unset($result['customer_id']);
-        unset($result['created_at']);
-        unset($result['updated_at']);
-
-        $billingAddressData['firstname'] = 'Polly';
-        $billingAddressData['lastname'] = 'Purebred';
-        $billingAddressData['prefix'] = $billingAddressData['middlename'] = $billingAddressData['suffix'] = null;
-        $this->assertEquals($billingAddressData, $result);
+        $this->assertExceptionProperties($exception);
+        $this->assertEquals($dataValues[0], $exception->error[0]->data[0]->discount_code);
+        $this->assertEquals(RESPONSE_CODE::HTTP_UNPROCESSABLE_ENTITY, $boltOrderCreationException->getHttpCode());
     }
 
     /**
-     * Test that if an imperative piece of data is missing, like the street
-     * the address is replaced by shipping.
+     * Test for correct exception when shipping price or tax are changed
      */
-    public function testCorrectBillingAddressWithNoBillingAddress() {
+    public function testShippingPriceOrTaxChangedException()
+    {
+        $dataValues = [100, 150];
+        $boltOrderCreationException = new Bolt_Boltpay_OrderCreationException(
+            Bolt_Boltpay_OrderCreationException::E_BOLT_SHIPPING_PRICE_HAS_BEEN_UPDATED,
+            Bolt_Boltpay_OrderCreationException::E_BOLT_SHIPPING_PRICE_HAS_BEEN_UPDATED_TMPL,
+            $dataValues
+        );
+        $exceptionJson = $boltOrderCreationException->getJson();
+        $exception = json_decode($exceptionJson);
 
-        $mockQuote = $this->testHelper->getCheckoutQuote();
-        $mockQuote->removeAllAddresses();
+        $this->assertExceptionProperties($exception);
+        $this->assertEquals('Shipping total has changed', $exception->error[0]->data[0]->reason);
+        $this->assertEquals($dataValues[0], $exception->error[0]->data[0]->old_value);
+        $this->assertEquals($dataValues[1], $exception->error[0]->data[0]->new_value);
+        $this->assertEquals(RESPONSE_CODE::HTTP_UNPROCESSABLE_ENTITY, $boltOrderCreationException->getHttpCode());
+    }
 
-        $shippingAddressData = array(
-            'email' => 'reporter@general_mills.com',
-            'firstname' => 'Polly',
-            'lastname' => 'Purebred',
-            'company' => 'TV Studio',
-            'street' => '4 Ever In Distress',
-            'city' => 'An Unnamed City',
-            'region' => 'An Unnamed Region',
-            'postcode' => '12345',
-            'country_id' => 'US',
-            'telephone' => '555-123-5555'
+    /**
+     * In case when we pass string data instead of expected numbers, values in the response will be set to zero
+     */
+    public function testIncorrectDataJson()
+    {
+        $dataValues = ['hundred', 'hundred and fifty'];
+        $boltOrderCreationException = new Bolt_Boltpay_OrderCreationException(
+            Bolt_Boltpay_OrderCreationException::E_BOLT_SHIPPING_PRICE_HAS_BEEN_UPDATED,
+            Bolt_Boltpay_OrderCreationException::E_BOLT_SHIPPING_PRICE_HAS_BEEN_UPDATED_TMPL,
+            $dataValues
+        );
+        $exceptionJson = $boltOrderCreationException->getJson();
+        $exception = json_decode($exceptionJson);
+
+        $this->assertExceptionProperties($exception);
+        $this->assertEquals('Shipping total has changed', $exception->error[0]->data[0]->reason);
+        $this->assertNotEquals($dataValues[0], $exception->error[0]->data[0]->old_value);
+        $this->assertNotEquals($dataValues[1], $exception->error[0]->data[0]->new_value);
+        $this->assertEquals(0, $exception->error[0]->data[0]->old_value);
+        $this->assertEquals(0, $exception->error[0]->data[0]->new_value);
+        $this->assertEquals(RESPONSE_CODE::HTTP_UNPROCESSABLE_ENTITY, $boltOrderCreationException->getHttpCode());
+    }
+
+    /**
+     * Test if OrderCreationException is keeping a reference to previous error
+     */
+    public function testExceptionWithPreviousException()
+    {
+        $reason = 'test with previous error';
+        $previousException = new Exception('This is previous error');
+        $boltOrderCreationException = new Bolt_Boltpay_OrderCreationException(
+            Bolt_Boltpay_OrderCreationException::E_BOLT_GENERAL_ERROR,
+            Bolt_Boltpay_OrderCreationException::E_BOLT_GENERAL_ERROR_TMPL_GENERIC,
+            [$reason],
+            $reason,
+            $previousException
         );
 
-        $expected = array(
-            'firstname' => 'Polly',
-            'lastname' => 'Purebred',
-            'company' => 'TV Studio',
-            'street' => '4 Ever In Distress',
-            'city' => 'An Unnamed City',
-            'region' => 'An Unnamed Region',
-            'region_id' => null,
-            'postcode' => '12345',
-            'country_id' => 'US',
-            'telephone' => '555-123-5555',
-            'address_type' => 'billing',
-            'prefix' => null,
-            'middlename' => null,
-            'suffix' => null
-        );
+        $exceptionJson = $boltOrderCreationException->getJson();
+        $exception = json_decode($exceptionJson);
 
-        $billingAddress = $mockQuote->getBillingAddress();
-        $expected['quote_id'] = $mockQuote->getId();
-        $expected['address_id'] = $billingAddress->getId();
+        $this->assertNotEmpty($exception->status);
+        $this->assertExceptionProperties($exception);
+        $this->assertNotEmpty($exception->error[0]->data[0]->reason);
 
-        $shippingAddress = $mockQuote->getShippingAddress()
-            ->addData($shippingAddressData);
+        $this->assertEquals(Bolt_Boltpay_OrderCreationException::E_BOLT_GENERAL_ERROR, $exception->error[0]->code);
+        $this->assertEquals($reason, $exception->error[0]->data[0]->reason);
+        $this->assertEquals($previousException, $boltOrderCreationException->getPrevious());
+        $this->assertEquals('This is previous error', $boltOrderCreationException->getPrevious()->getMessage());
+        $this->assertEquals(RESPONSE_CODE::HTTP_CONFLICT, $boltOrderCreationException->getHttpCode());
+    }
 
-        $this->assertTrue($this->currentMock->correctBillingAddress($billingAddress, $shippingAddress, false));
+    /**
+     * Testing HTTP response code for general exception with default parameters
+     */
+    public function testGeneralExceptionHttpCode()
+    {
+        $boltOrderCreationException = new Bolt_Boltpay_OrderCreationException();
+        $this->assertEquals(RESPONSE_CODE::HTTP_CONFLICT, $boltOrderCreationException->getHttpCode());
+    }
 
-        $result = $billingAddress->getData();
-        unset($result['customer_id']);
-        unset($result['created_at']);
-        unset($result['updated_at']);
+    /**
+     * Testing HTTP response code for general exception with default parameters
+     */
+    public function testExistingCartExceptionHttpCode()
+    {
+        $dataValues = ['id_123', 'pending'];
+        $boltOrderCreationException = new Bolt_Boltpay_OrderCreationException(
+            Bolt_Boltpay_OrderCreationException::E_BOLT_ORDER_ALREADY_EXISTS,
+            Bolt_Boltpay_OrderCreationException::E_BOLT_ORDER_ALREADY_EXISTS_TMPL,
+            $dataValues);
+        $this->assertEquals(RESPONSE_CODE::HTTP_CONFLICT, $boltOrderCreationException->getHttpCode());
+    }
 
-        $this->assertEquals($expected, $result);
+    /**
+     * Helper function for asserting that all required params exist in the exception instance
+     *
+     * @param Throwable $exception The exception instance we are testing
+     */
+    private function assertExceptionProperties($exception)
+    {
+        $this->assertNotEmpty($exception->error);
+        $this->assertNotEmpty($exception->error[0]->code);
+        $this->assertNotEmpty($exception->error[0]->data);
+        $this->assertEquals('failure', $exception->status);
     }
 }
