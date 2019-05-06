@@ -20,62 +20,76 @@ require_once 'Mage/Checkout/controllers/OnepageController.php';
 /**
  * Class Bolt_Boltpay_OnepageController
  *
+ * @deprecated This will be removed after the skip payment option is resolved.
  */
 class Bolt_Boltpay_OnepageController
     extends Mage_Checkout_OnepageController implements Bolt_Boltpay_Controller_Interface
 {
-    use Bolt_Boltpay_Controller_Traits_ApiControllerTrait;
+    use Bolt_Boltpay_BoltGlobalTrait;
 
-    /**
-     * Sets up this  controller for non-Bolt orders.  For Bolt orders,
-     * we will call @see Bolt_Boltpay_Controller_Traits_ApiControllerTrait::preDispatch()
-     * explicitly in the success action.
-     */
-    public function _construct()
+    public function saveShippingMethodAction() 
     {
-        $this->willReturnJson = false;
-        $this->requestMustBeSigned = false;
+        try {
+            if ($this->_expireAjax()) {
+                return;
+            }
 
-        parent::_construct();
-    }
+            if ($this->getRequest()->isPost()) {
+                $data = $this->getRequest()->getPost('shipping_method', '');
+                $result = $this->getOnepage()->saveShippingMethod($data);
+                // $result will contain error data if shipping method is empty
+                if (!$result) {
+                    if (Mage::getStoreConfig('payment/boltpay/skip_payment')) {
+                        try {
+                            $data = array('method' => Bolt_Boltpay_Model_Payment::METHOD_CODE);
+                            $result = $this->getOnepage()->savePayment($data);
+                        } catch (Mage_Payment_Exception $e) {
+                            if ($e->getFields()) {
+                                $result['fields'] = $e->getFields();
+                            }
 
+                            $result['error'] = $e->getMessage();
+                            Mage::helper('boltpay/bugsnag')->notifyException($e);
+                        } catch (Mage_Core_Exception $e) {
+                            $result['error'] = $e->getMessage();
+                            Mage::helper('boltpay/bugsnag')->notifyException($e);
+                        } catch (Exception $e) {
+                            //Mage::logException($e);
+                            $result['error'] = $this->__('Unable to set Payment Method.');
+                            Mage::helper('boltpay/bugsnag')->notifyException($e);
+                        }
+                    }
 
-    /**
-	 * Order success action.  For Bolt orders, we need to set the session values that are normally set in
-	 * a checkout session but are missed when we do pre-auth order creation in a separate
-	 * context.
-	 */
-    public function successAction()
-    {
-        $requestParams = $this->getRequest()->getParams();
+                    if (!$result) {
+                        Mage::dispatchEvent(
+                            'checkout_controller_onepage_save_shipping_method',
+                            array(
+                                'request' => $this->getRequest(),
+                            'quote' => $this->getOnepage()->getQuote())
+                        );
+                        Mage::helper('boltpay')->collectTotals($this->getOnepage()->getQuote());
+                        $this->getResponse()->setBody(Mage::helper('core')->jsonEncode($result));
+                        if (Mage::getStoreConfig('payment/boltpay/skip_payment')) {
+                            $this->loadLayout('checkout_onepage_review');
+                            $result['goto_section'] = 'review';
+                            $result['update_section'] = array(
+                                'name' => 'review',
+                                'html' => $this->_getReviewHtml());
+                        } else {
+                            $result['goto_section'] = 'payment';
+                            $result['update_section'] = array(
+                                'name' => 'payment-method',
+                                'html' => $this->_getPaymentMethodsHtml());
+                        }
+                    }
+                }
 
-        if (isset($requestParams['bolt_payload'])) {
-            // Handle Bolt Orders only
-
-            $this->payload = base64_decode($requestParams['bolt_payload']);
-            $this->signature = $requestParams['bolt_signature'];
-            $this->preDispatch();  // this handles signature verification
-
-            /** @var Mage_Checkout_Model_Session $checkoutSession */
-            $checkoutSession = Mage::getSingleton('checkout/session');
-            $checkoutSession
-                ->clearHelperData();
-
-            $quote = $this->getOnepage()->getQuote();
-
-            /* @var Mage_Sales_Model_Quote $immutableQuote */
-            $immutableQuote = Mage::getModel('sales/quote')->loadByIdWithoutStore($quote->getParentQuoteId());
-
-            $checkoutSession
-                ->setLastQuoteId($requestParams['lastQuoteId'])
-                ->setLastSuccessQuoteId($requestParams['lastSuccessQuoteId'])
-                ->setLastOrderId($requestParams['lastOrderId'])
-                ->setLastRealOrderId($requestParams['lastRealOrderId'])
-                ->setLastRecurringProfileIds(explode( ',', @$requestParams['lastRecurringProfileIds']));
-
-            Mage::getModel('boltpay/order')->receiveOrder($requestParams['lastRealOrderId'], $this->payload);
+                Mage::helper('boltpay')->collectTotals($this->getOnepage()->getQuote())->save();
+                $this->getResponse()->setBody(Mage::helper('core')->jsonEncode($result));
+            }
+        } catch (Exception $e) {
+            Mage::helper('boltpay/bugsnag')->notifyException($e);
+            throw $e;
         }
-
-		parent::successAction();
     }
 }

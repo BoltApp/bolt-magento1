@@ -16,6 +16,7 @@
  */
 
 require_once(Mage::getModuleDir('controllers','Mage_Adminhtml').DS.'Sales'.DS.'Order'.DS.'CreateController.php');
+require_once(Mage::getModuleDir('controllers','Bolt_Boltpay').DS.'OrderControllerTrait.php');
 
 /**
  * Adminhtml sales orders creation process controller
@@ -27,7 +28,7 @@ require_once(Mage::getModuleDir('controllers','Mage_Adminhtml').DS.'Sales'.DS.'O
 class Bolt_Boltpay_Adminhtml_Sales_Order_CreateController
     extends Mage_Adminhtml_Sales_Order_CreateController implements Bolt_Boltpay_Controller_Interface
 {
-    use Bolt_Boltpay_Controller_Traits_OrderControllerTrait;
+    use Bolt_Boltpay_OrderControllerTrait;
 
     /**
      * Add address data to the quote for Bolt.  This is normally deferred to

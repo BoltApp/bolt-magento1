@@ -15,8 +15,6 @@
  * @license    http://opensource.org/licenses/osl-3.0.php  Open Software License (OSL 3.0)
  */
 
-use Bolt_Boltpay_OrderCreationException as OCE;
-
 /**
  * Class Bolt_Boltpay_ApiController
  *
@@ -24,45 +22,53 @@ use Bolt_Boltpay_OrderCreationException as OCE;
  */
 class Bolt_Boltpay_ApiController extends Mage_Core_Controller_Front_Action implements Bolt_Boltpay_Controller_Interface
 {
-    use Bolt_Boltpay_Controller_Traits_ApiControllerTrait;
-
-    /**
-     * Sets the request body sent to this controller for actions to use
-     */
-    protected function _construct()
-    {
-        $this->payload = file_get_contents('php://input');
-        $this->signature = @$_SERVER['HTTP_X_BOLT_HMAC_SHA256'];
-
-        parent::_construct();
-    }
+    use Bolt_Boltpay_BoltGlobalTrait;
 
     /**
      * The starting point for all Api hook request
      */
     public function hookAction()
     {
+
         try {
-            /* Allows this method to be used even if the Bolt plugin is disabled.  This accounts for orders that have already been processed by Bolt */
-            Bolt_Boltpay_Helper_Data::$fromHooks = true;
+            $hmacHeader = @$_SERVER['HTTP_X_BOLT_HMAC_SHA256'];
 
-            $bodyParams = json_decode($this->payload, true);
-            $reference = $bodyParams['reference'];
-            $transactionId = @$bodyParams['transaction_id'] ?: $bodyParams['id'];
-            $hookType = @$bodyParams['notification_type'] ?: $bodyParams['type'];
-            $parentQuoteId = @$bodyParams['quote_id'];
+            $requestJson = file_get_contents('php://input');
 
-            /** @var Mage_Sales_Model_Order $order */
+            $this->boltHelper()->setResponseContextHeaders();
 
-            if ($hookType === 'failed_payment') {
-                $this->handleFailedPaymentHook($parentQuoteId);
-                return;
-            } else if ($hookType === 'discounts.code.apply') {
-                $this->handleDiscountHook();
+            if (!$this->boltHelper()->verify_hook($requestJson, $hmacHeader)) {
+                $exception = new Exception($this->boltHelper()->__('Hook request failed validation.'));
+                $this->getResponse()->setHttpResponseCode(412);
+                $this->getResponse()->setBody(json_encode(array('status' => 'failure', 'error' => array('code' => 6001, 'message' => $exception->getMessage()))));
+
+                $this->getResponse()->setException($exception);
+                $this->boltHelper()->notifyException($exception);
                 return;
             }
 
+            //Mage::log('Initiating webhook call', null, 'bolt.log');
+
+            $bodyParams = json_decode(file_get_contents('php://input'), true);
+
+            if (isset($bodyParams['type']) && $bodyParams['type'] == "discounts.code.apply") {
+                /** @var Bolt_Boltpay_Model_Coupon $couponModel */
+                $couponModel = Mage::getModel('boltpay/coupon');
+                $couponModel->setupVariables(json_decode(file_get_contents('php://input')));
+                $couponModel->applyCoupon();
+
+                return $this->sendResponse($couponModel->getHttpCode(), $couponModel->getResponseData());
+            }
+
+            $reference = $bodyParams['reference'];
+            $transactionId = @$bodyParams['transaction_id'] ?: $bodyParams['id'];
+            $hookType = @$bodyParams['notification_type'] ?: $bodyParams['type'];
+
+            /* Allows this method to be used even if the Bolt plugin is disabled.  This accounts for orders that have already been processed by Bolt */
+            Bolt_Boltpay_Helper_Data::$fromHooks = true;
+
             $transaction = $this->boltHelper()->fetchTransaction($reference);
+
             $quoteId = $this->boltHelper()->getImmutableQuoteIdFromTransaction($transaction);
 
             /* If display_id has been confirmed and updated on Bolt, then we should look up the order by display_id */
@@ -74,28 +80,8 @@ class Bolt_Boltpay_ApiController extends Mage_Core_Controller_Front_Action imple
             }
 
             if (!$order->isObjectNew()) {
-                ///////////////////////////////////////
-                // Order was found.  We will update it
-                ///////////////////////////////////////
-
+                //Mage::log('Order Found. Updating it', null, 'bolt.log');
                 $orderPayment = $order->getPayment();
-                if (!$orderPayment->getAdditionalInformation('bolt_reference')) {
-                    /////////////////////////////////////////////////////////////////////////////
-                    /// We've reached a case where authorization was not finalized via the browser
-                    /// session.  We'll complete the post authorization steps prior to processing
-                    /// the webhook.
-                    /////////////////////////////////////////////////////////////////////////////
-                    $immutableQuote = Mage::getModel('sales/quote')->loadByIdWithoutStore($quoteId);
-                    Mage::dispatchEvent(
-                        'bolt_boltpay_authorization_after',
-                        array(
-                            'order'=> $order,
-                            'quote'=> $immutableQuote,
-                            'reference' => $reference
-                        )
-                    );
-                    /////////////////////////////////////////////////////////////////////////////
-                }
 
                 $newTransactionStatus = Bolt_Boltpay_Model_Payment::translateHookTypeToTransactionStatus($hookType, $transaction);
                 $prevTransactionStatus = $orderPayment->getAdditionalInformation('bolt_transaction_status');
@@ -108,10 +94,21 @@ class Bolt_Boltpay_ApiController extends Mage_Core_Controller_Front_Action imple
                         ->setTransactionId($transaction->id);
                 }
 
+                /******************************************************************************************************
+                 * TODO: Check the validity of this code.  It has been known to get out of sync and
+                 * is not strictly necessary.  In fact, it is redundant with one-to-one quote to bolt order mapping
+                 * Therefore, throwing errors will be disabled until fully reviewed.
+                 ********************************************************************************************************/
                 $merchantTransactionId = $orderPayment->getAdditionalInformation('bolt_merchant_transaction_id');
                 if ($merchantTransactionId == null || $merchantTransactionId == '') {
                     $orderPayment->setAdditionalInformation('bolt_merchant_transaction_id', $transactionId);
                     $orderPayment->save();
+                } elseif ($merchantTransactionId != $transactionId && $hookType != 'credit') {
+                    $this->boltHelper()->notifyException(
+                        new Exception(
+                            $this->boltHelper()->__("Transaction id mismatch. Expected: %s got: %s", $merchantTransactionId, $transactionId)
+                        )
+                    );
                 }
 
                 $orderPayment->setData('auto_capture', $newTransactionStatus == 'completed');
@@ -142,9 +139,49 @@ class Bolt_Boltpay_ApiController extends Mage_Core_Controller_Front_Action imple
             }
 
             /////////////////////////////////////////////////////
-            /// Order was not found.  Throw Exception
+            /// Order was not found.  We will create it.
             /////////////////////////////////////////////////////
-            throw new Exception("Could not find order ".$transaction->order->cart->display_id);
+
+            $this->boltHelper()->addBreadcrumb(
+                array(
+                    'reference'  => $reference,
+                    'quote_id'   => $quoteId,
+                )
+            );
+
+            if (empty($reference) || empty($transactionId)) {
+                $exception = new Exception($this->boltHelper()->__('Reference and/or transaction_id is missing'));
+
+                $this->getResponse()->setHttpResponseCode(400)
+                    ->setBody(json_encode(array('status' => 'failure', 'error' => array('code' => 6011, 'message' => $exception->getMessage()))));
+
+                $this->boltHelper()->notifyException($exception);
+                return;
+            }
+
+            /** @var Mage_Sales_Model_Order $order */
+            $order = Mage::getModel('boltpay/order')->createOrder($reference, $sessionQuoteId = null, false, $transaction);
+
+            $this->getResponse()->setBody(
+                json_encode(
+                    array(
+                        'status' => 'success',
+                        'display_id' => $order->getIncrementId(),
+                        'message' => $this->boltHelper()->__('Order creation was successful')
+                    )
+                )
+            );
+            $this->getResponse()
+                ->setHttpResponseCode(201)
+                ->sendResponse();
+
+            //////////////////////////////////////////////
+            //  Clear parent quote to empty the cart
+            //////////////////////////////////////////////
+            /** @var Mage_Sales_Model_Quote $parentQuote */
+            $parentQuote = Mage::getModel('boltpay/order')->getParentQuoteFromOrder($order);
+            $parentQuote->removeAllItems()->save();
+            //////////////////////////////////////////////
 
         } catch (Bolt_Boltpay_InvalidTransitionException $boltPayInvalidTransitionException) {
 
@@ -182,80 +219,24 @@ class Bolt_Boltpay_ApiController extends Mage_Core_Controller_Front_Action imple
                 }
             }
         } catch (Exception $e) {
-            $this->getResponse()->setHttpResponseCode(422)
-                ->setBody(json_encode(array('status' => 'failure', 'error' => array('code' => 6009, 'message' => $e->getMessage()))));
+            if(stripos($e->getMessage(), 'Not all products are available in the requested quantity') !== false) {
+                $this->getResponse()->setHttpResponseCode(409)
+                    ->setBody(json_encode(array('status' => 'failure', 'error' => array('code' => 6003, 'message' => $e->getMessage()))));
+            }else{
+                $this->getResponse()->setHttpResponseCode(422)
+                    ->setBody(json_encode(array('status' => 'failure', 'error' => array('code' => 6009, 'message' => $e->getMessage()))));
 
-            $metaData = array();
-            if (isset($quote)){
-                $metaData['quote'] = var_export($quote->debug(), true);
+                $metaData = array();
+                if (isset($quote)){
+                    $metaData['quote'] = var_export($quote->debug(), true);
+                }
+
+                $this->boltHelper()->notifyException($e, $metaData);
             }
-
-            $this->boltHelper()->notifyException($e, $metaData);
         }
     }
 
-    /**
-     * Creates a Bolt order in response to a Bolt-side pre-authorization call for order creation
-     *
-     * @throws Zend_Controller_Response_Exception if there is an error in sending a response back to the caller
-     * @throws Mage_Core_Model_Store_Exception  if there is a problem locating a reference to the underlying store
-     */
-	public function create_orderAction() {
-        try {
-            $transaction = json_decode($this->payload);
-            $immutableQuoteId = $this->boltHelper()->getImmutableQuoteIdFromTransaction($transaction);
-
-            /** @var  Bolt_Boltpay_Model_Order $orderModel */
-            $orderModel = Mage::getModel('boltpay/order');
-            $order = $orderModel->getOrderByQuoteId($immutableQuoteId);
-
-            if ($order->isObjectNew()) {
-                /** @var Mage_Sales_Model_Order $order */
-                $order = Mage::getModel('boltpay/order')->createOrder($reference = null, $sessionQuoteId = null, $isPreAuthCreation = true, $transaction);
-            } else {
-                if ($order->getStatus() === 'canceled_bolt') {
-                    throw new Bolt_Boltpay_OrderCreationException(
-                        OCE::E_BOLT_CART_HAS_EXPIRED,
-                        OCE::E_BOLT_CART_HAS_EXPIRED_TMPL_EXPIRED
-                    );
-                }
-            }
-
-            $orderSuccessUrl = $this->createSuccessUrl($order, $immutableQuoteId);
-
-            $this->sendResponse(
-                200,
-                array(
-                    'status' => 'success',
-                    'display_id' => $order->getIncrementId(),
-                    'total' => (int)($order->getGrandTotal() * 100),
-                    'order_received_url' => $orderSuccessUrl
-                )
-            );
-        } catch ( Bolt_Boltpay_OrderCreationException $orderCreationException ) {
-            $this->sendResponse(
-                $orderCreationException->getHttpCode(),
-                $orderCreationException->getJson(),
-                false
-            );
-
-            //////////////////////////////////////////////////////
-            /// Send the computed cart to Bugsnag for comparison
-            //////////////////////////////////////////////////////
-            $immutableQuote = Mage::getModel('sales/quote')->loadByIdWithoutStore($order->getQuoteId());
-            $computedCart = Mage::getModel('boltpay/boltOrder')->buildCart($immutableQuote, false );
-            $this->boltHelper()->notifyException($orderCreationException, array( 'magento_order_details' => json_encode($computedCart)));
-        }
-	}
-
-    /**
-     * If present, returns the capture amount on a transaction
-     *
-     * @param object $transaction  The Bolt transaction sent as the body of the API request
-     *
-     * @return float|int|null   returns the transaction amount as a float, if present, otherwise null
-     */
-	protected function getCaptureAmount($transaction) {
+    protected function getCaptureAmount($transaction) {
         if(isset($transaction->capture->amount->amount) && is_numeric($transaction->capture->amount->amount)) {
             return $transaction->capture->amount->amount/100;
         }
@@ -264,99 +245,14 @@ class Bolt_Boltpay_ApiController extends Mage_Core_Controller_Front_Action imple
     }
 
     /**
-     * Creates the success url for Bolt to forward the customer browser to upon transaction authorization
-     *
-     * @param Mage_Sales_Model_Order    $order
-     * @param Mage_Sales_Model_Quote    $immutableQuoteId
-     *
-     * @return string   The URL for which Bolt is to forward the browser.  It contains variables normally
-     *                  stored as session values as URL parameter
-     *
-     * @throws Mage_Core_Model_Store_Exception  if for any reason the store can not be found to generate the URL
+     * @param int $httpCode
+     * @param array $data
      */
-    private function createSuccessUrl($order, $immutableQuoteId) {
-        /* @var Mage_Sales_Model_Quote $immutableQuote */
-        $immutableQuote = Mage::getModel('sales/quote')->loadByIdWithoutStore($immutableQuoteId);
-        $recurringPaymentProfiles = $immutableQuote->collectTotals()->prepareRecurringPaymentProfiles();
-        $successUrlPath = $this->boltHelper()->getMagentoUrl(Mage::getStoreConfig('payment/boltpay/successpage')) ?: '/';
-
-        if ($successUrlPath[strlen($successUrlPath) - 1] === '/' ) $successUrlPath = substr( $successUrlPath, 0, -1);
-
-        $successUrlQueryString = "?lastQuoteId={$immutableQuote->getParentQuoteId()}&lastSuccessQuoteId={$immutableQuote->getParentQuoteId()}&lastOrderId={$order->getId()}&lastRealOrderId={$order->getIncrementId()}";
-
-        $recurringPaymentProfilesIds = array();
-        /** @var Mage_Payment_Model_Recurring_Profile $profile */
-        foreach((array)$recurringPaymentProfiles as $profile) {
-            $recurringPaymentProfilesIds[] = $profile->getId();
-        }
-
-        if ($recurringPaymentProfilesIds) {
-            $successUrlQueryString .= "&lastRecurringProfileIds=" . implode(",", $recurringPaymentProfilesIds);
-        }
-
-        return $successUrlPath . $successUrlQueryString;
+    protected function sendResponse($httpCode, $data = array())
+    {
+        $this->getResponse()->setHeader('Content-type', 'application/json');
+        $this->getResponse()->setHttpResponseCode($httpCode);
+        $this->getResponse()->setBody(json_encode($data));
     }
 
-    /**
-     * Handles failed payment web hooks.  It attempts to cancel a specified pre-auth order
-     * in addition to invalidating the cache associated with that orders session.
-     *
-     * @param int   $parentQuoteId  the ID of the session quote whose order should be cancelled.
-     *
-     * @throws Zend_Controller_Response_Exception if there is an unexpected error in sending a response
-     * @throws Mage_Core_Exception if the order cannot be canceled
-     */
-    private function handleFailedPaymentHook($parentQuoteId) {
-        /** @var Bolt_Boltpay_Model_Order $orderModel */
-        $orderModel = Mage::getModel('boltpay/order');
-        $order =  $orderModel->getOrderByParentQuoteId($parentQuoteId);
-
-        if (!$order->isObjectNew()) {
-            $orderModel->removePreAuthOrder($order);
-        }
-
-        ////////////////////////////////////////////////////////////////////
-        /// We treat Bolt initiated cancels to be the same as a directive
-        /// to expire the cached immutable quote that is stored in the session,
-        /// otherwise, the Bolt checkout could result in a locked state where the end
-        /// user will repeatedly be told that his cart has expired and to refresh. However,
-        /// since we are operating outside the session we cannot directly clear
-        /// the cache session from data
-        ///
-        /// Instead, we mark the immutable quote cache to be expired by setting
-        /// the parent quote to be the parent quote of itself.  We take care of this
-        /// via an observer that watches for this condition.  This will preserve
-        /// native abandoned cart behavior while not marking the quote for
-        /// cleanup.
-        ////////////////////////////////////////////////////////////////////
-
-        $parentQuote = $orderModel->getQuoteById($parentQuoteId);
-        if ($parentQuote->getId()) {
-            $parentQuote
-                ->setParentQuoteId($parentQuote->getId())
-                ->save();
-        }
-
-        $this->sendResponse(
-            200,
-            array(
-                'status' => 'success',
-                'message' => $this->boltHelper()->__('Pre-auth order was canceled')
-            )
-        );
-    }
-
-    /**
-     * Handles discount web hooks
-     *
-     * @throws Zend_Controller_Response_Exception if there is an unexpected error in sending a response
-     */
-    private function handleDiscountHook() {
-        /** @var Bolt_Boltpay_Model_Coupon $couponModel */
-        $couponModel = Mage::getModel('boltpay/coupon');
-        $couponModel->setupVariables(json_decode($this->payload));
-        $couponModel->applyCoupon();
-
-        $this->sendResponse($couponModel->getHttpCode(), $couponModel->getResponseData());
-    }
 }

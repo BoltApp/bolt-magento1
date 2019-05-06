@@ -73,7 +73,7 @@ class Bolt_Boltpay_Model_Payment extends Mage_Payment_Model_Method_Abstract
     protected $_canUseForMultishipping      = false;
     protected $_canCreateBillingAgreement   = false;
     protected $_isGateway                   = false;
-    protected $_isInitializeNeeded          = true;
+    protected $_isInitializeNeeded          = false;
 
     protected $_validStateTransitions = array(
         self::TRANSACTION_AUTHORIZED => array(self::TRANSACTION_AUTHORIZED, self::TRANSACTION_COMPLETED, self::TRANSACTION_CANCELLED, self::TRANSACTION_REJECTED_REVERSIBLE, self::TRANSACTION_REJECTED_IRREVERSIBLE, self::TRANSACTION_PENDING),
@@ -109,22 +109,6 @@ class Bolt_Boltpay_Model_Payment extends Mage_Payment_Model_Method_Abstract
         if (!Bolt_Boltpay_Helper_Data::$fromHooks) {
             $this->_validStateTransitions[self::TRANSACTION_ON_HOLD] = array(self::TRANSACTION_ALL_STATES);
         }
-    }
-
-    /**
-     * We set the initial state to Bolt
-     * @param string $paymentAction
-     * @param object $stateObject
-     * @return Mage_Payment_Model_Abstract
-     */
-    public function initialize($paymentAction, $stateObject)
-    {
-        $stateObject
-            ->setState(Mage_Sales_Model_Order::STATE_PENDING_PAYMENT)
-            ->setStatus('pending_bolt')
-            ->setIsNotified(false);
-
-        return parent::initialize($paymentAction, $stateObject);
     }
 
     /**
@@ -443,6 +427,7 @@ class Bolt_Boltpay_Model_Payment extends Mage_Payment_Model_Method_Abstract
                 if ($this->isCaptureRequest($newTransactionStatus, $prevTransactionStatus)) {
                     $this->createInvoiceForHookRequest($payment);
                 }elseif ($newTransactionStatus == self::TRANSACTION_AUTHORIZED) {
+                    $reference = $payment->getAdditionalInformation('bolt_reference');
                     if (empty($reference)) {
                         throw new Exception( $this->boltHelper()->__("Payment missing expected transaction ID.") );
                     }
@@ -804,7 +789,7 @@ class Bolt_Boltpay_Model_Payment extends Mage_Payment_Model_Method_Abstract
                 break;
             default:
                 $payment = new Bolt_Boltpay_Model_Payment();
-                $payment->boltHelper()->notifyException(new Exception( $payment->boltHelper()->__("'%s' is not a recognized order status.  '%s' is being set instead.", $transactionStatus, $new_order_status) ));
+                $payment->boltHelper()->notifyException(new Exception( $payment->boltHelper()->__("'%s' is not a recognized order status.  '%s' is being set instead.", $transactionStatus, $transactionStatus) ));
         }
 
         return $new_order_status;
@@ -984,8 +969,7 @@ class Bolt_Boltpay_Model_Payment extends Mage_Payment_Model_Method_Abstract
 
         if (!array_intersect($requestedStateOrAll, $validNextStatuses)) {
             throw new Bolt_Boltpay_InvalidTransitionException(
-                $prevTransactionStatus, $newTransactionStatus, $this->boltHelper()->__("Cannot transition a transaction from %s to %s", $prevTransactionStatus, $newTransactionStatus)
-            );
+                $prevTransactionStatus, $newTransactionStatus, $this->boltHelper()->__("Cannot transition a transaction from %s to %s", $prevTransactionStatus, $newTransactionStatus));
         }
 
         return true;

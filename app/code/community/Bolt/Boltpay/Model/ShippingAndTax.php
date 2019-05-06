@@ -138,9 +138,10 @@ class Bolt_Boltpay_Model_ShippingAndTax extends Bolt_Boltpay_Model_Abstract
         );
 
         try {
+            $this->boltHelper()->collectTotals(Mage::getModel('sales/quote')->load($quote->getId()));
             $originalCouponCode = $quote->getCouponCode();
+
             if ($parentQuote) $quote->setCouponCode($parentQuote->getCouponCode());
-            $this->boltHelper()->collectTotals(Mage::getModel('sales/quote')->load($quote->getId()), true);
 
             //we should first determine if the cart is virtual
             if($quote->isVirtual()){
@@ -153,8 +154,7 @@ class Bolt_Boltpay_Model_ShippingAndTax extends Bolt_Boltpay_Model_Abstract
                 );
                 $response['shipping_options'][] = $option;
                 $quote->setTotalsCollectedFlag(true);
-
-                return $this->boltHelper()->doFilterEvent('bolt_boltpay_filter_shipping_and_tax_estimate', $response, $quote);
+                return $response;
             }
 
             $this->applyShippingRate($quote, null);
@@ -179,7 +179,6 @@ class Bolt_Boltpay_Model_ShippingAndTax extends Bolt_Boltpay_Model_Abstract
                     continue;
                 }
 
-                if ($parentQuote) $quote->setCouponCode($parentQuote->getCouponCode());
                 $this->applyShippingRate($quote, $rate->getCode());
 
                 $rateCode = $rate->getCode();
@@ -203,21 +202,12 @@ class Bolt_Boltpay_Model_ShippingAndTax extends Bolt_Boltpay_Model_Abstract
                 );
 
                 $response['shipping_options'][] = $option;
-
-                Mage::dispatchEvent(
-                    'bolt_boltpay_shipping_option_added',
-                    array(
-                        'quote'=> $quote,
-                        'shippingMethodCode' => $rate->getCode()
-                    )
-                );
             }
-
         } finally {
             $quote->setCouponCode($originalCouponCode);
         }
 
-        return $this->boltHelper()->doFilterEvent('bolt_boltpay_filter_shipping_and_tax_estimate', $response, $quote);
+        return $response;
     }
 
     /**
@@ -226,20 +216,10 @@ class Bolt_Boltpay_Model_ShippingAndTax extends Bolt_Boltpay_Model_Abstract
      * @param Mage_Sales_Model_Quote $quote    Quote which has been updated to use new shipping rate
      * @param string $shippingRateCode         Shipping rate code composed of {carrier}_{method}
      */
-    public function applyShippingRate($quote, $shippingRateCode, $clearTotalsCollectedFlag = true ) {
-
+    public function applyShippingRate($quote, $shippingRateCode) {
         $shippingAddress = $quote->getShippingAddress();
 
         if (!empty($shippingAddress)) {
-
-            Mage::dispatchEvent(
-                'bolt_boltpay_shipping_method_applied_before',
-                array(
-                    'quote'=> $quote,
-                    'shippingMethodCode' => $shippingRateCode
-                )
-            );
-
             // Flagging address as new is required to force collectTotals to recalculate discounts
             $shippingAddress->isObjectNew(true);
             $shippingAddressId = $shippingAddress->getData('address_id');
@@ -257,7 +237,7 @@ class Bolt_Boltpay_Model_ShippingAndTax extends Bolt_Boltpay_Model_Abstract
                 $item->setData('base_discount_amount', $item->getOrigData('base_discount_amount'));
             }
 
-            $this->boltHelper()->collectTotals($quote, $clearTotalsCollectedFlag);
+            $this->boltHelper()->collectTotals($quote, true);
 
             if(!empty($shippingAddressId) && $shippingAddressId != $shippingAddress->getData('address_id')) {
                 $shippingAddress->setData('address_id', $shippingAddressId);

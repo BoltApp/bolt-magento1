@@ -59,7 +59,7 @@ class Bolt_Boltpay_ShippingController
     public function indexAction()
     {
         try {
-
+          
             set_time_limit(30);
             ignore_user_abort(true);
 
@@ -88,14 +88,6 @@ class Bolt_Boltpay_ShippingController
             ////////////////////////////////////////////////////////////////////////////////
             /// Apply shipping address with validation checks
             ////////////////////////////////////////////////////////////////////////////////
-            Mage::dispatchEvent(
-                'bolt_boltpay_shipping_estimate_before',
-                array(
-                    'quote'=> $quote,
-                    'transaction' => $mockTransaction
-                )
-            );
-
             $shippingAddress = $requestData->shipping_address;
             $addressErrorDetails = array();
 
@@ -120,10 +112,11 @@ class Bolt_Boltpay_ShippingController
                 $this->boltHelper()->notifyException(new Exception(json_encode($addressErrorDetails)));
                 return $this->getResponse()
                     ->clearAllHeaders()
-                    ->setHttpResponseCode(403)
+                    ->setHttpResponseCode(422)
                     ->setBody(json_encode(array('status' => 'failure','error' => $addressErrorDetails)));
             }
             ////////////////////////////////////////////////////////////////////////////////
+
 
             ////////////////////////////////////////////////////////////////////////////////////////
             // Check session cache for estimate.  If the shipping city or postcode, and the country code match,
@@ -176,6 +169,7 @@ class Bolt_Boltpay_ShippingController
      */
     public function prefetchEstimateAction()
     {
+
         set_time_limit(30);
         ignore_user_abort(true);
 
