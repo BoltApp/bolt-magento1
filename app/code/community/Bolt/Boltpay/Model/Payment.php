@@ -25,6 +25,8 @@ class Bolt_Boltpay_Model_Payment extends Mage_Payment_Model_Method_Abstract
     const METHOD_CODE               = 'boltpay';
     const TITLE                     = "Credit & Debit Card";
     const TITLE_ADMIN               = "Credit and Debit Card (Powered by Bolt)";
+    const DECISION_APPROVE          = 'approve';
+    const DECISION_REJECT           = 'reject';
 
     // Order States
     const ORDER_DEFERRED = 'deferred';
@@ -94,7 +96,7 @@ class Bolt_Boltpay_Model_Payment extends Mage_Payment_Model_Method_Abstract
         self::HOOK_TYPE_PENDING => self::TRANSACTION_PENDING,
         self::HOOK_TYPE_REJECTED_REVERSIBLE => self::TRANSACTION_REJECTED_REVERSIBLE,
         self::HOOK_TYPE_REJECTED_IRREVERSIBLE => self::TRANSACTION_REJECTED_IRREVERSIBLE,
-        self::HOOK_TYPE_VOID => self::TRANSACTION_CANCELLED,        
+        self::HOOK_TYPE_VOID => self::TRANSACTION_CANCELLED,
         self::HOOK_TYPE_REFUND => self::TRANSACTION_REFUND
     );
 
@@ -317,7 +319,7 @@ class Bolt_Boltpay_Model_Payment extends Mage_Payment_Model_Method_Abstract
                 $message = $this->boltHelper()->__('Bad refund response. Empty transaction id');
                 Mage::throwException($message);
             }
-            
+
             $this->setRefundPaymentInfo($payment,$response);
 
             //Mage::log(sprintf('Refund completed for payment id: %d', $payment->getId()), null, 'bolt.log');
@@ -436,7 +438,7 @@ class Bolt_Boltpay_Model_Payment extends Mage_Payment_Model_Method_Abstract
                     $transaction = $payment->addTransaction( Mage_Sales_Model_Order_Payment_Transaction::TYPE_AUTH );
                     $transaction->setIsClosed(false);
                     $payment->save();
-                    
+
                     $message = $this->boltHelper()->__('BOLT notification: Payment transaction is authorized.');
                     $order->setState( Mage_Sales_Model_Order::STATE_PROCESSING, true, $message );
                     $order->save();
@@ -459,7 +461,7 @@ class Bolt_Boltpay_Model_Payment extends Mage_Payment_Model_Method_Abstract
                 } elseif ($newTransactionStatus == self::TRANSACTION_REJECTED_REVERSIBLE) {
                     $order = $payment->getOrder();
                     $message = $this->boltHelper()->__('BOLT notification: Transaction reference "%s" has been rejected by Bolt internal review but is eligible for force approval on Bolt\'s merchant dashboard', $reference);
-                    $order->setState(self::ORDER_DEFERRED, true, $message);
+                    $order->setState(Mage_Sales_Model_Order::STATE_PAYMENT_REVIEW, self::ORDER_DEFERRED, $message);
                     $order->save();
                 } elseif ($newTransactionStatus == self::TRANSACTION_REFUND) {
                     $this->handleRefundTransactionUpdate($payment, $newTransactionStatus, $prevTransactionStatus, $transactionAmount, $transaction);
@@ -488,7 +490,7 @@ class Bolt_Boltpay_Model_Payment extends Mage_Payment_Model_Method_Abstract
             throw $e;
         }
     }
-    
+
     public function handleRefundTransactionUpdate(
         Mage_Payment_Model_Info $payment,
         $newTransactionStatus,
@@ -515,8 +517,8 @@ class Bolt_Boltpay_Model_Payment extends Mage_Payment_Model_Method_Abstract
             $isPartialRefund = false;
             //actually for order with bolt payment, there is only one invoice can refund
             if ($invoiceIds && isset($invoiceIds[0])) {
-                $this->setRefundPaymentInfo($payment,$transaction);             
-                
+                $this->setRefundPaymentInfo($payment,$transaction);
+
                 // flag refund as already being set on Bolt to prevent a duplicate call by Magento to Bolt
                 $payment->setAdditionalInformation('bolt_transaction_was_refunded_by_webhook', '1');
 
@@ -550,7 +552,7 @@ class Bolt_Boltpay_Model_Payment extends Mage_Payment_Model_Method_Abstract
                             $data = array(
                                 'qtys' => $qtys
                             );
-                            
+
                             // When doing a refund from Bolt dashboard, it is hard to detect what the refund is for, actually the refund could be shipping, tax, item fee or any part of them,
                             // therefore we have to reply on "Adjustment Refund", using this field the refund in magento can keep pace with exact amount from Bolt server, also avoid complicated calculation
                             // and conflicts with other plugins.
@@ -612,7 +614,7 @@ class Bolt_Boltpay_Model_Payment extends Mage_Payment_Model_Method_Abstract
             throw $e;
         }
     }
-    
+
     /**
      * Set related info for refund payment.
      *
@@ -1070,5 +1072,96 @@ class Bolt_Boltpay_Model_Payment extends Mage_Payment_Model_Method_Abstract
         }
 
         return false;
+    }
+
+    /**
+     * Whether this method can accept or deny payment
+     *
+     * @param Mage_Payment_Model_Info $payment
+     *
+     * @return bool
+     */
+    public function canReviewPayment(Mage_Payment_Model_Info $payment)
+    {
+       return $payment->getAdditionalInformation('bolt_transaction_status') == self::TRANSACTION_REJECTED_REVERSIBLE;
+    }
+
+    /**
+     * Attempt to approve the order
+     *
+     * @param Mage_Payment_Model_Info $payment
+     * @return bool
+     * @throws Exception
+     */
+    public function acceptPayment(Mage_Payment_Model_Info $payment)
+    {
+        return $this->review($payment, self::DECISION_APPROVE);
+    }
+
+    /**
+     * Attempt to deny the order
+     *
+     * @param Mage_Payment_Model_Info $payment
+     * @return bool
+     * @throws Exception
+     */
+    public function denyPayment(Mage_Payment_Model_Info $payment)
+    {
+        return $this->review($payment, self::DECISION_REJECT);
+    }
+
+    /**
+     * Function to process the review (approve/reject), sends data to Bolt API
+     * And update order history
+     *
+     * @param Mage_Payment_Model_Info $payment
+     * @param $review
+     *
+     * @return bool
+     */
+    protected function review(Mage_Payment_Model_Info $payment, $review)
+    {
+        try {
+            $transId = $payment->getAdditionalInformation('bolt_merchant_transaction_id');
+            if ($transId == null) {
+                $message = $this->boltHelper()->__('Waiting for a transaction update from Bolt. Please retry after 60 seconds.');
+                Mage::throwException($message);
+            }
+
+            $data = array(
+                'transaction_id' => $transId,
+                'decision'       => $review,
+            );
+
+            $response = $this->boltHelper()->transmit("review", $data);
+
+            if (strlen($response->reference) == 0) {
+                $message = $this->boltHelper()->__('Bad review response. Empty transaction reference');
+                Mage::throwException($message);
+            }
+
+            $this->updateReviewedOrderHistory($payment, $review);
+
+            return true;
+        } catch (Exception $e) {
+            $this->boltHelper()->notifyException($e);
+        }
+
+        return false;
+    }
+
+    /**
+     * @param Mage_Payment_Model_Info $payment
+     * @param $review
+     */
+    protected function updateReviewedOrderHistory(Mage_Payment_Model_Info $payment, $review)
+    {
+        $statusMessage = $review == self::DECISION_APPROVE ? 'Force approve order by %s %s.' : 'Confirm order rejection by %s %s.';
+        $adminUser = Mage::getSingleton('admin/session')->getUser();
+        $message = $this->boltHelper()->__($statusMessage, $adminUser->getFirstname(), $adminUser->getLastname());
+
+        $order = $payment->getOrder();
+        $order->addStatusHistoryComment($message);
+        $order->save();
     }
 }
