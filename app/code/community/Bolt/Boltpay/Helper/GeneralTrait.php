@@ -70,6 +70,9 @@ trait Bolt_Boltpay_Helper_GeneralTrait {
 
         if($clearTotalsCollectedFlag) {
             $quote->setTotalsCollectedFlag(false);
+            $quote->getShippingAddress()->unsetData('cached_items_all');
+            $quote->getShippingAddress()->unsetData('cached_items_nominal');
+            $quote->getShippingAddress()->unsetData('cached_items_nonnominal');
         }
 
         $quote->collectTotals();
