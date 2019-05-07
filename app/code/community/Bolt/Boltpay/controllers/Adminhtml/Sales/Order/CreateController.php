@@ -25,7 +25,8 @@ require_once(Mage::getModuleDir('controllers','Bolt_Boltpay').DS.'OrderControlle
  * @package    Mage_Adminhtml
  * @author      Magento Core Team <core@magentocommerce.com>
  */
-class Bolt_Boltpay_Adminhtml_Sales_Order_CreateController extends Mage_Adminhtml_Sales_Order_CreateController
+class Bolt_Boltpay_Adminhtml_Sales_Order_CreateController
+    extends Mage_Adminhtml_Sales_Order_CreateController implements Bolt_Boltpay_Controller_Interface
 {
     use Bolt_Boltpay_OrderControllerTrait;
 
