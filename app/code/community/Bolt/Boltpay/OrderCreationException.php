@@ -114,19 +114,42 @@ class Bolt_Boltpay_OrderCreationException extends Bolt_Boltpay_BoltException
     /**
      * Bolt_Boltpay_OrderCreationException constructor.
      *
-     * @param int    $code          The Bolt defined error code
+     * @param int    $code          The Bolt-defined error code
      * @param string $dataTemplate  specific Bolt error sub-category
      * @param array  $dataValues    An array of values to be added to the data template
      * @param string $message       The exception message to throw.
      * @param Throwable|null $previous  [optional] The previously throwable used for exception chaining.
+     *
+     * @see Bolt_Boltpay_OrderCreationException::$validCodes for the supported Bolt-defined error codes
      */
-    public function __construct($code = self::E_BOLT_GENERAL_ERROR, $dataTemplate = self::E_BOLT_GENERAL_ERROR_TMPL_GENERIC, array $dataValues = array(), $message = null, Throwable $previous = null)
+    public function __construct(
+        $code = self::E_BOLT_GENERAL_ERROR,
+        $dataTemplate = self::E_BOLT_GENERAL_ERROR_TMPL_GENERIC,
+        array $dataValues = array(),
+        $message = null,
+        Throwable $previous = null
+    )
     {
         // If code is invalid, we will use the generic message
         if (!in_array($code, self::$validCodes)) {
+            $originalCode = $code;
+            $originalDataTemplate = $dataTemplate;
+            $originalDataValues = $dataValues;
+            $originalJson = $this->createJson($originalCode, $originalDataTemplate, $originalDataValues);
+
+            $this->boltHelper()->notifyException(
+                new Exception("Invalid response code specified [$code]. Default "
+                    .self::E_BOLT_GENERAL_ERROR." will be used instead."
+                    ."\nSupported codes: ".json_encode(self::$validCodes)
+                    ."\nSupplied error:\n$originalJson"
+                ),
+                array(),
+                'warning'
+            );
+
             $code = self::E_BOLT_GENERAL_ERROR;
             $dataTemplate = self::E_BOLT_GENERAL_ERROR_TMPL_GENERIC;
-            $dataValues = array($message);
+            $dataValues = array($message."\nSupplied error:\n$originalJson");
         }
 
         foreach( $dataValues as $index => $value ) {
@@ -146,8 +169,10 @@ class Bolt_Boltpay_OrderCreationException extends Bolt_Boltpay_BoltException
     /**
      * Finds the httpCode based on the error parameters
      *
-     * @param int    $code         Bolt error code
+     * @param int    $code         Bolt-defined error code
      * @param string $dataTemplate specific Bolt error sub-category
+     *
+     * @see Bolt_Boltpay_OrderCreationException::$validCodes for the supported Bolt-defined error codes
      *
      * @return int The HTTP code that was found which matches the provided error info
      */
@@ -176,7 +201,7 @@ class Bolt_Boltpay_OrderCreationException extends Bolt_Boltpay_BoltException
     /**
      * Creates the JSON to be returned to the Bolt server
      *
-     * @param int    $code         Bolt error code
+     * @param int    $code         Bolt-defined error code
      * @param string $dataTemplate specific Bolt error sub-category
      * @param array  $dataValues   An array of values to be added to the data template
      *
