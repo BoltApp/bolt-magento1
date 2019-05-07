@@ -354,18 +354,34 @@ class Bolt_Boltpay_OrderCreationExceptionTest extends PHPUnit_Framework_TestCase
      */
     public function testNonRegisteredErrorCode()
     {
-        $reason = 'test non-existing code';
+
+        $errorMessage = 'test non-existing code';
+        $templateData = ['this error is from the template'];
         $boltOrderCreationException = new Bolt_Boltpay_OrderCreationException(
             12345,
             Bolt_Boltpay_OrderCreationException::E_BOLT_GENERAL_ERROR_TMPL_GENERIC,
-            [$reason],
-            $reason
+            $templateData,
+            $errorMessage
         );
+
+        $createJsonMethod = new ReflectionMethod($boltOrderCreationException, 'createJson');
+        $createJsonMethod->setAccessible(true);
+
+        $createJsonResult = $createJsonMethod->invoke(
+            $boltOrderCreationException,
+            12345,
+            Bolt_Boltpay_OrderCreationException::E_BOLT_GENERAL_ERROR_TMPL_GENERIC,
+            $templateData
+        );
+
         $exceptionJson = $boltOrderCreationException->getJson();
         $exception = json_decode($exceptionJson);
 
         $this->assertExceptionProperties($exception);
-        $this->assertEquals($reason, $exception->error[0]->data[0]->reason);
+        $this->assertEquals(
+            $errorMessage."\nSupplied error:\n$createJsonResult",
+            $exception->error[0]->data[0]->reason
+        );
 
         $this->assertEquals(RESPONSE_CODE::HTTP_UNPROCESSABLE_ENTITY, $boltOrderCreationException->getHttpCode());
     }
