@@ -99,7 +99,7 @@ if(!$this->boltHelper()->canUseBolt($this->getQuote(), false) || Mage::getStoreC
 
                 var payment_radio = payment_radios[i];
 
-                payment_radio.onclick = toggleBoltButton;
+                payment_radio.addEventListener('click', toggleBoltButton);
 
                 <?php if ($this->isBoltOnlyPayment()): ?>
                 if (payment_radio.id != "p_method_boltpay") {
