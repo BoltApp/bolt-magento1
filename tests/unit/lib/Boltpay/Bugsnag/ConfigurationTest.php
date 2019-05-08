@@ -214,9 +214,78 @@ class ConfigurationTest extends TestCase
                 'data' => [
                     'notifyReleaseStages' => [],
                     'releaseStage' => '',
-                    'expect' => ''
+                    'expect' => false
                 ]
-            ]
+            ],
+            [
+                'data' => [
+                    'notifyReleaseStages' => [],
+                    'releaseStage' => 'shipping',
+                    'expect' => false
+                ]
+            ],
+            [
+                'data' => [
+                    'notifyReleaseStages' => ['shipping'],
+                    'releaseStage' => '',
+                    'expect' => false
+                ]
+            ],
+            [
+                'data' => [
+                    'notifyReleaseStages' => ['shipping'],
+                    'releaseStage' => 'shipping',
+                    'expect' => true
+                ]
+            ],
+            [
+                'data' => [
+                    'notifyReleaseStages' => ['shipping', 'payment'],
+                    'releaseStage' => 'shipping',
+                    'expect' => true
+                ]
+            ],
+            [
+                'data' => [
+                    'notifyReleaseStages' => ['shipping', 'payment'],
+                    'releaseStage' => 'confirmation',
+                    'expect' => false
+                ]
+            ],
+        ];
+    }
+
+    /**
+     * @test
+     * @dataProvider shouldIgnoreErrorCodeCases
+     */
+    public function shouldIgnoreErrorCode($data)
+    {
+        $object = new Bugsnag_Configuration();
+        $object->errorReportingLevel = $data['errorReportingLevel'];
+        $this->assertEquals($data['expect'], $object->shouldIgnoreErrorCode($data['code']));
+    }
+
+    /**
+     * @return array
+     */
+    public function shouldIgnoreErrorCodeCases()
+    {
+        return [
+            [
+                'data' => [
+                    'errorReportingLevel' => '',
+                    'code' => '',
+                    'expect' => true
+                ]
+            ],
+//             [
+//                 'data' => [
+//                     'errorReportingLevel' => '',
+//                     'code' => 0,
+//                     'expect' => true
+//                 ]
+//             ],
         ];
     }
 }
