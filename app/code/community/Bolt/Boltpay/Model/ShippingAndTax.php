@@ -61,7 +61,7 @@ class Bolt_Boltpay_Model_ShippingAndTax extends Bolt_Boltpay_Model_Abstract
             . (@$shippingAddress->street_address3 ?: '') . "\n"
             . (@$shippingAddress->street_address4 ?: '')
         );
-            
+
         $addressData = array(
             'email' => @$shippingAddress->email ?: $shippingAddress->email_address,
             'firstname' => @$shippingAddress->first_name,
@@ -138,10 +138,9 @@ class Bolt_Boltpay_Model_ShippingAndTax extends Bolt_Boltpay_Model_Abstract
         );
 
         try {
-            $this->boltHelper()->collectTotals(Mage::getModel('sales/quote')->load($quote->getId()));
             $originalCouponCode = $quote->getCouponCode();
-
             if ($parentQuote) $quote->setCouponCode($parentQuote->getCouponCode());
+            $this->boltHelper()->collectTotals(Mage::getModel('sales/quote')->load($quote->getId()), true);
 
             //we should first determine if the cart is virtual
             if($quote->isVirtual()){
@@ -179,6 +178,7 @@ class Bolt_Boltpay_Model_ShippingAndTax extends Bolt_Boltpay_Model_Abstract
                     continue;
                 }
 
+                if ($parentQuote) $quote->setCouponCode($parentQuote->getCouponCode());
                 $this->applyShippingRate($quote, $rate->getCode());
 
                 $rateCode = $rate->getCode();
@@ -203,6 +203,7 @@ class Bolt_Boltpay_Model_ShippingAndTax extends Bolt_Boltpay_Model_Abstract
 
                 $response['shipping_options'][] = $option;
             }
+
         } finally {
             $quote->setCouponCode($originalCouponCode);
         }
@@ -217,6 +218,7 @@ class Bolt_Boltpay_Model_ShippingAndTax extends Bolt_Boltpay_Model_Abstract
      * @param string $shippingRateCode         Shipping rate code composed of {carrier}_{method}
      */
     public function applyShippingRate($quote, $shippingRateCode) {
+
         $shippingAddress = $quote->getShippingAddress();
 
         if (!empty($shippingAddress)) {
