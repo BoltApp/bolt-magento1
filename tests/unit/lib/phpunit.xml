@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<phpunit
+    bootstrap="bootstrap.php"
+    colors="true"
+>
+
+    <filter>
+        <whitelist>
+            <directory suffix=".php">./../../../app/</directory>
+            <directory suffix=".php">./../../../lib/</directory>
+        </whitelist>
+    </filter>
+    <logging>
+        <log type="coverage-text" target="php://stdout" showOnlySummary="true" showUncoveredFiles="false" />
+    </logging>
+</phpunit>
