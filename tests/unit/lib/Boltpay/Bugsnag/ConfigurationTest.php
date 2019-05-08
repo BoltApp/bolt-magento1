@@ -279,13 +279,13 @@ class ConfigurationTest extends TestCase
                     'expect' => true
                 ]
             ],
-//             [
-//                 'data' => [
-//                     'errorReportingLevel' => '',
-//                     'code' => 0,
-//                     'expect' => true
-//                 ]
-//             ],
+            [
+                'data' => [
+                    'errorReportingLevel' => 0,
+                    'code' => 0,
+                    'expect' => true
+                ]
+            ],
         ];
     }
 }
