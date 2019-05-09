@@ -16,12 +16,12 @@
  */
 
 /**
- * Trait Bolt_Boltpay_OrderControllerTrait
+ * Trait Bolt_Boltpay_Controller_Traits_OrderControllerTrait
  *
  * Defines generalized actions and elements used in Bolt order process
  * that is common to both backend and frontend
  */
-trait Bolt_Boltpay_OrderControllerTrait {
+trait Bolt_Boltpay_Controller_Traits_OrderControllerTrait {
 
     use Bolt_Boltpay_BoltGlobalTrait;
 
@@ -29,6 +29,7 @@ trait Bolt_Boltpay_OrderControllerTrait {
      * Creates the Bolt order and returns the Bolt.process javascript.
      */
     public function createAction() {
+
         try {
             if (!$this->getRequest()->isAjax()) {
                 Mage::throwException($this->boltHelper()->__(get_class()."::createAction called with a non AJAX call"));
