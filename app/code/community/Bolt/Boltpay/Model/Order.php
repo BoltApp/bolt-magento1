@@ -48,7 +48,9 @@ class Bolt_Boltpay_Model_Order extends Bolt_Boltpay_Model_Abstract
 
         try {
             if (empty($reference)) {
-                throw new Exception($this->boltHelper()->__("Bolt transaction reference is missing in the Magento order creation process."));
+                $msg = $this->boltHelper()->__("Bolt transaction reference is missing in the Magento order creation process.");
+                $this->boltHelper()->logWarning($msg);
+                throw new Exception($msg);
             }
 
             $transaction = $transaction ?: $this->boltHelper()->fetchTransaction($reference);
@@ -66,33 +68,35 @@ class Bolt_Boltpay_Model_Order extends Bolt_Boltpay_Model_Abstract
 
             // check that the order is in the system.  If not, we have an unexpected problem
             if ($immutableQuote->isEmpty()) {
-                throw new Exception($this->boltHelper()->__("The expected immutable quote [$immutableQuoteId] is missing from the Magento system.  Were old quotes recently removed from the database?"));
+                $msg = $this->boltHelper()->__("The expected immutable quote [$immutableQuoteId] is missing from the Magento system.  Were old quotes recently removed from the database?");
+                $this->boltHelper()->logWarning($msg);
+                throw new Exception($msg);
             }
 
             if(!$this->allowOutOfStockOrders() && !empty($this->getOutOfStockSKUs($immutableQuote))){
-                throw new Exception($this->boltHelper()->__("Not all items are available in the requested quantities. Out of stock SKUs: %s", join(', ', $this->getOutOfStockSKUs($immutableQuote))));
+                $msg = $this->boltHelper()->__("Not all items are available in the requested quantities. Out of stock SKUs: %s", join(', ', $this->getOutOfStockSKUs($immutableQuote)));
+                $this->boltHelper()->logWarning($msg);
+                throw new Exception($msg);
             }
 
             // check if the quotes matches, frontend only
             if ( $sessionQuoteId && ($sessionQuoteId != $immutableQuote->getParentQuoteId()) ) {
-                throw new Exception(
-                    $this->boltHelper()->__("The Bolt order reference does not match the current cart ID. Cart ID: [%s]  Bolt Reference: [%s]",
-                        $sessionQuoteId , $immutableQuote->getParentQuoteId())
-                );
+                $msg = $this->boltHelper()->__("The Bolt order reference does not match the current cart ID. Cart ID: [%s]  Bolt Reference: [%s]", $sessionQuoteId , $immutableQuote->getParentQuoteId());
+                $this->boltHelper()->logWarning($msg);
+                throw new Exception($msg);
             }
 
             // check if this order is currently being proccessed.  If so, throw exception
             $parentQuote = $this->getQuoteById($immutableQuote->getParentQuoteId());
             if ($parentQuote->isEmpty()) {
-                throw new Exception(
-                    $this->boltHelper()->__("The parent quote %s is unexpectedly missing.",
-                        $immutableQuote->getParentQuoteId() )
-                );
+                $msg = $this->boltHelper()->__("The parent quote %s is unexpectedly missing.", $immutableQuote->getParentQuoteId());
+                $this->boltHelper()->logWarning($msg);
+                throw new Exception($msg);
             } else if (!$parentQuote->getIsActive() && $transaction->indemnification_reason !== self::MERCHANT_BACK_OFFICE) {
-                throw new Exception(
-                    $this->boltHelper()->__("The parent quote %s for immutable quote %s is currently being processed or has been processed for order #%s. Check quote %s for details.",
-                        $parentQuote->getId(), $immutableQuote->getId(), $parentQuote->getReservedOrderId(), $parentQuote->getParentQuoteId() )
-                );
+                $msg = $this->boltHelper()->__("The parent quote %s for immutable quote %s is currently being processed or has been processed for order #%s. Check quote %s for details.",
+                    $parentQuote->getId(), $immutableQuote->getId(), $parentQuote->getReservedOrderId(), $parentQuote->getParentQuoteId());
+                $this->boltHelper()->logWarning($msg);
+                throw new Exception($msg);
             } else {
                 $parentQuote->setIsActive(false)->save();
             }
@@ -177,6 +181,7 @@ class Bolt_Boltpay_Model_Order extends Bolt_Boltpay_Model_Abstract
                         'shipping_address' => var_export($shippingAddress->debug(), true),
                         'quote' => var_export($immutableQuote->debug(), true)
                     );
+                    $this->boltHelper()->logWarning($errorMessage);
                     $this->boltHelper()->notifyException(new Exception($errorMessage), $metaData);
                 }
             }
@@ -210,6 +215,8 @@ class Bolt_Boltpay_Model_Order extends Bolt_Boltpay_Model_Abstract
                         array(),
                         'warning'
                     );
+
+
                     return $preExistingOrder;
                 }
                 ############################
@@ -256,6 +263,7 @@ class Bolt_Boltpay_Model_Order extends Bolt_Boltpay_Model_Abstract
                         'quote_address' => var_export($immutableQuote->getShippingAddress()->debug(), true)
                     )
                 );
+                $this->boltHelper()->logException($e);
                 throw $e;
             }
             ////////////////////////////////////////////////////////////////////////////
@@ -265,7 +273,7 @@ class Bolt_Boltpay_Model_Order extends Bolt_Boltpay_Model_Abstract
             if (@$parentQuote) {
                 $parentQuote->setIsActive(true)->save();
             }
-
+            $this->boltHelper()->logException($e);
             throw $e;
         }
 

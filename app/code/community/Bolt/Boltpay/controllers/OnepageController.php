@@ -19,14 +19,12 @@ require_once 'Mage/Checkout/controllers/OnepageController.php';
 
 /**
  * Class Bolt_Boltpay_OnepageController
- *
- * @deprecated This will be removed after the skip payment option is resolved.
  */
 class Bolt_Boltpay_OnepageController
     extends Mage_Checkout_OnepageController implements Bolt_Boltpay_Controller_Interface
 {
-    use Bolt_Boltpay_BoltGlobalTrait;
-
+    use Bolt_Boltpay_Controller_Traits_ApiControllerTrait;
+    
     /**
      * Sets up this controller for 1.x and non-Bolt orders.  For pre-auth Bolt orders,
      * we will call @see Bolt_Boltpay_Controller_Traits_ApiControllerTrait::preDispatch()

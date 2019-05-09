@@ -83,7 +83,9 @@ class Bolt_Boltpay_ShippingController
                 !$this->_shippingAndTaxModel->isPOBoxAllowed()
                 && $this->_shippingAndTaxModel->doesAddressContainPOBox($shippingAddress->street_address1, $shippingAddress->street_address2)
             ) {
-                $addressErrorDetails = array('code' => 6101, 'message' => $this->boltHelper()->__('Address with P.O. Box is not allowed.'));
+                $msg = $this->boltHelper()->__('Address with P.O. Box is not allowed.');
+                $addressErrorDetails = array('code' => 6101, 'message' => $msg);
+                $this->boltHelper()->logWarning($msg);
             } else {
                 $addressData = $this->_shippingAndTaxModel->applyShippingAddressToQuote($quote, $shippingAddress);
 
@@ -134,8 +136,7 @@ class Bolt_Boltpay_ShippingController
 
             $this->sendResponse(
                 200,
-                $responseJSON,
-                false
+                $responseJSON
             );
 
         } catch (Exception $e) {
@@ -145,6 +146,7 @@ class Bolt_Boltpay_ShippingController
             }
 
             $this->boltHelper()->notifyException($e, $metaData);
+            $this->boltHelper()->logException($e, $metaData);
             throw $e;
         }
     }
@@ -166,8 +168,7 @@ class Bolt_Boltpay_ShippingController
         if(!$quote->getId() || !$quote->getItemsCount()){
             $this->sendResponse(
                 200,
-                "{}",
-                false
+                "{}"
             );
             return;
         }
@@ -215,8 +216,7 @@ class Bolt_Boltpay_ShippingController
         $response = Mage::helper('core')->jsonEncode(array('address_data' => $addressData));
         $this->sendResponse(
             200,
-            $response,
-            false
+            $response
         );
     }
 

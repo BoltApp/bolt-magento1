@@ -31,7 +31,9 @@ class Bolt_Boltpay_ProductpageController
             $requestJson = file_get_contents('php://input');
 
             if (!$this->boltHelper()->verify_hook($requestJson, $hmacHeader)) {
-                throw new Exception($this->boltHelper()->__("Failed HMAC Authentication"));
+                $exception = new Exception($this->boltHelper()->__("Failed HMAC Authentication"));
+                $this->boltHelper()->logWarning($exception->getMessage());
+                throw $exception;
             }
 
             $request = json_decode($requestJson);
@@ -54,6 +56,7 @@ class Bolt_Boltpay_ProductpageController
             ));
 
             $this->boltHelper()->notifyException($e);
+            $this->boltHelper()->logException($e);
         }
     }
 

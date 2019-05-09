@@ -50,6 +50,7 @@ class Bolt_Boltpay_Model_Observer
             }
         } catch (Exception $e) {
             $this->boltHelper()->notifyException($e);
+            $this->boltHelper()->logException($e);
         }
 
         $session->unsBoltUserId();
@@ -209,9 +210,6 @@ class Bolt_Boltpay_Model_Observer
                 case Mage_Sales_Model_Order::STATE_PENDING_PAYMENT:
                 case Mage_Sales_Model_Order::STATE_NEW:
                     $payment->setAdditionalInformation('bolt_transaction_status', Bolt_Boltpay_Model_Payment::TRANSACTION_PENDING);
-                    break;
-                case Bolt_Boltpay_Model_Payment::ORDER_DEFERRED:
-                    $payment->setAdditionalInformation('bolt_transaction_status', Bolt_Boltpay_Model_Payment::TRANSACTION_REJECTED_REVERSIBLE);
                     break;
             }
             $payment->save();

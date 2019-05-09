@@ -17,7 +17,7 @@
 /**
  * Trait Bolt_Boltpay_Controller_Traits_ApiControllerTrait
  *
- * Defines generalized actions associated with API calls to and from the Bolt server
+ * Defines generalized actions associated with web hooks
  *
  * @method Mage_Core_Controller_Response_Http getResponse()
  * @method Mage_Core_Model_Layout getLayout()
@@ -50,7 +50,7 @@ trait Bolt_Boltpay_Controller_Traits_ApiControllerTrait {
      */
     public function preDispatch()
     {
-        @ob_start();
+        ob_start();
         if ($this->willReturnJson) {
             $this->getResponse()->clearAllHeaders()->clearBody();
             $this->boltHelper()->setResponseContextHeaders();
@@ -94,16 +94,16 @@ trait Bolt_Boltpay_Controller_Traits_ApiControllerTrait {
      * POST data in response to a request
      *
      * @param int   $httpCode       standard HTTP response code
-     * @param array $data           a PHP array to be encoded as JSON and sent as a response body to Bolt
-     * @param bool  $doJsonEncode   instructs whether to JSON encode the data, true by default
+     * @param array $data           a JSON string or PHP object or array to be encoded representing the
+     *                              JSON to be sent as a response body to Bolt
      *
      * @throws Zend_Controller_Response_Exception if the error code is not within the valid range
      */
-    protected function sendResponse($httpCode, $data = array(), $doJsonEncode = true )
+    protected function sendResponse($httpCode, $data = array())
     {
-        @ob_end_clean();
+        ob_end_clean();
         $this->getResponse()
             ->setHttpResponseCode($httpCode)
-            ->setBody($doJsonEncode ? json_encode($data) : $data );
+            ->setBody(is_string($data) ? $data : json_encode($data));
     }
 }
