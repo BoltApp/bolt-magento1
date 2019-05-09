@@ -21,7 +21,7 @@
 $installer = Mage::getResourceModel('sales/setup', 'sales_setup');
 $installer->startSetup();
 
-Mage::log('Installing Bolt 1.4.1.1 updates', null, 'bolt_install.log');
+Mage::log('Installing Bolt 1.4.1.2 updates', null, 'bolt_install.log');
 
 if (!$installer->getConnection()->tableColumnExists($installer->getTable('sales/quote'), "is_bolt_pdp")) {
     $installer->addAttribute(
@@ -34,6 +34,6 @@ if (!$installer->getConnection()->tableColumnExists($installer->getTable('sales/
     );
 }
 
-Mage::log('Bolt 1.4.1.1 update installation completed', null, 'bolt_install.log');
+Mage::log('Bolt 1.4.1.2 update installation completed', null, 'bolt_install.log');
 
 $installer->endSetup();
