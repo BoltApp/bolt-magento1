@@ -209,6 +209,7 @@ class Bolt_Boltpay_Model_Productpage_Cart extends Bolt_Boltpay_Model_Abstract
             );
             $cart->addProduct($product, $param);
         }
+        $cart->getQuote()->setIsBoltPdp(true);
         $cart->save();
 
         return $cart;
