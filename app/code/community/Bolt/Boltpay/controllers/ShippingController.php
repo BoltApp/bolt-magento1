@@ -23,7 +23,7 @@
 class Bolt_Boltpay_ShippingController
     extends Mage_Core_Controller_Front_Action implements Bolt_Boltpay_Controller_Interface
 {
-    use Bolt_Boltpay_BoltGlobalTrait;
+    use Bolt_Boltpay_Controller_Traits_ApiControllerTrait;
 
     /**
      * @var Mage_Core_Model_Cache  The Magento cache where the shipping and tax estimate is stored
@@ -36,18 +36,12 @@ class Bolt_Boltpay_ShippingController
     protected $_shippingAndTaxModel;
 
     /**
-     * @var string  The request body of the post made to this controller, expected to be in JSON
-     */
-    protected $_requestJSON;
-
-    /**
      * Initializes Controller member variables
      */
     protected function _construct()
     {
         $this->_cache = Mage::app()->getCache();
         $this->_shippingAndTaxModel = Mage::getModel("boltpay/shippingAndTax");
-        $this->_requestJSON = file_get_contents('php://input');
     }
 
     /**
@@ -59,17 +53,11 @@ class Bolt_Boltpay_ShippingController
     public function indexAction()
     {
         try {
-          
+
             set_time_limit(30);
             ignore_user_abort(true);
 
-            $hmacHeader = $_SERVER['HTTP_X_BOLT_HMAC_SHA256'];
-
-            $requestData = json_decode($this->_requestJSON);
-
-            if (!$this->boltHelper()->verify_hook($this->_requestJSON, $hmacHeader)) {
-                throw new Exception($this->boltHelper()->__("Failed HMAC Authentication"));
-            }
+            $requestData = json_decode($this->payload);
 
             $mockTransaction = (object) array("order" => $requestData );
             $quoteId = $this->boltHelper()->getImmutableQuoteIdFromTransaction($mockTransaction);
@@ -110,13 +98,13 @@ class Bolt_Boltpay_ShippingController
 
             if ($addressErrorDetails) {
                 $this->boltHelper()->notifyException(new Exception(json_encode($addressErrorDetails)));
-                return $this->getResponse()
-                    ->clearAllHeaders()
-                    ->setHttpResponseCode(422)
-                    ->setBody(json_encode(array('status' => 'failure','error' => $addressErrorDetails)));
+                $this->sendResponse(
+                    422,
+                    array('status' => 'failure','error' => $addressErrorDetails)
+                );
+                return;
             }
             ////////////////////////////////////////////////////////////////////////////////
-
 
             ////////////////////////////////////////////////////////////////////////////////////////
             // Check session cache for estimate.  If the shipping city or postcode, and the country code match,
@@ -140,16 +128,16 @@ class Bolt_Boltpay_ShippingController
             $responseJSON = json_encode($estimate, JSON_PRETTY_PRINT);
 
             //Mage::log('SHIPPING AND TAX RESPONSE: ' . $response, null, 'shipping_and_tax.log');
+            $this->getResponse()
+                ->setHeader('X-Nonce', rand(100000000, 999999999), true)
+                ->setHeader('X-Bolt-Cache-Hit', $cacheBoltHeader);
 
-            $this->getResponse()->clearAllHeaders()
-                ->setHeader('Content-type', 'application/json', true)
-                ->setHeader('X-Nonce', rand(100000000, 999999999), true);
+            $this->sendResponse(
+                200,
+                $responseJSON,
+                false
+            );
 
-            $this->getResponse()->setHeader('X-Bolt-Cache-Hit', $cacheBoltHeader);
-
-            $this->boltHelper()->setResponseContextHeaders();
-
-            $this->getResponse()->setBody($responseJSON);
         } catch (Exception $e) {
             $metaData = array();
             if (isset($quote)){
@@ -169,7 +157,6 @@ class Bolt_Boltpay_ShippingController
      */
     public function prefetchEstimateAction()
     {
-
         set_time_limit(30);
         ignore_user_abort(true);
 
@@ -177,8 +164,11 @@ class Bolt_Boltpay_ShippingController
         $quote = Mage::getSingleton('checkout/session')->getQuote();
 
         if(!$quote->getId() || !$quote->getItemsCount()){
-            $this->getResponse()->clearAllHeaders()->setHeader('Content-type', 'application/json');
-            $this->getResponse()->setBody("{}");
+            $this->sendResponse(
+                200,
+                "{}",
+                false
+            );
             return;
         }
 
@@ -223,8 +213,11 @@ class Bolt_Boltpay_ShippingController
         }
 
         $response = Mage::helper('core')->jsonEncode(array('address_data' => $addressData));
-        $this->getResponse()->clearAllHeaders()->setHeader('Content-type', 'application/json');
-        $this->getResponse()->setBody($response);
+        $this->sendResponse(
+            200,
+            $response,
+            false
+        );
     }
 
 
@@ -253,7 +246,7 @@ class Bolt_Boltpay_ShippingController
      */
     protected function getGeoIpAddress()
     {
-        $requestData = json_decode($this->_requestJSON);
+        $requestData = json_decode($this->payload);
 
         $addressData = array(
             'city'          => isset($requestData->city) ?$requestData->city: '',
@@ -266,7 +259,7 @@ class Bolt_Boltpay_ShippingController
         if(!empty($addressData['country_id'])){
             /** @var Mage_Directory_Model_Country $countryObj */
             $countryObj = Mage::getModel('directory/country')->loadByCode($addressData['country_id']);
-    
+
             if (!$countryObj->getRegionCollection()->getSize()) {
                 // If country does not have region options for dropdown.
                 $addressData['region'] = $addressData['region_name'];
@@ -277,7 +270,7 @@ class Bolt_Boltpay_ShippingController
                     $addressData['region'] = $regionModel->getName();
                     $addressData['region_id'] = $regionModel->getId();
                 }
-            }    
+            }
         }
         return $addressData;
     }
@@ -363,9 +356,9 @@ class Bolt_Boltpay_ShippingController
      * or a custom HTTP request header.  For now, we'll rely on sentinel value detection.
      */
     private function isApplePayRequest() {
-        $requestData = json_decode($this->_requestJSON);
+        $requestData = json_decode($this->payload);
         $shippingAddress = $requestData->shipping_address;
-        
+
         // For a more strict check, we would enable verifying the phone number is null
         return ($shippingAddress->name === 'n/a') /* && is_null($shippingAddress->phone) */;
     }

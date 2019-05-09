@@ -14,37 +14,32 @@
  * @copyright  Copyright (c) 2018 Bolt Financial, Inc (https://www.bolt.com)
  * @license    http://opensource.org/licenses/osl-3.0.php  Open Software License (OSL 3.0)
  */
-
 /**
  * Trait Bolt_Boltpay_Controller_Traits_ApiControllerTrait
  *
  * Defines generalized actions associated with API calls to and from the Bolt server
  *
+ * @method Mage_Core_Controller_Response_Http getResponse()
+ * @method Mage_Core_Model_Layout getLayout()
  */
 trait Bolt_Boltpay_Controller_Traits_ApiControllerTrait {
-
     use Bolt_Boltpay_BoltGlobalTrait;
-
     /**
      * @var string The body of the request made to this controller
      */
     protected $payload;
-
     /**
      * @var string The signed payload which used the stores signing secret
      */
     protected $signature;
-
     /**
      * @var bool determines if JSON is expected return type for preDispatch optimization.
      */
     protected $willReturnJson = true;
-
     /**
      * @var bool mandates that all request to this controller must be signed
      */
     protected $requestMustBeSigned = true;
-
     /**
      * For JSON, clears response body and header, and sets headers.
      * After this, verifies request is from Bolt, if not, sends error message response
@@ -61,15 +56,15 @@ trait Bolt_Boltpay_Controller_Traits_ApiControllerTrait {
             $this->boltHelper()->setResponseContextHeaders();
             $this->getResponse()
                 ->setHeader('Content-type', 'application/json', true);
-
             $this->getLayout()->setDirectOutput(true);
         }
-
-        if ( $this->requestMustBeSigned ) $this->verifyBoltSignature($this->payload, $this->signature);
-
+        if ( $this->requestMustBeSigned ) {
+            if (empty($this->payload)) { $this->payload = file_get_contents('php://input'); }
+            if (empty($this->signature)) { $this->signature = @$_SERVER['HTTP_X_BOLT_HMAC_SHA256']; }
+            $this->verifyBoltSignature($this->payload, $this->signature);
+        }
         return parent::preDispatch();
     }
-
     /**
      * Verifies that a request originated from and was signed by Bolt.  If not,
      * an error response is sent to caller and the execution of the script is halted
@@ -86,18 +81,15 @@ trait Bolt_Boltpay_Controller_Traits_ApiControllerTrait {
                 Bolt_Boltpay_OrderCreationException::E_BOLT_GENERAL_ERROR,
                 Bolt_Boltpay_OrderCreationException::E_BOLT_GENERAL_ERROR_TMPL_HMAC
             );
-
             $this->getResponse()
                 ->setHttpResponseCode($exception->getHttpCode())
                 ->setBody($exception->getJson())
                 ->setException($exception)
                 ->sendResponse();
-
             $this->boltHelper()->notifyException($exception, array(), 'warning');
             exit;
         }
     }
-
     /**
      * POST data in response to a request
      *
@@ -110,7 +102,8 @@ trait Bolt_Boltpay_Controller_Traits_ApiControllerTrait {
     protected function sendResponse($httpCode, $data = array(), $doJsonEncode = true )
     {
         @ob_end_clean();
-        $this->getResponse()->setHttpResponseCode($httpCode);
-        $this->getResponse()->setBody($doJsonEncode ? json_encode($data) : $data );
+        $this->getResponse()
+            ->setHttpResponseCode($httpCode)
+            ->setBody($doJsonEncode ? json_encode($data) : $data );
     }
 }
