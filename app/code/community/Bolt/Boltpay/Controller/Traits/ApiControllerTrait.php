@@ -20,9 +20,6 @@
  *
  * Defines generalized actions associated with API calls to and from the Bolt server
  *
- * @method Mage_Core_Controller_Response_Http getResponse()
- * @method Mage_Core_Model_Layout getLayout()
- *
  */
 trait Bolt_Boltpay_Controller_Traits_ApiControllerTrait {
 
