@@ -71,6 +71,7 @@ class Bolt_Boltpay_OrderController
 
         } catch (Exception $e) {
             $this->boltHelper()->notifyException($e);
+            $this->boltHelper()->logException($e);
             throw $e;
         }
     }
@@ -161,6 +162,7 @@ class Bolt_Boltpay_OrderController
             $this->getResponse()->setBody(Mage::helper('core')->jsonEncode($result));
         } catch (Exception $e) {
             $this->boltHelper()->notifyException($e);
+            $this->boltHelper()->logException($e);
             throw $e;
         }
     }

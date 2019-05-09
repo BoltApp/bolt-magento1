@@ -68,7 +68,9 @@ class Bolt_Boltpay_ShippingController
             $requestData = json_decode($this->_requestJSON);
 
             if (!$this->boltHelper()->verify_hook($this->_requestJSON, $hmacHeader)) {
-                throw new Exception($this->boltHelper()->__("Failed HMAC Authentication"));
+                $exception = new Exception($this->boltHelper()->__("Failed HMAC Authentication"));
+                $this->boltHelper()->logWarning($exception->getMessage());
+                throw $exception;
             }
 
             $mockTransaction = (object) array("order" => $requestData );
@@ -95,7 +97,9 @@ class Bolt_Boltpay_ShippingController
                 !$this->_shippingAndTaxModel->isPOBoxAllowed()
                 && $this->_shippingAndTaxModel->doesAddressContainPOBox($shippingAddress->street_address1, $shippingAddress->street_address2)
             ) {
-                $addressErrorDetails = array('code' => 6101, 'message' => $this->boltHelper()->__('Address with P.O. Box is not allowed.'));
+                $msg = $this->boltHelper()->__('Address with P.O. Box is not allowed.');
+                $addressErrorDetails = array('code' => 6101, 'message' => $msg);
+                $this->boltHelper()->logWarning($msg);
             } else {
                 $addressData = $this->_shippingAndTaxModel->applyShippingAddressToQuote($quote, $shippingAddress);
 
@@ -157,6 +161,7 @@ class Bolt_Boltpay_ShippingController
             }
 
             $this->boltHelper()->notifyException($e, $metaData);
+            $this->boltHelper()->logException($e, $metaData);
             throw $e;
         }
     }

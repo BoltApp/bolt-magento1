@@ -52,7 +52,9 @@ class Bolt_Boltpay_Model_ShippingAndTax extends Bolt_Boltpay_Model_Abstract
         $regionId = $directory->getRegionId(); // This is a required field for calculation: shipping, shopping price rules and etc.
 
         if (!property_exists($shippingAddress, 'postal_code') || !property_exists($shippingAddress, 'country_code')) {
-            throw new Exception($this->boltHelper()->__("Address must contain postal_code and country_code."));
+            $exception = new Exception($this->boltHelper()->__("Address must contain postal_code and country_code."));
+            $this->boltHelper()->logWarning($exception->getMessage());
+            throw $exception;
         }
 
         $shippingStreet = trim(
@@ -169,13 +171,10 @@ class Bolt_Boltpay_Model_ShippingAndTax extends Bolt_Boltpay_Model_Abstract
             foreach ($rates as $rate) {
 
                 if ($rate->getErrorMessage()) {
+                    $exception = new Exception($this->boltHelper()->__("Error getting shipping option for %s: %s", $rate->getCarrierTitle(), $rate->getErrorMessage()));
                     $metaData = array('quote' => var_export($quote->debug(), true));
-                    $this->boltHelper()->notifyException(
-                        new Exception(
-                            $this->boltHelper()->__("Error getting shipping option for %s: %s", $rate->getCarrierTitle(), $rate->getErrorMessage())
-                        ),
-                        $metaData
-                    );
+                    $this->boltHelper()->logWarning($exception->getMessage(),$metaData);
+                    $this->boltHelper()->notifyException($exception->getMessage(), $metaData);
                     continue;
                 }
 
@@ -184,12 +183,10 @@ class Bolt_Boltpay_Model_ShippingAndTax extends Bolt_Boltpay_Model_Abstract
                 $rateCode = $rate->getCode();
 
                 if (empty($rateCode)) {
+                    $exception = new Exception( $this->boltHelper()->__('Rate code is empty. ') . var_export($rate->debug(), true) );
                     $metaData = array('quote' => var_export($quote->debug(), true));
-
-                    $this->boltHelper()->notifyException(
-                        new Exception( $this->boltHelper()->__('Rate code is empty. ') . var_export($rate->debug(), true) ),
-                        $metaData
-                    );
+                    $this->boltHelper()->logWarning($exception->getMessage(),$metaData);
+                    $this->boltHelper()->notifyException($exception,$metaData);
                 }
 
                 $adjustedShippingAmount = $this->getAdjustedShippingAmount($originalDiscountedSubtotal, $quote);
