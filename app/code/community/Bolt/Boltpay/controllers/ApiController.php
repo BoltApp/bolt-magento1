@@ -27,17 +27,6 @@ class Bolt_Boltpay_ApiController extends Mage_Core_Controller_Front_Action imple
     use Bolt_Boltpay_Controller_Traits_ApiControllerTrait;
 
     /**
-     * Sets the request body sent to this controller for actions to use
-     */
-    protected function _construct()
-    {
-        $this->payload = file_get_contents('php://input');
-        $this->signature = @$_SERVER['HTTP_X_BOLT_HMAC_SHA256'];
-
-        parent::_construct();
-    }
-
-    /**
      * The starting point for all Api hook request
      */
     public function hookAction()
@@ -126,17 +115,15 @@ class Bolt_Boltpay_ApiController extends Mage_Core_Controller_Front_Action imple
                 $orderPayment->getMethodInstance()
                     ->setStore($order->getStoreId())
                     ->handleTransactionUpdate($orderPayment, $newTransactionStatus, $prevTransactionStatus, $transactionAmount, $transaction);
-                
-                $this->getResponse()->setBody(
-                    json_encode(
-                        array(
-                            'status' => 'success',
-                            'display_id' => $order->getIncrementId(),
-                            'message' => $this->boltHelper()->__( 'Updated existing order %d', $order->getIncrementId() )
-                        )
+
+                $this->sendResponse(
+                    200,
+                    array(
+                        'status' => 'success',
+                        'display_id' => $order->getIncrementId(),
+                        'message' => $this->boltHelper()->__( 'Updated existing order %d', $order->getIncrementId() )
                     )
                 );
-                $this->getResponse()->setHttpResponseCode(200);
 
                 return;
             }
@@ -166,24 +153,27 @@ class Bolt_Boltpay_ApiController extends Mage_Core_Controller_Front_Action imple
 
                 if ( $canAssumeHookedIsHandled )
                 {
-                    $this->getResponse()->setBody(
-                        json_encode(
-                            array(
-                                'status' => 'success',
-                                'display_id' => $order->getIncrementId(),
-                                'message' => $this->boltHelper()->__('Order already handled, so hook was ignored')
-                            )
+                    $this->sendResponse(
+                        200,
+                        array(
+                            'status' => 'success',
+                            'display_id' => $order->getIncrementId(),
+                            'message' => $this->boltHelper()->__('Order already handled, so hook was ignored')
                         )
-                    )->setHttpResponseCode(200);
+                    );
                 } else {
-                    $this->getResponse()
-                        ->setHttpResponseCode(422)
-                        ->setBody(json_encode(array('status' => 'failure', 'error' => array('code' => 6009, 'message' => $this->boltHelper()->__('Invalid webhook transition from %s to %s', $prevTransactionStatus, $newTransactionStatus) ))));
+                    $this->sendResponse(
+                        422,
+                        array('status' => 'failure', 'error' => array('code' => 6009, 'message' => $this->boltHelper()->__('Invalid webhook transition from %s to %s', $prevTransactionStatus, $newTransactionStatus) ))
+                    );
                 }
             }
         } catch (Exception $e) {
-            $this->getResponse()->setHttpResponseCode(422)
-                ->setBody(json_encode(array('status' => 'failure', 'error' => array('code' => 6009, 'message' => $e->getMessage()))));
+
+            $this->sendResponse(
+                422,
+                array('status' => 'failure', 'error' => array('code' => 6009, 'message' => $e->getMessage()))
+            );
 
             $metaData = array();
             if (isset($quote)){

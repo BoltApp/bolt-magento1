@@ -186,9 +186,9 @@ class Bolt_Boltpay_ShippingControllerTest extends PHPUnit_Framework_TestCase
         );
 
         $reflectedShippingController = new ReflectionClass($this->_shippingController);
-        $reflectedRequestJson = $reflectedShippingController->getProperty('_requestJSON');
-        $reflectedRequestJson->setAccessible(true);
-        $reflectedRequestJson->setValue($this->_shippingController, json_encode($geoIpAddressData));
+        $reflectedPayload = $reflectedShippingController->getProperty('payload');
+        $reflectedPayload->setAccessible(true);
+        $reflectedPayload->setValue($this->_shippingController, json_encode($geoIpAddressData));
 
         $this->_shippingController->prefetchEstimateAction();
 
@@ -268,9 +268,9 @@ class Bolt_Boltpay_ShippingControllerTest extends PHPUnit_Framework_TestCase
         );
 
 
-        $reflectedRequestJson = $reflectedShippingController->getProperty('_requestJSON');
-        $reflectedRequestJson->setAccessible(true);
-        $reflectedRequestJson->setValue($this->_shippingController, json_encode($mockBoltRequestData));
+        $reflectedPayload = $reflectedShippingController->getProperty('payload');
+        $reflectedPayload->setAccessible(true);
+        $reflectedPayload->setValue($this->_shippingController, json_encode($mockBoltRequestData));
 
         ////////////////////////////////////////////////////////
         // Make first call that should not have a cache value
@@ -311,7 +311,7 @@ class Bolt_Boltpay_ShippingControllerTest extends PHPUnit_Framework_TestCase
         $modifiedAddressExpectedCacheId = $this->_shippingController->getEstimateCacheIdentifier($quote, $modifiedMagentoFormatAddressData);
 
 
-        $reflectedRequestJson->setValue($this->_shippingController, json_encode($mockBoltRequestData));
+        $reflectedPayload->setValue($this->_shippingController, json_encode($mockBoltRequestData));
 
         $this->_shippingController->indexAction();
         $thirdCallEstimate = json_decode($this->_shippingController->getResponse()->getBody(), true);
@@ -324,7 +324,7 @@ class Bolt_Boltpay_ShippingControllerTest extends PHPUnit_Framework_TestCase
         // Make a fourth call with the original data
         // It should be read from the cache
         ////////////////////////////////////////////////////////
-        $reflectedRequestJson->setValue($this->_shippingController, json_encode($originalMockBoltRequestData));
+        $reflectedPayload->setValue($this->_shippingController, json_encode($originalMockBoltRequestData));
 
         $this->_shippingController->indexAction();
         $fourthCallEstimate = json_decode($this->_shippingController->getResponse()->getBody(), true);

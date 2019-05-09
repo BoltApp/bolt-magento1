@@ -20,6 +20,8 @@
  *
  * Defines generalized actions associated with API calls to and from the Bolt server
  *
+ * @method Mage_Core_Controller_Response_Http getResponse()
+ * @method Mage_Core_Model_Layout getLayout()
  */
 trait Bolt_Boltpay_Controller_Traits_ApiControllerTrait {
 
@@ -65,7 +67,11 @@ trait Bolt_Boltpay_Controller_Traits_ApiControllerTrait {
             $this->getLayout()->setDirectOutput(true);
         }
 
-        if ( $this->requestMustBeSigned ) $this->verifyBoltSignature($this->payload, $this->signature);
+        if ( $this->requestMustBeSigned ) {
+            if (empty($this->payload)) { $this->payload = file_get_contents('php://input'); }
+            if (empty($this->signature)) { $this->signature = @$_SERVER['HTTP_X_BOLT_HMAC_SHA256']; }
+            $this->verifyBoltSignature($this->payload, $this->signature);
+        }
 
         return parent::preDispatch();
     }
@@ -110,7 +116,8 @@ trait Bolt_Boltpay_Controller_Traits_ApiControllerTrait {
     protected function sendResponse($httpCode, $data = array(), $doJsonEncode = true )
     {
         @ob_end_clean();
-        $this->getResponse()->setHttpResponseCode($httpCode);
-        $this->getResponse()->setBody($doJsonEncode ? json_encode($data) : $data );
+        $this->getResponse()
+            ->setHttpResponseCode($httpCode)
+            ->setBody($doJsonEncode ? json_encode($data) : $data );
     }
 }
