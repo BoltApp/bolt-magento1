@@ -59,7 +59,7 @@ class Bolt_Boltpay_ShippingController
     public function indexAction()
     {
         try {
-          
+
             set_time_limit(30);
             ignore_user_abort(true);
 
@@ -121,7 +121,6 @@ class Bolt_Boltpay_ShippingController
             }
             ////////////////////////////////////////////////////////////////////////////////
 
-
             ////////////////////////////////////////////////////////////////////////////////////////
             // Check session cache for estimate.  If the shipping city or postcode, and the country code match,
             // then use the cached version.  Otherwise, we have to do another calculation
@@ -174,7 +173,6 @@ class Bolt_Boltpay_ShippingController
      */
     public function prefetchEstimateAction()
     {
-
         set_time_limit(30);
         ignore_user_abort(true);
 
@@ -271,7 +269,7 @@ class Bolt_Boltpay_ShippingController
         if(!empty($addressData['country_id'])){
             /** @var Mage_Directory_Model_Country $countryObj */
             $countryObj = Mage::getModel('directory/country')->loadByCode($addressData['country_id']);
-    
+
             if (!$countryObj->getRegionCollection()->getSize()) {
                 // If country does not have region options for dropdown.
                 $addressData['region'] = $addressData['region_name'];
@@ -282,7 +280,7 @@ class Bolt_Boltpay_ShippingController
                     $addressData['region'] = $regionModel->getName();
                     $addressData['region_id'] = $regionModel->getId();
                 }
-            }    
+            }
         }
         return $addressData;
     }
@@ -370,7 +368,7 @@ class Bolt_Boltpay_ShippingController
     private function isApplePayRequest() {
         $requestData = json_decode($this->_requestJSON);
         $shippingAddress = $requestData->shipping_address;
-        
+
         // For a more strict check, we would enable verifying the phone number is null
         return ($shippingAddress->name === 'n/a') /* && is_null($shippingAddress->phone) */;
     }
