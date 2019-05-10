@@ -99,6 +99,7 @@ trait Bolt_Boltpay_Controller_Traits_ApiControllerTrait {
                 ->setException($exception)
                 ->sendResponse();
 
+            $this->boltHelper()->logWarning($exception->getMessage());
             $this->boltHelper()->notifyException($exception, array(), 'warning');
             exit;
         }

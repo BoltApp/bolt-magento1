@@ -15,6 +15,8 @@
  * @license    http://opensource.org/licenses/osl-3.0.php  Open Software License (OSL 3.0)
  */
 
+require_once(Mage::getBaseDir('lib') . DS .  'Boltpay/DataDog/ErrorTypes.php');
+
 /**
  * Class Bolt_Boltpay_Model_Admin_ExtraConfig
  *
@@ -131,6 +133,37 @@ class Bolt_Boltpay_Model_Admin_ExtraConfig extends Mage_Core_Model_Config_Data
         return $isValid;
     }
 
+    /**
+     * Validate datadog key severity
+     * @param $severityString
+     * @return mixed
+     */
+    public function hasValidDatadogKeySeverity($severityString) {
+
+        $severityString = preg_replace('/\s+/', '', $severityString);
+        if($severityString) {
+            $severities = explode(',', $severityString);
+            foreach ($severities as $severity) {
+                if (!in_array($severity, [
+                        DataDog_ErrorTypes::TYPE_ERROR,
+                        DataDog_ErrorTypes::TYPE_WARNING,
+                        DataDog_ErrorTypes::TYPE_INFO]
+                )) {
+                    Mage::getSingleton('core/session')->addError(
+                        Mage::helper('boltpay')->__(
+                            'Invalid datadog key severity value for extra option `datadogKeySeverity`.[%s]
+                         The valid values must be error or warning or info ', $severity
+                    )
+                );
+
+                    return false;
+                }
+            }
+        }
+
+        return true;
+    }
+
 
     /**
      * Makes hex letters all-caps or all lower case.
@@ -179,6 +212,28 @@ JS;
         return (trim($rawConfigValue))
             ?
             : $defaultFunction;
+    }
+
+
+    /**
+     * @param $rawConfigValue
+     * @param array $additionalParams
+     * @return string
+     */
+    public function filterDatadogKeySeverity($rawConfigValue, $additionalParams = array())
+    {
+        $allExtraConfigs = (array)json_decode($this->normalizeJSON(Mage::getStoreConfig('payment/boltpay/extra_options')), true);
+        return (array_key_exists("datadogKeySeverity", $allExtraConfigs)) ? $rawConfigValue : Bolt_Boltpay_Helper_DataDogTrait::$defaultSeverityConfig;
+    }
+
+    /**
+     * @param $rawConfigValue
+     * @param array $additionalParams
+     * @return string
+     */
+    public function filterDatadogKey($rawConfigValue, $additionalParams = array())
+    {
+        return trim($rawConfigValue) ?: Bolt_Boltpay_Helper_DataDogTrait::$defaultDataDogKey;
     }
 
     /**

@@ -16,7 +16,7 @@
  */
 
 /**
- * Trait Bolt_Boltpay_OrderControllerTrait
+ * Trait Bolt_Boltpay_Controller_Traits_OrderControllerTrait
  *
  * Defines generalized actions and elements used in Bolt order process
  * that is common to both backend and frontend

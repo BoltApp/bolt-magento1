@@ -91,7 +91,9 @@ class Bolt_Boltpay_ShippingController
                 !$this->_shippingAndTaxModel->isPOBoxAllowed()
                 && $this->_shippingAndTaxModel->doesAddressContainPOBox($shippingAddress->street_address1, $shippingAddress->street_address2)
             ) {
-                $addressErrorDetails = array('code' => 6101, 'message' => $this->boltHelper()->__('Address with P.O. Box is not allowed.'));
+                $msg = $this->boltHelper()->__('Address with P.O. Box is not allowed.');
+                $addressErrorDetails = array('code' => 6101, 'message' => $msg);
+                $this->boltHelper()->logWarning($msg);
             } else {
                 $addressData = $this->_shippingAndTaxModel->applyShippingAddressToQuote($quote, $shippingAddress);
 
@@ -153,6 +155,7 @@ class Bolt_Boltpay_ShippingController
             }
 
             $this->boltHelper()->notifyException($e, $metaData);
+            $this->boltHelper()->logException($e, $metaData);
             throw $e;
         }
     }
@@ -267,7 +270,7 @@ class Bolt_Boltpay_ShippingController
         if(!empty($addressData['country_id'])){
             /** @var Mage_Directory_Model_Country $countryObj */
             $countryObj = Mage::getModel('directory/country')->loadByCode($addressData['country_id']);
-    
+
             if (!$countryObj->getRegionCollection()->getSize()) {
                 // If country does not have region options for dropdown.
                 $addressData['region'] = $addressData['region_name'];
@@ -278,7 +281,7 @@ class Bolt_Boltpay_ShippingController
                     $addressData['region'] = $regionModel->getName();
                     $addressData['region_id'] = $regionModel->getId();
                 }
-            }    
+            }
         }
         return $addressData;
     }
@@ -366,7 +369,7 @@ class Bolt_Boltpay_ShippingController
     private function isApplePayRequest() {
         $requestData = json_decode($this->payload);
         $shippingAddress = $requestData->shipping_address;
-        
+
         // For a more strict check, we would enable verifying the phone number is null
         return ($shippingAddress->name === 'n/a') /* && is_null($shippingAddress->phone) */;
     }

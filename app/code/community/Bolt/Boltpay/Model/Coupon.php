@@ -68,7 +68,9 @@ class Bolt_Boltpay_Model_Coupon extends Bolt_Boltpay_Model_Abstract
         try {
 
             if (!$this->requestObject){
-                throw new \Bolt_Boltpay_BadInputException('Need to set setup variables in order to apply coupon');
+                $msg = 'Need to set setup variables in order to apply coupon';
+                $this->boltHelper()->logWarning($msg);
+                throw new \Bolt_Boltpay_BadInputException($msg);
             }
 
             $this->validateCoupon();
@@ -80,6 +82,7 @@ class Bolt_Boltpay_Model_Coupon extends Bolt_Boltpay_Model_Abstract
             return false;
         } catch (\Exception $e) {
             $this->boltHelper()->notifyException($e);
+            $this->boltHelper()->logException($e);
             return false;
         }
         return true;
@@ -444,9 +447,10 @@ class Bolt_Boltpay_Model_Coupon extends Bolt_Boltpay_Model_Abstract
         $this->responseCart = $this->getCartTotals();
 
         if ($exception){
+            $this->boltHelper()->logException($exception);
             throw $exception;
         }
-
+        $this->boltHelper()->logWarning($message);
         throw new \Bolt_Boltpay_BadInputException($message);
     }
 

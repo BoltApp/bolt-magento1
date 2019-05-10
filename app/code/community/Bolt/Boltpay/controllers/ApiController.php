@@ -32,6 +32,7 @@ class Bolt_Boltpay_ApiController extends Mage_Core_Controller_Front_Action imple
     public function hookAction()
     {
         try {
+
             /* Allows this method to be used even if the Bolt plugin is disabled.  This accounts for orders that have already been processed by Bolt */
             Bolt_Boltpay_Helper_Data::$fromHooks = true;
 
@@ -125,6 +126,8 @@ class Bolt_Boltpay_ApiController extends Mage_Core_Controller_Front_Action imple
                     )
                 );
 
+                $this->boltHelper()->logInfo($this->boltHelper()->__( 'Updated existing order %d', $order->getIncrementId() ));
+
                 return;
             }
 
@@ -134,8 +137,9 @@ class Bolt_Boltpay_ApiController extends Mage_Core_Controller_Front_Action imple
             throw new Exception("Could not find order ".$transaction->order->cart->display_id);
 
         } catch (Bolt_Boltpay_InvalidTransitionException $boltPayInvalidTransitionException) {
-
+            $this->boltHelper()->logException($boltPayInvalidTransitionException);
             if ($boltPayInvalidTransitionException->getOldStatus() == Bolt_Boltpay_Model_Payment::TRANSACTION_ON_HOLD) {
+                $this->boltHelper()->logWarning($this->boltHelper()->__('The order is on-hold and requires manual merchant update before this hook can be processed'));
                 $this->getResponse()->setHttpResponseCode(503)
                     ->setHeader("Retry-After", "86400")
                     ->setBody(json_encode(array('status' => 'failure', 'error' => array('code' => 6009, 'message' => $this->boltHelper()->__('The order is on-hold and requires manual merchant update before this hook can be processed') ))));
@@ -153,6 +157,7 @@ class Bolt_Boltpay_ApiController extends Mage_Core_Controller_Front_Action imple
 
                 if ( $canAssumeHookedIsHandled )
                 {
+                    $this->boltHelper()->logWarning($this->boltHelper()->__('Order already handled, so hook was ignored'));
                     $this->sendResponse(
                         200,
                         array(
@@ -162,6 +167,7 @@ class Bolt_Boltpay_ApiController extends Mage_Core_Controller_Front_Action imple
                         )
                     );
                 } else {
+                    $this->boltHelper()->logWarning($this->boltHelper()->__('Invalid webhook transition from %s to %s', $prevTransactionStatus, $newTransactionStatus) );
                     $this->sendResponse(
                         422,
                         array('status' => 'failure', 'error' => array('code' => 6009, 'message' => $this->boltHelper()->__('Invalid webhook transition from %s to %s', $prevTransactionStatus, $newTransactionStatus) ))
@@ -169,7 +175,6 @@ class Bolt_Boltpay_ApiController extends Mage_Core_Controller_Front_Action imple
                 }
             }
         } catch (Exception $e) {
-
             $this->sendResponse(
                 422,
                 array('status' => 'failure', 'error' => array('code' => 6009, 'message' => $e->getMessage()))
@@ -181,6 +186,7 @@ class Bolt_Boltpay_ApiController extends Mage_Core_Controller_Front_Action imple
             }
 
             $this->boltHelper()->notifyException($e, $metaData);
+            $this->boltHelper()->logException($e, $metaData);
         }
     }
 

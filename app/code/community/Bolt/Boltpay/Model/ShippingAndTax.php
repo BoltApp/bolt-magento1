@@ -52,7 +52,9 @@ class Bolt_Boltpay_Model_ShippingAndTax extends Bolt_Boltpay_Model_Abstract
         $regionId = $directory->getRegionId(); // This is a required field for calculation: shipping, shopping price rules and etc.
 
         if (!property_exists($shippingAddress, 'postal_code') || !property_exists($shippingAddress, 'country_code')) {
-            throw new Exception($this->boltHelper()->__("Address must contain postal_code and country_code."));
+            $exception = new Exception($this->boltHelper()->__("Address must contain postal_code and country_code."));
+            $this->boltHelper()->logWarning($exception->getMessage());
+            throw $exception;
         }
 
         $shippingStreet = trim(
@@ -61,7 +63,7 @@ class Bolt_Boltpay_Model_ShippingAndTax extends Bolt_Boltpay_Model_Abstract
             . (@$shippingAddress->street_address3 ?: '') . "\n"
             . (@$shippingAddress->street_address4 ?: '')
         );
-            
+
         $addressData = array(
             'email' => @$shippingAddress->email ?: $shippingAddress->email_address,
             'firstname' => @$shippingAddress->first_name,
@@ -169,13 +171,10 @@ class Bolt_Boltpay_Model_ShippingAndTax extends Bolt_Boltpay_Model_Abstract
             foreach ($rates as $rate) {
 
                 if ($rate->getErrorMessage()) {
+                    $exception = new Exception($this->boltHelper()->__("Error getting shipping option for %s: %s", $rate->getCarrierTitle(), $rate->getErrorMessage()));
                     $metaData = array('quote' => var_export($quote->debug(), true));
-                    $this->boltHelper()->notifyException(
-                        new Exception(
-                            $this->boltHelper()->__("Error getting shipping option for %s: %s", $rate->getCarrierTitle(), $rate->getErrorMessage())
-                        ),
-                        $metaData
-                    );
+                    $this->boltHelper()->logWarning($exception->getMessage(),$metaData);
+                    $this->boltHelper()->notifyException($exception->getMessage(), $metaData);
                     continue;
                 }
 
@@ -185,12 +184,10 @@ class Bolt_Boltpay_Model_ShippingAndTax extends Bolt_Boltpay_Model_Abstract
                 $rateCode = $rate->getCode();
 
                 if (empty($rateCode)) {
+                    $exception = new Exception( $this->boltHelper()->__('Rate code is empty. ') . var_export($rate->debug(), true) );
                     $metaData = array('quote' => var_export($quote->debug(), true));
-
-                    $this->boltHelper()->notifyException(
-                        new Exception( $this->boltHelper()->__('Rate code is empty. ') . var_export($rate->debug(), true) ),
-                        $metaData
-                    );
+                    $this->boltHelper()->logWarning($exception->getMessage(),$metaData);
+                    $this->boltHelper()->notifyException($exception,$metaData);
                 }
 
                 $adjustedShippingAmount = $this->getAdjustedShippingAmount($originalDiscountedSubtotal, $quote);
@@ -226,7 +223,7 @@ class Bolt_Boltpay_Model_ShippingAndTax extends Bolt_Boltpay_Model_Abstract
      * @param Mage_Sales_Model_Quote $quote    Quote which has been updated to use new shipping rate
      * @param string $shippingRateCode         Shipping rate code composed of {carrier}_{method}
      */
-    public function applyShippingRate($quote, $shippingRateCode, $clearTotalsCollectedFlag = true ) {
+    public function applyShippingRate($quote, $shippingRateCode) {
 
         $shippingAddress = $quote->getShippingAddress();
 
@@ -257,7 +254,7 @@ class Bolt_Boltpay_Model_ShippingAndTax extends Bolt_Boltpay_Model_Abstract
                 $item->setData('base_discount_amount', $item->getOrigData('base_discount_amount'));
             }
 
-            $this->boltHelper()->collectTotals($quote, $clearTotalsCollectedFlag);
+            $this->boltHelper()->collectTotals($quote, true);
 
             if(!empty($shippingAddressId) && $shippingAddressId != $shippingAddress->getData('address_id')) {
                 $shippingAddress->setData('address_id', $shippingAddressId);

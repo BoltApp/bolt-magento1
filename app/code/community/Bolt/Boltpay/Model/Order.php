@@ -46,7 +46,9 @@ class Bolt_Boltpay_Model_Order extends Bolt_Boltpay_Model_Abstract
     {
         try {
             if (empty($reference) && !$isPreAuthCreation) {
-                throw new Exception($this->boltHelper()->__("Bolt transaction reference is missing in the Magento order creation process."));
+                $msg = $this->boltHelper()->__("Bolt transaction reference is missing in the Magento order creation process.");
+                $this->boltHelper()->logWarning($msg);
+                throw new Exception($msg);
             }
 
             $transaction = $transaction ?: $this->boltHelper()->fetchTransaction($reference);
@@ -160,6 +162,7 @@ class Bolt_Boltpay_Model_Order extends Bolt_Boltpay_Model_Abstract
                         'shipping_address' => var_export($shippingAddress->debug(), true),
                         'quote' => var_export($immutableQuote->debug(), true)
                     );
+                    $this->boltHelper()->logWarning($errorMessage);
                     $this->boltHelper()->notifyException(new Exception($errorMessage), $metaData);
                 }
             }
@@ -194,6 +197,8 @@ class Bolt_Boltpay_Model_Order extends Bolt_Boltpay_Model_Abstract
                         array(),
                         'warning'
                     );
+
+
                     return $preExistingOrder;
                 }
                 ############################
@@ -228,6 +233,7 @@ class Bolt_Boltpay_Model_Order extends Bolt_Boltpay_Model_Abstract
                         'quote_address' => var_export($immutableQuote->getShippingAddress()->debug(), true)
                     )
                 );
+                $this->boltHelper()->logException($e);
                 throw $e;
             }
             ////////////////////////////////////////////////////////////////////////////
@@ -238,6 +244,7 @@ class Bolt_Boltpay_Model_Order extends Bolt_Boltpay_Model_Abstract
                 $parentQuote->setIsActive(true)->save();
             }
 
+            $this->boltHelper()->logException($oce);
             if ( $oce instanceof Bolt_Boltpay_OrderCreationException ) {
                 throw $oce;
             } else {
