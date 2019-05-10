@@ -59,7 +59,7 @@ class Bugsnag_Request
             if (isset($_SERVER['CONTENT_TYPE']) && stripos($_SERVER['CONTENT_TYPE'], 'application/json') === 0) {
                 $requestData['request']['params'] = json_decode($input, true);
             }
-
+            $params = array();
             if (isset($_SERVER['REQUEST_METHOD']) && in_array(strtoupper($_SERVER['REQUEST_METHOD']), $methodsWithPayload)) {
                 parse_str($input, $params);
                 if (isset($requestData['request']['params']) && is_array($requestData['request']['params'])) {

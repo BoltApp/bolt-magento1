@@ -286,6 +286,165 @@ class ConfigurationTest extends TestCase
                     'expect' => true
                 ]
             ],
+            [
+                'data' => [
+                    'errorReportingLevel' => 1,
+                    'code' => 0,
+                    'expect' => true
+                ]
+            ],
+            [
+                'data' => [
+                    'errorReportingLevel' => 1,
+                    'code' => 1,
+                    'expect' => false
+                ]
+            ],
+        ];
+    }
+
+    /**
+     * @test
+     * @dataProvider setProjectRootCases
+     */
+    public function setProjectRoot($data)
+    {
+        $object = $this->getMockBuilder('Bugsnag_Configuration')
+            ->setMethods(['setStripPath'])
+            ->getMock();
+        if (!is_null($data['stripPath'])) {
+            $object->expects($this->once())
+                ->method('setStripPath')
+                ->with($data['projectRoot']);
+        }
+        $object->setProjectRoot($data['projectRoot']);
+        $this->assertEquals($data['projectRoot'], $object->projectRoot);
+        $this->assertEquals($data['expect']['projectRootRegex'], $object->projectRootRegex);
+    }
+
+    /**
+     * @return array
+     */
+    public function setProjectRootCases()
+    {
+        return [
+            [
+                'data' => [
+                    'projectRoot' => '',
+                    'stripPath' => '',
+                    'expect' => [
+                        'projectRootRegex' => '/[\/]?/i',
+                    ]
+                ]
+            ],
+            [
+                'data' => [
+                    'projectRoot' => '',
+                    'stripPath' => '/var/',
+                    'expect' => [
+                        'projectRootRegex' => '/[\/]?/i',
+                    ]
+                ]
+            ],
+            [
+                'data' => [
+                    'projectRoot' => '/var/www/project/',
+                    'stripPath' => '',
+                    'expect' => [
+                        'projectRootRegex' => '/\/var\/www\/project\/[\/]?/i',
+                    ]
+                ]
+            ],
+            [
+                'data' => [
+                    'projectRoot' => '/var/www/project/',
+                    'stripPath' => '/var/strip/',
+                    'expect' => [
+                        'projectRootRegex' => '/\/var\/www\/project\/[\/]?/i',
+                    ]
+                ]
+            ],
+        ];
+    }
+
+    /**
+     * @test
+     * @dataProvider setStripPathCases
+     */
+    public function setStripPath($data)
+    {
+        $object = new Bugsnag_Configuration();
+        $object->setStripPath($data['stripPath']);
+        $this->assertEquals($data['expect'], $object->stripPathRegex);
+    }
+
+    /**
+     * @return array
+     */
+    public function setStripPathCases()
+    {
+        return [
+            [
+                'data' => [
+                    'stripPath' => '',
+                    'expect' => '/[\/]?/i'
+                ]
+            ],
+            [
+                'data' => [
+                    'stripPath' => '/var/www/project/',
+                    'expect' => '/\/var\/www\/project\/[\/]?/i'
+                ]
+            ],
+        ];
+    }
+
+    /**
+     * @test
+     * @dataProvider getCases
+     */
+    public function get($data)
+    {
+        $object = new Bugsnag_Configuration();
+        $this->assertEquals($data['expect'], $object->get($data['key'], $data['default']));
+    }
+
+    /**
+     * @return array
+     */
+    public function getCases()
+    {
+        return [
+            // @todo this must works
+//             [
+//                 'data' => [
+//                     'key' => '',
+//                     'default' => '',
+//                     'expect' => ''
+//                 ]
+//             ],
+            // @todo this must works too
+//             [
+//                 'data' => [
+//                     'key' => 'dummy',
+//                     'default' => '',
+//                     'expect' => ''
+//                 ]
+//             ],
+            [
+                'data' => [
+                    'key' => 'apiKey',
+                    'default' => 'test',
+                    'expect' => 'test'
+                ]
+            ],
+            [
+                'data' => [
+                    'key' => 'apiKey',
+                    'default' => null,
+                    'expect' => null
+                ]
+            ],
         ];
     }
 }
