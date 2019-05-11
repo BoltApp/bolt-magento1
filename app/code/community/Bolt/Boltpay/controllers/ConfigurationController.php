@@ -191,7 +191,7 @@ class Bolt_Boltpay_ConfigurationController
         }
 
         $statusTable = $setup->getTable('sales_order_status_state');
-        $query = $connection->query("SELECT * FROM $statusTable WHERE state = 'deferred'");
+        $query = $connection->query("SELECT * FROM $statusTable WHERE status = 'deferred'");
         $resultData = $query->fetchAll();
         if (!count($resultData)) {
             return false;
