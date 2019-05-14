@@ -273,7 +273,7 @@ class Bolt_Boltpay_Model_Order extends Bolt_Boltpay_Model_Abstract
             if (@$parentQuote) {
                 $parentQuote->setIsActive(true)->save();
             }
-            $this->boltHelper()->logException($oce);
+            $this->boltHelper()->logException($e);
             throw $e;
         }
 
