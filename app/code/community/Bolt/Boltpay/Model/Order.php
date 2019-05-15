@@ -460,7 +460,12 @@ class Bolt_Boltpay_Model_Order extends Bolt_Boltpay_Model_Abstract
     public function sendOrderEmail($order)
     {
         try {
-            $order->sendNewOrderEmail();
+            $mustSendEmail = !$order->getPayment()->getAdditionalInformation("orderEmailWasSent");
+            if ($mustSendEmail) {
+                $order->queueNewOrderEmail();
+                $order->getPayment()->setAdditionalInformation("orderEmailWasSent", "true")->save();
+            }
+
         } catch (Exception $e) {
             // Catches errors that occur when sending order email confirmation (e.g. external API is down)
             // and allows order creation to complete.
