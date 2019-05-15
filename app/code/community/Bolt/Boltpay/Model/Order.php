@@ -769,10 +769,10 @@ class Bolt_Boltpay_Model_Order extends Bolt_Boltpay_Model_Abstract
     /**
      * Add user note as a status history comment. It will be visible in admin and front
      *
-     * @param OrderModel $order
-     * @param string     $userNote
+     * @param Mage_Sales_Model_Order $order    Order in which the comment need to be set
+     * @param string                 $userNote Customer note that need to be added as a comment in the order
      *
-     * @return OrderModel
+     * @return Mage_Sales_Model_Order Order object with comment set
      */
     public function setOrderUserNote($order, $userNote)
     {
