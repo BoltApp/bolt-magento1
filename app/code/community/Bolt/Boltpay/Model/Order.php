@@ -225,6 +225,11 @@ class Bolt_Boltpay_Model_Order extends Bolt_Boltpay_Model_Abstract
                 $service->submitAll();
                 $order = $service->getOrder();
 
+                // Add the user_note to the order comments and make it visible for customer.
+                if (isset($transaction->order->user_note)) {
+                    $this->setOrderUserNote($order, '[CUSTOMER NOTE] ' . $transaction->order->user_note);
+                }
+
             } catch (Exception $e) {
 
                 $this->boltHelper()->addBreadcrumb(
@@ -759,5 +764,23 @@ class Bolt_Boltpay_Model_Order extends Bolt_Boltpay_Model_Abstract
      */
     public function isBoltOrder($order) {
         return (strtolower($order->getPayment()->getMethod()) === Bolt_Boltpay_Model_Payment::METHOD_CODE);
+    }
+
+    /**
+     * Add user note as a status history comment. It will be visible in admin and front
+     *
+     * @param OrderModel $order
+     * @param string     $userNote
+     *
+     * @return OrderModel
+     */
+    public function setOrderUserNote($order, $userNote)
+    {
+        $order
+            ->addStatusHistoryComment($userNote)
+            ->setIsVisibleOnFront(true)
+            ->setIsCustomerNotified(false);
+
+        return $order;
     }
 }
