@@ -32,16 +32,6 @@ trait Bolt_Boltpay_Controller_Traits_WebHookTrait {
     protected $payload;
 
     /**
-     * @var string The signed payload which used the stores signing secret
-     */
-    protected $signature;
-
-    /**
-     * @var bool determines if JSON is expected return type for preDispatch optimization.
-     */
-    protected $willReturnJson = true;
-
-    /**
      * For JSON, clears response body and header, and sets headers.
      * After this, verifies request is from Bolt, if not, sends error message response
      *
@@ -52,17 +42,16 @@ trait Bolt_Boltpay_Controller_Traits_WebHookTrait {
     public function preDispatch()
     {
         ob_start();
-        if ($this->willReturnJson) {
-            $this->getResponse()->clearAllHeaders()->clearBody();
-            $this->boltHelper()->setResponseContextHeaders();
-            $this->getResponse()
-                ->setHeader('Content-type', 'application/json', true);
-            $this->getLayout()->setDirectOutput(true);
-        }
 
-        if (empty($this->payload)) { $this->payload = file_get_contents('php://input'); }
-        if (empty($this->signature)) { $this->signature = @$_SERVER['HTTP_X_BOLT_HMAC_SHA256']; }
-        $this->verifyBoltSignature($this->payload, $this->signature);
+        $this->getResponse()->clearAllHeaders()->clearBody();
+        $this->boltHelper()->setResponseContextHeaders();
+        $this->getResponse()
+            ->setHeader('Content-type', 'application/json', true);
+        $this->getLayout()->setDirectOutput(true);
+
+        $this->payload = file_get_contents('php://input');
+
+        $this->verifyBoltSignature($this->payload, @$_SERVER['HTTP_X_BOLT_HMAC_SHA256']);
 
         return parent::preDispatch();
     }
