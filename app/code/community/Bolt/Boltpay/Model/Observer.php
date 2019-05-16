@@ -50,6 +50,7 @@ class Bolt_Boltpay_Model_Observer
             }
         } catch (Exception $e) {
             $this->boltHelper()->notifyException($e);
+            $this->boltHelper()->logException($e);
         }
 
         $session->unsBoltUserId();

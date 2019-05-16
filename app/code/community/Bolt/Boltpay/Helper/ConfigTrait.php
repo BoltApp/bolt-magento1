@@ -181,4 +181,28 @@ trait Bolt_Boltpay_Helper_ConfigTrait {
 
         return ($active && $isEverywhere);
     }
+
+    /**
+     * Get Api key configuration
+     *
+     * @return mixed
+     */
+    public function getApiKeyConfig()
+    {
+        return $this->getExtraConfig('datadogKey');
+    }
+
+    /**
+     * Get severity configuration
+     *
+     * @return array
+     */
+    public function getSeverityConfig()
+    {
+        $severityString = $this->getExtraConfig('datadogKeySeverity');
+        $severityString = preg_replace('/\s+/', '', $severityString);
+        $severities = explode(',', $severityString);
+
+        return $severities;
+    }
 }
