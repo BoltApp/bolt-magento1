@@ -235,6 +235,12 @@ class Bolt_Boltpay_Model_Order extends Bolt_Boltpay_Model_Abstract
                 ///////////////////////////////////////////////////////
 
                 $service->submitAll();
+                $order = $service->getOrder();
+
+                // Add the user_note to the order comments and make it visible for customer.
+                if (isset($transaction->order->user_note)) {
+                    $this->setOrderUserNote($order, '[CUSTOMER NOTE] ' . $transaction->order->user_note);
+                }
             } catch (Exception $e) {
 
                 ///////////////////////////////////////////////////////
@@ -391,4 +397,30 @@ class Bolt_Boltpay_Model_Order extends Bolt_Boltpay_Model_Abstract
         }
     }
 
+    /**
+     * @param \Mage_Sales_Model_Order $order
+     */
+    protected function setOrderOnHold(Mage_Sales_Model_Order $order)
+    {
+        $order->setHoldBeforeState($order->getState());
+        $order->setHoldBeforeStatus($order->getStatus());
+        $order->setState(Mage_Sales_Model_Order::STATE_HOLDED, true, $this->orderOnHoldMessage);
+    }
+
+    /**
+     * Add user note as a status history comment. It will be visible in admin and front
+     *
+     * @param Mage_Sales_Model_Order $order    Order in which the comment needs to be set
+     * @param string                 $userNote The comment entered by the customer via the Bolt modal
+     *
+     * @return Mage_Sales_Model_Order Order object with comment set
+     */
+    public function setOrderUserNote($order, $userNote)
+    {
+        $order
+            ->addStatusHistoryComment($userNote)
+            ->setIsVisibleOnFront(true)
+            ->setIsCustomerNotified(false);
+        return $order;
+    }
 }
