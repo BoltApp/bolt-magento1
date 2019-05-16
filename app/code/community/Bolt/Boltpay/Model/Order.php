@@ -25,11 +25,6 @@ class Bolt_Boltpay_Model_Order extends Bolt_Boltpay_Model_Abstract
 {
     const MERCHANT_BACK_OFFICE = 'merchant_back_office';
 
-    protected $outOfStockSkus = null;
-    protected $shouldPutOrderOnHold = false;
-    protected $orderOnHoldMessage = '';
-    protected $cartProducts = null;
-
     /**
      * Processes Magento order creation. Called from both frontend and API.
      *
@@ -69,12 +64,6 @@ class Bolt_Boltpay_Model_Order extends Bolt_Boltpay_Model_Abstract
             // check that the order is in the system.  If not, we have an unexpected problem
             if ($immutableQuote->isEmpty()) {
                 $msg = $this->boltHelper()->__("The expected immutable quote [$immutableQuoteId] is missing from the Magento system.  Were old quotes recently removed from the database?");
-                $this->boltHelper()->logWarning($msg);
-                throw new Exception($msg);
-            }
-
-            if(!$this->allowOutOfStockOrders() && !empty($this->getOutOfStockSKUs($immutableQuote))){
-                $msg = $this->boltHelper()->__("Not all items are available in the requested quantities. Out of stock SKUs: %s", join(', ', $this->getOutOfStockSKUs($immutableQuote)));
                 $this->boltHelper()->logWarning($msg);
                 throw new Exception($msg);
             }
@@ -245,7 +234,6 @@ class Bolt_Boltpay_Model_Order extends Bolt_Boltpay_Model_Abstract
                 Mage::getSingleton('core/session')->setWasCreatedByHook(!$isAjaxRequest);
                 ///////////////////////////////////////////////////////
 
-                $this->validateProducts($immutableQuote);
                 $service->submitAll();
                 $order = $service->getOrder();
 
@@ -285,17 +273,6 @@ class Bolt_Boltpay_Model_Order extends Bolt_Boltpay_Model_Abstract
 
         $order = $service->getOrder();
         $this->validateSubmittedOrder($order, $immutableQuote);
-
-        if ($this->shouldPutOrderOnHold()) {
-            $this->setOrderOnHold($order);
-        }
-
-        /** @var Bolt_Boltpay_Model_OrderFixer $orderFixer */
-        $orderFixer = Mage::getModel('boltpay/orderFixer');
-        $orderFixer->setupVariables($order, $transaction);
-        if($orderFixer->requiresOrderUpdateToMatchBolt()) {
-            $orderFixer->updateOrderToMatchBolt();
-        }
 
         ///////////////////////////////////////////////////////
         // Close out session by assigning the immutable quote
@@ -350,158 +327,7 @@ class Bolt_Boltpay_Model_Order extends Bolt_Boltpay_Model_Abstract
             ->addFieldToFilter('entity_id', $quoteId)
             ->getFirstItem();
 
-        if($this->allowDisabledSKUOrders()) {
-            $immutableQuote->setIsSuperMode(true); // Allow an order to be created even if it has disabled products
-        }
-
         return $immutableQuote;
-    }
-
-    /**
-     * @return boolean
-     */
-    protected function allowDisabledSKUOrders()
-    {
-        return Mage::getStoreConfigFlag('payment/boltpay/allow_disabled_sku_orders');
-    }
-
-    /**
-     * @return boolean
-     */
-    protected function allowOutOfStockOrders()
-    {
-        return Mage::getStoreConfigFlag('payment/boltpay/allow_out_of_stock_orders');
-    }
-
-    /**
-     * @param Mage_Sales_Model_Quote $quote
-     *
-     * @return void
-     */
-    protected function validateProducts(Mage_Sales_Model_Quote $quote)
-    {
-        $outOfStockSKUs = $this->getOutOfStockSKUs($quote);
-        if ($outOfStockSKUs) {
-            $this->enableOutOfStockOrderToBeCreated();
-
-            $errorMessage = $this->boltHelper()->__("Product " .
-                join(", ", $outOfStockSKUs) .
-                (count($outOfStockSKUs) == 1 ? " is" : " are") .
-                " out of stock. ");
-
-            $this->appendOrderOnHoldMessage($errorMessage);
-        }
-
-        $disabledSKUs = $this->getDisabledSKUs($quote);
-        if ($disabledSKUs) {
-            $errorMessage = $this->boltHelper()->__("Product " .
-                join(", ", $disabledSKUs) .
-                (count($disabledSKUs) == 1 ? " is" : " are") .
-                " disabled. ");
-
-            $this->appendOrderOnHoldMessage($errorMessage);
-        }
-
-        if ($this->shouldPutOrderOnHold()) {
-            $invalidSKUs = array_unique(array_merge($outOfStockSKUs, $outOfStockSKUs));
-            $errorMessage = $this->boltHelper()->__("Please review " .
-                (count($invalidSKUs) > 1 ? "them" : "it") .
-                " and un-hold the order. ");
-
-            $this->appendOrderOnHoldMessage($errorMessage);
-        }
-    }
-
-    /**
-     * @return boolean
-     */
-    protected function shouldPutOrderOnHold()
-    {
-        return $this->shouldPutOrderOnHold;
-    }
-
-    /**
-     * @param $message
-     *
-     * @return void
-     */
-    protected function appendOrderOnHoldMessage($message)
-    {
-        $this->shouldPutOrderOnHold = true;
-        $this->orderOnHoldMessage .= $message;
-    }
-
-    /**
-     * @var Mage_Sales_Model_Quote $quote The quote that defines the cart
-     *
-     * @return array
-     */
-    public function getOutOfStockSKUs(Mage_Sales_Model_Quote $quote)
-    {
-        if($this->outOfStockSkus == null) {
-            $this->outOfStockSkus = array();
-
-            foreach($this->getCartProducts($quote) as $product) {
-                $stockInfo = $product->getStockItem();
-                if ($stockInfo->getManageStock()) {
-                    if (($stockInfo->getQty() < $product->getCartItemQty()) && !$stockInfo->getBackorders()) {
-                        $this->outOfStockSkus[] = $product->getSku();
-                    }
-                }
-            }
-        }
-
-        return $this->outOfStockSkus;
-    }
-
-    /**
-     * @var Mage_Sales_Model_Quote $quote The quote that defines the cart
-     *
-     * @return array
-     */
-    protected function getCartProducts(Mage_Sales_Model_Quote $quote)
-    {
-        if($this->cartProducts == null) {
-            foreach ($quote->getAllItems() as $cartItem) {
-                if ($cartItem->getHasChildren()) {
-                    continue;
-                }
-
-                $product = $cartItem->getProduct();
-                $product->setCartItemQty($cartItem->getQty());
-
-                $this->cartProducts[] = $product;
-            }
-        }
-
-        return $this->cartProducts;
-    }
-
-    /**
-     * @param Mage_Sales_Model_Quote $quote
-     *
-     * @return array
-     */
-    protected function getDisabledSKUs(Mage_Sales_Model_Quote $quote)
-    {
-        $disabledSKUs = array();
-
-        foreach($this->getCartProducts($quote) as $product) {
-            if ($product->getStatus() == Mage_Catalog_Model_Product_Status::STATUS_DISABLED) {
-                $disabledSKUs[] = $product->getSku();
-            }
-        }
-
-        return $disabledSKUs;
-    }
-
-    protected function enableOutOfStockOrderToBeCreated()
-    {
-        try{
-            Mage::app()->getStore()->setId(Mage_Core_Model_App::ADMIN_STORE_ID);
-        }catch (\Exception $e){
-            $this->boltHelper()->notifyException($e);
-        }
     }
 
     /**
