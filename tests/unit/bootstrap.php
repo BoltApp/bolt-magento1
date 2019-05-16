@@ -1,5 +1,5 @@
 <?php
-define('ROOT_DIR', dirname(dirname(dirname(__DIR__))));
+define('ROOT_DIR', dirname(dirname(__DIR__)));
 
 define('BUGSNAG_ROOT', 'Bugsnag');
 define('BUGSNAG_DIR', ROOT_DIR . '/lib/Boltpay/Bugsnag/');
