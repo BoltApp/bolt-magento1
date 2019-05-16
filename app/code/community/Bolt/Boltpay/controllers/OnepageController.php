@@ -23,17 +23,15 @@ require_once 'Mage/Checkout/controllers/OnepageController.php';
 class Bolt_Boltpay_OnepageController
     extends Mage_Checkout_OnepageController implements Bolt_Boltpay_Controller_Interface
 {
-    use Bolt_Boltpay_Controller_Traits_ApiControllerTrait;
+    use Bolt_Boltpay_Controller_Traits_WebHookTrait;
     
     /**
-     * Sets up this controller for 1.x and non-Bolt orders.  For pre-auth Bolt orders,
-     * we will call @see Bolt_Boltpay_Controller_Traits_ApiControllerTrait::preDispatch()
-     * explicitly in the success action.
+     * Allows for success call to be treated like a webhook will not returning JSON
+     * @see Bolt_Boltpay_Controller_Traits_WebHookTrait::preDispatch()
      */
     public function _construct()
     {
         $this->willReturnJson = false;
-        $this->requestMustBeSigned = false;
         parent::_construct();
     }
 }

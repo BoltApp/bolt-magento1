@@ -23,7 +23,7 @@
 class Bolt_Boltpay_ShippingController
     extends Mage_Core_Controller_Front_Action implements Bolt_Boltpay_Controller_Interface
 {
-    use Bolt_Boltpay_Controller_Traits_ApiControllerTrait;
+    use Bolt_Boltpay_Controller_Traits_WebHookTrait;
 
     /**
      * @var Mage_Core_Model_Cache  The Magento cache where the shipping and tax estimate is stored
