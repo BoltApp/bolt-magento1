@@ -281,7 +281,7 @@ class ConfigurationTest extends TestCase
             ],
             [
                 'data' => [
-                    'errorReportingLevel' => 0,
+                    'errorReportingLevel' => '',
                     'code' => 0,
                     'expect' => true
                 ]
