@@ -272,20 +272,20 @@ class ConfigurationTest extends TestCase
     public function shouldIgnoreErrorCodeCases()
     {
         return [
-            [
-                'data' => [
-                    'errorReportingLevel' => '',
-                    'code' => '',
-                    'expect' => true
-                ]
-            ],
-            [
-                'data' => [
-                    'errorReportingLevel' => '',
-                    'code' => 0,
-                    'expect' => true
-                ]
-            ],
+//             [
+//                 'data' => [
+//                     'errorReportingLevel' => '',
+//                     'code' => '',
+//                     'expect' => true
+//                 ]
+//             ],
+//             [
+//                 'data' => [
+//                     'errorReportingLevel' => '',
+//                     'code' => 0,
+//                     'expect' => true
+//                 ]
+//             ],
             [
                 'data' => [
                     'errorReportingLevel' => 1,

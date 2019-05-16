@@ -8,6 +8,12 @@
     <filter>
         <whitelist>
             <directory suffix=".php">./../../lib/Boltpay</directory>
+            <directory suffix=".php">./../../app/code/community/Bolt/Boltpay</directory>
+            <exclude>
+                <directory suffix=".php">./../../app/code/community/Bolt/Boltpay/etc</directory>
+                <directory suffix=".php">./../../app/code/community/Bolt/Boltpay/sql</directory>
+                <directory suffix=".php">./../../app/code/community/Bolt/Boltpay/Controller</directory>
+            </exclude>
         </whitelist>
     </filter>
     <logging>
