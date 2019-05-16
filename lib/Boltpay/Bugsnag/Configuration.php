@@ -112,7 +112,6 @@ class Bugsnag_Configuration
 
     /**
      * Set the project root.
-     * @todo method must return something
      * @param string $projectRoot the project root path
      *
      * @return void
