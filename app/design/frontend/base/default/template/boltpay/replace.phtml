@@ -167,6 +167,12 @@ $additionalClasses = $this->boltHelper()->getAdditionalButtonClasses();
 
         replaceCheckout();
 
+        if (typeof Minicart != "undefined") {
+            Minicart.prototype.hideOverlay = function(){
+                onDomReady();
+                $j(this.selectors.overlay).removeClass('loading');
+            };
+        }
     };
 
     if (document.addEventListener) {
