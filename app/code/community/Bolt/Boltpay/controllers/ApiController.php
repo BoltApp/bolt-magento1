@@ -98,7 +98,7 @@ class Bolt_Boltpay_ApiController extends Mage_Core_Controller_Front_Action imple
                 $orderPayment->save();
                 
                 if($hookType == 'credit'){
-                    $transactionAmount = $bodyParams->amount/100;                    
+                    $transactionAmount = $bodyParams->amount/100;
                 }
                 else{
                     $transactionAmount = $this->getCaptureAmount($transaction);
@@ -237,16 +237,4 @@ class Bolt_Boltpay_ApiController extends Mage_Core_Controller_Front_Action imple
 
         return null;
     }
-
-    /**
-     * @param int $httpCode
-     * @param array $data
-     */
-    protected function sendResponse($httpCode, $data = array())
-    {
-        $this->getResponse()->setHeader('Content-type', 'application/json');
-        $this->getResponse()->setHttpResponseCode($httpCode);
-        $this->getResponse()->setBody(json_encode($data));
-    }
-
 }

@@ -167,8 +167,7 @@ class Bolt_Boltpay_ShippingController
 
         if(!$quote->getId() || !$quote->getItemsCount()){
             $this->sendResponse(
-                200,
-                "{}"
+                200
             );
             return;
         }

@@ -85,9 +85,9 @@ trait Bolt_Boltpay_Controller_Traits_WebHookTrait {
     /**
      * POST data in response to a request
      *
-     * @param int   $httpCode       standard HTTP response code
-     * @param array $data           a JSON string or PHP object or array to be encoded representing the
-     *                              JSON to be sent as a response body to Bolt
+     * @param int                 $httpCode       standard HTTP response code
+     * @param string|object|array $data           a JSON string or PHP object or array to be encoded representing the
+     *                                            JSON to be sent as a response body to Bolt
      *
      * @throws Zend_Controller_Response_Exception if the error code is not within the valid range
      */
