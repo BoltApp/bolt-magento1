@@ -272,6 +272,7 @@ class ConfigurationTest extends TestCase
     public function shouldIgnoreErrorCodeCases()
     {
         return [
+            // @todo this cases must work
 //             [
 //                 'data' => [
 //                     'errorReportingLevel' => '',
