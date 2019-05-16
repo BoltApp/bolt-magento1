@@ -57,7 +57,9 @@ class Bolt_Boltpay_ShippingController
             set_time_limit(30);
             ignore_user_abort(true);
 
-            $mockTransaction = (object) array("order" => $this->payload );
+            $requestData = json_decode($this->payload);
+
+            $mockTransaction = (object) array("order" => $requestData );
             $quoteId = $this->boltHelper()->getImmutableQuoteIdFromTransaction($mockTransaction);
 
             /* @var Mage_Sales_Model_Quote $quote */
@@ -74,7 +76,7 @@ class Bolt_Boltpay_ShippingController
             ////////////////////////////////////////////////////////////////////////////////
             /// Apply shipping address with validation checks
             ////////////////////////////////////////////////////////////////////////////////
-            $shippingAddress = $this->payload->shipping_address;
+            $shippingAddress = $requestData->shipping_address;
             $addressErrorDetails = array();
 
             if (
@@ -243,13 +245,14 @@ class Bolt_Boltpay_ShippingController
      */
     protected function getGeoIpAddress()
     {
+        $requestData = json_decode($this->payload);
 
         $addressData = array(
-            'city'          => isset($this->payload->city) ? $this->payload->city: '',
-            'region'        => isset($this->payload->region_code) ? $this->payload->region_code: '',
-            'region_name'   => isset($this->payload->region_name) ? $this->payload->region_name: '',
-            'postcode'      => isset($this->payload->zip_code) ? $this->payload->zip_code: '',
-            'country_id'    => isset($this->payload->country_code) ? $this->payload->country_code: ''
+            'city'          => isset($requestData->city) ?$requestData->city: '',
+            'region'        => isset($requestData->region_code) ?$requestData->region_code: '',
+            'region_name'   => isset($requestData->region_name) ?$requestData->region_name: '',
+            'postcode'      => isset($requestData->zip_code) ?$requestData->zip_code: '',
+            'country_id'    => isset($requestData->country_code) ?$requestData->country_code: ''
         );
 
         if(!empty($addressData['country_id'])){
@@ -352,7 +355,8 @@ class Bolt_Boltpay_ShippingController
      * or a custom HTTP request header.  For now, we'll rely on sentinel value detection.
      */
     private function isApplePayRequest() {
-        $shippingAddress = $this->payload->shipping_address;
+        $requestData = json_decode($this->payload);
+        $shippingAddress = $requestData->shipping_address;
 
         // For a more strict check, we would enable verifying the phone number is null
         return ($shippingAddress->name === 'n/a') /* && is_null($shippingAddress->phone) */;

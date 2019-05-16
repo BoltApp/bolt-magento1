@@ -31,7 +31,7 @@ class Bolt_Boltpay_ApiController extends Mage_Core_Controller_Front_Action imple
     {
 
         try {
-            $bodyParams = $this->payload;
+            $bodyParams = json_decode($this->payload);
 
             if (isset($bodyParams->type) && $bodyParams->type == "discounts.code.apply") {
                 /** @var Bolt_Boltpay_Model_Coupon $couponModel */
