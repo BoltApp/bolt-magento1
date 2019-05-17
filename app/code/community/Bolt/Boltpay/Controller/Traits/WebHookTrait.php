@@ -49,9 +49,10 @@ trait Bolt_Boltpay_Controller_Traits_WebHookTrait {
             ->setHeader('Content-type', 'application/json', true);
         $this->getLayout()->setDirectOutput(true);
 
-        $this->payload = file_get_contents('php://input');
+        $jsonPayload = file_get_contents('php://input');
+        $this->payload = json_decode($jsonPayload);
 
-        $this->verifyBoltSignature($this->payload, @$_SERVER['HTTP_X_BOLT_HMAC_SHA256']);
+        $this->verifyBoltSignature($jsonPayload, @$_SERVER['HTTP_X_BOLT_HMAC_SHA256']);
 
         return parent::preDispatch();
     }

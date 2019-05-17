@@ -57,7 +57,7 @@ class Bolt_Boltpay_ShippingController
             set_time_limit(30);
             ignore_user_abort(true);
 
-            $requestData = json_decode($this->payload);
+            $requestData = $this->payload;
 
             $mockTransaction = (object) array("order" => $requestData );
             $quoteId = $this->boltHelper()->getImmutableQuoteIdFromTransaction($mockTransaction);
@@ -245,7 +245,7 @@ class Bolt_Boltpay_ShippingController
      */
     protected function getGeoIpAddress()
     {
-        $requestData = json_decode($this->payload);
+        $requestData = $this->payload;
 
         $addressData = array(
             'city'          => isset($requestData->city) ?$requestData->city: '',
@@ -355,7 +355,7 @@ class Bolt_Boltpay_ShippingController
      * or a custom HTTP request header.  For now, we'll rely on sentinel value detection.
      */
     private function isApplePayRequest() {
-        $requestData = json_decode($this->payload);
+        $requestData = $this->payload;
         $shippingAddress = $requestData->shipping_address;
 
         // For a more strict check, we would enable verifying the phone number is null
