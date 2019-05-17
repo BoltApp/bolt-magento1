@@ -31,20 +31,20 @@ class Bolt_Boltpay_ApiController extends Mage_Core_Controller_Front_Action imple
     {
 
         try {
-            $bodyParams = $this->payload;
+            $requestData = $this->getRequestData();
 
-            if (isset($bodyParams->type) && $bodyParams->type == "discounts.code.apply") {
+            if (isset($requestData->type) && $requestData->type == "discounts.code.apply") {
                 /** @var Bolt_Boltpay_Model_Coupon $couponModel */
                 $couponModel = Mage::getModel('boltpay/coupon');
-                $couponModel->setupVariables($bodyParams);
+                $couponModel->setupVariables($requestData);
                 $couponModel->applyCoupon();
 
                 return $this->sendResponse($couponModel->getHttpCode(), $couponModel->getResponseData());
             }
 
-            $reference = $bodyParams->reference;
-            $transactionId = @$bodyParams->transaction_id ?: $bodyParams->id;
-            $hookType = @$bodyParams->notification_type ?: $bodyParams->type;
+            $reference = $requestData->reference;
+            $transactionId = @$requestData->transaction_id ?: $requestData->id;
+            $hookType = @$requestData->notification_type ?: $requestData->type;
 
             /* Allows this method to be used even if the Bolt plugin is disabled.  This accounts for orders that have already been processed by Bolt */
             Bolt_Boltpay_Helper_Data::$fromHooks = true;
@@ -98,7 +98,7 @@ class Bolt_Boltpay_ApiController extends Mage_Core_Controller_Front_Action imple
                 $orderPayment->save();
                 
                 if($hookType == 'credit'){
-                    $transactionAmount = $bodyParams->amount/100;
+                    $transactionAmount = $requestData->amount/100;
                 }
                 else{
                     $transactionAmount = $this->getCaptureAmount($transaction);
