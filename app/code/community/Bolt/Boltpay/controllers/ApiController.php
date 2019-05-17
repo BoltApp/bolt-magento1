@@ -22,7 +22,7 @@
  */
 class Bolt_Boltpay_ApiController extends Mage_Core_Controller_Front_Action implements Bolt_Boltpay_Controller_Interface
 {
-    use Bolt_Boltpay_BoltGlobalTrait;
+    use Bolt_Boltpay_Controller_Traits_WebHookTrait;
 
     /**
      * The starting point for all Api hook request
@@ -31,39 +31,20 @@ class Bolt_Boltpay_ApiController extends Mage_Core_Controller_Front_Action imple
     {
 
         try {
-            $hmacHeader = @$_SERVER['HTTP_X_BOLT_HMAC_SHA256'];
+            $requestData = $this->getRequestData();
 
-            $requestJson = file_get_contents('php://input');
-
-            $this->boltHelper()->setResponseContextHeaders();
-
-            if (!$this->boltHelper()->verify_hook($requestJson, $hmacHeader)) {
-                $exception = new Exception($this->boltHelper()->__('Hook request failed validation.'));
-                $this->getResponse()->setHttpResponseCode(412);
-                $this->getResponse()->setBody(json_encode(array('status' => 'failure', 'error' => array('code' => 6001, 'message' => $exception->getMessage()))));
-
-                $this->getResponse()->setException($exception);
-                $this->boltHelper()->notifyException($exception);
-                $this->boltHelper()->logException($exception);
-                return;
-            }
-
-            //Mage::log('Initiating webhook call', null, 'bolt.log');
-
-            $bodyParams = json_decode(file_get_contents('php://input'), true);
-
-            if (isset($bodyParams['type']) && $bodyParams['type'] == "discounts.code.apply") {
+            if (isset($requestData->type) && $requestData->type == "discounts.code.apply") {
                 /** @var Bolt_Boltpay_Model_Coupon $couponModel */
                 $couponModel = Mage::getModel('boltpay/coupon');
-                $couponModel->setupVariables(json_decode(file_get_contents('php://input')));
+                $couponModel->setupVariables($requestData);
                 $couponModel->applyCoupon();
 
                 return $this->sendResponse($couponModel->getHttpCode(), $couponModel->getResponseData());
             }
 
-            $reference = $bodyParams['reference'];
-            $transactionId = @$bodyParams['transaction_id'] ?: $bodyParams['id'];
-            $hookType = @$bodyParams['notification_type'] ?: $bodyParams['type'];
+            $reference = $requestData->reference;
+            $transactionId = @$requestData->transaction_id ?: $requestData->id;
+            $hookType = @$requestData->notification_type ?: $requestData->type;
 
             /* Allows this method to be used even if the Bolt plugin is disabled.  This accounts for orders that have already been processed by Bolt */
             Bolt_Boltpay_Helper_Data::$fromHooks = true;
@@ -117,7 +98,7 @@ class Bolt_Boltpay_ApiController extends Mage_Core_Controller_Front_Action imple
                 $orderPayment->save();
                 
                 if($hookType == 'credit'){
-                    $transactionAmount = $bodyParams['amount']/100;                    
+                    $transactionAmount = $requestData->amount/100;
                 }
                 else{
                     $transactionAmount = $this->getCaptureAmount($transaction);
@@ -125,16 +106,16 @@ class Bolt_Boltpay_ApiController extends Mage_Core_Controller_Front_Action imple
                 $orderPayment->getMethodInstance()
                     ->setStore($order->getStoreId())
                     ->handleTransactionUpdate($orderPayment, $newTransactionStatus, $prevTransactionStatus, $transactionAmount, $transaction);
-                
-                $this->getResponse()->setBody(
-                    json_encode(
-                        array(
-                            'status' => 'success',
-                            'display_id' => $order->getIncrementId(),
-                            'message' => $this->boltHelper()->__( 'Updated existing order %d', $order->getIncrementId() )
-                        )
+
+                $this->sendResponse(
+                    200,
+                    array(
+                        'status' => 'success',
+                        'display_id' => $order->getIncrementId(),
+                        'message' => $this->boltHelper()->__( 'Updated existing order %d', $order->getIncrementId() )
                     )
                 );
+
                 $this->boltHelper()->logInfo($this->boltHelper()->__( 'Updated existing order %d', $order->getIncrementId() ));
                 $this->getResponse()->setHttpResponseCode(200);
 
@@ -190,10 +171,12 @@ class Bolt_Boltpay_ApiController extends Mage_Core_Controller_Front_Action imple
         } catch (Bolt_Boltpay_InvalidTransitionException $boltPayInvalidTransitionException) {
             $this->boltHelper()->logException($boltPayInvalidTransitionException);
             if ($boltPayInvalidTransitionException->getOldStatus() == Bolt_Boltpay_Model_Payment::TRANSACTION_ON_HOLD) {
+                $this->getResponse() ->setHeader("Retry-After", "86400");
+                $this->sendResponse(
+                    503,
+                    array('status' => 'failure', 'error' => array('code' => 6009, 'message' => $this->boltHelper()->__('The order is on-hold and requires manual merchant update before this hook can be processed') ))
+                );
                 $this->boltHelper()->logWarning($this->boltHelper()->__('The order is on-hold and requires manual merchant update before this hook can be processed'));
-                $this->getResponse()->setHttpResponseCode(503)
-                    ->setHeader("Retry-After", "86400")
-                    ->setBody(json_encode(array('status' => 'failure', 'error' => array('code' => 6009, 'message' => $this->boltHelper()->__('The order is on-hold and requires manual merchant update before this hook can be processed') ))));
             } else {
                 $isNotRefundOrCaptureHook = !in_array($hookType, array(Bolt_Boltpay_Model_Payment::HOOK_TYPE_REFUND, Bolt_Boltpay_Model_Payment::HOOK_TYPE_CAPTURE));
                 $isRepeatHook = $newTransactionStatus === $prevTransactionStatus;
@@ -209,20 +192,20 @@ class Bolt_Boltpay_ApiController extends Mage_Core_Controller_Front_Action imple
                 if ( $canAssumeHookedIsHandled )
                 {
                     $this->boltHelper()->logWarning($this->boltHelper()->__('Order already handled, so hook was ignored'));
-                    $this->getResponse()->setBody(
-                        json_encode(
-                            array(
-                                'status' => 'success',
-                                'display_id' => $order->getIncrementId(),
-                                'message' => $this->boltHelper()->__('Order already handled, so hook was ignored')
-                            )
+                    $this->sendResponse(
+                        200,
+                        array(
+                            'status' => 'success',
+                            'display_id' => $order->getIncrementId(),
+                            'message' => $this->boltHelper()->__('Order already handled, so hook was ignored')
                         )
-                    )->setHttpResponseCode(200);
+                    );
                 } else {
                     $this->boltHelper()->logWarning($this->boltHelper()->__('Invalid webhook transition from %s to %s', $prevTransactionStatus, $newTransactionStatus) );
-                    $this->getResponse()
-                        ->setHttpResponseCode(422)
-                        ->setBody(json_encode(array('status' => 'failure', 'error' => array('code' => 6009, 'message' => $this->boltHelper()->__('Invalid webhook transition from %s to %s', $prevTransactionStatus, $newTransactionStatus) ))));
+                    $this->sendResponse(
+                        422,
+                        array('status' => 'failure', 'error' => array('code' => 6009, 'message' => $this->boltHelper()->__('Invalid webhook transition from %s to %s', $prevTransactionStatus, $newTransactionStatus) ))
+                    );
                 }
             }
         } catch (Exception $e) {
@@ -231,8 +214,10 @@ class Bolt_Boltpay_ApiController extends Mage_Core_Controller_Front_Action imple
                 $this->getResponse()->setHttpResponseCode(409)
                     ->setBody(json_encode(array('status' => 'failure', 'error' => array('code' => 6003, 'message' => $e->getMessage()))));
             }else{
-                $this->getResponse()->setHttpResponseCode(422)
-                    ->setBody(json_encode(array('status' => 'failure', 'error' => array('code' => 6009, 'message' => $e->getMessage()))));
+                $this->sendResponse(
+                    422,
+                    array('status' => 'failure', 'error' => array('code' => 6009, 'message' => $e->getMessage()))
+                );
 
                 $metaData = array();
                 if (isset($quote)){
@@ -252,16 +237,4 @@ class Bolt_Boltpay_ApiController extends Mage_Core_Controller_Front_Action imple
 
         return null;
     }
-
-    /**
-     * @param int $httpCode
-     * @param array $data
-     */
-    protected function sendResponse($httpCode, $data = array())
-    {
-        $this->getResponse()->setHeader('Content-type', 'application/json');
-        $this->getResponse()->setHttpResponseCode($httpCode);
-        $this->getResponse()->setBody(json_encode($data));
-    }
-
 }
