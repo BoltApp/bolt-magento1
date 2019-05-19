@@ -16,36 +16,20 @@
  */
 
 /**
- * Trait Bolt_Boltpay_Controller_Traits_ApiControllerTrait
+ * Trait Bolt_Boltpay_Controller_Traits_WebHookTrait
  *
- * Defines generalized actions associated with API calls to and from the Bolt server
+ * Defines generalized actions associated with web hooks
  *
  * @method Mage_Core_Controller_Response_Http getResponse()
  * @method Mage_Core_Model_Layout getLayout()
  */
-trait Bolt_Boltpay_Controller_Traits_ApiControllerTrait {
-
+trait Bolt_Boltpay_Controller_Traits_WebHookTrait {
     use Bolt_Boltpay_BoltGlobalTrait;
 
     /**
      * @var string The body of the request made to this controller
      */
     protected $payload;
-
-    /**
-     * @var string The signed payload which used the stores signing secret
-     */
-    protected $signature;
-
-    /**
-     * @var bool determines if JSON is expected return type for preDispatch optimization.
-     */
-    protected $willReturnJson = true;
-
-    /**
-     * @var bool mandates that all request to this controller must be signed
-     */
-    protected $requestMustBeSigned = true;
 
     /**
      * For JSON, clears response body and header, and sets headers.
@@ -57,21 +41,17 @@ trait Bolt_Boltpay_Controller_Traits_ApiControllerTrait {
      */
     public function preDispatch()
     {
-        @ob_start();
-        if ($this->willReturnJson) {
-            $this->getResponse()->clearAllHeaders()->clearBody();
-            $this->boltHelper()->setResponseContextHeaders();
-            $this->getResponse()
-                ->setHeader('Content-type', 'application/json', true);
+        ob_start();
 
-            $this->getLayout()->setDirectOutput(true);
-        }
+        $this->getResponse()->clearAllHeaders()->clearBody();
+        $this->boltHelper()->setResponseContextHeaders();
+        $this->getResponse()
+            ->setHeader('Content-type', 'application/json', true);
+        $this->getLayout()->setDirectOutput(true);
 
-        if ( $this->requestMustBeSigned ) {
-            if (empty($this->payload)) { $this->payload = file_get_contents('php://input'); }
-            if (empty($this->signature)) { $this->signature = @$_SERVER['HTTP_X_BOLT_HMAC_SHA256']; }
-            $this->verifyBoltSignature($this->payload, $this->signature);
-        }
+        $this->payload = file_get_contents('php://input');
+
+        $this->verifyBoltSignature($this->payload, @$_SERVER['HTTP_X_BOLT_HMAC_SHA256']);
 
         return parent::preDispatch();
     }
@@ -92,14 +72,11 @@ trait Bolt_Boltpay_Controller_Traits_ApiControllerTrait {
                 Bolt_Boltpay_OrderCreationException::E_BOLT_GENERAL_ERROR,
                 Bolt_Boltpay_OrderCreationException::E_BOLT_GENERAL_ERROR_TMPL_HMAC
             );
-
             $this->getResponse()
                 ->setHttpResponseCode($exception->getHttpCode())
                 ->setBody($exception->getJson())
                 ->setException($exception)
                 ->sendResponse();
-
-            $this->boltHelper()->logWarning($exception->getMessage());
             $this->boltHelper()->notifyException($exception, array(), 'warning');
             exit;
         }
@@ -108,17 +85,26 @@ trait Bolt_Boltpay_Controller_Traits_ApiControllerTrait {
     /**
      * POST data in response to a request
      *
-     * @param int   $httpCode       standard HTTP response code
-     * @param array $data           a PHP array to be encoded as JSON and sent as a response body to Bolt
-     * @param bool  $doJsonEncode   instructs whether to JSON encode the data, true by default
+     * @param int                 $httpCode       standard HTTP response code
+     * @param string|object|array $data           a JSON string or PHP object or array to be encoded representing the
+     *                                            JSON to be sent as a response body to Bolt
      *
      * @throws Zend_Controller_Response_Exception if the error code is not within the valid range
      */
-    protected function sendResponse($httpCode, $data = array(), $doJsonEncode = true )
+    protected function sendResponse($httpCode, $data = array())
     {
-        @ob_end_clean();
+        ob_end_clean();
         $this->getResponse()
             ->setHttpResponseCode($httpCode)
-            ->setBody($doJsonEncode ? json_encode($data) : $data );
+            ->setBody(is_string($data) ? $data : json_encode($data));
+    }
+
+    /**
+     * A convenience method for getting the Bolt supplied payload as an object
+     *
+     * @return object   The JSON decoded object that was supplied in the request to this controller
+     */
+    public function getRequestData() {
+        return json_decode($this->payload);
     }
 }

@@ -670,7 +670,6 @@ class Bolt_Boltpay_Model_Order extends Bolt_Boltpay_Model_Abstract
         );
     }
 
-
     /**
      * Gets a an order by parent quote id/Bolt order reference
      *

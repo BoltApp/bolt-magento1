@@ -24,7 +24,7 @@ use Bolt_Boltpay_OrderCreationException as OCE;
  */
 class Bolt_Boltpay_ApiController extends Mage_Core_Controller_Front_Action implements Bolt_Boltpay_Controller_Interface
 {
-    use Bolt_Boltpay_Controller_Traits_ApiControllerTrait;
+    use Bolt_Boltpay_Controller_Traits_WebHookTrait;
 
     /**
      * The starting point for all Api hook request
@@ -33,14 +33,15 @@ class Bolt_Boltpay_ApiController extends Mage_Core_Controller_Front_Action imple
     {
         try {
 
+            $requestData = $this->getRequestData();
+
             /* Allows this method to be used even if the Bolt plugin is disabled.  This accounts for orders that have already been processed by Bolt */
             Bolt_Boltpay_Helper_Data::$fromHooks = true;
 
-            $bodyParams = json_decode($this->payload, true);
-            $reference = $bodyParams['reference'];
-            $transactionId = @$bodyParams['transaction_id'] ?: $bodyParams['id'];
-            $hookType = @$bodyParams['notification_type'] ?: $bodyParams['type'];
-            $parentQuoteId = @$bodyParams['quote_id'];
+            $reference = $requestData->reference;
+            $transactionId = @$requestData->transaction_id ?: $requestData->id;
+            $hookType = @$requestData->notification_type ?: $requestData->type;
+            $parentQuoteId = @$requestData->quote_id;
 
             /** @var Mage_Sales_Model_Order $order */
 
@@ -108,7 +109,7 @@ class Bolt_Boltpay_ApiController extends Mage_Core_Controller_Front_Action imple
                 $orderPayment->save();
                 
                 if($hookType == 'credit'){
-                    $transactionAmount = $bodyParams['amount']/100;                    
+                    $transactionAmount = $requestData->amount/100;
                 }
                 else{
                     $transactionAmount = $this->getCaptureAmount($transaction);
@@ -139,10 +140,12 @@ class Bolt_Boltpay_ApiController extends Mage_Core_Controller_Front_Action imple
         } catch (Bolt_Boltpay_InvalidTransitionException $boltPayInvalidTransitionException) {
             $this->boltHelper()->logException($boltPayInvalidTransitionException);
             if ($boltPayInvalidTransitionException->getOldStatus() == Bolt_Boltpay_Model_Payment::TRANSACTION_ON_HOLD) {
+                $this->getResponse() ->setHeader("Retry-After", "86400");
+                $this->sendResponse(
+                    503,
+                    array('status' => 'failure', 'error' => array('code' => 6009, 'message' => $this->boltHelper()->__('The order is on-hold and requires manual merchant update before this hook can be processed') ))
+                );
                 $this->boltHelper()->logWarning($this->boltHelper()->__('The order is on-hold and requires manual merchant update before this hook can be processed'));
-                $this->getResponse()->setHttpResponseCode(503)
-                    ->setHeader("Retry-After", "86400")
-                    ->setBody(json_encode(array('status' => 'failure', 'error' => array('code' => 6009, 'message' => $this->boltHelper()->__('The order is on-hold and requires manual merchant update before this hook can be processed') ))));
             } else {
                 $isNotRefundOrCaptureHook = !in_array($hookType, array(Bolt_Boltpay_Model_Payment::HOOK_TYPE_REFUND, Bolt_Boltpay_Model_Payment::HOOK_TYPE_CAPTURE));
                 $isRepeatHook = $newTransactionStatus === $prevTransactionStatus;
@@ -175,6 +178,7 @@ class Bolt_Boltpay_ApiController extends Mage_Core_Controller_Front_Action imple
                 }
             }
         } catch (Exception $e) {
+
             $this->sendResponse(
                 422,
                 array('status' => 'failure', 'error' => array('code' => 6009, 'message' => $e->getMessage()))
@@ -198,7 +202,7 @@ class Bolt_Boltpay_ApiController extends Mage_Core_Controller_Front_Action imple
      */
 	public function create_orderAction() {
         try {
-            $transaction = json_decode($this->payload);
+            $transaction = $this->getRequestData();
             $immutableQuoteId = $this->boltHelper()->getImmutableQuoteIdFromTransaction($transaction);
 
             /** @var  Bolt_Boltpay_Model_Order $orderModel */

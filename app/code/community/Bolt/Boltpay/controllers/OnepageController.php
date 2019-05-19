@@ -19,26 +19,11 @@ require_once 'Mage/Checkout/controllers/OnepageController.php';
 
 /**
  * Class Bolt_Boltpay_OnepageController
- *
  */
 class Bolt_Boltpay_OnepageController
     extends Mage_Checkout_OnepageController implements Bolt_Boltpay_Controller_Interface
 {
-    use Bolt_Boltpay_Controller_Traits_ApiControllerTrait;
-
-    /**
-     * Sets up this  controller for non-Bolt orders.  For Bolt orders,
-     * we will call @see Bolt_Boltpay_Controller_Traits_ApiControllerTrait::preDispatch()
-     * explicitly in the success action.
-     */
-    public function _construct()
-    {
-        $this->willReturnJson = false;
-        $this->requestMustBeSigned = false;
-
-        parent::_construct();
-    }
-
+    use Bolt_Boltpay_BoltGlobalTrait;
 
     /**
 	 * Order success action.  For Bolt orders, we need to set the session values that are normally set in
@@ -49,12 +34,22 @@ class Bolt_Boltpay_OnepageController
     {
         $requestParams = $this->getRequest()->getParams();
 
+        // Handle only Bolt orders
         if (isset($requestParams['bolt_payload'])) {
-            // Handle Bolt Orders only
 
-            $this->payload = base64_decode($requestParams['bolt_payload']);
-            $this->signature = $requestParams['bolt_signature'];
-            $this->preDispatch();  // this handles signature verification
+            $payload = base64_decode(@$requestParams['bolt_payload']);
+
+            if (!$this->boltHelper()->verify_hook($payload, @$requestParams['bolt_signature'])) {
+                // If signature verification fails, we log the error and immediately return control to Magento
+                $exception = new Bolt_Boltpay_OrderCreationException(
+                    Bolt_Boltpay_OrderCreationException::E_BOLT_GENERAL_ERROR,
+                    Bolt_Boltpay_OrderCreationException::E_BOLT_GENERAL_ERROR_TMPL_HMAC
+                );
+                $this->boltHelper()->notifyException($exception, array(), 'warning');
+                $this->boltHelper()->logWarning($exception->getMessage());
+                parent::successAction();
+                return;
+            }
 
             /** @var Mage_Checkout_Model_Session $checkoutSession */
             $checkoutSession = Mage::getSingleton('checkout/session');
@@ -78,4 +73,5 @@ class Bolt_Boltpay_OnepageController
 
 		parent::successAction();
     }
+
 }
