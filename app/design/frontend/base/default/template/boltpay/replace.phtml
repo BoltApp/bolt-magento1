@@ -33,7 +33,7 @@ $additionalClasses = $this->boltHelper()->getAdditionalButtonClasses();
 ?>
 <script>
 
-    var onDomReady = function(){
+    var initBoltButtons = function(){
 
         /****************************************************************************************************
          * Finds and replaces specified buttons with Bolt checkout buttons. Runs internal function
@@ -167,14 +167,27 @@ $additionalClasses = $this->boltHelper()->getAdditionalButtonClasses();
 
         replaceCheckout();
 
+        if (typeof Minicart != "undefined") {
+            /*************************************************************
+             * Minicart HTML is regenerated via ajax after document load.
+             * On each ajax call, and overlay is added and then removed
+             * after the rendering of the new HTML is complete.  At this
+             * point we want to re-render the Bolt buttons, which will
+             * have been removed in the regeneration
+             *************************************************************/
+            Minicart.prototype.hideOverlay = function(){
+                initBoltButtons();
+                $j(this.selectors.overlay).removeClass('loading');
+            };
+        }
     };
 
     if (document.addEventListener) {
-        document.addEventListener("DOMContentLoaded", onDomReady);
+        document.addEventListener("DOMContentLoaded", initBoltButtons);
     } else if (window.attachEvent) {
-        window.attachEvent("onload", onDomReady);
+        window.attachEvent("onload", initBoltButtons);
     } else {
-        window.onload = onDomReady;
+        window.onload = initBoltButtons;
     }
 
 </script>
