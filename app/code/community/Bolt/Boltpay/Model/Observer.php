@@ -272,4 +272,18 @@ class Bolt_Boltpay_Model_Observer
             ->setTransactionId($transaction->id)
             ->save();
     }
+
+    /**
+     * Prevents Magento from changing the Bolt preauth statuses
+     *
+     * event: sales_order_save_before
+     *
+     * @param Varien_Event_Observer $observer Observer event contains an order object
+     */
+    public function safeguardPreAuthStatus($observer) {
+        $order = $observer->getEvent()->getOrder();
+        if (!Bolt_Boltpay_Helper_Data::$fromHooks && in_array($order->getOrigData('status'), array('pending_bolt','canceled_bolt')) ) {
+            $order->setStatus($order->getOrigData('status'));
+        }
+    }
 }
