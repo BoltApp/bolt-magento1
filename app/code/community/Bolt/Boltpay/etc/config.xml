@@ -286,6 +286,14 @@
           <model>boltpay/cron::cleanupQuotes</model>
         </run>
       </immutable_quote_cleanup>
+      <preauth_order_cleanup>
+        <schedule>
+          <cron_expr>*/15 * * * *</cron_expr>
+        </schedule>
+        <run>
+          <model>boltpay/cron::cleanupOrders</model>
+        </run>
+      </preauth_order_cleanup>
     </jobs>
   </crontab>
 </config>
