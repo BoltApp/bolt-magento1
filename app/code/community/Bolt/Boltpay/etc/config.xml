@@ -231,6 +231,17 @@
         </boltpay>
       </updates>
     </layout>
+    <events>
+        <controller_front_init_before>
+            <observers>
+                <bolt_boltpay_check_if_order_canceled>
+                    <type>singleton</type>
+                    <class>Bolt_Boltpay_Model_Observer</class>
+                    <method>clearCartCacheOnOrderCanceled</method>
+                </bolt_boltpay_check_if_order_canceled>
+            </observers>
+        </controller_front_init_before>
+    </events>
   </frontend>
 
   <default>
@@ -284,6 +295,14 @@
           <model>boltpay/cron::cleanupQuotes</model>
         </run>
       </immutable_quote_cleanup>
+      <preauth_order_cleanup>
+        <schedule>
+          <cron_expr>*/15 * * * *</cron_expr>
+        </schedule>
+        <run>
+          <model>boltpay/cron::cleanupOrders</model>
+        </run>
+      </preauth_order_cleanup>
     </jobs>
   </crontab>
 </config>
