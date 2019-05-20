@@ -14,7 +14,9 @@
  * @copyright  Copyright (c) 2019 Bolt Financial, Inc (https://www.bolt.com)
  * @license    http://opensource.org/licenses/osl-3.0.php  Open Software License (OSL 3.0)
  */
+
 require_once(Mage::getBaseDir('lib') . DS .  'Boltpay/DataDog/ErrorTypes.php');
+
 /**
  * Class Bolt_Boltpay_Model_Admin_ExtraConfig
  *
@@ -53,11 +55,41 @@ class Bolt_Boltpay_Model_Admin_ExtraConfig extends Mage_Core_Model_Config_Data
     use Bolt_Boltpay_BoltGlobalTrait;
 
     /**
+     * Gets the value of a Bolt non-publicized or non-emphasized
+     * configuration value after passing it through an optionally
+     * defined filter method.
+     *
+     * @param string $configName        The name of the config as defined
+     *                                  the configuration JSON
+     * @param array $filterParameters   Optional set of parameters passed to
+     *                                  the optionally defined filter method
+     *                                  of the config
+     *
+     * @return mixed    Typically a string representing the config value, but
+     *                  is not limited to this type.  If the config is not defined,
+     *                  an empty string is returned
+     */
+    public function getExtraConfig($configName, $filterParameters = array() ) {
+        $methodPostfix = ucfirst($configName);
+        $filterMethod = 'filter'.$methodPostfix;
+
+        $allExtraConfigs = (array) json_decode($this->normalizeJSON(Mage::getStoreConfig('payment/boltpay/extra_options')), true);
+        $rawValue = @$allExtraConfigs[$configName] ?: '';
+
+        return method_exists($this, $filterMethod)
+            ? $this->$filterMethod($rawValue, $filterParameters)
+            : $rawValue;
+    }
+
+
+    /**
      * Saves the Bolt extra options json string to the database after each option has been validated.
      * If any extra options fails validation, the entirety of the new value is ignored and
      * the old value is retained.
      *
      * @return Mage_Core_Model_Abstract  $this
+     *
+     * @throws Exception when there is an error saving the extra config to the database
      */
     public function save()
     {
@@ -123,8 +155,8 @@ class Bolt_Boltpay_Model_Admin_ExtraConfig extends Mage_Core_Model_Config_Data
                         Mage::helper('boltpay')->__(
                             'Invalid datadog key severity value for extra option `datadogKeySeverity`.[%s]
                          The valid values must be error or warning or info ', $severity
-                    )
-                );
+                        )
+                    );
 
                     return false;
                 }
@@ -147,7 +179,7 @@ class Bolt_Boltpay_Model_Admin_ExtraConfig extends Mage_Core_Model_Config_Data
      * @param array  $additionalParams  Single parameter `case` that is 'UPPER'|'lower'.
      *                                  The default is 'UPPER'
      *
-     * @return string
+     * @return string   upper or lower case of hex value
      */
     public function filterBoltPrimaryColor($rawConfigValue, $additionalParams = array('case' => 'UPPER') ) {
         return (strtolower(@$additionalParams['case']) === 'lower')
@@ -184,6 +216,7 @@ JS;
             : $defaultFunction;
     }
 
+
     /**
      * @param $rawConfigValue
      * @param array $additionalParams
@@ -191,8 +224,7 @@ JS;
      */
     public function filterDatadogKeySeverity($rawConfigValue, $additionalParams = array())
     {
-        $allExtraConfigs = (array)json_decode($this->normalizeJSON(Mage::getStoreConfig('payment/boltpay/extra_options')), true);
-        return (array_key_exists("datadogKeySeverity", $allExtraConfigs)) ? $rawConfigValue : Bolt_Boltpay_Helper_DataDogTrait::$defaultSeverityConfig;
+        return strlen(trim($rawConfigValue)) ? trim($rawConfigValue) : Bolt_Boltpay_Helper_DataDogTrait::$defaultSeverityConfig;
     }
 
     /**
@@ -206,42 +238,94 @@ JS;
     }
 
     /**
-     * Gets the value of a Bolt non-publicized or non-emphasized
-     * configuration value after passing it through an optionally
-     * defined filter method.
+     * Validates whether value is an int
      *
-     * @param string $configName        The name of the config as defined
-     *                                  the configuration JSON
-     * @param array $filterParameters   Optional set of parameters passed to
-     *                                  the optionally defined filter method
-     *                                  of the config
+     * @param int $priceTolerance  The amount a Bolt order is allowed to differ
+     *                             from a the Magento order in cents
      *
-     * @return mixed    Typically a string representing the config value, but
-     *                  is not limited to this type.  If the config is not defined,
-     *                  an empty string is returned
+     * @return bool     True if the value is positive and integer
      */
-    public function getExtraConfig($configName, $filterParameters = array() ) {
-        $methodPostfix = ucfirst($configName);
-        $filterMethod = 'filter'.$methodPostfix;
+    public function hasValidPriceFaultTolerance($priceTolerance) {
+        if (is_int($priceTolerance) && ($priceTolerance > 0) ) {
+            return true;
+        }
 
-        $allExtraConfigs = (array) json_decode($this->normalizeJSON(Mage::getStoreConfig('payment/boltpay/extra_options')), true);
-        $rawValue = @$allExtraConfigs[$configName] ?: '';
-
-        return method_exists($this, $filterMethod)
-            ? $this->$filterMethod($rawValue, $filterParameters)
-            : $rawValue;
+        Mage::getSingleton('core/session')->addError(
+            Mage::helper('boltpay')->__(
+                 'Invalid value for extra option `priceFaultTolerance`.[%s]
+                         A valid value must be a positive integer.', $priceTolerance
+            )
+        );
+        return false;
     }
 
     /**
-     * Normalizes JSON by stripping new lines from the given string and returning null in the case of only white space.
+     * Defines the default value as a 1 cent tolerance for Bolt and Magento grand total
+     * difference
+     *
+     * @param int|string $rawConfigValue    The config value pre-filter. Will be an int or an empty string
+     * @param array      $additionalParams  unused for this filter
+     *
+     * @return int  the number defined in the extra config admin.  If not defined, the default of 1
+     */
+    public function filterPriceFaultTolerance($rawConfigValue, $additionalParams = array() ) {
+        return is_int($rawConfigValue) ? $rawConfigValue : 1;
+    }
+
+    /**
+     * Ensures boolean value for whether to display Bolt pre-auth orders in Magento
+     *
+     * @param mixed $rawConfigValue    The config value pre-filter
+     * @param array  $additionalParams  unused for this filter
+     *
+     * @return bool  the value from the extra config admin forced to boolean
+     */
+    public function filterDisplayPreAuthOrders($rawConfigValue, $additionalParams = array() ) {
+        return $this->normalizeBoolean($rawConfigValue);
+    }
+
+    /**
+     * Ensures boolean value for whether to keep created_at and updated_at time-stamps for pre-auth orders
+     *
+     * @param mixed $rawConfigValue    The config value pre-filter
+     * @param array  $additionalParams  unused for this filter
+     *
+     * @return bool  the value from the extra config admin forced to boolean
+     */
+    public function filterKeepPreAuthOrderTimeStamps($rawConfigValue, $additionalParams = array() ) {
+        return $this->normalizeBoolean($rawConfigValue);
+    }
+
+    /**
+     * Normalizes JSON by stripping new lines from the given string and returning null
+     * in the case of only white space.
+     *
      * New line characters are added by the text area and this breaks JSON decoding
      *
      * @param string $string    The string to be stripped of newlines
      *
      * @return string|null      The string stripped of newline characters or null on error
      */
-    private function normalizeJSON($string)
-    {
+    private function normalizeJSON($string) {
         return trim(preg_replace( '/(\r\n)|\n|\r/', '', $string )) ?: json_encode(array());
+    }
+
+    /**
+     * Converts the inputted value to a boolean after setting common negative strings as boolean false
+     *
+     * @param mixed $rawConfigValue    The config value pre-filter
+     *
+     * @return  bool    false if the value represents a recognized negative response, otherwise the original value
+     *                  converted to a boolean
+     */
+    private function normalizeBoolean($rawConfigValue) {
+        if (is_string($rawConfigValue)) {
+            $rawConfigValue = strtolower(trim($rawConfigValue));
+            if (in_array($rawConfigValue,  ['false', 'no', 'n', 'off'], true)) {
+                $rawConfigValue = false;
+            }
+        }
+
+        return (bool) $rawConfigValue;
     }
 }
