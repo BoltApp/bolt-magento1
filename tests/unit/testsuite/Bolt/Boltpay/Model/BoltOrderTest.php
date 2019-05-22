@@ -44,7 +44,7 @@ class Bolt_Boltpay_Model_BoltOrderTest extends PHPUnit_Framework_TestCase
     public static function setUpBeforeClass()
     {
         // Create some dummy product:
-        //self::$productId = Bolt_Boltpay_ProductProvider::createDummyProduct('PHPUNIT_TEST_1');
+        self::$productId = Bolt_Boltpay_ProductProvider::createDummyProduct('PHPUNIT_TEST_1');
     }
 
     /**
@@ -52,7 +52,7 @@ class Bolt_Boltpay_Model_BoltOrderTest extends PHPUnit_Framework_TestCase
      */
     public static function tearDownAfterClass()
     {
-        //Bolt_Boltpay_ProductProvider::deleteDummyProduct(self::$productId);
+        Bolt_Boltpay_ProductProvider::deleteDummyProduct(self::$productId);
     }
 
     public function testBuildCart()
