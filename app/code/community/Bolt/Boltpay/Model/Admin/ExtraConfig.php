@@ -218,13 +218,17 @@ JS;
 
 
     /**
+     * @todo revise method for enabling and disabling datadog
+     *
      * @param $rawConfigValue
      * @param array $additionalParams
      * @return string
      */
     public function filterDatadogKeySeverity($rawConfigValue, $additionalParams = array())
     {
-        return strlen(trim($rawConfigValue)) ? trim($rawConfigValue) : Bolt_Boltpay_Helper_DataDogTrait::$defaultSeverityConfig;
+        $allExtraConfigs = (array)json_decode($this->normalizeJSON(Mage::getStoreConfig('payment/boltpay/extra_options')), true);
+        return (array_key_exists("datadogKeySeverity", $allExtraConfigs)) ? $rawConfigValue : Bolt_Boltpay_Helper_DataDogTrait::$defaultSeverityConfig;
+        // return strlen(trim($rawConfigValue)) ? trim($rawConfigValue) : Bolt_Boltpay_Helper_DataDogTrait::$defaultSeverityConfig; # preferable way to get default
     }
 
     /**
