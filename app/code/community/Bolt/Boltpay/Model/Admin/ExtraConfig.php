@@ -220,7 +220,7 @@ JS;
      *                  is not limited to this type.  If the config is not defined,
      *                  an empty string is returned
      */
-    public function getExtraConfig($configName, $filterParameters = array(), $storeId = 0 ) {
+    public function getExtraConfig($configName, $filterParameters = array(), $storeId = null ) {
         $methodPostfix = ucfirst($configName);
         $filterMethod = 'filter'.$methodPostfix;
 

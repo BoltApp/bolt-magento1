@@ -81,7 +81,6 @@ trait Bolt_Boltpay_Helper_DataDogTrait
             $this->init();
             $this->_datadog = new DataDog_Client($this->_apiKey, $this->_severityConfig, $this->_data);
         }
-
         return $this->_datadog;
     }
 
