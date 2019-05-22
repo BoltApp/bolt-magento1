@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<phpunit bootstrap="bootstrap.php" colors="true" backupGlobals="true">
+    <testsuites>
+        <testsuite name="Tests location">
+            <directory>./</directory>
+        </testsuite>
+    </testsuites>
+    <filter>
+        <whitelist>
+            <directory suffix=".php">./../../lib/Boltpay</directory>
+            <directory suffix=".php">./../../app/code/community/Bolt/Boltpay</directory>
+            <exclude>
+                <directory suffix=".php">./../../app/code/community/Bolt/Boltpay/etc</directory>
+                <directory suffix=".php">./../../app/code/community/Bolt/Boltpay/sql</directory>
+                <directory suffix=".php">./../../app/code/community/Bolt/Boltpay/Controller</directory>
+            </exclude>
+        </whitelist>
+    </filter>
+    <logging>
+        <log type="coverage-text" target="php://stdout" showOnlySummary="true" showUncoveredFiles="false" />
+    </logging>
+</phpunit>

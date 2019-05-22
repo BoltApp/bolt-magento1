@@ -1,22 +1,32 @@
-<?xml version="1.0" encoding="UTF-8"?>
-<phpunit bootstrap="bootstrap.php" colors="true" backupGlobals="true">
-    <testsuites>
-        <testsuite name="Tests location">
-            <directory>./</directory>
-        </testsuite>
-    </testsuites>
+<?xml version="1.0" encoding="UTF-8" ?>
+<phpunit backupGlobals="false"
+         backupStaticAttributes="false"
+         colors="true"
+         convertErrorsToExceptions="true"
+         convertNoticesToExceptions="true"
+         convertWarningsToExceptions="true"
+         processIsolation="false"
+         stopOnFailure="false"
+         syntaxCheck="true"
+         bootstrap="./autoload.php">
+    <testsuite name="Boltpay_Unit_Test">
+        <directory>testsuite</directory>
+    </testsuite>
     <filter>
-        <whitelist>
-            <directory suffix=".php">./../../lib/Boltpay</directory>
-            <directory suffix=".php">./../../app/code/community/Bolt/Boltpay</directory>
+        <whitelist addUncoveredFilesFromWhitelist="true" processUncoveredFilesFromWhitelist="true">
+            <directory suffix=".php">../../app/code/community/Bolt/</directory>
             <exclude>
-                <directory suffix=".php">./../../app/code/community/Bolt/Boltpay/etc</directory>
-                <directory suffix=".php">./../../app/code/community/Bolt/Boltpay/sql</directory>
-                <directory suffix=".php">./../../app/code/community/Bolt/Boltpay/Controller</directory>
+                <!-- Excluding installation and upgrade scripts -->
+                <directory>../../app/code/community/*/*/sql</directory>
+                <!-- Excluding data installation and upgrade scripts -->
+                <directory>../../app/code/community/*/*/data</directory>
             </exclude>
         </whitelist>
     </filter>
     <logging>
-        <log type="coverage-text" target="php://stdout" showOnlySummary="true" showUncoveredFiles="false" />
+        <log type="coverage-text" target="php://stdout" showUncoveredFiles="false"/>
     </logging>
+    <php>
+        <ini name="date.timezone" value="America/Los_Angeles"/>
+    </php>
 </phpunit>
