@@ -47,9 +47,9 @@ trait Bolt_Boltpay_Helper_GeneralTrait {
          * If called from hooks always return true
          */
         if (self::$fromHooks) return true;
-
-        return $this->isBoltPayActive()
-            && (!$checkCountry || ($checkCountry && $this->canUseForCountry($quote->getBillingAddress()->getCountry())))
+        $storeId = $quote->getStoreId();
+        return $this->isBoltPayActive($storeId)
+            && (!$checkCountry || ($checkCountry && $this->canUseForCountry($quote->getBillingAddress()->getCountry(), $storeId)))
             && (Mage::app()->getStore()->getCurrentCurrencyCode() == 'USD')
             && (Mage::app()->getStore()->getBaseCurrencyCode() == 'USD');
     }

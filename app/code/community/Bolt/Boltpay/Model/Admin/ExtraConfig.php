@@ -220,11 +220,11 @@ JS;
      *                  is not limited to this type.  If the config is not defined,
      *                  an empty string is returned
      */
-    public function getExtraConfig($configName, $filterParameters = array() ) {
+    public function getExtraConfig($configName, $filterParameters = array(), $storeId = 0 ) {
         $methodPostfix = ucfirst($configName);
         $filterMethod = 'filter'.$methodPostfix;
 
-        $allExtraConfigs = (array) json_decode($this->normalizeJSON(Mage::getStoreConfig('payment/boltpay/extra_options')), true);
+        $allExtraConfigs = (array) json_decode($this->normalizeJSON(Mage::getStoreConfig('payment/boltpay/extra_options', $storeId)), true);
         $rawValue = @$allExtraConfigs[$configName] ?: '';
 
         return method_exists($this, $filterMethod)

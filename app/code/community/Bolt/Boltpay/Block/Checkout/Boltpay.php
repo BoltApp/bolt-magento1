@@ -96,6 +96,7 @@ class Bolt_Boltpay_Block_Checkout_Boltpay extends Mage_Checkout_Block_Onepage_Re
         try {
             /* @var Mage_Sales_Model_Quote $sessionQuote */
             $sessionQuote = $this->getSessionQuote($checkoutType);
+            $storeId = $sessionQuote->getStoreId();
 
             $hintData = $this->getAddressHints($sessionQuote, $checkoutType);
 
