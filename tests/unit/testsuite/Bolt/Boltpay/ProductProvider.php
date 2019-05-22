@@ -43,19 +43,9 @@ class Bolt_Boltpay_ProductProvider
                 self::$websiteIds[] = $website->getId();
             }
         }
-
-        /** @var Mage_Catalog_Model_Resource_Product_Collection $collection */
-        $collection = Mage::getResourceModel('catalog/product_collection')
-            ->addAttributeToSelect(array('entity_id', 'sku'))
-            ->addAttributeToFilter('sku', array('eq' => $sku))
-        ;
-
-        if ($collection->getSize() > 0) {
-            $id = $collection->getFirstItem()->getId();
-
-            return $id;
-        } else {
-            unset($collection);
+        $product= self::getProductBySku($sku);
+        if (!empty($product)) {
+            return $product->getId();
         }
 
         $product = Mage::getModel('catalog/product');
@@ -65,7 +55,7 @@ class Bolt_Boltpay_ProductProvider
             'description' => 'Description for ' . $sku,
             'short_description' => 'Short description for ' . $sku,
             'weight' => 1,
-            'price' => 10,
+            'price' => isset($additionalData['price']) ? $additionalData['price'] : 10,
             'attribute_set_id' => self::$attributeSetId,
             'tax_class_id' => self::$taxClassId,
             'stock_data' => array(
@@ -97,17 +87,30 @@ class Bolt_Boltpay_ProductProvider
      */
     public static function  deleteDummyProduct($productId)
     {
-        /** @var Mage_Core_Model_Resource $resource */
-        $resource = Mage::getSingleton('core/resource');
-        /** @var Magento_Db_Adapter_Pdo_Mysql $writeConnection */
-        $writeConnection = $resource->getConnection('core_write');
-        $table = $resource->getTableName('catalog/product');
-        
-        $query = "DELETE FROM ".$table." WHERE entity_id = :productId";
-        $bind = array(
-            'productId' => (int) $productId
-        );
+        $product = self::getProductById($productId);
+        try {
+            $product->delete();
+            return null;
+        } catch (Exception $e) {
+            return $product;
+        }
+    }
 
-        $writeConnection->query($query, $bind);
+    /**
+     * @param string $sku
+     * @return Mage_Catalog_Model_Product | null
+     */
+    public static function getProductBySku($sku)
+    {
+        return Mage::getModel('catalog/product')->loadByAttribute('sku', $sku);
+    }
+
+    /**
+     * @param integer $productId
+     * @return Mage_Catalog_Model_Product | null
+     */
+    public static function getProductById($productId)
+    {
+        return  Mage::getModel('catalog/product')->load($productId);
     }
 }

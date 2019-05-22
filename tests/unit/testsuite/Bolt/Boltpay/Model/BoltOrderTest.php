@@ -44,7 +44,7 @@ class Bolt_Boltpay_Model_BoltOrderTest extends PHPUnit_Framework_TestCase
     public static function setUpBeforeClass()
     {
         // Create some dummy product:
-        self::$productId = Bolt_Boltpay_ProductProvider::createDummyProduct('PHPUNIT_TEST_1');
+        //self::$productId = Bolt_Boltpay_ProductProvider::createDummyProduct('PHPUNIT_TEST_1');
     }
 
     /**
@@ -52,7 +52,7 @@ class Bolt_Boltpay_Model_BoltOrderTest extends PHPUnit_Framework_TestCase
      */
     public static function tearDownAfterClass()
     {
-        Bolt_Boltpay_ProductProvider::deleteDummyProduct(self::$productId);
+        //Bolt_Boltpay_ProductProvider::deleteDummyProduct(self::$productId);
     }
 
     public function testBuildCart()
@@ -330,5 +330,81 @@ class Bolt_Boltpay_Model_BoltOrderTest extends PHPUnit_Framework_TestCase
         unset($result['updated_at']);
 
         $this->assertEquals($expected, $result);
+    }
+
+    /**
+     * @test
+     * @group Discount
+     * @dataProvider addDiscountsCases
+     */
+    public function addDiscounts($data = [])
+    {
+        
+        $cart = $this->testHelper->addProduct(self::$productId, 2);
+        $quote = $cart->getQuote();
+        $totals = $quote->getTotals();
+        
+        $class = new \ReflectionClass($this->currentMock);
+        $method = $class->getMethod('addDiscounts');
+        $method->setAccessible(true);
+        $totalDiscount = $method->invokeArgs($this->currentMock, [$totals, []]);
+        $this->assertEquals($data['expect'], $totalDiscount);
+        $this->assertTrue(true);
+    }
+
+    public function addDiscountsCases()
+    {
+        return [
+            [
+                'data' => [
+                    'expect' => 0
+                ]
+            ]
+        ];
+    }
+
+    /**
+     * @test
+     * @group Tax
+     * @dataProvider getTaxForAdminCases
+     */
+    public function getTaxForAdmin($data)
+    {
+        $class = new \ReflectionClass($this->currentMock);
+        $method = $class->getMethod('getTaxForAdmin');
+        $method->setAccessible(true);
+        $tax = $method->invoke($this->currentMock, $data['taxTotal']);
+        $this->assertEquals($data['expect'], $tax);
+    }
+
+    public function getTaxForAdminCases()
+    {
+        $cases = [];
+        $testHelper = new Bolt_Boltpay_TestHelper();
+        $product1 = Bolt_Boltpay_ProductProvider::createDummyProduct('PHPUNIT_TAX_TEST_1', ['price' => 50]);
+        $cart = $testHelper->addProduct($product1, 1);
+        $quote = Mage::getModel('checkout/session')->getQuote();
+        Mage::helper('boltpay')->collectTotals($quote)->save(); 
+        $totals1 = $cart->getQuote()->getTotals();
+        $cases[] = [
+            'data' => [
+                'taxTotal' => $totals1['tax'],
+                'expect' => 413
+            ]
+        ];
+        Bolt_Boltpay_ProductProvider::deleteDummyProduct($product1);
+        $product2 = Bolt_Boltpay_ProductProvider::createDummyProduct('PHPUNIT_TAX_TEST_2', ['price' => 100]);
+        $cart = $testHelper->addProduct($product2, 2);
+        $quote = Mage::getModel('checkout/session')->getQuote();
+        Mage::helper('boltpay')->collectTotals($quote)->save(); 
+        $totals2 = $cart->getQuote()->getTotals();
+        $cases[] = [
+            'data' => [
+                'taxTotal' => $totals2['tax'],
+                'expect' => 1238
+            ]
+        ];
+        Bolt_Boltpay_ProductProvider::deleteDummyProduct($product2);
+        return $cases;
     }
 }

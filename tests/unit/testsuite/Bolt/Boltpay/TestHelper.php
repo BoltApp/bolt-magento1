@@ -10,17 +10,40 @@ class Bolt_Boltpay_TestHelper
      */
     public function addProduct($productId, $quantity)
     {
+        //Mage::init('default');
         /** @var Mage_Catalog_Model_Product $product */
-        $product = Mage::getModel('catalog/product')->load($productId);
+        $product = Bolt_Boltpay_ProductProvider::getProductById($productId);//Mage::getModel('catalog/product')->load($productId);
+        // Validate product
         /** @var Mage_Checkout_Model_Cart $cart */
         $cart = Mage::getSingleton('checkout/cart');
+        $cart->init();
+        $session = Mage::getSingleton('customer/session'); 
+        $formKey = $session->getFormKey();
+        
+//         echo $product->getSku()."\n";
+//         var_dump($formKey);
         $param = array(
             'product' => $productId,
-            'qty' => $quantity
+            'qty' => $quantity,
+            'form_key' => $formKey
         );
-        $cart->addProduct($product, $param);
-        $cart->save();
+        $request = new Varien_Object();
+        $request->setData($param);
+        $cart->addProduct($product, $request);
+//         $cart->getQuote()->setTotalsCollectedFlag(false)->collectTotals();
+//         $cart->save();
 
+        
+        
+        $quote = Mage::getModel('checkout/session')->getQuote();
+        $quote->setTotalsCollectedFlag(false)->collectTotals();
+        $quote->collectTotals()->save();
+        $session->setCartWasUpdated(true);
+        
+        $cart->save();
+        
+        
+        //Mage::getSingleton('checkout/session')->setCartWasUpdated(true);
         return $cart;
     }
 

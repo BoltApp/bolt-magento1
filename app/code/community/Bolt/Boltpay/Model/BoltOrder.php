@@ -23,9 +23,25 @@
  */
 class Bolt_Boltpay_Model_BoltOrder extends Bolt_Boltpay_Model_Abstract
 {
+    /**
+     * @var string
+     */
     const ITEM_TYPE_PHYSICAL = 'physical';
+
+    /**
+     * @var string
+     */
     const ITEM_TYPE_DIGITAL  = 'digital';
-    protected $itemOptionKeys = array('attributes_info', 'options', 'additional_options', 'bundle_options');
+
+    /**
+     * @var array
+     */
+    protected $itemOptionKeys = array(
+        'attributes_info',
+        'options',
+        'additional_options',
+        'bundle_options'
+    );
 
     /**
      * @var int The amount of time in seconds that an order token is preserved in cache
@@ -47,13 +63,15 @@ class Bolt_Boltpay_Model_BoltOrder extends Bolt_Boltpay_Model_Abstract
         'amgiftcard', // https://amasty.com/magento-gift-card.html
         'amstcred', // https://amasty.com/magento-store-credit.html
         'awraf',    //https://ecommerce.aheadworks.com/magento-extensions/refer-a-friend.html#magento1
+        'rewardpoints_after_tax', // Magestore_RewardPoints
     );
 
     /**
-     * @var array  list of country codes for which we will require a region for validation to succeed.
+     * @var array list of country codes for which we will require a region for validation to succeed.
      */
     protected $countriesRequiringRegion = array(
-        'US', 'CA',
+        'US',
+        'CA',
     );
 
     /**
@@ -116,7 +134,7 @@ class Bolt_Boltpay_Model_BoltOrder extends Bolt_Boltpay_Model_Abstract
         /***************************************************/
 
         $this->boltHelper()->collectTotals($quote)->save();
-
+        $calculatedTotal = 0;
         $totals = $quote->getTotals();
         ///////////////////////////////////////////////////////////////////////////////////
 
@@ -149,6 +167,7 @@ class Bolt_Boltpay_Model_BoltOrder extends Bolt_Boltpay_Model_Abstract
             ),
             'currency' => $quote->getQuoteCurrencyCode(),
         );
+        
         ///////////////////////////////////////////////////////////
 
         /////////////////////////////////////////////////////////////////////////
@@ -307,6 +326,41 @@ class Bolt_Boltpay_Model_BoltOrder extends Bolt_Boltpay_Model_Abstract
         return $this->getCorrectedTotal($calculatedTotal, $cartSubmissionData);
     }
 
+    /**
+     * @param Mage_Sales_Model_Quote $quote
+     * @return array
+     */
+    public function getCartSubmissionData(Mage_Sales_Model_Quote $quote, &$calculatedTotal)
+    {
+        $result = [
+            'order_reference' => $quote->getParentQuoteId(),
+            'display_id'      => $quote->getReservedOrderId().'|'.$quote->getId(),
+            'currency' => $quote->getQuoteCurrencyCode(),
+            'items' => array_map(
+                function ($item) use ($quote, &$calculatedTotal) {
+                    /** @var Mage_Sales_Model_Quote_Item $item */
+                    $imageUrl = $this->boltHelper()->getItemImageUrl($item);
+                    $product   = Mage::getModel('catalog/product')->load($item->getProductId());
+                    $type = $product->getTypeId() == 'virtual' ? self::ITEM_TYPE_DIGITAL : self::ITEM_TYPE_PHYSICAL;
+                    $calculatedTotal += round($item->getPrice() * 100 * $item->getQty());
+                    return array(
+                        'reference'    => $item->getId(),
+                        'image_url'    => $imageUrl,
+                        'name'         => $item->getName(),
+                        'sku'          => $item->getSku(),
+                        'description'  => substr($product->getDescription(), 0, 8182) ?: '',
+                        'total_amount' => round($item->getCalculationPrice() * 100) * $item->getQty(),
+                        'unit_price'   => round($item->getCalculationPrice() * 100),
+                        'quantity'     => $item->getQty(),
+                        'type'         => $type,
+                        'properties'   => $this->getItemProperties($item)
+                    );
+                }, $quote->getAllVisibleItems()
+            ),
+            'currency' => $quote->getQuoteCurrencyCode()
+        ];
+        return $result;
+    }
 
     /**
      * Adds the calculated discounts to the Bolt order
@@ -317,7 +371,8 @@ class Bolt_Boltpay_Model_BoltOrder extends Bolt_Boltpay_Model_Abstract
      *
      * @return int    The total discount in cents as a positive number
      */
-    protected function addDiscounts( $totals, &$cartSubmissionData, $quote = null ) {
+    protected function addDiscounts( $totals, &$cartSubmissionData, $quote = null )
+    {
         $cartSubmissionData['discounts'] = array();
         $totalDiscount = 0;
 
@@ -365,7 +420,8 @@ class Bolt_Boltpay_Model_BoltOrder extends Bolt_Boltpay_Model_Abstract
      *
      * @return int    The total tax in cents
      */
-    protected function getTax($totals) {
+    protected function getTax($totals)
+    {
         return (@$totals['tax']) ? (int) round($totals['tax']->getValue() * 100) : 0;
     }
 
@@ -427,7 +483,8 @@ class Bolt_Boltpay_Model_BoltOrder extends Bolt_Boltpay_Model_Abstract
      *
      * @return int    The total tax in cents
      */
-    protected function getTaxForAdmin( $taxTotal ) {
+    protected function getTaxForAdmin(Mage_Sales_Model_Quote_Address_Total $taxTotal)
+    {
         return ($taxTotal ? (int) round($taxTotal->getValue() * 100) : 0);
     }
 
@@ -579,7 +636,8 @@ class Bolt_Boltpay_Model_BoltOrder extends Bolt_Boltpay_Model_Abstract
      *
      * @return array    collection of strings used by Magento to specify type of discount
      */
-    public function getDiscountTypes() {
+    public function getDiscountTypes()
+    {
         return $this->discountTypes;
     }
 
