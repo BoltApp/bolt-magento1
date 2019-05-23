@@ -25,15 +25,14 @@ class Bolt_Boltpay_Model_Observer
     use Bolt_Boltpay_BoltGlobalTrait;
 
     /**
-     * Event handler called after a save event.
      * Adds the Bolt User Id to the newly registered customer.
      *
-     * @param $observer
-     * @throws Exception
+     * event: bolt_boltpay_authorization_after
+     *
+     * @param Varien_Event_Observer $observer  Observer event contains `quote`
      */
-    public function setBoltUserId($observer) 
+    public function setBoltUserId($observer)
     {
-
         $quote = $observer->getEvent()->getQuote();
         $session = Mage::getSingleton('customer/session');
 
@@ -57,66 +56,35 @@ class Bolt_Boltpay_Model_Observer
     }
 
     /**
-     * Event handler called after a save event.
-     * Calls the complete authorize Bolt end point to confirm the order is valid.
-     * If the order has been changed between the creation on Bolt end and the save in Magento
-     * an order info message is recorded to inform the merchant and a bugsnag notification sent to Bolt.
+     * Event handler called after Bolt confirms order authorization
      *
-     * @param $observer
-     * @throws Exception
+     * event: bolt_boltpay_authorization_after
+     *
+     * @param Varien_Event_Observer $observer Observer event contains `quote`, `order`, and the bolt transaction `reference`
+     *
+     * @throws Mage_Core_Exception if the bolt transaction reference is an object instead of expected string
      */
-    public function verifyOrderContents($observer)
+    public function completeAuthorize($observer)
     {
         /* @var Mage_Sales_Model_Quote $quote */
         $quote = $observer->getEvent()->getQuote();
         /* @var Mage_Sales_Model_Order $order */
         $order = $observer->getEvent()->getOrder();
-        $transaction = $observer->getEvent()->getTransaction();
-        $payment = $quote->getPayment();
-        $method = $payment->getMethod();
-        if (strtolower($method) == Bolt_Boltpay_Model_Payment::METHOD_CODE) {
-            $reference = $payment->getAdditionalInformation('bolt_reference');
-            $magentoTotal = (int)(round($order->getGrandTotal() * 100));
-            if ($magentoTotal !== $transaction->amount->amount)  {
-                $message = $this->boltHelper()->__("THERE IS A MISMATCH IN THE ORDER PAID AND ORDER RECORDED.<br>
-                           PLEASE COMPARE THE ORDER DETAILS WITH THAT RECORD IN YOUR BOLT MERCHANT ACCOUNT AT: %s/transaction/%s<br/>
-                           Bolt reports %s. Magento expects %s", $this->boltHelper()->getBoltMerchantUrl(),
-                    $reference, ($transaction->amount->amount/100), ($magentoTotal/100) );
+        $reference = $observer->getEvent()->getReference();
 
-                # Adjust amount if it is off by only one cent, likely due to rounding
-                $difference = $transaction->amount->amount - $magentoTotal;
-                if ( abs($difference) == 1) {
-                    $order->setTaxAmount($order->getTaxAmount() + ($difference/100))
-                        ->setBaseTaxAmount($order->getBaseTaxAmount() + ($difference/100))
-                        ->setGrandTotal($order->getGrandTotal() + ($difference/100))
-                        ->setBaseGrandTotal($order->getBaseGrandTotal() + ($difference/100))
-                        ->save();
-                } else {
-                    # Total differs by more than one cent, so we put the order on hold.
-                    $order->setHoldBeforeState($order->getState());
-                    $order->setHoldBeforeStatus($order->getStatus());
-                    $order->setState(Mage_Sales_Model_Order::STATE_HOLDED, true, $message)
-                        ->save();
-                }
-                $metaData = array(
-                    'process'   => "order verification",
-                    'reference'  => $reference,
-                    'quote_id'   => $quote->getId(),
-                    'display_id' => $order->getIncrementId(),
-                );
-                $this->boltHelper()->notifyException(new Exception($message), $metaData);
-            }
-            $this->sendOrderEmail($order);
-            $order->save();
-        }
+        if (empty($order->getCreatedAt())) { $order->setCreatedAt(Mage::getModel('core/date')->gmtDate())->save(); }
+        Mage::getModel('boltpay/order')->getParentQuoteFromOrder($order)->setIsActive(false)->save();
+        $order->getPayment()->setAdditionalInformation('bolt_reference', $reference)->save();
+        Mage::getModel('boltpay/order')->sendOrderEmail($order);
     }
 
     /**
      * Clears the Shopping Cart after the success page
      *
+     * @param Varien_Event_Observer $observer   An Observer object with an empty event object*
      * Event: checkout_onepage_controller_success_action
      */
-    public function clearShoppingCart() {
+    public function clearShoppingCart($observer) {
         $cartHelper = Mage::helper('checkout/cart');
         $cartHelper->getCart()->truncate()->save();
     }
