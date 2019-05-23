@@ -19,9 +19,6 @@ class Bolt_Boltpay_TestHelper
         $cart->init();
         $session = Mage::getSingleton('customer/session'); 
         $formKey = $session->getFormKey();
-        
-//         echo $product->getSku()."\n";
-//         var_dump($formKey);
         $param = array(
             'product' => $productId,
             'qty' => $quantity,
@@ -30,11 +27,6 @@ class Bolt_Boltpay_TestHelper
         $request = new Varien_Object();
         $request->setData($param);
         $cart->addProduct($product, $request);
-//         $cart->getQuote()->setTotalsCollectedFlag(false)->collectTotals();
-//         $cart->save();
-
-        
-        
         $quote = Mage::getModel('checkout/session')->getQuote();
         $quote->setTotalsCollectedFlag(false)->collectTotals();
         $quote->collectTotals()->save();
