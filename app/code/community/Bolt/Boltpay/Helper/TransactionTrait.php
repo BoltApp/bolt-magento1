@@ -20,8 +20,8 @@
  *
  * Defines functions used by Bolt
  */
-trait Bolt_Boltpay_Helper_TransactionTrait {
-
+trait Bolt_Boltpay_Helper_TransactionTrait
+{
     /**
      * Gets the immutable quote id stored in the Bolt transaction.  This is backwards
      * compatible with older versions of the plugin and is suitable for transition
@@ -31,7 +31,8 @@ trait Bolt_Boltpay_Helper_TransactionTrait {
      *
      * @return string  The immutable quote id
      */
-    public function getImmutableQuoteIdFromTransaction( $transaction ) {
+    public function getImmutableQuoteIdFromTransaction( $transaction )
+    {
         if (strpos($transaction->order->cart->display_id, '|') !== false) {
             return explode("|", $transaction->order->cart->display_id)[1];
         } else {
@@ -68,10 +69,10 @@ trait Bolt_Boltpay_Helper_TransactionTrait {
      *
      * @return string  The order increment id
      */
-    public function getIncrementIdFromTransaction( $transaction ) {
+    public function getIncrementIdFromTransaction( $transaction )
+    {
         return (strpos($transaction->order->cart->display_id, '|') !== false)
             ? explode("|", $transaction->order->cart->display_id)[0]
             : $transaction->order->cart->display_id;
     }
-
 }

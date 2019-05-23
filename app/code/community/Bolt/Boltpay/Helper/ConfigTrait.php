@@ -20,7 +20,8 @@
  *
  * Defines convenience functions used to access Bolt configuration values
  */
-trait Bolt_Boltpay_Helper_ConfigTrait {
+trait Bolt_Boltpay_Helper_ConfigTrait
+{
 
     /**
      * @return bool
@@ -112,12 +113,14 @@ trait Bolt_Boltpay_Helper_ConfigTrait {
      * @param $checkoutType
      * @return string
      */
-    public function getPaymentBoltpayConfig($configPath, $checkoutType,$storeId = null)
+    public function getPaymentBoltpayConfig($configPath, $checkoutType, $storeId = null)
     {
         /** @var string $configValue */
         $configValue = Mage::getStoreConfig('payment/boltpay/'.$configPath, $storeId);
 
-        return ($checkoutType === Bolt_Boltpay_Block_Checkout_Boltpay::CHECKOUT_TYPE_ADMIN) && !Mage::getStoreConfig('payment/boltpay/use_javascript_in_admin', $storeId) ? '' : $configValue;
+        return ($checkoutType === Bolt_Boltpay_Block_Checkout_Boltpay::CHECKOUT_TYPE_ADMIN)
+            && !Mage::getStoreConfig('payment/boltpay/use_javascript_in_admin', $storeId)
+            ? '' : $configValue;
     }
 
     /**
