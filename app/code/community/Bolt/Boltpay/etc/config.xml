@@ -54,14 +54,12 @@
       </boltpay>
     </helpers>
 
-    <!--
     <rewrite>
       <bolt_boltpay_onepage>
-        <from><![CDATA[#^/checkout/onepage/#]]></from>
-        <to>/boltpay/onepage/</to>
+        <from><![CDATA[#^/checkout/onepage/success#]]></from>
+        <to>/boltpay/onepage/success</to>
       </bolt_boltpay_onepage>
     </rewrite>
-    -->
 
     <resources>
       <bolt_boltpay_setup>
@@ -77,15 +75,7 @@
     </resources>
 
     <events>
-      <sales_order_save_after>
-        <observers>
-          <bolt_boltpay_update_bolt_transaction_status>
-            <class>Bolt_Boltpay_Model_Observer</class>
-            <method>updateBoltTransactionStatus</method>
-          </bolt_boltpay_update_bolt_transaction_status>
-        </observers>
-      </sales_order_save_after>
-      <checkout_onepage_controller_success_action> <!-- Call after order has been saved and fowarded to success page -->
+      <checkout_onepage_controller_success_action> <!-- Call after order has been saved and forwarded to success page -->
         <observers>
           <bolt_boltpay_clear_shopping_cart>
             <class>Bolt_Boltpay_Model_Observer</class>
@@ -96,18 +86,18 @@
           </bolt_boltpay_clear_shopping_cart>
         </observers>
       </checkout_onepage_controller_success_action>
-      <bolt_boltpay_save_order_after>
+      <bolt_boltpay_authorization_after>
         <observers>
-          <bolt_boltpay_verify_order_contents>
+          <bolt_boltpay_complete_authorization>
             <class>Bolt_Boltpay_Model_Observer</class>
-            <method>verifyOrderContents</method>
-          </bolt_boltpay_verify_order_contents>
+            <method>completeAuthorize</method>
+          </bolt_boltpay_complete_authorization>
           <bolt_boltpay_set_bolt_user_id>
             <class>Bolt_Boltpay_Model_Observer</class>
             <method>setBoltUserId</method>
           </bolt_boltpay_set_bolt_user_id>
         </observers>
-      </bolt_boltpay_save_order_after>
+      </bolt_boltpay_authorization_after>
       <sales_order_payment_capture>
         <observers>
           <boltpay_payment_capture_add_message>
@@ -126,15 +116,6 @@
               </bolt_boltpay_filter_preauth_orders>
           </observers>
       </sales_order_grid_collection_load_before>
-      <sales_order_place_after>
-        <observers>
-          <set_initial_order_status_and_details>
-            <class>Bolt_Boltpay_Model_Observer</class>
-            <method>setInitialOrderStatusAndDetails</method>
-            <type>singleton</type>
-          </set_initial_order_status_and_details>
-        </observers>
-      </sales_order_place_after>
       <sales_order_save_before>
         <observers>
           <bolt_boltpay_safeguard_preauth_status>

@@ -73,20 +73,35 @@ class Bolt_Boltpay_Model_ObserverTest extends PHPUnit_Framework_TestCase
     public function setUp()
     {
         $this->order = $this->getMockBuilder('Mage_Sales_Model_Order')
+            ->disableOriginalClone()
+            ->disableArgumentCloning()
+            ->setMethods(['save','addStatusHistoryComment'])
+            ->getMock();
+
+        $history = $this->getMockBuilder('Mage_Sales_Model_Order_Status_History')
             ->disableOriginalConstructor()
             ->disableOriginalClone()
             ->disableArgumentCloning()
             ->getMock();
+
+        $this->order->expects($this->any())
+            ->method('addStatusHistoryComment')
+            ->willReturn($history);
 
         $this->session  = Mage::getSingleton('customer/session');
         $this->quote    = Mage::getSingleton('checkout/session')->getQuote();
 
         $this->orderPayment = $this->getMockBuilder('Mage_Sales_Model_Order_Payment')
-            ->disableOriginalConstructor()
             ->disableOriginalClone()
             ->disableArgumentCloning()
+            ->setMethods(['getMethod', 'save'])
             ->getMock();
 
+        $this->orderPayment
+            ->method('getMethod')
+            ->willReturn(Bolt_Boltpay_Model_Payment::METHOD_CODE);
+
+        $this->order->setPayment($this->orderPayment);
         $this->customer = Mage::getModel('customer/customer');
     }
 
@@ -106,12 +121,11 @@ class Bolt_Boltpay_Model_ObserverTest extends PHPUnit_Framework_TestCase
      */
     public function testSetBoltUserId()
     {
-        $order = null;
         $this->setEmptyQuoteWithCustomer();
 
         $this->session->setBoltUserId(self::CUSTOMER_BOLT_USER_ID);
 
-        Mage::dispatchEvent('bolt_boltpay_save_order_after', array('order' => $order, 'quote' => $this->quote));
+        Mage::dispatchEvent('bolt_boltpay_authorization_after', array('order' => $this->order, 'quote' => $this->quote, 'reference' => 'BOLT-TEST-REF4-BTID'));
 
         $this->assertEquals(self::CUSTOMER_BOLT_USER_ID, $this->quote->getCustomer()->getBoltUserId());
     }
@@ -150,123 +164,12 @@ class Bolt_Boltpay_Model_ObserverTest extends PHPUnit_Framework_TestCase
     }
 
     /**
-     * @inheritdoc
-     * @throws Varien_Exception
+     * Test if complete authorize successfully adds reference to the payment
      */
-    public function testVerifyOrderContents()
+    public function testCompleteAuthorize()
     {
-        $observerModel = $this->getMockBuilder('Bolt_Boltpay_Model_Observer')
-            ->enableOriginalConstructor()
-            ->setMethods(array('getBoltApiHelper', 'sendOrderEmail'))
-            ->getMock();
-
-        $quote = $this->quote;
-        $this->order = $this->getMockBuilder('Mage_Sales_Model_Order')
-            ->enableOriginalConstructor()
-            ->getMock()
-        ;
-
-        $this->order
-            ->method('setState')
-            ->willReturn($this->order);
-
-        $this->order
-            ->expects($this->atLeastOnce())
-            ->method('save');
-
-        $this->order
-            ->expects($this->atMost(2))
-            ->method('save');
-
-        $history = $this->getMockBuilder('Mage_Sales_Model_Order_Status_History')
-            ->disableOriginalConstructor()
-            ->disableOriginalClone()
-            ->disableArgumentCloning()
-            ->getMock();
-
-        $this->order->expects($this->any())
-            ->method('addStatusHistoryComment')
-            ->willReturn($history);
-
-        $this->quotePayment = $this->_createQuotePayment(
-            self::QUOTE_PAYMENT_ID,
-            $quote,
-            Bolt_Boltpay_Model_Payment::METHOD_CODE);
-
-        $this->_createGuestCheckout(
-            self::$productId,
-            2
-        );
-
-        $quote->setPayment($this->quotePayment);
-
-        $observerObject = new Varien_Object();
-        $observerObject->setData('event', new Varien_Object());
-        $observerObject->getEvent()->addData(array(
-            'quote' => $quote,
-            'order' => $this->order
-        ));
-
-        $observerModel->verifyOrderContents($observerObject);
-
-    }
-
-    /**
-     * @inheritdoc
-     */
-    public function testSendOrderEmail()
-    {
-        /** @var Bolt_Boltpay_Model_Observer $observerModel */
-        $methods = [];
-        $observerModel = $this->getMockBuilder('Bolt_Boltpay_Model_Observer')
-            ->disableOriginalConstructor()
-            ->disableOriginalClone()
-            ->disableArgumentCloning()
-            ->setMethods(empty($methods) ? null : $methods)
-            ->getMock();
-
-        $this->order = $this->getMockBuilder('Mage_Sales_Model_Order')
-            ->setMethods(array('getIncrementId', 'addStatusHistoryComment', 'addStatusHistory', 'getPayment', 'sendNewOrderEmail'))
-            ->getMock()
-        ;
-
-        $incrementId = '100000001';
-        $this->order->method('getIncrementId')
-            ->will($this->returnValue($incrementId));
-
-        $orderPayment = $this->getMockBuilder('Mage_Sales_Model_Order_Payment')
-            ->setMethods(['getMethod', 'getOrder'])
-            ->enableOriginalConstructor()
-            ->getMock();
-
-        $orderPayment
-            ->method('getMethod')
-            ->willReturn(Bolt_Boltpay_Model_Payment::METHOD_CODE);
-
-        $orderPayment->method('getOrder')
-            ->willReturn($this->order);
-        $this->order->method('getPayment')
-            ->willReturn($orderPayment);
-
-        $history = $this->getMockBuilder('Mage_Sales_Model_Order_Status_History')
-            ->setMethods(array('getStatus'))
-            ->getMock();
-
-        $history->method('getStatus')
-            ->will($this->returnValue('test_status'));
-
-        $this->order->expects($this->any())
-            ->method('addStatusHistoryComment')
-            ->willReturn($history);
-
-        $this->order
-            ->method('sendNewOrderEmail')
-            ->willReturnSelf();
-
-        $observerModel->sendOrderEmail($this->order);
-
-        $this->assertTrue($history->getIsCustomerNotified());
-        $this->assertEquals('test_status', $history->getStatus());
+        Mage::dispatchEvent('bolt_boltpay_authorization_after', array('order' => $this->order, 'quote' => $this->quote, 'reference' => 'TEST-BOLT-REFE-RENC'));
+        $this->assertEquals('TEST-BOLT-REFE-RENC', $this->orderPayment->getAdditionalInformation('bolt_reference'));
     }
 
     /**

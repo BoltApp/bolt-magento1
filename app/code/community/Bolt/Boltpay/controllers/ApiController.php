@@ -239,6 +239,40 @@ class Bolt_Boltpay_ApiController extends Mage_Core_Controller_Front_Action imple
     }
 
     /**
+     * Creates the success url for Bolt to forward the customer browser to upon transaction authorization
+     *
+     * @param Mage_Sales_Model_Order    $order
+     * @param Mage_Sales_Model_Quote    $immutableQuoteId
+     *
+     * @return string   The URL for which Bolt is to forward the browser.  It contains variables normally
+     *                  stored as session values as URL parameter
+     *
+     * @throws Mage_Core_Model_Store_Exception  if for any reason the store can not be found to generate the URL
+     */
+    private function createSuccessUrl($order, $immutableQuoteId) {
+        /* @var Mage_Sales_Model_Quote $immutableQuote */
+        $immutableQuote = Mage::getModel('sales/quote')->loadByIdWithoutStore($immutableQuoteId);
+        $recurringPaymentProfiles = $immutableQuote->collectTotals()->prepareRecurringPaymentProfiles();
+        $successUrlPath = $this->boltHelper()->getMagentoUrl(Mage::getStoreConfig('payment/boltpay/successpage')) ?: '/';
+
+        if ($successUrlPath[strlen($successUrlPath) - 1] === '/' ) $successUrlPath = substr( $successUrlPath, 0, -1);
+
+        $successUrlQueryString = "?lastQuoteId={$immutableQuote->getParentQuoteId()}&lastSuccessQuoteId={$immutableQuote->getParentQuoteId()}&lastOrderId={$order->getId()}&lastRealOrderId={$order->getIncrementId()}";
+
+        $recurringPaymentProfilesIds = array();
+        /** @var Mage_Payment_Model_Recurring_Profile $profile */
+        foreach((array)$recurringPaymentProfiles as $profile) {
+            $recurringPaymentProfilesIds[] = $profile->getId();
+        }
+
+        if ($recurringPaymentProfilesIds) {
+            $successUrlQueryString .= "&lastRecurringProfileIds=" . implode(",", $recurringPaymentProfilesIds);
+        }
+
+        return $successUrlPath . $successUrlQueryString;
+    }
+
+    /**
      * Handles failed payment web hooks.  It attempts to cancel a specified pre-auth order
      * in addition to invalidating the cache associated with that orders session.
      *
