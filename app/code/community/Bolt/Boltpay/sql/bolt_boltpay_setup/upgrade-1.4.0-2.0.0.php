@@ -33,11 +33,14 @@ $connection = $installer->getConnection();
 $statusTable = $installer->getTable('sales/order_status');
 $statusStateTable = $installer->getTable('sales/order_status_state');
 
-$pendingBoltStatusDoesntExists = !is_object($connection->query("SELECT status FROM $statusTable WHERE status = 'pending_bolt'")->fetchObject());
-$pendingBoltMappingDoesntExists = !is_object($connection->query("SELECT status FROM $statusStateTable WHERE status = 'pending_bolt' AND state = 'pending_payment'")->fetchObject());
+$pendingBolt = Bolt_Boltpay_Model_Payment::TRANSACTION_PRE_AUTH_PENDING;
+$canceledBolt = Bolt_Boltpay_Model_Payment::TRANSACTION_PRE_AUTH_CANCELED;
 
-$canceledBoltStatusDoesntExists = !is_object($connection->query("SELECT status FROM $statusTable WHERE status = 'canceled_bolt'")->fetchObject());
-$canceledBoltMappingDoesntExists = !is_object($connection->query("SELECT status FROM $statusStateTable WHERE status = 'canceled_bolt' AND state = 'canceled'")->fetchObject());
+$pendingBoltStatusDoesntExists = !is_object($connection->query("SELECT status FROM $statusTable WHERE status = '$pendingBolt'")->fetchObject());
+$pendingBoltMappingDoesntExists = !is_object($connection->query("SELECT status FROM $statusStateTable WHERE status = '$pendingBolt' AND state = 'pending_payment'")->fetchObject());
+
+$canceledBoltStatusDoesntExists = !is_object($connection->query("SELECT status FROM $statusTable WHERE status = '$canceledBolt'")->fetchObject());
+$canceledBoltMappingDoesntExists = !is_object($connection->query("SELECT status FROM $statusStateTable WHERE status = '$canceledBolt' AND state = 'canceled'")->fetchObject());
 
 if ($pendingBoltStatusDoesntExists) {
     // Insert statuses
@@ -48,7 +51,7 @@ if ($pendingBoltStatusDoesntExists) {
             'label'
         ),
         array(
-            array('status' => 'pending_bolt', 'label' => 'Pending Bolt Authorization'),
+            array('status' => $pendingBolt, 'label' => 'Pending Bolt Authorization'),
         )
     );
 
@@ -65,7 +68,7 @@ if ($pendingBoltMappingDoesntExists) {
         ),
         array(
             array(
-                'status' => 'pending_bolt',
+                'status' => $pendingBolt,
                 'state' => 'pending_payment',
                 'is_default' => 0
             ),
@@ -82,7 +85,7 @@ if ($canceledBoltStatusDoesntExists) {
             'label'
         ),
         array(
-            array('status' => 'canceled_bolt', 'label' => 'Canceled by Bolt'),
+            array('status' => $canceledBolt, 'label' => 'Canceled by Bolt'),
         )
     );
 
@@ -99,7 +102,7 @@ if ($canceledBoltMappingDoesntExists) {
         ),
         array(
             array(
-                'status' => 'canceled_bolt',
+                'status' => $canceledBolt,
                 'state' => 'canceled',
                 'is_default' => 0
             ),
