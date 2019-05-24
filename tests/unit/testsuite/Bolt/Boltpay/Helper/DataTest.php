@@ -63,7 +63,7 @@ class Bolt_Boltpay_Helper_DataTest extends PHPUnit_Framework_TestCase
         ;
     }
 
-    public function testCanUseBoltReturnsFalseIfDisabled() 
+    public function testCanUseBoltReturnsFalseIfDisabled()
     {
         $this->app->getStore()->setConfig('payment/boltpay/active', 0);
         $quote = $this->testHelper->getCheckoutQuote();
@@ -84,7 +84,7 @@ class Bolt_Boltpay_Helper_DataTest extends PHPUnit_Framework_TestCase
         $this->assertTrue($result);
     }
 
-    public function testCanUseBoltReturnsFalseIfBillingCountryNotWhitelisted() 
+    public function testCanUseBoltReturnsFalseIfBillingCountryNotWhitelisted()
     {
         $this->app->getStore()->setConfig('payment/boltpay/active', 1);
         $this->app->getStore()->setConfig('payment/boltpay/allowspecific', 1);
@@ -110,7 +110,7 @@ class Bolt_Boltpay_Helper_DataTest extends PHPUnit_Framework_TestCase
         $this->assertTrue($this->dataHelper->canUseBolt($quote));
     }
 
-    public function testCanUseBoltReturnsTrueIfSkipPaymentEvenIfBillingCountryIsNotWhitelisted() 
+    public function testCanUseBoltReturnsTrueIfSkipPaymentEvenIfBillingCountryIsNotWhitelisted()
     {
         $this->app->getStore()->setConfig('payment/boltpay/active', 1);
         $this->app->getStore()->setConfig('payment/boltpay/skip_payment', 1);
@@ -124,7 +124,7 @@ class Bolt_Boltpay_Helper_DataTest extends PHPUnit_Framework_TestCase
         $this->assertTrue($this->dataHelper->canUseBolt($quote));
     }
 
-    public function testCanUseBoltReturnsTrueIfAllowSpecificIsFalse() 
+    public function testCanUseBoltReturnsTrueIfAllowSpecificIsFalse()
     {
         $this->app->getStore()->setConfig('payment/boltpay/active', 1);
         $this->app->getStore()->setConfig('payment/boltpay/allowspecific', 0);

@@ -43,8 +43,6 @@ class Bolt_Boltpay_ApiController extends Mage_Core_Controller_Front_Action imple
             $hookType = @$requestData->notification_type ?: $requestData->type;
             $parentQuoteId = @$requestData->quote_id;
 
-            /** @var Mage_Sales_Model_Order $order */
-
             if ($hookType === 'failed_payment') {
                 $this->handleFailedPaymentHook($parentQuoteId);
                 return;
@@ -323,7 +321,7 @@ class Bolt_Boltpay_ApiController extends Mage_Core_Controller_Front_Action imple
         /// since we are operating outside the session we cannot directly clear
         /// the cache session from data
         ///
-        /// Instead, we mark the immutable quote cache to be expired by setting
+        /// Instead, we mark the Bolt order token cache to be expired by setting
         /// the parent quote to be the parent quote of itself.  We take care of this
         /// via an observer that watches for this condition.  This will preserve
         /// native abandoned cart behavior while not marking the quote for

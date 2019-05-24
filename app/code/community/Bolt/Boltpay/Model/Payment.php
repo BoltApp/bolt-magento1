@@ -32,6 +32,8 @@ class Bolt_Boltpay_Model_Payment extends Mage_Payment_Model_Method_Abstract
     const ORDER_DEFERRED = 'deferred';
 
     // Transaction States
+    const TRANSACTION_PRE_AUTH_PENDING = 'pending_bolt';
+    const TRANSACTION_PRE_AUTH_CANCELED = 'canceled_bolt';
     const TRANSACTION_AUTHORIZED = 'authorized';
     const TRANSACTION_CANCELLED = 'cancelled';
     const TRANSACTION_COMPLETED = 'completed';

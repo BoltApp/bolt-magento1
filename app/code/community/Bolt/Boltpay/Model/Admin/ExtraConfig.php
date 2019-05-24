@@ -88,6 +88,8 @@ class Bolt_Boltpay_Model_Admin_ExtraConfig extends Mage_Core_Model_Config_Data
      * the old value is retained.
      *
      * @return Mage_Core_Model_Abstract  $this
+     *
+     * @throws Exception when there is an error saving the extra config to the database
      */
     public function save()
     {
@@ -153,8 +155,8 @@ class Bolt_Boltpay_Model_Admin_ExtraConfig extends Mage_Core_Model_Config_Data
                         Mage::helper('boltpay')->__(
                             'Invalid datadog key severity value for extra option `datadogKeySeverity`.[%s]
                          The valid values must be error or warning or info ', $severity
-                    )
-                );
+                        )
+                    );
 
                     return false;
                 }
@@ -216,6 +218,8 @@ JS;
 
 
     /**
+     * @todo revise method for enabling and disabling datadog
+     *
      * @param $rawConfigValue
      * @param array $additionalParams
      * @return string
@@ -224,6 +228,7 @@ JS;
     {
         $allExtraConfigs = (array)json_decode($this->normalizeJSON(Mage::getStoreConfig('payment/boltpay/extra_options')), true);
         return (array_key_exists("datadogKeySeverity", $allExtraConfigs)) ? $rawConfigValue : Bolt_Boltpay_Helper_DataDogTrait::$defaultSeverityConfig;
+        // return strlen(trim($rawConfigValue)) ? trim($rawConfigValue) : Bolt_Boltpay_Helper_DataDogTrait::$defaultSeverityConfig; # preferable way to get default
     }
 
     /**
@@ -245,20 +250,54 @@ JS;
      * @return bool     True if the value is positive and integer
      */
     public function hasValidPriceFaultTolerance($priceTolerance) {
-        return is_int($priceTolerance) && ($priceTolerance > 0);
+        if (is_int($priceTolerance) && ($priceTolerance > 0) ) {
+            return true;
+        }
+
+        Mage::getSingleton('core/session')->addError(
+            Mage::helper('boltpay')->__(
+                 'Invalid value for extra option `priceFaultTolerance`.[%s]
+                         A valid value must be a positive integer.', $priceTolerance
+            )
+        );
+        return false;
     }
 
     /**
      * Defines the default value as a 1 cent tolerance for Bolt and Magento grand total
      * difference
      *
-     * @param string $rawConfigValue    The config value pre-filter
-     * @param array  $additionalParams  unused for this filter
+     * @param int|string $rawConfigValue    The config value pre-filter. Will be an int or an empty string
+     * @param array      $additionalParams  unused for this filter
      *
      * @return int  the number defined in the extra config admin.  If not defined, the default of 1
      */
     public function filterPriceFaultTolerance($rawConfigValue, $additionalParams = array() ) {
         return is_int($rawConfigValue) ? $rawConfigValue : 1;
+    }
+
+    /**
+     * Ensures boolean value for whether to display Bolt pre-auth orders in Magento
+     *
+     * @param mixed $rawConfigValue    The config value pre-filter
+     * @param array  $additionalParams  unused for this filter
+     *
+     * @return bool  the value from the extra config admin forced to boolean
+     */
+    public function filterDisplayPreAuthOrders($rawConfigValue, $additionalParams = array() ) {
+        return $this->normalizeBoolean($rawConfigValue);
+    }
+
+    /**
+     * Ensures boolean value for whether to keep created_at and updated_at time-stamps for pre-auth orders
+     *
+     * @param mixed $rawConfigValue    The config value pre-filter
+     * @param array  $additionalParams  unused for this filter
+     *
+     * @return bool  the value from the extra config admin forced to boolean
+     */
+    public function filterKeepPreAuthOrderTimeStamps($rawConfigValue, $additionalParams = array() ) {
+        return $this->normalizeBoolean($rawConfigValue);
     }
 
     /**
@@ -271,8 +310,26 @@ JS;
      *
      * @return string|null      The string stripped of newline characters or null on error
      */
-
     private function normalizeJSON($string) {
         return trim(preg_replace( '/(\r\n)|\n|\r/', '', $string )) ?: json_encode(array());
+    }
+
+    /**
+     * Converts the inputted value to a boolean after setting common negative strings as boolean false
+     *
+     * @param mixed $rawConfigValue    The config value pre-filter
+     *
+     * @return  bool    false if the value represents a recognized negative response, otherwise the original value
+     *                  converted to a boolean
+     */
+    private function normalizeBoolean($rawConfigValue) {
+        if (is_string($rawConfigValue)) {
+            $rawConfigValue = strtolower(trim($rawConfigValue));
+            if (in_array($rawConfigValue,  ['false', 'no', 'n', 'off'], true)) {
+                $rawConfigValue = false;
+            }
+        }
+
+        return (bool) $rawConfigValue;
     }
 }

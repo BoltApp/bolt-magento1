@@ -142,9 +142,18 @@ class Bolt_Boltpay_Model_Observer
      * @param Varien_Event_Observer $observer Observer event contains an orderGridCollection object
      */
     public function filterPreAuthOrders($observer) {
+        if ($this->boltHelper()->getExtraConfig('displayPreAuthOrders')) { return; }
+
         /** @var Mage_Sales_Model_Resource_Order_Grid_Collection $orderGridCollection */
         $orderGridCollection = $observer->getEvent()->getOrderGridCollection();
-        $orderGridCollection->addFieldToFilter('main_table.status',array('nin'=>array('pending_bolt','canceled_bolt')));
+        $orderGridCollection->addFieldToFilter('main_table.status',
+            array(
+                'nin'=>array(
+                    Bolt_Boltpay_Model_Payment::TRANSACTION_PRE_AUTH_PENDING,
+                    Bolt_Boltpay_Model_Payment::TRANSACTION_PRE_AUTH_CANCELED
+                )
+            )
+        );
     }
 
     /**
@@ -156,8 +165,17 @@ class Bolt_Boltpay_Model_Observer
      */
     public function safeguardPreAuthStatus($observer) {
         $order = $observer->getEvent()->getOrder();
-
-        if (!Bolt_Boltpay_Helper_Data::$fromHooks && in_array($order->getOrigData('status'), array('pending_bolt','canceled_bolt')) ) {
+        if (
+            !Bolt_Boltpay_Helper_Data::$fromHooks
+            && in_array(
+                $order->getOrigData('status'),
+                array(
+                    Bolt_Boltpay_Model_Payment::TRANSACTION_PRE_AUTH_PENDING,
+                    Bolt_Boltpay_Model_Payment::TRANSACTION_PRE_AUTH_CANCELED
+                )
+            )
+        )
+        {
             $order->setStatus($order->getOrigData('status'));
         }
     }
