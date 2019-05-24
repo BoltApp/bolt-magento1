@@ -29,25 +29,25 @@ class Bolt_Boltpay_ApiController extends Mage_Core_Controller_Front_Action imple
      */
     public function hookAction()
     {
-
         try {
+
             $requestData = $this->getRequestData();
 
-            if (isset($requestData->type) && $requestData->type == "discounts.code.apply") {
-                /** @var Bolt_Boltpay_Model_Coupon $couponModel */
-                $couponModel = Mage::getModel('boltpay/coupon');
-                $couponModel->setupVariables($requestData);
-                $couponModel->applyCoupon();
-
-                return $this->sendResponse($couponModel->getHttpCode(), $couponModel->getResponseData());
-            }
+            /* Allows this method to be used even if the Bolt plugin is disabled.  This accounts for orders that have already been processed by Bolt */
+            Bolt_Boltpay_Helper_Data::$fromHooks = true;
 
             $reference = $requestData->reference;
             $transactionId = @$requestData->transaction_id ?: $requestData->id;
             $hookType = @$requestData->notification_type ?: $requestData->type;
+            $parentQuoteId = @$requestData->quote_id;
 
-            /* Allows this method to be used even if the Bolt plugin is disabled.  This accounts for orders that have already been processed by Bolt */
-            Bolt_Boltpay_Helper_Data::$fromHooks = true;
+            if ($hookType === 'failed_payment') {
+                $this->handleFailedPaymentHook($parentQuoteId);
+                return;
+            } else if ($hookType === 'discounts.code.apply') {
+                $this->handleDiscountHook();
+                return;
+            }
 
             $transaction = $this->boltHelper()->fetchTransaction($reference);
 
@@ -236,5 +236,62 @@ class Bolt_Boltpay_ApiController extends Mage_Core_Controller_Front_Action imple
         }
 
         return null;
+    }
+
+    /**
+     * Handles failed payment web hooks.  It attempts to cancel a specified pre-auth order
+     * in addition to invalidating the cache associated with that orders session.
+     *
+     * @param int   $parentQuoteId  the ID of the session quote whose order should be cancelled.
+     *
+     * @throws Zend_Controller_Response_Exception if there is an unexpected error in sending a response
+     */
+    private function handleFailedPaymentHook($parentQuoteId) {
+        /** @var Bolt_Boltpay_Model_Order $orderModel */
+        $orderModel = Mage::getModel('boltpay/order');
+        $order =  $orderModel->getOrderByParentQuoteId($parentQuoteId);
+        if (!$order->isObjectNew()) {
+            $orderModel->removePreAuthOrder($order);
+        }
+        ////////////////////////////////////////////////////////////////////
+        /// We treat Bolt initiated failed payment cancels to be the same as a directive
+        /// to expire the cached immutable quote that is stored in the session,
+        /// otherwise, the Bolt checkout could result in a locked state where the end
+        /// user will repeatedly be told that his cart has expired and to refresh. However,
+        /// since we are operating outside the session we cannot directly clear
+        /// the cache session from data
+        ///
+        /// Instead, we mark the Bolt order token cache to be expired by setting
+        /// the parent quote to be the parent quote of itself.  We take care of this
+        /// via an observer that watches for this condition.  This will preserve
+        /// native abandoned cart behavior while not marking the quote for
+        /// cleanup.
+        ////////////////////////////////////////////////////////////////////
+        $parentQuote = $orderModel->getQuoteById($parentQuoteId);
+        if ($parentQuote->getId()) {
+            $parentQuote
+                ->setParentQuoteId($parentQuote->getId())
+                ->save();
+        }
+        $this->sendResponse(
+            200,
+            array(
+                'status' => 'success',
+                'message' => $this->boltHelper()->__('Pre-auth order was canceled')
+            )
+        );
+    }
+
+    /**
+     * Handles discount web hooks
+     *
+     * @throws Zend_Controller_Response_Exception if there is an unexpected error in sending a response
+     */
+    private function handleDiscountHook() {
+        /** @var Bolt_Boltpay_Model_Coupon $couponModel */
+        $couponModel = Mage::getModel('boltpay/coupon');
+        $couponModel->setupVariables(json_decode($this->payload));
+        $couponModel->applyCoupon();
+        $this->sendResponse($couponModel->getHttpCode(), $couponModel->getResponseData());
     }
 }
