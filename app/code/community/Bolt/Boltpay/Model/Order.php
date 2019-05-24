@@ -589,7 +589,7 @@ class Bolt_Boltpay_Model_Order extends Bolt_Boltpay_Model_Abstract
         ///////////////////////////////////////////////////////
         Mage::dispatchEvent('bolt_boltpay_authorization_after', array('order'=>$order, 'quote'=>$immutableQuote, 'reference' => $payloadObject->transaction_reference));
     }
-
+    
     /**
      * Sends an email if an order email has not already been sent.
      *

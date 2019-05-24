@@ -124,15 +124,6 @@
               </bolt_boltpay_filter_preauth_orders>
           </observers>
       </sales_order_grid_collection_load_before>
-      <sales_order_place_after>
-        <observers>
-          <set_initial_order_status_and_details>
-            <class>Bolt_Boltpay_Model_Observer</class>
-            <method>setInitialOrderStatusAndDetails</method>
-            <type>singleton</type>
-          </set_initial_order_status_and_details>
-        </observers>
-      </sales_order_place_after>
       <sales_order_save_before>
         <observers>
           <bolt_boltpay_safeguard_preauth_status>
