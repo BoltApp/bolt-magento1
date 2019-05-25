@@ -314,7 +314,7 @@ class Bolt_Boltpay_ApiController extends Mage_Core_Controller_Front_Action imple
         }
 
         ////////////////////////////////////////////////////////////////////
-        /// We treat Bolt initiated cancels to be the same as a directive
+        /// We treat Bolt initiated failed payment cancels to be the same as a directive
         /// to expire the cached immutable quote that is stored in the session,
         /// otherwise, the Bolt checkout could result in a locked state where the end
         /// user will repeatedly be told that his cart has expired and to refresh. However,
