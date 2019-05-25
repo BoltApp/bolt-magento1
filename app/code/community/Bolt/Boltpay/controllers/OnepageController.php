@@ -26,7 +26,7 @@ class Bolt_Boltpay_OnepageController
     use Bolt_Boltpay_BoltGlobalTrait;
 
     /**
-     * Order success action.  For Bolt orders, we need to set the session values that are normally set in	
+     * Order success action.  For Bolt orders, we need to set the session values that are normally set in
      * a checkout session but are missed when we do pre-auth order creation in a separate
      * context.
      */
@@ -71,7 +71,6 @@ class Bolt_Boltpay_OnepageController
             Mage::getModel('boltpay/order')->receiveOrder($requestParams['lastRealOrderId'], $this->payload);
         }
 
-	parent::successAction();
+        parent::successAction();
     }
-
 }
