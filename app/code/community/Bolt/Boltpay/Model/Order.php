@@ -70,6 +70,16 @@ class Bolt_Boltpay_Model_Order extends Bolt_Boltpay_Model_Abstract
                 $this->boltHelper()->setCustomerSessionByQuoteId($sessionQuoteId);
             }
 
+            Mage::dispatchEvent(
+                'bolt_boltpay_order_creation_before',
+                array(
+                    'immutableQuote'=> $immutableQuote,
+                    'parentQuote' => $parentQuote,
+                    'transaction' => $transaction,
+                    'isPreAuthCreation' => $isPreAuthCreation,
+                )
+            );
+
             $this->validateCartSessionData($immutableQuote, $parentQuote, $transaction);
 
             // adding guest user email to order
@@ -282,6 +292,16 @@ class Bolt_Boltpay_Model_Order extends Bolt_Boltpay_Model_Abstract
      */
     protected function validateCartSessionData($immutableQuote, $parentQuote, $transaction) {
 
+        Mage::dispatchEvent(
+            'bolt_boltpay_validate_cart_session_before',
+            array(
+                'immutableQuote'=> $immutableQuote,
+                'parentQuote' => $parentQuote,
+                'transaction' => $transaction,
+                'sessionQuoteId' => $sessionQuoteId,
+            )
+        );
+
         if ($immutableQuote->isEmpty()) {
             throw new Bolt_Boltpay_OrderCreationException(
                 OCE::E_BOLT_CART_HAS_EXPIRED,
@@ -329,6 +349,15 @@ class Bolt_Boltpay_Model_Order extends Bolt_Boltpay_Model_Abstract
             }
         }
 
+        Mage::dispatchEvent(
+            'bolt_boltpay_validate_cart_session_after',
+            array(
+                'immutableQuote'=> $immutableQuote,
+                'parentQuote' => $parentQuote,
+                'transaction' => $transaction,
+                'sessionQuoteId' => $sessionQuoteId,
+            )
+        );
     }
 
     /**
@@ -433,6 +462,14 @@ class Bolt_Boltpay_Model_Order extends Bolt_Boltpay_Model_Abstract
      */
     protected function validateCoupons(Mage_Sales_Model_Quote $immutableQuote, $transaction) {
 
+        Mage::dispatchEvent(
+            'bolt_boltpay_validate_coupons_before',
+            array(
+                'immutableQuote'=> $immutableQuote,
+                'transaction' => $transaction,
+            )
+        );
+
         if (@$transaction->order->cart->discounts) {
             /*
              * Natively, Magento only supports one coupon code per order, but we can build
@@ -485,6 +522,14 @@ class Bolt_Boltpay_Model_Order extends Bolt_Boltpay_Model_Abstract
 
             }
         }
+
+        Mage::dispatchEvent(
+            'bolt_boltpay_validate_coupons_after',
+            array(
+                'immutableQuote'=> $immutableQuote,
+                'transaction' => $transaction,
+            )
+        );
     }
 
     /**
@@ -497,6 +542,15 @@ class Bolt_Boltpay_Model_Order extends Bolt_Boltpay_Model_Abstract
      */
     protected function validateTotals(Mage_Sales_Model_Order $immutableQuote, $transaction)
     {
+
+        Mage::dispatchEvent(
+            'bolt_boltpay_validate_totals_before',
+            array(
+                'immutableQuote'=> $immutableQuote,
+                'transaction' => $transaction,
+            )
+        );
+
         $magentoTotals = $immutableQuote->getTotals();
 
         foreach ($transaction->order->cart->items as $boltCartItem) {
@@ -559,6 +613,14 @@ class Bolt_Boltpay_Model_Order extends Bolt_Boltpay_Model_Abstract
                 array($boltTaxTotal, $magentoTaxTotal)
             );
         }
+
+        Mage::dispatchEvent(
+            'bolt_boltpay_validate_totals_after',
+            array(
+                'immutableQuote'=> $immutableQuote,
+                'transaction' => $transaction,
+            )
+        );
     }
 
     /**
@@ -589,7 +651,7 @@ class Bolt_Boltpay_Model_Order extends Bolt_Boltpay_Model_Abstract
         ///////////////////////////////////////////////////////
         Mage::dispatchEvent('bolt_boltpay_authorization_after', array('order'=>$order, 'quote'=>$immutableQuote, 'reference' => $payloadObject->transaction_reference));
     }
-    
+
     /**
      * Sends an email if an order email has not already been sent.
      *
