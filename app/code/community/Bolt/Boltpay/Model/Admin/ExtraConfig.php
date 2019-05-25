@@ -228,7 +228,6 @@ JS;
     {
         $allExtraConfigs = (array)json_decode($this->normalizeJSON(Mage::getStoreConfig('payment/boltpay/extra_options')), true);
         return (array_key_exists("datadogKeySeverity", $allExtraConfigs)) ? $rawConfigValue : Bolt_Boltpay_Helper_DataDogTrait::$defaultSeverityConfig;
-        // return strlen(trim($rawConfigValue)) ? trim($rawConfigValue) : Bolt_Boltpay_Helper_DataDogTrait::$defaultSeverityConfig; # preferable way to get default
     }
 
     /**
