@@ -179,4 +179,34 @@ class Bolt_Boltpay_Model_Observer
             $order->setStatus($order->getOrigData('status'));
         }
     }
+
+    /**
+     * This is the last chance, bottom line price check.  It is done after the submit service
+     * has created the order, but before the order is committed to the database.  This allows
+     * to get the actual totals that will be stored in the database and catch all unexpected
+     * changes.  We have the option to attempt to correct any problems here.  If there remain
+     * any unhandled problems, we can throw an exception and avoid complex order rollback.
+     *
+     * This is called from the observer context
+     *
+     * event: sales_model_service_quote_submit_before
+     *
+     * @param Varien_Event_Observer $observer Observer event contains an order and (immutable) quote
+     *                                        -  Mage_Sales_Model_Order order
+     *                                        -  Mage_Sales_Model_Quote quote
+     *
+     *                                        The $quote, in turn holds
+     *                                        -  Mage_Sales_Model_Quote parent (ONLY pre-auth; will be empty for admin)
+     *                                        -  object (bolt) transaction (ONLY pre-auth; will be empty for admin)
+     *
+     *
+     * @throws Exception    if an unknown error occurs
+     * @throws Bolt_Boltpay_OrderCreationException if the bottom line price total differs by allowed tolerance
+     *
+     */
+    public function validateBeforeOrderCommit($observer) {
+        /** @var  Bolt_Boltpay_Model_Order $orderModel */
+        $orderModel = Mage::getModel('boltpay/order');
+        $orderModel->validateBeforeOrderCommit($observer);
+    }
 }

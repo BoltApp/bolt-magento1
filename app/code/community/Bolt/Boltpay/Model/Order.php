@@ -36,7 +36,6 @@ class Bolt_Boltpay_Model_Order extends Bolt_Boltpay_Model_Abstract
      * @param boolean       $isPreAuthCreation   If called via pre-auth creation. default to false.
      * @param object        $transaction         pre-loaded Bolt Transaction object
      *
-     * @todo   Remove orphaned transaction logic
      *
      * @return Mage_Sales_Model_Order   The order saved to Magento
      *
@@ -81,7 +80,7 @@ class Bolt_Boltpay_Model_Order extends Bolt_Boltpay_Model_Abstract
                 )
             );
 
-            $this->validateCartSessionData($immutableQuote, $parentQuote, $sessionQuoteId, $transaction);
+            $this->validateCartSessionData($immutableQuote, $parentQuote, $transaction);
 
             // adding guest user email to order
             if (!$immutableQuote->getCustomerEmail()) {
@@ -146,13 +145,6 @@ class Bolt_Boltpay_Model_Order extends Bolt_Boltpay_Model_Abstract
                 if ($shippingMethodCode) {
                     $shippingAndTaxModel->applyShippingRate($immutableQuote, $shippingMethodCode, false);
                     $shippingAddress->save();
-                    Mage::dispatchEvent(
-                        'bolt_boltpay_order_creation_shipping_method_applied',
-                        array(
-                            'quote'=> $immutableQuote,
-                            'shippingMethodCode' => $shippingMethodCode
-                        )
-                    );
                 } else {
                     $errorMessage = $this->boltHelper()->__('Shipping method not found');
                     $metaData = array(
@@ -274,8 +266,8 @@ class Bolt_Boltpay_Model_Order extends Bolt_Boltpay_Model_Abstract
             ->save();
         ///////////////////////////////////////////////////////
 
-        // We set the created_at and updated_at date to null to hide the order from ERPs
-        $order->setCreatedAt(null)->save();
+        // We set the created_at and updated_at date to null to hide the order from ERP until authorized
+        $this->removeOrderTimeStamps($order);
 
         $recurringPaymentProfiles = $service->getRecurringPaymentProfiles();
 
@@ -290,15 +282,17 @@ class Bolt_Boltpay_Model_Order extends Bolt_Boltpay_Model_Abstract
 
 
     /**
-     * @param Mage_Sales_Model_Quote $immutableQuote
-     * @param Mage_Sales_Model_Quote $parentQuote
-     * @param $sessionQuoteId
-     * @param $transaction
-     * @throws Bolt_Boltpay_OrderCreationException
+     * Checks several indicators to see if the Magento session or cart has expired
+     *
+     * @param Mage_Sales_Model_Quote $immutableQuote    Copy of the Magento session quote used by Bolt
+     * @param Mage_Sales_Model_Quote $parentQuote       The Magento session quote holding cart data
+     * @param object                 $transaction       The Bolt transaction object sent from the Bolt server
+     *
+     * @throws Bolt_Boltpay_OrderCreationException  on failure of session validation
      */
-    protected function validateCartSessionData($immutableQuote, $parentQuote, $sessionQuoteId, $transaction) {
+    protected function validateCartSessionData($immutableQuote, $parentQuote, $transaction) {
 
-        Mage::dispatchEvent(
+       Mage::dispatchEvent(
             'bolt_boltpay_validate_cart_session_before',
             array(
                 'immutableQuote'=> $immutableQuote,
@@ -539,12 +533,16 @@ class Bolt_Boltpay_Model_Order extends Bolt_Boltpay_Model_Abstract
     }
 
     /**
-     * @param Mage_Sales_Model_Quote $quote
+     * Verifies that the expected totals stored on Bolt have not changed in the Magento order prior to order creation
      *
-     * @return void
+     * @param Mage_Sales_Model_Quote $immutableQuote    Copy of the Magento session quote used by Bolt
+     * @param object                 $transaction       The Bolt transaction object sent from the Bolt server
+     *
+     * @throws Bolt_Boltpay_OrderCreationException upon failure of price consistency validation
      */
-    protected function validateTotals(Mage_Sales_Model_Quote $immutableQuote, $transaction)
+    protected function validateTotals(Mage_Sales_Model_Order $immutableQuote, $transaction)
     {
+
         Mage::dispatchEvent(
             'bolt_boltpay_validate_totals_before',
             array(
@@ -552,7 +550,7 @@ class Bolt_Boltpay_Model_Order extends Bolt_Boltpay_Model_Abstract
                 'transaction' => $transaction,
             )
         );
-
+      
         $magentoTotals = $immutableQuote->getTotals();
 
         foreach ($transaction->order->cart->items as $boltCartItem) {
@@ -653,7 +651,7 @@ class Bolt_Boltpay_Model_Order extends Bolt_Boltpay_Model_Abstract
         ///////////////////////////////////////////////////////
         Mage::dispatchEvent('bolt_boltpay_authorization_after', array('order'=>$order, 'quote'=>$immutableQuote, 'reference' => $payloadObject->transaction_reference));
     }
-
+    
     /**
      * Sends an email if an order email has not already been sent.
      *
@@ -777,5 +775,30 @@ class Bolt_Boltpay_Model_Order extends Bolt_Boltpay_Model_Abstract
             ->setIsCustomerNotified(false);
 
         return $order;
+    }
+
+    /**
+     * To prevent common ERPs import of non-authorized orders, we remove timestamps until the order has been authorized
+     *
+     * @param Mage_Sales_Model_Order    $order  The order whose timestamps will be nullified
+     */
+    private function removeOrderTimeStamps($order) {
+        /** @var Mage_Core_Model_Resource $resource */
+        $resource = Mage::getSingleton('core/resource');
+        /** @var Magento_Db_Adapter_Pdo_Mysql $writeConnection */
+        $writeConnection = $resource->getConnection('core_write');
+        $table = $resource->getTableName('sales/order');
+
+        $query = "UPDATE $table SET updated_at = NULL, created_at = NULL WHERE entity_id = :orderId";
+        $bind = array(
+            'orderId' => (int)$order->getId()
+        );
+
+        try {
+            $writeConnection->query($query, $bind);
+        } catch (Zend_Db_Adapter_Exception $e) {
+            $this->boltHelper()->notifyException($e, array(), 'warning');
+            $this->boltHelper()->logWarning($e->getMessage());
+        }
     }
 }

@@ -483,7 +483,7 @@ class Bolt_Boltpay_Model_Payment extends Mage_Payment_Model_Method_Abstract
                     $order->setState(Mage_Sales_Model_Order::STATE_PAYMENT_REVIEW, true, $message);
                     $order->save();
                 } elseif ($newTransactionStatus == self::TRANSACTION_CANCELLED) {
-                      $this->handleVoidTransactionUpdate($payment);
+                    $this->handleVoidTransactionUpdate($payment);
                 } elseif ($newTransactionStatus == self::TRANSACTION_REJECTED_IRREVERSIBLE) {
                     $order = $payment->getOrder();
                     $payment->setParentTransactionId($reference);
@@ -563,8 +563,8 @@ class Bolt_Boltpay_Model_Payment extends Mage_Payment_Model_Method_Abstract
                 // full refund
                 if ($totalPaid == $availableRefund && $transactionAmount == $availableRefund) {
                     $invoice = Mage::getModel('sales/order_invoice')
-                                   ->load($invoiceId)
-                                   ->setOrder($order);
+                        ->load($invoiceId)
+                        ->setOrder($order);
                     if ($order->canCreditmemo() && $invoice->canRefund()) {
                         $data       = array();
                         $creditmemo = $service->prepareInvoiceCreditmemo($invoice, $data);
@@ -578,8 +578,8 @@ class Bolt_Boltpay_Model_Payment extends Mage_Payment_Model_Method_Abstract
                     //actually for order with bolt payment, there is only one invoice can refund
                     foreach ($invoiceIds as $k => $invoiceId) {
                         $invoice = Mage::getModel('sales/order_invoice')
-                                       ->load($invoiceId)
-                                       ->setOrder($order);
+                            ->load($invoiceId)
+                            ->setOrder($order);
                         if ($order->canCreditmemo() && $invoice->canRefund()) {
                             $qtys = array();
                             foreach ($order->getAllItems() as $item) {
@@ -621,8 +621,8 @@ class Bolt_Boltpay_Model_Payment extends Mage_Payment_Model_Method_Abstract
                     //we need to restore the items in cart separately
                     if ($isPartialRefund) {
                         $invoice = Mage::getModel('sales/order_invoice')
-                                       ->load($invoiceId)
-                                       ->setOrder($order);
+                            ->load($invoiceId)
+                            ->setOrder($order);
                         $qtys    = array();
                         foreach ($order->getAllItems() as $item) {
                             $qtys[$item->getId()] = $item->getData('qty_ordered');
@@ -976,7 +976,7 @@ class Bolt_Boltpay_Model_Payment extends Mage_Payment_Model_Method_Abstract
     protected function isTransactionStatusChanged($newTransactionStatus, $prevTransactionStatus)
     {
         return in_array($newTransactionStatus, array(self::TRANSACTION_REFUND, self::TRANSACTION_AUTHORIZED, self::TRANSACTION_COMPLETED)) ||
-               $newTransactionStatus != $prevTransactionStatus;
+            $newTransactionStatus != $prevTransactionStatus;
     }
 
     /**
@@ -1026,7 +1026,7 @@ class Bolt_Boltpay_Model_Payment extends Mage_Payment_Model_Method_Abstract
     protected function isCaptureRequest($newTransactionStatus, $prevTransactionStatus)
     {
         return $newTransactionStatus == self::TRANSACTION_COMPLETED ||
-              ($newTransactionStatus == self::TRANSACTION_AUTHORIZED && $prevTransactionStatus == self::TRANSACTION_AUTHORIZED);
+            ($newTransactionStatus == self::TRANSACTION_AUTHORIZED && $prevTransactionStatus == self::TRANSACTION_AUTHORIZED);
     }
 
     /**
@@ -1123,7 +1123,7 @@ class Bolt_Boltpay_Model_Payment extends Mage_Payment_Model_Method_Abstract
      */
     public function canReviewPayment(Mage_Payment_Model_Info $payment)
     {
-       return $payment->getAdditionalInformation('bolt_transaction_status') == self::TRANSACTION_REJECTED_REVERSIBLE;
+        return $payment->getAdditionalInformation('bolt_transaction_status') == self::TRANSACTION_REJECTED_REVERSIBLE;
     }
 
     /**

@@ -101,7 +101,7 @@
       <sales_model_service_quote_submit_before>
         <observers>
           <bolt_boltpay_validate_order_before_commit>
-            <class>Bolt_Boltpay_Model_Order</class>
+            <class>Bolt_Boltpay_Model_Observer</class>
             <method>validateBeforeOrderCommit</method>
           </bolt_boltpay_validate_order_before_commit>
         </observers>

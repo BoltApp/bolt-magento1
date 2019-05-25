@@ -105,7 +105,7 @@ class Bolt_Boltpay_ApiController extends Mage_Core_Controller_Front_Action imple
 
                 $orderPayment->setData('auto_capture', $newTransactionStatus == 'completed');
                 $orderPayment->save();
-                
+
                 if($hookType == 'credit'){
                     $transactionAmount = $requestData->amount/100;
                 }
@@ -198,7 +198,7 @@ class Bolt_Boltpay_ApiController extends Mage_Core_Controller_Front_Action imple
      * @throws Zend_Controller_Response_Exception if there is an error in sending a response back to the caller
      * @throws Mage_Core_Model_Store_Exception  if there is a problem locating a reference to the underlying store
      */
-	public function create_orderAction() {
+    public function create_orderAction() {
         try {
             $transaction = $this->getRequestData();
             $immutableQuoteId = $this->boltHelper()->getImmutableQuoteIdFromTransaction($transaction);
@@ -244,7 +244,7 @@ class Bolt_Boltpay_ApiController extends Mage_Core_Controller_Front_Action imple
             $computedCart = Mage::getModel('boltpay/boltOrder')->buildCart($immutableQuote, false );
             $this->boltHelper()->notifyException($orderCreationException, array( 'magento_order_details' => json_encode($computedCart)));
         }
-	}
+    }
 
     /**
      * If present, returns the capture amount on a transaction
@@ -253,7 +253,7 @@ class Bolt_Boltpay_ApiController extends Mage_Core_Controller_Front_Action imple
      *
      * @return float|int|null   returns the transaction amount as a float, if present, otherwise null
      */
-	protected function getCaptureAmount($transaction) {
+    protected function getCaptureAmount($transaction) {
         if(isset($transaction->capture->amount->amount) && is_numeric($transaction->capture->amount->amount)) {
             return $transaction->capture->amount->amount/100;
         }
