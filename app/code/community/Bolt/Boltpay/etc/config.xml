@@ -89,7 +89,7 @@
         <observers>
           <bolt_boltpay_clear_shopping_cart>
             <class>Bolt_Boltpay_Model_Observer</class>
-            <method>clearShoppingCart</method>
+            <method>clearShoppingCartExceptPPCOrder</method>
             <depends>
               <ZZZZZ_Bolt />  <!--  psuedo module to place execution at the back of event queue -->
             </depends>
