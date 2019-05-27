@@ -47,6 +47,7 @@ class Bolt_Boltpay_Model_BoltOrder extends Bolt_Boltpay_Model_Abstract
         'amgiftcard', // https://amasty.com/magento-gift-card.html
         'amstcred', // https://amasty.com/magento-store-credit.html
         'awraf',    //https://ecommerce.aheadworks.com/magento-extensions/refer-a-friend.html#magento1
+        'rewardpoints_after_tax', // Magestore_RewardPoints
     );
 
     /**
