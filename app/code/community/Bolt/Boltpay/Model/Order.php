@@ -384,6 +384,36 @@ class Bolt_Boltpay_Model_Order extends Bolt_Boltpay_Model_Abstract
         return $rateDebuggingData;
     }
 
+    /**
+     * Removes a bolt order from the system.  The order is expected to be a Bolt order
+     *
+     * @param Mage_Sales_Model_Order $order
+     *
+     * @throws Mage_Core_Exception if the order cannot be canceled
+     */
+    public function removePreAuthOrder($order) {
+        if ($this->isBoltOrder($order)) {
+            if ($order->getStatus() !== 'canceled_bolt') {
+                $order->cancel()->setQuoteId(null)->setStatus('canceled_bolt')->save();
+            }
+            $previousStoreId = Mage::app()->getStore()->getId();
+            Mage::app()->setCurrentStore(Mage_Core_Model_App::ADMIN_STORE_ID);
+            $order->delete();
+            Mage::app()->setCurrentStore($previousStoreId);
+        }
+    }
+
+    /**
+     * Determines whether a given order is owned by Bolt
+     *
+     * @param Mage_Sales_Model_Order    $order  the magento order to be inspected
+     *
+     * @return bool true if the payment method for this order is currently set to Bolt, otherwise false
+     */
+    public function isBoltOrder($order) {
+        return (strtolower($order->getPayment()->getMethod()) === Bolt_Boltpay_Model_Payment::METHOD_CODE);
+    }
+
     protected function validateSubmittedOrder($order, $quote) {
         if(empty($order)) {
             $this->boltHelper()->addBreadcrumb(
