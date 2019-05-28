@@ -128,7 +128,8 @@ trait Bolt_Boltpay_Helper_ConfigTrait {
         $checkoutType = Bolt_Boltpay_Block_Checkout_Boltpay::CHECKOUT_TYPE_MULTI_PAGE;
         $config = $this->getPaymentBoltpayConfig('allowed_button_by_custom_routes', $checkoutType);
         // removes all NULL, FALSE and Empty Strings but leaves 0 (zero) values
-        $result = array_filter(explode(',', $config));
+        $configData = explode(',', $config);
+        $result = array_values(array_filter(array_map('trim', $configData), 'strlen'));
 
         return (empty($result)) ? [] : $result;
     }
