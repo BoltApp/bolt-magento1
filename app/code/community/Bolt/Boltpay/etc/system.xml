@@ -178,7 +178,7 @@
             </selector_styles>
 
             <allowed_button_by_custom_routes>
-                <label>Allowed Button By Custom Route(s)</label>
+                <label>Show Bolt Button on Pages By Custom Route(s)</label>
                 <frontend_type>text</frontend_type>
                 <comment>Routes are comma delimited. Leave empty if not require additional custom route.</comment>
                 <sort_order>38</sort_order>
