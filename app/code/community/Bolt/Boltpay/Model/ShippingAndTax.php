@@ -309,9 +309,9 @@ class Bolt_Boltpay_Model_ShippingAndTax extends Bolt_Boltpay_Model_Abstract
      *
      * @return bool     true if P.O. boxes are allowed.  Otherwise, false.
      */
-    public function isPOBoxAllowed()
+    public function isPOBoxAllowed($storeId = null)
     {
-        return Mage::getStoreConfigFlag('payment/boltpay/allow_po_box');
+        return Mage::getStoreConfigFlag('payment/boltpay/allow_po_box', $storeId);
     }
 
     /**
