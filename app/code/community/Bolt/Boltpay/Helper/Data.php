@@ -200,12 +200,6 @@ class Bolt_Boltpay_Helper_Data extends Mage_Core_Helper_Abstract
             case Bolt_Boltpay_Block_Checkout_Boltpay::CHECKOUT_TYPE_PRODUCT_PAGE:
                 $quoteId = Mage::getSingleton('checkout/session')->getQuoteId();
                 $successUrl = $this->getMagentoUrl(Mage::getStoreConfig('payment/boltpay/successpage'), array('checkoutType' => $checkoutType, 'session_quote_id' => $quoteId));
-            default:
-                $javascript .= "
-                    if (order_completed) {
-                        location.href = '$successUrl';
-                    }
-                ";
         }
 
         return $javascript;

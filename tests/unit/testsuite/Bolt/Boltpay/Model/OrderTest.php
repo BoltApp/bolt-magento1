@@ -62,4 +62,50 @@ class Bolt_Boltpay_Model_OrderTest extends PHPUnit_Framework_TestCase
 
         $this->assertFalse($result);
     }
+
+    /**
+     * Test whether flags are correctly set after an email is sent and that no exceptions are thrown in the process
+     */
+    public function testSendOrderEmail()
+    {
+        /** @var Bolt_Boltpay_Model_Order $orderModel */
+        $orderModel = Mage::getModel('boltpay/order');
+
+        /** @var Mage_Sales_Model_Order $order */
+        $this->order = $this->getMockBuilder('Mage_Sales_Model_Order')
+            ->setMethods(array('getPayment', 'addStatusHistoryComment', 'queueNewOrderEmail'))
+            ->getMock();
+
+        $orderPayment = $this->getMockBuilder('Mage_Sales_Model_Order_Payment')
+            ->setMethods(['save'])
+            ->enableOriginalConstructor()
+            ->getMock();
+
+        $this->order->method('getPayment')
+            ->willReturn($orderPayment);
+
+        $this->order->setIncrementId(187);
+
+        $history = Mage::getModel('sales/order_status_history');
+
+        $this->order->expects($this->once())
+            ->method('queueNewOrderEmail');
+
+        $this->order->expects($this->once())
+            ->method('addStatusHistoryComment')
+            ->willReturn($history);
+
+        $this->assertNull($history->getIsCustomerNotified());
+        $this->assertNull($orderPayment->getAdditionalInformation("orderEmailWasSent"));
+
+        try {
+            $orderModel->sendOrderEmail($this->order);
+        } catch ( Exception $e ) {
+            $this->fail('An exception was thrown while sending the email');
+        }
+
+        $this->assertTrue($history->getIsCustomerNotified());
+        $this->assertEquals('true', $orderPayment->getAdditionalInformation("orderEmailWasSent"));
+    }
+
 }
