@@ -381,6 +381,8 @@ class Bolt_Boltpay_Model_Order extends Bolt_Boltpay_Model_Abstract
             if ($mustSendEmail) {
                 $order->queueNewOrderEmail();
                 $order->getPayment()->setAdditionalInformation("orderEmailWasSent", "true")->save();
+                $history = $order->addStatusHistoryComment( $this->boltHelper()->__('Email sent for order %s', $order->getIncrementId()) );
+                $history->setIsCustomerNotified(true);
             }
         } catch (Exception $e) {
             // Catches errors that occur when sending order email confirmation (e.g. external API is down)
@@ -389,8 +391,6 @@ class Bolt_Boltpay_Model_Order extends Bolt_Boltpay_Model_Abstract
             $this->boltHelper()->notifyException($error);
             return;
         }
-        $history = $order->addStatusHistoryComment( $this->boltHelper()->__('Email sent for order %s', $order->getIncrementId()) );
-        $history->setIsCustomerNotified(true);
     }
 
     /**

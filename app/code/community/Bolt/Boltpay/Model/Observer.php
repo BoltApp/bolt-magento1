@@ -56,7 +56,7 @@ class Bolt_Boltpay_Model_Observer
     }
 
     /**
-     * Event handler called after Bolt confirms order authorization
+     * Event handler called after Bolt confirms payment authorization
      *
      * event: bolt_boltpay_authorization_after
      *
@@ -81,7 +81,8 @@ class Bolt_Boltpay_Model_Observer
     /**
      * Clears the Shopping Cart except product page checkout order after the success page
      *
-     * @param Varien_Event_Observer $observer   An Observer object with an empty event object*
+     * @param Varien_Event_Observer $observer   An Observer object with an empty event object
+     *
      * Event: checkout_onepage_controller_success_action
      * @param $observer
      */
