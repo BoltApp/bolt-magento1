@@ -146,24 +146,6 @@ class Bolt_Boltpay_Model_Observer
         }
     }
 
-    /**
-     * If the session quote has been flagged by having a parent quote Id equal to its own
-     * id, this will clear the cart cache, which, in turn, forces the creation of a new Bolt order
-     *
-     * event: controller_front_init_before
-     *
-     * @param Varien_Event_Observer $observer event contains front (Mage_Core_Controller_Varien_Front)
-     */
-    public function clearCartCacheOnOrderCanceled($observer) {
-        /** @var Mage_Sales_Model_Quote $quote */
-        $quote = Mage::getSingleton('checkout/session')->getQuote();
-        if ($quote && is_int($quote->getId()) && $quote->getId() === $quote->getParentQuoteId()) {
-            Mage::getSingleton('core/session')->unsCachedCartData();
-            // clear the parent quote ID to re-enable cart cache
-            $quote->setParentQuoteId(null);
-        }
-    }
-
     public function sendCompleteAuthorizeRequest($request)
     {
         return $this->boltHelper()->transmit('complete_authorize', $request);
