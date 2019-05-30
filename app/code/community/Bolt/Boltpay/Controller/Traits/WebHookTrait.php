@@ -32,6 +32,11 @@ trait Bolt_Boltpay_Controller_Traits_WebHookTrait {
     protected $payload;
 
     /**
+     * @var bool mandates that all request to this controller must be signed
+     */
+    protected $requestMustBeSigned = true;
+
+    /**
      * For JSON, clears response body and header, and sets headers.
      * After this, verifies request is from Bolt, if not, sends error message response
      *
@@ -49,9 +54,10 @@ trait Bolt_Boltpay_Controller_Traits_WebHookTrait {
             ->setHeader('Content-type', 'application/json', true);
         $this->getLayout()->setDirectOutput(true);
 
-        $this->payload = file_get_contents('php://input');
-
-        $this->verifyBoltSignature($this->payload, @$_SERVER['HTTP_X_BOLT_HMAC_SHA256']);
+        if ($this->requestMustBeSigned) {
+            $this->payload = file_get_contents('php://input');
+            $this->verifyBoltSignature($this->payload, @$_SERVER['HTTP_X_BOLT_HMAC_SHA256']);
+        }
 
         return parent::preDispatch();
     }
