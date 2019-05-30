@@ -79,14 +79,21 @@ class Bolt_Boltpay_Model_Observer
     }
 
     /**
-     * Clears the Shopping Cart after the success page
+     * Clears the Shopping Cart except product page checkout order after the success page
      *
      * @param Varien_Event_Observer $observer   An Observer object with an empty event object*
      * Event: checkout_onepage_controller_success_action
+     * @param $observer
      */
-    public function clearShoppingCart($observer) {
+    public function clearShoppingCartExceptPPCOrder()
+    {
         $cartHelper = Mage::helper('checkout/cart');
-        $cartHelper->getCart()->truncate()->save();
+        if (Mage::app()->getRequest()->getParam('checkoutType') == Bolt_Boltpay_Block_Checkout_Boltpay::CHECKOUT_TYPE_PRODUCT_PAGE) {
+            $quoteId = Mage::app()->getRequest()->getParam('session_quote_id');
+            Mage::getSingleton('checkout/session')->setQuoteId($quoteId);
+        } else {
+            $cartHelper->getCart()->truncate()->save();
+        }
     }
 
     /**

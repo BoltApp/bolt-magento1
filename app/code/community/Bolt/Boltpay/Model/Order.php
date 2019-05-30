@@ -298,6 +298,10 @@ class Bolt_Boltpay_Model_Order extends Bolt_Boltpay_Model_Abstract
         );
         ///////////////////////////////////////////////////////
 
+        if ($immutableQuote->getData('is_bolt_pdp') && Mage::getSingleton('customer/session')->isLoggedIn()) {
+            $this->associateOrderToCustomerWhenPlacingOnPDP($order->getData('increment_id'));
+        }
+
         if ($sessionQuoteId) {
             $checkoutSession = Mage::getSingleton('checkout/session');
             $checkoutSession
@@ -312,6 +316,24 @@ class Bolt_Boltpay_Model_Order extends Bolt_Boltpay_Model_Abstract
         }
 
         return $order;
+    }
+
+    /**
+     * Associate order to customer when placing on product detail page
+     * @param $orderIncrementId
+     */
+    protected function associateOrderToCustomerWhenPlacingOnPDP($orderIncrementId){
+        $customer = Mage::getSingleton('customer/session')->getCustomer();
+
+        $order = Mage::getModel('sales/order')->loadByIncrementId($orderIncrementId);
+        $order->setCustomerId($customer->getId())
+            ->setCustomerEmail($customer->getEmail())
+            ->setCustomerFirstname($customer->getFirstname())
+            ->setCustomerLastname($customer->getLastname())
+            ->setCustomerIsGuest(0)
+            ->setCustomerGroupId($customer->getGroupId());
+
+        $order->save();
     }
 
     /**
