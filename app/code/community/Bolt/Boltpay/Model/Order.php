@@ -269,8 +269,13 @@ class Bolt_Boltpay_Model_Order extends Bolt_Boltpay_Model_Abstract
         // We set the created_at and updated_at date to null to hide the order from ERP until authorized
         $this->removeOrderTimeStamps($order);
 
-        $recurringPaymentProfiles = $service->getRecurringPaymentProfiles();
+        ///////////////////////////////////////////////////////
+        /// Dispatch order save events
+        ///////////////////////////////////////////////////////
+        Mage::dispatchEvent('bolt_boltpay_order_creation_after', array('order'=>$order, 'quote'=>$immutableQuote, 'transaction' => $transaction));
 
+        $recurringPaymentProfiles = $service->getRecurringPaymentProfiles();
+        
         Mage::dispatchEvent(
             'checkout_submit_all_after',
             array('order' => $order, 'quote' => $immutableQuote, 'recurring_profiles' => $recurringPaymentProfiles)
