@@ -86,7 +86,7 @@ class Bolt_Boltpay_Model_Observer
             }
         }
     }
-
+    
     /**
      * Hides the Bolt Pre-auth order states from the admin->Sales->Order list
      *
@@ -94,7 +94,7 @@ class Bolt_Boltpay_Model_Observer
      *
      * @param Varien_Event_Observer $observer Observer event contains an orderGridCollection object
      */
-    public function filterPreAuthOrders($observer) {
+    public function hidePreAuthOrders($observer) {
         if ($this->boltHelper()->getExtraConfig('displayPreAuthOrders')) { return; }
 
         /** @var Mage_Sales_Model_Resource_Order_Grid_Collection $orderGridCollection */
