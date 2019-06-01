@@ -5,45 +5,10 @@
  */
 class Bolt_Boltpay_Model_ObserverTest extends PHPUnit_Framework_TestCase
 {
-    const CUSTOMER_ID = 100;
-    const QUOTE_ID = 200;
-    const QUOTE_PAYMENT_ID = 300;
-    const CUSTOMER_EMAIL = 'abc@test.com';
-    const CUSTOMER_BOLT_USER_ID = "13456";
-
     /**
      * @var int|null
      */
     private static $productId = null;
-
-    /**
-     * @var Mage_Sales_Model_Quote
-     */
-    private $quote = null;
-    /**
-     * @var Mage_Sales_Model_Order
-     */
-    private $order = null;
-
-    /**
-     * @var Mage_Customer_Model_Session
-     */
-    private $session = null;
-
-    /**
-     * @var Mage_Sales_Model_Quote_Payment
-     */
-    private $quotePayment = null;
-
-    /**
-     * @var Mage_Sales_Model_Order_Payment
-     */
-    private $orderPayment = null;
-
-    /**
-     * @var Mage_Customer_Model_Customer
-     */
-    private $customer = null;
 
     /**
      * Generate dummy products for testing purposes
@@ -67,67 +32,12 @@ class Bolt_Boltpay_Model_ObserverTest extends PHPUnit_Framework_TestCase
 
     /**
      * @inheritdoc
-     *
-     * @throws Varien_Exception
-     */
-    public function setUp()
-    {
-        $this->order = $this->getMockBuilder('Mage_Sales_Model_Order')
-            ->disableOriginalClone()
-            ->disableArgumentCloning()
-            ->setMethods(['save','addStatusHistoryComment'])
-            ->getMock();
-
-        $history = $this->getMockBuilder('Mage_Sales_Model_Order_Status_History')
-            ->disableOriginalConstructor()
-            ->disableOriginalClone()
-            ->disableArgumentCloning()
-            ->getMock();
-
-        $this->order->expects($this->any())
-            ->method('addStatusHistoryComment')
-            ->willReturn($history);
-
-        $this->session  = Mage::getSingleton('customer/session');
-        $this->quote    = Mage::getSingleton('checkout/session')->getQuote();
-
-        $this->orderPayment = $this->getMockBuilder('Mage_Sales_Model_Order_Payment')
-            ->disableOriginalClone()
-            ->disableArgumentCloning()
-            ->setMethods(['getMethod', 'save'])
-            ->getMock();
-
-        $this->orderPayment
-            ->method('getMethod')
-            ->willReturn(Bolt_Boltpay_Model_Payment::METHOD_CODE);
-
-        $this->order->setPayment($this->orderPayment);
-        $this->customer = Mage::getModel('customer/customer');
-    }
-
-    /**
-     * @inheritdoc
      */
     public function testCheckObserverClass()
     {
         $observer = Mage::getModel('boltpay/Observer');
 
         $this->assertInstanceOf('Bolt_Boltpay_Model_Observer', $observer);
-    }
-
-    /**
-     * @inheritdoc
-     * @throws Varien_Exception
-     */
-    public function testSetBoltUserId()
-    {
-        $this->setEmptyQuoteWithCustomer();
-
-        $this->session->setBoltUserId(self::CUSTOMER_BOLT_USER_ID);
-
-        Mage::dispatchEvent('bolt_boltpay_authorization_after', array('order' => $this->order, 'quote' => $this->quote, 'reference' => 'BOLT-TEST-REF4-BTID'));
-
-        $this->assertEquals(self::CUSTOMER_BOLT_USER_ID, $this->quote->getCustomer()->getBoltUserId());
     }
 
     /**
@@ -161,15 +71,6 @@ class Bolt_Boltpay_Model_ObserverTest extends PHPUnit_Framework_TestCase
         Mage::dispatchEvent('sales_order_payment_capture', array('payment' => $orderPayment));
 
         $this->assertEquals('Magento Order ID: "'.$incrementId.'".', $orderPayment->getData('prepared_message'));
-    }
-
-    /**
-     * Test if complete authorize successfully adds reference to the payment
-     */
-    public function testCompleteAuthorize()
-    {
-        Mage::dispatchEvent('bolt_boltpay_authorization_after', array('order' => $this->order, 'quote' => $this->quote, 'reference' => 'TEST-BOLT-REFE-RENC'));
-        $this->assertEquals('TEST-BOLT-REFE-RENC', $this->orderPayment->getAdditionalInformation('bolt_reference'));
     }
 
     /**
@@ -257,17 +158,5 @@ class Bolt_Boltpay_Model_ObserverTest extends PHPUnit_Framework_TestCase
         $checkout->saveShippingMethod('flatrate_flatrate');
 
         return $cart;
-    }
-
-    /**
-     * @inheritdoc
-     * @throws Varien_Exception
-     */
-    private function setEmptyQuoteWithCustomer()
-    {
-        $this->customer->setId(self::CUSTOMER_ID);
-        $this->customer->setEmail(self::CUSTOMER_EMAIL);
-
-        $this->quote->setCustomer($this->customer);
     }
 }

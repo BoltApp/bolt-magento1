@@ -218,13 +218,16 @@ JS;
 
 
     /**
+     * @todo revise method for enabling and disabling datadog
+     *
      * @param $rawConfigValue
      * @param array $additionalParams
      * @return string
      */
     public function filterDatadogKeySeverity($rawConfigValue, $additionalParams = array())
     {
-        return strlen(trim($rawConfigValue)) ? trim($rawConfigValue) : Bolt_Boltpay_Helper_DataDogTrait::$defaultSeverityConfig;
+        $allExtraConfigs = (array)json_decode($this->normalizeJSON(Mage::getStoreConfig('payment/boltpay/extra_options')), true);
+        return (array_key_exists("datadogKeySeverity", $allExtraConfigs)) ? $rawConfigValue : Bolt_Boltpay_Helper_DataDogTrait::$defaultSeverityConfig;
     }
 
     /**
@@ -246,7 +249,7 @@ JS;
      * @return bool     True if the value is positive and integer
      */
     public function hasValidPriceFaultTolerance($priceTolerance) {
-        if (is_int($priceTolerance) && ($priceTolerance > 0) ) {
+        if (is_int($priceTolerance) && ($priceTolerance >= 0) ) {
             return true;
         }
 
@@ -260,7 +263,7 @@ JS;
     }
 
     /**
-     * Defines the default value as a 1 cent tolerance for Bolt and Magento grand total
+     * Defines the default value as a 0 cent tolerance for Bolt and Magento grand total
      * difference
      *
      * @param int|string $rawConfigValue    The config value pre-filter. Will be an int or an empty string
@@ -269,7 +272,7 @@ JS;
      * @return int  the number defined in the extra config admin.  If not defined, the default of 1
      */
     public function filterPriceFaultTolerance($rawConfigValue, $additionalParams = array() ) {
-        return is_int($rawConfigValue) ? $rawConfigValue : 1;
+        return is_int($rawConfigValue) ? $rawConfigValue : 0;
     }
 
     /**
