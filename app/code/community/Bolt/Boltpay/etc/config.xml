@@ -117,6 +117,15 @@
           </boltpay_payment_capture_add_message>
         </observers>
       </sales_order_payment_capture>
+      <sales_order_grid_collection_load_before>
+          <observers>
+              <bolt_boltpay_filter_preauth_orders>
+                  <type>singleton</type>
+                  <class>Bolt_Boltpay_Model_Observer</class>
+                  <method>hidePreAuthOrders</method>
+              </bolt_boltpay_filter_preauth_orders>
+          </observers>
+      </sales_order_grid_collection_load_before>
       <sales_order_place_after>
         <observers>
           <set_initial_order_status_and_details>
