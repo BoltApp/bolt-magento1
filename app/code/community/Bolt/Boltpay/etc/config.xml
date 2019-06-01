@@ -122,7 +122,7 @@
               <bolt_boltpay_filter_preauth_orders>
                   <type>singleton</type>
                   <class>Bolt_Boltpay_Model_Observer</class>
-                  <method>filterPreAuthOrders</method>
+                  <method>hidePreAuthOrders</method>
               </bolt_boltpay_filter_preauth_orders>
           </observers>
       </sales_order_grid_collection_load_before>
