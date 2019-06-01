@@ -455,57 +455,59 @@ class Bolt_Boltpay_Model_Order extends Bolt_Boltpay_Model_Abstract
      */
     protected function validateCoupons(Mage_Sales_Model_Quote $immutableQuote, $transaction) {
 
-        if (@$transaction->order->cart->discounts) {
-            /*
-             * Natively, Magento only supports one coupon code per order, but we can build
-             * basic support here for plugins like Amasty or custom solutions that implement
-             * multiple coupons.
-             *
-             * Here, we use "," to delimit multiple coupon codes like Amasty and popular multi-coupon
-             * custom code strategies.  This implementation also supports standard magento single coupon
-             * format.
-             */
-            foreach($transaction->order->cart->discounts as $boltCoupon) {
+        if (!@$transaction->order->cart->discounts) {
+            return;
+        }
 
-                if (@$boltCoupon->reference) {
-                    $magentoCoupon = Mage::getModel('salesrule/coupon')->load($boltCoupon->reference, 'code');
-                    $couponExists = (bool) $magentoCoupon->getId();
+        /*
+         * Natively, Magento only supports one coupon code per order, but we can build
+         * basic support here for plugins like Amasty or custom solutions that implement
+         * multiple coupons.
+         *
+         * Here, we use "," to delimit multiple coupon codes like Amasty and popular multi-coupon
+         * custom code strategies.  This implementation also supports standard magento single coupon
+         * format.
+         */
+        foreach($transaction->order->cart->discounts as $boltCoupon) {
 
-                    if ($couponExists) {
+            if (@$boltCoupon->reference) {
+                $magentoCoupon = Mage::getModel('salesrule/coupon')->load($boltCoupon->reference, 'code');
+                $couponExists = (bool) $magentoCoupon->getId();
 
-                        $magentoCouponCodes = $immutableQuote->getCouponCode() ? explode(',', (string) $immutableQuote->getCouponCode()) : array();
+                if ($couponExists) {
 
-                        if (!in_array($boltCoupon->reference, $magentoCouponCodes)) {
-                            /** @var Mage_SalesRule_Model_Rule $rule */
-                            $rule = Mage::getModel('salesrule/rule')->load($magentoCoupon->getRuleId());
-                            $toTime = $rule->getToDate() ? ((int) strtotime($rule->getToDate()) + Mage_CatalogRule_Model_Resource_Rule::SECONDS_IN_DAY - 1) : 0;
-                            $now = Mage::getModel('core/date')->gmtTimestamp('Today');
+                    $magentoCouponCodes = $immutableQuote->getCouponCode() ? explode(',', (string) $immutableQuote->getCouponCode()) : array();
 
-                            if ( $toTime && $toTime < $now ) {
-                                throw new Bolt_Boltpay_OrderCreationException(
-                                    OCE::E_BOLT_DISCOUNT_CANNOT_APPLY,
-                                    OCE::E_BOLT_DISCOUNT_CANNOT_APPLY_TMPL_EXPIRED,
-                                    array($boltCoupon->reference)
-                                );
-                            }
+                    if (!in_array($boltCoupon->reference, $magentoCouponCodes)) {
+                        /** @var Mage_SalesRule_Model_Rule $rule */
+                        $rule = Mage::getModel('salesrule/rule')->load($magentoCoupon->getRuleId());
+                        $toTime = $rule->getToDate() ? ((int) strtotime($rule->getToDate()) + Mage_CatalogRule_Model_Resource_Rule::SECONDS_IN_DAY - 1) : 0;
+                        $now = Mage::getModel('core/date')->gmtTimestamp('Today');
 
+                        if ( $toTime && $toTime < $now ) {
                             throw new Bolt_Boltpay_OrderCreationException(
                                 OCE::E_BOLT_DISCOUNT_CANNOT_APPLY,
-                                OCE::E_BOLT_DISCOUNT_CANNOT_APPLY_TMPL_GENERIC,
-                                array("Coupon criteria was not met.", $boltCoupon->reference)
+                                OCE::E_BOLT_DISCOUNT_CANNOT_APPLY_TMPL_EXPIRED,
+                                array($boltCoupon->reference)
                             );
                         }
 
-                    } else {
                         throw new Bolt_Boltpay_OrderCreationException(
-                            OCE::E_BOLT_DISCOUNT_DOES_NOT_EXIST,
-                            OCE::E_BOLT_DISCOUNT_DOES_NOT_EXIST_TMPL,
-                            array($boltCoupon->reference)
+                            OCE::E_BOLT_DISCOUNT_CANNOT_APPLY,
+                            OCE::E_BOLT_DISCOUNT_CANNOT_APPLY_TMPL_GENERIC,
+                            array("Coupon criteria was not met.", $boltCoupon->reference)
                         );
                     }
-                }
 
+                } else {
+                    throw new Bolt_Boltpay_OrderCreationException(
+                        OCE::E_BOLT_DISCOUNT_DOES_NOT_EXIST,
+                        OCE::E_BOLT_DISCOUNT_DOES_NOT_EXIST_TMPL,
+                        array($boltCoupon->reference)
+                    );
+                }
             }
+
         }
     }
 
@@ -540,46 +542,61 @@ class Bolt_Boltpay_Model_Order extends Bolt_Boltpay_Model_Abstract
         /////////////////////////////////////////////////////////////////////////
         /// Historically, we have honored a price tolerance of 1 cent on
         /// an order due calculations outside of the Magento framework context
-        /// for discounts, shipping and tax.  We must still respect this
+        /// for discounts, shipping and tax.  We must still respect this feature
         /// and adjust the order final price according to fault tolerance which
-        /// will default to one cent unless a hidden option overrides this value
+        /// will now default to 0 cent unless a hidden option overrides this value
         /////////////////////////////////////////////////////////////////////////
         $priceFaultTolerance = $this->boltHelper()->getExtraConfig('priceFaultTolerance');
 
         $magentoDiscountTotal = (int)(($immutableQuote->getBaseSubtotal() - $immutableQuote->getBaseSubtotalWithDiscount()) * 100);
         $boltDiscountTotal = (int)$transaction->order->cart->discount_amount->amount;
-        if (abs($magentoDiscountTotal - $boltDiscountTotal) > $priceFaultTolerance) {
+        $difference = abs($magentoDiscountTotal - $boltDiscountTotal);
+        if ( $difference > $priceFaultTolerance ) {
             throw new Bolt_Boltpay_OrderCreationException(
                 OCE::E_BOLT_CART_HAS_EXPIRED,
                 OCE::E_BOLT_CART_HAS_EXPIRED_TMPL_DISCOUNT,
                 array($boltDiscountTotal, $magentoDiscountTotal)
             );
+        } else if ($difference) {
+            $message = "Discount differed by $difference cents.  Bolt: $boltDiscountTotal | Magento: $magentoDiscountTotal";
+            $this->boltHelper()->logWarning($message);
+            $this->boltHelper()->notifyException(new Exception($message), [], 'warning' );
         }
 
         if ( !$immutableQuote->isVirtual() ) {
             $shippingAddress = $immutableQuote->getShippingAddress();
             $magentoShippingTotal = (int) (($shippingAddress->getShippingAmount() - $shippingAddress->getBaseShippingDiscountAmount()) * 100);
             $boltShippingTotal = (int)$transaction->order->cart->shipping_amount->amount;
-            if (abs($magentoShippingTotal - $boltShippingTotal)  > $priceFaultTolerance) {
+            $difference = abs($magentoShippingTotal - $boltShippingTotal);
+            if ( $difference > $priceFaultTolerance ) {
                 throw new Bolt_Boltpay_OrderCreationException(
                     OCE::E_BOLT_SHIPPING_PRICE_HAS_BEEN_UPDATED,
                     OCE::E_BOLT_SHIPPING_PRICE_HAS_BEEN_UPDATED_TMPL,
                     array($boltShippingTotal, $magentoShippingTotal)
                 );
+            } else if ($difference) {
+                $message = "Shipping differed by $difference cents.  Bolt: $boltShippingTotal | Magento: $magentoShippingTotal";
+                $this->boltHelper()->logWarning($message);
+                $this->boltHelper()->notifyException(new Exception($message), [], 'warning' );
             }
 
-            // Shipping Tax totals is used for to supply the total tax total for round error purposes.  Therefore,
-            // we do not validate that total, but only the full tax total
+            // Shipping Tax totals is used for supplying the total tax total for rounding error purposes.  Therefore,
+            // we do not validate the shipping tax total. We only validate the full tax total
         }
 
         $magentoTaxTotal = (int)(( @$magentoTotals['tax']) ? round($magentoTotals['tax']->getValue() * 100) : 0 );
         $boltTaxTotal = (int)$transaction->order->cart->tax_amount->amount;
-        if (abs($magentoTaxTotal - $boltTaxTotal) > $priceFaultTolerance) {
+        $difference = abs($magentoTaxTotal - $boltTaxTotal);
+        if ( $difference > $priceFaultTolerance ) {
             throw new Bolt_Boltpay_OrderCreationException(
                 OCE::E_BOLT_CART_HAS_EXPIRED,
                 OCE::E_BOLT_CART_HAS_EXPIRED_TMPL_TAX,
                 array($boltTaxTotal, $magentoTaxTotal)
             );
+        } else if ($difference) {
+            $message = "Tax differed by $difference cents.  Bolt: $boltTaxTotal | Magento: $magentoTaxTotal";
+            $this->boltHelper()->logWarning($message);
+            $this->boltHelper()->notifyException(new Exception($message), [], 'warning' );
         }
     }
 

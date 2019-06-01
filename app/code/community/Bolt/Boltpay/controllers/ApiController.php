@@ -209,7 +209,7 @@ class Bolt_Boltpay_ApiController extends Mage_Core_Controller_Front_Action imple
 
             if ($order->isObjectNew()) {
                 /** @var Mage_Sales_Model_Order $order */
-                $order = Mage::getModel('boltpay/order')->createOrder($reference = null, $sessionQuoteId = null, $isPreAuthCreation = true, $transaction);
+                $order = $orderModel->createOrder($reference = null, $sessionQuoteId = null, $isPreAuthCreation = true, $transaction);
             } else {
                 if ($order->getStatus() === 'canceled_bolt') {
                     throw new Bolt_Boltpay_OrderCreationException(
