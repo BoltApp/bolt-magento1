@@ -353,20 +353,70 @@ class Bolt_Boltpay_Model_Order extends Bolt_Boltpay_Model_Abstract
     }
 
     /**
-     * Called after order is authorized on Bolt.
+     * Called after pre-auth order is confirmed as authorized on Bolt.
      *
      * @param string $orderIncrementId  customer facing order id
      * @param object $payload           payload sent from Bolt
+     *
+     * @throws Mage_Core_Exception if there is a problem retrieving the bolt transaction reference from the payload
      */
     public function receiveOrder( $orderIncrementId, $payload ) {
         /** @var Mage_Sales_Model_Order $order */
         $order = Mage::getModel('sales/order')->loadByIncrementId($orderIncrementId);
         $payloadObject = json_decode($payload);
         $immutableQuote = $this->getQuoteFromOrder($order);
-        ///////////////////////////////////////////////////////
-        /// Dispatch order save events
-        ///////////////////////////////////////////////////////
-        Mage::dispatchEvent('bolt_boltpay_authorization_after', array('order'=>$order, 'quote'=>$immutableQuote, 'reference' => $payloadObject->transaction_reference));
+
+        Mage::dispatchEvent('bolt_boltpay_order_received_before', array('order'=>$order, 'payload' => $payloadObject));
+
+        $this->activateOrder($order, $payloadObject);
+        $this->setBoltUserId($immutableQuote);
+
+        Mage::dispatchEvent('bolt_boltpay_order_received_after', array('order'=>$order, 'payload' => $payloadObject));
+    }
+
+    /**
+     * Performs the appropriate actions after a pre-auth order is confirmed to be transitioned to a
+     * standard Magento order.
+     *
+     * @param Mage_Sales_Model_Order $order           The order than is has a confirmed authorization that is still at Bolt
+     * @param object                 $payloadObject   The payload which contains the Bolt transaction reference
+     *
+     * @throws Mage_Core_Exception if the bolt transaction reference is an object instead of expected string
+     */
+    private function activateOrder(Mage_Sales_Model_Order $order, $payloadObject)
+    {
+        if (empty($order->getCreatedAt())) { $order->setCreatedAt(Mage::getModel('core/date')->gmtDate())->save(); }
+        $this->getParentQuoteFromOrder($order)->setIsActive(false)->save();
+        $order->getPayment()->setAdditionalInformation('bolt_reference', $payloadObject->transaction_reference)->save();
+        $this->sendOrderEmail($order);
+    }
+
+    /**
+     *  Adds the Bolt User Id to a newly registered customer.
+     *
+     * @param $quote    The quote copy used to create the Bolt order
+     */
+    private function setBoltUserId($quote)
+    {
+        $session = Mage::getSingleton('customer/session');
+
+        try {
+            $customer = $quote->getCustomer();
+            $boltUserId = $session->getBoltUserId();
+
+            if ($customer != null && $boltUserId != null) {
+                if ($customer->getBoltUserId() == null || $customer->getBoltUserId() == 0) {
+                    //Mage::log("Bolt_Boltpay_Model_Observer.saveOrderAfter: Adding bolt_user_id to the customer from the quote", null, 'bolt.log');
+                    $customer->setBoltUserId($boltUserId);
+                    $customer->save();
+                }
+            }
+        } catch (Exception $e) {
+            $this->boltHelper()->notifyException($e);
+            $this->boltHelper()->logException($e);
+        }
+
+        $session->unsBoltUserId();
     }
 
     /**

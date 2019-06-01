@@ -1,67 +1,26 @@
 <?php
 
 require_once('TestHelper.php');
+require_once('MockingTrait.php');
+
+use Bolt_Boltpay_TestHelper as TestHelper;
 
 /**
  * Class Bolt_Boltpay_Model_OrderTest
  */
 class Bolt_Boltpay_Model_OrderTest extends PHPUnit_Framework_TestCase
 {
-    /**
-     * @var int|null
-     */
-    private static $productId = null;
+    use Bolt_Boltpay_MockingTrait;
 
     /**
-     * @var Bolt_Boltpay_TestHelper|null
+     * @var string The class name of the subject of these test
      */
-    private $testHelper = null;
+    protected $testClassName = 'Bolt_Boltpay_Model_Order';
 
     /**
-     * @var Bolt_Boltpay_Model_Order
+     * @var Bolt_Boltpay_Model_Order  The mocked instance the test class
      */
-    private $currentMock;
-
-    private $app;
-
-    public function setUp()
-    {
-        $this->app = Mage::app('default');
-        $this->app->getStore()->resetConfig();
-        $this->currentMock = Mage::getModel('boltpay/order');
-        $this->testHelper = new Bolt_Boltpay_TestHelper();
-    }
-
-    protected function tearDown()
-    {
-        Mage::getSingleton('checkout/cart')->truncate()->save();
-    }
-
-    /**
-     * Generate dummy products for testing purposes
-     */
-    public static function setUpBeforeClass()
-    {
-        // Create some dummy product:
-        self::$productId = Bolt_Boltpay_ProductProvider::createDummyProduct('PHPUNIT_TEST_' . 1);
-    }
-
-    /**
-     * Delete dummy products after the test
-     */
-    public static function tearDownAfterClass()
-    {
-        Bolt_Boltpay_ProductProvider::deleteDummyProduct(self::$productId);
-    }
-
-    public function testGetOutOfStockSKUs()
-    {
-        $cart = $this->testHelper->addProduct(self::$productId, 2);
-
-        $result = (bool)$this->currentMock->getOutOfStockSKUs($cart->getQuote());
-
-        $this->assertFalse($result);
-    }
+    private $testClassMock;
 
     /**
      * Test whether flags are correctly set after an email is sent and that no exceptions are thrown in the process
@@ -72,26 +31,26 @@ class Bolt_Boltpay_Model_OrderTest extends PHPUnit_Framework_TestCase
         $orderModel = Mage::getModel('boltpay/order');
 
         /** @var Mage_Sales_Model_Order $order */
-        $this->order = $this->getMockBuilder('Mage_Sales_Model_Order')
+        $order = $this->getClassPrototype('Mage_Sales_Model_Order')
             ->setMethods(array('getPayment', 'addStatusHistoryComment', 'queueNewOrderEmail'))
             ->getMock();
 
-        $orderPayment = $this->getMockBuilder('Mage_Sales_Model_Order_Payment')
+        $orderPayment = $this->getClassPrototype('Mage_Sales_Model_Order_Payment')
             ->setMethods(['save'])
             ->enableOriginalConstructor()
             ->getMock();
 
-        $this->order->method('getPayment')
+        $order->method('getPayment')
             ->willReturn($orderPayment);
 
-        $this->order->setIncrementId(187);
+        $order->setIncrementId(187);
 
         $history = Mage::getModel('sales/order_status_history');
 
-        $this->order->expects($this->once())
+        $order->expects($this->once())
             ->method('queueNewOrderEmail');
 
-        $this->order->expects($this->once())
+        $order->expects($this->once())
             ->method('addStatusHistoryComment')
             ->willReturn($history);
 
@@ -99,7 +58,7 @@ class Bolt_Boltpay_Model_OrderTest extends PHPUnit_Framework_TestCase
         $this->assertNull($orderPayment->getAdditionalInformation("orderEmailWasSent"));
 
         try {
-            $orderModel->sendOrderEmail($this->order);
+            $orderModel->sendOrderEmail($order);
         } catch ( Exception $e ) {
             $this->fail('An exception was thrown while sending the email');
         }
@@ -108,4 +67,94 @@ class Bolt_Boltpay_Model_OrderTest extends PHPUnit_Framework_TestCase
         $this->assertEquals('true', $orderPayment->getAdditionalInformation("orderEmailWasSent"));
     }
 
+    /**
+     * Test if setBoltUserId successfully associates Bolt customer ID with the Magento customer
+     */
+    public function testSetBoltUserId()
+    {
+        $this->testClassMock = $this->getTestClassPrototype()
+            ->setMethods(null)
+            ->getMock();
+
+        $customer = Mage::getModel('customer/customer');
+        $quote = Mage::getModel('Mage_Sales_Model_Quote');
+
+        $quote->setCustomer($customer);
+
+        $session  = Mage::getSingleton('customer/session');
+        $session->setBoltUserId(911);
+
+        $this->assertEquals(911, $session->getBoltUserId());
+        $this->assertEmpty($quote->getCustomer()->getBoltUserId());
+
+        TestHelper::callNonPublicFunction(
+            $this->testClassMock,
+            'setBoltUserId',
+            [$quote]
+        );
+
+        $this->assertEmpty($session->getBoltUserId());
+        $this->assertEquals(911, $quote->getCustomer()->getBoltUserId());
+    }
+
+    /**
+     * Test if activateOrder successfully adds reference to the payment
+     */
+    public function testActivateOrder()
+    {
+        $quote = new Mage_Sales_Model_Quote();
+        $quote->setIsActive(true);
+
+        $this->testClassMock = $this->getTestClassPrototype()
+            ->setMethods(['getParentQuoteFromOrder', 'sendOrderEmail'])
+            ->getMock();
+
+        $this->testClassMock->expects($this->exactly(2))
+            ->method('getParentQuoteFromOrder')
+            ->willReturn($quote);
+
+        $payment = $this->getClassPrototype('Mage_Sales_Model_Order_Payment')
+            ->setMethods(['save'])
+            ->getMock();
+
+        $order = $this->getClassPrototype('Mage_Sales_Model_Order')
+            ->setMethods(['save','getPayment'])
+            ->getMock();
+
+        $order->expects($this->exactly(2))
+            ->method('getPayment')
+            ->willReturn($payment);
+
+        ////////////////////////////////////////////////////////////
+        /// First call
+        ////////////////////////////////////////////////////////////
+        $this->assertEmpty( $order->getCreatedAt() );
+        $this->assertTrue( (bool)$quote->getIsActive() );
+        $this->assertEmpty($payment->getAdditionalInformation('bolt_reference'));
+
+        TestHelper::callNonPublicFunction(
+            $this->testClassMock,
+            'activateOrder',
+            [$order, json_decode('{"transaction_reference" : "TEST-BOLT-REFE-RENC"}')]
+        );
+
+        $this->assertNotEmpty( $order->getCreatedAt() );
+        $this->assertFalse( (bool)$quote->getIsActive() );
+        $this->assertEquals('TEST-BOLT-REFE-RENC', $payment->getAdditionalInformation('bolt_reference'));
+        ////////////////////////////////////////////////////////////
+
+        ////////////////////////////////////////////////////////////
+        /// Second call: check that createdAt does not change
+        ////////////////////////////////////////////////////////////
+        $currentCreatedAt = $order->getCreatedAt();
+        TestHelper::callNonPublicFunction(
+            $this->testClassMock,
+            'activateOrder',
+            [$order, json_decode('{"transaction_reference" : "TEST-BOLT-REFE-TWO2"}')]
+        );
+
+        $this->assertEquals( $currentCreatedAt, $order->getCreatedAt() );
+        $this->assertEquals('TEST-BOLT-REFE-TWO2', $payment->getAdditionalInformation('bolt_reference'));
+        ////////////////////////////////////////////////////////////
+    }
 }

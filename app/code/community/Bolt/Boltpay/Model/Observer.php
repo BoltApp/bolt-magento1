@@ -25,60 +25,6 @@ class Bolt_Boltpay_Model_Observer
     use Bolt_Boltpay_BoltGlobalTrait;
 
     /**
-     * Adds the Bolt User Id to the newly registered customer.
-     *
-     * event: bolt_boltpay_authorization_after
-     *
-     * @param Varien_Event_Observer $observer  Observer event contains `quote`
-     */
-    public function setBoltUserId($observer)
-    {
-        $quote = $observer->getEvent()->getQuote();
-        $session = Mage::getSingleton('customer/session');
-
-        try {
-            $customer = $quote->getCustomer();
-            $boltUserId = $session->getBoltUserId();
-
-            if ($customer != null && $boltUserId != null) {
-                if ($customer->getBoltUserId() == null || $customer->getBoltUserId() == 0) {
-                    //Mage::log("Bolt_Boltpay_Model_Observer.saveOrderAfter: Adding bolt_user_id to the customer from the quote", null, 'bolt.log');
-                    $customer->setBoltUserId($boltUserId);
-                    $customer->save();
-                }
-            }
-        } catch (Exception $e) {
-            $this->boltHelper()->notifyException($e);
-            $this->boltHelper()->logException($e);
-        }
-
-        $session->unsBoltUserId();
-    }
-
-    /**
-     * Event handler called after Bolt confirms payment authorization
-     *
-     * event: bolt_boltpay_authorization_after
-     *
-     * @param Varien_Event_Observer $observer Observer event contains `quote`, `order`, and the bolt transaction `reference`
-     *
-     * @throws Mage_Core_Exception if the bolt transaction reference is an object instead of expected string
-     */
-    public function completeAuthorize($observer)
-    {
-        /* @var Mage_Sales_Model_Quote $quote */
-        $quote = $observer->getEvent()->getQuote();
-        /* @var Mage_Sales_Model_Order $order */
-        $order = $observer->getEvent()->getOrder();
-        $reference = $observer->getEvent()->getReference();
-
-        if (empty($order->getCreatedAt())) { $order->setCreatedAt(Mage::getModel('core/date')->gmtDate())->save(); }
-        Mage::getModel('boltpay/order')->getParentQuoteFromOrder($order)->setIsActive(false)->save();
-        $order->getPayment()->setAdditionalInformation('bolt_reference', $reference)->save();
-        Mage::getModel('boltpay/order')->sendOrderEmail($order);
-    }
-
-    /**
      * Clears the Shopping Cart except product page checkout order after the success page
      *
      * @param Varien_Event_Observer $observer   An Observer object with an empty event object

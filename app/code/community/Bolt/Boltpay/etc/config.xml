@@ -86,18 +86,6 @@
           </bolt_boltpay_clear_shopping_cart>
         </observers>
       </checkout_onepage_controller_success_action>
-      <bolt_boltpay_authorization_after>
-        <observers>
-          <bolt_boltpay_complete_authorization>
-            <class>Bolt_Boltpay_Model_Observer</class>
-            <method>completeAuthorize</method>
-          </bolt_boltpay_complete_authorization>
-          <bolt_boltpay_set_bolt_user_id>
-            <class>Bolt_Boltpay_Model_Observer</class>
-            <method>setBoltUserId</method>
-          </bolt_boltpay_set_bolt_user_id>
-        </observers>
-      </bolt_boltpay_authorization_after>
       <sales_order_payment_capture>
         <observers>
           <boltpay_payment_capture_add_message>
