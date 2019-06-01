@@ -44,43 +44,4 @@ class Bolt_Boltpay_Model_Cron
 
         $connection->query($sql);
     }
-
-    /**
-     * After a pre-auth pending order has existed for 15 minutes or more, we remove it from the system.
-     * At this point, Bolt should have called the "failed_payment" webhook to do this. We are catching
-     * the anomaly cases where this mechanism fails.
-     *
-     * Additionally, all pre-auth canceled orders should have been removed from the system.  If any exists,
-     * they are removed.
-     */
-    public function cleanupOrders() {
-        $expiration_time = date('Y-m-d H:i:s', time()-(60*15));  // Magento uses GMT to save in DB
-        /* @var Mage_Sales_Model_Resource_Order_Collection $expiredPendindOrderCollection */
-        $expiredPendindOrderCollection = Mage::getModel('sales/order')->getCollection();
-        $expiredPendindOrderCollection
-            ->addFieldToFilter('updated_at', array( 'lt' => $expiration_time))
-            ->addFieldToFilter('status', Bolt_Boltpay_Model_Payment::TRANSACTION_PRE_AUTH_PENDING)
-        ;
-
-        /* @var Mage_Sales_Model_Resource_Order_Collection $canceledOrderCollection */
-        $canceledOrderCollection = Mage::getModel('sales/order')->getCollection();
-        $canceledOrderCollection
-            ->addFieldToFilter('status', Bolt_Boltpay_Model_Payment::TRANSACTION_PRE_AUTH_CANCELED)
-        ;
-
-        $ordersToRemove = array_merge($expiredPendindOrderCollection->getItems(), $canceledOrderCollection->getItems());
-
-        /** @var Bolt_Boltpay_Model_Order $orderModel */
-        $orderModel = Mage::getModel('boltpay/order');
-
-        /** @var Mage_Sales_Model_Order $order */
-        foreach($ordersToRemove as $order) {
-            try {
-                $orderModel->removePreAuthOrder($order);
-            } catch (Exception $e) {
-                $this->boltHelper()->notifyException($e, array(), 'warning');
-                $this->boltHelper()->logWarning($e->getMessage());
-            }
-        }
-    }
 }

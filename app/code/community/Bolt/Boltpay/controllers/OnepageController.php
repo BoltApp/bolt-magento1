@@ -35,41 +35,51 @@ class Bolt_Boltpay_OnepageController
         $requestParams = $this->getRequest()->getParams();
 
         // Handle only Bolt orders
-        if (isset($requestParams['bolt_payload'])) {
-
-            $payload = base64_decode(@$requestParams['bolt_payload']);
-
-            if (!$this->boltHelper()->verify_hook($payload, @$requestParams['bolt_signature'])) {
-                // If signature verification fails, we log the error and immediately return control to Magento
-                $exception = new Bolt_Boltpay_OrderCreationException(
-                    Bolt_Boltpay_OrderCreationException::E_BOLT_GENERAL_ERROR,
-                    Bolt_Boltpay_OrderCreationException::E_BOLT_GENERAL_ERROR_TMPL_HMAC
-                );
-                $this->boltHelper()->notifyException($exception, array(), 'warning');
-                $this->boltHelper()->logWarning($exception->getMessage());
-                parent::successAction();
-                return;
-            }
-
-            /** @var Mage_Checkout_Model_Session $checkoutSession */
-            $checkoutSession = Mage::getSingleton('checkout/session');
-            $checkoutSession
-                ->clearHelperData();
-
-            $quote = $this->getOnepage()->getQuote();
-
-            /* @var Mage_Sales_Model_Quote $immutableQuote */
-            $immutableQuote = Mage::getModel('sales/quote')->loadByIdWithoutStore($quote->getParentQuoteId());
-
-            $checkoutSession
-                ->setLastQuoteId($requestParams['lastQuoteId'])
-                ->setLastSuccessQuoteId($requestParams['lastSuccessQuoteId'])
-                ->setLastOrderId($requestParams['lastOrderId'])
-                ->setLastRealOrderId($requestParams['lastRealOrderId'])
-                ->setLastRecurringProfileIds(explode( ',', @$requestParams['lastRecurringProfileIds']));
-
-            Mage::getModel('boltpay/order')->receiveOrder($requestParams['lastRealOrderId'], $this->payload);
+        if (!isset($requestParams['bolt_payload'])) {
+            parent::successAction();
+            return;
         }
+
+        $payload = base64_decode(@$requestParams['bolt_payload']);
+
+        if (!$this->boltHelper()->verify_hook($payload, @$requestParams['bolt_signature'])) {
+            // If signature verification fails, we log the error and immediately return control to Magento
+            $exception = new Bolt_Boltpay_OrderCreationException(
+                Bolt_Boltpay_OrderCreationException::E_BOLT_GENERAL_ERROR,
+                Bolt_Boltpay_OrderCreationException::E_BOLT_GENERAL_ERROR_TMPL_HMAC
+            );
+            $this->boltHelper()->notifyException($exception, array(), 'warning');
+            $this->boltHelper()->logWarning($exception->getMessage());
+            parent::successAction();
+            return;
+        }
+
+        /** @var Mage_Checkout_Model_Session $checkoutSession */
+        $checkoutSession = Mage::getSingleton('checkout/session');
+        $checkoutSession
+            ->clearHelperData();
+
+        $quote = $this->getOnepage()->getQuote();
+
+        /* @var Mage_Sales_Model_Quote $immutableQuote */
+        $immutableQuote = Mage::getModel('sales/quote')->loadByIdWithoutStore($quote->getParentQuoteId());
+
+        $recurringPaymentProfilesIds = array();
+        $recurringPaymentProfiles = $immutableQuote->collectTotals()->prepareRecurringPaymentProfiles();
+
+        /** @var Mage_Payment_Model_Recurring_Profile $profile */
+        foreach((array)$recurringPaymentProfiles as $profile) {
+            $recurringPaymentProfilesIds[] = $profile->getId();
+        }
+
+        $checkoutSession
+            ->setLastQuoteId($requestParams['lastQuoteId'])
+            ->setLastSuccessQuoteId($requestParams['lastSuccessQuoteId'])
+            ->setLastOrderId($requestParams['lastOrderId'])
+            ->setLastRealOrderId($requestParams['lastRealOrderId'])
+            ->setLastRecurringProfileIds($recurringPaymentProfilesIds);
+
+        Mage::getModel('boltpay/order')->receiveOrder($requestParams['lastRealOrderId'], $this->payload);
 
         parent::successAction();
     }
