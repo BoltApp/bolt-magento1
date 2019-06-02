@@ -43,6 +43,9 @@ class Bolt_Boltpay_ApiController extends Mage_Core_Controller_Front_Action imple
             $hookType = @$requestData->notification_type ?: $requestData->type;
             $parentQuoteId = @$requestData->quote_id;
 
+            /** @var Bolt_Boltpay_Model_Order $orderModel */
+            $orderModel = Mage::getModel('boltpay/order');
+
             if ($hookType === 'failed_payment') {
                 $this->handleFailedPaymentHook($parentQuoteId);
                 return;
@@ -59,7 +62,7 @@ class Bolt_Boltpay_ApiController extends Mage_Core_Controller_Front_Action imple
 
             /* If it hasn't been confirmed, or could not be found, we use the quoteId as fallback */
             if ($order->isObjectNew()) {
-                $order =  Mage::getModel('boltpay/order')->getOrderByQuoteId($quoteId);
+                $order =  $orderModel->getOrderByQuoteId($quoteId);
             }
 
             if (!$order->isObjectNew()) {
@@ -74,15 +77,7 @@ class Bolt_Boltpay_ApiController extends Mage_Core_Controller_Front_Action imple
                     /// session.  We'll complete the post authorization steps prior to processing
                     /// the webhook.
                     /////////////////////////////////////////////////////////////////////////////
-                    $immutableQuote = Mage::getModel('sales/quote')->loadByIdWithoutStore($quoteId);
-                    Mage::dispatchEvent(
-                        'bolt_boltpay_authorization_after',
-                        array(
-                            'order'=> $order,
-                            'quote'=> $immutableQuote,
-                            'reference' => $reference
-                        )
-                    );
+                    $orderModel->receiveOrder($order->getIncrementId(), $this->payload);
                     /////////////////////////////////////////////////////////////////////////////
                 }
 
