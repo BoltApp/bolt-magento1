@@ -44,8 +44,9 @@ class Bolt_Boltpay_Model_Observer
     }
 
     /**
-     * If the session quote has been flagged by having a parent quote Id equal to its own
-     * id, this will clear the cart cache, which, in turn, forces the creation of a new Bolt order
+     * This will clear the cart cache, forcing creation of a new immutable quote, if
+     * the parent quote has been flagged by having a parent quote Id as its own
+     * id.
      *
      * event: controller_front_init_before
      *
@@ -54,6 +55,7 @@ class Bolt_Boltpay_Model_Observer
     public function clearCartCacheOnOrderCanceled($observer) {
         /** @var Mage_Sales_Model_Quote $quote */
         $quote = Mage::getSingleton('checkout/session')->getQuote();
+
         if ($quote && is_int($quote->getId()) && $quote->getId() === $quote->getParentQuoteId()) {
             Mage::getSingleton('core/session')->unsCachedCartData();
             // clear the parent quote ID to re-enable cart cache
@@ -73,9 +75,7 @@ class Bolt_Boltpay_Model_Observer
     {
         /** @var Mage_Sales_Model_Order_Payment $payment */
         $payment = $observer->getEvent()->getPayment();
-        /** @var Mage_Sales_Model_Order $order */
         $order = $payment->getOrder();
-
         $method = $payment->getMethod();
         $message = '';
 
@@ -118,7 +118,17 @@ class Bolt_Boltpay_Model_Observer
      */
     public function safeguardPreAuthStatus($observer) {
         $order = $observer->getEvent()->getOrder();
-        if (!Bolt_Boltpay_Helper_Data::$fromHooks && in_array($order->getOrigData('status'), array('pending_bolt','canceled_bolt')) ) {
+        if (
+            !Bolt_Boltpay_Helper_Data::$fromHooks
+            && in_array(
+                $order->getOrigData('status'),
+                array(
+                    Bolt_Boltpay_Model_Payment::TRANSACTION_PRE_AUTH_PENDING,
+                    Bolt_Boltpay_Model_Payment::TRANSACTION_PRE_AUTH_CANCELED
+                )
+            )
+        )
+        {
             $order->setStatus($order->getOrigData('status'));
         }
     }
