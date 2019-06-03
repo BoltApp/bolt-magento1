@@ -273,11 +273,19 @@ class Bolt_Boltpay_Model_Order extends Bolt_Boltpay_Model_Abstract
             $this->associateOrderToCustomerWhenPlacingOnPDP($order->getData('increment_id'));
         }
 
+        ///////////////////////////////////////////////////////
+        /// Dispatch order save events
+        ///////////////////////////////////////////////////////
         $recurringPaymentProfiles = $service->getRecurringPaymentProfiles();
-
+        
         Mage::dispatchEvent(
             'checkout_submit_all_after',
             array('order' => $order, 'quote' => $immutableQuote, 'recurring_profiles' => $recurringPaymentProfiles)
+        );
+
+        Mage::dispatchEvent(
+            'bolt_boltpay_order_creation_after',
+            array('order'=>$order, 'quote'=>$immutableQuote, 'transaction' => $transaction)
         );
         ///////////////////////////////////////////////////////
 
