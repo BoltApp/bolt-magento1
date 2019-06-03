@@ -79,25 +79,13 @@
         <observers>
           <bolt_boltpay_clear_shopping_cart>
             <class>Bolt_Boltpay_Model_Observer</class>
-            <method>clearShoppingCart</method>
+            <method>clearShoppingCartExceptPPCOrder</method>
             <depends>
               <ZZZZZ_Bolt />  <!--  psuedo module to place execution at the back of event queue -->
             </depends>
           </bolt_boltpay_clear_shopping_cart>
         </observers>
       </checkout_onepage_controller_success_action>
-      <bolt_boltpay_authorization_after>
-        <observers>
-          <bolt_boltpay_complete_authorization>
-            <class>Bolt_Boltpay_Model_Observer</class>
-            <method>completeAuthorize</method>
-          </bolt_boltpay_complete_authorization>
-          <bolt_boltpay_set_bolt_user_id>
-            <class>Bolt_Boltpay_Model_Observer</class>
-            <method>setBoltUserId</method>
-          </bolt_boltpay_set_bolt_user_id>
-        </observers>
-      </bolt_boltpay_authorization_after>
       <sales_model_service_quote_submit_before>
         <observers>
           <bolt_boltpay_validate_order_before_commit>

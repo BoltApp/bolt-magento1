@@ -43,6 +43,9 @@ class Bolt_Boltpay_ApiController extends Mage_Core_Controller_Front_Action imple
             $hookType = @$requestData->notification_type ?: $requestData->type;
             $parentQuoteId = @$requestData->quote_id;
 
+            /** @var Bolt_Boltpay_Model_Order $orderModel */
+            $orderModel = Mage::getModel('boltpay/order');
+
             if ($hookType === 'failed_payment') {
                 $this->handleFailedPaymentHook($parentQuoteId);
                 return;
@@ -59,7 +62,7 @@ class Bolt_Boltpay_ApiController extends Mage_Core_Controller_Front_Action imple
 
             /* If it hasn't been confirmed, or could not be found, we use the quoteId as fallback */
             if ($order->isObjectNew()) {
-                $order =  Mage::getModel('boltpay/order')->getOrderByQuoteId($quoteId);
+                $order =  $orderModel->getOrderByQuoteId($quoteId);
             }
 
             if (!$order->isObjectNew()) {
@@ -74,15 +77,7 @@ class Bolt_Boltpay_ApiController extends Mage_Core_Controller_Front_Action imple
                     /// session.  We'll complete the post authorization steps prior to processing
                     /// the webhook.
                     /////////////////////////////////////////////////////////////////////////////
-                    $immutableQuote = Mage::getModel('sales/quote')->loadByIdWithoutStore($quoteId);
-                    Mage::dispatchEvent(
-                        'bolt_boltpay_authorization_after',
-                        array(
-                            'order'=> $order,
-                            'quote'=> $immutableQuote,
-                            'reference' => $reference
-                        )
-                    );
+                    $orderModel->receiveOrder($order->getIncrementId(), $this->payload);
                     /////////////////////////////////////////////////////////////////////////////
                 }
 
@@ -209,7 +204,7 @@ class Bolt_Boltpay_ApiController extends Mage_Core_Controller_Front_Action imple
 
             if ($order->isObjectNew()) {
                 /** @var Mage_Sales_Model_Order $order */
-                $order = Mage::getModel('boltpay/order')->createOrder($reference = null, $sessionQuoteId = null, $isPreAuthCreation = true, $transaction);
+                $order = $orderModel->createOrder($reference = null, $sessionQuoteId = null, $isPreAuthCreation = true, $transaction);
             } else {
                 if ($order->getStatus() === 'canceled_bolt') {
                     throw new Bolt_Boltpay_OrderCreationException(
@@ -264,8 +259,8 @@ class Bolt_Boltpay_ApiController extends Mage_Core_Controller_Front_Action imple
     /**
      * Creates the success url for Bolt to forward the customer browser to upon transaction authorization
      *
-     * @param Mage_Sales_Model_Order    $order
-     * @param Mage_Sales_Model_Quote    $immutableQuoteId
+     * @param Mage_Sales_Model_Order    $order              Recently created pre-auth order
+     * @param Mage_Sales_Model_Quote    $immutableQuoteId   Id of quote used to create the pre-auth order
      *
      * @return string   The URL for which Bolt is to forward the browser.  It contains variables normally
      *                  stored as session values as URL parameter
@@ -275,24 +270,20 @@ class Bolt_Boltpay_ApiController extends Mage_Core_Controller_Front_Action imple
     private function createSuccessUrl($order, $immutableQuoteId) {
         /* @var Mage_Sales_Model_Quote $immutableQuote */
         $immutableQuote = Mage::getModel('sales/quote')->loadByIdWithoutStore($immutableQuoteId);
-        $recurringPaymentProfiles = $immutableQuote->collectTotals()->prepareRecurringPaymentProfiles();
-        $successUrlPath = $this->boltHelper()->getMagentoUrl(Mage::getStoreConfig('payment/boltpay/successpage')) ?: '/';
 
-        if ($successUrlPath[strlen($successUrlPath) - 1] === '/' ) $successUrlPath = substr( $successUrlPath, 0, -1);
-
-        $successUrlQueryString = "?lastQuoteId={$immutableQuote->getParentQuoteId()}&lastSuccessQuoteId={$immutableQuote->getParentQuoteId()}&lastOrderId={$order->getId()}&lastRealOrderId={$order->getIncrementId()}";
-
-        $recurringPaymentProfilesIds = array();
-        /** @var Mage_Payment_Model_Recurring_Profile $profile */
-        foreach((array)$recurringPaymentProfiles as $profile) {
-            $recurringPaymentProfilesIds[] = $profile->getId();
-        }
-
-        if ($recurringPaymentProfilesIds) {
-            $successUrlQueryString .= "&lastRecurringProfileIds=" . implode(",", $recurringPaymentProfilesIds);
-        }
-
-        return $successUrlPath . $successUrlQueryString;
+        $successUrlPath = $this->boltHelper()->getMagentoUrl(
+            Mage::getStoreConfig('payment/boltpay/successpage'),
+            [
+                '_query' => [
+                    'lastQuoteId' => $immutableQuote->getParentQuoteId(),
+                    'lastSuccessQuoteId' => $immutableQuote->getParentQuoteId(),
+                    'lastOrderId' => $order->getId(),
+                    'lastRealOrderId' => $order->getIncrementId()
+                ]
+            ]
+        );
+        $this->boltHelper()->notifyException(new Exception($successUrlPath));
+        return $successUrlPath;
     }
 
     /**
