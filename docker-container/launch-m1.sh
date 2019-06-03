@@ -29,5 +29,5 @@ else
     rm -rf ./bolt-magento1
 fi
 docker exec docker-magento_web_1 bash -c "cp -r /var/www/html/bolt-magento1/* /var/www/html/"
-docker cp ../set_magento.php docker-magento_web_1:/var/www/html/
-docker exec -it docker-magento_web_1 php set_magento.php $boltApiKey $boltSigningSecret $boltPublishableKey
+docker cp ../set-magento.php docker-magento_web_1:/var/www/html/
+docker exec -it docker-magento_web_1 php set-magento.php $boltApiKey $boltSigningSecret $boltPublishableKey
