@@ -187,7 +187,7 @@ class Bolt_Boltpay_Model_ShippingAndTax extends Bolt_Boltpay_Model_Abstract
                     $exception = new Exception( $this->boltHelper()->__('Rate code is empty. ') . var_export($rate->debug(), true) );
                     $metaData = array('quote' => var_export($quote->debug(), true));
                     $this->boltHelper()->logWarning($exception->getMessage(),$metaData);
-                    $this->boltHelper()->notifyException($exception,$metaData);
+                    $this->boltHelper()->notifyException($exception,$metaData, 'warning');
                 }
 
                 $adjustedShippingAmount = $this->getAdjustedShippingAmount($originalDiscountedSubtotal, $quote);
@@ -200,14 +200,6 @@ class Bolt_Boltpay_Model_ShippingAndTax extends Bolt_Boltpay_Model_Abstract
                 );
 
                 $response['shipping_options'][] = $option;
-
-                Mage::dispatchEvent(
-                    'bolt_boltpay_shipping_option_added',
-                    array(
-                        'quote'=> $quote,
-                        'shippingMethodCode' => $rate->getCode()
-                    )
-                );
             }
 
         } finally {
@@ -261,7 +253,7 @@ class Bolt_Boltpay_Model_ShippingAndTax extends Bolt_Boltpay_Model_Abstract
             }
 
             Mage::dispatchEvent(
-                'bolt_boltpay_shipping_method_applied',
+                'bolt_boltpay_shipping_method_applied_after',
                 array(
                     'quote'=> $quote,
                     'shippingMethodCode' => $shippingRateCode
