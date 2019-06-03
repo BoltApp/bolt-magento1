@@ -86,6 +86,14 @@
           </bolt_boltpay_clear_shopping_cart>
         </observers>
       </checkout_onepage_controller_success_action>
+      <sales_model_service_quote_submit_before>
+        <observers>
+          <bolt_boltpay_validate_order_before_commit>
+            <class>Bolt_Boltpay_Model_Observer</class>
+            <method>validateBeforeOrderCommit</method>
+          </bolt_boltpay_validate_order_before_commit>
+        </observers>
+      </sales_model_service_quote_submit_before>
       <sales_order_payment_capture>
         <observers>
           <boltpay_payment_capture_add_message>
