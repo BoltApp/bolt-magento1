@@ -108,7 +108,7 @@
           <bolt_boltpay_filter_preauth_orders>
             <type>singleton</type>
             <class>Bolt_Boltpay_Model_Observer</class>
-            <method>filterPreAuthOrders</method>
+            <method>hidePreAuthOrders</method>
           </bolt_boltpay_filter_preauth_orders>
         </observers>
       </sales_order_grid_collection_load_before>
@@ -281,14 +281,6 @@
           <model>boltpay/cron::cleanupQuotes</model>
         </run>
       </immutable_quote_cleanup>
-      <preauth_order_cleanup>
-        <schedule>
-          <cron_expr>*/15 * * * *</cron_expr>
-        </schedule>
-        <run>
-          <model>boltpay/cron::cleanupOrders</model>
-        </run>
-      </preauth_order_cleanup>
     </jobs>
   </crontab>
 </config>

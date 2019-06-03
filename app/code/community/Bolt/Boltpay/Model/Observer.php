@@ -44,8 +44,9 @@ class Bolt_Boltpay_Model_Observer
     }
 
     /**
-     * If the session quote has been flagged by having a parent quote Id equal to its own
-     * id, this will clear the cart cache, which, in turn, forces the creation of a new Bolt order
+     * This will clear the cart cache, forcing creation of a new immutable quote, if
+     * the parent quote has been flagged by having a parent quote Id as its own
+     * id.
      *
      * event: controller_front_init_before
      *
