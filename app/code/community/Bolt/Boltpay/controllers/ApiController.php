@@ -239,6 +239,36 @@ class Bolt_Boltpay_ApiController extends Mage_Core_Controller_Front_Action imple
     }
 
     /**
+     * Creates the success url for Bolt to forward the customer browser to upon transaction authorization
+     *
+     * @param Mage_Sales_Model_Order    $order              Recently created pre-auth order
+     * @param Mage_Sales_Model_Quote    $immutableQuoteId   Id of quote used to create the pre-auth order
+     *
+     * @return string   The URL for which Bolt is to forward the browser.  It contains variables normally
+     *                  stored as session values as URL parameter
+     *
+     * @throws Mage_Core_Model_Store_Exception  if for any reason the store can not be found to generate the URL
+     */
+    private function createSuccessUrl($order, $immutableQuoteId) {
+        /* @var Mage_Sales_Model_Quote $immutableQuote */
+        $immutableQuote = Mage::getModel('sales/quote')->loadByIdWithoutStore($immutableQuoteId);
+
+        $successUrlPath = $this->boltHelper()->getMagentoUrl(
+            Mage::getStoreConfig('payment/boltpay/successpage'),
+            [
+                '_query' => [
+                    'lastQuoteId' => $immutableQuote->getParentQuoteId(),
+                    'lastSuccessQuoteId' => $immutableQuote->getParentQuoteId(),
+                    'lastOrderId' => $order->getId(),
+                    'lastRealOrderId' => $order->getIncrementId()
+                ]
+            ]
+        );
+        $this->boltHelper()->notifyException(new Exception($successUrlPath));
+        return $successUrlPath;
+    }
+
+    /**
      * Handles failed payment web hooks.  It attempts to cancel a specified pre-auth order
      * in addition to invalidating the cache associated with that orders session.
      *
