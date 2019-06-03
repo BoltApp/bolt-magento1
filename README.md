@@ -14,6 +14,18 @@ See [CHANGELOG.md](./CHANGELOG.md) for change history.
 ## Installation guide
 [Magento 1 plugin installation guide](https://docs.bolt.com/docs/magento-integration-guide)
 
+## Event Reference
+
+| Name | Type | Area | Parameters | Description |
+| --- | --- | --- | --- | --- |
+| wc_bolt_after_set_cart_by_bolt_reference | action | bolt-payment-gateway-helpers.php | Allow for a merchant hook to do customization on cart content by Bolt Reference |
+| wc_bolt_process_payment | action | class-bolt-checkout.php | Allow for a merchant hook prior to showing the success page |
+| bolt_payment_checkout | action | class-bolt-checkout.php | Action to show the Bolt button on checkout page |
+| wc_bolt_set_checkout_address_data | filter | class-bolt-address-helper.php | Allow for a merchant hook to add extra address fields |
+| wc_bolt_order_creation_cart_data | filter | class-bolt-gateway-api.php | Add extra data to send to 'Bolt create_orders' API request |
+| wc_bolt_after_load_shipping_options | filter | class-bolt-shipping-and-tax.php | Allow for a merchant hook to do customization on shipping options for shipping and tax method endpoint |
+| wc_bolt_order_creation_hint_data | filter | bolt-cart-functions.php | Allow for a merchant hook to add extra hint data when creating Bolt order |
+
 ## Run tests
 
 Run the following from root magento folder:
