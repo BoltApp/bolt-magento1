@@ -282,7 +282,6 @@ class Bolt_Boltpay_ApiController extends Mage_Core_Controller_Front_Action imple
                 ]
             ]
         );
-        $this->boltHelper()->notifyException(new Exception($successUrlPath));
         return $successUrlPath;
     }
 
