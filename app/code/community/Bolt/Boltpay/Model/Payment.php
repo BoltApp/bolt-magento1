@@ -444,7 +444,7 @@ class Bolt_Boltpay_Model_Payment extends Mage_Payment_Model_Method_Abstract
         $newTransactionStatus,
         $prevTransactionStatus,
         $transactionAmount = null,
-        $transaction = null
+        $boltTransaction = null
     ) {
         try {
             $newTransactionStatus = strtolower($newTransactionStatus);
@@ -461,7 +461,7 @@ class Bolt_Boltpay_Model_Payment extends Mage_Payment_Model_Method_Abstract
                 $reference = $payment->getAdditionalInformation('bolt_reference');
 
                 if ($this->isCaptureRequest($newTransactionStatus, $prevTransactionStatus)) {
-                    $this->createInvoiceForHookRequest($payment);
+                    $this->createInvoiceForHookRequest($payment, $boltTransaction);
                 }elseif ($newTransactionStatus == self::TRANSACTION_AUTHORIZED) {
                     if (empty($reference)) {
                         $exception = new Exception( $this->boltHelper()->__("Payment missing expected transaction ID.") );
@@ -499,7 +499,7 @@ class Bolt_Boltpay_Model_Payment extends Mage_Payment_Model_Method_Abstract
                     $order->setState(Mage_Sales_Model_Order::STATE_PAYMENT_REVIEW, self::ORDER_DEFERRED, $message);
                     $order->save();
                 } elseif ($newTransactionStatus == self::TRANSACTION_REFUND) {
-                    $this->handleRefundTransactionUpdate($payment, $newTransactionStatus, $prevTransactionStatus, $transactionAmount, $transaction);
+                    $this->handleRefundTransactionUpdate($payment, $newTransactionStatus, $prevTransactionStatus, $transactionAmount, $boltTransaction);
                 }
 
                 $this->_handleBoltTransactionStatus($payment, $newTransactionStatus);
@@ -573,7 +573,7 @@ class Bolt_Boltpay_Model_Payment extends Mage_Payment_Model_Method_Abstract
                         $creditmemo->setPaymentRefundDisallowed(false);
                         $creditmemo->register()->save();
                     }
-                } else if (!$this->isPartialRefundFixingMismatch($order, $transactionAmount)) { // partial refund
+                } else if (!$this->isPartialRefundFixingMismatch($order, $transactionAmount, $transaction)) { // partial refund
                     $isPartialRefund   = true;
                     //actually for order with bolt payment, there is only one invoice can refund
                     foreach ($invoiceIds as $k => $invoiceId) {
@@ -697,15 +697,17 @@ class Bolt_Boltpay_Model_Payment extends Mage_Payment_Model_Method_Abstract
     /**
      * Generates either a partial or full invoice for the order.
      *
-     * @param        $order Mage_Sales_Model_Order
-     * @param        $captureAmount - The amount to invoice for
+     * @param Mage_Sales_Model_Order    $order           The order to which the invoice is applied
+     * @param float                     $captureAmount   The amount to invoice for
+     * @param object                    $boltTransaction The fetch Bolt transaction
      *
      * @return Mage_Sales_Model_Order_Invoice   The order invoice
-     * @throws Exception
+     *
+     * @throws Exception on an invalid capture amount
      */
-    protected function createInvoice($order, $captureAmount) {
+    protected function createInvoice($order, $captureAmount, $boltTransaction) {
         if (isset($captureAmount)) {
-            $boltMaxCaptureAmountAfterRefunds = $this->getBoltMaxCaptureAmountAfterRefunds($order);
+            $boltMaxCaptureAmountAfterRefunds = $this->getBoltMaxCaptureAmountAfterRefunds($order, $boltTransaction);
             if($captureAmount > $boltMaxCaptureAmountAfterRefunds){
                 $captureAmount = $boltMaxCaptureAmountAfterRefunds;
             }
@@ -724,15 +726,14 @@ class Bolt_Boltpay_Model_Payment extends Mage_Payment_Model_Method_Abstract
      * Handles case where Bolt didn't properly apply discount, and Magento grand total is now less than the Bolt capture amount.
      * Reduces the Bolt capture amount by the Bolt refunded amount.
      *
-     * @param $order
-     * @return float
+     * @param Mage_Sales_Model_Order    $order           The order to which the capture is to be applied
+     * @param object                    $boltTransaction The fetch Bolt transaction
+     *
+     * @return float    maximum available capture amount in the appropriate currency
      */
-    protected function getBoltMaxCaptureAmountAfterRefunds($order){
-        $reference = $order->getPayment()->getAdditionalInformation('bolt_reference');
-        $transaction = $this->boltHelper()->fetchTransaction($reference);
-        $refundedAmount = (!empty($transaction->refunded_amount->amount)) ? $transaction->refunded_amount->amount : 0;
-
-        return ($transaction->amount->amount - $refundedAmount)/100;
+    protected function getBoltMaxCaptureAmountAfterRefunds($order, $boltTransaction){
+        $refundedAmount = (!empty($boltTransaction->refunded_amount->amount)) ? $boltTransaction->refunded_amount->amount : 0;
+        return ($boltTransaction->amount->amount - $refundedAmount)/100;
     }
 
     /**
@@ -833,13 +834,15 @@ class Bolt_Boltpay_Model_Payment extends Mage_Payment_Model_Method_Abstract
     }
 
     /**
-     * @param \Mage_Payment_Model_Info $payment
+     * Creates and invoice as a result of a capture
      *
-     * @throws \Exception
+     * @param Mage_Payment_Model_Info $payment          The Magento order payment of this payment
+     * @param object                  $boltTransaction  The fetched Bolt transaction
+     *
      */
-    protected function createInvoiceForHookRequest(Mage_Payment_Model_Info $payment)
+    protected function createInvoiceForHookRequest(Mage_Payment_Model_Info $payment, $boltTransaction)
     {
-        $boltCaptures = $this->getNewBoltCaptures($payment);
+        $boltCaptures = $this->getNewBoltCaptures($payment, $boltTransaction);
 
         $order = $payment->getOrder();
         $order->setStatus(Mage_Sales_Model_Order::STATE_PROCESSING);
@@ -851,7 +854,7 @@ class Bolt_Boltpay_Model_Payment extends Mage_Payment_Model_Method_Abstract
         // Create invoices for items from $boltCaptures that are not exists on Magento
         $identifier = count($boltCaptures) > 1 ? 0 : null;
         foreach ($boltCaptures as $captureAmount) {
-            $invoice = $this->createInvoice($order, $captureAmount / 100);
+            $invoice = $this->createInvoice($order, $captureAmount / 100, $boltTransaction);
             $invoice->setRequestedCaptureCase(Mage_Sales_Model_Order_Invoice::CAPTURE_OFFLINE);
             $invoice->register();
             $this->preparePaymentAndAddTransaction($payment, $invoice, $identifier);
@@ -863,17 +866,16 @@ class Bolt_Boltpay_Model_Payment extends Mage_Payment_Model_Method_Abstract
     }
 
     /**
-     * @param \Mage_Payment_Model_Info $payment
+     * Retrieves a list of all Bolt captures that have not been recorded by Magento
+     *
+     * @param Mage_Payment_Model_Info $payment          The Magento order payment of this payment
+     * @param object                  $boltTransaction  The fetched Bolt transaction
      *
      * @return array
-     * @throws \Exception
      */
-    protected function getNewBoltCaptures(Mage_Payment_Model_Info $payment)
+    protected function getNewBoltCaptures(Mage_Payment_Model_Info $payment, $boltTransaction)
     {
-        $reference = $payment->getAdditionalInformation('bolt_reference');
-        $transaction = $this->boltHelper()->fetchTransaction($reference);
-        $boltCaptures = $this->getBoltCaptures($transaction);
-
+        $boltCaptures = $this->getBoltCaptures($boltTransaction);
         return $this->removeInvoicedCaptures($payment, $boltCaptures);
     }
 
@@ -1083,20 +1085,19 @@ class Bolt_Boltpay_Model_Payment extends Mage_Payment_Model_Method_Abstract
     /**
      * @param Mage_Sales_Model_Order $order
      * @param $hookAmount
+     * @param object $boltTransaction       The fetched Bolt transaction
      * @return bool
      * @throws Mage_Core_Model_Store_Exception
      */
-    protected function isPartialRefundFixingMismatch(Mage_Sales_Model_Order $order, $hookAmount){
-        $reference = $order->getPayment()->getAdditionalInformation('bolt_reference');
-        $transaction = $this->boltHelper()->fetchTransaction($reference);
-        $boltTotal = $transaction->amount->amount / 100;
+    protected function isPartialRefundFixingMismatch(Mage_Sales_Model_Order $order, $hookAmount, $boltTransaction){
+        $boltTotal = $boltTransaction->amount->amount / 100;
         $magentoTotal =  Mage::app()->getStore()->roundPrice(
             $order->getGrandTotal()
         );
 
         if($magentoTotal !== $boltTotal){
 
-            $boltRefundedTotal = !empty($transaction->refunded_amount->amount) ? $transaction->refunded_amount->amount / 100 : 0;
+            $boltRefundedTotal = !empty($boltTransaction->refunded_amount->amount) ? $boltTransaction->refunded_amount->amount / 100 : 0;
             // Bolt refund amount includes the current hook amount that hasn't been applied to Magento yet, so subtracting current hook refund amount
             // to get the amount that Magento should know about.
             $boltRefundedTotal -= $hookAmount;
