@@ -232,6 +232,8 @@ class Bolt_Boltpay_Model_Order extends Bolt_Boltpay_Model_Abstract
             }
 
             $this->boltHelper()->logException($oce);
+            $this->boltHelper()->notifyException($oce);
+
             if ( $oce instanceof Bolt_Boltpay_OrderCreationException ) {
                 throw $oce;
             } else {
@@ -519,7 +521,7 @@ class Bolt_Boltpay_Model_Order extends Bolt_Boltpay_Model_Abstract
      *
      * @throws Bolt_Boltpay_OrderCreationException upon failure of price consistency validation
      */
-    protected function validateTotals(Mage_Sales_Model_Order $immutableQuote, $transaction)
+    protected function validateTotals(Mage_Sales_Model_Quote $immutableQuote, $transaction)
     {
         $magentoTotals = $immutableQuote->getTotals();
 
@@ -647,7 +649,8 @@ class Bolt_Boltpay_Model_Order extends Bolt_Boltpay_Model_Abstract
     {
         if (empty($order->getCreatedAt())) { $order->setCreatedAt(Mage::getModel('core/date')->gmtDate())->save(); }
         $this->getParentQuoteFromOrder($order)->setIsActive(false)->save();
-        $order->getPayment()->setAdditionalInformation('bolt_reference', $payloadObject->transaction_reference)->save();
+        $reference = @$payloadObject->transaction_reference ?: $payloadObject->reference;
+        $order->getPayment()->setAdditionalInformation('bolt_reference', $reference)->save();
         $this->sendOrderEmail($order);
     }
 
