@@ -69,6 +69,7 @@ class Bolt_Boltpay_ApiController extends Mage_Core_Controller_Front_Action imple
                 ///////////////////////////////////////
                 // Order was found.  We will update it
                 ///////////////////////////////////////
+                Mage::app()->setCurrentStore($order->getStore());
 
                 $orderPayment = $order->getPayment();
                 if (!$orderPayment->getAdditionalInformation('bolt_reference')) {
