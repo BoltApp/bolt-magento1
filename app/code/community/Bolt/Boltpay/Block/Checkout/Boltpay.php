@@ -348,7 +348,11 @@ class Bolt_Boltpay_Block_Checkout_Boltpay extends Mage_Checkout_Block_Onepage_Re
             $hints['virtual_terminal_mode'] = true;
         }
 
-        $hints['prefill'] = $prefill;
+        // Skip pre-fill for Apple Pay related data.
+        if (!($prefill['email'] == 'fake@email.com' || $prefill['phone'] == '1111111111')) {
+            $hints['prefill'] = $prefill;
+        }
+
         return $hints;
     }
 
@@ -638,7 +642,9 @@ class Bolt_Boltpay_Block_Checkout_Boltpay extends Mage_Checkout_Block_Onepage_Re
 
         $isEnabledProductPageCheckout = $this->boltHelper()->isEnabledProductPageCheckout();
 
-        $isAllowed = ($routeName === 'checkout' && $controllerName === 'cart')
+        $customRoutes = $this->boltHelper()->getAllowedButtonByCustomRoutes();
+
+        $isAllowed = (in_array($routeName, $customRoutes) || ($routeName === 'checkout' && $controllerName === 'cart'))
             || ($routeName === 'firecheckout')
             || ($isEnabledProductPageCheckout && $routeName === 'catalog' && $controllerName === 'product')
             || ($routeName === 'adminhtml' && in_array($controllerName, array('sales_order_create', 'sales_order_edit')));

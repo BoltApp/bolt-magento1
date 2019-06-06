@@ -177,7 +177,7 @@ class Bolt_Boltpay_Model_CouponTest extends PHPUnit_Framework_TestCase
     {
         $passed = true;
         try {
-            $this->setupEnvironment(array('discount_code' => 'BOLT_UN_EXIST_CODE'));
+            $this->setupEnvironment(array('discount_code' => 'BOLT_NOT_EXISTS_CODE'));
             $this->currentMock->validateCouponExists();
         } catch (\Bolt_Boltpay_BadInputException $e) {
             $passed = false;
@@ -209,7 +209,7 @@ class Bolt_Boltpay_Model_CouponTest extends PHPUnit_Framework_TestCase
     {
         $passed = true;
         try {
-            $this->setupEnvironment(array('discount_code' => 'BOLT_UN_EXIST_CODE'));
+            $this->setupEnvironment(array('discount_code' => 'BOLT_NOT_EXISTS_CODE'));
             $this->currentMock->validateRuleExists();
         } catch (\Bolt_Boltpay_BadInputException $e) {
             $passed = false;

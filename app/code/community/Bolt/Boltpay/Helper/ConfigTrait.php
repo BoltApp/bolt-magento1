@@ -124,6 +124,20 @@ trait Bolt_Boltpay_Helper_ConfigTrait
     }
 
     /**
+     * @return array
+     */
+    public function getAllowedButtonByCustomRoutes()
+    {
+        $checkoutType = Bolt_Boltpay_Block_Checkout_Boltpay::CHECKOUT_TYPE_MULTI_PAGE;
+        $config = $this->getPaymentBoltpayConfig('allowed_button_by_custom_routes', $checkoutType);
+        // removes all NULL, FALSE and Empty Strings but leaves 0 (zero) values
+        $configData = explode(',', $config);
+        $result = array_values(array_filter(array_map('trim', $configData), 'strlen'));
+
+        return (empty($result)) ? [] : $result;
+    }
+
+    /**
      * Check if the Bolt payment method can be used for specific country
      *
      * @param string $country   the country to be compared in check for allowing Bolt as a payment method
