@@ -138,7 +138,7 @@ class Bolt_Boltpay_Block_Checkout_Boltpay extends Mage_Checkout_Block_Onepage_Re
                 );
             }
 
-            return $this->buildBoltCheckoutJavascript($checkoutType, $sessionQuote, $hintData, $cartData);
+            return $this->buildBoltCheckoutJavascript($checkoutType, $sessionQuote, $hintData, $cartData, $storeId);
 
         } catch (Exception $e) {
             $this->boltHelper()->logException($e);
@@ -194,7 +194,7 @@ class Bolt_Boltpay_Block_Checkout_Boltpay extends Mage_Checkout_Block_Onepage_Re
      * @param $cartData
      * @return string
      */
-    public function buildBoltCheckoutJavascript($checkoutType, $quote, $hintData, $cartData)
+    public function buildBoltCheckoutJavascript($checkoutType, $quote, $hintData, $cartData, $storeId = null)
     {
         $filterParameters = array(
           'checkoutType' => $checkoutType,
@@ -210,8 +210,8 @@ class Bolt_Boltpay_Block_Checkout_Boltpay extends Mage_Checkout_Block_Onepage_Re
         $checkCustom = $this->boltHelper()->getPaymentBoltpayConfig('check', $checkoutType);
         $onCheckCallback = $this->boltHelper()->buildOnCheckCallback($checkoutType, $quote);
 
-        $hintsTransformFunction = $this->boltHelper()->getExtraConfig('hintsTransform');
-        $shouldCloneImmediately = !$this->boltHelper()->getExtraConfig( 'cloneOnClick' );
+        $hintsTransformFunction = $this->boltHelper()->getExtraConfig('hintsTransform', array(), $storeId);
+        $shouldCloneImmediately = !$this->boltHelper()->getExtraConfig( 'cloneOnClick', array(), $storeId );
 
         $boltConfigureCall =
         "

@@ -46,13 +46,11 @@ class Bolt_Boltpay_Block_Adminhtml_System_Config_Form_Button extends Mage_Adminh
     public function getButtonHtml()
     {
         $button = $this->getLayout()->createBlock('adminhtml/widget_button')
-            ->setData(
-                array(
-                    'id' => 'boltpay_check_button',
-                    'label' => $this->boltHelper()->__('Check'),
-                    'onclick' => 'javascript:check(); return false;'
-                )
-            );
+            ->setData(array(
+                'id' => 'boltpay_check_button',
+                'label' => $this->boltHelper()->__('Check'),
+                'onclick' => 'javascript:check(); return false;'
+            ));
 
         return $button->toHtml();
     }
@@ -63,13 +61,15 @@ class Bolt_Boltpay_Block_Adminhtml_System_Config_Form_Button extends Mage_Adminh
      */
     public function getStoreId()
     {
-        if (strlen($code = Mage::getSingleton('adminhtml/config_data')->getStore())) {
+        if (strlen($code = Mage::getSingleton('adminhtml/config_data')->getStore()))
+        {
             return Mage::getModel('core/store')->load($code)->getId();
         }
 
-        if (strlen($code = Mage::getSingleton('adminhtml/config_data')->getWebsite())) {
-            $websiteId = Mage::getModel('core/website')->load($code)->getId();
-            return Mage::app()->getWebsite($websiteId)->getDefaultStore()->getId();
+        if (strlen($code = Mage::getSingleton('adminhtml/config_data')->getWebsite()))
+        {
+            $website_id = Mage::getModel('core/website')->load($code)->getId();
+            return Mage::app()->getWebsite($website_id)->getDefaultStore()->getId();
         }
 
         // Returns default admin level
