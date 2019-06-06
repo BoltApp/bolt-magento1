@@ -93,17 +93,16 @@ trait Bolt_Boltpay_Helper_LoggerTrait
      *
      * @return void
      */
-    public function log($level, $message, array $context = array())
-    {
+    public function log($level, $message, array $context = array()) {
         //example for now
-        if (Bolt_Boltpay_Helper_LoggerTrait::$isLoggerEnabled) {
+        if(Bolt_Boltpay_Helper_LoggerTrait::$isLoggerEnabled){
             $this->addBreadcrumb(
                 array(
                     'level'  => $level,
                     'context'  => var_export($context, true),
                 )
             );
-            $this->notifyException(new Exception((string)$message));
+            $this->notifyException( new Exception((string)$message) );
         }
     }
 }

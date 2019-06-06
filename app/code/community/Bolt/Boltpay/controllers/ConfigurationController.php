@@ -43,44 +43,28 @@ class Bolt_Boltpay_ConfigurationController
 
         // Validate for API key
         if (!($this->checkApiKey())) {
-            $this->setErrorResponseData(
-                $responseData,
-                $this->boltHelper()->__('Api Key is invalid')
-            );
+            $this->setErrorResponseData($responseData, $this->boltHelper()->__('Api Key is invalid'));
         }
 
         // Validate for Signing Secret
         if (!($this->checkSigningSecret())) {
-            $this->setErrorResponseData(
-                $responseData,
-                $this->boltHelper()->__('Signing Secret is invalid')
-            );
+            $this->setErrorResponseData($responseData, $this->boltHelper()->__('Signing Secret is invalid'));
         }
 
         // Validate Publishable Key - Multi-Page Checkout / Publishable Key - One Page Checkout
         if (!($this->checkPublishableKeyMultiPage())) {
-            $this->setErrorResponseData(
-                $responseData,
-                $this->boltHelper()->__('Publishable Key - Multi-Page Checkout is invalid')
-            );
+            $this->setErrorResponseData($responseData, $this->boltHelper()->__('Publishable Key - Multi-Page Checkout is invalid'));
         }
-
         if (!($this->checkPublishableKeyOnePage())) {
-            $this->setErrorResponseData(
-                $responseData,
-                $this->boltHelper()->__('Publishable Key - One Page Checkout is invalid')
-            );
+            $this->setErrorResponseData($responseData, $this->boltHelper()->__('Publishable Key - One Page Checkout is invalid'));
         }
 
         // Validate database schema
         if (!($this->checkSchema())) {
-            $this->setErrorResponseData(
-                $responseData,
-                $this->boltHelper()->__('Schema is invalid')
-            );
+            $this->setErrorResponseData($responseData, $this->boltHelper()->__('Schema is invalid'));
         }
 
-        if (!$responseData['result']) {
+        if (!$responseData['result']){
             $msg = $this->boltHelper()->__('Invalid configuration');
             $this->boltHelper()->notifyException(new Exception($msg), $responseData);
             $this->boltHelper()->logWarning($msg);
@@ -103,13 +87,7 @@ class Bolt_Boltpay_ConfigurationController
         );
 
         try {
-            $signResponse = $this->boltHelper()->transmit(
-                'sign',
-                $signRequest,
-                'merchant',
-                'merchant',
-                $this->_storeId
-            );
+            $signResponse = $this->boltHelper()->transmit('sign', $signRequest, 'merchant', 'merchant', $this->_storeId);
         } catch (\Exception $e) {
             return false;
         }
@@ -196,7 +174,6 @@ class Bolt_Boltpay_ConfigurationController
         if (!$connection->tableColumnExists($quoteTable, 'user_session_id')) {
             return false;
         }
-
         if (!$connection->tableColumnExists($quoteTable, 'parent_quote_id')) {
             return false;
         }

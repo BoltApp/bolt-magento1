@@ -46,17 +46,15 @@ class Bolt_Boltpay_ProductpageController
             $this->sendResponse($productCartModel->getResponseHttpCode(), $productCartModel->getResponseBody());
         } catch (Exception $e) {
             // unexpected error
-            $this->sendResponse(
-                422,
-                array(
-                    'status' => 'failure',
-                    'error' =>
-                        array(
-                            'code' => 6009,
-                            'message' => $e->getMessage()
-                        )
-                )
-            );
+            $this->sendResponse(422, array(
+                'status' => 'failure',
+                'error'  =>
+                    array(
+                        'code'    => 6009,
+                        'message' => $e->getMessage()
+                    )
+            ));
+
             $this->boltHelper()->notifyException($e);
             $this->boltHelper()->logException($e);
         }
