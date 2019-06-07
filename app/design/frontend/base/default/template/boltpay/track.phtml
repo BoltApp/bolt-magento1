@@ -24,14 +24,19 @@ $controllerName = $this->getRequest()->getControllerName();
 /* TODO: extend key selection for mini-cart if necessary */
 ?>
 <?php if($this->isBoltActive()): ?>
-    <script
-            id="bolt-track"
-            type="text/javascript"
-            src="<?= $this->getTrackJsUrl(); ?>"
-            data-publishable-key="<?=$this->getPublishableKey((Mage::app()->getRequest()->getControllerName() === 'cart'
-                || ($routeName === 'catalog' && $controllerName === 'product'))
-                ? 'multi-page' : 'one-page'); ?>">
-    </script>
-    <script>console.log("Bolt M1 Version: <?=$version?>");</script>
+    <?php
+    $publishableKey = $this->getPublishableKey((Mage::app()->getRequest()->getControllerName() === 'cart'
+        || ($routeName === 'catalog' && $controllerName === 'product'))
+        ? 'multi-page' : 'one-page');
+    ?>
+    <?php if (!empty($publishableKey)): ?>
+        <script
+                id="bolt-track"
+                type="text/javascript"
+                src="<?php echo $this->getTrackJsUrl(); ?>"
+                data-publishable-key="<?php echo $publishableKey; ?>">
+        </script>
+        <script>console.log("Bolt Version: <?php echo $version?>");</script>
+    <?php endif; ?>
 <?php endif; ?>
 
