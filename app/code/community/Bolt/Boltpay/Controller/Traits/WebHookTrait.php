@@ -100,9 +100,16 @@ trait Bolt_Boltpay_Controller_Traits_WebHookTrait {
     protected function sendResponse($httpCode, $data = array())
     {
         ob_end_clean();
+        $content = is_string($data) ? $data : json_encode($data);
+        $length = strlen($content);
+
         $this->getResponse()
             ->setHttpResponseCode($httpCode)
-            ->setBody(is_string($data) ? $data : json_encode($data));
+            ->setHeader('Content-Length', $length, true)
+            ->setBody($content)
+            ->sendResponse();
+
+        while (ob_get_level()) { ob_end_clean(); }
     }
 
     /**

@@ -617,15 +617,15 @@ class Bolt_Boltpay_Model_Order extends Bolt_Boltpay_Model_Abstract
     /**
      * Called after pre-auth order is confirmed as authorized on Bolt.
      *
-     * @param string $orderIncrementId  customer facing order id
-     * @param object $payload           payload sent from Bolt
+     * @param Mage_Sales_Model_Order|string $order      the order or the customer facing order id
+     * @param object|string                 $payload    payload sent from Bolt
      *
      * @throws Mage_Core_Exception if there is a problem retrieving the bolt transaction reference from the payload
      */
-    public function receiveOrder( $orderIncrementId, $payload ) {
+    public function receiveOrder( $order, $payload ) {
         /** @var Mage_Sales_Model_Order $order */
-        $order = Mage::getModel('sales/order')->loadByIncrementId($orderIncrementId);
-        $payloadObject = json_decode($payload);
+        $order = is_object($order) ? $order : Mage::getModel('sales/order')->loadByIncrementId($order);
+        $payloadObject = is_object($payload) ? $payload : json_decode($payload);
         $immutableQuote = $this->getQuoteFromOrder($order);
 
         Mage::dispatchEvent('bolt_boltpay_order_received_before', array('order'=>$order, 'payload' => $payloadObject));
