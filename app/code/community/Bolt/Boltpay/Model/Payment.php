@@ -15,6 +15,8 @@
  * @license    http://opensource.org/licenses/osl-3.0.php  Open Software License (OSL 3.0)
  */
 
+use Bolt_Boltpay_Model_Payment as Payment;
+
 class Bolt_Boltpay_Model_Payment extends Mage_Payment_Model_Method_Abstract
 {
     use Bolt_Boltpay_BoltGlobalTrait;
@@ -459,15 +461,21 @@ class Bolt_Boltpay_Model_Payment extends Mage_Payment_Model_Method_Abstract
 
             if ($this->isTransactionStatusChanged($newTransactionStatus, $prevTransactionStatus)) {
                 $reference = $payment->getAdditionalInformation('bolt_reference');
+                if (empty($reference)) {
+                    $exception = new Exception( $this->boltHelper()->__("Payment missing expected transaction ID.") );
+                    $this->boltHelper()->logWarning($exception->getMessage());
+                    throw $exception;
+                }
 
-                if ($this->isCaptureRequest($newTransactionStatus, $prevTransactionStatus)) {
+                if ( empty($boltTransaction)
+                    && Payment::updateRequiresBoltTransaction($newTransactionStatus, $prevTransactionStatus) )
+                {
+                    $boltTransaction = $this->boltHelper()->fetchTransaction($reference);
+                }
+
+                if (Payment::isCaptureRequest($newTransactionStatus, $prevTransactionStatus)) {
                     $this->createInvoiceForHookRequest($payment, $boltTransaction);
                 }elseif ($newTransactionStatus == self::TRANSACTION_AUTHORIZED) {
-                    if (empty($reference)) {
-                        $exception = new Exception( $this->boltHelper()->__("Payment missing expected transaction ID.") );
-                        $this->boltHelper()->logWarning($exception->getMessage());
-                        throw $exception;
-                    }
                     $order = $payment->getOrder();
                     $payment->setTransactionId($reference);
                     $transaction = $payment->addTransaction( Mage_Sales_Model_Order_Payment_Transaction::TYPE_AUTH );
@@ -830,6 +838,7 @@ class Bolt_Boltpay_Model_Payment extends Mage_Payment_Model_Method_Abstract
                 $payment->boltHelper()->notifyException(new Exception( $payment->boltHelper()->__("'%s' is not a recognized order status.  '%s' is being set instead.", $transactionStatus, $new_order_status) ));
         }
 
+
         return $new_order_status;
     }
 
@@ -1025,10 +1034,23 @@ class Bolt_Boltpay_Model_Payment extends Mage_Payment_Model_Method_Abstract
      *
      * @return bool
      */
-    protected function isCaptureRequest($newTransactionStatus, $prevTransactionStatus)
+    protected static function isCaptureRequest($newTransactionStatus, $prevTransactionStatus)
     {
         return $newTransactionStatus == self::TRANSACTION_COMPLETED ||
             ($newTransactionStatus == self::TRANSACTION_AUTHORIZED && $prevTransactionStatus == self::TRANSACTION_AUTHORIZED);
+    }
+
+    /**
+     * Determines whether an transaction update needs a copy of the Bolt transaction to process
+     *
+     * @param string $newTransactionStatus      The new transaction directive from Bolt
+     * @param string $prevTransactionStatus     The previous transaction directive from Bolt
+     *
+     * @return bool  true for captures and refunds, otherwise false
+     */
+    public static final function updateRequiresBoltTransaction($newTransactionStatus, $prevTransactionStatus) {
+        return Payment::isCaptureRequest($newTransactionStatus, $prevTransactionStatus)
+            || ($newTransactionStatus == self::TRANSACTION_REFUND);
     }
 
     /**
