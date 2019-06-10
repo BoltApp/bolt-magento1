@@ -54,14 +54,12 @@
       </boltpay>
     </helpers>
 
-    <!--
     <rewrite>
       <bolt_boltpay_onepage>
-        <from><![CDATA[#^/checkout/onepage/#]]></from>
-        <to>/boltpay/onepage/</to>
+        <from><![CDATA[#^/checkout/onepage/success#]]></from>
+        <to>/boltpay/onepage/success</to>
       </bolt_boltpay_onepage>
     </rewrite>
-    -->
 
     <resources>
       <bolt_boltpay_setup>
@@ -77,37 +75,25 @@
     </resources>
 
     <events>
-      <sales_order_save_after>
-        <observers>
-          <bolt_boltpay_update_bolt_transaction_status>
-            <class>Bolt_Boltpay_Model_Observer</class>
-            <method>updateBoltTransactionStatus</method>
-          </bolt_boltpay_update_bolt_transaction_status>
-        </observers>
-      </sales_order_save_after>
-      <checkout_onepage_controller_success_action> <!-- Call after order has been saved and fowarded to success page -->
+      <checkout_onepage_controller_success_action> <!-- Call after order has been saved and forwarded to success page -->
         <observers>
           <bolt_boltpay_clear_shopping_cart>
             <class>Bolt_Boltpay_Model_Observer</class>
-            <method>clearShoppingCart</method>
+            <method>clearShoppingCartExceptPPCOrder</method>
             <depends>
               <ZZZZZ_Bolt />  <!--  psuedo module to place execution at the back of event queue -->
             </depends>
           </bolt_boltpay_clear_shopping_cart>
         </observers>
       </checkout_onepage_controller_success_action>
-      <bolt_boltpay_save_order_after>
+      <sales_model_service_quote_submit_before>
         <observers>
-          <bolt_boltpay_verify_order_contents>
+          <bolt_boltpay_validate_order_before_commit>
             <class>Bolt_Boltpay_Model_Observer</class>
-            <method>verifyOrderContents</method>
-          </bolt_boltpay_verify_order_contents>
-          <bolt_boltpay_set_bolt_user_id>
-            <class>Bolt_Boltpay_Model_Observer</class>
-            <method>setBoltUserId</method>
-          </bolt_boltpay_set_bolt_user_id>
+            <method>validateBeforeOrderCommit</method>
+          </bolt_boltpay_validate_order_before_commit>
         </observers>
-      </bolt_boltpay_save_order_after>
+      </sales_model_service_quote_submit_before>
       <sales_order_payment_capture>
         <observers>
           <boltpay_payment_capture_add_message>
@@ -117,15 +103,24 @@
           </boltpay_payment_capture_add_message>
         </observers>
       </sales_order_payment_capture>
-      <sales_order_place_after>
+      <sales_order_grid_collection_load_before>
         <observers>
-          <set_initial_order_status_and_details>
-            <class>Bolt_Boltpay_Model_Observer</class>
-            <method>setInitialOrderStatusAndDetails</method>
+          <bolt_boltpay_filter_preauth_orders>
             <type>singleton</type>
-          </set_initial_order_status_and_details>
+            <class>Bolt_Boltpay_Model_Observer</class>
+            <method>hidePreAuthOrders</method>
+          </bolt_boltpay_filter_preauth_orders>
         </observers>
-      </sales_order_place_after>
+      </sales_order_grid_collection_load_before>
+      <sales_order_save_before>
+        <observers>
+          <bolt_boltpay_safeguard_preauth_status>
+            <type>singleton</type>
+            <class>Bolt_Boltpay_Model_Observer</class>
+            <method>safeguardPreAuthStatus</method>
+          </bolt_boltpay_safeguard_preauth_status>
+        </observers>
+      </sales_order_save_before>
     </events>
 
     <sales>
@@ -222,6 +217,17 @@
         </boltpay>
       </updates>
     </layout>
+    <events>
+      <controller_front_init_before>
+        <observers>
+          <bolt_boltpay_check_if_order_canceled>
+            <type>singleton</type>
+            <class>Bolt_Boltpay_Model_Observer</class>
+            <method>clearCartCacheOnOrderCanceled</method>
+          </bolt_boltpay_check_if_order_canceled>
+        </observers>
+      </controller_front_init_before>
+    </events>
   </frontend>
 
   <default>
@@ -237,24 +243,24 @@
         <currency>USD</currency>
         <enable_merchant_scoped_account>0</enable_merchant_scoped_account>
         <selectors><![CDATA[.btn-proceed-checkout, .minicart-actions .checkout-button, body.firecheckout-index-index .button.btn-checkout]]></selectors>
-
-        <selector_styles>.btn-proceed-checkout {
-  .bolt-checkout-button.with-cards {
-    float: right;
-  }
-}       </selector_styles>
+        <selector_styles>
+          .btn-proceed-checkout {
+            .bolt-checkout-button.with-cards {
+              float: right;
+            }
+          }
+        </selector_styles>
         <enable_product_page_checkout>0</enable_product_page_checkout>
         <product_page_checkout_selector>.btn-cart</product_page_checkout_selector>
-
         <additional_css>
-#checkout-review-submit .bolt-checkout-button {
-  clear:both;
-  float:right;
-}
-.col-right.sidebar .block.block-cart .block-content .actions .bolt-checkout-button-button {
-  min-width: max-content!important;
-}       </additional_css>
-
+          #checkout-review-submit .bolt-checkout-button {
+            clear:both;
+            float:right;
+          }
+          .col-right.sidebar .block.block-cart .block-content .actions .bolt-checkout-button-button {
+            min-width: max-content!important;
+          }
+        </additional_css>
         <successpage>checkout/onepage/success</successpage>
         <allow_po_box>1</allow_po_box>
         <skip_payment>0</skip_payment>
