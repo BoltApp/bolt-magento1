@@ -112,6 +112,7 @@ class Bugsnag_Configuration
 
     /**
      * Set the project root.
+     *
      * @param string $projectRoot the project root path
      *
      * @return void
