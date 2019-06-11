@@ -741,7 +741,7 @@ class Bolt_Boltpay_Model_Payment extends Mage_Payment_Model_Method_Abstract
      */
     protected function getBoltMaxCaptureAmountAfterRefunds($order, $boltTransaction){
         $refundedAmount = (!empty($boltTransaction->refunded_amount->amount)) ? $boltTransaction->refunded_amount->amount : 0;
-        return ($boltTransaction->amount->amount - $refundedAmount)/100;
+        return ($boltTransaction->order->cart->total_amount->amount - $refundedAmount)/100;
     }
 
     /**
@@ -1112,7 +1112,7 @@ class Bolt_Boltpay_Model_Payment extends Mage_Payment_Model_Method_Abstract
      * @throws Mage_Core_Model_Store_Exception
      */
     protected function isPartialRefundFixingMismatch(Mage_Sales_Model_Order $order, $hookAmount, $boltTransaction){
-        $boltTotal = $boltTransaction->amount->amount / 100;
+        $boltTotal = $boltTransaction->order->cart->total_amount->amount / 100;
         $magentoTotal =  Mage::app()->getStore()->roundPrice(
             $order->getGrandTotal()
         );
