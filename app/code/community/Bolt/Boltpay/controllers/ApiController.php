@@ -304,6 +304,29 @@ class Bolt_Boltpay_ApiController extends Mage_Core_Controller_Front_Action imple
         $order =  $orderModel->getOrderByParentQuoteId($parentQuoteId);
 
         if (!$order->isObjectNew()) {
+            //////////////////////////////////////////////////////////////////////////////////////
+            // Remove order and expire cache only if the order is still pending authorization
+            // Otherwise, ignore the failed payment hook because it arriving out of sync as
+            // a payment has already been recorded
+            //////////////////////////////////////////////////////////////////////////////////////
+            if ($order->getStatus() !== Bolt_Boltpay_Model_Payment::TRANSACTION_PRE_AUTH_PENDING) {
+                $message = $this->boltHelper()->__(
+                    'Payment was already recorded. The failed payment hook for order %s seems out of sync.',
+                    $order->getIncrementId()
+                );
+                $this->boltHelper()->logWarning($message);
+                $this->boltHelper()->notifyException(new Exception($message), [], 'warning');
+                $this->sendResponse(
+                    200,
+                    array(
+                        'status' => 'success',
+                        'message' => $message
+                    )
+                );
+                return;
+            }
+            //////////////////////////////////////////////////////////////////////////////////////
+
             $orderModel->removePreAuthOrder($order);
         }
 
