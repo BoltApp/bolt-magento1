@@ -14,6 +14,25 @@ See [CHANGELOG.md](./CHANGELOG.md) for change history.
 ## Installation guide
 [Magento 1 plugin installation guide](https://docs.bolt.com/docs/magento-integration-guide)
 
+## Custom Bolt Events
+
+| Name | Description | Parameters |
+| --- | --- | --- | 
+| bolt_boltpay_shipping_method_applied  | | | |
+| bolt_boltpay_discounts_applied_to_bolt_order  | | | |
+| bolt_boltpay_correct_billing_address_for_bolt_order  | | | |
+| bolt_boltpay_tax_applied_to_bolt_order  | | | |
+| bolt_boltpay_correct_shipping_address_for_bolt_order  | | | |
+| bolt_boltpay_shipping_applied_to_bolt_order  | | | |
+| bolt_boltpay_filter_bolt_checkout_javascript  | | | |
+| bolt_boltpay_order_received_before  | Entry for altering the behavior of order activation and reception, (i.e. after an order payment has been authorized) | **order**<br>_Mage_Sales_Model_Order_<br>The recently converted order prior to being confirmed as authorized<br><br>**payload**<br>_object_<br>Bolt payload |
+| bolt_boltpay_order_received_after  | Entry for adding additional behavior to order reception, (i.e. after an order payment has been authorized) | **order**<br>_Mage_Sales_Model_Order_<br>The authorized and activated order<br><br>**payload**<br>_object_<br>Bolt payload |
+
+## Custom Bolt Filters
+| Name | Description | Parameters |
+| --- | --- | --- | 
+| bolt_boltpay_filter_bolt_checkout_javascript  | | | |
+
 ## Run tests
 
 Run the following from root magento folder:
