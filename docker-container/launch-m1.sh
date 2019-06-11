@@ -6,6 +6,13 @@ rm -rf docker-magento
 # Install docker base from external library
 git clone -b $m1Version git@github.com:alexcheng1982/docker-magento.git
 
+if [ "$installSampleData" = false ] ; then
+    python remove-sampledata.py
+fi
+
+# Set php version
+python set-php.py $phpVersion
+
 # Configure external library to our specs
 python change-hostname.py $ngrokUrl
 
