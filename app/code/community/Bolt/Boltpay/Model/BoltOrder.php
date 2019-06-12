@@ -47,6 +47,7 @@ class Bolt_Boltpay_Model_BoltOrder extends Bolt_Boltpay_Model_Abstract
         'amgiftcard', // https://amasty.com/magento-gift-card.html
         'amstcred', // https://amasty.com/magento-store-credit.html
         'awraf',    //https://ecommerce.aheadworks.com/magento-extensions/refer-a-friend.html#magento1
+        'rewardpoints_after_tax', // Magestore_RewardPoints
     );
 
     /**
@@ -76,11 +77,13 @@ class Bolt_Boltpay_Model_BoltOrder extends Bolt_Boltpay_Model_Abstract
      * Generates cart submission data for sending to Bolt order cart field.
      *
      * @param Mage_Sales_Model_Quote        $quote      Magento quote instance
-     * @param bool                          $multipage  Is checkout type Multi-Page Checkout, the default is true, set to false for One Page Checkout
+     * @param bool                          $isMultipage  Is checkout type Multi-Page Checkout, the default is true, set to false for One Page Checkout
      *
      * @return array            The cart data part of the order payload to be sent as to bolt in API call as a PHP array
+     *
+     * @throws Mage_Core_Model_Store_Exception if the store cannot be determined
      */
-    public function buildCart($quote, $multipage)
+    public function buildCart($quote, $isMultipage)
     {
 
         ///////////////////////////////////////////////////////////////////////////////////
@@ -126,13 +129,13 @@ class Bolt_Boltpay_Model_BoltOrder extends Bolt_Boltpay_Model_Abstract
             'display_id'      => $quote->getReservedOrderId().'|'.$quote->getId(),
             'items'           => array_map(
                 function ($item) use ($quote, &$calculatedTotal) {
+                    /** @var Mage_Sales_Model_Quote_Item $item */
                     $imageUrl = $this->boltHelper()->getItemImageUrl($item);
                     $product   = Mage::getModel('catalog/product')->load($item->getProductId());
                     $type = $product->getTypeId() == 'virtual' ? self::ITEM_TYPE_DIGITAL : self::ITEM_TYPE_PHYSICAL;
-
                     $calculatedTotal += round($item->getPrice() * 100 * $item->getQty());
                     return array(
-                        'reference'    => $quote->getId(),
+                        'reference'    => $item->getId(),
                         'image_url'    => $imageUrl,
                         'name'         => $item->getName(),
                         'sku'          => $item->getSku(),
@@ -141,7 +144,7 @@ class Bolt_Boltpay_Model_BoltOrder extends Bolt_Boltpay_Model_Abstract
                         'unit_price'   => round($item->getCalculationPrice() * 100),
                         'quantity'     => $item->getQty(),
                         'type'         => $type,
-                        'properties' => $this->getItemProperties($item)
+                        'properties'   => $this->getItemProperties($item)
                     );
                 }, $quote->getAllVisibleItems()
             ),
@@ -152,14 +155,14 @@ class Bolt_Boltpay_Model_BoltOrder extends Bolt_Boltpay_Model_Abstract
         /////////////////////////////////////////////////////////////////////////
         // Check for discounts and include them in the submission data if found.
         /////////////////////////////////////////////////////////////////////////
-        $this->addDiscounts($totals, $cartSubmissionData);
+        $this->addDiscounts($totals, $cartSubmissionData, $quote);
         $this->dispatchCartDataEvent('bolt_boltpay_discounts_applied_to_bolt_order', $quote, $cartSubmissionData);
         $totalDiscount = isset($cartSubmissionData['discounts']) ? array_sum(array_column($cartSubmissionData['discounts'], 'amount')) : 0;
 
         $calculatedTotal -= $totalDiscount;
         /////////////////////////////////////////////////////////////////////////
 
-        if ($multipage) {
+        if ($isMultipage) {
             /////////////////////////////////////////////////////////////////////////////////////////
             // For multi-page checkout type send only subtotal, do not include shipping and tax info.
             /////////////////////////////////////////////////////////////////////////////////////////
@@ -223,7 +226,7 @@ class Bolt_Boltpay_Model_BoltOrder extends Bolt_Boltpay_Model_Abstract
                 $cartSubmissionData['total_amount'] = (int) round($grandTotal->getValue() * 100);
 
                 /* @var Mage_Sales_Model_Quote_Address_Total $taxTotal */
-                $taxTotal = $totalsBlock->getTotals()['tax'];
+                $taxTotal = isset($totalsBlock->getTotals()['tax']) ? $totalsBlock->getTotals()['tax'] : 0;
                 $cartSubmissionData['tax_amount'] = $this->getTaxForAdmin($taxTotal);
             } else {
                 $cartSubmissionData['total_amount'] = round($totals["grand_total"]->getValue() * 100);
@@ -325,12 +328,29 @@ class Bolt_Boltpay_Model_BoltOrder extends Bolt_Boltpay_Model_Abstract
                 // others as negative, which is the Magento default.
                 // Using the absolute value.
                 $discountAmount = (int) abs(round($amount * 100));
-
-                $cartSubmissionData['discounts'][] = array(
+                $data = array(
                     'amount'      => $discountAmount,
                     'description' => $totals[$discount]->getTitle(),
                     'type'        => 'fixed_amount',
                 );
+                if ($discount === 'discount' && $quote->getCouponCode()) {
+                    /////////////////////////////////////////////////////////////
+                    /// We want to get the apply the coupon code as a reference.
+                    /// Potentially, we will have several 'discount' entries
+                    /// but only one coupon code, so we must find the right entry
+                    /// to map to.  Magento stores the coupon rule description in
+                    /// the totals object wrapped in the string "Discount()" and
+                    /// keeps no reference to the rule or coupon code. Here, we use
+                    /// the coupon code to look up the rule description and compare
+                    /// it to the total object's title.
+                    /////////////////////////////////////////////////////////////
+                    $coupon = Mage::getModel('salesrule/coupon')->load($quote->getCouponCode(), 'code');
+                    $rule = Mage::getModel('salesrule/rule')->load($coupon->getRuleId());
+                    if ($totals[$discount]->getTitle() === Mage::helper('sales')->__('Discount (%s)', (string)$rule->getName()) ) {
+                        $data['reference'] = $quote->getCouponCode();
+                    }
+                }
+                $cartSubmissionData['discounts'][] = $data;
                 $totalDiscount += $discountAmount;
             }
         }
@@ -352,7 +372,7 @@ class Bolt_Boltpay_Model_BoltOrder extends Bolt_Boltpay_Model_Abstract
 
 
     /**
-     * Adds the calculated shipping tax to the Bolt order
+     * Adds the calculated shipping to the Bolt order
      *
      * @param array                                 $totals             totals array from collectTotals
      * @param array                                 $cartSubmissionData data to be sent to Bolt
@@ -449,7 +469,7 @@ class Bolt_Boltpay_Model_BoltOrder extends Bolt_Boltpay_Model_Abstract
         // otherwise, we have no better thing to do than let the Bolt server do the checking
         return $magentoDerivedCartData;
     }
-    
+
 
     /**
      * Checks if billing address of a quote has all the expected fields.
@@ -578,7 +598,7 @@ class Bolt_Boltpay_Model_BoltOrder extends Bolt_Boltpay_Model_Abstract
             //////////////////////////////////////////////////
             // In the admin, we first check form session data.
             // For order edits or reorders, the guest customer's email
-            // will be stored in the order 
+            // will be stored in the order
             //////////////////////////////////////////////////
             $shippingAddressData = Mage::getSingleton('admin/session')->getOrderShippingAddress() ?: array( 'email_address' => '', 'email' => '' );
             $customerEmail = $shippingAddressData['email_address'] ?: $shippingAddressData['email'];
@@ -888,6 +908,7 @@ PROMISE;
     {
         $properties = array();
         foreach($this->getProductOptions($item) as $option) {
+            /** @var Mage_Sales_Model_Quote_Item_Option $option */
             $optionValue = $this->getOptionValue($option);
 
             if ($optionValue) {

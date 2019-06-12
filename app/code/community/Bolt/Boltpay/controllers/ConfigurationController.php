@@ -20,7 +20,8 @@
  *
  * Check Configuration for Bolt
  */
-class Bolt_Boltpay_ConfigurationController extends Mage_Core_Controller_Front_Action
+class Bolt_Boltpay_ConfigurationController
+    extends Mage_Core_Controller_Front_Action implements Bolt_Boltpay_Controller_Interface
 {
     use Bolt_Boltpay_BoltGlobalTrait;
 
@@ -64,7 +65,9 @@ class Bolt_Boltpay_ConfigurationController extends Mage_Core_Controller_Front_Ac
         }
 
         if (!$responseData['result']){
-            $this->boltHelper()->notifyException(new Exception($this->boltHelper()->__('Invalid configuration')), $responseData);
+            $msg = $this->boltHelper()->__('Invalid configuration');
+            $this->boltHelper()->notifyException(new Exception($msg), $responseData);
+            $this->boltHelper()->logWarning($msg);
         }
 
         $response = Mage::helper('core')->jsonEncode($responseData);
@@ -188,7 +191,7 @@ class Bolt_Boltpay_ConfigurationController extends Mage_Core_Controller_Front_Ac
         }
 
         $statusTable = $setup->getTable('sales_order_status_state');
-        $query = $connection->query("SELECT * FROM $statusTable WHERE state = 'deferred'");
+        $query = $connection->query("SELECT * FROM $statusTable WHERE status = 'deferred'");
         $resultData = $query->fetchAll();
         if (!count($resultData)) {
             return false;

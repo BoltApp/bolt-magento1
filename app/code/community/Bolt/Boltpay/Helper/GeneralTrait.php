@@ -51,7 +51,8 @@ trait Bolt_Boltpay_Helper_GeneralTrait {
         return $this->isBoltPayActive()
             && (!$checkCountry || ($checkCountry && $this->canUseForCountry($quote->getBillingAddress()->getCountry())))
             && (Mage::app()->getStore()->getCurrentCurrencyCode() == 'USD')
-            && (Mage::app()->getStore()->getBaseCurrencyCode() == 'USD');
+            && (Mage::app()->getStore()->getBaseCurrencyCode() == 'USD')
+            && count($quote->getAllVisibleItems()) > 0;
     }
 
 
@@ -70,6 +71,9 @@ trait Bolt_Boltpay_Helper_GeneralTrait {
 
         if($clearTotalsCollectedFlag) {
             $quote->setTotalsCollectedFlag(false);
+            $quote->getShippingAddress()->unsetData('cached_items_all');
+            $quote->getShippingAddress()->unsetData('cached_items_nominal');
+            $quote->getShippingAddress()->unsetData('cached_items_nonnominal');
         }
 
         $quote->collectTotals();

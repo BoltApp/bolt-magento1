@@ -15,7 +15,9 @@
  * @license    http://opensource.org/licenses/osl-3.0.php  Open Software License (OSL 3.0)
  */
 
-class Bolt_Boltpay_BadInputException extends Bolt_Boltpay_BoltException
+class DataDog_Environment
 {
-
+    const TEST_ENVIRONMENT = 'test';
+    const DEVELOPMENT_ENVIRONMENT = 'development';
+    const PRODUCTION_ENVIRONMENT = 'production';
 }

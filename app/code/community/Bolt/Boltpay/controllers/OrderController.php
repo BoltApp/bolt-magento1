@@ -15,16 +15,15 @@
  * @license    http://opensource.org/licenses/osl-3.0.php  Open Software License (OSL 3.0)
  */
 
-require_once(Mage::getModuleDir('controllers','Bolt_Boltpay').DS.'OrderControllerTrait.php');
-
 /**
  * Class Bolt_Boltpay_OrderController
  *
  * Saves the order in Magento system after successful Bolt transaction processing.
  */
-class Bolt_Boltpay_OrderController extends Mage_Core_Controller_Front_Action
+class Bolt_Boltpay_OrderController
+    extends Mage_Core_Controller_Front_Action implements Bolt_Boltpay_Controller_Interface
 {
-    use Bolt_Boltpay_OrderControllerTrait;
+    use Bolt_Boltpay_Controller_Traits_OrderControllerTrait;
 
     /**
      * Frontend save order action. Called from BoltCheckout.configure success callback.
@@ -65,11 +64,12 @@ class Bolt_Boltpay_OrderController extends Mage_Core_Controller_Front_Action
 
             if ($order->isObjectNew()) {
                 $sessionQuoteId = ($this->getRequest()->getParam('checkoutType') == Bolt_Boltpay_Block_Checkout_Boltpay::CHECKOUT_TYPE_PRODUCT_PAGE) ? null : $checkoutSession->getQuoteId();
-                $orderModel->createOrder($reference,$sessionQuoteId, true, $transaction);
+                $orderModel->createOrder($reference,$sessionQuoteId, false, $transaction);
             }
 
         } catch (Exception $e) {
             $this->boltHelper()->notifyException($e);
+            $this->boltHelper()->logException($e);
             throw $e;
         }
     }
@@ -160,6 +160,7 @@ class Bolt_Boltpay_OrderController extends Mage_Core_Controller_Front_Action
             $this->getResponse()->setBody(Mage::helper('core')->jsonEncode($result));
         } catch (Exception $e) {
             $this->boltHelper()->notifyException($e);
+            $this->boltHelper()->logException($e);
             throw $e;
         }
     }

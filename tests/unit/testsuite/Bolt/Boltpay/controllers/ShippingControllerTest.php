@@ -23,12 +23,12 @@ class Bolt_Boltpay_ShippingControllerTest extends PHPUnit_Framework_TestCase
      * @var Bolt_Boltpay_TestHelper  Used for working with the shopping cart
      */
     private $testHelper;
-    
+
     /**
      * @var string  Used for storing $cacheBoltHeader in the header of response
      */
     private $_cacheBoltHeader;
-    
+
     /**
      * @var Mage_Customer_Model_Customer
      */
@@ -52,53 +52,53 @@ class Bolt_Boltpay_ShippingControllerTest extends PHPUnit_Framework_TestCase
         $stubbedBoltHelper = $this->getMockBuilder('Bolt_Boltpay_Helper_Data')
             ->setMethods(array('verify_hook', 'setResponseContextHeaders'))
             ->getMock();
-        
+
         $stubbedResponse = $this->getMockBuilder('Mage_Core_Controller_Response_Http')
             ->setMethods(['setHeader'])
             ->getMock();
-        
+
         $stubbedResponse->method('setHeader')
             ->with(
-                    $this->anything(),
-                    $this->callback(function($headerValue){
-                        if($headerValue === 'HIT' || $headerValue === 'MISS'){
-                            $this->_cacheBoltHeader = $headerValue;
-                        }
-                        return $headerValue;
-                    })
-                   )
+                $this->anything(),
+                $this->callback(function($headerValue){
+                    if($headerValue === 'HIT' || $headerValue === 'MISS'){
+                        $this->_cacheBoltHeader = $headerValue;
+                    }
+                    return $headerValue;
+                })
+            )
             ->willReturn($stubbedResponse);
 
         $stubbedBoltHelper->method('verify_hook')->willReturn(true);
-        
+
         $stubbedBoltHelper->method('setResponseContextHeaders')->willReturn($stubbedResponse);
 
         $this->_shippingController->method('boltHelper')->willReturn($stubbedBoltHelper);
-        
+
         $this->_shippingController->method('getResponse')->willReturn($stubbedResponse);
 
         $this->testHelper = new Bolt_Boltpay_TestHelper();
-        
+
         $websiteId = Mage::app()->getWebsite()->getId();
         $store = Mage::app()->getStore();
-         
+
         $this->_customer = Mage::getModel("customer/customer");
         $this->_customer   ->setWebsiteId($websiteId)
-                    ->setStore($store)
-                    ->setFirstname('Don')
-                    ->setLastname('Quijote')
-                    ->setEmail('test-shipping-cache@bolt.com')
-                    ->setPassword('somepassword');
+            ->setStore($store)
+            ->setFirstname('Don')
+            ->setLastname('Quijote')
+            ->setEmail('test-shipping-cache@bolt.com')
+            ->setPassword('somepassword');
 
     }
-    
+
     public function tearDown() {
-		Mage::register('isSecureArea', true);
+        Mage::register('isSecureArea', true);
         $this->_customer->delete();
         Mage::unregister('isSecureArea');
-        
+
         Mage::getSingleton('checkout/session')->setQuoteId(null);
-	}
+    }
 
 
 
@@ -186,9 +186,9 @@ class Bolt_Boltpay_ShippingControllerTest extends PHPUnit_Framework_TestCase
         );
 
         $reflectedShippingController = new ReflectionClass($this->_shippingController);
-        $reflectedRequestJson = $reflectedShippingController->getProperty('_requestJSON');
-        $reflectedRequestJson->setAccessible(true);
-        $reflectedRequestJson->setValue($this->_shippingController, json_encode($geoIpAddressData));
+        $reflectedPayload = $reflectedShippingController->getProperty('payload');
+        $reflectedPayload->setAccessible(true);
+        $reflectedPayload->setValue($this->_shippingController, json_encode($geoIpAddressData));
 
         $this->_shippingController->prefetchEstimateAction();
 
@@ -268,16 +268,16 @@ class Bolt_Boltpay_ShippingControllerTest extends PHPUnit_Framework_TestCase
         );
 
 
-        $reflectedRequestJson = $reflectedShippingController->getProperty('_requestJSON');
-        $reflectedRequestJson->setAccessible(true);
-        $reflectedRequestJson->setValue($this->_shippingController, json_encode($mockBoltRequestData));
+        $reflectedPayload = $reflectedShippingController->getProperty('payload');
+        $reflectedPayload->setAccessible(true);
+        $reflectedPayload->setValue($this->_shippingController, json_encode($mockBoltRequestData));
 
         ////////////////////////////////////////////////////////
         // Make first call that should not have a cache value
         ////////////////////////////////////////////////////////
         $this->_shippingController->indexAction();
         $firstCallEstimate = json_decode($this->_shippingController->getResponse()->getBody(), true);
-        $firstCallHeaders = $this->_shippingController->getResponse()->getHeaders();      
+        $firstCallHeaders = $this->_shippingController->getResponse()->getHeaders();
         $firstCallHitOrMiss = $this->_cacheBoltHeader;
         ////////////////////////////////////////////////////////
 
@@ -311,7 +311,7 @@ class Bolt_Boltpay_ShippingControllerTest extends PHPUnit_Framework_TestCase
         $modifiedAddressExpectedCacheId = $this->_shippingController->getEstimateCacheIdentifier($quote, $modifiedMagentoFormatAddressData);
 
 
-        $reflectedRequestJson->setValue($this->_shippingController, json_encode($mockBoltRequestData));
+        $reflectedPayload->setValue($this->_shippingController, json_encode($mockBoltRequestData));
 
         $this->_shippingController->indexAction();
         $thirdCallEstimate = json_decode($this->_shippingController->getResponse()->getBody(), true);
@@ -324,7 +324,7 @@ class Bolt_Boltpay_ShippingControllerTest extends PHPUnit_Framework_TestCase
         // Make a fourth call with the original data
         // It should be read from the cache
         ////////////////////////////////////////////////////////
-        $reflectedRequestJson->setValue($this->_shippingController, json_encode($originalMockBoltRequestData));
+        $reflectedPayload->setValue($this->_shippingController, json_encode($originalMockBoltRequestData));
 
         $this->_shippingController->indexAction();
         $fourthCallEstimate = json_decode($this->_shippingController->getResponse()->getBody(), true);
