@@ -47,4 +47,4 @@ If you would like to pull the latest Bolt code from the Git repo and update Mage
 
 | Name | Area | Description | Parameters | Filtered Value | 
 | --- | --- | --- | --- | --- |
-| bolt_boltpay_filter_shipping_label | global | Allows changing of individual shipping labels that are displayed in Bolt | **rate**<br>_Mage_Sales_Model_Quote_Address_Rate_<br>the information for this calculated rate, including method, carrier, and price | **string**<br>The label to be displayed in the Bolt order |
+| bolt_boltpay_filter_shipping_label | global | Allows changing of individual shipping labels that are displayed in Bolt | **rate**<br>_Mage_Sales_Model_Quote_Address_Rate_<br>The information for this calculated rate, including method, carrier, and price | **string**<br>The label to be displayed in the Bolt order |
