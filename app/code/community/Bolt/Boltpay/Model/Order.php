@@ -236,6 +236,8 @@ class Bolt_Boltpay_Model_Order extends Bolt_Boltpay_Model_Abstract
             }
 
             $this->boltHelper()->logException($oce);
+            $this->boltHelper()->notifyException($oce);
+
             if ( $oce instanceof Bolt_Boltpay_OrderCreationException ) {
                 throw $oce;
             } else {
@@ -523,7 +525,7 @@ class Bolt_Boltpay_Model_Order extends Bolt_Boltpay_Model_Abstract
      *
      * @throws Bolt_Boltpay_OrderCreationException upon failure of price consistency validation
      */
-    protected function validateTotals(Mage_Sales_Model_Order $immutableQuote, $transaction)
+    protected function validateTotals(Mage_Sales_Model_Quote $immutableQuote, $transaction)
     {
         $magentoTotals = $immutableQuote->getTotals();
 
@@ -619,15 +621,15 @@ class Bolt_Boltpay_Model_Order extends Bolt_Boltpay_Model_Abstract
     /**
      * Called after pre-auth order is confirmed as authorized on Bolt.
      *
-     * @param string $orderIncrementId  customer facing order id
-     * @param object $payload           payload sent from Bolt
+     * @param Mage_Sales_Model_Order|string $order      the order or the customer facing order id
+     * @param object|string                 $payload    payload sent from Bolt
      *
      * @throws Mage_Core_Exception if there is a problem retrieving the bolt transaction reference from the payload
      */
-    public function receiveOrder( $orderIncrementId, $payload ) {
+    public function receiveOrder( $order, $payload ) {
         /** @var Mage_Sales_Model_Order $order */
-        $order = Mage::getModel('sales/order')->loadByIncrementId($orderIncrementId);
-        $payloadObject = json_decode($payload);
+        $order = is_object($order) ? $order : Mage::getModel('sales/order')->loadByIncrementId($order);
+        $payloadObject = is_object($payload) ? $payload : json_decode($payload);
         $immutableQuote = $this->getQuoteFromOrder($order);
 
         Mage::dispatchEvent('bolt_boltpay_order_received_before', array('order'=>$order, 'payload' => $payloadObject));
@@ -651,7 +653,8 @@ class Bolt_Boltpay_Model_Order extends Bolt_Boltpay_Model_Abstract
     {
         if (empty($order->getCreatedAt())) { $order->setCreatedAt(Mage::getModel('core/date')->gmtDate())->save(); }
         $this->getParentQuoteFromOrder($order)->setIsActive(false)->save();
-        $order->getPayment()->setAdditionalInformation('bolt_reference', $payloadObject->transaction_reference)->save();
+        $reference = @$payloadObject->transaction_reference ?: $payloadObject->reference;
+        $order->getPayment()->setAdditionalInformation('bolt_reference', $reference)->save();
         $this->sendOrderEmail($order);
     }
 

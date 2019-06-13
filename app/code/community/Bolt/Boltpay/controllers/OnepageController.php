@@ -40,9 +40,10 @@ class Bolt_Boltpay_OnepageController
             return;
         }
 
-        $payload = base64_decode(@$requestParams['bolt_payload']);
+        $payload = @$requestParams['bolt_payload'];
+        $signature = base64_decode(@$requestParams['bolt_signature']);
 
-        if (!$this->boltHelper()->verify_hook($payload, @$requestParams['bolt_signature'])) {
+        if (!$this->boltHelper()->verify_hook($payload, $signature)) {
             // If signature verification fails, we log the error and immediately return control to Magento
             $exception = new Bolt_Boltpay_OrderCreationException(
                 Bolt_Boltpay_OrderCreationException::E_BOLT_GENERAL_ERROR,
@@ -50,6 +51,7 @@ class Bolt_Boltpay_OnepageController
             );
             $this->boltHelper()->notifyException($exception, array(), 'warning');
             $this->boltHelper()->logWarning($exception->getMessage());
+
             parent::successAction();
             return;
         }
@@ -79,7 +81,7 @@ class Bolt_Boltpay_OnepageController
             ->setLastRealOrderId($requestParams['lastRealOrderId'])
             ->setLastRecurringProfileIds($recurringPaymentProfilesIds);
 
-        Mage::getModel('boltpay/order')->receiveOrder($requestParams['lastRealOrderId'], $this->payload);
+        Mage::getModel('boltpay/order')->receiveOrder($requestParams['lastRealOrderId'], base64_decode($payload));
 
         parent::successAction();
     }
