@@ -43,7 +43,18 @@ This will download the Bolt repository and symlink the modman Bolt files to the 
 If you would like to pull the latest Bolt code from the Git repo and update Magento, simply run:
 > modman update
 
-## Custom Bolt Event Reference
+## Custom Bolt Standard Event Reference
+
+| Name | Area | Description | Parameters |
+| --- | --- | --- | --- |
+| bolt_boltpay_order_creation_before | global | Entry-point for applying any pre-conditions prior to the conversion of a Bolt order to Magento order | **immutableQuote**<br>_Mage_Sales_Model_Quote_<br>the Magento cart copy of the Bolt order<br><br>**parentQuote**<br>_Mage_Sales_Model_Quote_<br>the original Magento cart session<br><br>**transaction**<br>_object_<br>Bolt payload | 
+| bolt_boltpay_order_creation_after | global | Allows for post order creation actions to be applied exclusively to Bolt orders | **order**<br>_Mage_Sales_Model_Order_<br>the converted and saved Magento order<br><br>**quote**<br>_Mage_Sales_Model_Quote_<br>the immutable quote<br><br>**transaction**<br>_object_<br>Bolt payload |
+| bolt_boltpay_shipping_estimate_before | global | Performed before all shipping and tax estimates are calculated.  Custom environment state initialization logic can be set here. | **quote**<br>_Mage_Sales_Model_Quote_<br>the immutable quote<br><br>**transaction**<br>_object_<br>Bolt payload |
+| bolt_boltpay_shipping_method_applied_before | global | Executed prior to a specific shipping method is applied to quote for shipping and tax calculation.  This is used for setting any shipping method specific conditions. Shipping method can be prevented from being added to Bolt by setting _quote->setShouldSkipThisShippingMethod(true)_.|  **quote**<br>_Mage_Sales_Model_Quote_<br>the immutable quote<br><br>**shippingMethodCode**<br>_string_ Shipping rate code composed of {carrier}_{method}|
+| bolt_boltpay_shipping_method_applied_after | global | Executed after a specific shipping method is applied to quote for shipping and tax calculation.  Shipping method specific cleanup logic is typically performed from here. Shipping method can be prevented from being added to Bolt by setting _quote->setShouldSkipThisShippingMethod(true)_. |  **quote**<br>_Mage_Sales_Model_Quote_<br>the immutable quote<br><br>**shippingMethodCode**<br>_string_<br>Shipping rate code composed of {carrier}_{method}|
+| bolt_boltpay_shipping_option_added | global | Executed after a shipping option is successfully added to what is sent to Bolt |  **quote**<br>_Mage_Sales_Model_Quote_<br>the immutable quote<br><br>**rate**<br>_Mage_Sales_Model_Quote_Address_Rate_<br>rate object of the option that was added<br><br>**option**<br>_array_<br>the actual data that is sent to Bolt for this option|
+
+## Custom Bolt Filter Event Reference
 
 | Name | Area | Description | Parameters | Filtered Value | 
 | --- | --- | --- | --- | --- |

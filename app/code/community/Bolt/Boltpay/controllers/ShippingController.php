@@ -81,6 +81,14 @@ class Bolt_Boltpay_ShippingController
             ////////////////////////////////////////////////////////////////////////////////
             /// Apply shipping address with validation checks
             ////////////////////////////////////////////////////////////////////////////////
+            Mage::dispatchEvent(
+                'bolt_boltpay_shipping_estimate_before',
+                array(
+                    'quote'=> $quote,
+                    'transaction' => $mockTransaction
+                )
+            );
+
             $shippingAddress = $requestData->shipping_address;
             $addressErrorDetails = array();
 

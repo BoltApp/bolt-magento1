@@ -74,6 +74,15 @@ class Bolt_Boltpay_Model_Order extends Bolt_Boltpay_Model_Abstract
                 $this->boltHelper()->setCustomerSessionByQuoteId($sessionQuoteId);
             }
 
+            Mage::dispatchEvent(
+                'bolt_boltpay_order_creation_before',
+                array(
+                    'immutable_quote'=> $immutableQuote,
+                    'parent_quote' => $parentQuote,
+                    'transaction' => $transaction
+                )
+            );
+
             $this->validateCartSessionData($immutableQuote, $parentQuote, $transaction);
 
             // adding guest user email to order
@@ -269,11 +278,19 @@ class Bolt_Boltpay_Model_Order extends Bolt_Boltpay_Model_Abstract
             $this->associateOrderToCustomerWhenPlacingOnPDP($order->getData('increment_id'));
         }
 
+        ///////////////////////////////////////////////////////
+        /// Dispatch order save events
+        ///////////////////////////////////////////////////////
         $recurringPaymentProfiles = $service->getRecurringPaymentProfiles();
 
         Mage::dispatchEvent(
             'checkout_submit_all_after',
             array('order' => $order, 'quote' => $immutableQuote, 'recurring_profiles' => $recurringPaymentProfiles)
+        );
+
+        Mage::dispatchEvent(
+            'bolt_boltpay_order_creation_after',
+            array('order'=>$order, 'quote'=>$immutableQuote, 'transaction' => $transaction)
         );
         ///////////////////////////////////////////////////////
 
