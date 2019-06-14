@@ -57,7 +57,6 @@ trait Bolt_Boltpay_Helper_ApiTrait {
     {
         $signingSecret = Mage::helper('core')->decrypt(Mage::getStoreConfig('payment/boltpay/signing_key'));
         $computedHmac  = trim(base64_encode(hash_hmac('sha256', $payload, $signingSecret, true)));
-
         return $hmacHeader == $computedHmac;
     }
 

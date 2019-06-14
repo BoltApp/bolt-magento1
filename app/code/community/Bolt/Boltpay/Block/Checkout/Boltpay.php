@@ -347,7 +347,11 @@ class Bolt_Boltpay_Block_Checkout_Boltpay extends Mage_Checkout_Block_Onepage_Re
             $hints['virtual_terminal_mode'] = true;
         }
 
-        $hints['prefill'] = $prefill;
+        // Skip pre-fill for Apple Pay related data.
+        if (!(@$prefill['email'] == 'fake@email.com' || @$prefill['phone'] == '1111111111')) {
+            $hints['prefill'] = $prefill;
+        }
+
         return $hints;
     }
 
@@ -448,6 +452,16 @@ class Bolt_Boltpay_Block_Checkout_Boltpay extends Mage_Checkout_Block_Onepage_Re
     public function getAdditionalCSS()
     {
         return Mage::getStoreConfig('payment/boltpay/additional_css');
+    }
+
+    /**
+     * Additional JS that is to be added on any page where the Bolt Button is rendered
+     *
+     * @return string   Well formed Javascript to typically be placed within a <script> tag
+     */
+    public function getAdditionalJs()
+    {
+        return Mage::getStoreConfig('payment/boltpay/additional_js');
     }
 
     /**

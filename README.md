@@ -42,3 +42,9 @@ This will create an empty .modman folder in the Magento root directory. Then clo
 This will download the Bolt repository and symlink the modman Bolt files to the symlinked Magento files.
 If you would like to pull the latest Bolt code from the Git repo and update Magento, simply run:
 > modman update
+
+## Custom Bolt Event Reference
+
+| Name | Area | Description | Parameters | Filtered Value | 
+| --- | --- | --- | --- | --- |
+| bolt_boltpay_filter_shipping_label | global | Allows changing of individual shipping labels that are displayed in Bolt | **rate**<br>_Mage_Sales_Model_Quote_Address_Rate_<br>The information for this calculated rate, including method, carrier, and price | **string**<br>The label to be displayed in the Bolt order |
