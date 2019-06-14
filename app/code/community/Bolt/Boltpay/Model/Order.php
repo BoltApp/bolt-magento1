@@ -40,6 +40,9 @@ class Bolt_Boltpay_Model_Order extends Bolt_Boltpay_Model_Abstract
      * @return Mage_Sales_Model_Order   The order saved to Magento
      *
      * @throws Bolt_Boltpay_OrderCreationException    thrown on order creation failure
+     *
+     * @todo Change this to accept a quote object to keep all setting current store context to the APIController
+     * @todo Remove $reference, $sessionQuoteId, and $isPreAuth as this is only called from the preauth context
      */
     public function createOrder($reference, $sessionQuoteId = null, $isPreAuthCreation = false, $transaction = null)
     {
@@ -54,6 +57,7 @@ class Bolt_Boltpay_Model_Order extends Bolt_Boltpay_Model_Abstract
 
             $immutableQuoteId = $this->boltHelper()->getImmutableQuoteIdFromTransaction($transaction);
             $immutableQuote = $this->getQuoteById($immutableQuoteId);
+            Mage::app()->setCurrentStore($immutableQuote->getStore());
             $parentQuote = $this->getQuoteById($immutableQuote->getParentQuoteId());
 
             if (!$parentQuote->getIsActive()) {
