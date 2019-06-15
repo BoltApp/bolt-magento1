@@ -55,7 +55,6 @@ class Bolt_Boltpay_Model_OrderTest extends PHPUnit_Framework_TestCase
             ->willReturn($history);
 
         $this->assertNull($history->getIsCustomerNotified());
-        $this->assertNull($orderPayment->getAdditionalInformation("orderEmailWasSent"));
 
         try {
             $orderModel->sendOrderEmail($order);
@@ -64,7 +63,6 @@ class Bolt_Boltpay_Model_OrderTest extends PHPUnit_Framework_TestCase
         }
 
         $this->assertTrue($history->getIsCustomerNotified());
-        $this->assertEquals('true', $orderPayment->getAdditionalInformation("orderEmailWasSent"));
     }
 
     /**
