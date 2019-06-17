@@ -4,6 +4,7 @@ set -x
 rm -rf docker-magento
 
 python set-magento-version.py $m1Version
+python change-hostname.py $ngrokUrl
 docker-compose down -v
 docker-compose up -d
 sleep 5

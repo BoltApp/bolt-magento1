@@ -4,9 +4,13 @@
 
 import sys
 newText=""
-with open("docker-magento/env") as f:
-    newText=f.read()
-    newText = newText.replace('local.magento', sys.argv[1])
 
-with open("docker-magento/env", "w") as f:
-    f.write(newText)
+with open("docker_env", "r") as f:
+    lines = f.readlines()
+with open("docker_env", "w") as f:
+    for line in lines:
+        if "MAGENTO_URL" in line:
+            url = line.split("=")
+            f.write(url[0] + "=" + sys.argv[1] + "\n")
+        else:
+            f.write(line)
