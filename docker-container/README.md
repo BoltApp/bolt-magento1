@@ -8,10 +8,10 @@ With M1 being an older service there is no official support from the platform. T
 
 ## ngrok
 
-[https://ngrok.com/](https://ngrok.com/pricing)
+[https://ngrok.com/](https://ngrok.com/)
 [https://ngrok.com/pricing](https://ngrok.com/pricing)
 
-In order for your docker container to communicate with the webhook and shipping & tax url set on [merchant.bolt.com](http://merchant.bolt.com/), one must set up an ngrok account to expose your store's docker ports to a public IP address. In order to do this one must have at least the Basic plan with ngrok to reserve a domain for themselves. 
+In order for your docker container to communicate with the webhook and shipping & tax url set on [merchant-sandbox.bolt.com](http://merchant-sandbox.bolt.com/), one must set up an ngrok account to expose your store's docker ports to a public IP address. In order to do this one must have at least the Basic plan with ngrok to reserve a domain for themselves. 
 
 Once the initial configuration scripts are ran in your local environment and a public domain is reserved, run the following command 
 
