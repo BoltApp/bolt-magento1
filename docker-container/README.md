@@ -25,12 +25,16 @@ Once the initial configuration scripts are ran in your local environment and a p
 
 Make sure you have a stable version of python in your environment. These scripts were ran with 2.7.15.
 
+Ensure you have the yaml library is installed for your python version. 
+
+    pip install pyyaml
+
 # **How to run**
 
 - Set the initial variables of config.sh to match your environment and versioning
 ```
     #VARIABLES
-    m1Version="master"
+    m1Version="1.9.1.0"
     boltBranch="develop"
     boltRepo="/Users/ewayda/Documents/GitHub/bolt-magento1"
     localRepo=false
@@ -38,6 +42,7 @@ Make sure you have a stable version of python in your environment. These scripts
     boltSigningSecret=""
     boltPublishableKey=""
     ngrokUrl="ethan-m1.ngrok.io"
+    installSampleData=true
 ```
 
 - Run **launch-m1.sh** to fully deploy a docker container containing M1 store with Bolt
@@ -46,13 +51,13 @@ Make sure you have a stable version of python in your environment. These scripts
 
 ## **Magento versions available to run**
 
-Version | Git branch | Tag name
---------| ---------- |---------
-1.9.3.8 | master     | latest
-1.9.1.1 | 1.9.1.0    | 1.9.1.0
-1.8.1.0 | 1.8.1.0    | 1.8.1.0
-1.7.0.2 | 1.7.0.2    | 1.7.0.2
-1.6.2.0 | 1.6.2.0    | 1.6.2.0
+Version | Tag name
+--------|---------
+1.9.3.8 | latest
+1.9.1.1 | 1.9.1.0
+1.8.1.0 | 1.8.1.0
+1.7.0.2 | 1.7.0.2
+1.6.2.0 | 1.6.2.0
 
 # File breakdown:
 
