@@ -51,13 +51,15 @@ Ensure you have the yaml library is installed for your python version.
 
 ## **Magento versions available to run**
 
-Version | Tag name
---------|---------
-1.9.3.8 | latest
-1.9.1.1 | 1.9.1.0
-1.8.1.0 | 1.8.1.0
-1.7.0.2 | 1.7.0.2
-1.6.2.0 | 1.6.2.0
+Version | Tag name | PHP Version
+--------|--------- |---------
+1.9.3.8 | latest   | 5.6.33
+1.9.1.1 | 1.9.1.0  | 5.6.33
+1.8.1.0 | 1.8.1.0  | 5.5.30
+1.7.0.2 | 1.7.0.2  | 5.5.30
+1.6.2.0 | 1.6.2.0  | 5.5.30
+
+**Note** For this current iteration php is fixed
 
 # File breakdown:
 
