@@ -158,14 +158,25 @@ class Bolt_Boltpay_Helper_Data extends Mage_Core_Helper_Abstract
                 document.getElementById('edit_form').appendChild(input);
 
                 // order and order.submit should exist for admin
-                if ((typeof order !== 'undefined' ) && (typeof order.submit === 'function')) { 
-                    window.order_completed = true;
+                if ((typeof order !== 'undefined' ) && (typeof order.submit === 'function')) {
+                    order_completed = true;
                     callback();
                 }
             }"
             : "function(transaction, callback) {
-                $successCustom
-                callback();
+                new Ajax.Request(
+                    '$saveOrderUrl',
+                    {
+                        method:'post',
+                        onSuccess:
+                            function() {
+                                $successCustom
+                                order_completed = true;
+                                callback();
+                            },
+                        parameters: 'reference='+transaction.reference
+                    }
+                );
             }";
     }
 
@@ -182,7 +193,7 @@ class Bolt_Boltpay_Helper_Data extends Mage_Core_Helper_Abstract
             case Bolt_Boltpay_Block_Checkout_Boltpay::CHECKOUT_TYPE_ADMIN:
                 $javascript .=
                     "
-                    if (window.order_completed && (typeof order !== 'undefined' ) && (typeof order.submit === 'function')) {
+                    if (order_completed && (typeof order !== 'undefined' ) && (typeof order.submit === 'function')) {
                         $closeCustom
                         var bolt_hidden = document.getElementById('boltpay_payment_button');
                         bolt_hidden.classList.remove('required-entry');
@@ -200,6 +211,12 @@ class Bolt_Boltpay_Helper_Data extends Mage_Core_Helper_Abstract
             case Bolt_Boltpay_Block_Checkout_Boltpay::CHECKOUT_TYPE_PRODUCT_PAGE:
                 $quoteId = Mage::getSingleton('checkout/session')->getQuoteId();
                 $successUrl = $this->getMagentoUrl(Mage::getStoreConfig('payment/boltpay/successpage'), array('checkoutType' => $checkoutType, 'session_quote_id' => $quoteId));
+            default:
+                $javascript .= "
+                    if (order_completed) {
+                        location.href = '$successUrl';
+                    }
+                ";
         }
 
         return $javascript;

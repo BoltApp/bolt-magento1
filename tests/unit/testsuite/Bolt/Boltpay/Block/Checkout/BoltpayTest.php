@@ -143,20 +143,6 @@ class Bolt_Boltpay_Block_Checkout_BoltpayTest extends PHPUnit_Framework_TestCase
     }
 
     /**
-     *  Test that additional Js is present
-     */
-    public function testGetAdditionalJs()
-    {
-        $js = 'jQuery("body div").text("Hello, world.")';
-
-        $this->app->getStore()->setConfig('payment/boltpay/additional_js', $js);
-
-        $result = $this->currentMock->getAdditionalJs();
-
-        $this->assertEquals($js, $result);
-    }
-
-    /**
      * @inheritdoc
      */
     public function testGetSuccessURL()

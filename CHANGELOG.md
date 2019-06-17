@@ -1,12 +1,4 @@
 # Changelog
-## [V2.0.0](https://s3-us-west-1.amazonaws.com/bolt-public/magento-integration-release/bolt-magento1_v2.0.0.zip) 2019-06-12
- - "Pre-auth release"
-   - Elimination of inventory errors
-   - Real-time order processing to better match sales timelinse
-   - Improved customer messaging
-   - In-app order note support
-   - Native events for seamless 3rd party plugin support
-
 ## [V1.4.1](https://s3-us-west-1.amazonaws.com/bolt-public/magento-integration-release/bolt-magento1_v1.4.1.zip) 2019-04-02
  - Various improvements to Bolt Order creation
  - Bug fixes

@@ -281,7 +281,7 @@ class Bolt_Boltpay_Model_ShippingAndTax extends Bolt_Boltpay_Model_Abstract
     /**
      * Returns user-visible label for given shipping rate.
      *
-     * @param   Mage_Sales_Model_Quote_Address_Rate $rate
+     * @param   object rate
      * @return  string
      */
     public function getShippingLabel($rate) {
@@ -301,8 +301,7 @@ class Bolt_Boltpay_Model_ShippingAndTax extends Bolt_Boltpay_Model_Abstract
         if (strncasecmp( $carrier, $title, strlen($carrier) ) === 0) {
             return $title;
         }
-
-        return $this->boltHelper()->doFilterEvent( 'bolt_boltpay_filter_shipping_label', $carrier . " - " . $title, '$rate');
+        return $carrier . " - " . $title;
     }
 
     /**

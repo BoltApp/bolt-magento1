@@ -79,7 +79,6 @@ if(($quote->getPayment()->getMethodInstance()->getCode() == 'boltpay') && $publi
                 }, 200);
 
         })();
-        <?=$this->getAdditionalJs();?>
     </script>
 <?php else: ?>
     <?= $this->getChildHtml('button_original') ?>

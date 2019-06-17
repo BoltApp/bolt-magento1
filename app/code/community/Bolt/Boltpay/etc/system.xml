@@ -217,16 +217,6 @@
               <show_in_store>1</show_in_store>
             </additional_css>
 
-            <additional_js translate="label">
-              <label>Global JS</label>
-              <comment>Any JS that is to be added to pages when any Bolt button selector is found</comment>
-              <frontend_type>textarea</frontend_type>
-              <sort_order>47</sort_order>
-              <show_in_default>1</show_in_default>
-              <show_in_website>1</show_in_website>
-              <show_in_store>1</show_in_store>
-            </additional_js>
-
             <successpage translate="label">
               <label>Success Page Redirect</label>
               <frontend_type>text</frontend_type>

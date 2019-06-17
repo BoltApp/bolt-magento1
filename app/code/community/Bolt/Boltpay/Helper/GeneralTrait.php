@@ -31,35 +31,29 @@ trait Bolt_Boltpay_Helper_GeneralTrait {
     public static $fromHooks = false;
 
     /**
-     * Determines if the Bolt payment method can be used to pay for the given quote using the quote's context
+     * Determines if the Bolt payment method can be used in the system
      *
-     * @param Mage_Sales_Model_Quote $quote        The cart to be inspected as viable for Bolt payment
+     * @param Mage_Sales_Model_Quote $quote         Magento quote object
      * @param bool                   $checkCountry Set to true if the billing country should be checked, otherwise false
      *
      * @return bool     true if Bolt can be used, false otherwise
      *
+     * TODO: consider store base currency and possibly add conversion logic
      * @throws Mage_Core_Model_Store_Exception
      */
     public function canUseBolt($quote, $checkCountry = true)
     {
-        $applicationContextStore = Mage::app()->getStore();
-        $quoteContextStore = $quote->getStore();
-
-        Mage::app()->setCurrentStore($quoteContextStore);
         /**
          * If called from hooks always return true
          */
         if (self::$fromHooks) return true;
 
-        $canQuoteUseBolt = $this->isBoltPayActive()
+        return $this->isBoltPayActive()
             && (!$checkCountry || ($checkCountry && $this->canUseForCountry($quote->getBillingAddress()->getCountry())))
             && (Mage::app()->getStore()->getCurrentCurrencyCode() == 'USD')
-            && (Mage::app()->getStore()->getBaseCurrencyCode() == 'USD')
-            && count($quote->getAllVisibleItems()) > 0;
-
-        Mage::app()->setCurrentStore($applicationContextStore);
-        return $canQuoteUseBolt;
+            && (Mage::app()->getStore()->getBaseCurrencyCode() == 'USD');
     }
+
 
 
     /**

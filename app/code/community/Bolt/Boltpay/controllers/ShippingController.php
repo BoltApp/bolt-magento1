@@ -70,13 +70,11 @@ class Bolt_Boltpay_ShippingController
 
             $this->boltHelper()->setCustomerSessionById($quote->getCustomerId());
 
-            ///////////////////////////////////////////////////
-            // Set customer session context
-            ///////////////////////////////////////////////////
-            Mage::app()->setCurrentStore($quote->getStore());
+            /***********************/
+            // Set session quote to real customer quote
             $session = Mage::getSingleton('checkout/session');
             $session->setQuoteId($quoteId);
-            ///////////////////////////////////////////////////
+            /**************/
 
             ////////////////////////////////////////////////////////////////////////////////
             /// Apply shipping address with validation checks

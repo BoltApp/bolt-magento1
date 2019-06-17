@@ -34,12 +34,12 @@ class Bolt_Boltpay_Model_PaymentTest extends PHPUnit_Framework_TestCase
         $this->assertTrue($this->_currentMock->canRefundPartialPerInvoice());
         $this->assertTrue($this->_currentMock->canCapturePartial());
         $this->assertTrue($this->_currentMock->canUseInternal());
-        $this->assertTrue($this->_currentMock->isInitializeNeeded());
 
         // All the features that are disabled
         $this->assertFalse($this->_currentMock->canUseForMultishipping());
         $this->assertFalse($this->_currentMock->canCreateBillingAgreement());
         $this->assertFalse($this->_currentMock->isGateway());
+        $this->assertFalse($this->_currentMock->isInitializeNeeded());
         $this->assertFalse($this->_currentMock->canManageRecurringProfiles());
         $this->assertFalse($this->_currentMock->canOrder());
     }
