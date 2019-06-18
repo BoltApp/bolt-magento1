@@ -11,7 +11,7 @@
  *
  * @category   Bolt
  * @package    Bolt_Boltpay
- * @copyright  Copyright (c) 2018 Bolt Financial, Inc (https://www.bolt.com)
+ * @copyright  Copyright (c) 2019 Bolt Financial, Inc (https://www.bolt.com)
  * @license    http://opensource.org/licenses/osl-3.0.php  Open Software License (OSL 3.0)
  */
 
@@ -19,28 +19,29 @@
  * Bolt replace button JavaScript / CSS that's added to the firecheckout cart page
  ********************************************************************/
 /** @var Bolt_Boltpay_Block_Checkout_Boltpay $this */
-if(!Mage::helper('boltpay')->canUseBolt($this->getQuote(), false) || Mage::getStoreConfig('payment/boltpay/hide_on_checkout') ) return;
+if(!$this->boltHelper()->canUseBolt($this->getQuote(), false) || Mage::getStoreConfig('payment/boltpay/hide_on_checkout') ) return;
 
 ?>
 <script>
 
-    var isFireCheckoutFormValid = false;
+    var bolt_buttons = [];
+    var place_order_buttons = [];
+
     var initBoltButtons = function() {
         <?=$this->getCartDataJs(Bolt_Boltpay_Block_Checkout_Boltpay::CHECKOUT_TYPE_FIRECHECKOUT); ?>
     };
 
     var initializeBolt = function(){
 
-        // checkout.setLoadWaiting(false);
+        var addBoltButtons = function() {
+            place_order_buttons = document.querySelectorAll('<?=Mage::getStoreConfig('payment/boltpay/selectors');?>');
 
-        var place_order_buttons = document.querySelectorAll('<?=Mage::getStoreConfig('payment/boltpay/selectors');?>');
-
-        place_order_buttons.forEach(
-            function(place_order_button) {
+            for (var i = 0; i < place_order_buttons.length; i++) {
+                place_order_button = place_order_buttons[i];
                 var bolt_button =  document.createElement("div");
-                bolt_button.setAttribute("class", "bolt-checkout-button <?=$this->getCssSuffix(); ?> <?=Mage::helper('boltpay')->getAdditionalButtonClasses() ?>");
+                bolt_button.setAttribute("class", "bolt-checkout-button <?=$this->getCssSuffix(); ?> <?=$this->boltHelper()->getAdditionalButtonClasses() ?>");
 
-                <?php $buttonColor = Mage::helper('boltpay')->getBoltPrimaryColor();?>
+                <?php $buttonColor = $this->boltHelper()->getBoltPrimaryColor();?>
                 <?php if($buttonColor):?>
                 bolt_button.setAttribute("style", "--bolt-primary-action-color:<?php echo $buttonColor?>");
                 <?php endif; ?>
@@ -48,12 +49,12 @@ if(!Mage::helper('boltpay')->canUseBolt($this->getQuote(), false) || Mage::getSt
                 bolt_button.style.display = "none";
 
                 place_order_button.parentNode.insertBefore(bolt_button, place_order_button);
+                bolt_buttons.push(bolt_button);
             }
-        );
-
-        var bolt_buttons = document.querySelectorAll('.bolt-checkout-button');
+        };
 
         // Render Bolt button.
+        addBoltButtons();
         initBoltButtons();
 
         /**
@@ -62,27 +63,23 @@ if(!Mage::helper('boltpay')->canUseBolt($this->getQuote(), false) || Mage::getSt
          */
         var toggleBoltButton = function () {
             if (this.id == "p_method_boltpay") {
-                bolt_buttons.forEach(
-                    function (bolt_button) {
-                        bolt_button.style.display = "";
-                    }
-                );
-                place_order_buttons.forEach(
-                    function (place_order_button) {
-                        place_order_button.style.display="none";
-                    }
-                );
+                for (var i = 0; i < bolt_buttons.length; i++)
+                {
+                    bolt_buttons[i].style.display = "";
+                }
+                for (var i = 0; i < place_order_buttons.length; i++)
+                {
+                    place_order_buttons[i].style.display="none";
+                }
             } else {
-                bolt_buttons.forEach(
-                    function (bolt_button) {
-                        bolt_button.style.display = "none";
-                    }
-                );
-                place_order_buttons.forEach(
-                    function (place_order_button) {
-                        place_order_button.style.display="";
-                    }
-                );
+                for (var i = 0; i < bolt_buttons.length; i++)
+                {
+                    bolt_buttons[i].style.display = "none";
+                }
+                for (var i = 0; i < place_order_buttons.length; i++)
+                {
+                    place_order_buttons[i].style.display="";
+                }
             }
         };
 
@@ -98,11 +95,11 @@ if(!Mage::helper('boltpay')->canUseBolt($this->getQuote(), false) || Mage::getSt
         var attachClickEvents = function(mutationList) {
 
             var payment_radios = document.querySelectorAll('[name="payment[method]"]');
-            for (i = 0, length = payment_radios.length; i < length; i++) {
+            for (var i = 0, length = payment_radios.length; i < length; i++) {
 
                 var payment_radio = payment_radios[i];
 
-                payment_radio.onclick = toggleBoltButton;
+                payment_radio.addEventListener('click', toggleBoltButton);
 
                 <?php if ($this->isBoltOnlyPayment()): ?>
                 if (payment_radio.id != "p_method_boltpay") {
@@ -121,7 +118,7 @@ if(!Mage::helper('boltpay')->canUseBolt($this->getQuote(), false) || Mage::getSt
             var shipping_selected = false;
             var shipping_methods  = document.querySelectorAll('input[name=shipping_method]');
 
-            for (i = 0, length = shipping_methods.length; i < length; i++) {
+            for (var i = 0; i < shipping_methods.length; i++) {
                 var shipping_method = shipping_methods[i];
                 if (shipping_method.checked) {
                     shipping_selected = true;
@@ -129,18 +126,23 @@ if(!Mage::helper('boltpay')->canUseBolt($this->getQuote(), false) || Mage::getSt
                 }
             }
 
-            if (!shipping_selected)  document.querySelectorAll('input[name=shipping_method]')[0].click();
+            if (!shipping_selected && shipping_methods.length)  document.querySelectorAll('input[name=shipping_method]')[0].click();
         };
 
         autoSelectShipping();
         attachClickEvents();
 
-        var bolt_radio = document.querySelector('#p_method_boltpay');
-        if (selected_radio) {
-            selected_radio.click();
-        } else if (bolt_radio) {
-            bolt_radio.click();
-        }
+        var autoSelectPaymentMethod = function () {
+            var bolt_radio = document.querySelector('#p_method_boltpay');
+
+            if (selected_radio) {
+                selected_radio.click();
+            } else if (bolt_radio) {
+                bolt_radio.click();
+            }
+        };
+
+        autoSelectPaymentMethod();
 
         //////////////////////////////////////////////////////////////////////
         // Watch for changes in the payment methods to re-attach click events
@@ -160,6 +162,7 @@ if(!Mage::helper('boltpay')->canUseBolt($this->getQuote(), false) || Mage::getSt
         window.onload = onloadCallback;
     }
 
+    <?=$this->getAdditionalJs();?>
 </script>
 
 <style>

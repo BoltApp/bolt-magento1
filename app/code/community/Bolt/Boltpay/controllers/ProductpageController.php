@@ -11,15 +11,18 @@
  *
  * @category   Bolt
  * @package    Bolt_Boltpay
- * @copyright  Copyright (c) 2018 Bolt Financial, Inc (https://www.bolt.com)
+ * @copyright  Copyright (c) 2019 Bolt Financial, Inc (https://www.bolt.com)
  * @license    http://opensource.org/licenses/osl-3.0.php  Open Software License (OSL 3.0)
  */
 
 /**
  * Class Bolt_Boltpay_ProductpageController
  */
-class Bolt_Boltpay_ProductpageController extends Mage_Core_Controller_Front_Action
+class Bolt_Boltpay_ProductpageController
+    extends Mage_Core_Controller_Front_Action implements Bolt_Boltpay_Controller_Interface
 {
+    use Bolt_Boltpay_BoltGlobalTrait;
+
     public function createCartAction()
     {
         try {
@@ -27,11 +30,10 @@ class Bolt_Boltpay_ProductpageController extends Mage_Core_Controller_Front_Acti
 
             $requestJson = file_get_contents('php://input');
 
-            /* @var Bolt_Boltpay_Helper_Api $boltHelper */
-            $boltHelper = Mage::helper('boltpay/api');
-
-            if (!$boltHelper->verify_hook($requestJson, $hmacHeader)) {
-                throw new Exception(Mage::helper('boltpay')->__("Failed HMAC Authentication"));
+            if (!$this->boltHelper()->verify_hook($requestJson, $hmacHeader)) {
+                $exception = new Exception($this->boltHelper()->__("Failed HMAC Authentication"));
+                $this->boltHelper()->logWarning($exception->getMessage());
+                throw $exception;
             }
 
             $request = json_decode($requestJson);
@@ -53,7 +55,8 @@ class Bolt_Boltpay_ProductpageController extends Mage_Core_Controller_Front_Acti
                     )
             ));
 
-            Mage::helper('boltpay/bugsnag')->notifyException($e);
+            $this->boltHelper()->notifyException($e);
+            $this->boltHelper()->logException($e);
         }
     }
 
@@ -65,7 +68,7 @@ class Bolt_Boltpay_ProductpageController extends Mage_Core_Controller_Front_Acti
      */
     protected function sendResponse($httpCode, $data = array())
     {
-        Mage::helper('boltpay/api')->setResponseContextHeaders();
+        $this->boltHelper()->setResponseContextHeaders();
         $this->getResponse()->setHeader('Content-type', 'application/json');
         $this->getResponse()->setHttpResponseCode($httpCode);
         $this->getResponse()->setBody(json_encode($data));

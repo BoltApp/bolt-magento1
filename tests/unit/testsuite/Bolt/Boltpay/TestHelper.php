@@ -55,6 +55,8 @@ class Bolt_Boltpay_TestHelper
     {
         $checkout = Mage::getSingleton('checkout/type_onepage');
         $shippingAddress = $checkout->getQuote()->getShippingAddress()->addData($addressData);
+        Mage::app('default')->getStore()->setConfig('carriers/flatrate/active', 1);
+
         $shippingAddress
             ->setCollectShippingRates(true)
             ->setShippingMethod('flatrate_flatrate')
@@ -124,69 +126,125 @@ class Bolt_Boltpay_TestHelper
         $this->app->getStore()->resetConfig();
     }
 
-    public function buildCartDataJs($jsonCart, $immutableQuoteId, $jsonHints, $callbacks = array())
+    /**
+     * @param $checkoutType
+     * @param $jsonCart
+     * @param $quote
+     * @param $jsonHints
+     * @return string
+     */
+    public function buildCartDataJs($checkoutType, $jsonCart, $quote, $jsonHints)
     {
-        $checkCustom = (isset($callbacks['checkCustom'])) ? $callbacks['checkCustom'] : '';
-        $onCheckCallbackAdmin = (isset($callbacks['onCheckCallbackAdmin'])) ? $callbacks['onCheckCallbackAdmin'] : '';
-        $onCheckoutStartCustom = (isset($callbacks['onCheckoutStartCustom'])) ? $callbacks['onCheckoutStartCustom'] : '';
-        $onShippingDetailsCompleteCustom = (isset($callbacks['onShippingDetailsCompleteCustom'])) ? $callbacks['onShippingDetailsCompleteCustom'] : '';
-        $onShippingOptionsCompleteCustom = (isset($callbacks['onShippingOptionsCompleteCustom'])) ? $callbacks['onShippingOptionsCompleteCustom'] : '';
-        $onPaymentSubmitCustom = (isset($callbacks['onPaymentSubmitCustom'])) ? $callbacks['onPaymentSubmitCustom'] : '';
-        $onSuccessCallback = (isset($callbacks['onSuccessCallback'])) ? $callbacks['onSuccessCallback'] : '';
-        $onCloseCallback = (isset($callbacks['onCloseCallback'])) ? $callbacks['onCloseCallback'] : '';
+        /* @var Bolt_Boltpay_Helper_Data $boltHelper */
+        $boltHelper = Mage::helper('boltpay');
+        $quote->setIsVirtual(false);
+
+        $hintsTransformFunction = $boltHelper->getExtraConfig('hintsTransform');
+        $configCallbacks = $boltHelper->getBoltCallbacks($checkoutType, $quote);
 
         return ("
-            var json_cart = $jsonCart;
-            var json_hints = {};
-            var quote_id = '{$immutableQuoteId}';
+            var \$hints_transform = $hintsTransformFunction;
+            
+            var get_json_cart = function() { return $jsonCart };
+            var json_hints = \$hints_transform($jsonHints);
+            var quote_id = '{$quote->getId()}';
             var order_completed = false;
+            var do_checks = 1;
 
-            BoltCheckout.configure(
-                json_cart,
+            window.BoltModal = BoltCheckout.configure(
+                get_json_cart(),
                 json_hints,
-                {
-                  check: function() {
-                    if (!json_cart.orderToken) {
-                        if (typeof BoltPopup !== \"undefined\") {
-                            BoltPopup.addMessage(json_cart.error).show();
-                        } else {
-                            alert(json_cart.error);
-                        }
-                        return false;
-                    }
-                    $checkCustom
-                    $onCheckCallbackAdmin
-                    return true;
-                  },
-                  
-                  onCheckoutStart: function() {
-                    // This function is called after the checkout form is presented to the user.
-                    $onCheckoutStartCustom
-                  },
-                  
-                  onShippingDetailsComplete: function() {
-                    // This function is called when the user proceeds to the shipping options page.
-                    // This is applicable only to multi-step checkout.
-                    $onShippingDetailsCompleteCustom
-                  },
-                  
-                  onShippingOptionsComplete: function() {
-                    // This function is called when the user proceeds to the payment details page.
-                    // This is applicable only to multi-step checkout.
-                    $onShippingOptionsCompleteCustom
-                  },
-                  
-                  onPaymentSubmit: function() {
-                    // This function is called after the user clicks the pay button.
-                    $onPaymentSubmitCustom
-                  },
-                  
-                  success: $onSuccessCallback,
-
-                  close: function() {
-                     $onCloseCallback
-                  }
-                }
+                $configCallbacks
         );");
+    }
+
+    /**
+     * Gets the object reports that reports information about a class.
+     *
+     * @param mixed $class Either a string containing the name of the class to reflect, or an object.
+     *
+     * @return ReflectionClass  instance of the object used for inspection of the passed class
+     * @throws ReflectionException if the class does not exist.
+     */
+    public static function getReflectedClass( $class ) {
+        return new ReflectionClass( $class );
+    }
+
+    /**
+     * Convenience method to call a private or protected function
+     *
+     * @param object|string     $objectOrClassName  The object of the function to be called.
+     *                                              If the function is static, then a this should be a string of the class name.
+     * @param string            $functionName       The name of the function to be invoked
+     * @param array             $arguments          An indexed array of arguments to be passed to the function in the
+     *                                              order that they are declared
+     *
+     * @return mixed    the value returned by the function
+     *
+     * @throws ReflectionException   if a specified object, class or method does not exist.
+     */
+    public static function callNonPublicFunction($objectOrClassName, $functionName, $arguments = [] ) {
+        try {
+            $reflectedMethod = self::getReflectedClass($objectOrClassName)->getMethod($functionName);
+            $reflectedMethod->setAccessible(true);
+
+            return $reflectedMethod->invokeArgs(is_object($objectOrClassName) ? $objectOrClassName : null, $arguments);
+        } finally {
+            if ( $reflectedMethod && ($reflectedMethod->isProtected() || $reflectedMethod->isPrivate()) ) {
+                $reflectedMethod->setAccessible(false);
+            }
+        }
+    }
+
+    /**
+     * Convenience method to get a private or protected property
+     *
+     * @param object|string $objectOrClassName  The object of the property to be retreived
+     *                                          If the property is static, then a this should be a string of the class name.
+     * @param string        $propertyName       The name of the property to be retrieved
+     *
+     * @return mixed    The value of the property
+     *
+     * @throws ReflectionException  if a specified object, class or property does not exist.
+     */
+    public static function getNonPublicProperty($objectOrClassName, $propertyName ) {
+        try {
+            $reflectedProperty = self::getReflectedClass($objectOrClassName)->getProperty($propertyName);
+            $reflectedProperty->setAccessible(true);
+
+            return $reflectedProperty->getValue( is_object($objectOrClassName) ? $objectOrClassName : null );
+
+        } finally {
+            if ( $reflectedProperty && ($reflectedProperty->isProtected() || $reflectedProperty->isPrivate()) ) {
+                $reflectedProperty->setAccessible(false);
+            }
+        }
+    }
+
+    /**
+     * Convenience method to set a private or protected property
+     *
+     * @param object|string $objectOrClassName  The object of the property to be set
+     *                                          If the property is static, then a this should be a string of the class name.
+     * @param string        $propertyName       The name of the property to be set
+     * @param mixed         $value              The value to be set to the named property
+     *
+     * @throws ReflectionException  if a specified object, class or property does not exist.
+     */
+    public static function setNonPublicProperty($objectOrClassName, $propertyName, $value ) {
+        try {
+            $reflectedProperty = self::getReflectedClass($objectOrClassName)->getProperty($propertyName);
+            $reflectedProperty->setAccessible(true);
+
+            if (is_object($objectOrClassName)) {
+                $reflectedProperty->setValue( $objectOrClassName, $value );
+            } else {
+                $reflectedProperty->setValue( $value );
+            }
+        } finally {
+            if ( $reflectedProperty && ($reflectedProperty->isProtected() || $reflectedProperty->isPrivate()) ) {
+                $reflectedProperty->setAccessible(false);
+            }
+        }
     }
 }

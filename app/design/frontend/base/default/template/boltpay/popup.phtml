@@ -1,13 +1,31 @@
-<?php /* @var $this Mage_Core_Block_Template */?>
+<?php
+/**
+ * Bolt magento plugin
+ *
+ * NOTICE OF LICENSE
+ *
+ * This source file is subject to the Open Software License (OSL 3.0)
+ * that is bundled with this package in the file LICENSE.txt.
+ * It is also available through the world-wide-web at this URL:
+ * http://opensource.org/licenses/osl-3.0.php
+ *
+ * @category   Bolt
+ * @package    Bolt_Boltpay
+ * @copyright  Copyright (c) 2019 Bolt Financial, Inc (https://www.bolt.com)
+ * @license    http://opensource.org/licenses/osl-3.0.php  Open Software License (OSL 3.0)
+ */
+
+/* @var $this Mage_Core_Block_Template */
+?>
 
 <div id="bolt-popup" class="bolt-popup" style="display: none;">
     <div class="popup-wrapper">
         <div class="popup-title"><?php echo $this->__('Bolt Checkout'); ?></div>
-        <div class="popup-content"></div>
+        <div class="popup-content"><?php echo $this->__('Sorry, but something went wrong. Please contact the seller.'); ?></div>
         <div class="popup-action">
             <button class="popup-close btn-close"><?php echo $this->__('Close')?></button>
         </div>
-        <div class="popup-close">x</div>
+        <div class="popup-close icon-close">x</div>
     </div>
 </div>
 
@@ -16,38 +34,59 @@
         popupElmId: 'bolt-popup',
         popupElm: null,
         init: function() {
-            this.popupElm = jQuery('#'+this.popupElmId);
+            this.popupElm = document.getElementById(this.popupElmId);
             this.initPopupEvents()
         },
         initPopupEvents: function() {
             var self = this;
 
-            if (!this.popupElm.length) {
+            if (!this.popupElm) {
                 return false;
             }
 
-            this.popupElm.find('.popup-close').on('click', function(event) {
-                self.close();
-            });
+            var popup_close = this.popupElm.getElementsByClassName('popup-close')
+            for (var i = 0; i < popup_close.length; i++) {
+                popup_close[i].addEventListener( 'click', function() {
+                    self.close();
+                });
+            }
         },
         close: function() {
-            this.popupElm.removeClass('active');
-            this.popupElm.fadeOut();
+            this.popupElm.classList.remove('active');
+            this.fade();
         },
         show: function() {
-            this.popupElm.addClass('active');
-
-            this.popupElm.show();
+            this.popupElm.classList.add('active');
+            this.popupElm.style.display = "block";
+        },
+        fade: function () {
+            element = this.popupElm;
+            var op = 1;  // initial opacity
+            var timer = setInterval(function () {
+                if (op <= 0.1){
+                    clearInterval(timer);
+                    element.style.display = 'none';
+                }
+                element.style.opacity = op;
+                element.style.filter = 'alpha(opacity=' + op * 100 + ")";
+                op -= op * 0.1;
+            }, 50);
         },
         addMessage: function(message) {
-            if (message && message.length) {
-                this.popupElm.find('.popup-content').html(message);
-            } else {
-                message = "<?php echo $this->__('Sorry, but something went wrong. Please contact the seller.'); ?>";
+            var elms = this.popupElm.getElementsByClassName('popup-content');
+            if (elms.length > 0) {
+                elms[0].innerHTML = message;
             }
-
-            this.popupElm.find('.popup-content').html(message);
-
+            return this;
+        },
+        setMessage: function(message) {
+            this.addMessage(message);
+        },
+        setTitle: function(title) {
+            var elms = this.popupElm.getElementsByClassName('popup-title');
+            if (elms.length > 0) {
+                elms[0].innerHTML = title;
+            }
             return this;
         }
     };
@@ -81,14 +120,18 @@
         padding: 15px;
     }
     .bolt-popup .popup-wrapper .popup-close {
-        position: absolute;
         color: #fff;
-        right: -10px;
-        top: -30px;
         font-size: 20px;
+        cursor: pointer;
     }
     .bolt-popup .popup-wrapper .popup-close.btn-close {
         position: static;
+    }
+    .bolt-popup .popup-wrapper .popup-close.icon-close {
+        position: absolute;
+        display: none;
+        right: -10px;
+        top: -30px;
     }
     .bolt-popup .popup-wrapper .popup-title {
         font-size: 20px;

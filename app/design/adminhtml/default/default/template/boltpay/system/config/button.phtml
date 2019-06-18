@@ -1,4 +1,22 @@
-<?php /** @var Bolt_Boltpay_Block_Adminhtml_System_Config_Form_Button $this */ ?>
+<?php
+/**
+ * Bolt magento plugin
+ *
+ * NOTICE OF LICENSE
+ *
+ * This source file is subject to the Open Software License (OSL 3.0)
+ * that is bundled with this package in the file LICENSE.txt.
+ * It is also available through the world-wide-web at this URL:
+ * http://opensource.org/licenses/osl-3.0.php
+ *
+ * @category   Bolt
+ * @package    Bolt_Boltpay
+ * @copyright  Copyright (c) 2019 Bolt Financial, Inc (https://www.bolt.com)
+ * @license    http://opensource.org/licenses/osl-3.0.php  Open Software License (OSL 3.0)
+ */
+
+/** @var Bolt_Boltpay_Block_Adminhtml_System_Config_Form_Button $this */
+?>
 <style>
     #row_payment_boltpay_checkapi .note span {
         color: red;
@@ -15,15 +33,15 @@
         var boltButtonElement = document.getElementById('boltpay_check_button');
 
         if (!apiKey) {
-            errorElement.innerText = '<?php echo Mage::helper('boltpay')->__('API Key is required')?>';
+            errorElement.innerText = '<?php echo $this->boltHelper()->__('API Key is required')?>';
             return;
         }
         if (!signingSecret) {
-            errorElement.innerText = '<?php echo Mage::helper('boltpay')->__('Signing Secret is required')?>';
+            errorElement.innerText = '<?php echo $this->boltHelper()->__('Signing Secret is required')?>';
             return;
         }
         if (!keyOnepage && !keyMultiPage) {
-            errorElement.innerText = '<?php echo Mage::helper('boltpay')->__('Field "Publishable Key - One Page Checkout" or "Publishable Key - Multi-Page Checkout" must contain a value.')?>';
+            errorElement.innerText = '<?php echo $this->boltHelper()->__('Field "Publishable Key - One Page Checkout" or "Publishable Key - Multi-Page Checkout" must contain a value.')?>';
             return;
         }
 
@@ -32,7 +50,7 @@
 
         var xmlhttp = new XMLHttpRequest();
 
-        xmlhttp.open("POST", "<?php echo Mage::helper('boltpay/url')->getMagentoUrl('boltpay/configuration/check');?>", true);
+        xmlhttp.open("POST", "<?php echo $this->boltHelper()->getMagentoUrl('boltpay/configuration/check');?>", true);
         xmlhttp.setRequestHeader("Content-type", "application/json");
         xmlhttp.onreadystatechange = function () {
             if (xmlhttp.readyState == XMLHttpRequest.DONE && xmlhttp.status == 200) {
@@ -41,7 +59,7 @@
                 if (!result.result) {
                     errorElement.innerText = result.message;
                 } else {
-                    errorElement.innerHTML = "<span style='color: green;'><?php echo Mage::helper('boltpay')->__('Valid configuration')?></span>";
+                    errorElement.innerHTML = "<span style='color: green;'><?php echo $this->boltHelper()->__('Valid configuration')?></span>";
                 }
             }
 

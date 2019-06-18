@@ -1,6 +1,6 @@
 <?php
 /**
- * Magento
+ * Bolt magento plugin
  *
  * NOTICE OF LICENSE
  *
@@ -8,19 +8,10 @@
  * that is bundled with this package in the file LICENSE.txt.
  * It is also available through the world-wide-web at this URL:
  * http://opensource.org/licenses/osl-3.0.php
- * If you did not receive a copy of the license and are unable to
- * obtain it through the world-wide-web, please send an email
- * to license@magento.com so we can send you a copy immediately.
  *
- * DISCLAIMER
- *
- * Do not edit or add to this file if you wish to upgrade Magento to newer
- * versions in the future. If you wish to customize Magento for your
- * needs please refer to http://www.magento.com for more information.
- *
- * @category    Mage
- * @package     Mage_Adminhtml
- * @copyright  Copyright (c) 2006-2016 X.commerce, Inc. and affiliates (http://www.magento.com)
+ * @category   Bolt
+ * @package    Bolt_Boltpay
+ * @copyright  Copyright (c) 2019 Bolt Financial, Inc (https://www.bolt.com)
  * @license    http://opensource.org/licenses/osl-3.0.php  Open Software License (OSL 3.0)
  */
 
@@ -33,8 +24,10 @@ require_once(Mage::getModuleDir('controllers','Mage_Adminhtml').DS.'Sales'.DS.'O
  * @package    Mage_Adminhtml
  * @author      Magento Core Team <core@magentocommerce.com>
  */
-class Bolt_Boltpay_Adminhtml_Sales_Order_CreateController extends Mage_Adminhtml_Sales_Order_CreateController
+class Bolt_Boltpay_Adminhtml_Sales_Order_CreateController
+    extends Mage_Adminhtml_Sales_Order_CreateController implements Bolt_Boltpay_Controller_Interface
 {
+    use Bolt_Boltpay_Controller_Traits_OrderControllerTrait;
 
     /**
      * Add address data to the quote for Bolt.  This is normally deferred to
@@ -44,8 +37,20 @@ class Bolt_Boltpay_Adminhtml_Sales_Order_CreateController extends Mage_Adminhtml
      */
     public function loadBlockAction()
     {
-        $quote = $this->_getQuote();
         $postData = $this->getRequest()->getPost('order');
+        $addressData = $this->prepareAddressData($postData);
+
+        Mage::getSingleton('admin/session')->setOrderShippingAddress($addressData);
+
+        parent::loadBlockAction();
+    }
+
+    /**
+     * @param $postData
+     * @return array
+     */
+    public function prepareAddressData($postData)
+    {
         $shippingAddress = $postData['shipping_address'];
 
         $addressData = array(
@@ -67,11 +72,8 @@ class Bolt_Boltpay_Adminhtml_Sales_Order_CreateController extends Mage_Adminhtml
             $addressData['email'] = $addressData['email_address'] = @$postData['account']['email'];
         }
 
-        Mage::getSingleton('admin/session')->setOrderShippingAddress($addressData);
-
-        parent::loadBlockAction();
+        return $addressData;
     }
-
 
     /**
      * Saving quote and create order.  We add the Bolt reference to the session
@@ -88,7 +90,7 @@ class Bolt_Boltpay_Adminhtml_Sales_Order_CreateController extends Mage_Adminhtml
         if (!$boltReference) {
             $this->_normalizeOrderData();  // We must re-normalize the data first
             parent::saveAction();
-            return;
+            return false;
         }
         /////////////////////////////////////////////////////////////////////////////
         
@@ -98,13 +100,7 @@ class Bolt_Boltpay_Adminhtml_Sales_Order_CreateController extends Mage_Adminhtml
         /// For Bolt orders, we must use the immutable quote to create
         /// this order for subsequent webhooks to succeed.
         ///////////////////////////////////////////////////
-        /** @var Bolt_Boltpay_Helper_Api $boltHelper */
-        $boltHelper = Mage::helper('boltpay/api');
-        $transaction = $boltHelper->fetchTransaction($boltReference);
-
-        /** @var Bolt_Boltpay_Helper_Transaction $transactionHelper */
-        $transactionHelper = Mage::helper('boltpay/transaction');
-        $immutableQuoteId = $transactionHelper->getImmutableQuoteIdFromTransaction($transaction);
+        $immutableQuoteId = $this->getImmutableQuoteIdFromTransaction($boltReference);
 
         $this->_getSession()->setQuoteId($immutableQuoteId);
         
@@ -119,7 +115,6 @@ class Bolt_Boltpay_Adminhtml_Sales_Order_CreateController extends Mage_Adminhtml
         Mage::getSingleton('core/session')->setBoltReference($boltReference);
         Mage::getSingleton('core/session')->setWasCreatedByHook(false);
         //////////////////////////////////////////////////////////////
-
 
         try {
             $this->_processActionData('save');
@@ -146,6 +141,9 @@ class Bolt_Boltpay_Adminhtml_Sales_Order_CreateController extends Mage_Adminhtml
 
             $this->_getSession()->clear();
             Mage::getSingleton('adminhtml/session')->addSuccess($this->__('The order has been created.'));
+
+            $this->boltHelper()->logInfo("The order {$order->getIncrementId()} has been created.",array('order' => var_export($order->debug(), true)));
+
             if (Mage::getSingleton('admin/session')->isAllowed('sales/order/actions/view')) {
                 $this->_redirect('*/sales_order/view', array('order_id' => $order->getId()));
             } else {
@@ -153,9 +151,11 @@ class Bolt_Boltpay_Adminhtml_Sales_Order_CreateController extends Mage_Adminhtml
             }
             ///////////////////////////////////////////////////////
 
+            return true;
         } catch (Mage_Payment_Model_Info_Exception $e) {
             if ($paymentData['method'] == 'boltpay') {
-                Mage::helper('boltpay/bugsnag')->notifyException($e);
+                $this->boltHelper()->notifyException($e);
+                $this->boltHelper()->logException($e);
             }
             $this->_getOrderCreateModel()->saveQuote();
             $message = $e->getMessage();
@@ -165,23 +165,38 @@ class Bolt_Boltpay_Adminhtml_Sales_Order_CreateController extends Mage_Adminhtml
             $this->_redirect('*/*/');
         } catch (Mage_Core_Exception $e){
             if ($paymentData['method'] == 'boltpay') {
-                Mage::helper('boltpay/bugsnag')->notifyException($e);
+                $this->boltHelper()->notifyException($e);
+                $this->boltHelper()->logException($e);
             }
             $message = $e->getMessage();
             if( !empty($message) ) {
                 $this->_getSession()->addError($message);
             }
             $this->_redirect('*/*/');
-        }
-        catch (Exception $e){
+        } catch (Exception $e) {
             if ($paymentData['method'] == 'boltpay') {
-                Mage::helper('boltpay/bugsnag')->notifyException($e);
+                $this->boltHelper()->notifyException($e);
+                $this->boltHelper()->logException($e);
             }
             $this->_getSession()->addException($e, $this->__('Order saving error: %s', $e->getMessage()));
             $this->_redirect('*/*/');
         }
+
+        return false;
     }
 
+    /**
+     * @param $boltReference
+     * @return string
+     * @throws Exception
+     */
+    protected function getImmutableQuoteIdFromTransaction($boltReference)
+    {
+        $transaction = $this->boltHelper()->fetchTransaction($boltReference);
+        $immutableQuoteId = $this->boltHelper()->getImmutableQuoteIdFromTransaction($transaction);
+
+        return $immutableQuoteId;
+    }
 
     /**
      * Some versions of Magento store post data for the form with slightly different names
@@ -190,16 +205,25 @@ class Bolt_Boltpay_Adminhtml_Sales_Order_CreateController extends Mage_Adminhtml
      * This method normalizes it to the expected format for underlying Magento code to handle our
      * data properly
      */
-    protected function _normalizeOrderData() {
-
-        if ($this->getRequest()->getPost('shipping_method')) {
-            $_POST['order']['shipping_method'] = $this->getRequest()->getPost('shipping_method');
+    protected function _normalizeOrderData()
+    {
+        $requestPost = $this->getRequest()->getPost();
+        if (isset($requestPost['shipping_method']) && $requestPost['shipping_method']) {
+            $this->getRequest()->setPost('order', array(
+                'shipping_method' => $requestPost['shipping_method']
+            ));
         }
 
-        $_POST['shipping_as_billing'] = @$_POST['shipping_as_billing'] ?: @$_POST['shipping_same_as_billing'];
+        if (@$requestPost['shipping_as_billing']) {
+            $this->getRequest()->setPost('shipping_as_billing', @$requestPost['shipping_as_billing']);
+        } else {
+            $this->getRequest()->setPost('shipping_as_billing', @$requestPost['shipping_same_as_billing']);
+        }
 
         // We must assure that Magento knows to recalculate the shipping
-        $_POST['collect_shipping_rates'] = 1;
+        $this->getRequest()->setPost('collect_shipping_rates', 1);
+
+        unset($requestPost);
 
         /**
          * Saving order data
@@ -218,7 +242,7 @@ class Bolt_Boltpay_Adminhtml_Sales_Order_CreateController extends Mage_Adminhtml
          */
         if (!$this->_getOrderCreateModel()->getQuote()->isVirtual()) {
             $syncFlag = $this->getRequest()->getPost('shipping_as_billing');
-            $shippingMethod = $this->_getOrderCreateModel()->getShippingAddress()->getShippingMethod();
+            $shippingMethod = $this->   _getOrderCreateModel()->getShippingAddress()->getShippingMethod();
             if (is_null($syncFlag)
                 && $this->_getOrderCreateModel()->getShippingAddress()->getSameAsBilling()
                 && empty($shippingMethod)
@@ -250,8 +274,8 @@ class Bolt_Boltpay_Adminhtml_Sales_Order_CreateController extends Mage_Adminhtml
      *
      * @var Mage_Sales_Model_Order $order  the recently created order
      */
-    protected function _postOrderCreateProcessing($order) {
-
+    protected function _postOrderCreateProcessing($order)
+    {
         ///////////////////////////////////////////////////////
         // Close out session by
         // 1.) deactivating the immutable quote so it can no longer be used
@@ -264,4 +288,5 @@ class Bolt_Boltpay_Adminhtml_Sales_Order_CreateController extends Mage_Adminhtml
         $parentQuote->setParentQuoteId($order->getQuoteId())->save();
 
     }
+
 }

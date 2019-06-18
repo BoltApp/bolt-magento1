@@ -2,6 +2,7 @@
 
 require_once('TestHelper.php');
 require_once('CouponHelper.php');
+require_once('OrderHelper.php');
 
 class Bolt_Boltpay_Model_CouponTest extends PHPUnit_Framework_TestCase
 {
@@ -176,7 +177,7 @@ class Bolt_Boltpay_Model_CouponTest extends PHPUnit_Framework_TestCase
     {
         $passed = true;
         try {
-            $this->setupEnvironment(array('discount_code' => 'BOLT_UN_EXIST_CODE'));
+            $this->setupEnvironment(array('discount_code' => 'BOLT_NOT_EXISTS_CODE'));
             $this->currentMock->validateCouponExists();
         } catch (\Bolt_Boltpay_BadInputException $e) {
             $passed = false;
@@ -208,7 +209,7 @@ class Bolt_Boltpay_Model_CouponTest extends PHPUnit_Framework_TestCase
     {
         $passed = true;
         try {
-            $this->setupEnvironment(array('discount_code' => 'BOLT_UN_EXIST_CODE'));
+            $this->setupEnvironment(array('discount_code' => 'BOLT_NOT_EXISTS_CODE'));
             $this->currentMock->validateRuleExists();
         } catch (\Bolt_Boltpay_BadInputException $e) {
             $passed = false;
@@ -272,7 +273,10 @@ class Bolt_Boltpay_Model_CouponTest extends PHPUnit_Framework_TestCase
     {
         $passed = true;
         try {
-            $incrementId = Bolt_Boltpay_CouponHelper::createDummyOrder(self::$productId);
+            /** @var Mage_Sales_Model_Order $order */
+            $order = Bolt_Boltpay_OrderHelper::createDummyOrder(self::$productId);
+
+            $incrementId = $order->getIncrementId();
 
             $this->setupEnvironment(array('cart' => array('display_id' => "$incrementId|50256")));
             $this->currentMock->validateOrderExists();
@@ -282,7 +286,7 @@ class Bolt_Boltpay_Model_CouponTest extends PHPUnit_Framework_TestCase
 
         $this->assertFalse($passed);
         if (@$incrementId) {
-            Bolt_Boltpay_CouponHelper::deleteDummyOrder($incrementId);
+            Bolt_Boltpay_OrderHelper::deleteDummyOrder($order);
         }
     }
 

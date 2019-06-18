@@ -51,6 +51,8 @@ class Bolt_Bolt_Helper_Api extends Bolt_Boltpay_Helper_Api
         'amstcred', // https://amasty.com/magento-store-credit.html
     );
 
+    const MERCHANT_BACK_OFFICE = 'merchant_back_office';
+
     /**
      * Generates cart submission data for sending to Bolt order cart field.
      * @param Mage_Sales_Model_Quote $quote
@@ -534,7 +536,7 @@ class Bolt_Bolt_Helper_Api extends Bolt_Boltpay_Helper_Api
             }
 
             // check if quote has already been used
-            if ( !$immutableQuote->getIsActive() ) {
+            if ( !$immutableQuote->getIsActive() && $transaction->indemnification_reason !== self::MERCHANT_BACK_OFFICE) {
                 throw new Exception(
                     Mage::helper('boltpay')->__("The order #%s has already been processed for this quote.",
                         $immutableQuote->getReservedOrderId() )
@@ -549,7 +551,7 @@ class Bolt_Bolt_Helper_Api extends Bolt_Boltpay_Helper_Api
                     Mage::helper('boltpay')->__("The parent quote %s is unexpectedly missing.",
                         $immutableQuote->getParentQuoteId() )
                 );
-            } else if (!$parentQuote->getIsActive() ) {
+            } else if (!$parentQuote->getIsActive() && $transaction->indemnification_reason !== self::MERCHANT_BACK_OFFICE) {
                 throw new Exception(
                     Mage::helper('boltpay')->__("The parent quote %s is currently being processed or has been processed.",
                         $immutableQuote->getParentQuoteId() )
@@ -645,12 +647,10 @@ class Bolt_Bolt_Helper_Api extends Bolt_Boltpay_Helper_Api
                 ############################
                 $preExistingTransactionReference = $preExistingOrder->getPayment()->getAdditionalInformation('bolt_reference');
                 if ( $preExistingTransactionReference === $reference ) {
-                    Mage::helper('boltpay/bugsnag')->notifyException(
-                        new Exception( Mage::helper('boltpay')->__("The order #%s has already been processed for this quote.", $preExistingOrder->getIncrementId() ) ),
-                        array(),
-                        'warning'
+                    throw new Exception(
+                        Mage::helper('boltpay')->__("The parent quote %s is currently being processed or has been processed.",
+                            $immutableQuote->getParentQuoteId() )
                     );
-                    return $preExistingOrder;
                 }
                 ############################
 

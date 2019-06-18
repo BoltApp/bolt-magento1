@@ -11,20 +11,20 @@
  *
  * @category   Bolt
  * @package    Bolt_Boltpay
- * @copyright  Copyright (c) 2018 Bolt Financial, Inc (https://www.bolt.com)
+ * @copyright  Copyright (c) 2019 Bolt Financial, Inc (https://www.bolt.com)
  * @license    http://opensource.org/licenses/osl-3.0.php  Open Software License (OSL 3.0)
  */
 ?>
 <?php /* @var $this Bolt_Boltpay_Block_Checkout_Boltpay */?>
 <?php
 $quote = Mage::getSingleton('checkout/session')->getQuote();
-$publishableKey = Mage::helper('boltpay')->getPublishableKeyOnePage();
+$publishableKey = $this->boltHelper()->getPublishableKeyOnePage();
 
 if(($quote->getPayment()->getMethodInstance()->getCode() == 'boltpay') && $publishableKey): ?>
 
     <?php
-    $additionalClasses = Mage::helper('boltpay')->getAdditionalButtonClasses();
-    $buttonColor = Mage::helper('boltpay')->getBoltPrimaryColor();
+    $additionalClasses = $this->boltHelper()->getAdditionalButtonClasses();
+    $buttonColor = $this->boltHelper()->getBoltPrimaryColor();
     ?>
     <div class="bolt-checkout-button <?php echo $additionalClasses; ?>"
         <?php if($buttonColor): ?>
@@ -32,6 +32,7 @@ if(($quote->getPayment()->getMethodInstance()->getCode() == 'boltpay') && $publi
         <?php endif;?>
     ></div>
     <script type="text/javascript">
+
         (function() {
 
             var jsonpRequest = function(parent, element, attributes, params, callback_fn) {
@@ -78,6 +79,7 @@ if(($quote->getPayment()->getMethodInstance()->getCode() == 'boltpay') && $publi
                 }, 200);
 
         })();
+        <?=$this->getAdditionalJs();?>
     </script>
 <?php else: ?>
     <?= $this->getChildHtml('button_original') ?>

@@ -11,7 +11,7 @@
  *
  * @category   Bolt
  * @package    Bolt_Boltpay
- * @copyright  Copyright (c) 2018 Bolt Financial, Inc (https://www.bolt.com)
+ * @copyright  Copyright (c) 2019 Bolt Financial, Inc (https://www.bolt.com)
  * @license    http://opensource.org/licenses/osl-3.0.php  Open Software License (OSL 3.0)
  */
 
@@ -23,23 +23,33 @@
  */
 class Bolt_Boltpay_Model_Api2_Order_Rest_Admin_V1 extends Bolt_Boltpay_Model_Api2_Order
 {
+    use Bolt_Boltpay_BoltGlobalTrait;
+
     /**
      * @var array  The response payload for successful order creation
+     * @return array
      */
-    public static $SUCCESS_ORDER_CREATED = array(
-        'message' => Mage::helper('boltpay')->__('New Order created'),
-        'status' => 'success',
-        'http_response_code' => 201
-    );
+    public static function successOrderCreated()
+    {
+        return array(
+                'message' => Mage::helper('boltpay')->__('New Order created'),
+                'status' => 'success',
+                'http_response_code' => 201
+            );
+    }
 
     /**
      * @var array  The response payload for successful order updates
+     * @return array
      */
-    public static $SUCCESS_ORDER_UPDATED = array(
-        'message' => Mage::helper('boltpay')->__('Updated existing order'),
-        'status' => 'success',
-        'http_response_code' => 200
-    );
+    public static function successOrderUpdated()
+    {
+        return array(
+            'message' => Mage::helper('boltpay')->__('Updated existing order'),
+            'status' => 'success',
+            'http_response_code' => 200
+        );
+    }
 
     /**
      * @inheritdoc
@@ -51,6 +61,7 @@ class Bolt_Boltpay_Model_Api2_Order_Rest_Admin_V1 extends Bolt_Boltpay_Model_Api
             $this->getResponse()->clearHeader("Location");
         } catch (Exception $e) {
             Mage::helper('boltpay/bugsnag')->notifyException($e);
+            $this->boltHelper()->logException($e);
             throw $e;
         }
 
@@ -109,8 +120,9 @@ class Bolt_Boltpay_Model_Api2_Order_Rest_Admin_V1 extends Bolt_Boltpay_Model_Api
                     ->setStore($order->getStoreId())
                     ->handleTransactionUpdate($orderPayment, $newTransactionStatus, $prevTransactionStatus);
 
+                $orderUpdatedResponse = $this->successOrderUpdated();
                 $this->getResponse()->addMessage(
-                    self::$SUCCESS_ORDER_UPDATED['message'], self::$SUCCESS_ORDER_UPDATED['http_response_code'],
+                    $orderUpdatedResponse['message'], $orderUpdatedResponse['http_response_code'],
                     array(), 'success'
                 );
                 $this->getResponse()->setHttpResponseCode(Mage_Api2_Model_Server::HTTP_OK);
@@ -144,19 +156,20 @@ class Bolt_Boltpay_Model_Api2_Order_Rest_Admin_V1 extends Bolt_Boltpay_Model_Api
             $boltOrderModel = Mage::getModel('boltpay/order');
             $boltOrderModel->createOrder($reference, $sessionQuoteId = null);
 
+            $orderUpdatedResponse = $this->successOrderUpdated();
             $this->getResponse()->addMessage(
-                self::$SUCCESS_ORDER_CREATED['message'], self::$SUCCESS_ORDER_CREATED['http_response_code'],
+                $orderUpdatedResponse['message'], $orderUpdatedResponse['http_response_code'],
                 array(), 'success'
             );
             //Mage::log('Order creation was successful', null, 'bolt.log');
             $this->_render($this->getResponse()->getMessages());
-        } catch (Bolt_Boltpay_InvalidTransitionException $invalid) {
+        } catch (Bolt_Boltpay_OrderCreationException $invalid) {
             // An invalid transition is treated as a late queue event and hence will be ignored
             $error = $invalid->getMessage();
             //Mage::log($error, null, 'bolt.log');
             //Mage::log("Late queue event. Returning as OK", null, 'bolt.log');
 
-
+            $this->boltHelper()->logException($invalid);
             Mage::helper('boltpay/bugsnag')->addBreadcrumb(
                 array(
                     "API HOOKS late queue event" => array (
@@ -171,7 +184,7 @@ class Bolt_Boltpay_Model_Api2_Order_Rest_Admin_V1 extends Bolt_Boltpay_Model_Api
         } catch (Exception $e) {
             $error = $e->getMessage();
             //Mage::log($error, null, 'bolt.log');
-
+            $this->boltHelper()->logException($e);
             Mage::helper('boltpay/bugsnag')->addBreadcrumb(
                 array(
                     "API HOOKS Exception" => array (

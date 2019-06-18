@@ -1,4 +1,36 @@
 # Changelog
+## [V2.0.0](https://s3-us-west-1.amazonaws.com/bolt-public/magento-integration-release/bolt-magento1_v2.0.0.zip) 2019-06-12
+ - "Pre-auth release"
+   - Elimination of inventory errors
+   - Real-time order processing to better match sales timelinse
+   - Improved customer messaging
+   - In-app order note support
+   - Native events for seamless 3rd party plugin support
+
+## [V1.4.1](https://s3-us-west-1.amazonaws.com/bolt-public/magento-integration-release/bolt-magento1_v1.4.1.zip) 2019-04-02
+ - Various improvements to Bolt Order creation
+ - Bug fixes
+
+## [V1.4.0](https://s3-us-west-1.amazonaws.com/bolt-public/magento-integration-release/bolt-magento1_v1.4.0.zip) 2019-02-21
+ - Order creation refactor - now supports more granular calculation overides for easier future upgradability
+ - Improved caching and DB resource consumption
+ - Configurable deferred immutable quote creation
+ - Added additional events to better support plugin customization
+ - Bug fixes
+
+## [V1.3.8](https://s3-us-west-1.amazonaws.com/bolt-public/magento-integration-release/bolt-magento1_v1.3.8.zip) 2019-01-31
+ - Apple Pay support
+ - Item properties support
+ - Product Page Checkout (beta)
+ - Bug fixes
+
+## [V1.3.7](https://s3-us-west-1.amazonaws.com/bolt-public/magento-integration-release/bolt-magento1_v1.3.7.zip) 2018-11-08
+ - Implement support for multiple capture
+ - Bug fixes around admin order
+
+## [V1.3.6](https://s3-us-west-1.amazonaws.com/bolt-public/magento-integration-release/bolt-magento1_v1.3.6.zip) 2018-10-21
+ - Bug fixes
+
 ## [V1.3.5](https://s3-us-west-1.amazonaws.com/bolt-public/magento-integration-release/bolt-magento1_v1.3.5.zip) 2018-10-15
  - Fix session related bug
  - Add user name to order
@@ -33,6 +65,7 @@
 ## [v1.2.2](https://s3-us-west-1.amazonaws.com/bolt-public/magento-integration-release/bolt-magento1_v1.2.2.zip) 2018-08-28
  - Fixed off-by-one error
  - Optimize loading
+ - Support discount hook
 
 ## [v1.2.1](https://s3-us-west-1.amazonaws.com/bolt-public/magento-integration-release/bolt-magento1_v1.2.1.zip) 2018-08-17
  - Introduced modman

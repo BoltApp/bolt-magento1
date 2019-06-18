@@ -101,7 +101,7 @@ class Bolt_Boltpay_CouponHelper
         $writeConnection = $resource->getConnection('core_write');
         $table = $resource->getTableName('sales/quote');
 
-        $query = "DELETE FROM  $table WHERE entity_id = :quoteId";
+        $query = "DELETE FROM $table WHERE entity_id = :quoteId";
         $bind = array(
             'quoteId' => (int)$quoteId
         );
@@ -116,13 +116,14 @@ class Bolt_Boltpay_CouponHelper
      * @param array  $additionalData
      * @param array  $couponData
      *
-     * @return int The Rule ID of the newly created product
+     * @return int The Rule ID of the pre-existing or newly created product
      * @throws Varien_Exception
      */
     public static function createDummyRule($couponCode = 'percent-coupon', $additionalData = array(), $couponData = array())
     {
         if(self::getCouponIdByCode($couponCode)){
-            return self::getCouponByCode($couponCode)->getRuleId();
+            $rule = Mage::getModel('salesrule/rule')->load(self::getCouponByCode($couponCode)->getRuleId());
+            if (!$rule->isObjectNew()) return $rule->getId();
         }
 
         // All customer group ids
@@ -181,71 +182,13 @@ class Bolt_Boltpay_CouponHelper
         $resource = Mage::getSingleton('core/resource');
         /** @var Magento_Db_Adapter_Pdo_Mysql $writeConnection */
         $writeConnection = $resource->getConnection('core_write');
-        $table = $resource->getTableName('salesrule/rule');
+        $ruleTable = $resource->getTableName('salesrule/rule');
+        $couponTable = $resource->getTableName('salesrule/coupon');
 
-        $query = "DELETE FROM $table WHERE rule_id = :ruleId";
+        $query = "DELETE $ruleTable, $couponTable FROM $ruleTable INNER JOIN $couponTable ON $ruleTable.rule_id = $couponTable.rule_id WHERE $ruleTable.rule_id = :ruleId";
+
         $bind = array(
             'ruleId' => (int)$ruleId
-        );
-
-        $writeConnection->query($query, $bind);
-    }
-
-    /**
-     * Creates dummy order
-     *
-     * @param $productId
-     *
-     * @return string
-     * @throws Mage_Core_Exception
-     * @throws Varien_Exception
-     */
-    public static function createDummyOrder($productId) {
-        $testHelper = new Bolt_Boltpay_TestHelper();
-        $testHelper->addTestBillingAddress();
-        $addressData = array(
-            'firstname'  => 'Luke',
-            'lastname'   => 'Skywalker',
-            'street'     => 'Sample Street 10',
-            'city'       => 'Los Angeles',
-            'postcode'   => '90014',
-            'telephone'  => '+1 867 345 123 5681',
-            'country_id' => 'US',
-            'region_id'  => 12
-        );
-        $testHelper->addTestFlatRateShippingAddress($addressData, 'checkmo');
-        $cart = $testHelper->addProduct($productId, 2);
-        $quote = $cart->getQuote();
-
-        // Set payment method for the quote
-        $quote->getPayment()->importData(array('method' => 'checkmo'));
-        $service = Mage::getModel('sales/service_quote', $quote);
-        $service->submitAll();
-        /** @var Mage_Sales_Model_Order $order */
-        $order = $service->getOrder();
-
-        return $order->getIncrementId();
-    }
-
-    /**
-     * Deletes dummy order
-     *
-     * @param $incrementId
-     *
-     * @throws Zend_Db_Adapter_Exception
-     *
-     */
-
-    public static function deleteDummyOrder($incrementId) {
-        /** @var Mage_Core_Model_Resource $resource */
-        $resource = Mage::getSingleton('core/resource');
-        /** @var Magento_Db_Adapter_Pdo_Mysql $writeConnection */
-        $writeConnection = $resource->getConnection('core_write');
-        $table = $resource->getTableName('sales/order');
-
-        $query = "DELETE FROM $table WHERE increment_id = :increment_id";
-        $bind = array(
-            'increment_id' => (int)$incrementId
         );
 
         $writeConnection->query($query, $bind);
@@ -258,7 +201,8 @@ class Bolt_Boltpay_CouponHelper
      * @param string $email
      *
      * @return mixed
-     * @throws Varien_Exception
+     *
+     * @throws Mage_Core_Model_Store_Exception if the store can not be found
      */
     public static function createDummyCustomer($additionalData = array(), $email = "bolt@bolt.com") {
         $customer = Mage::getModel("customer/customer");

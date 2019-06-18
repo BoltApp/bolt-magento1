@@ -11,7 +11,7 @@
  *
  * @category   Bolt
  * @package    Bolt_Boltpay
- * @copyright  Copyright (c) 2018 Bolt Financial, Inc (https://www.bolt.com)
+ * @copyright  Copyright (c) 2019 Bolt Financial, Inc (https://www.bolt.com)
  * @license    http://opensource.org/licenses/osl-3.0.php  Open Software License (OSL 3.0)
  */
 
@@ -25,13 +25,15 @@
 if(!$this->isAllowedReplaceScriptOnCurrentPage()
    || !$this->canUseBolt()
    || !$this->getPublishableKeyForRoute()
-) return;
+) {
+    return;
+}
 
-$additionalClasses = Mage::helper('boltpay')->getAdditionalButtonClasses();
+$additionalClasses = $this->boltHelper()->getAdditionalButtonClasses();
 ?>
 <script>
 
-    var onDomReady = function(){
+    var initBoltButtons = function(){
 
         /****************************************************************************************************
          * Finds and replaces specified buttons with Bolt checkout buttons. Runs internal function
@@ -84,7 +86,7 @@ $additionalClasses = Mage::helper('boltpay')->getAdditionalButtonClasses();
                                 var bolt_button =  document.createElement("div");
                                 bolt_button.setAttribute("class",selectors[selector]);
 
-                                <?php $buttonColor = Mage::helper('boltpay')->getBoltPrimaryColor();?>
+                                <?php $buttonColor = $this->boltHelper()->getBoltPrimaryColor();?>
                                 <?php if($buttonColor):?>
                                     bolt_button.setAttribute("style", "--bolt-primary-action-color:<?php echo $buttonColor?>");
                                 <?php endif; ?>
@@ -165,16 +167,30 @@ $additionalClasses = Mage::helper('boltpay')->getAdditionalButtonClasses();
 
         replaceCheckout();
 
+        if (typeof Minicart != "undefined") {
+            /*************************************************************
+             * Minicart HTML is regenerated via ajax after document load.
+             * On each ajax call, and overlay is added and then removed
+             * after the rendering of the new HTML is complete.  At this
+             * point we want to re-render the Bolt buttons, which will
+             * have been removed in the regeneration
+             *************************************************************/
+            Minicart.prototype.hideOverlay = function(){
+                initBoltButtons();
+                $j(this.selectors.overlay).removeClass('loading');
+            };
+        }
     };
 
     if (document.addEventListener) {
-        document.addEventListener("DOMContentLoaded", onDomReady);
+        document.addEventListener("DOMContentLoaded", initBoltButtons);
     } else if (window.attachEvent) {
-        window.attachEvent("onload", onDomReady);
+        window.attachEvent("onload", initBoltButtons);
     } else {
-        window.onload = onDomReady;
+        window.onload = initBoltButtons;
     }
 
+    <?=$this->getAdditionalJs();?>
 </script>
 
 <style>

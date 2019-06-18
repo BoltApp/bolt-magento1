@@ -32,6 +32,19 @@
  * @var $this Mage_Checkout_Block_Cart_Totals
  */
 ?>
+<?php
+    $showTotal = false;
+    
+    $subtotal = Mage::helper('checkout/cart')->getQuote()->getSubtotal();
+    $subtotalInclDiscount = Mage::helper('checkout/cart')->getQuote()->getSubtotalWithDiscount();
+    $storeCredit = Mage::helper('checkout/cart')->getQuote()->getAmstcredAmountUsed(); 
+    $giftCards = Mage::helper('checkout/cart')->getQuote()->getAmGiftCardsAmountUsed();
+    $totalExclTax = $subtotalInclDiscount - $storeCredit - $giftCards;    
+    
+    if($subtotal > $totalExclTax) {
+        $showTotal = true;
+    }    
+?>
 <?php if ($this->canApplyMsrp()): ?>
     <div class="cart-msrp-totals"><?php echo $this->__('ORDER TOTAL WILL BE DISPLAYED BEFORE YOU SUBMIT THE ORDER'); ?></div>
 <?php else: ?>
@@ -44,3 +57,14 @@
     </table>
 	<p class="cart_subtotal_message">Applicable taxes and shipping calculated at check-out</p>
 <?php endif; ?>
+<?php if($showTotal && $totalExclTax > 0): ?>
+    <script>
+        jQuery( document ).ready(function() {            
+            var totalExclTax = '<?php echo Mage::helper('core')->formatPrice($totalExclTax); ?>'; 
+            var tBodyElem = jQuery('#shopping-cart-totals-table').children('tbody');            
+            var totalHTML = '<tr><td style="" class="a-right" colspan="1">TOTAL EXCL. TAX</td><td style="" class="a-right"><span class="price">' + totalExclTax + '</span></td></tr>';            
+            jQuery(tBodyElem).append(totalHTML);            
+        });
+    </script>
+<?php endif;
+

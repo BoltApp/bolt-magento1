@@ -11,7 +11,7 @@
  *
  * @category   Bolt
  * @package    Bolt_Boltpay
- * @copyright  Copyright (c) 2018 Bolt Financial, Inc (https://www.bolt.com)
+ * @copyright  Copyright (c) 2019 Bolt Financial, Inc (https://www.bolt.com)
  * @license    http://opensource.org/licenses/osl-3.0.php  Open Software License (OSL 3.0)
  */
 
@@ -22,8 +22,10 @@
  */
 class Bolt_Boltpay_Model_Cron
 {
+    use Bolt_Boltpay_BoltGlobalTrait;
+
     /**
-     * After an immutable quote has existed for 2 weeks or more, we remove it from the system.
+     * After an immutable quote / unused generated session quote on PDP has existed for 2 weeks or more, we remove it from the system.
      * At this point, only the order object is relevant for converted orders and any immutable
      * quote that was to be converted will have been handled well before this time.
      *
@@ -38,7 +40,8 @@ class Bolt_Boltpay_Model_Cron
 
         $connection = Mage::getSingleton('core/resource')->getConnection('core_write');
 
-        $sql = "DELETE sfq FROM $sales_flat_quote_table sfq LEFT JOIN $sales_flat_order_table sfo ON sfq.entity_id = sfo.quote_id WHERE (sfq.parent_quote_id IS NOT NULL) AND (sfq.parent_quote_id < sfq.entity_id) AND (sfq.updated_at <= '$expiration_time') AND (sfo.entity_id IS NULL)";
+        $sql = "DELETE sfq FROM $sales_flat_quote_table sfq LEFT JOIN $sales_flat_order_table sfo ON sfq.entity_id = sfo.quote_id WHERE (((sfq.parent_quote_id IS NOT NULL) AND (sfq.parent_quote_id < sfq.entity_id)) OR ((sfq.parent_quote_id IS NULL) AND (sfq.is_bolt_pdp = true))) AND (sfq.updated_at <= '$expiration_time') AND (sfo.entity_id IS NULL)";
+
         $connection->query($sql);
     }
 }

@@ -11,7 +11,7 @@
  *
  * @category   Bolt
  * @package    Bolt_Boltpay
- * @copyright  Copyright (c) 2018 Bolt Financial, Inc (https://www.bolt.com)
+ * @copyright  Copyright (c) 2019 Bolt Financial, Inc (https://www.bolt.com)
  * @license    http://opensource.org/licenses/osl-3.0.php  Open Software License (OSL 3.0)
  */
 
@@ -22,6 +22,8 @@
  */
 class Bolt_Boltpay_Block_Info extends Mage_Payment_Block_Info
 {
+    use Bolt_Boltpay_BoltGlobalTrait;
+
     public function _construct() 
     {
         $this->setTemplate('boltpay/info.phtml');

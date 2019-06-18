@@ -4,42 +4,44 @@ class Bolt_Boltpay_Model_PaymentTest extends PHPUnit_Framework_TestCase
 {
     private $app;
 
+    /** @var Bolt_Boltpay_Model_Payment */
+    private $_currentMock;
+
     public function setUp() 
     {
         /* You'll have to load Magento app in any test classes in this method */
         $this->app = Mage::app('default');
+        $this->_currentMock = Mage::getModel('boltpay/payment');
     }
 
     public function testPaymentConstants() 
     {
-        $payment = Mage::getModel('boltpay/payment');
-        $this->assertEquals('Credit & Debit Card', $payment::TITLE);
+        $payment =  $this->_currentMock;
+        $this->assertEquals('Credit & Debit Card',$payment::TITLE);
         $this->assertEquals('boltpay', $payment->getCode());
     }
 
     public function testPaymentConfiguration() 
     {
-        /** @var Bolt_Boltpay_Model_Payment $payment */
-        $payment = Mage::getModel('boltpay/payment');
         // All the features that are enabled
-        $this->assertTrue($payment->canAuthorize());
-        $this->assertTrue($payment->canCapture());
-        $this->assertTrue($payment->canRefund());
-        $this->assertTrue($payment->canVoid(new Varien_Object()));
-        $this->assertTrue($payment->canUseCheckout());
-        $this->assertTrue($payment->canFetchTransactionInfo());
-        $this->assertTrue($payment->canEdit());
-        $this->assertTrue($payment->canRefundPartialPerInvoice());
-        $this->assertTrue($payment->canCapturePartial());
-        $this->assertTrue($payment->canUseInternal());
+        $this->assertTrue($this->_currentMock->canAuthorize());
+        $this->assertTrue($this->_currentMock->canCapture());
+        $this->assertTrue($this->_currentMock->canRefund());
+        $this->assertTrue($this->_currentMock->canVoid(new Varien_Object()));
+        $this->assertTrue($this->_currentMock->canUseCheckout());
+        $this->assertTrue($this->_currentMock->canFetchTransactionInfo());
+        $this->assertTrue($this->_currentMock->canEdit());
+        $this->assertTrue($this->_currentMock->canRefundPartialPerInvoice());
+        $this->assertTrue($this->_currentMock->canCapturePartial());
+        $this->assertTrue($this->_currentMock->canUseInternal());
+        $this->assertTrue($this->_currentMock->isInitializeNeeded());
 
         // All the features that are disabled
-        $this->assertFalse($payment->canUseForMultishipping());
-        $this->assertFalse($payment->canCreateBillingAgreement());
-        $this->assertFalse($payment->isGateway());
-        $this->assertFalse($payment->isInitializeNeeded());
-        $this->assertFalse($payment->canManageRecurringProfiles());
-        $this->assertFalse($payment->canOrder());
+        $this->assertFalse($this->_currentMock->canUseForMultishipping());
+        $this->assertFalse($this->_currentMock->canCreateBillingAgreement());
+        $this->assertFalse($this->_currentMock->isGateway());
+        $this->assertFalse($this->_currentMock->canManageRecurringProfiles());
+        $this->assertFalse($this->_currentMock->canOrder());
     }
 
     public function testAssignDataIfNotAdminArea()
@@ -166,5 +168,11 @@ class Bolt_Boltpay_Model_PaymentTest extends PHPUnit_Framework_TestCase
         $result = $currentMock->getConfigData($field);
 
         $this->assertEquals(Bolt_Boltpay_Model_Payment::TITLE, $result, 'TITLE field does not match');
+    }
+
+    public function testCanReviewPayment(){
+        $orderPayment = new Mage_Sales_Model_Order_Payment();
+        $orderPayment->setAdditionalInformation('bolt_transaction_status', Bolt_Boltpay_Model_Payment::TRANSACTION_REJECTED_REVERSIBLE);
+        $this->assertTrue($this->_currentMock->canReviewPayment($orderPayment));
     }
 }

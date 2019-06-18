@@ -11,7 +11,7 @@
  *
  * @category   Bolt
  * @package    Bolt_Boltpay
- * @copyright  Copyright (c) 2018 Bolt Financial, Inc (https://www.bolt.com)
+ * @copyright  Copyright (c) 2019 Bolt Financial, Inc (https://www.bolt.com)
  * @license    http://opensource.org/licenses/osl-3.0.php  Open Software License (OSL 3.0)
  */
 
@@ -21,7 +21,7 @@
  * The Magento Model class that provides shipping and tax related utility methods
  *
  */
-class Bolt_Boltpay_Model_ShippingAndTax extends Mage_Core_Model_Abstract
+class Bolt_Boltpay_Model_ShippingAndTax extends Bolt_Boltpay_Model_Abstract
 {
     /**
      *  Updates the shipping address data and, if necessary, the fills in missing
@@ -35,22 +35,47 @@ class Bolt_Boltpay_Model_ShippingAndTax extends Mage_Core_Model_Abstract
      */
     public function applyShippingAddressToQuote( $quote, $shippingAddress ) {
 
-        $directory = Mage::getModel('directory/region')->loadByName($shippingAddress->region, $shippingAddress->country_code);
-        $region = $directory->getName(); // For region field should be the name not a code.
-        $regionId = $directory->getRegionId(); // This is require field for calculation: shipping, shopping price rules and etc.
+        $region = $shippingAddress->region; // Initialize and set default value for region name
+
+        $directory = Mage::getModel('directory/region')->loadByName($region, $shippingAddress->country_code);
+
+        // If region_id is null, try to load by region code
+        if(!$directory->getRegionId()) {
+            $directory = Mage::getModel('directory/region')->loadByCode($region, $shippingAddress->country_code);
+        }
+
+        // If region_id is not null, use the name and region_id
+        if($directory->getRegionId()) {
+            $region = $directory->getName(); // For region field should be the name not a code.
+        }
+
+        $regionId = $directory->getRegionId(); // This is a required field for calculation: shipping, shopping price rules and etc.
+
+        if (!property_exists($shippingAddress, 'postal_code') || !property_exists($shippingAddress, 'country_code')) {
+            $exception = new Exception($this->boltHelper()->__("Address must contain postal_code and country_code."));
+            $this->boltHelper()->logWarning($exception->getMessage());
+            throw $exception;
+        }
+
+        $shippingStreet = trim(
+            (@$shippingAddress->street_address1 ?: '') . "\n"
+            . (@$shippingAddress->street_address2 ?: '') . "\n"
+            . (@$shippingAddress->street_address3 ?: '') . "\n"
+            . (@$shippingAddress->street_address4 ?: '')
+        );
 
         $addressData = array(
-            'email' => $shippingAddress->email ?: $shippingAddress->email_address,
-            'firstname' => $shippingAddress->first_name,
-            'lastname' => $shippingAddress->last_name,
-            'street' => $shippingAddress->street_address1 . ($shippingAddress->street_address2 ? "\n" . $shippingAddress->street_address2 : ''),
-            'company' => $shippingAddress->company,
-            'city' => $shippingAddress->locality,
+            'email' => @$shippingAddress->email ?: $shippingAddress->email_address,
+            'firstname' => @$shippingAddress->first_name,
+            'lastname' => @$shippingAddress->last_name,
+            'street' => $shippingStreet,
+            'company' => @$shippingAddress->company,
+            'city' => @$shippingAddress->locality,
             'region' => $region,
             'region_id' => $regionId,
             'postcode' => $shippingAddress->postal_code,
             'country_id' => $shippingAddress->country_code,
-            'telephone' => $shippingAddress->phone ?: $shippingAddress->phone_number
+            'telephone' => @$shippingAddress->phone ?: $shippingAddress->phone_number
         );
 
         if ($quote->getCustomerId()) {
@@ -77,27 +102,18 @@ class Bolt_Boltpay_Model_ShippingAndTax extends Mage_Core_Model_Abstract
                     ->save();
             }
         }
-        $quote->removeAllAddresses();
-        $quote->save();
-        $quote->getShippingAddress()->addData($addressData)->save();
+
+        // https://github.com/BoltApp/bolt-magento1/pull/255
+        if (strpos(Mage::getVersion(), '1.7') !== 0){
+            $quote->removeAllAddresses();
+            $quote->save();
+        }
 
         $billingAddress = $quote->getBillingAddress();
+        $shippingAddress = $quote->getShippingAddress();
 
-        $quote->getBillingAddress()->addData(
-            array(
-                'email' => $billingAddress->getEmail() ?: ($shippingAddress->email ?: $shippingAddress->email_address),
-                'firstname' => $billingAddress->getFirstname() ?: $shippingAddress->first_name,
-                'lastname' => $billingAddress->getLastname() ?: $shippingAddress->last_name,
-                'street' => implode("\n", $billingAddress->getStreet()) ?: $shippingAddress->street_address1 . ($shippingAddress->street_address2 ? "\n" . $shippingAddress->street_address2 : ''),
-                'company' => $billingAddress->getCompany() ?: $shippingAddress->company,
-                'city' => $billingAddress->getCity() ?: $shippingAddress->locality,
-                'region' => $billingAddress->getRegion() ?: $region,
-                'region_id' => $billingAddress->getRegionId() ?: $regionId,
-                'postcode' => $billingAddress->getPostcode() ?: $shippingAddress->postal_code,
-                'country_id' => $billingAddress->getCountryId() ?: $shippingAddress->country_code,
-                'telephone' => $billingAddress->getTelephone() ?: ($shippingAddress->phone ?: $shippingAddress->phone_number)
-            )
-        )->save();
+        $shippingAddress->addData($addressData)->save();
+        Mage::getModel('boltpay/boltOrder')->correctBillingAddress($billingAddress, $shippingAddress, false);
 
         return $addressData;
     }
@@ -111,6 +127,11 @@ class Bolt_Boltpay_Model_ShippingAndTax extends Mage_Core_Model_Abstract
      */
     public function getShippingAndTaxEstimate( $quote )
     {
+        /** @var Mage_Sales_Model_Quote $parentQuote */
+        $parentQuote = $quote->getParentQuoteId()
+            ? Mage::getModel('sales/quote')->loadByIdWithoutStore($quote->getParentQuoteId())
+            : null;
+
         $response = array(
             'shipping_options' => array(),
             'tax_result' => array(
@@ -118,70 +139,94 @@ class Bolt_Boltpay_Model_ShippingAndTax extends Mage_Core_Model_Abstract
             ),
         );
 
-        Mage::helper('boltpay')->collectTotals(Mage::getModel('sales/quote')->load($quote->getId()));
+        try {
+            $originalCouponCode = $quote->getCouponCode();
+            if ($parentQuote) $quote->setCouponCode($parentQuote->getCouponCode());
+            $this->boltHelper()->collectTotals(Mage::getModel('sales/quote')->load($quote->getId()), true);
 
-        //we should first determine if the cart is virtual
-        if($quote->isVirtual()){
-            Mage::helper('boltpay')->collectTotals($quote, true);
-            $option = array(
-                "service"   => Mage::helper('boltpay')->__('No Shipping Required'),
-                "reference" => 'noshipping',
-                "cost" => 0,
-                "tax_amount" => abs(round($quote->getBillingAddress()->getTaxAmount() * 100))
-            );
-            $response['shipping_options'][] = $option;
-            $quote->setTotalsCollectedFlag(true);
-            return $response;
-        }
-
-        /*****************************************************************************************
-         * Calculate tax
-         *****************************************************************************************/
-        $this->applyShippingRate($quote, null);
-
-        $shippingAddress = $quote->getShippingAddress();
-        $shippingAddress->setCollectShippingRates(true)->collectShippingRates()->save();
-
-        $originalDiscountedSubtotal = $quote->getSubtotalWithDiscount();
-
-        $rates = $this->getSortedShippingRates($shippingAddress);
-
-        foreach ($rates as $rate) {
-
-            if ($rate->getErrorMessage()) {
-                $metaData = array('quote' => var_export($quote->debug(), true));
-                Mage::helper('boltpay/bugsnag')->notifyException(
-                    new Exception(
-                        Mage::helper('boltpay')->__("Error getting shipping option for %s: %s", $rate->getCarrierTitle(), $rate->getErrorMessage())
-                    ),
-                    $metaData
+            //we should first determine if the cart is virtual
+            if($quote->isVirtual()){
+                $this->boltHelper()->collectTotals($quote, true);
+                $option = array(
+                    "service"   => $this->boltHelper()->__('No Shipping Required'),
+                    "reference" => 'noshipping',
+                    "cost" => 0,
+                    "tax_amount" => abs(round($quote->getBillingAddress()->getTaxAmount() * 100))
                 );
-                continue;
+                $response['shipping_options'][] = $option;
+                $quote->setTotalsCollectedFlag(true);
+                return $response;
             }
 
-            $this->applyShippingRate($quote, $rate->getCode());
+            $this->applyShippingRate($quote, null);
 
-            $rateCode = $rate->getCode();
+            $shippingAddress = $quote->getShippingAddress();
+            $shippingAddress->setCollectShippingRates(true)->collectShippingRates()->save();
 
-            if (empty($rateCode)) {
-                $metaData = array('quote' => var_export($quote->debug(), true));
+            $originalDiscountedSubtotal = $quote->getSubtotalWithDiscount();
 
-                Mage::helper('boltpay/bugsnag')->notifyException(
-                    new Exception( Mage::helper('boltpay')->__('Rate code is empty. ') . var_export($rate->debug(), true) ),
-                    $metaData
+            $rates = $this->getSortedShippingRates($shippingAddress);
+
+            /** @var Mage_Sales_Model_Quote_Address_Rate $rate */
+            foreach ($rates as $rate) {
+
+                if ($rate->getErrorMessage()) {
+                    $exception = new Exception($this->boltHelper()->__("Error getting shipping option for %s: %s", $rate->getCarrierTitle(), $rate->getErrorMessage()));
+                    $metaData = array('quote' => var_export($quote->debug(), true));
+                    $this->boltHelper()->logWarning($exception->getMessage(),$metaData);
+                    $this->boltHelper()->notifyException($exception->getMessage(), $metaData);
+                    continue;
+                }
+
+                if ($parentQuote) $quote->setCouponCode($parentQuote->getCouponCode());
+
+                $quote->setShouldSkipThisShippingMethod(false);
+                $this->applyShippingRate($quote, $rate->getCode());
+
+                $rateCode = $rate->getCode();
+
+                if ($quote->getShouldSkipThisShippingMethod() || empty($rateCode)) {
+                    ////////////////////////////////////////////////////////////////////////////
+                    // The rate code theoretically should never be empty at this point.
+                    // The merchant may also choose to skip any particular shipping method by
+                    // via $quote->setShouldSkipThisShippingMethod(true) via the events
+                    // 'bolt_boltpay_shipping_method_applied_before' or
+                    // 'bolt_boltpay_shipping_method_applied_after'.
+                    // If any of the above are true, then this shipping method should not be
+                    // included as a Bolt shipping option.
+                    ////////////////////////////////////////////////////////////////////////////
+                    if (empty($rateCode)) {
+                        $exception = new Exception( $this->boltHelper()->__('Rate code is empty. ') . var_export($rate->debug(), true) );
+                        $metaData = array('quote' => var_export($quote->debug(), true));
+                        $this->boltHelper()->logWarning($exception->getMessage(),$metaData);
+                        $this->boltHelper()->notifyException($exception,$metaData, 'warning');
+                    }
+                    continue;
+                }
+
+                $adjustedShippingAmount = $this->getAdjustedShippingAmount($originalDiscountedSubtotal, $quote);
+
+                $option = array(
+                    "service" => $this->getShippingLabel($rate),
+                    "reference" => $rateCode,
+                    "cost" => round($adjustedShippingAmount * 100),
+                    "tax_amount" => abs(round($shippingAddress->getTaxAmount() * 100))
+                );
+
+                $response['shipping_options'][] = $option;
+
+                Mage::dispatchEvent(
+                    'bolt_boltpay_shipping_option_added',
+                    array(
+                        'quote'=> $quote,
+                        'rate' => $rate,
+                        'option' => $option
+                    )
                 );
             }
 
-            $adjustedShippingAmount = $this->getAdjustedShippingAmount($originalDiscountedSubtotal, $quote);
-
-            $option = array(
-                "service" => $this->getShippingLabel($rate),
-                "reference" => $rateCode,
-                "cost" => round($adjustedShippingAmount * 100),
-                "tax_amount" => abs(round($shippingAddress->getTaxAmount() * 100))
-            );
-
-            $response['shipping_options'][] = $option;
+        } finally {
+            $quote->setCouponCode($originalCouponCode);
         }
 
         return $response;
@@ -190,18 +235,30 @@ class Bolt_Boltpay_Model_ShippingAndTax extends Mage_Core_Model_Abstract
     /**
      * Applies shipping rate to quote. Clears previously calculated discounts by clearing address id.
      *
-     * @param Mage_Sales_Model_Quote $quote    Quote which has been updated to use new shipping rate
-     * @param string $shippingRateCode    Shipping rate code
+     * @param Mage_Sales_Model_Quote $quote              Quote which has been updated to use new shipping rate
+     * @param string                 $shippingRateCode   Shipping rate code composed of {carrier}_{method}
      */
     public function applyShippingRate($quote, $shippingRateCode) {
+
         $shippingAddress = $quote->getShippingAddress();
 
         if (!empty($shippingAddress)) {
+
+            Mage::dispatchEvent(
+                'bolt_boltpay_shipping_method_applied_before',
+                array(
+                    'quote'=> $quote,
+                    'shipping_method_code' => $shippingRateCode
+                )
+            );
+
             // Flagging address as new is required to force collectTotals to recalculate discounts
             $shippingAddress->isObjectNew(true);
             $shippingAddressId = $shippingAddress->getData('address_id');
 
-            $shippingAddress->setShippingMethod($shippingRateCode);
+            $shippingAddress
+                ->setShippingMethod($shippingRateCode)
+                ->setCollectShippingRates(true);
 
             // When multiple shipping methods apply a discount to the sub-total, collect totals doesn't clear the
             // previously set discount, so the previous discount gets added to each subsequent shipping method that
@@ -212,11 +269,19 @@ class Bolt_Boltpay_Model_ShippingAndTax extends Mage_Core_Model_Abstract
                 $item->setData('base_discount_amount', $item->getOrigData('base_discount_amount'));
             }
 
-            Mage::helper('boltpay')->collectTotals($quote, true);
+            $this->boltHelper()->collectTotals($quote, true);
 
             if(!empty($shippingAddressId) && $shippingAddressId != $shippingAddress->getData('address_id')) {
                 $shippingAddress->setData('address_id', $shippingAddressId);
             }
+
+            Mage::dispatchEvent(
+                'bolt_boltpay_shipping_method_applied_after',
+                array(
+                    'quote'=> $quote,
+                    'shipping_method_code' => $shippingRateCode
+                )
+            );
         }
     }
 
@@ -249,7 +314,7 @@ class Bolt_Boltpay_Model_ShippingAndTax extends Mage_Core_Model_Abstract
     /**
      * Returns user-visible label for given shipping rate.
      *
-     * @param   object rate
+     * @param   Mage_Sales_Model_Quote_Address_Rate $rate
      * @return  string
      */
     public function getShippingLabel($rate) {
@@ -269,6 +334,36 @@ class Bolt_Boltpay_Model_ShippingAndTax extends Mage_Core_Model_Abstract
         if (strncasecmp( $carrier, $title, strlen($carrier) ) === 0) {
             return $title;
         }
-        return $carrier . " - " . $title;
+
+        return $this->boltHelper()->doFilterEvent( 'bolt_boltpay_filter_shipping_label', $carrier . " - " . $title, $rate);
+    }
+
+    /**
+     * Returns a whether P.O. box addresses are allowed for this store
+     *
+     * @return bool     true if P.O. boxes are allowed.  Otherwise, false.
+     */
+    public function isPOBoxAllowed()
+    {
+        return Mage::getStoreConfigFlag('payment/boltpay/allow_po_box');
+    }
+
+    /**
+     * Checks whether a P.O. Box exist in the addresses given
+     *
+     * @param $address1      The address to be checked for a P.O. Box matching string
+     * @param $address2      If set, second address to be checked.  Useful for checking both shipping and billing in one call.
+     *
+     * @return bool     returns true only if any of the provided addresses contain a P.O. Box.  Otherwise, false
+     */
+    public function doesAddressContainPOBox($address1, $address2 = null)
+    {
+        $poBoxRegex = '/^\s*((P(OST)?.?\s*(O(FF(ICE)?)?|B(IN|OX))+.?\s+(B(IN|OX))?)|B(IN|OX))/i';
+        $poBoxRegexStrict = '/(?:P(?:ost(?:al)?)?[\.\-\s]*(?:(?:O(?:ffice)?[\.\-\s]*)?B(?:ox|in|\b|\d)|o(?:ffice|\b)(?:[-\s]*\d)|code)|box[-\s\b]*\d)/i';
+
+        return preg_match($poBoxRegex, $address1)
+            || preg_match($poBoxRegex, $address2)
+            || preg_match($poBoxRegexStrict, $address1)
+            || preg_match($poBoxRegexStrict, $address2);
     }
 }

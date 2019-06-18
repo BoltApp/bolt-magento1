@@ -11,7 +11,7 @@
  *
  * @category   Bolt
  * @package    Bolt_Boltpay
- * @copyright  Copyright (c) 2018 Bolt Financial, Inc (https://www.bolt.com)
+ * @copyright  Copyright (c) 2019 Bolt Financial, Inc (https://www.bolt.com)
  * @license    http://opensource.org/licenses/osl-3.0.php  Open Software License (OSL 3.0)
  */
 
@@ -20,8 +20,9 @@
  *
  * @deprecated OAuth will be removed in future versions
  */
-class Bolt_Boltpay_IndexController extends Mage_Adminhtml_Controller_Action
+class Bolt_Boltpay_IndexController extends Mage_Adminhtml_Controller_Action implements Bolt_Boltpay_Controller_Interface
 {
+    use Bolt_Boltpay_BoltGlobalTrait;
 
     protected function _isAllowed()
     {

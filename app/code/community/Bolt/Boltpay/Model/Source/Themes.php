@@ -11,7 +11,7 @@
  *
  * @category   Bolt
  * @package    Bolt_Boltpay
- * @copyright  Copyright (c) 2018 Bolt Financial, Inc (https://www.bolt.com)
+ * @copyright  Copyright (c) 2019 Bolt Financial, Inc (https://www.bolt.com)
  * @license    http://opensource.org/licenses/osl-3.0.php  Open Software License (OSL 3.0)
  */
 
@@ -22,17 +22,19 @@
  */
 class Bolt_Boltpay_Model_Source_Themes
 {
-  public function toOptionArray()
-  {
-    return array(
-      array(
-        'value' => 'light',
-        'label' => Mage::helper('boltpay')->__('Light, for dark backgrounds')
-      ),
-      array(
-        'value' => 'dark',
-        'label' => Mage::helper('boltpay')->__('Dark, for light backgrounds')
-      ),
-    );
-  }
+    use Bolt_Boltpay_BoltGlobalTrait;
+
+    public function toOptionArray()
+    {
+        return array(
+            array(
+                'value' => 'light',
+                'label' => $this->boltHelper()->__('Light, for dark backgrounds')
+            ),
+            array(
+                'value' => 'dark',
+                'label' => $this->boltHelper()->__('Dark, for light backgrounds')
+            ),
+        );
+    }
 }

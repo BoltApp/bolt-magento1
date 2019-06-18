@@ -11,17 +11,17 @@
  *
  * @category   Bolt
  * @package    Bolt_Boltpay
- * @copyright  Copyright (c) 2018 Bolt Financial, Inc (https://www.bolt.com)
+ * @copyright  Copyright (c) 2019 Bolt Financial, Inc (https://www.bolt.com)
  * @license    http://opensource.org/licenses/osl-3.0.php  Open Software License (OSL 3.0)
  */
 
-class Bolt_Boltpay_Model_Productpage_Cart extends Mage_Core_Model_Abstract
+class Bolt_Boltpay_Model_Productpage_Cart extends Bolt_Boltpay_Model_Abstract
 {
-    const ERR_CODE_OUT_OF_STOCKS = 7001;
-    const ERR_CODE_INVALID_SIZE = 7002;
-    const ERR_CODE_INVALID_QUANTITY = 7003;
-    const ERR_CODE_INVALID_REFERENCE = 7004;
-    const ERR_CODE_INVALID_AMOUNT = 7005;
+    const ERR_CODE_OUT_OF_STOCKS = 6301;
+    const ERR_CODE_INVALID_SIZE = 6302;
+    const ERR_CODE_INVALID_QUANTITY = 6303;
+    const ERR_CODE_INVALID_REFERENCE = 6304;
+    const ERR_CODE_INVALID_AMOUNT = 6305;
 
     const ITEM_TYPE_PHYSICAL = 'physical';
     const ITEM_TYPE_DIGITAL = 'digital';
@@ -52,12 +52,13 @@ class Bolt_Boltpay_Model_Productpage_Cart extends Mage_Core_Model_Abstract
         try {
             $this->validateCartRequest();
             $this->createCart();
-            $this->setCartResponse();
+            $immutableQuote = $this->createImmutableQuote();
+            $this->setCartResponse($immutableQuote);
         } catch (\Bolt_Boltpay_BadInputException $e) {
             return false;
         } catch (\Exception $e) {
-            Mage::helper('boltpay/bugsnag')->notifyException($e);
-
+            $this->boltHelper()->notifyException($e);
+            $this->boltHelper()->logException($e);
             return false;
         }
 
@@ -208,22 +209,37 @@ class Bolt_Boltpay_Model_Productpage_Cart extends Mage_Core_Model_Abstract
             );
             $cart->addProduct($product, $param);
         }
+        $cart->getQuote()->setIsBoltPdp(true);
         $cart->save();
 
         return $cart;
     }
 
     /**
+     * The cloned copy of the source quote
+     *
+     * @return Mage_Sales_Model_Quote
+     * @throws Exception
+     */
+    protected function createImmutableQuote()
+    {
+        $cart = $this->getSessionCart();
+        $sessionQuote = $cart->getQuote();
+
+        return Mage::getModel('boltpay/boltOrder')->cloneQuote($sessionQuote);
+    }
+
+    /**
+     * @param Mage_Sales_Model_Quote $quote
      * @return array
      */
-    protected function setCartResponse()
+    protected function setCartResponse($quote)
     {
-        $quote = $this->getSessionQuote();
         $this->cartResponse = array(
             'order_reference' => $quote->getId(),
             'currency'        => $quote->getQuoteCurrencyCode(),
-            'items'           => $this->getGeneratedItems(),
-            'total'           => $this->getGeneratedTotal()
+            'items'           => $this->getGeneratedItems($quote),
+            'total_amount'    => $this->getGeneratedTotal()
         );
         $this->httpCode = 200;
 
@@ -247,15 +263,14 @@ class Bolt_Boltpay_Model_Productpage_Cart extends Mage_Core_Model_Abstract
      *
      * @return array
      */
-    protected function getGeneratedItems()
+    protected function getGeneratedItems($quote)
     {
-        $items = $this->getSessionQuote()->getAllVisibleItems();
-        /** @var Bolt_Boltpay_Helper_Data $boltHelper */
-        $boltHelper = Mage::helper('boltpay');
+        $items = $quote->getAllVisibleItems();
+        $quoteId = $quote->getId();
 
         return array_map(
-            function ($item) use ($boltHelper) {
-                $imageUrl = $boltHelper->getItemImageUrl($item);
+            function ($item) use ($quoteId) {
+                $imageUrl = $this->boltHelper()->getItemImageUrl($item);
                 $product = $this->getProductById($item->getProductId());
                 $type = $product->getTypeId() == 'virtual' ? self::ITEM_TYPE_DIGITAL : self::ITEM_TYPE_PHYSICAL;
 
@@ -264,10 +279,10 @@ class Bolt_Boltpay_Model_Productpage_Cart extends Mage_Core_Model_Abstract
                 $totalAmount = (int)round($unitPrice * $quantity);
 
                 return array(
-                    'reference'    => $this->getSessionQuote()->getId(),
+                    'reference'    => $quoteId,
                     'image_url'    => $imageUrl,
                     'name'         => $item->getName(),
-                    'sku'          => $product->getData('sku'),
+                    'sku'          => $item->getSku(),
                     'description'  => substr($product->getDescription(), 0, 8182) ?: '',
                     'total_amount' => $totalAmount,
                     'unit_price'   => $unitPrice,
@@ -329,9 +344,10 @@ class Bolt_Boltpay_Model_Productpage_Cart extends Mage_Core_Model_Abstract
         $this->cartResponse = $this->getCartTotals();
 
         if ($exception) {
+            $this->boltHelper()->logException($exception);
             throw $exception;
         }
-
+        $this->boltHelper()->logWarning($message);
         throw new \Bolt_Boltpay_BadInputException($message);
     }
 

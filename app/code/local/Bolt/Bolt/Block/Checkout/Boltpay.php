@@ -27,17 +27,17 @@
  *
  */
 class Bolt_Bolt_Block_Checkout_Boltpay extends Bolt_Boltpay_Block_Checkout_Boltpay
-{    
+{
 
     /**
      * @param string $successCustom
      * @param $checkoutType
      * @return string
      */
-        public function buildOnSuccessCallback($successCustom = '', $checkoutType)
+    public function buildOnSuccessCallback($successCustom = '', $checkoutType)
     {
-        $saveOrderUrl = Mage::helper('boltpay/api')->getMagentoUrl('boltpay/order/save');
-        
+        $saveOrderUrl = Mage::helper('boltpay/url')->getMagentoUrl('boltpay/order/save');
+
         if($checkoutType === self::CHECKOUT_TYPE_ADMIN) {
             return "function(transaction, callback) {
                 $successCustom
@@ -87,6 +87,6 @@ class Bolt_Bolt_Block_Checkout_Boltpay extends Bolt_Boltpay_Block_Checkout_Boltp
                     }
                 );
             }";
-        }                
-    }      
+        }
+    }
 }
