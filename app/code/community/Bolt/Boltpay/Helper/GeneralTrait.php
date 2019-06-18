@@ -164,7 +164,7 @@ trait Bolt_Boltpay_Helper_GeneralTrait {
      *
      * @param string                    $eventName              The name of the event to be dispatched
      * @param mixed                     $valueToFilter          The value to filter
-     * @param array                     $additionalParameters   any extra parameters used in filtering
+     * @param mixed                     $additionalParameters   any extra parameters used in filtering
      *
      * @return mixed   the value after it has been filtered
      */
@@ -174,7 +174,7 @@ trait Bolt_Boltpay_Helper_GeneralTrait {
         Mage::dispatchEvent(
             $eventName,
             array(
-                'valueWrapper' => $valueWrapper,
+                'value_wrapper' => $valueWrapper,
                 'parameters' => $additionalParameters
             )
         );

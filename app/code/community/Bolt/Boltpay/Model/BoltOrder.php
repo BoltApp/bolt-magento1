@@ -986,7 +986,7 @@ PROMISE;
             $eventName,
             array(
                 'quote'=>$quote,
-                'cartDataWrapper' => $cartDataWrapper
+                'cart_data_wrapper' => $cartDataWrapper
             )
         );
         $cartSubmissionData = $cartDataWrapper->getCartData();
