@@ -220,10 +220,24 @@ class Bolt_Boltpay_Model_Order extends Bolt_Boltpay_Model_Abstract
                 $service->submitAll();
                 $order = $service->getOrder();
 
-                // Add the user_note to the order comments and make it visible for customer.
-                if (isset($transaction->order->user_note)) {
-                    $this->setOrderUserNote($order, '[CUSTOMER NOTE] ' . $transaction->order->user_note);
+                //////////////////////////////////////////////////
+                // Add the user_note to the order comments
+                // and make it visible for customer.
+                //////////////////////////////////////////////////
+                $userNote = isset($transaction->order->user_note)
+                    ?
+                        $this->boltHelper()->doFilterEvent(
+                            'bolt_boltpay_filter_user_note',
+                            '[CUSTOMER NOTE] ' . $transaction->order->user_note,
+                            $order
+                        )
+                    :
+                        ''
+                ;
+                if (!empty($userNote)) {
+                    $this->setOrderUserNote($order, $userNote);
                 }
+                //////////////////////////////////////////////////
 
             } catch (Exception $e) {
 

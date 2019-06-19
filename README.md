@@ -60,4 +60,5 @@ If you would like to pull the latest Bolt code from the Git repo and update Mage
 | --- | --- | --- | --- | --- |
 | bolt_boltpay_filter_shipping_label | global | Allows changing of individual shipping labels that are displayed in Bolt | **rate**<br>_Mage_Sales_Model_Quote_Address_Rate_<br>The information for this calculated rate, including method, carrier, and price | **string**<br>The label to be displayed in the Bolt order |
 | bolt_boltpay_filter_success_url | global | Provides means for custom success order urls | **order**<br>_Mage_Sales_Model_Order_<br>The order to be authorized<br><br>**quoteId**<br>_int_<br>The quote id of the order which maps to the Bolt order reference | **string**<br>The url that the BoltCheckout modal will forward the customer to on successful order authorization |
+| bolt_boltpay_filter_user_note | global | Allows changing of the customer user note and user note behavior.  To disable default behavior, return a falsy value | **order**<br>_Mage_Sales_Model_Order_<br>The order to which to append the user note | **string**<br>The customized user note that will be appended to the order history comments and displayed to the customer |
 
