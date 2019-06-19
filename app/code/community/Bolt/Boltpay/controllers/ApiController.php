@@ -219,7 +219,18 @@ class Bolt_Boltpay_ApiController extends Mage_Core_Controller_Front_Action imple
                 }
             }
 
-            $orderSuccessUrl = $this->createSuccessUrl($order, $immutableQuoteId);
+            /////////////////////////////////
+            // create success order URL
+            /////////////////////////////////
+            $orderSuccessUrl = $this->boltHelper()->doFilterEvent(
+                'bolt_boltpay_filter_success_url',
+                $this->createSuccessUrl($order, $immutableQuoteId),
+                [
+                    'order' => $order,
+                    'quote_id' => $immutableQuoteId
+                ]
+            );
+            /////////////////////////////////
 
             $this->sendResponse(
                 200,
