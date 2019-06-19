@@ -74,5 +74,7 @@
       <block type="boltpay/catalog_product_boltpay" name="bolt_product_checkout_config" template="boltpay/catalog/product/configure_checkout.phtml"/>
     </reference>
   </catalog_product_view>
-
+    <boltpay_onepage_success translate="label">
+        <update handle="checkout_onepage_success"/>
+    </boltpay_onepage_success>
 </layout>
