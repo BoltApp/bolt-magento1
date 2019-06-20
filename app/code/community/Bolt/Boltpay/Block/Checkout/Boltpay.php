@@ -663,11 +663,11 @@ class Bolt_Boltpay_Block_Checkout_Boltpay extends Mage_Checkout_Block_Onepage_Re
 
     /**
      * Gets Publishable Key depending the other checkout type.
-     * -  shopping cart uses multi-step publishable keys
-     * -  firecheckout and onepage checkout uses a payment only publishable key
+     * - shopping cart, product page and etc uses multi-step publishable keys
+     * - firecheckout and onepage checkout uses a payment only publishable key
+     * - adminhtml uses a payment only back-office key
      *
      * @return string
-     * @throws Exception
      */
     public function getPublishableKeyForRoute()
     {
@@ -677,9 +677,11 @@ class Bolt_Boltpay_Block_Checkout_Boltpay extends Mage_Checkout_Block_Onepage_Re
         $checkoutType = static::CHECKOUT_TYPE_MULTI_PAGE;
         if ($routeName === 'adminhtml') {
             $checkoutType = static::CHECKOUT_TYPE_ADMIN;
-        } else if ( ($routeName === 'firecheckout') || ($routeName === 'checkout' && $controllerName === 'onepage') ) {
+        } else if ($routeName === 'checkout' && $controllerName === 'onepage') {
             $checkoutType = static::CHECKOUT_TYPE_ONE_PAGE;
         }
+
+        Mage::dispatchEvent('bolt_checkout_type_for_route', array('checkout_type' => $checkoutType));
 
         return $this->getPublishableKey($checkoutType);
     }
@@ -710,5 +712,12 @@ class Bolt_Boltpay_Block_Checkout_Boltpay extends Mage_Checkout_Block_Onepage_Re
         $isFireCheckoutPage = ($this->getRequest()->getRouteName() === 'firecheckout');
 
         return (!$isFireCheckoutPage && $this->isAllowedConnectJsOnCurrentPage());
+    }
+
+    public function getBoltModuleVersion()
+    {
+        $versionElm =  Mage::getConfig()->getModuleConfig("Bolt_Boltpay")->xpath("version");
+
+        return $versionElm[0];
     }
 }

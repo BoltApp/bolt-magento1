@@ -17,17 +17,12 @@
 ?>
 <?php /* @var $this Bolt_Boltpay_Block_Checkout_Boltpay */ ?>
 <?php
-$versionElm =  Mage::getConfig()->getModuleConfig("Bolt_Boltpay")->xpath("version");
-$version = (string)$versionElm[0];
-$routeName = $this->getRequest()->getRouteName();
-$controllerName = $this->getRequest()->getControllerName();
+$version = (string) $this->getBoltModuleVersion();
 /* TODO: extend key selection for mini-cart if necessary */
 ?>
 <?php if($this->isBoltActive()): ?>
     <?php
-    $publishableKey = $this->getPublishableKey((Mage::app()->getRequest()->getControllerName() === 'cart'
-        || ($routeName === 'catalog' && $controllerName === 'product'))
-        ? 'multi-page' : 'one-page');
+    $publishableKey = $this->getPublishableKeyForRoute();
     ?>
     <?php if (!empty($publishableKey)): ?>
         <script
@@ -36,7 +31,7 @@ $controllerName = $this->getRequest()->getControllerName();
                 src="<?php echo $this->getTrackJsUrl(); ?>"
                 data-publishable-key="<?php echo $publishableKey; ?>">
         </script>
-        <script>console.log("Bolt Version: <?php echo $version?>");</script>
+        <script>console.log("Bolt M1 Version: <?php echo $version?>");</script>
     <?php endif; ?>
 <?php endif; ?>
 
