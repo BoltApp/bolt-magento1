@@ -714,6 +714,9 @@ class Bolt_Boltpay_Block_Checkout_Boltpay extends Mage_Checkout_Block_Onepage_Re
         return (!$isFireCheckoutPage && $this->isAllowedConnectJsOnCurrentPage());
     }
 
+    /**
+     * @return mixed
+     */
     public function getBoltModuleVersion()
     {
         $versionElm =  Mage::getConfig()->getModuleConfig("Bolt_Boltpay")->xpath("version");
