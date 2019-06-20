@@ -3,3 +3,4 @@
 /vendor
 
 docker-container/docker-magento
+docker-container/config.sh
