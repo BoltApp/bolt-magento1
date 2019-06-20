@@ -40,6 +40,9 @@ class Bolt_Boltpay_Model_Order extends Bolt_Boltpay_Model_Abstract
      * @return Mage_Sales_Model_Order   The order saved to Magento
      *
      * @throws Bolt_Boltpay_OrderCreationException    thrown on order creation failure
+     *
+     * @todo Change this to accept a quote object to keep all setting current store context to the APIController
+     * @todo Remove $reference, $sessionQuoteId, and $isPreAuth as this is only called from the preauth context
      */
     public function createOrder($reference, $sessionQuoteId = null, $isPreAuthCreation = false, $transaction = null)
     {
@@ -54,6 +57,7 @@ class Bolt_Boltpay_Model_Order extends Bolt_Boltpay_Model_Abstract
 
             $immutableQuoteId = $this->boltHelper()->getImmutableQuoteIdFromTransaction($transaction);
             $immutableQuote = $this->getQuoteById($immutableQuoteId);
+            Mage::app()->setCurrentStore($immutableQuote->getStore());
             $parentQuote = $this->getQuoteById($immutableQuote->getParentQuoteId());
 
             if (!$parentQuote->getIsActive()) {
@@ -69,6 +73,15 @@ class Bolt_Boltpay_Model_Order extends Bolt_Boltpay_Model_Abstract
                 $sessionQuoteId = $immutableQuote->getParentQuoteId();
                 $this->boltHelper()->setCustomerSessionByQuoteId($sessionQuoteId);
             }
+
+            Mage::dispatchEvent(
+                'bolt_boltpay_order_creation_before',
+                array(
+                    'immutable_quote'=> $immutableQuote,
+                    'parent_quote' => $parentQuote,
+                    'transaction' => $transaction
+                )
+            );
 
             $this->validateCartSessionData($immutableQuote, $parentQuote, $transaction);
 
@@ -265,11 +278,19 @@ class Bolt_Boltpay_Model_Order extends Bolt_Boltpay_Model_Abstract
             $this->associateOrderToCustomerWhenPlacingOnPDP($order->getData('increment_id'));
         }
 
+        ///////////////////////////////////////////////////////
+        /// Dispatch order save events
+        ///////////////////////////////////////////////////////
         $recurringPaymentProfiles = $service->getRecurringPaymentProfiles();
 
         Mage::dispatchEvent(
             'checkout_submit_all_after',
             array('order' => $order, 'quote' => $immutableQuote, 'recurring_profiles' => $recurringPaymentProfiles)
+        );
+
+        Mage::dispatchEvent(
+            'bolt_boltpay_order_creation_after',
+            array('order'=>$order, 'quote'=>$immutableQuote, 'transaction' => $transaction)
         );
         ///////////////////////////////////////////////////////
 
@@ -617,15 +638,15 @@ class Bolt_Boltpay_Model_Order extends Bolt_Boltpay_Model_Abstract
     /**
      * Called after pre-auth order is confirmed as authorized on Bolt.
      *
-     * @param string $orderIncrementId  customer facing order id
-     * @param object $payload           payload sent from Bolt
+     * @param Mage_Sales_Model_Order|string $order      the order or the customer facing order id
+     * @param object|string                 $payload    payload sent from Bolt
      *
      * @throws Mage_Core_Exception if there is a problem retrieving the bolt transaction reference from the payload
      */
-    public function receiveOrder( $orderIncrementId, $payload ) {
+    public function receiveOrder( $order, $payload ) {
         /** @var Mage_Sales_Model_Order $order */
-        $order = Mage::getModel('sales/order')->loadByIncrementId($orderIncrementId);
-        $payloadObject = json_decode($payload);
+        $order = is_object($order) ? $order : Mage::getModel('sales/order')->loadByIncrementId($order);
+        $payloadObject = is_object($payload) ? $payload : json_decode($payload);
         $immutableQuote = $this->getQuoteFromOrder($order);
 
         Mage::dispatchEvent('bolt_boltpay_order_received_before', array('order'=>$order, 'payload' => $payloadObject));

@@ -31,30 +31,35 @@ trait Bolt_Boltpay_Helper_GeneralTrait {
     public static $fromHooks = false;
 
     /**
-     * Determines if the Bolt payment method can be used in the system
+     * Determines if the Bolt payment method can be used to pay for the given quote using the quote's context
      *
-     * @param Mage_Sales_Model_Quote $quote         Magento quote object
+     * @param Mage_Sales_Model_Quote $quote        The cart to be inspected as viable for Bolt payment
      * @param bool                   $checkCountry Set to true if the billing country should be checked, otherwise false
      *
      * @return bool     true if Bolt can be used, false otherwise
      *
-     * TODO: consider store base currency and possibly add conversion logic
      * @throws Mage_Core_Model_Store_Exception
      */
     public function canUseBolt($quote, $checkCountry = true)
     {
+        $applicationContextStore = Mage::app()->getStore();
+        $quoteContextStore = $quote->getStore();
+
+        Mage::app()->setCurrentStore($quoteContextStore);
         /**
          * If called from hooks always return true
          */
         if (self::$fromHooks) return true;
 
-        return $this->isBoltPayActive()
+        $canQuoteUseBolt = $this->isBoltPayActive()
             && (!$checkCountry || ($checkCountry && $this->canUseForCountry($quote->getBillingAddress()->getCountry())))
             && (Mage::app()->getStore()->getCurrentCurrencyCode() == 'USD')
             && (Mage::app()->getStore()->getBaseCurrencyCode() == 'USD')
             && count($quote->getAllVisibleItems()) > 0;
-    }
 
+        Mage::app()->setCurrentStore($applicationContextStore);
+        return $canQuoteUseBolt;
+    }
 
 
     /**
@@ -159,7 +164,7 @@ trait Bolt_Boltpay_Helper_GeneralTrait {
      *
      * @param string                    $eventName              The name of the event to be dispatched
      * @param mixed                     $valueToFilter          The value to filter
-     * @param array                     $additionalParameters   any extra parameters used in filtering
+     * @param mixed                     $additionalParameters   any extra parameters used in filtering
      *
      * @return mixed   the value after it has been filtered
      */
@@ -169,7 +174,7 @@ trait Bolt_Boltpay_Helper_GeneralTrait {
         Mage::dispatchEvent(
             $eventName,
             array(
-                'valueWrapper' => $valueWrapper,
+                'value_wrapper' => $valueWrapper,
                 'parameters' => $additionalParameters
             )
         );

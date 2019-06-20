@@ -263,7 +263,7 @@ JS;
     }
 
     /**
-     * Defines the default value as a 0 cent tolerance for Bolt and Magento grand total
+     * Defines the default value as a 1 cent tolerance for Bolt and Magento grand total
      * difference
      *
      * @param int|string $rawConfigValue    The config value pre-filter. Will be an int or an empty string
@@ -272,7 +272,7 @@ JS;
      * @return int  the number defined in the extra config admin.  If not defined, the default of 1
      */
     public function filterPriceFaultTolerance($rawConfigValue, $additionalParams = array() ) {
-        return is_int($rawConfigValue) ? $rawConfigValue : 0;
+        return is_int($rawConfigValue) ? $rawConfigValue : 1;
     }
 
     /**

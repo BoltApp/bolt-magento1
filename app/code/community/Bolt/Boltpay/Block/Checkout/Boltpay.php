@@ -455,6 +455,16 @@ class Bolt_Boltpay_Block_Checkout_Boltpay extends Mage_Checkout_Block_Onepage_Re
     }
 
     /**
+     * Additional JS that is to be added on any page where the Bolt Button is rendered
+     *
+     * @return string   Well formed Javascript to typically be placed within a <script> tag
+     */
+    public function getAdditionalJs()
+    {
+        return Mage::getStoreConfig('payment/boltpay/additional_js');
+    }
+
+    /**
      * Returns the Bolt Sandbox Mode configuration.
      * @return string
      */

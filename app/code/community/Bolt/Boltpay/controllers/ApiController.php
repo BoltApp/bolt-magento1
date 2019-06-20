@@ -41,12 +41,13 @@ class Bolt_Boltpay_ApiController extends Mage_Core_Controller_Front_Action imple
             $reference = $requestData->reference;
             $transactionId = @$requestData->transaction_id ?: $requestData->id;
             $hookType = @$requestData->notification_type ?: $requestData->type;
-            $parentQuoteId = @$requestData->quote_id;
+            $incrementId = @$requestData->display_id;
 
             /** @var Bolt_Boltpay_Model_Order $orderModel */
             $orderModel = Mage::getModel('boltpay/order');
 
             if ($hookType === 'failed_payment') {
+                $parentQuoteId = $requestData->quote_id;
                 $this->handleFailedPaymentHook($parentQuoteId);
                 return;
             } else if ($hookType === 'discounts.code.apply') {
@@ -54,14 +55,13 @@ class Bolt_Boltpay_ApiController extends Mage_Core_Controller_Front_Action imple
                 return;
             }
 
-            $transaction = $this->boltHelper()->fetchTransaction($reference);
-            $quoteId = $this->boltHelper()->getImmutableQuoteIdFromTransaction($transaction);
-
             /* If display_id has been confirmed and updated on Bolt, then we should look up the order by display_id */
-            $order = Mage::getModel('sales/order')->loadByIncrementId($transaction->order->cart->display_id);
+            $order = Mage::getModel('sales/order')->loadByIncrementId($incrementId);
 
             /* If it hasn't been confirmed, or could not be found, we use the quoteId as fallback */
             if ($order->isObjectNew()) {
+                $transaction = $this->boltHelper()->fetchTransaction($reference);
+                $quoteId = $this->boltHelper()->getImmutableQuoteIdFromTransaction($transaction);
                 $order =  $orderModel->getOrderByQuoteId($quoteId);
             }
 
@@ -69,6 +69,11 @@ class Bolt_Boltpay_ApiController extends Mage_Core_Controller_Front_Action imple
                 ///////////////////////////////////////
                 // Order was found.  We will update it
                 ///////////////////////////////////////
+                Mage::app()->setCurrentStore($order->getStore());
+
+                if (empty($transaction) && $hookType !== 'pending') {
+                    $transaction = $this->boltHelper()->fetchTransaction($reference);
+                }
 
                 $orderPayment = $order->getPayment();
                 if (!$orderPayment->getAdditionalInformation('bolt_reference')) {
@@ -77,7 +82,7 @@ class Bolt_Boltpay_ApiController extends Mage_Core_Controller_Front_Action imple
                     /// session.  We'll complete the post authorization steps prior to processing
                     /// the webhook.
                     /////////////////////////////////////////////////////////////////////////////
-                    $orderModel->receiveOrder($order->getIncrementId(), $this->payload);
+                    $orderModel->receiveOrder($order, $this->payload);
                     /////////////////////////////////////////////////////////////////////////////
                 }
 
@@ -214,7 +219,18 @@ class Bolt_Boltpay_ApiController extends Mage_Core_Controller_Front_Action imple
                 }
             }
 
-            $orderSuccessUrl = $this->createSuccessUrl($order, $immutableQuoteId);
+            /////////////////////////////////
+            // create success order URL
+            /////////////////////////////////
+            $orderSuccessUrl = $this->boltHelper()->doFilterEvent(
+                'bolt_boltpay_filter_success_url',
+                $this->createSuccessUrl($order, $immutableQuoteId),
+                [
+                    'order' => $order,
+                    'quote_id' => $immutableQuoteId
+                ]
+            );
+            /////////////////////////////////
 
             $this->sendResponse(
                 200,
@@ -300,6 +316,29 @@ class Bolt_Boltpay_ApiController extends Mage_Core_Controller_Front_Action imple
         $order =  $orderModel->getOrderByParentQuoteId($parentQuoteId);
 
         if (!$order->isObjectNew()) {
+            //////////////////////////////////////////////////////////////////////////////////////
+            // Remove order and expire cache only if the order is still pending authorization
+            // Otherwise, ignore the failed payment hook because it arriving out of sync as
+            // a payment has already been recorded
+            //////////////////////////////////////////////////////////////////////////////////////
+            if ($order->getStatus() !== Bolt_Boltpay_Model_Payment::TRANSACTION_PRE_AUTH_PENDING) {
+                $message = $this->boltHelper()->__(
+                    'Payment was already recorded. The failed payment hook for order %s seems out of sync.',
+                    $order->getIncrementId()
+                );
+                $this->boltHelper()->logWarning($message);
+                $this->boltHelper()->notifyException(new Exception($message), [], 'warning');
+                $this->sendResponse(
+                    200,
+                    array(
+                        'status' => 'success',
+                        'message' => $message
+                    )
+                );
+                return;
+            }
+            //////////////////////////////////////////////////////////////////////////////////////
+
             $orderModel->removePreAuthOrder($order);
         }
 
