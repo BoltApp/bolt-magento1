@@ -238,9 +238,13 @@ class Bolt_Boltpay_Model_Payment extends Mage_Payment_Model_Method_Abstract
             $routeName= Mage::app()->getRequest()->getRouteName();
             $moduleName = Mage::app()->getRequest()->getControllerModule();
             $controllerName = Mage::app()->getRequest()->getControllerName();
+            $otherRoute = false;
+
+            Mage::dispatchEvent('bolt_is_available_payment', array('other_route' => $otherRoute));
+
             if (
-                ($routeName === 'onestepcheckout' && $moduleName === 'Idev_OneStepCheckout')
-                || ($routeName === 'checkout' && $controllerName === 'onepage' && $moduleName === 'Mage_Checkout')
+                ($routeName === 'checkout' && $controllerName === 'onepage' && $moduleName === 'Mage_Checkout')
+                || $otherRoute
             ) {
                 $hidePayment = Mage::getStoreConfigFlag('payment/boltpay/hide_on_checkout');
             }
