@@ -172,7 +172,7 @@ class Bolt_Boltpay_Model_Order extends Bolt_Boltpay_Model_Abstract
             //////////////////////////////////////////////////////////////////////////////////
 
             $this->boltHelper()->collectTotals($immutableQuote, true)->save();
-            $this->validateCoupons($immutableQuote, $transaction);
+            $this->validateDiscounts($immutableQuote, $transaction);
             $this->validateTotals($immutableQuote, $transaction);
 
             ////////////////////////////////////////////////////////////////////////////
@@ -469,18 +469,41 @@ class Bolt_Boltpay_Model_Order extends Bolt_Boltpay_Model_Abstract
     }
 
     /**
-     * Validates coupon codes
+     * Alias for {@see Bolt_Boltpay_Model_Order::validateDiscounts()}
+     *
+     * @param Mage_Sales_Model_Quote $immutableQuote    Magento copy of Bolt order data
+     * @param object                 $transaction       Bolt copy of order data
+     *
+     * @deprecated 2.0.1
+     * @see Bolt_Boltpay_Model_Order::validateDiscounts()  Use this method instead
+     *
+     * @throws Bolt_Boltpay_OrderCreationException  when coupon fails validation
+     */
+    protected function validateCoupons(Mage_Sales_Model_Quote $immutableQuote, $transaction) {
+        $this->validateDiscounts($immutableQuote, $transaction);
+    }
+
+    /**
+     * Validates discounts including coupons and other forms of discounts
      *
      * @param Mage_Sales_Model_Quote $immutableQuote    Magento copy of Bolt order data
      * @param object                 $transaction       Bolt copy of order data
      *
      * @throws Bolt_Boltpay_OrderCreationException  when coupon fails validation
      */
-    protected function validateCoupons(Mage_Sales_Model_Quote $immutableQuote, $transaction) {
+    protected function validateDiscounts(Mage_Sales_Model_Quote $immutableQuote, $transaction) {
 
         if (!@$transaction->order->cart->discounts) {
             return;
         }
+
+        Mage::dispatchEvent(
+            'bolt_boltpay_validate_discounts_before',
+            array(
+                'quote'=> $immutableQuote,
+                'transaction' => $transaction,
+            )
+        );
 
         /*
          * Natively, Magento only supports one coupon code per order, but we can build
@@ -530,8 +553,15 @@ class Bolt_Boltpay_Model_Order extends Bolt_Boltpay_Model_Abstract
                     );
                 }
             }
-
         }
+
+        Mage::dispatchEvent(
+            'bolt_boltpay_validate_discounts_after',
+            array(
+                'quote'=> $immutableQuote,
+                'transaction' => $transaction,
+            )
+        );
     }
 
     /**
