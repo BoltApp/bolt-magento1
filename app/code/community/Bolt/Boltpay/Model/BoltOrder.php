@@ -121,15 +121,15 @@ class Bolt_Boltpay_Model_BoltOrder extends Bolt_Boltpay_Model_Abstract
          * HOWEVER: 
          * WE CANNOT PUT THIS INTO GENERAL USE AS IT WOULD DROP SUPPORT FOR ITEMS SHIPPED TO DIFFERENT LOCATIONS
          ***************************************************/
-        //////////////////////////////////////////////////////////
-        //$addresses = $quote->getAllAddresses();
-        //if (count($addresses) > 2) {
-        //    for($i = 2; $i < count($addresses); $i++) {
-        //        $address = $addresses[$i];
-        //        $address->isDeleted(true);
-        //    }
-        //}
-        ///////////////////////////////////////////////////////////
+        /**
+         * $addresses = $quote->getAllAddresses();
+         * if (count($addresses) > 2) {
+         *    for($i = 2; $i < count($addresses); $i++) {
+         *        $address = $addresses[$i];
+         *        $address->isDeleted(true);
+         *    }
+         * }
+        **/
         /** Instead we will calculate the cost and use our calculated value to match against magento's calculation
          * If the totals do not match, then we will try halving the Magento total.  We use Magento's
          * instead of ours because on the potential complex nature of discounts and virtual products.
