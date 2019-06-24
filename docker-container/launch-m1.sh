@@ -7,7 +7,11 @@ python set-magento-version.py $m1Version
 python change-hostname.py $ngrokUrl
 docker-compose down -v
 docker-compose up -d
-sleep 5 # used to give DB time to initialize
+# used to give DB time to initialize
+while ! docker exec magento1_db mysql --user=magento --password=magento -e "SELECT 1" >/dev/null 2>&1; do
+    sleep 1
+done
+
 
 # Install Sample Data and Initialize Magento
 if [ "$installSampleData" = true ] ; then
