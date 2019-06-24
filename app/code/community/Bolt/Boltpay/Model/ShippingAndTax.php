@@ -121,11 +121,12 @@ class Bolt_Boltpay_Model_ShippingAndTax extends Bolt_Boltpay_Model_Abstract
     /**
      * Gets the shipping and the tax estimate for a quote
      *
-     * @param Mage_Sales_Model_Quote  $quote    A quote object with pre-populated addresses
+     * @param Mage_Sales_Model_Quote  $quote      A quote object with pre-populated addresses
+     * @param object                  $boltOrder  The order information sent by Bolt to the shipping and tax endpoint
      *
      * @return array    Bolt shipping and tax response array to be converted to JSON
      */
-    public function getShippingAndTaxEstimate( $quote )
+    public function getShippingAndTaxEstimate( Mage_Sales_Model_Quote $quote, $boltOrder = null )
     {
         /** @var Mage_Sales_Model_Quote $parentQuote */
         $parentQuote = $quote->getParentQuoteId()
@@ -163,7 +164,17 @@ class Bolt_Boltpay_Model_ShippingAndTax extends Bolt_Boltpay_Model_Abstract
             $shippingAddress = $quote->getShippingAddress();
             $shippingAddress->setCollectShippingRates(true)->collectShippingRates()->save();
 
-            $originalDiscountedSubtotal = $quote->getSubtotalWithDiscount();
+            $originalDiscountTotal = 0;
+            if ($boltOrder) {
+                if (@$boltOrder->cart->discounts) {
+                    $discounts = $boltOrder->cart->discounts;
+                    for(
+                        $i = 0, $originalDiscountTotal = 0;
+                        $i < count($discounts);
+                        $originalDiscountTotal += $discounts[$i]->amount/100, $i++
+                    );
+                }
+            }
 
             $rates = $this->getSortedShippingRates($shippingAddress);
 
@@ -204,7 +215,7 @@ class Bolt_Boltpay_Model_ShippingAndTax extends Bolt_Boltpay_Model_Abstract
                     continue;
                 }
 
-                $adjustedShippingAmount = $this->getAdjustedShippingAmount($originalDiscountedSubtotal, $quote);
+                $adjustedShippingAmount = $this->getAdjustedShippingAmount($originalDiscountTotal, $quote);
 
                 $option = array(
                     "service" => $this->getShippingLabel($rate),
@@ -302,13 +313,14 @@ class Bolt_Boltpay_Model_ShippingAndTax extends Bolt_Boltpay_Model_Abstract
      * methods that could affect the subtotal (e.g. $5 off when you choose Next Day Air), then we need to modify the
      * shipping amount so that it makes up for the previous subtotal.
      *
-     * @param float $originalDiscountedSubtotal    Original discounted subtotal
+     * @param float                     $originalDiscountTotal    Original discount
      * @param Mage_Sales_Model_Quote    $quote    Quote which has been updated to use new shipping rate
      *
      * @return float    Discount modified as a result of the new shipping method
      */
-    public function getAdjustedShippingAmount($originalDiscountedSubtotal, $quote) {
-        return $quote->getShippingAddress()->getShippingAmount() + $quote->getSubtotalWithDiscount() - $originalDiscountedSubtotal;
+    public function getAdjustedShippingAmount($originalDiscountTotal, $quote ) {
+        $newDiscountTotal = $quote->getSubtotal() - $quote->getSubtotalWithDiscount();
+        return $quote->getShippingAddress()->getShippingAmount() + $originalDiscountTotal - $newDiscountTotal;
     }
 
     /**
