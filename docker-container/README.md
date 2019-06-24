@@ -47,7 +47,7 @@ Ensure you have the yaml library is installed for your python version.
 
 - Run **launch-m1.sh** to fully deploy a docker container containing M1 store with Bolt
 - Visit store at your ngrok url
-    - Admin credentials can be found in the env file once dowloaded username: **admin** password: **magentorocks1**
+    - Admin credentials can be found in the env file once dowloaded username: **admin** password: **bolt**
 
 ## **Magento versions available to run**
 
