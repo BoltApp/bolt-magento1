@@ -20,7 +20,7 @@
  *
  * This class implements order event behavior
  */
-class Bolt_Boltpay_Model_Observer
+class Bolt_Boltpay_Model_Observer extends Varien_Event_Observer
 {
     use Bolt_Boltpay_BoltGlobalTrait;
 
@@ -161,5 +161,22 @@ class Bolt_Boltpay_Model_Observer
         /** @var  Bolt_Boltpay_Model_Order $orderModel */
         $orderModel = Mage::getModel('boltpay/order');
         $orderModel->validateBeforeOrderCommit($observer);
+    }
+
+    /**
+     * @param Varien_Event_Observer $observer
+     * @return Varien_Object
+     */
+    public function checkCheckoutTypeForFirecheckoutModule($observer)
+    {
+        /** @var Varien_Object $valueWrapper */
+        $valueWrapper = $observer->getEvent()->getValueWrapper();
+        $routeName = Mage::app()->getRequest()->getRouteName();
+
+        if ($routeName === 'firecheckout') {
+            $valueWrapper->setValue(Bolt_Boltpay_Block_Checkout_Boltpay::CHECKOUT_TYPE_ONE_PAGE);
+        }
+
+        return $valueWrapper;
     }
 }
