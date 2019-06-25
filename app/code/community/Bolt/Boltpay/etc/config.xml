@@ -227,13 +227,14 @@
           </bolt_boltpay_check_if_order_canceled>
         </observers>
       </controller_front_init_before>
+      <!-- An event of our officially supported onepage checkouts by route path. -->
       <bolt_boltpay_filter_checkout_type>
         <observers>
-          <bolt_boltpay_checkout_type_for_route>
+          <bolt_boltpay_checkout_type_for_firecheckout_route>
             <type>singleton</type>
             <class>Bolt_Boltpay_Model_Observer</class>
             <method>checkCheckoutTypeForFirecheckoutModule</method>
-          </bolt_boltpay_checkout_type_for_route>
+          </bolt_boltpay_checkout_type_for_firecheckout_route>
         </observers>
       </bolt_boltpay_filter_checkout_type>
     </events>

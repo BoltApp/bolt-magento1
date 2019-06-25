@@ -164,6 +164,11 @@ class Bolt_Boltpay_Model_Observer extends Varien_Event_Observer
     }
 
     /**
+     * Checks route name for consistency with `firecheckout`. Firecheckout is 3rd party module and
+     * implement custom checkout for Magento.
+     *
+     * event: bolt_boltpay_filter_checkout_type
+     *
      * @param Varien_Event_Observer $observer
      * @return Varien_Object
      */
@@ -171,7 +176,8 @@ class Bolt_Boltpay_Model_Observer extends Varien_Event_Observer
     {
         /** @var Varien_Object $valueWrapper */
         $valueWrapper = $observer->getEvent()->getValueWrapper();
-        $routeName = Mage::app()->getRequest()->getRouteName();
+        $parameters = $observer->getEvent()->getParameters();
+        $routeName = isset($parameters['route_name']) ? $parameters['route_name'] : '';
 
         if ($routeName === 'firecheckout') {
             $valueWrapper->setValue(Bolt_Boltpay_Block_Checkout_Boltpay::CHECKOUT_TYPE_ONE_PAGE);

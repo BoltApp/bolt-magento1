@@ -228,28 +228,36 @@ class Bolt_Boltpay_Model_Payment extends Mage_Payment_Model_Method_Abstract
 
     /**
      * Check whether BoltPay is available
+     *
+     * @param null|Mage_Sales_Model_Quote $quote
+     * @return bool
      */
     public function isAvailable($quote = null)
     {
         if(!empty($quote)) {
             $canUseBolt = $this->boltHelper()->canUseBolt($quote);
-            $hidePayment = false;
+
+            if (!$canUseBolt) {
+                return false;
+            }
 
             $routeName= Mage::app()->getRequest()->getRouteName();
             $moduleName = Mage::app()->getRequest()->getControllerModule();
             $controllerName = Mage::app()->getRequest()->getControllerName();
-            $otherRoute = false;
 
-            Mage::dispatchEvent('bolt_is_available_payment', array('other_route' => $otherRoute));
-
-            if (
-                ($routeName === 'checkout' && $controllerName === 'onepage' && $moduleName === 'Mage_Checkout')
-                || $otherRoute
-            ) {
-                $hidePayment = Mage::getStoreConfigFlag('payment/boltpay/hide_on_checkout');
+            if ($routeName === 'checkout' && $controllerName === 'onepage' && $moduleName === 'Mage_Checkout') {
+                $canUseBolt = Mage::getStoreConfigFlag('payment/boltpay/hide_on_checkout');
             }
 
-            return ($canUseBolt && !$hidePayment);
+            return $this->boltHelper()->doFilterEvent(
+                'bolt_boltpay_filter_can_use_bolt',
+                $canUseBolt,
+                [
+                    'route_name' => $routeName,
+                    'module_name' => $moduleName,
+                    'controller_name' => $controllerName
+                ]
+            );
         }
 
         return false;

@@ -683,7 +683,11 @@ class Bolt_Boltpay_Block_Checkout_Boltpay extends Mage_Checkout_Block_Onepage_Re
 
         $checkoutType =   $this->boltHelper()->doFilterEvent(
             'bolt_boltpay_filter_checkout_type',
-            $checkoutType
+            $checkoutType,
+            [
+                'route_name' => $routeName,
+                'controller_name' => $controllerName
+            ]
         );
 
         return $this->getPublishableKey($checkoutType);
