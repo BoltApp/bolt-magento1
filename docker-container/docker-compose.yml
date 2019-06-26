@@ -1,0 +1,27 @@
+services:
+  db:
+    container_name: magento1_db
+    env_file:
+    - docker_env
+    image: mysql:5.6.23
+    volumes:
+    - db-data:/var/lib/mysql/data
+  phpmyadmin:
+    container_name: magento1_phpmyadmin
+    image: phpmyadmin/phpmyadmin
+    links:
+    - db
+    ports:
+    - 8580:80
+  web:
+    container_name: magento1_store
+    env_file:
+    - docker_env
+    image: alexcheng/magento:1.9.1.0
+    links:
+    - db
+    ports:
+    - 80:80
+version: '3.0'
+volumes:
+  db-data: null
