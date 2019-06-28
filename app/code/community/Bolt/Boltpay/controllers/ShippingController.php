@@ -100,7 +100,7 @@ class Bolt_Boltpay_ShippingController
                 $addressErrorDetails = array('code' => 6101, 'message' => $msg);
                 $this->boltHelper()->logWarning($msg);
             } else {
-                $addressData = $this->_shippingAndTaxModel->applyShippingAddressToQuote($quote, $shippingAddress);
+                $addressData = $this->_shippingAndTaxModel->applyBoltAddressData($quote, $shippingAddress);
 
                 if ($this->shouldDoAddressValidation()) {
                     $magentoAddressErrors = $quote->getShippingAddress()->validate();

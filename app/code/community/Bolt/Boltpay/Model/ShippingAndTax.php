@@ -24,24 +24,25 @@
 class Bolt_Boltpay_Model_ShippingAndTax extends Bolt_Boltpay_Model_Abstract
 {
     /**
-     *  Updates the shipping address data and, if necessary, the fills in missing
-     *  billing address data with shipping address data
-     *
+     * Applies the address data provide by Bolt to the Magento quote and customer
      *
      * @param Mage_Sales_Model_Quote    $quote             The quote to which the address will be applied
-     * @param array                     $shippingAddress   The Bolt formatted address data
+     * @param array                     $boltAddressData   The Bolt formatted address data
      *
      * @return  array   The shipping address applied in Magento compatible format
+     *
+     * @throws Exception  if the bolt address does not contain an postal or country code
+     * @throws Exception  if there is a failure saving the customer or address data to the database
      */
-    public function applyShippingAddressToQuote( $quote, $shippingAddress ) {
+    public function applyBoltAddressData( $quote, $boltAddressData ) {
 
-        $region = $shippingAddress->region; // Initialize and set default value for region name
+        $region = $boltAddressData->region; // Initialize and set default value for region name
 
-        $directory = Mage::getModel('directory/region')->loadByName($region, $shippingAddress->country_code);
+        $directory = Mage::getModel('directory/region')->loadByName($region, $boltAddressData->country_code);
 
         // If region_id is null, try to load by region code
         if(!$directory->getRegionId()) {
-            $directory = Mage::getModel('directory/region')->loadByCode($region, $shippingAddress->country_code);
+            $directory = Mage::getModel('directory/region')->loadByCode($region, $boltAddressData->country_code);
         }
 
         // If region_id is not null, use the name and region_id
@@ -51,54 +52,71 @@ class Bolt_Boltpay_Model_ShippingAndTax extends Bolt_Boltpay_Model_Abstract
 
         $regionId = $directory->getRegionId(); // This is a required field for calculation: shipping, shopping price rules and etc.
 
-        if (!property_exists($shippingAddress, 'postal_code') || !property_exists($shippingAddress, 'country_code')) {
+        if (!property_exists($boltAddressData, 'postal_code') || !property_exists($boltAddressData, 'country_code')) {
             $exception = new Exception($this->boltHelper()->__("Address must contain postal_code and country_code."));
-            $this->boltHelper()->logWarning($exception->getMessage());
+            $this->boltHelper()->logException($exception);
             throw $exception;
         }
 
-        $shippingStreet = trim(
-            (@$shippingAddress->street_address1 ?: '') . "\n"
-            . (@$shippingAddress->street_address2 ?: '') . "\n"
-            . (@$shippingAddress->street_address3 ?: '') . "\n"
-            . (@$shippingAddress->street_address4 ?: '')
+        $boltStreetData = trim(
+            (@$boltAddressData->street_address1 ?: '') . "\n"
+            . (@$boltAddressData->street_address2 ?: '') . "\n"
+            . (@$boltAddressData->street_address3 ?: '') . "\n"
+            . (@$boltAddressData->street_address4 ?: '')
         );
 
         $addressData = array(
-            'email' => @$shippingAddress->email ?: $shippingAddress->email_address,
-            'firstname' => @$shippingAddress->first_name,
-            'lastname' => @$shippingAddress->last_name,
-            'street' => $shippingStreet,
-            'company' => @$shippingAddress->company,
-            'city' => @$shippingAddress->locality,
+            'email' => @$boltAddressData->email ?: $boltAddressData->email_address,
+            'firstname' => @$boltAddressData->first_name,
+            'lastname' => @$boltAddressData->last_name,
+            'street' => $boltStreetData,
+            'company' => @$boltAddressData->company,
+            'city' => @$boltAddressData->locality,
             'region' => $region,
             'region_id' => $regionId,
-            'postcode' => $shippingAddress->postal_code,
-            'country_id' => $shippingAddress->country_code,
-            'telephone' => @$shippingAddress->phone ?: $shippingAddress->phone_number
+            'postcode' => $boltAddressData->postal_code,
+            'country_id' => $boltAddressData->country_code,
+            'telephone' => @$boltAddressData->phone ?: $boltAddressData->phone_number
         );
 
         if ($quote->getCustomerId()) {
             $customerSession = Mage::getSingleton('customer/session');
             $customerSession->setCustomerGroupId($quote->getCustomerGroupId());
+            /** @var Mage_Customer_Model_Customer $customer */
             $customer = Mage::getModel("customer/customer")->load($quote->getCustomerId());
-            $address = $customer->getPrimaryShippingAddress();
+            $primaryShippingAddress = $customer->getPrimaryShippingAddress();
+            $primaryBillingAddress = $customer->getPrimaryBillingAddress();
 
-            if (!$address) {
-                $address = Mage::getModel('customer/address');
+            if (!$primaryShippingAddress) {
+                /** @var Mage_Customer_Model_Address $primaryShippingAddress */
+                $primaryShippingAddress = Mage::getModel('customer/address');
 
-                $address->setCustomerId($customer->getId())
+                $primaryShippingAddress
+                    ->setCustomerId($customer->getId())
                     ->setCustomer($customer)
+                    ->addData($addressData)
                     ->setIsDefaultShipping('1')
                     ->setSaveInAddressBook('1')
                     ->save();
 
+                $customer->addAddress($primaryShippingAddress)
+                    ->setDefaultShipping($primaryShippingAddress->getId())
+                    ->save();
+            }
 
-                $address->addData($addressData);
-                $address->save();
+            if (!$primaryBillingAddress) {
+                /** @var Mage_Customer_Model_Address $primaryBillingAddress */
+                $primaryBillingAddress = Mage::getModel('customer/address');
 
-                $customer->addAddress($address)
-                    ->setDefaultShippingg($address->getId())
+                $primaryBillingAddress->setCustomerId($customer->getId())
+                    ->setCustomer($customer)
+                    ->addData($addressData)
+                    ->setIsDefaultBilling('1')
+                    ->setSaveInAddressBook('1')
+                    ->save();
+
+                $customer->addAddress($primaryBillingAddress)
+                    ->setDefaultBilling($primaryBillingAddress->getId())
                     ->save();
             }
         }
@@ -365,5 +383,22 @@ class Bolt_Boltpay_Model_ShippingAndTax extends Bolt_Boltpay_Model_Abstract
             || preg_match($poBoxRegex, $address2)
             || preg_match($poBoxRegexStrict, $address1)
             || preg_match($poBoxRegexStrict, $address2);
+    }
+
+    /**
+     * Applies the address data provide by Bolt to the Magento quote and customer
+     *
+     * @param Mage_Sales_Model_Quote    $quote             The quote to which the address will be applied
+     * @param array                     $shippingAddress   The Bolt formatted address data
+     *
+     * @return  array   The shipping address applied in Magento compatible format
+     *
+     * @throws Exception  if the bolt address does not contain an postal or country code
+     * @throws Exception  if there is a failure saving the customer or address data to the database
+     *
+     * @deprecated Use {@see Bolt_Boltpay_Model_ShippingAndTax::applyBoltAddressData()} instead
+     */
+    public function applyShippingAddressToQuote($quote, $shippingAddress) {
+        return $this->applyBoltAddressData($quote, $shippingAddress);
     }
 }
