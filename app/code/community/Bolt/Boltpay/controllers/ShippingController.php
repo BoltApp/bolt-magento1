@@ -134,7 +134,7 @@ class Bolt_Boltpay_ShippingController
             } else {
                 //Mage::log('Generating address from quote', null, 'shipping_and_tax.log');
                 //Mage::log('Live address: '.var_export($address_data, true), null, 'shipping_and_tax.log');
-                $estimate = $this->_shippingAndTaxModel->getShippingAndTaxEstimate($quote);
+                $estimate = $this->_shippingAndTaxModel->getShippingAndTaxEstimate($quote, $requestData);
                 $this->cacheShippingAndTaxEstimate($estimate, $cachedIdentifier);
                 $cacheBoltHeader = 'MISS';
             }

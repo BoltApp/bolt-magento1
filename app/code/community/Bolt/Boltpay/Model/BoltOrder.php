@@ -338,15 +338,24 @@ class Bolt_Boltpay_Model_BoltOrder extends Bolt_Boltpay_Model_Abstract
                     /// We want to get the apply the coupon code as a reference.
                     /// Potentially, we will have several 'discount' entries
                     /// but only one coupon code, so we must find the right entry
-                    /// to map to.  Magento stores the coupon rule description in
-                    /// the totals object wrapped in the string "Discount()" and
-                    /// keeps no reference to the rule or coupon code. Here, we use
-                    /// the coupon code to look up the rule description and compare
-                    /// it to the total object's title.
+                    /// to map to.  Magento stores the records rule description or
+                    /// the coupon code when the rule description is empty in
+                    /// the totals object wrapped in the string "Discount()", and
+                    /// keeps no separate reference to the rule or coupon code.
+                    /// Here, we use the coupon code to look up the rule description
+                    /// and compare it and the coupon code to the total object's title.
                     /////////////////////////////////////////////////////////////
                     $coupon = Mage::getModel('salesrule/coupon')->load($quote->getCouponCode(), 'code');
                     $rule = Mage::getModel('salesrule/rule')->load($coupon->getRuleId());
-                    if ($totals[$discount]->getTitle() === Mage::helper('sales')->__('Discount (%s)', (string)$rule->getName()) ) {
+                    if (
+                        in_array(
+                            $totals[$discount]->getTitle(),
+                            [
+                                Mage::helper('sales')->__('Discount (%s)', (string)$rule->getName()),
+                                Mage::helper('sales')->__('Discount (%s)', (string)$quote->getCouponCode())
+                            ]
+                        )
+                    ) {
                         $data['reference'] = $quote->getCouponCode();
                     }
                 }

@@ -172,6 +172,7 @@ class Bolt_Boltpay_Model_Order extends Bolt_Boltpay_Model_Abstract
             //////////////////////////////////////////////////////////////////////////////////
 
             $this->boltHelper()->collectTotals($immutableQuote, true)->save();
+
             $this->validateCoupons($immutableQuote, $transaction);
             $this->validateTotals($immutableQuote, $transaction);
 
@@ -478,11 +479,45 @@ class Bolt_Boltpay_Model_Order extends Bolt_Boltpay_Model_Abstract
      */
     protected function validateCoupons(Mage_Sales_Model_Quote $immutableQuote, $transaction) {
 
-        if (!@$transaction->order->cart->discounts) {
-            return;
+        /////////////////////////////////////////////////////////////////////////////
+        /// The Bolt server design is limited in that it immutably sets the
+        /// discount value prior to calculating shipping and tax.  We handle this
+        /// problem by modifying shipping and tax totals in order to arrive at the
+        /// correct bottom line grand total.  However, as a result, we can no longer
+        /// validate at the subtotal level if discounts are supposed to be applied
+        /// to the tax and are based on percentage.  This is a valid standard
+        /// Magento configuration possibility.  If this possibility is detected,
+        /// we simplify by flagging to skip subtotal validation and rely on
+        /// bottom line grand total validation.
+        /////////////////////////////////////////////////////////////////////////////
+        $transaction->shouldSkipDiscountAndShippingTotalValidation = false;
+        $cachedRules = [];
+        if (Mage::getStoreConfigFlag('tax/calculation/discount_tax')) {
+
+            foreach (explode(',', $immutableQuote->getAppliedRuleIds()) as $appliedRuleId ) {
+                /** @var Mage_SalesRule_Model_Rule $rule */
+                $rule = Mage::getModel('salesrule/rule')->load($appliedRuleId);
+                $cachedRules[$appliedRuleId] = $rule;
+
+                $percentDiscountWasCalculatedWithTax =
+                    in_array(
+                        $rule->getSimpleAction(),
+                        [Mage_SalesRule_Model_Rule::TO_PERCENT_ACTION, Mage_SalesRule_Model_Rule::BY_PERCENT_ACTION]
+                    )
+                ;
+
+                if ( $percentDiscountWasCalculatedWithTax ) {
+                    $transaction->shouldSkipDiscountAndShippingTotalValidation = true;
+                    break;
+                }
+            }
         }
+        /////////////////////////////////////////////////////////////////////////////
+
 
         /*
+         * Validation of shopping cart rules and coupons, as opposed to catalog rules
+         *
          * Natively, Magento only supports one coupon code per order, but we can build
          * basic support here for plugins like Amasty or custom solutions that implement
          * multiple coupons.
@@ -491,6 +526,10 @@ class Bolt_Boltpay_Model_Order extends Bolt_Boltpay_Model_Abstract
          * custom code strategies.  This implementation also supports standard magento single coupon
          * format.
          */
+        if (!@$transaction->order->cart->discounts) {
+            return;
+        }
+
         foreach($transaction->order->cart->discounts as $boltCoupon) {
 
             if (@$boltCoupon->reference) {
@@ -498,12 +537,10 @@ class Bolt_Boltpay_Model_Order extends Bolt_Boltpay_Model_Abstract
                 $couponExists = (bool) $magentoCoupon->getId();
 
                 if ($couponExists) {
-
                     $magentoCouponCodes = $immutableQuote->getCouponCode() ? explode(',', (string) $immutableQuote->getCouponCode()) : array();
-
                     if (!in_array($boltCoupon->reference, $magentoCouponCodes)) {
                         /** @var Mage_SalesRule_Model_Rule $rule */
-                        $rule = Mage::getModel('salesrule/rule')->load($magentoCoupon->getRuleId());
+                        $rule = (@$cachedRules[$magentoCoupon->getRuleId()]) ?: Mage::getModel('salesrule/rule')->load($magentoCoupon->getRuleId());
                         $toTime = $rule->getToDate() ? ((int) strtotime($rule->getToDate()) + Mage_CatalogRule_Model_Resource_Rule::SECONDS_IN_DAY - 1) : 0;
                         $now = Mage::getModel('core/date')->gmtTimestamp('Today');
 
@@ -571,6 +608,23 @@ class Bolt_Boltpay_Model_Order extends Bolt_Boltpay_Model_Abstract
         /////////////////////////////////////////////////////////////////////////
         $priceFaultTolerance = $this->boltHelper()->getExtraConfig('priceFaultTolerance');
 
+        $magentoTaxTotal = (int)(( @$magentoTotals['tax']) ? round($magentoTotals['tax']->getValue() * 100) : 0 );
+        $boltTaxTotal = (int)$transaction->order->cart->tax_amount->amount;
+        $difference = abs($magentoTaxTotal - $boltTaxTotal);
+        if ( $difference > $priceFaultTolerance ) {
+            throw new Bolt_Boltpay_OrderCreationException(
+                OCE::E_BOLT_CART_HAS_EXPIRED,
+                OCE::E_BOLT_CART_HAS_EXPIRED_TMPL_TAX,
+                array($boltTaxTotal, $magentoTaxTotal)
+            );
+        } else if ($difference) {
+            $message = "Tax differed by $difference cents.  Bolt: $boltTaxTotal | Magento: $magentoTaxTotal";
+            $this->boltHelper()->logWarning($message);
+            $this->boltHelper()->notifyException(new Exception($message), [], 'warning' );
+        }
+
+        if ($transaction->shouldSkipDiscountAndShippingTotalValidation) return;
+
         $magentoDiscountTotal = (int)(($immutableQuote->getBaseSubtotal() - $immutableQuote->getBaseSubtotalWithDiscount()) * 100);
         $boltDiscountTotal = (int)$transaction->order->cart->discount_amount->amount;
         $difference = abs($magentoDiscountTotal - $boltDiscountTotal);
@@ -607,20 +661,6 @@ class Bolt_Boltpay_Model_Order extends Bolt_Boltpay_Model_Abstract
             // we do not validate the shipping tax total. We only validate the full tax total
         }
 
-        $magentoTaxTotal = (int)(( @$magentoTotals['tax']) ? round($magentoTotals['tax']->getValue() * 100) : 0 );
-        $boltTaxTotal = (int)$transaction->order->cart->tax_amount->amount;
-        $difference = abs($magentoTaxTotal - $boltTaxTotal);
-        if ( $difference > $priceFaultTolerance ) {
-            throw new Bolt_Boltpay_OrderCreationException(
-                OCE::E_BOLT_CART_HAS_EXPIRED,
-                OCE::E_BOLT_CART_HAS_EXPIRED_TMPL_TAX,
-                array($boltTaxTotal, $magentoTaxTotal)
-            );
-        } else if ($difference) {
-            $message = "Tax differed by $difference cents.  Bolt: $boltTaxTotal | Magento: $magentoTaxTotal";
-            $this->boltHelper()->logWarning($message);
-            $this->boltHelper()->notifyException(new Exception($message), [], 'warning' );
-        }
     }
 
     /**
