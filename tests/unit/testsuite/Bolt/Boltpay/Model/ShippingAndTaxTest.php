@@ -75,7 +75,7 @@ class Bolt_Boltpay_Model_ShippingAndTaxTest extends PHPUnit_Framework_TestCase
             'company' => 'Bolt',
             'region' => 'California'
         );
-        $result = $this->currentMock->applyShippingAddressToQuote($quote, $shippingAddress);
+        $result = $this->currentMock->applyBoltAddressData($quote, $shippingAddress);
 
         $expected = array(
             'email' => 'test@bolt.com',
@@ -115,7 +115,7 @@ class Bolt_Boltpay_Model_ShippingAndTaxTest extends PHPUnit_Framework_TestCase
             'company' => 'Bolt',
             'region' => 'California'
         );
-        $result = $this->currentMock->applyShippingAddressToQuote($quote, $shippingAddress);
+        $result = $this->currentMock->applyBoltAddressData($quote, $shippingAddress);
 
         $expected = array(
             'email' => 'test@bolt.com',
@@ -145,7 +145,7 @@ class Bolt_Boltpay_Model_ShippingAndTaxTest extends PHPUnit_Framework_TestCase
             'country_code' => 'US',
             'region' => 'California'
         );
-        $result = $this->currentMock->applyShippingAddressToQuote($quote, $shippingAddress);
+        $result = $this->currentMock->applyBoltAddressData($quote, $shippingAddress);
 
         $expected = array(
             'email' => 'test@bolt.com',
@@ -183,7 +183,7 @@ class Bolt_Boltpay_Model_ShippingAndTaxTest extends PHPUnit_Framework_TestCase
             'company' => 'Bolt',
             'region' => 'California'
         );
-        $result = $this->currentMock->applyShippingAddressToQuote($quote, $shippingAddress);
+        $result = $this->currentMock->applyBoltAddressData($quote, $shippingAddress);
 
         $expected = array(
             'email' => 'test@bolt.com',
@@ -222,7 +222,7 @@ class Bolt_Boltpay_Model_ShippingAndTaxTest extends PHPUnit_Framework_TestCase
             'company' => 'Bolt',
             'region' => 'CA'
         );
-        $result = $this->currentMock->applyShippingAddressToQuote($quote, $shippingAddress);
+        $result = $this->currentMock->applyBoltAddressData($quote, $shippingAddress);
 
         $expected = array(
             'email' => 'test@bolt.com',
@@ -247,7 +247,7 @@ class Bolt_Boltpay_Model_ShippingAndTaxTest extends PHPUnit_Framework_TestCase
             'email' => 'test@bolt.com'
         );
         try {
-            $this->currentMock->applyShippingAddressToQuote($quote, $shippingAddress);
+            $this->currentMock->applyBoltAddressData($quote, $shippingAddress);
         } catch (Exception $e) {
             $this->assertEquals('Address must contain postal_code and country_code.', $e->getMessage());
             return;
