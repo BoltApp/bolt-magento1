@@ -52,7 +52,7 @@ class DataDog_Client
             $data = DataDog_Request::getRequestMetaData();
         }
 
-        $data['message'] = $message;
+        $data['message'] = addcslashes($message, '{}"');
         $data['status'] = $type;
         $data['service'] = $this->getData('service');
         $data['merchant_platform'] = $this->getData('platform-version');
