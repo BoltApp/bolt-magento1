@@ -83,13 +83,13 @@ $additionalClasses = $this->boltHelper()->getAdditionalButtonClasses();
                                 /**
                                  * Escape double replace buttons
                                 **/
-                                var bolt = element.getAttribute("bolt");
-                                if (bolt != "replaced") {
+                                var wasReplaced = element.getAttribute("data-was-replaced");
+                                if (wasReplaced !== "true") {
                                     element.style.display = "none";
                                     /**
                                      * Mark button as replaced
                                      **/
-                                    element.setAttribute("bolt", "replaced");
+                                    element.setAttribute("data-was-replaced", "true");
                                     var bolt_button =  document.createElement("div");
                                     bolt_button.setAttribute("class",selectors[selector]);
     
