@@ -20,7 +20,7 @@
 
   <modules>
     <Bolt_Boltpay>
-      <version>2.0.0</version> <!-- version number should be incremented appropriately  -->
+      <version>2.0.1</version> <!-- version number should be incremented appropriately  -->
     </Bolt_Boltpay>
   </modules>
 
@@ -53,13 +53,6 @@
         <class>Bolt_Boltpay_Helper</class>
       </boltpay>
     </helpers>
-
-    <rewrite>
-      <bolt_boltpay_onepage>
-        <from><![CDATA[#^/checkout/onepage/success#]]></from>
-        <to>/boltpay/onepage/success</to>
-      </bolt_boltpay_onepage>
-    </rewrite>
 
     <resources>
       <bolt_boltpay_setup>
@@ -218,15 +211,20 @@
       </updates>
     </layout>
     <events>
-      <controller_front_init_before>
+      <controller_action_predispatch>
         <observers>
           <bolt_boltpay_check_if_order_canceled>
             <type>singleton</type>
             <class>Bolt_Boltpay_Model_Observer</class>
             <method>clearCartCacheOnOrderCanceled</method>
           </bolt_boltpay_check_if_order_canceled>
+          <bolt_boltpay_set_success_session_data>
+            <type>singleton</type>
+            <class>Bolt_Boltpay_Model_Observer</class>
+            <method>setSuccessSessionData</method>
+          </bolt_boltpay_set_success_session_data>
         </observers>
-      </controller_front_init_before>
+      </controller_action_predispatch>
     </events>
   </frontend>
 
