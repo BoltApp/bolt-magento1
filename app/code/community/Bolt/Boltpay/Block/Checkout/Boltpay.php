@@ -607,14 +607,17 @@ class Bolt_Boltpay_Block_Checkout_Boltpay extends Mage_Checkout_Block_Onepage_Re
         return $locationInfo;
     }
 
+    /**
+     * @param string $url
+     * @return string
+     */
     public function url_get_contents($url)
     {
-        $ch = curl_init();
-        curl_setopt($ch, CURLOPT_URL, $url);
-        curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
-        $output = curl_exec($ch);
-        curl_close($ch);
-        return $output;
+        $http = new Varien_Http_Adapter_Curl();
+        $http->write(Zend_Http_Client::GET, $url);
+        $response = $http->read();
+        $http->close();
+        return $response;
     }
 
     /**
