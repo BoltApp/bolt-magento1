@@ -73,29 +73,26 @@ trait Bolt_Boltpay_Helper_ApiTrait {
             $url = $this->getApiUrl() . "/v1/merchant/verify_signature";
 
             $key = Mage::helper('core')->decrypt(Mage::getStoreConfig('payment/boltpay/api_key'));
-
-            $ch = curl_init($url);
-
-            curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
             $httpHeader = array(
                 "X-Api-Key: $key",
                 "X-Bolt-Hmac-Sha256: $hmacHeader",
                 "Content-type: application/json",
             );
-            curl_setopt($ch, CURLOPT_HTTPHEADER, $httpHeader);
-            curl_setopt($ch, CURLOPT_POST, true);
-            curl_setopt($ch, CURLOPT_POSTFIELDS, $payload);
-            $this->addMetaData(array('BOLT API REQUEST' => array('verify-hook-api-header'=>$httpHeader)),true);
-            $this->addMetaData(array('BOLT API REQUEST' => array('verify-hook-api-data'=>$payload)),true);
-            $result = curl_exec($ch);
+            $this->addMetaData(array('BOLT API REQUEST' => array('verify-hook-api-header' => $httpHeader)), true);
+            $this->addMetaData(array('BOLT API REQUEST' => array('verify-hook-api-data' => $payload)), true);
 
-            $response = curl_getinfo($ch, CURLINFO_HTTP_CODE);
-            $this->setCurlResultWithHeader($ch, $result);
-
+            $http = new Varien_Http_Adapter_Curl();
+            $http->write(Zend_Http_Client::POST, $url, '1.1', $httpHeader, $payload);
+            $response = $http->read();
+            $code = Zend_Http_Response::extractCode($response);
+            if ($code == Mage_Api2_Model_Server::HTTP_OK) {
+                $this->curlHeaders = Zend_Http_Response::extractHeaders($response);
+                $this->curlBody = Zend_Http_Response::extractBody($response);
+            }
             $resultJSON = $this->getCurlJSONBody();
-            $this->addMetaData(array('BOLT API RESPONSE' => array('verify-hook-api-response'=>$resultJSON)),true);
-
-            return $response == 200;
+            $this->addMetaData(array('BOLT API RESPONSE' => array('verify-hook-api-response' => $resultJSON)), true);
+            $http->close();
+            return $code == Mage_Api2_Model_Server::HTTP_OK;
         } catch (Exception $e) {
             $this->notifyException($e);
             $this->logException($e);
@@ -139,13 +136,9 @@ trait Bolt_Boltpay_Helper_ApiTrait {
             $url .= $object . '/' . $type . '/' . $command;
         }
 
-        //Mage::log(sprintf("Making an API call to %s", $url), null, 'bolt.log');
-
-        $ch = curl_init($url);
         $params = "";
         if ($data != null) {
             $params = json_encode($data);
-            curl_setopt($ch, CURLOPT_POSTFIELDS, $params);
         }
 
         if ($command == '' && $type == '' && $object == 'merchant') {
@@ -153,7 +146,7 @@ trait Bolt_Boltpay_Helper_ApiTrait {
         } else {
             $key = Mage::getStoreConfig('payment/boltpay/api_key', $storeId);
         }
-
+        return $key;
         $contextInfo = $this->getContextInfo();
         $headerInfo = array(
             'Content-Type: application/json',
@@ -163,37 +156,32 @@ trait Bolt_Boltpay_Helper_ApiTrait {
             'User-Agent: BoltPay/Magento-' . $contextInfo["Magento-Version"] . '/' . $contextInfo["Bolt-Plugin-Version"],
             'X-Bolt-Plugin-Version: ' . $contextInfo["Bolt-Plugin-Version"]
         );
-        curl_setopt($ch, CURLOPT_HTTPHEADER, $headerInfo);
-        $this->addMetaData(array('BOLT API REQUEST' => array('header'=>$headerInfo)));
-        $this->addMetaData(array('BOLT API REQUEST' => array('data'=>$data)),true);
-        curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
-        curl_setopt($ch, CURLOPT_HEADER, true);
+        $this->addMetaData(array('BOLT API REQUEST' => array('header' => $headerInfo)));
+        $this->addMetaData(array('BOLT API REQUEST' => array('data' => $data)), true);
 
-        $result = curl_exec($ch);
-        if ($result === false) {
-            $curlInfo = var_export(curl_getinfo($ch), true);
-            curl_close($ch);
-
-            $message ="Curl info: " . $curlInfo;
+        $http = new Varien_Http_Adapter_Curl();
+        $http->write(Zend_Http_Client::POST, $url, '1.1', $headerInfo, $params);
+        $response = $http->read();
+        $code = Zend_Http_Response::extractCode($response);
+        if ($code == Mage_Api2_Model_Server::HTTP_OK) {
+            $this->curlHeaders = Zend_Http_Response::extractHeaders($response);
+            $this->curlBody = Zend_Http_Response::extractBody($response);
+        } else {
+            $message ="Curl info: " . Zend_Http_Response::extractMessage($response);
             $this->logWarning($message);
             Mage::throwException($message);
         }
-
-        $this->setCurlResultWithHeader($ch, $result);
+        $http->close();
 
         $resultJSON = $this->getCurlJSONBody();
-        $this->addMetaData(array('BOLT API RESPONSE' => array('BOLT-RESPONSE'=>$resultJSON)),true);
+        $this->addMetaData(array('BOLT API RESPONSE' => array('BOLT-RESPONSE' => $resultJSON)),true);
         $jsonError = $this->handleJSONParseError();
         if ($jsonError != null) {
-            curl_close($ch);
-            $message ="JSON Parse Type: " . $jsonError . " Response: " . $result;
+            $message ="JSON Parse Type: " . $jsonError . " Response: " . Zend_Http_Response::extractBody($response);
             $this->logWarning($message);
             Mage::throwException($message);
         }
-
-        curl_close($ch);
         Mage::getModel('boltpay/payment')->debugData($resultJSON);
-
         return $this->_handleErrorResponse($resultJSON, $url, $params);
     }
 

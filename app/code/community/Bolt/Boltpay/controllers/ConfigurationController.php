@@ -128,21 +128,15 @@ class Bolt_Boltpay_ConfigurationController
     protected function curlCheckPublishableKey($key)
     {
         $url = $this->boltHelper()->getApiUrl($this->_storeId) . 'v1/merchant';
-
-        $ch = curl_init($url);
-
         $headerInfo = array(
             "X-Publishable-Key: $key"
         );
-        curl_setopt($ch, CURLOPT_HTTPHEADER, $headerInfo);
-        curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
-        curl_setopt($ch, CURLOPT_HEADER, true);
-
-        curl_exec($ch);
-        $response = curl_getinfo($ch, CURLINFO_HTTP_CODE);
-        curl_close($ch);
-
-        return (int)($response / 100) == 2;
+        $http = new Varien_Http_Adapter_Curl();
+        $http->write(Zend_Http_Client::GET, $url, '1.1', $headerInfo);
+        $response = $http->read();
+        $code = Zend_Http_Response::extractCode($response);
+        $http->close();
+        return (int)($code / 100) == 2;
     }
 
     /**
