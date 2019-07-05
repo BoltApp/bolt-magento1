@@ -146,7 +146,6 @@ trait Bolt_Boltpay_Helper_ApiTrait {
         } else {
             $key = Mage::getStoreConfig('payment/boltpay/api_key', $storeId);
         }
-        return $key;
         $contextInfo = $this->getContextInfo();
         $headerInfo = array(
             'Content-Type: application/json',
