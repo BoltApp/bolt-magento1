@@ -492,26 +492,25 @@ class Bolt_Boltpay_Model_Order extends Bolt_Boltpay_Model_Abstract
         /////////////////////////////////////////////////////////////////////////////
         $transaction->shouldSkipDiscountAndShippingTotalValidation = false;
         $cachedRules = [];
-        if (Mage::getStoreConfigFlag('tax/calculation/discount_tax')) {
 
-            foreach (explode(',', $immutableQuote->getAppliedRuleIds()) as $appliedRuleId ) {
+
+        foreach (explode(',', $immutableQuote->getAppliedRuleIds()) as $appliedRuleId ) {
                 /** @var Mage_SalesRule_Model_Rule $rule */
-                $rule = Mage::getModel('salesrule/rule')->load($appliedRuleId);
-                $cachedRules[$appliedRuleId] = $rule;
-
-                $percentDiscountWasCalculatedWithTax =
-                    in_array(
-                        $rule->getSimpleAction(),
-                        [Mage_SalesRule_Model_Rule::TO_PERCENT_ACTION, Mage_SalesRule_Model_Rule::BY_PERCENT_ACTION]
-                    )
-                ;
+            $rule = Mage::getModel('salesrule/rule')->load($appliedRuleId);
+            $cachedRules[$appliedRuleId] = $rule;
+            $percentDiscountWasCalculatedWithTax = $rule->getApplyToShipping() ||
+                (
+                    Mage::getStoreConfigFlag('tax/calculation/discount_tax') &&
+                    in_array($rule->getSimpleAction(), [Mage_SalesRule_Model_Rule::TO_PERCENT_ACTION, Mage_SalesRule_Model_Rule::BY_PERCENT_ACTION])
+                );
 
                 if ( $percentDiscountWasCalculatedWithTax ) {
                     $transaction->shouldSkipDiscountAndShippingTotalValidation = true;
                     break;
                 }
-            }
+
         }
+
         /////////////////////////////////////////////////////////////////////////////
 
 
