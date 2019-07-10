@@ -273,7 +273,9 @@ class Bolt_Boltpay_Model_Order extends Bolt_Boltpay_Model_Abstract
         ///////////////////////////////////////////////////////
 
         // We set the created_at and updated_at date to null to hide the order from ERP until authorized
-        $this->removeOrderTimeStamps($order);
+        if (!$this->boltHelper()->getExtraConfig('keepPreAuthOrderTimeStamps')) {
+            $this->removeOrderTimeStamps($order);
+        }
 
         if ($immutableQuote->getData('is_bolt_pdp') && Mage::getSingleton('customer/session')->isLoggedIn()) {
             $this->associateOrderToCustomerWhenPlacingOnPDP($order->getData('increment_id'));
