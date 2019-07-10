@@ -57,13 +57,14 @@ class Bolt_Boltpay_Model_Order extends Bolt_Boltpay_Model_Abstract
 
             $immutableQuoteId = $this->boltHelper()->getImmutableQuoteIdFromTransaction($transaction);
             $immutableQuote = $this->getQuoteById($immutableQuoteId);
+            $immutableQuote->setParentId($transaction->order->cart->order_reference);
             Mage::app()->setCurrentStore($immutableQuote->getStore());
-            $parentQuote = $this->getQuoteById($immutableQuote->getParentQuoteId());
+            $parentQuote = $this->getQuoteById($transaction->order->cart->order_reference);
 
             if (!$parentQuote->getIsActive()) {
                 throw new Exception(
-                    $this->boltHelper()->__("The parent quote %s for immutable quote %s is currently being processed or has been processed for order #%s. Check quote %s for details.",
-                        $parentQuote->getId(), $immutableQuote->getId(), $parentQuote->getReservedOrderId(), $parentQuote->getParentQuoteId() )
+                    $this->boltHelper()->__("Bolt expects the parent quote [%s] to be available.  Instead it found that the parent quote [%s] for the immutable quote [%s] is currently being processed, has been processed, or can not be processed for order [#%s]. Check quote [%s] for details.",
+                        $transaction->order->cart->order_reference, $parentQuote->getId(), $immutableQuote->getId(), $parentQuote->getReservedOrderId(), $parentQuote->getParentQuoteId() )
                 );
             }
 
