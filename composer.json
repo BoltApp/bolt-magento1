@@ -13,9 +13,11 @@
   "require": {
     "php": "^5.5",
     "ext-gd": "*",
-    "ext-PDO": "*"
+    "ext-PDO": "*",
+    "guzzlehttp/guzzle": "^6.3"
   },
   "require-dev": {
+    "guzzlehttp/guzzle": "^6.3",
     "squizlabs/php_codesniffer": "3.*",
     "magento/marketplace-eqp": "2.*",
     "phpunit/phpunit": "^4.8"

@@ -26,6 +26,7 @@
  * create the order on Bolt side and set up the javascript BoltCheckout.configure process with cart and hint data.
  *
  */
+require_once(Mage::getBaseDir('lib') . DS .  'Boltpay/Init.php');
 class Bolt_Boltpay_Block_Checkout_Boltpay extends Mage_Checkout_Block_Onepage_Review_Info
 {
     use Bolt_Boltpay_BoltGlobalTrait;
@@ -598,23 +599,29 @@ class Bolt_Boltpay_Block_Checkout_Boltpay extends Mage_Checkout_Block_Onepage_Re
         if (empty($locationInfo)) {
             //To receive the API results in the old freegeoip format, we need ipstack Access Key
             $ipstackAccessKey = Mage::helper('core')->decrypt(Mage::getStoreConfig('payment/boltpay/ipstack_key'));
-            if(!empty($ipstackAccessKey)){
-               $locationInfo = $this->url_get_contents("http://api.ipstack.com/".$this->getIpAddress()."?access_key=".$ipstackAccessKey."&output=json&legacy=1");
-               Mage::getSingleton('core/session')->setLocationInfo($locationInfo);
+            if (!empty($ipstackAccessKey)) {
+                $locationInfo = $this->url_get_contents("http://api.ipstack.com/" . $this->getIpAddress() . "?access_key=" . $ipstackAccessKey . "&output=json&legacy=1");
+                Mage::getSingleton('core/session')->setLocationInfo($locationInfo);
             }
         }
 
         return $locationInfo;
     }
 
+    /**
+     * @param $url
+     * @return string|null
+     */
     public function url_get_contents($url)
     {
-        $ch = curl_init();
-        curl_setopt($ch, CURLOPT_URL, $url);
-        curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
-        $output = curl_exec($ch);
-        curl_close($ch);
-        return $output;
+        try{
+            $client = $this->boltHelper()->getApiClient();
+            return (string)$client->get($url)->getBody();
+        }catch (\Exception $e){
+            $this->boltHelper()->notifyException($e);
+            $this->boltHelper()->logException($e);
+            return null;
+        }
     }
 
     /**

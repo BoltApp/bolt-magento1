@@ -54,7 +54,6 @@ class Bugsnag_Configuration
     public $beforeNotifyFunction;
     public $errorReportingLevel;
 
-    public $curlOptions = array();
 
     public $debug = false;
 

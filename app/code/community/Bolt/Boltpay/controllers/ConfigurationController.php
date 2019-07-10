@@ -20,6 +20,7 @@
  *
  * Check Configuration for Bolt
  */
+require_once(Mage::getBaseDir('lib') . DS .  'Boltpay/Init.php');
 class Bolt_Boltpay_ConfigurationController
     extends Mage_Core_Controller_Front_Action implements Bolt_Boltpay_Controller_Interface
 {
@@ -116,33 +117,30 @@ class Bolt_Boltpay_ConfigurationController
     {
         $keyMultiplePage = Mage::getStoreConfig('payment/boltpay/publishable_key_multipage', $this->_storeId);
 
-        return !$keyMultiplePage || $this->curlCheckPublishableKey($keyMultiplePage);
+        return !$keyMultiplePage || $this->guzzleCheckPublishableKey($keyMultiplePage);
     }
 
     /**
      * Calls the Bolt API endpoint.
-     *
      * @param $key
-     * @return mixed thrown if an error is detected in a response
+     * @return bool|string
+     * @throws \GuzzleHttp\Exception\GuzzleException
      */
-    protected function curlCheckPublishableKey($key)
+    protected function guzzleCheckPublishableKey($key)
     {
         $url = $this->boltHelper()->getApiUrl($this->_storeId) . 'v1/merchant';
 
-        $ch = curl_init($url);
-
         $headerInfo = array(
-            "X-Publishable-Key: $key"
+            'X-Publishable-Key'=> $key,
         );
-        curl_setopt($ch, CURLOPT_HTTPHEADER, $headerInfo);
-        curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
-        curl_setopt($ch, CURLOPT_HEADER, true);
 
-        curl_exec($ch);
-        $response = curl_getinfo($ch, CURLINFO_HTTP_CODE);
-        curl_close($ch);
-
-        return (int)($response / 100) == 2;
+        try{
+            $client = $this->boltHelper()->getApiClient();
+            return (string)$client->get($url,$headerInfo)->getBody();
+        }catch (\Exception $exception){
+            Mage::helper('boltpay/bugsnag')->notifyException($exception);
+            return false;
+        }
     }
 
     /**
@@ -152,7 +150,7 @@ class Bolt_Boltpay_ConfigurationController
     {
         $keyOnePage = Mage::getStoreConfig('payment/boltpay/publishable_key_onepage', $this->_storeId);
 
-        return !$keyOnePage || $this->curlCheckPublishableKey($keyOnePage);
+        return !$keyOnePage || $this->guzzleCheckPublishableKey($keyOnePage);
     }
 
     /**

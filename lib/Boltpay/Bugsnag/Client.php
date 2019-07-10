@@ -363,22 +363,6 @@ class Bugsnag_Client
         return $this;
     }
 
-    /**
-     * Set custom curl options.
-     *
-     * @param array $curlOptions an array with curl options. Eg:
-     *        array(
-     *            CURLOPT_IPRESOLVE => CURL_IPRESOLVE_V4
-     *        )
-     *
-     * @return $this
-     */
-    public function setCurlOptions(array $curlOptions)
-    {
-        $this->config->curlOptions = $curlOptions;
-
-        return $this;
-    }
 
     /**
      * Set a custom function to call before notifying Bugsnag of an error.
