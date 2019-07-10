@@ -1,27 +1,56 @@
 <?php
-
+require_once('TestHelper.php');
+require_once('OrderHelper.php');
 class Bolt_Boltpay_Model_PaymentTest extends PHPUnit_Framework_TestCase
 {
     private $app;
 
+    /**
+     * @var int|null
+     */
+    private static $productId = null;
+
+    /**
+     * @var Bolt_Boltpay_TestHelper|null
+     */
+    private $testHelper = null;
+
     /** @var Bolt_Boltpay_Model_Payment */
     private $_currentMock;
 
-    public function setUp() 
+    public function setUp()
     {
         /* You'll have to load Magento app in any test classes in this method */
         $this->app = Mage::app('default');
         $this->_currentMock = Mage::getModel('boltpay/payment');
+        $this->testHelper = new Bolt_Boltpay_TestHelper();
     }
 
-    public function testPaymentConstants() 
+    /**
+     * Generate dummy products for testing purposes
+     */
+    public static function setUpBeforeClass()
+    {
+        // Create some dummy product:
+        self::$productId = Bolt_Boltpay_ProductProvider::createDummyProduct('PHPUNIT_TEST_1');
+    }
+
+    /**
+     * Delete dummy products after the test
+     */
+    public static function tearDownAfterClass()
+    {
+        Bolt_Boltpay_ProductProvider::deleteDummyProduct(self::$productId);
+    }
+
+    public function testPaymentConstants()
     {
         $payment =  $this->_currentMock;
         $this->assertEquals('Credit & Debit Card',$payment::TITLE);
         $this->assertEquals('boltpay', $payment->getCode());
     }
 
-    public function testPaymentConfiguration() 
+    public function testPaymentConfiguration()
     {
         // All the features that are enabled
         $this->assertTrue($this->_currentMock->canAuthorize());
@@ -174,5 +203,84 @@ class Bolt_Boltpay_Model_PaymentTest extends PHPUnit_Framework_TestCase
         $orderPayment = new Mage_Sales_Model_Order_Payment();
         $orderPayment->setAdditionalInformation('bolt_transaction_status', Bolt_Boltpay_Model_Payment::TRANSACTION_REJECTED_REVERSIBLE);
         $this->assertTrue($this->_currentMock->canReviewPayment($orderPayment));
+    }
+
+    /**
+     * Test if product inventory is restored after order cancellation.
+     * Order will be deleted once Bolt notify the store that transaction is irreversibly rejected
+     *
+     * @throws Mage_Core_Exception
+     */
+    public function testCancelOrderOnTransactionUpdate()
+    {
+        $expectedProductStock = 10;
+        $orderProductQty = 2;
+
+        // Assert initial product store stock
+        $storeProduct = Bolt_Boltpay_ProductProvider::getStoreProductWithQty(self::$productId);
+        $this->assertEquals($expectedProductStock, (int)$storeProduct->getQty());
+
+        // Create order with the product
+        $this->testHelper->createCheckout('guest');
+        $order = Bolt_Boltpay_OrderHelper::createDummyOrder(self::$productId, $orderProductQty);
+
+        // After order creation product store stock should be reduced by the order qty
+        $storeProduct = Bolt_Boltpay_ProductProvider::getStoreProductWithQty(self::$productId);
+        $this->assertEquals(($expectedProductStock - $orderProductQty), (int)$storeProduct->getQty());
+
+        // Transaction is set to REJECTED_IRREVERSIBLE
+        $payment = $order->getPayment();
+        $payment->setAdditionalInformation('bolt_reference', '12345');
+        $boltPayment = Mage::getModel('boltpay/payment');
+        $boltPayment->handleTransactionUpdate(
+            $order->getPayment(),
+            Bolt_Boltpay_Model_Payment::TRANSACTION_REJECTED_IRREVERSIBLE,
+            Bolt_Boltpay_Model_Payment::TRANSACTION_AUTHORIZED);
+
+        // After the hook is triggered order should be deleted and product stock restored
+        $storeProduct = Bolt_Boltpay_ProductProvider::getStoreProductWithQty(self::$productId);
+        $this->assertEquals($expectedProductStock, (int)$storeProduct->getQty());
+        $this->assertEquals('canceled', $order->getStatus());
+
+        // Delete dummy order
+        Bolt_Boltpay_OrderHelper::deleteDummyOrder($order);
+    }
+
+    /**
+     * Test if product inventory is restored after order cancellation.
+     * Order will be canceled once Bolt notify the store that transaction is voided
+     *
+     * @throws Mage_Core_Exception
+     */
+    public function testCancelOrderOnVoidTransactionUpdate()
+    {
+        $expectedProductStock = 10;
+        $orderProductQty = 2;
+
+        // Assert initial product store stock
+        $storeProduct = Bolt_Boltpay_ProductProvider::getStoreProductWithQty(self::$productId);
+        $this->assertEquals($expectedProductStock, (int)$storeProduct->getQty());
+
+        // Create order with the product
+        $this->testHelper->createCheckout('guest');
+        $order = Bolt_Boltpay_OrderHelper::createDummyOrder(self::$productId, $orderProductQty);
+
+        // After order creation product store stock should be reduced by the order qty
+        $storeProduct = Bolt_Boltpay_ProductProvider::getStoreProductWithQty(self::$productId);
+        $this->assertEquals(($expectedProductStock - $orderProductQty), (int)$storeProduct->getQty());
+
+        // Void Transaction
+        $payment = $order->getPayment();
+        $payment->setAdditionalInformation('bolt_reference', '23456');
+        $boltPayment = Mage::getModel('boltpay/payment');
+        $boltPayment->handleVoidTransactionUpdate($order->getPayment());
+
+        // After the hook is triggered order should be deleted and product stock restored
+        $storeProduct = Bolt_Boltpay_ProductProvider::getStoreProductWithQty(self::$productId);
+        $this->assertEquals($expectedProductStock, (int)$storeProduct->getQty());
+        $this->assertEquals('canceled', $order->getStatus());
+
+        // Delete dummy order
+        Bolt_Boltpay_OrderHelper::deleteDummyOrder($order);
     }
 }

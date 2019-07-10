@@ -493,13 +493,11 @@ class Bolt_Boltpay_Model_Payment extends Mage_Payment_Model_Method_Abstract
                 } elseif ($newTransactionStatus == self::TRANSACTION_CANCELLED) {
                     $this->handleVoidTransactionUpdate($payment);
                 } elseif ($newTransactionStatus == self::TRANSACTION_REJECTED_IRREVERSIBLE) {
+                    /** @var Mage_Sales_Model_Order $order */
                     $order = $payment->getOrder();
-                    $payment->setParentTransactionId($reference);
-                    $payment->setTransactionId(sprintf("%s-rejected", $reference));
-                    $payment->addTransaction(Mage_Sales_Model_Order_Payment_Transaction::TYPE_VOID, null, true);
+                    $order->cancel();
                     $message = $this->boltHelper()->__('BOLT notification: Transaction reference "%s" has been permanently rejected by Bolt', $reference);
-                    $order->setState(Mage_Sales_Model_Order::STATE_CANCELED, true, $message);
-                    $payment->save();
+                    $order->addStatusHistoryComment($message)->setIsVisibleOnFront(false)->setIsCustomerNotified(false);
                     $order->save();
                 } elseif ($newTransactionStatus == self::TRANSACTION_REJECTED_REVERSIBLE) {
                     $order = $payment->getOrder();
@@ -1063,18 +1061,13 @@ class Bolt_Boltpay_Model_Payment extends Mage_Payment_Model_Method_Abstract
     public function handleVoidTransactionUpdate(Mage_Payment_Model_Info $payment){
 
         $authTransaction = $payment->getAuthorizationTransaction();
+        /** @var Mage_Sales_Model_Order $order */
         $order = $payment->getOrder();
         $amount =  $order->getBaseGrandTotal() - $order->getBaseTotalPaid() ;
 
         if (!$authTransaction || $authTransaction->canVoidAuthorizationCompletely()) {
             // True void
-            $reference = $payment->getAdditionalInformation('bolt_reference');
-            $payment->setParentTransactionId($reference);
-            $payment->setTransactionId(sprintf("%s-void", $reference));
-            $payment->setShouldCloseParentTransaction(true);
-            $transaction = $payment->addTransaction(Mage_Sales_Model_Order_Payment_Transaction::TYPE_VOID, null, true);
-            $message = $this->getVoidMessage($payment, $transaction, $amount);
-            $order->setState(Mage_Sales_Model_Order::STATE_CANCELED, true, $message);
+            $order->cancel();
         } else if (!$authTransaction->getIsClosed()) {
             // Open authorization has expired and partial capture has taken place.
             // We do not change the order state.  We only need to close the authorization.

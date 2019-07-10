@@ -102,12 +102,35 @@ class Bolt_Boltpay_ProductProvider
         /** @var Magento_Db_Adapter_Pdo_Mysql $writeConnection */
         $writeConnection = $resource->getConnection('core_write');
         $table = $resource->getTableName('catalog/product');
-        
+
         $query = "DELETE FROM ".$table." WHERE entity_id = :productId";
         $bind = array(
             'productId' => (int) $productId
         );
 
         $writeConnection->query($query, $bind);
+    }
+
+    /**
+     * Get store product with it's stock quantity
+     *
+     * @param int $productId Store product ID (catalog_product_entity::entity_id)
+     *
+     * @return Mage_Catalog_Model_Resource_Product
+     */
+    public static function getStoreProductWithQty($productId)
+    {
+        $storeProducts = Mage::getModel('catalog/product')
+            ->getCollection()
+            ->addAttributeToFilter('entity_id', $productId)
+            ->joinField(
+                'qty',
+                'cataloginventory/stock_item',
+                'qty',
+                'product_id=entity_id',
+                '{{table}}.stock_id=1',
+                'left'
+            );
+        return $storeProducts->getFirstItem();
     }
 }
