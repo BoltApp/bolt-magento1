@@ -273,14 +273,6 @@ class Bolt_Boltpay_Model_ShippingAndTax extends Bolt_Boltpay_Model_Abstract
 
         if (!empty($shippingAddress)) {
 
-            Mage::dispatchEvent(
-                'bolt_boltpay_shipping_method_applied_before',
-                array(
-                    'quote'=> $quote,
-                    'shipping_method_code' => $shippingRateCode
-                )
-            );
-
             // Flagging address as new is required to force collectTotals to recalculate discounts
             $shippingAddress->isObjectNew(true);
             $shippingAddressId = $shippingAddress->getData('address_id');
@@ -297,6 +289,14 @@ class Bolt_Boltpay_Model_ShippingAndTax extends Bolt_Boltpay_Model_Abstract
                 $item->setData('discount_amount', $item->getOrigData('discount_amount'));
                 $item->setData('base_discount_amount', $item->getOrigData('base_discount_amount'));
             }
+
+            Mage::dispatchEvent(
+                'bolt_boltpay_shipping_method_applied_before',
+                array(
+                    'quote'=> $quote,
+                    'shipping_method_code' => $shippingRateCode
+                )
+            );
 
             $this->boltHelper()->collectTotals($quote, true);
 
