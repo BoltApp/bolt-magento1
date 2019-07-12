@@ -63,15 +63,17 @@ jobs:
               JUNIT_REPORT_DIR=./test-results SCREENSHOT_DIR=./screenshots TEST_ENV=sandbox npm run test-checkout-magento1
             fi
       - store_test_results:
-          path: ./test-results
+          path: ./integration-tests/test-results
       - store_artifacts:
-          path: ./screenshots
+          path: ./integration-tests/screenshots
       - run:
           name: Generate Report
-          command: npm run generate-report
+          command: |
+            cd integration-tests
+            npm run generate-report
           when: always
       - store_artifacts:
-          path: ./allure-report
+          path: ./integration-tests/allure-report
 
 workflows:
   version: 2
