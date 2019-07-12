@@ -57,13 +57,14 @@ class Bolt_Boltpay_Model_Order extends Bolt_Boltpay_Model_Abstract
 
             $immutableQuoteId = $this->boltHelper()->getImmutableQuoteIdFromTransaction($transaction);
             $immutableQuote = $this->getQuoteById($immutableQuoteId);
+            $immutableQuote->setParentId($transaction->order->cart->order_reference);
             Mage::app()->setCurrentStore($immutableQuote->getStore());
-            $parentQuote = $this->getQuoteById($immutableQuote->getParentQuoteId());
+            $parentQuote = $this->getQuoteById($transaction->order->cart->order_reference);
 
             if (!$parentQuote->getIsActive()) {
                 throw new Exception(
-                    $this->boltHelper()->__("The parent quote %s for immutable quote %s is currently being processed or has been processed for order #%s. Check quote %s for details.",
-                        $parentQuote->getId(), $immutableQuote->getId(), $parentQuote->getReservedOrderId(), $parentQuote->getParentQuoteId() )
+                    $this->boltHelper()->__("Bolt expects the parent quote [%s] to be available.  Instead it found that the parent quote [%s] for the immutable quote [%s] is currently being processed, has been processed, or can not be processed for order [#%s]. Check quote [%s] for details.",
+                        $transaction->order->cart->order_reference, $parentQuote->getId(), $immutableQuote->getId(), $parentQuote->getReservedOrderId(), $parentQuote->getParentQuoteId() )
                 );
             }
 
@@ -124,7 +125,7 @@ class Bolt_Boltpay_Model_Order extends Bolt_Boltpay_Model_Abstract
 
                 /** @var Bolt_Boltpay_Model_ShippingAndTax $shippingAndTaxModel */
                 $shippingAndTaxModel = Mage::getModel("boltpay/shippingAndTax");
-                $shippingAndTaxModel->applyBoltAddressData($immutableQuote, $packagesToShip[0]->shipping_address);
+                $shippingAndTaxModel->applyBoltAddressData($immutableQuote, $packagesToShip[0]->shipping_address, false);
                 $shippingMethodCode = $packagesToShip[0]->reference;
 
                 if (!$shippingMethodCode) {
@@ -336,6 +337,17 @@ class Bolt_Boltpay_Model_Order extends Bolt_Boltpay_Model_Abstract
 
         foreach ($immutableQuote->getAllItems() as $cartItem) {
             /** @var Mage_Sales_Model_Quote_Item $cartItem */
+            $cartItem->shouldNotBeValidated = false;
+            Mage::dispatchEvent(
+                'bolt_boltpay_cart_item_inventory_validation_before',
+                [
+                    'cart_item' => $cartItem,
+                    'quote' => $immutableQuote,
+                    'transaction' => $transaction
+                ]
+            );
+
+            if ( $cartItem->shouldNotBeValidated ){ continue; }
 
             $product = $cartItem->getProduct();
             if (!$product->isSaleable()) {
@@ -582,11 +594,36 @@ class Bolt_Boltpay_Model_Order extends Bolt_Boltpay_Model_Abstract
      */
     protected function validateTotals(Mage_Sales_Model_Quote $immutableQuote, $transaction)
     {
+        $transaction->shouldDoTaxTotalValidation = true;
+        $transaction->shouldDoDiscountTotalValidation = true;
+        $transaction->shouldDoShippingTotalValidation = true;
+
+        Mage::dispatchEvent(
+            'bolt_boltpay_validate_totals_before',
+            array(
+                'quote'=> $immutableQuote,
+                'transaction' => $transaction,
+            )
+        );
+
         $magentoTotals = $immutableQuote->getTotals();
 
         foreach ($transaction->order->cart->items as $boltCartItem) {
 
             $cartItem = $immutableQuote->getItemById($boltCartItem->reference);
+
+            $cartItem->shouldNotBeValidated = false;
+            Mage::dispatchEvent(
+                'bolt_boltpay_cart_item_total_validation_before',
+                [
+                    'cart_item' => $cartItem,
+                    'quote' => $immutableQuote,
+                    'transaction' => $transaction
+                ]
+            );
+
+            if ( $cartItem->shouldNotBeValidated ){ continue; }
+
             $boltPrice = (int)$boltCartItem->total_amount->amount;
             $magentoRowPrice = (int) ( $cartItem->getRowTotalWithDiscount() * 100 );
             $magentoCalculatedPrice = (int) round($cartItem->getCalculationPrice() * 100 * $cartItem->getQty());
@@ -609,39 +646,43 @@ class Bolt_Boltpay_Model_Order extends Bolt_Boltpay_Model_Abstract
         /////////////////////////////////////////////////////////////////////////
         $priceFaultTolerance = $this->boltHelper()->getExtraConfig('priceFaultTolerance');
 
-        $magentoTaxTotal = (int)(( @$magentoTotals['tax']) ? round($magentoTotals['tax']->getValue() * 100) : 0 );
-        $boltTaxTotal = (int)$transaction->order->cart->tax_amount->amount;
-        $difference = abs($magentoTaxTotal - $boltTaxTotal);
-        if ( $difference > $priceFaultTolerance ) {
-            throw new Bolt_Boltpay_OrderCreationException(
-                OCE::E_BOLT_CART_HAS_EXPIRED,
-                OCE::E_BOLT_CART_HAS_EXPIRED_TMPL_TAX,
-                array($boltTaxTotal, $magentoTaxTotal)
-            );
-        } else if ($difference) {
-            $message = "Tax differed by $difference cents.  Bolt: $boltTaxTotal | Magento: $magentoTaxTotal";
-            $this->boltHelper()->logWarning($message);
-            $this->boltHelper()->notifyException(new Exception($message), [], 'warning' );
+        if ($transaction->shouldDoTaxTotalValidation) {
+            $magentoTaxTotal = (int)(( @$magentoTotals['tax']) ? round($magentoTotals['tax']->getValue() * 100) : 0 );
+            $boltTaxTotal = (int)$transaction->order->cart->tax_amount->amount;
+            $difference = abs($magentoTaxTotal - $boltTaxTotal);
+            if ( $difference > $priceFaultTolerance ) {
+                throw new Bolt_Boltpay_OrderCreationException(
+                    OCE::E_BOLT_CART_HAS_EXPIRED,
+                    OCE::E_BOLT_CART_HAS_EXPIRED_TMPL_TAX,
+                    array($boltTaxTotal, $magentoTaxTotal)
+                );
+            } else if ($difference) {
+                $message = "Tax differed by $difference cents.  Bolt: $boltTaxTotal | Magento: $magentoTaxTotal";
+                $this->boltHelper()->logWarning($message);
+                $this->boltHelper()->notifyException(new Exception($message), [], 'warning' );
+            }
         }
 
         if ($transaction->shouldSkipDiscountAndShippingTotalValidation) return;
 
-        $magentoDiscountTotal = (int)(($immutableQuote->getBaseSubtotal() - $immutableQuote->getBaseSubtotalWithDiscount()) * 100);
-        $boltDiscountTotal = (int)$transaction->order->cart->discount_amount->amount;
-        $difference = abs($magentoDiscountTotal - $boltDiscountTotal);
-        if ( $difference > $priceFaultTolerance ) {
-            throw new Bolt_Boltpay_OrderCreationException(
-                OCE::E_BOLT_CART_HAS_EXPIRED,
-                OCE::E_BOLT_CART_HAS_EXPIRED_TMPL_DISCOUNT,
-                array($boltDiscountTotal, $magentoDiscountTotal)
-            );
-        } else if ($difference) {
-            $message = "Discount differed by $difference cents.  Bolt: $boltDiscountTotal | Magento: $magentoDiscountTotal";
-            $this->boltHelper()->logWarning($message);
-            $this->boltHelper()->notifyException(new Exception($message), [], 'warning' );
+        if ($transaction->shouldDoDiscountTotalValidation) {
+            $magentoDiscountTotal = (int)(($immutableQuote->getBaseSubtotal() - $immutableQuote->getBaseSubtotalWithDiscount()) * 100);
+            $boltDiscountTotal = (int)$transaction->order->cart->discount_amount->amount;
+            $difference = abs($magentoDiscountTotal - $boltDiscountTotal);
+            if ( $difference > $priceFaultTolerance ) {
+                throw new Bolt_Boltpay_OrderCreationException(
+                    OCE::E_BOLT_CART_HAS_EXPIRED,
+                    OCE::E_BOLT_CART_HAS_EXPIRED_TMPL_DISCOUNT,
+                    array($boltDiscountTotal, $magentoDiscountTotal)
+                );
+            } else if ($difference) {
+                $message = "Discount differed by $difference cents.  Bolt: $boltDiscountTotal | Magento: $magentoDiscountTotal";
+                $this->boltHelper()->logWarning($message);
+                $this->boltHelper()->notifyException(new Exception($message), [], 'warning' );
+            }
         }
 
-        if ( !$immutableQuote->isVirtual() ) {
+        if ( $transaction->shouldDoShippingTotalValidation && !$immutableQuote->isVirtual() ) {
             $shippingAddress = $immutableQuote->getShippingAddress();
             $magentoShippingTotal = (int) (($shippingAddress->getShippingAmount() - $shippingAddress->getBaseShippingDiscountAmount()) * 100);
             $boltShippingTotal = (int)$transaction->order->cart->shipping_amount->amount;
@@ -662,6 +703,13 @@ class Bolt_Boltpay_Model_Order extends Bolt_Boltpay_Model_Abstract
             // we do not validate the shipping tax total. We only validate the full tax total
         }
 
+        Mage::dispatchEvent(
+            'bolt_boltpay_validate_totals_after',
+            array(
+                'quote' => $immutableQuote,
+                'transaction' => $transaction,
+            )
+        );
     }
 
     /**

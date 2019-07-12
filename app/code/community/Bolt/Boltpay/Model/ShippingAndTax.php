@@ -28,13 +28,15 @@ class Bolt_Boltpay_Model_ShippingAndTax extends Bolt_Boltpay_Model_Abstract
      *
      * @param Mage_Sales_Model_Quote    $quote             The quote to which the address will be applied
      * @param array                     $boltAddressData   The Bolt formatted address data
+     * @param bool                      $clearCurrentData  If true, the current address data in the quote will be
+     *                                                     removed prior to adding the Bolt provided address data
      *
      * @return  array   The shipping address applied in Magento compatible format
      *
      * @throws Exception  if the bolt address does not contain an postal or country code
      * @throws Exception  if there is a failure saving the customer or address data to the database
      */
-    public function applyBoltAddressData( $quote, $boltAddressData ) {
+    public function applyBoltAddressData( $quote, $boltAddressData, $clearCurrentData = true ) {
 
         $region = $boltAddressData->region; // Initialize and set default value for region name
 
@@ -121,8 +123,7 @@ class Bolt_Boltpay_Model_ShippingAndTax extends Bolt_Boltpay_Model_Abstract
             }
         }
 
-        // https://github.com/BoltApp/bolt-magento1/pull/255
-        if (strpos(Mage::getVersion(), '1.7') !== 0){
+        if ($clearCurrentData){
             $quote->removeAllAddresses();
             $quote->save();
         }
