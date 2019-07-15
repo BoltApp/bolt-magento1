@@ -59,11 +59,19 @@ jobs:
               git clone git@github.com:BoltApp/integration-tests.git
               cd integration-tests
               npm install
-              mkdir -p /tmp/screenshots
-              SCREENSHOT_DIR=/tmp/screenshots TEST_ENV=sandbox npm run test-checkout-magento1
+              mkdir -p ./screenshots
+              JUNIT_REPORT_DIR=./test-results SCREENSHOT_DIR=./screenshots TEST_ENV=sandbox npm run test-checkout-magento1
             fi
+      - store_test_results:
+          path: ./test-results
       - store_artifacts:
-          path: /tmp/screenshots
+          path: ./screenshots
+      - run:
+          name: Generate Report
+          command: npm run generate-report
+          when: always
+      - store_artifacts:
+          path: ./allure-report
 
 workflows:
   version: 2

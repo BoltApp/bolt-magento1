@@ -75,7 +75,7 @@ class Bolt_Boltpay_Model_ShippingAndTaxTest extends PHPUnit_Framework_TestCase
             'company' => 'Bolt',
             'region' => 'California'
         );
-        $result = $this->currentMock->applyShippingAddressToQuote($quote, $shippingAddress);
+        $result = $this->currentMock->applyBoltAddressData($quote, $shippingAddress);
 
         $expected = array(
             'email' => 'test@bolt.com',
@@ -115,7 +115,7 @@ class Bolt_Boltpay_Model_ShippingAndTaxTest extends PHPUnit_Framework_TestCase
             'company' => 'Bolt',
             'region' => 'California'
         );
-        $result = $this->currentMock->applyShippingAddressToQuote($quote, $shippingAddress);
+        $result = $this->currentMock->applyBoltAddressData($quote, $shippingAddress);
 
         $expected = array(
             'email' => 'test@bolt.com',
@@ -145,7 +145,7 @@ class Bolt_Boltpay_Model_ShippingAndTaxTest extends PHPUnit_Framework_TestCase
             'country_code' => 'US',
             'region' => 'California'
         );
-        $result = $this->currentMock->applyShippingAddressToQuote($quote, $shippingAddress);
+        $result = $this->currentMock->applyBoltAddressData($quote, $shippingAddress);
 
         $expected = array(
             'email' => 'test@bolt.com',
@@ -183,7 +183,7 @@ class Bolt_Boltpay_Model_ShippingAndTaxTest extends PHPUnit_Framework_TestCase
             'company' => 'Bolt',
             'region' => 'California'
         );
-        $result = $this->currentMock->applyShippingAddressToQuote($quote, $shippingAddress);
+        $result = $this->currentMock->applyBoltAddressData($quote, $shippingAddress);
 
         $expected = array(
             'email' => 'test@bolt.com',
@@ -222,7 +222,7 @@ class Bolt_Boltpay_Model_ShippingAndTaxTest extends PHPUnit_Framework_TestCase
             'company' => 'Bolt',
             'region' => 'CA'
         );
-        $result = $this->currentMock->applyShippingAddressToQuote($quote, $shippingAddress);
+        $result = $this->currentMock->applyBoltAddressData($quote, $shippingAddress);
 
         $expected = array(
             'email' => 'test@bolt.com',
@@ -247,7 +247,7 @@ class Bolt_Boltpay_Model_ShippingAndTaxTest extends PHPUnit_Framework_TestCase
             'email' => 'test@bolt.com'
         );
         try {
-            $this->currentMock->applyShippingAddressToQuote($quote, $shippingAddress);
+            $this->currentMock->applyBoltAddressData($quote, $shippingAddress);
         } catch (Exception $e) {
             $this->assertEquals('Address must contain postal_code and country_code.', $e->getMessage());
             return;
@@ -267,13 +267,14 @@ class Bolt_Boltpay_Model_ShippingAndTaxTest extends PHPUnit_Framework_TestCase
         $cart = $this->testHelper->addProduct(self::$productId, 2);
         $quote = $cart->getQuote();
 
-        $originalDiscountedSubtotal = 100;
+        $originalDiscountTotal = 0;
 
         $quote->getShippingAddress()->setShippingAmount(50);
+        $quote->setSubtotal(100);
         $quote->setSubtotalWithDiscount(100);
 
         $expected = 50;
-        $result = $this->currentMock->getAdjustedShippingAmount($originalDiscountedSubtotal, $quote);
+        $result = $this->currentMock->getAdjustedShippingAmount($originalDiscountTotal, $quote);
 
         $this->assertEquals($expected, $result);
     }
@@ -289,13 +290,14 @@ class Bolt_Boltpay_Model_ShippingAndTaxTest extends PHPUnit_Framework_TestCase
         $cart = $this->testHelper->addProduct(self::$productId, 2);
         $quote = $cart->getQuote();
 
-        $originalDiscountedSubtotal = 100;
+        $originalDiscountTotal = 0;
 
         $quote->getShippingAddress()->setShippingAmount(50);
+        $quote->setSubtotal(100);
         $quote->setSubtotalWithDiscount(75); // Discount on shipping: subtotal - shipping_amount * 50% = $75
 
         $expected = 25;
-        $result = $this->currentMock->getAdjustedShippingAmount($originalDiscountedSubtotal, $quote);
+        $result = $this->currentMock->getAdjustedShippingAmount($originalDiscountTotal, $quote);
 
         $this->assertEquals($expected, $result);
     }
@@ -311,13 +313,14 @@ class Bolt_Boltpay_Model_ShippingAndTaxTest extends PHPUnit_Framework_TestCase
         $cart = $this->testHelper->addProduct(self::$productId, 2);
         $quote = $cart->getQuote();
 
-        $originalDiscountedSubtotal = 50;
+        $originalDiscountTotal = 50;
 
         $quote->getShippingAddress()->setShippingAmount(50);
+        $quote->setSubtotal(100);
         $quote->setSubtotalWithDiscount(50); // Discount on quote: subtotal * 50% = $50
 
         $expected = 50;
-        $result = $this->currentMock->getAdjustedShippingAmount($originalDiscountedSubtotal, $quote);
+        $result = $this->currentMock->getAdjustedShippingAmount($originalDiscountTotal, $quote);
 
         $this->assertEquals($expected, $result);
     }
@@ -333,13 +336,14 @@ class Bolt_Boltpay_Model_ShippingAndTaxTest extends PHPUnit_Framework_TestCase
         $cart = $this->testHelper->addProduct(self::$productId, 2);
         $quote = $cart->getQuote();
 
-        $originalDiscountedSubtotal = 50; // Discount on cart: 50%
+        $originalDiscountTotal = 0; // Discount on cart: 50%
 
         $quote->getShippingAddress()->setShippingAmount(50);
-        $quote->setSubtotalWithDiscount(25); // Discount on shipping: subtotal * 50% - shipping_amount * 50% = $25
+        $quote->setSubtotal(100);
+        $quote->setSubtotalWithDiscount(75); // Discount on shipping: subtotal * 50% - shipping_amount * 50% = $25
 
         $expected = 25;
-        $result = $this->currentMock->getAdjustedShippingAmount($originalDiscountedSubtotal, $quote);
+        $result = $this->currentMock->getAdjustedShippingAmount($originalDiscountTotal, $quote);
 
         $this->assertEquals($expected, $result);
     }

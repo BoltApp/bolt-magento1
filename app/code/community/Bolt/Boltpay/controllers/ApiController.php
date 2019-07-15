@@ -201,11 +201,21 @@ class Bolt_Boltpay_ApiController extends Mage_Core_Controller_Front_Action imple
     public function create_orderAction() {
         try {
             $transaction = $this->getRequestData();
-            $immutableQuoteId = $this->boltHelper()->getImmutableQuoteIdFromTransaction($transaction);
+            $displayId = $transaction->order->cart->display_id;
 
-            /** @var  Bolt_Boltpay_Model_Order $orderModel */
-            $orderModel = Mage::getModel('boltpay/order');
-            $order = $orderModel->getOrderByQuoteId($immutableQuoteId);
+            if (strpos($displayId, '|') !== false) {
+                /* This is when the order has not already been created, nor order success URL sent to Bolt */
+
+                $immutableQuoteId = $this->boltHelper()->getImmutableQuoteIdFromTransaction($transaction);
+
+                /** @var  Bolt_Boltpay_Model_Order $orderModel */
+                $orderModel = Mage::getModel('boltpay/order');
+                $order = $orderModel->getOrderByQuoteId($immutableQuoteId);
+            } else {
+                /* @var Mage_Sales_Model_Order $order */
+                $order = Mage::getModel('sales/order')->loadByIncrementId($displayId);
+                $immutableQuoteId = $order->getQuoteId();
+            }
 
             if ($order->isObjectNew()) {
                 /** @var Mage_Sales_Model_Order $order */
@@ -219,7 +229,18 @@ class Bolt_Boltpay_ApiController extends Mage_Core_Controller_Front_Action imple
                 }
             }
 
-            $orderSuccessUrl = $this->createSuccessUrl($order, $immutableQuoteId);
+            /////////////////////////////////
+            // create success order URL
+            /////////////////////////////////
+            $orderSuccessUrl = $this->boltHelper()->doFilterEvent(
+                'bolt_boltpay_filter_success_url',
+                $this->createSuccessUrl($order, $immutableQuoteId),
+                [
+                    'order' => $order,
+                    'quote_id' => $immutableQuoteId
+                ]
+            );
+            /////////////////////////////////
 
             $this->sendResponse(
                 200,

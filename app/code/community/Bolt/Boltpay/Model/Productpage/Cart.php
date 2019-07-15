@@ -279,7 +279,7 @@ class Bolt_Boltpay_Model_Productpage_Cart extends Bolt_Boltpay_Model_Abstract
                 $totalAmount = (int)round($unitPrice * $quantity);
 
                 return array(
-                    'reference'    => $quoteId,
+                    'reference'    => $item->getId(),
                     'image_url'    => $imageUrl,
                     'name'         => $item->getName(),
                     'sku'          => $item->getSku(),
