@@ -2,8 +2,6 @@
 
 class Bolt_Bolt_Model_Observer extends Amasty_Rules_Model_Observer
 {
-    const XML_PATH_BUG_SNAG_LOG = 'payment/boltpay/bugsnag_log';
-
     /**
      * @param $observer
      * Process quote item validation and discount calculation
@@ -17,83 +15,35 @@ class Bolt_Bolt_Model_Observer extends Amasty_Rules_Model_Observer
     }
 
     /**
-     * Log quote delete to Bugsnag and DataDog
-     *
+     * event: bolt_boltpay_order_creation_after
      * @param $observer
      */
-    public function logDeletedQuote($observer)
-    {
-        /** @var Mage_Sales_Model_Quote $quote */
-        $quote = $observer->getQuote();
-        try{
-            if ($this->DidQuoteUseBolt($quote) && $this->isQuoteInUse($quote)) {
-                if ($this->isBugSnagLogEnabled()) {
-                    $message = Mage::helper('boltpay')->__("The quote [{$quote->getId()}] was removed");
-                    Mage::helper('boltpay/bugsnag')->notifyException(new Exception($message));
-                }
-            }
-        }catch (Exception $e){}
-    }
+    public function addOrderNote($observer) {
 
-    /**
-     * @return bool
-     */
-    protected function isBugSnagLogEnabled()
-    {
-        return Mage::getStoreConfigFlag(self::XML_PATH_BUG_SNAG_LOG);
-    }
+        $order = $observer->getOrder();
+        $transaction = $observer->getTransaction();
 
-    /**
-     * @param Mage_Sales_Model_Quote $quote
-     *
-     * @return bool
-     */
-    protected function DidQuoteUseBolt(Mage_Sales_Model_Quote $quote)
-    {
-        $payment = $quote->getPayment();
-        $method = $payment->getMethod();
-
-        return strtolower($method) == Bolt_Boltpay_Model_Payment::METHOD_CODE;
-    }
-
-    /**
-     * @param Mage_Sales_Model_Quote $quote
-     *
-     * @return bool
-     */
-    protected function isQuoteInUse(Mage_Sales_Model_Quote $quote)
-    {
-        $quoteId = $quote->getId();
-        $parentQuoteId = $quote->getData('parent_quote_id');
-        if ($quoteId && $parentQuoteId) {
-            if ($this->DoesQuoteHaveOrder($quoteId)) {
-                return true;
-            }
-
-            /** @var Mage_Sales_Model_Quote $potentialImmutableQuote */
-            $potentialImmutableQuote = Mage::getModel('sales/quote')->loadByIdWithoutStore($parentQuoteId);
-
-            if ($this->DoesQuoteHaveOrder($potentialImmutableQuote->getId())) {
-                return true;
-            }
+        if (isset($transaction->order->user_note)) {
+            Mage::getModel('amorderattr/attribute')->load($order->getId(), 'order_id')->setData(
+                'customerordercomments', $transaction->order->user_note
+            )->save();
         }
-
-        return false;
     }
 
     /**
-     * @param $quoteId
-     *
-     * @return bool
+     * event:
+     * @param $observer
      */
-    protected function DoesQuoteHaveOrder($quoteId)
-    {
-        $order = Mage::getModel('boltpay/order')->getOrderByQuoteId($quoteId);
+    public function addNoteToBoltOrder($observer) {
 
         if ($order->getId()) {
-            return true;
-        }
 
-        return false;
+            if(Mage::getSingleton('core/session')->getBoltOnePageComments()) {
+                Mage::getModel('amorderattr/attribute')->load($order->getId(), 'order_id')->setData(
+                    'customerordercomments', Mage::getSingleton('core/session')->getBoltOnePageComments()
+                )->save();
+                Mage::getSingleton('core/session')->unsBoltOnePageComments();
+            }
+        }
     }
 }

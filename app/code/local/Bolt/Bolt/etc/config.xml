@@ -21,11 +21,6 @@
             <bolt_bolt>
                 <class>Bolt_Bolt_Block</class>
             </bolt_bolt>
-            <boltpay>
-                <rewrite>
-                    <checkout_boltpay>Bolt_Bolt_Block_Checkout_Boltpay</checkout_boltpay>
-                </rewrite>
-            </boltpay>
         </blocks>
         <models>
             <bolt_bolt>
@@ -43,23 +38,12 @@
             </amrules>
             <boltpay>
                 <rewrite>
-                    <order>Bolt_Bolt_Model_Order</order>
                     <boltOrder>Bolt_Bolt_Model_BoltOrder</boltOrder>
                     <shippingAndTax>Bolt_Bolt_Model_ShippingAndTax</shippingAndTax>
                     <payment>Bolt_Bolt_Model_Payment</payment>
                 </rewrite>
             </boltpay>
         </models>
-        <events>
-            <sales_quote_delete_before>
-                <observers>
-                    <bolt_bolt_log_deleted_quote>
-                        <class>Bolt_Bolt_Model_Observer</class>
-                        <method>logDeletedQuote</method>
-                    </bolt_bolt_log_deleted_quote>
-                </observers>
-            </sales_quote_delete_before>
-        </events>
     </global>
 
     <frontend>
