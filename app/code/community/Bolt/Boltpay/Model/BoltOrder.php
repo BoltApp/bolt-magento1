@@ -61,15 +61,20 @@ class Bolt_Boltpay_Model_BoltOrder extends Bolt_Boltpay_Model_Abstract
      * Generates order data for sending to Bolt.
      *
      * @param Mage_Sales_Model_Quote        $quote      Magento quote instance
-     * @param bool                          $multipage  Is checkout type Multi-Page Checkout, the default is true, set to false for One Page Checkout
+     * @param bool                          $isMultiPage  Is checkout type Multi-Page Checkout, the default is true, set to false for One Page Checkout
      *
      * @return array            The order payload to be sent as to bolt in API call as a PHP array
+     *
+     * @throws Mage_Core_Model_Store_Exception if the store cannot be determined
      */
-    public function buildOrder($quote, $multipage)
+    public function buildOrder($quote, $isMultiPage)
     {
-        $cart = $this->buildCart($quote, $multipage);
-        return array(
-            'cart' => $cart
+        $cart = $this->buildCart($quote, $isMultiPage);
+        $boltOrder = ['cart' => $cart];
+        return $this->boltHelper()->dispatchFilterEvent(
+            "bolt_boltpay_filter_boltOrder",
+            $boltOrder,
+            ['quote' => $quote, 'isMultiPage' => $isMultiPage]
         );
     }
 
