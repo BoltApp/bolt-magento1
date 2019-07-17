@@ -15,11 +15,14 @@ class Bolt_Bolt_Model_Observer extends Amasty_Rules_Model_Observer
     }
 
     /**
+     * Adds the user note to the Magento created order
+     *
      * event: bolt_boltpay_order_creation_after
      * @param $observer
      */
     public function addOrderNote($observer) {
 
+        /** @var Mage_Sales_Model_Order $order */
         $order = $observer->getOrder();
         $transaction = $observer->getTransaction();
 
@@ -28,22 +31,27 @@ class Bolt_Bolt_Model_Observer extends Amasty_Rules_Model_Observer
                 'customerordercomments', $transaction->order->user_note
             )->save();
         }
+
+        Mage::getSingleton('core/session')->unsBoltOnePageComments();
     }
 
     /**
-     * event:
+     * Adds the user note to the Bolt order data if it has already been set in the session
+     *
+     * event: bolt_boltpay_filter_boltOrder
+     *
      * @param $observer
      */
     public function addNoteToBoltOrder($observer) {
 
-        if ($order->getId()) {
+        $valueWrapper = $observer->getValueWrapper();
+        $orderData = $valueWrapper->getValue();
+        $comments = Mage::getSingleton('core/session')->getBoltOnePageComments();
 
-            if(Mage::getSingleton('core/session')->getBoltOnePageComments()) {
-                Mage::getModel('amorderattr/attribute')->load($order->getId(), 'order_id')->setData(
-                    'customerordercomments', Mage::getSingleton('core/session')->getBoltOnePageComments()
-                )->save();
-                Mage::getSingleton('core/session')->unsBoltOnePageComments();
-            }
+        if($comments) {
+            $orderData['user_note'] = $comments;
         }
+
+        $valueWrapper->setValue($orderData);
     }
 }

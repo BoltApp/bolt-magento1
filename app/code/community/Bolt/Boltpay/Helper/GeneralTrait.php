@@ -162,13 +162,27 @@ trait Bolt_Boltpay_Helper_GeneralTrait {
     /**
      * Dispatches event to filter a value
      *
-     * @param string                    $eventName              The name of the event to be dispatched
-     * @param mixed                     $valueToFilter          The value to filter
-     * @param mixed                     $additionalParameters   any extra parameters used in filtering
+     * @param string   $eventName              The name of the event to be dispatched
+     * @param mixed    $valueToFilter          The value to filter
+     * @param mixed    $additionalParameters   any extra parameter or array of parameters used in filtering
      *
      * @return mixed   the value after it has been filtered
      */
     public function doFilterEvent($eventName, $valueToFilter, $additionalParameters = array()) {
+        return $this->dispatchFilterEvent($eventName, $valueToFilter, $additionalParameters);
+    }
+
+    /**
+     * Memory conservative version of {@see Bolt_Boltpay_Helper_GeneralTrait::doFilterEvent()}
+     * Use this instead if cases of passing large arrays or large string values
+     *
+     * @param string   $eventName              The name of the event to be dispatched
+     * @param mixed    $valueToFilter          The value to filter
+     * @param mixed    $additionalParameters   any extra parameter or array of parameters used in filtering
+     *
+     * @return mixed   the value after it has been filtered
+     */
+    public function dispatchFilterEvent($eventName, &$valueToFilter, $additionalParameters = array()) {
         $valueWrapper = new Varien_Object();
         $valueWrapper->setValue($valueToFilter);
         Mage::dispatchEvent(
@@ -181,5 +195,4 @@ trait Bolt_Boltpay_Helper_GeneralTrait {
 
         return $valueWrapper->getValue();
     }
-
 }
