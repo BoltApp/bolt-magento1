@@ -83,6 +83,7 @@ workflows:
                 - master
                 - develop
                 - circleci
+                - remove-redundant-parralel
       - unit-php55-mage18
       - unit-php55-mage19
       - unit-php56-mage18
