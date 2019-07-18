@@ -62,7 +62,7 @@ If you would like to pull the latest Bolt code from the Git repo and update Mage
 
 | Name | Area | Description | Parameters | Filtered Value | 
 | --- | --- | --- | --- | --- |
+| bolt_boltpay_filter_discount_amount | global | Allows changing of individual discount amount that is displayed in Bolt | **quote**<br>_Mage_Sales_Model_Quote_<br>the Magento cart copy of the Bolt order<br><br>**discount**<br>string<br>the Magento totals array index/label for the discount |
 | bolt_boltpay_filter_shipping_label | global | Allows changing of individual shipping labels that are displayed in Bolt | **rate**<br>_Mage_Sales_Model_Quote_Address_Rate_<br>The information for this calculated rate, including method, carrier, and price | **string**<br>The label to be displayed in the Bolt order |
 | bolt_boltpay_filter_success_url | global | Provides means for custom success order urls | **order**<br>_Mage_Sales_Model_Order_<br>The order to be authorized<br><br>**quoteId**<br>_int_<br>The quote id of the order which maps to the Bolt order reference | **string**<br>The url that the BoltCheckout modal will forward the customer to on successful order authorization |
-| bolt_boltpay_filter_discount_amount | global | Allows changing of individual discount amount that is displayed in Bolt | **quote**<br>_Mage_Sales_Model_Quote_<br>the quote<br><br>**discount**<br>string<br>the index of the discount<br><br>|
 
