@@ -15,32 +15,32 @@
  * @license    http://opensource.org/licenses/osl-3.0.php  Open Software License (OSL 3.0)
  */
 
-class Bugsnag_Notification
+class Boltpay_Bugsnag_Notification
 {
     private static $CONTENT_TYPE_HEADER = 'Content-type: application/json';
 
     /**
      * The config instance.
      *
-     * @var Bugsnag_Configuration
+     * @var Boltpay_Bugsnag_Configuration
      */
     private $config;
 
     /**
      * The queue of errors to send to Bugsnag.
      *
-     * @var Bugsnag_Error[]
+     * @var Boltpay_Bugsnag_Error[]
      */
     private $errorQueue = array();
 
     /**
      * Create a new notification instance.
      *
-     * @param Bugsnag_Configuration $config the configuration instance
+     * @param Boltpay_Bugsnag_Configuration $config the configuration instance
      *
      * @return void
      */
-    public function __construct(Bugsnag_Configuration $config)
+    public function __construct(Boltpay_Bugsnag_Configuration $config)
     {
         $this->config = $config;
     }
@@ -48,12 +48,12 @@ class Bugsnag_Notification
     /**
      * Add an error to the queue.
      *
-     * @param Bugsnag_Error $config         the bugsnag error instance
+     * @param Boltpay_Bugsnag_Error $config         the bugsnag error instance
      * @param array         $passedMetaData the associated meta data
      *
      * @return bool
      */
-    public function addError(Bugsnag_Error $error, $passedMetaData = array())
+    public function addError(Boltpay_Bugsnag_Error $error, $passedMetaData = array())
     {
         // Check if this error should be sent to Bugsnag
         if (!$this->config->shouldNotify()) {
@@ -64,8 +64,8 @@ class Bugsnag_Notification
         $error->setMetaData($this->config->metaData);
 
         // Add request meta-data to error
-        if (Bugsnag_Request::isRequest()) {
-            $error->setMetaData(Bugsnag_Request::getRequestMetaData());
+        if (Boltpay_Bugsnag_Request::isRequest()) {
+            $error->setMetaData(Boltpay_Bugsnag_Request::getRequestMetaData());
         }
 
         // Session Tab

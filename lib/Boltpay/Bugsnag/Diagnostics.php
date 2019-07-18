@@ -15,23 +15,23 @@
  * @license    http://opensource.org/licenses/osl-3.0.php  Open Software License (OSL 3.0)
  */
 
-class Bugsnag_Diagnostics
+class Boltpay_Bugsnag_Diagnostics
 {
     /**
      * The config instance.
      *
-     * @var Bugsnag_Configuration
+     * @var Boltpay_Bugsnag_Configuration
      */
     private $config;
 
     /**
      * Create a new diagnostics instance.
      *
-     * @param Bugsnag_Configuration $config the configuration instance
+     * @param Boltpay_Bugsnag_Configuration $config the configuration instance
      *
      * @return void
      */
-    public function __construct(Bugsnag_Configuration $config)
+    public function __construct(Boltpay_Bugsnag_Configuration $config)
     {
         $this->config = $config;
     }
@@ -79,7 +79,7 @@ class Bugsnag_Diagnostics
      */
     public function getContext()
     {
-        return $this->config->get('context', Bugsnag_Request::getContext());
+        return $this->config->get('context', Boltpay_Bugsnag_Request::getContext());
     }
 
     /**
@@ -90,7 +90,7 @@ class Bugsnag_Diagnostics
     public function getUser()
     {
         $defaultUser = array();
-        $userId = Bugsnag_Request::getUserId();
+        $userId = Boltpay_Bugsnag_Request::getUserId();
 
         if (!is_null($userId)) {
             $defaultUser['id'] = $userId;
