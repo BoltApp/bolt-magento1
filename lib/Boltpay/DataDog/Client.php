@@ -15,7 +15,7 @@
  * @license    http://opensource.org/licenses/osl-3.0.php  Open Software License (OSL 3.0)
  */
 
-class DataDog_Client
+class Boltpay_DataDog_Client
 {
     const URL = 'https://http-intake.logs.datadoghq.com/v1/input/';
     private $_apiKey;
@@ -23,7 +23,7 @@ class DataDog_Client
     private $_severityConfig;
 
     /**
-     * DataDog_Client constructor.
+     * Boltpay_DataDog_Client constructor.
      *
      * @param $apiKey
      * @param array $data
@@ -42,14 +42,14 @@ class DataDog_Client
      * @param array $additionalData
      * @return $this
      */
-    public function log($message, $type = DataDog_ErrorTypes::TYPE_INFO, $additionalData = array())
+    public function log($message, $type = Boltpay_DataDog_ErrorTypes::TYPE_INFO, $additionalData = array())
     {
         if ($this->_apiKey && !in_array($type, $this->_severityConfig)) {
             return $this->setLastResponseStatus(false);
         };
 
-        if (DataDog_Request::isRequest()) {
-            $data = DataDog_Request::getRequestMetaData();
+        if (Boltpay_DataDog_Request::isRequest()) {
+            $data = Boltpay_DataDog_Request::getRequestMetaData();
         }
 
         $data['message'] = addcslashes($message, '{}"');
@@ -73,7 +73,7 @@ class DataDog_Client
      */
     public function postWithCurl($body)
     {
-        if ($this->getData('env') == DataDog_Environment::TEST_ENVIRONMENT){
+        if ($this->getData('env') == Boltpay_DataDog_Environment::TEST_ENVIRONMENT){
             return $this->setLastResponseStatus(true);
         }
 
@@ -104,7 +104,7 @@ class DataDog_Client
      * Set last response status
      *
      * @param $responseStatus
-     * @return DataDog_Client
+     * @return Boltpay_DataDog_Client
      */
     public function setLastResponseStatus($responseStatus)
     {

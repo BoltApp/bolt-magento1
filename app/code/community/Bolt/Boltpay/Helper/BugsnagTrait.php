@@ -15,8 +15,6 @@
  * @license    http://opensource.org/licenses/osl-3.0.php  Open Software License (OSL 3.0)
  */
 
-require_once(Mage::getBaseDir('lib') . DS .  'Boltpay/Bugsnag/Autoload.php');
-
 /**
  * Trait Bolt_Boltpay_Helper_BugsnagTrait
  *
@@ -47,7 +45,7 @@ trait Bolt_Boltpay_Helper_BugsnagTrait {
     {
 
         if (!$this->bugsnag) {
-            $bugsnag = new Bugsnag_Client($this->apiKey);
+            $bugsnag = new Boltpay_Bugsnag_Client($this->apiKey);
 
             $bugsnag->setErrorReportingLevel(E_ERROR);
 
