@@ -330,7 +330,11 @@ class Bolt_Boltpay_Model_BoltOrder extends Bolt_Boltpay_Model_Abstract
         foreach ($this->discountTypes as $discount) {
 
             $amount = (@$totals[$discount]) 
-                ? $this->boltHelper()->doFilterEvent( 'bolt_boltpay_filter_discount_amount', $totals[$discount]->getValue(), array('quote' => $quote, 'discount'=>$discount))
+                ? $this->boltHelper()->doFilterEvent( 
+                    'bolt_boltpay_filter_discount_amount', 
+                    $totals[$discount]->getValue(), 
+                    array('quote' => $quote, 'discount'=>$discount)
+                )
                 : 0;
             
             if ($amount) {
