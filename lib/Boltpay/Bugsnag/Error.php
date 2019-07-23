@@ -15,7 +15,7 @@
  * @license    http://opensource.org/licenses/osl-3.0.php  Open Software License (OSL 3.0)
  */
 
-class Bugsnag_Error
+class Boltpay_Bugsnag_Error
 {
     private static $VALID_SEVERITIES = array(
         'error',
@@ -27,21 +27,21 @@ class Bugsnag_Error
     public $payloadVersion = '2';
     public $message;
     public $severity = 'warning';
-    /** @var Bugsnag_Stacktrace */
+    /** @var Boltpay_Bugsnag_Stacktrace */
     public $stacktrace;
     public $metaData = array();
     public $user;
     public $config;
     public $diagnostics;
-    /** @var Bugsnag_Error|null */
+    /** @var Boltpay_Bugsnag_Error|null */
     public $previous;
     public $groupingHash;
 
     /**
      * Create a new error from a PHP error.
      *
-     * @param Bugsnag_Configuration $config      the config instance
-     * @param Bugsnag_Diagnostics   $diagnostics the diagnostics instance
+     * @param Boltpay_Bugsnag_Configuration $config      the config instance
+     * @param Boltpay_Bugsnag_Diagnostics   $diagnostics the diagnostics instance
      * @param int                   $code        the error code
      * @param string                $message     the error message
      * @param string                $file        the error file
@@ -50,7 +50,7 @@ class Bugsnag_Error
      *
      * @return self
      */
-    public static function fromPHPError(Bugsnag_Configuration $config, Bugsnag_Diagnostics $diagnostics, $code, $message, $file, $line, $fatal = false)
+    public static function fromPHPError(Boltpay_Bugsnag_Configuration $config, Boltpay_Bugsnag_Diagnostics $diagnostics, $code, $message, $file, $line, $fatal = false)
     {
         $error = new self($config, $diagnostics);
         $error->setPHPError($code, $message, $file, $line, $fatal);
@@ -61,13 +61,13 @@ class Bugsnag_Error
     /**
      * Create a new error from a PHP throwable.
      *
-     * @param Bugsnag_Configuration $config      the config instance
-     * @param Bugsnag_Diagnostics   $diagnostics the diagnostics instance
+     * @param Boltpay_Bugsnag_Configuration $config      the config instance
+     * @param Boltpay_Bugsnag_Diagnostics   $diagnostics the diagnostics instance
      * @param Throwable             $throwable   te he throwable instance
      *
      * @return self
      */
-    public static function fromPHPThrowable(Bugsnag_Configuration $config, Bugsnag_Diagnostics $diagnostics, $throwable)
+    public static function fromPHPThrowable(Boltpay_Bugsnag_Configuration $config, Boltpay_Bugsnag_Diagnostics $diagnostics, $throwable)
     {
         $error = new self($config, $diagnostics);
         $error->setPHPThrowable($throwable);
@@ -78,19 +78,19 @@ class Bugsnag_Error
     /**
      * Create a new error from a named error.
      *
-     * @param Bugsnag_Configuration $config      the config instance
-     * @param Bugsnag_Diagnostics   $diagnostics the diagnostics instance
+     * @param Boltpay_Bugsnag_Configuration $config      the config instance
+     * @param Boltpay_Bugsnag_Diagnostics   $diagnostics the diagnostics instance
      * @param string                $name        the error name
      * @param string|null           $message     the error message
      *
      * @return self
      */
-    public static function fromNamedError(Bugsnag_Configuration $config, Bugsnag_Diagnostics $diagnostics, $name, $message = null)
+    public static function fromNamedError(Boltpay_Bugsnag_Configuration $config, Boltpay_Bugsnag_Diagnostics $diagnostics, $name, $message = null)
     {
         $error = new self($config, $diagnostics);
         $error->setName($name)
               ->setMessage($message)
-              ->setStacktrace(Bugsnag_Stacktrace::generate($config));
+              ->setStacktrace(Boltpay_Bugsnag_Stacktrace::generate($config));
 
         return $error;
     }
@@ -100,12 +100,12 @@ class Bugsnag_Error
      *
      * This is only for for use only by the static methods above.
      *
-     * @param Bugsnag_Configuration $config      the config instance
-     * @param Bugsnag_Diagnostics   $diagnostics the diagnostics instance
+     * @param Boltpay_Bugsnag_Configuration $config      the config instance
+     * @param Boltpay_Bugsnag_Diagnostics   $diagnostics the diagnostics instance
      *
      * @return void
      */
-    private function __construct(Bugsnag_Configuration $config, Bugsnag_Diagnostics $diagnostics)
+    private function __construct(Boltpay_Bugsnag_Configuration $config, Boltpay_Bugsnag_Diagnostics $diagnostics)
     {
         $this->config = $config;
         $this->diagnostics = $diagnostics;
@@ -170,11 +170,11 @@ class Bugsnag_Error
     /**
      * Set the bugsnag stacktrace.
      *
-     * @param Bugsnag_Stacktrace $stacktrace the stacktrace instance
+     * @param Boltpay_Bugsnag_Stacktrace $stacktrace the stacktrace instance
      *
      * @return $this
      */
-    public function setStacktrace(Bugsnag_Stacktrace $stacktrace)
+    public function setStacktrace(Boltpay_Bugsnag_Stacktrace $stacktrace)
     {
         $this->stacktrace = $stacktrace;
 
@@ -240,7 +240,7 @@ class Bugsnag_Error
 
         $this->setName(get_class($exception))
              ->setMessage($exception->getMessage())
-             ->setStacktrace(Bugsnag_Stacktrace::fromBacktrace($this->config, $exception->getTrace(), $exception->getFile(), $exception->getLine()));
+             ->setStacktrace(Boltpay_Bugsnag_Stacktrace::fromBacktrace($this->config, $exception->getTrace(), $exception->getFile(), $exception->getLine()));
 
         if (method_exists($exception, 'getPrevious')) {
             $this->setPrevious($exception->getPrevious());
@@ -269,14 +269,14 @@ class Bugsnag_Error
             //
             // In these situations, we generate a "stacktrace" containing only
             // the line and file number where the crash occurred.
-            $stacktrace = Bugsnag_Stacktrace::fromFrame($this->config, $file, $line);
+            $stacktrace = Boltpay_Bugsnag_Stacktrace::fromFrame($this->config, $file, $line);
         } else {
-            $stacktrace = Bugsnag_Stacktrace::generate($this->config);
+            $stacktrace = Boltpay_Bugsnag_Stacktrace::generate($this->config);
         }
 
-        $this->setName(Bugsnag_ErrorTypes::getName($code))
+        $this->setName(Boltpay_Bugsnag_ErrorTypes::getName($code))
              ->setMessage($message)
-             ->setSeverity(Bugsnag_ErrorTypes::getSeverity($code))
+             ->setSeverity(Boltpay_Bugsnag_ErrorTypes::getSeverity($code))
              ->setStacktrace($stacktrace);
 
         return $this;

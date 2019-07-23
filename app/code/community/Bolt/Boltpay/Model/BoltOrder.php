@@ -72,7 +72,7 @@ class Bolt_Boltpay_Model_BoltOrder extends Bolt_Boltpay_Model_Abstract
         $cart = $this->buildCart($quote, $isMultiPage);
         $boltOrder = ['cart' => $cart];
         return $this->boltHelper()->dispatchFilterEvent(
-            "bolt_boltpay_filter_boltOrder",
+            "bolt_boltpay_filter_bolt_order",
             $boltOrder,
             ['quote' => $quote, 'isMultiPage' => $isMultiPage]
         );

@@ -15,7 +15,7 @@
  * @license    http://opensource.org/licenses/osl-3.0.php  Open Software License (OSL 3.0)
  */
 
-class Bugsnag_Configuration
+class Boltpay_Bugsnag_Configuration
 {
     public static $DEFAULT_TIMEOUT = 10;
     public static $DEFAULT_ENDPOINT = 'https://notify.bugsnag.com';

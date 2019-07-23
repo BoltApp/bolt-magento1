@@ -48,20 +48,17 @@ jobs:
     docker:
       - image: circleci/openjdk:latest-node
       - image: selenium/standalone-chrome
-    parallelism: 2
     steps:
       - checkout
       - run:
           name: Integration test (only for master/develop/circleci branch)
-          command: |
-            if [ "$CIRCLE_BRANCH" = "master" ] || [ "$CIRCLE_BRANCH" = "develop" ] || [ "$CIRCLE_BRANCH" = "circleci" ]; then
+          command: |  
               echo "Running integraiton test"
               git clone git@github.com:BoltApp/integration-tests.git
               cd integration-tests
               npm install
               mkdir -p ./screenshots
               JUNIT_REPORT_DIR=./test-results SCREENSHOT_DIR=./screenshots TEST_ENV=sandbox npm run test-checkout-magento1
-            fi
       - store_test_results:
           path: ./integration-tests/test-results
       - store_artifacts:
