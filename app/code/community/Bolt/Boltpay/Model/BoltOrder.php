@@ -329,6 +329,8 @@ class Bolt_Boltpay_Model_BoltOrder extends Bolt_Boltpay_Model_Abstract
 
         foreach ($this->discountTypes as $discount) {
             if (@$totals[$discount] && $amount = $totals[$discount]->getValue()) {
+                $amount = $this->boltHelper()->doFilterEvent( 'bolt_boltpay_filter_discount_amount', $amount, array('quote' => $quote, 'discount'=>$discount));
+                
                 // Some extensions keep discount totals as positive values,
                 // others as negative, which is the Magento default.
                 // Using the absolute value.
