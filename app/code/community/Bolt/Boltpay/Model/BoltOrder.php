@@ -218,10 +218,8 @@ class Bolt_Boltpay_Model_BoltOrder extends Bolt_Boltpay_Model_Abstract
             ///////////////////////////////////////////
 
             ////////////////////////////////////////////////////////////////////////////////////
-            // For one page checkout type include tax and shipment / address data in submission.
+            // For one page checkout/admin type include tax and shipment / address data in submission.
             ////////////////////////////////////////////////////////////////////////////////////
-
-
             if (Mage::app()->getStore()->isAdmin()) {
                 /* @var Mage_Adminhtml_Block_Sales_Order_Create_Totals $totalsBlock */
                 $totalsBlock =  Mage::app()->getLayout()->createBlock("adminhtml/sales_order_create_totals_shipping");
@@ -298,9 +296,12 @@ class Bolt_Boltpay_Model_BoltOrder extends Bolt_Boltpay_Model_Abstract
                         }
                     }
                 }
-                $this->dispatchCartDataEvent('bolt_boltpay_shipping_applied_to_bolt_order', $quote, $cartSubmissionData);
+
                 $calculatedTotal += isset($cartSubmissionData['shipments']) ? array_sum(array_column($cartSubmissionData['shipments'], 'cost')) : 0;
             }
+
+            # It is possible that no shipments were added which could be used as indicative of an In-Store Pickup/No Shipping Required
+            $this->dispatchCartDataEvent('bolt_boltpay_shipping_applied_to_bolt_order', $quote, $cartSubmissionData);
             ////////////////////////////////////////////////////////////////////////////////////
         }
 
