@@ -22,7 +22,8 @@ require_once(Mage::getBaseDir('lib') . DS .  'Boltpay/Bugsnag/Autoload.php');
  *
  * Adds Bugsnag functionality to Bolt
  */
-trait Bolt_Boltpay_Helper_BugsnagTrait {
+trait Bolt_Boltpay_Helper_BugsnagTrait
+{
 
     private $apiKey = "811cd1efe8b48df719c5ad0379e3ae75";
 
@@ -56,7 +57,8 @@ trait Bolt_Boltpay_Helper_BugsnagTrait {
             } else {
                 $bugsnag->setReleaseStage(Mage::getStoreConfig('payment/boltpay/test') ? 'development' : 'production');
             }
-            $bugsnag->setNotifyReleaseStages( array( 'development', 'production' ) );
+
+            $bugsnag->setNotifyReleaseStages(array( 'development', 'production' ));
             $bugsnag->setAppVersion(static::getBoltPluginVersion());
             $bugsnag->setBatchSending(true);
             $bugsnag->setBeforeNotifyFunction(array($this, 'beforeNotifyFunction'));
@@ -130,7 +132,8 @@ trait Bolt_Boltpay_Helper_BugsnagTrait {
             ) + static::getRequestHeaders();
     }
 
-    protected static function getBoltPluginVersion() {
+    protected static function getBoltPluginVersion()
+    {
         $versionElm =  Mage::getConfig()->getModuleConfig("Bolt_Boltpay")->xpath("version");
 
         if(isset($versionElm[0])) {
