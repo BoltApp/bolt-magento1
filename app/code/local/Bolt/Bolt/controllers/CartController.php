@@ -2,6 +2,14 @@
 
 class Bolt_Bolt_CartController extends Mage_Core_Controller_Front_Action
 {
+    public function addCommentAction() {
+        $quote = $this->getCart()->getQuote();
+        $comment = $this->getRequest()->getParam('comment');
+
+        $quote->setCustomerNote($comment)->save();
+        echo $quote->getCustomerNote();
+    }
+
     /**
      * Action to apply store credit
      */

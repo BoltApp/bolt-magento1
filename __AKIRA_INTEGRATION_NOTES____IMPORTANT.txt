@@ -48,3 +48,13 @@ Global CSS:
 .bolt-checkout-button div div img {
     display: none !important;
 }
+
+
+===============================
+Javascript: onCheckoutStart
+===============================
+var comment = document.getElementById('customerordercomments').value;
+
+var xhttp = new XMLHttpRequest();
+xhttp.open("GET", "/bolt/cart/addComment/?comment="+comment , true);
+xhttp.send();

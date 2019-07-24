@@ -64,7 +64,7 @@ class Bolt_Bolt_Model_Observer extends Amasty_Rules_Model_Observer
     }
 
     /**
-     * Sets in-store pickup to the session
+     * Sets in-store pickup to the session at order creation time
      *
      * event: bolt_boltpay_order_creation_before
      * @param $observer
@@ -79,11 +79,41 @@ class Bolt_Bolt_Model_Observer extends Amasty_Rules_Model_Observer
 
         $packagesToShip = @$transaction->order->cart->shipments;
 
-        if (!$packagesToShip && !$immutableQuote->isVirtual()) {
-            if ($immutableQuote->getStorePickupId()) {
-                Mage::getSingleton('core/session')->setIsStorePickup(true);
-            }
+        if ($immutableQuote->getStorePickupId()) {
+            Mage::getSingleton('core/session')->setIsStorePickup(true);
+            $immutableQuote->setIsVirtual(1)->save();
         }
+
+    }
+
+    /**
+     * Sets in-store pickup to the Bolt order
+     *
+     * event: bolt_boltpay_filter_bolt_order
+     * @param $observer
+     */
+    public function setInStorePickupToBoltOrder($observer) {
+
+        $valueWrapper = $observer->getValueWrapper();
+        $parameters = $observer->getParameters();
+
+        $orderData = $valueWrapper->getValue();
+        $quote = $parameters['quote'];
+
+        if ($parameters['ísMultiPage']) {return;}
+
+        if ($quote->getStorePickupId()) {
+            Mage::getSingleton('core/session')->setIsStorePickup(true);
+            $orderData['cart']['shipments'] = array(array(
+                'shipping_address' => $orderData['cart']['billing_address'],
+                'tax_amount'       => 0,
+                'service'          => $this->boltHelper()->__('No Shipping Required'),
+                'reference'        => "noshipping",
+                'cost'             => 0
+            ));
+        }
+
+        $valueWrapper->setValue($orderData);
     }
 
     /**
@@ -101,6 +131,18 @@ class Bolt_Bolt_Model_Observer extends Amasty_Rules_Model_Observer
         if (isset($transaction->order->user_note)) {
             Mage::getModel('amorderattr/attribute')->load($order->getId(), 'order_id')->setData(
                 'customerordercomments', $transaction->order->user_note
+            )->save();
+            Mage::getSingleton('core/session')->unsBoltOnePageComments();
+            return;
+        }
+
+        /** @var Bolt_Boltpay_Model_Order $orderModel */
+        $orderModel = Mage::getModel('boltpay/order');
+        $parentQuote = $orderModel->getParentQuoteFromOrder($order);
+
+        if ($parentQuote->getCustomerNote()) {
+            Mage::getModel('amorderattr/attribute')->load($order->getId(), 'order_id')->setData(
+                'customerordercomments', $parentQuote->getCustomerNote()
             )->save();
         }
 
@@ -128,9 +170,29 @@ class Bolt_Bolt_Model_Observer extends Amasty_Rules_Model_Observer
     }
 
     /**
+     * Corrects discounts for proper validation
+     *
+     * event: bolt_boltpay_validate_totals_before
+     * @param $observer
+     */
+    public function correctDiscountsForValidation($observer) {
+        /** @var Mage_Sales_Model_Quote $quote */
+        $quote = $observer->getQuote();
+        $transaction = $observer->getTransaction();
+
+        if($quote->getAmGiftCardsAmount()){
+            $transaction->order->cart->discount_amount->amount -=  ($quote->getAmGiftCardsAmountUsed() * 100);
+        }
+
+        if ($quote->getAmstcredUseCustomerBalance() && $quote->getAmstcredAmountUsed()) {
+            $transaction->order->cart->discount_amount->amount -= ($quote->getAmstcredAmountUsed() * 100);
+        }
+    }
+
+    /**
      * Adds the user note to the Bolt order data if it has already been set in the session
      *
-     * event: bolt_boltpay_filter_discount_amount
+     * event: bolt_boltpay_filter_adjusted_shipping_amount
      *
      * @param $observer
      */
@@ -139,20 +201,22 @@ class Bolt_Bolt_Model_Observer extends Amasty_Rules_Model_Observer
         $valueWrapper = $observer->getValueWrapper();
         $parameters = $observer->getParameters();
 
-        $old = $discountAmount = $valueWrapper->getValue();
+        $adjustedShippingAmount = $valueWrapper->getValue();
         $quote = $parameters['quote'];
-        $discountType = $parameters['discount'];
+        $originalDiscountTotal = $parameters['originalDiscountTotal'];
 
-        if($discountType=='amgiftcard'){
-            $discountAmount = $quote->getAmGiftCardsAmount();
-$this->boltHelper()->notifyException(new Exception("Old Amstay Gift Card Discount: $old, New: $discountAmount"));
-        }elseif ($discountType == 'amstcred') {
-            $customerId = $quote->getCustomer()->getId();
-            if ($customerId) $discountAmount = $this->getStoreCreditBalance($customerId);
-$this->boltHelper()->notifyException(new Exception("Old Amstay Credit Discount: $old, New: $discountAmount"));
+        $newDiscountTotal = $quote->getSubtotal() - $quote->getSubtotalWithDiscount();
+        $adjustedShippingAmount = $quote->getShippingAddress()->getShippingAmount() + $originalDiscountTotal - $newDiscountTotal;
+
+        if($quote->getAmGiftCardsAmountUsed()){
+            $adjustedShippingAmount -= $quote->getAmGiftCardsAmountUsed();
         }
 
-        $valueWrapper->setValue($discountAmount);
+        if ($quote->getAmstcredUseCustomerBalance() && $quote->getAmstcredAmountUsed()) {
+            $adjustedShippingAmount -= $quote->getAmstcredAmountUsed();
+        }
+
+        $valueWrapper->setValue($adjustedShippingAmount);
     }
 
     /**

@@ -66,17 +66,28 @@
                         <class>Bolt_Bolt_Model_Observer</class>
                         <method>addNoteToBoltOrder</method>
                     </bolt_bolt_add_customer_note_to_bolt_order>
+                    <bolt_bolt_set_in-store_pickup_to_bolt_order>
+                        <class>Bolt_Bolt_Model_Observer</class>
+                        <method>setInStorePickupToBoltOrder</method>
+                    </bolt_bolt_set_in-store_pickup_to_bolt_order>
                 </observers>
             </bolt_boltpay_filter_bolt_order>
-            <bolt_boltpay_filter_discount_amount>
+            <bolt_boltpay_filter_adjusted_shipping_amount>
                 <observers>
                     <bolt_bolt_adjust_amstay_discount>
                         <class>Bolt_Bolt_Model_Observer</class>
                         <method>adjustAmastyDiscount</method>
                     </bolt_bolt_adjust_amstay_discount>
                 </observers>
-            </bolt_boltpay_filter_discount_amount>
-
+            </bolt_boltpay_filter_adjusted_shipping_amount>
+            <bolt_boltpay_validate_totals_before>
+                <observers>
+                    <bolt_bolt_adjust_amstay_discount_for_validation>
+                        <class>Bolt_Bolt_Model_Observer</class>
+                        <method>correctDiscountsForValidation</method>
+                    </bolt_bolt_adjust_amstay_discount_for_validation>
+                </observers>
+            </bolt_boltpay_validate_totals_before>
         </events>
     </global>
 
