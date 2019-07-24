@@ -7,16 +7,6 @@
     </modules>
 
     <global>
-        <helpers>
-            <bolt_bolt>
-                <class>Bolt_Bolt_Helper</class>
-            </bolt_bolt>
-            <boltpay>
-                <rewrite>
-                    <data>Bolt_Bolt_Helper_Data</data>
-                </rewrite>
-            </boltpay>
-        </helpers>
         <blocks>
             <bolt_bolt>
                 <class>Bolt_Bolt_Block</class>
@@ -36,14 +26,58 @@
                     <observer>Bolt_Bolt_Model_Observer</observer>
                 </rewrite>
             </amrules>
-            <boltpay>
-                <rewrite>
-                    <boltOrder>Bolt_Bolt_Model_BoltOrder</boltOrder>
-                    <shippingAndTax>Bolt_Bolt_Model_ShippingAndTax</shippingAndTax>
-                    <payment>Bolt_Bolt_Model_Payment</payment>
-                </rewrite>
-            </boltpay>
         </models>
+        <events>
+            <bolt_boltpay_filter_shipping_label>
+                <observers>
+                    <bolt_bolt_add_shipping_time_to_label>
+                        <class>Bolt_Bolt_Model_Observer</class>
+                        <method>addShippingTimeToLabel</method>
+                    </bolt_bolt_add_shipping_time_to_label>
+                </observers>
+            </bolt_boltpay_filter_shipping_label>
+            <bolt_boltpay_shipping_method_applied_after>
+                <observers>
+                    <bolt_bolt_skip_in-store_pickup>
+                        <class>Bolt_Bolt_Model_Observer</class>
+                        <method>skipInStorePickup</method>
+                    </bolt_bolt_skip_in-store_pickup>
+                </observers>
+            </bolt_boltpay_shipping_method_applied_after>
+            <bolt_boltpay_order_creation_before>
+                <observers>
+                    <bolt_bolt_set_in-store_pickup>
+                        <class>Bolt_Bolt_Model_Observer</class>
+                        <method>setInStorePickup</method>
+                    </bolt_bolt_set_in-store_pickup>
+                </observers>
+            </bolt_boltpay_order_creation_before>
+            <bolt_boltpay_order_creation_after>
+                <observers>
+                    <bolt_bolt_add_customer_note_to_order>
+                        <class>Bolt_Bolt_Model_Observer</class>
+                        <method>addOrderNote</method>
+                    </bolt_bolt_add_customer_note_to_order>
+                </observers>
+            </bolt_boltpay_order_creation_after>
+            <bolt_boltpay_filter_bolt_order>
+                <observers>
+                    <bolt_bolt_add_customer_note_to_bolt_order>
+                        <class>Bolt_Bolt_Model_Observer</class>
+                        <method>addNoteToBoltOrder</method>
+                    </bolt_bolt_add_customer_note_to_bolt_order>
+                </observers>
+            </bolt_boltpay_filter_bolt_order>
+            <bolt_boltpay_filter_discount_amount>
+                <observers>
+                    <bolt_bolt_adjust_amstay_discount>
+                        <class>Bolt_Bolt_Model_Observer</class>
+                        <method>adjustAmastyDiscount</method>
+                    </bolt_bolt_adjust_amstay_discount>
+                </observers>
+            </bolt_boltpay_filter_discount_amount>
+
+        </events>
     </global>
 
     <frontend>
