@@ -982,7 +982,6 @@ PROMISE;
         return @$option['value'];
     }
 
-
     /**
      * @param $option
      * @return string
@@ -998,6 +997,34 @@ PROMISE;
         return join(', ', $optionValues);
     }
 
+    /**
+     * Validate virtual quote
+     *
+     * @param Mage_Sales_Model_Quote $quote
+     *
+     * @return bool
+     */
+    protected function validateVirtualQuote($quote)
+    {
+        if (!$quote->isVirtual()){
+            return true;
+        }
+
+        $address = $quote->getBillingAddress();
+
+        if (
+            !$address->getLastname() ||
+            !$address->getStreet1() ||
+            !$address->getCity() ||
+            !$address->getPostcode() ||
+            !$address->getTelephone() ||
+            !$address->getCountryId()
+        ){
+            return false;
+        }
+
+        return true;
+    }
 
     /**
      * Dispatches events related to Bolt order cart data changes
