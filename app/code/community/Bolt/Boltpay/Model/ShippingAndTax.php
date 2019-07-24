@@ -339,7 +339,13 @@ class Bolt_Boltpay_Model_ShippingAndTax extends Bolt_Boltpay_Model_Abstract
      */
     public function getAdjustedShippingAmount($originalDiscountTotal, $quote ) {
         $newDiscountTotal = $quote->getSubtotal() - $quote->getSubtotalWithDiscount();
-        return $quote->getShippingAddress()->getShippingAmount() + $originalDiscountTotal - $newDiscountTotal;
+        $adjustedShippingAmount = $quote->getShippingAddress()->getShippingAmount() + $originalDiscountTotal - $newDiscountTotal;
+
+        return $this->boltHelper()->doFilterEvent(
+            'bolt_boltpay_filter_adjusted_shipping_amount',
+            $adjustedShippingAmount,
+            array('originalDiscountTotal' => $originalDiscountTotal, 'quote'=>$quote)
+        );
     }
 
     /**
