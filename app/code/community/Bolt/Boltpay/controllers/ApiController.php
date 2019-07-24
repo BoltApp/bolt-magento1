@@ -331,7 +331,12 @@ class Bolt_Boltpay_ApiController extends Mage_Core_Controller_Front_Action imple
             // Otherwise, ignore the failed payment hook because it arriving out of sync as
             // a payment has already been recorded
             //////////////////////////////////////////////////////////////////////////////////////
-            if ($order->getStatus() !== Bolt_Boltpay_Model_Payment::TRANSACTION_PRE_AUTH_PENDING) {
+            $payment = $order->getPayment();
+            if (
+                $payment->getAdditionalInformation('bolt_reference')
+                || $payment->getAuthorizationTransaction()
+                || $payment->getLastTransId()
+            ) {
                 $message = $this->boltHelper()->__(
                     'Payment was already recorded. The failed payment hook for order %s seems out of sync.',
                     $order->getIncrementId()
