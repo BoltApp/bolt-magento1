@@ -329,47 +329,57 @@ class Bolt_Boltpay_Model_BoltOrder extends Bolt_Boltpay_Model_Abstract
         $totalDiscount = 0;
 
         foreach ($this->discountTypes as $discount) {
-            if (@$totals[$discount] && $amount = $totals[$discount]->getValue()) {
-                $amount = $this->boltHelper()->doFilterEvent( 'bolt_boltpay_filter_discount_amount', $amount, array('quote' => $quote, 'discount'=>$discount));
-                
-                // Some extensions keep discount totals as positive values,
-                // others as negative, which is the Magento default.
-                // Using the absolute value.
-                $discountAmount = (int) abs(round($amount * 100));
-                $data = array(
-                    'amount'      => $discountAmount,
-                    'description' => $totals[$discount]->getTitle(),
-                    'type'        => 'fixed_amount',
-                );
-                if ($discount === 'discount' && $quote->getCouponCode()) {
-                    /////////////////////////////////////////////////////////////
-                    /// We want to get the apply the coupon code as a reference.
-                    /// Potentially, we will have several 'discount' entries
-                    /// but only one coupon code, so we must find the right entry
-                    /// to map to.  Magento stores the records rule description or
-                    /// the coupon code when the rule description is empty in
-                    /// the totals object wrapped in the string "Discount()", and
-                    /// keeps no separate reference to the rule or coupon code.
-                    /// Here, we use the coupon code to look up the rule description
-                    /// and compare it and the coupon code to the total object's title.
-                    /////////////////////////////////////////////////////////////
-                    $coupon = Mage::getModel('salesrule/coupon')->load($quote->getCouponCode(), 'code');
-                    $rule = Mage::getModel('salesrule/rule')->load($coupon->getRuleId());
-                    if (
-                        in_array(
-                            $totals[$discount]->getTitle(),
-                            [
-                                Mage::helper('sales')->__('Discount (%s)', (string)$rule->getName()),
-                                Mage::helper('sales')->__('Discount (%s)', (string)$quote->getCouponCode())
-                            ]
-                        )
-                    ) {
-                        $data['reference'] = $quote->getCouponCode();
-                    }
+
+            $amount = (@$totals[$discount])
+                ? $this->boltHelper()->doFilterEvent(
+                    'bolt_boltpay_filter_discount_amount',
+                    $totals[$discount]->getValue(),
+                    array('quote' => $quote, 'discount'=>$discount)
+                )
+                : 0;
+
+            if (!$amount) {continue;}
+
+            // Some extensions keep discount totals as positive values,
+            // others as negative, which is the Magento default.
+            // Using the absolute value.
+            $discountAmount = (int) abs(round($amount * 100));
+            $data = array(
+                'amount'      => $discountAmount,
+                'description' => $totals[$discount]->getTitle(),
+                'type'        => 'fixed_amount',
+            );
+
+            if ($discount === 'discount' && $quote->getCouponCode()) {
+                /////////////////////////////////////////////////////////////
+                /// We want to get the apply the coupon code as a reference.
+                /// Potentially, we will have several 'discount' entries
+                /// but only one coupon code, so we must find the right entry
+                /// to map to.  Magento stores the records rule description or
+                /// the coupon code when the rule description is empty in
+                /// the totals object wrapped in the string "Discount()", and
+                /// keeps no separate reference to the rule or coupon code.
+                /// Here, we use the coupon code to look up the rule description
+                /// and compare it and the coupon code to the total object's title.
+                /////////////////////////////////////////////////////////////
+                $coupon = Mage::getModel('salesrule/coupon')->load($quote->getCouponCode(), 'code');
+                $rule = Mage::getModel('salesrule/rule')->load($coupon->getRuleId());
+
+                if (
+                    in_array(
+                        $totals[$discount]->getTitle(),
+                        [
+                            Mage::helper('sales')->__('Discount (%s)', (string)$rule->getName()),
+                            Mage::helper('sales')->__('Discount (%s)', (string)$quote->getCouponCode())
+                        ]
+                    )
+                ) {
+                    $data['reference'] = $quote->getCouponCode();
                 }
-                $cartSubmissionData['discounts'][] = $data;
-                $totalDiscount += $discountAmount;
             }
+
+            $cartSubmissionData['discounts'][] = $data;
+            $totalDiscount += $discountAmount;
         }
 
         return $totalDiscount;
