@@ -52,7 +52,9 @@ class Bolt_Boltpay_Model_Observer
      *
      * @param Varien_Event_Observer $observer event contains front (Mage_Core_Controller_Varien_Front)
      */
-    public function clearCartCacheOnOrderCanceled($observer) {
+    public function clearCartCacheOnOrderCanceled($observer)
+    {
+
         /** @var Mage_Sales_Model_Quote $quote */
         $quote = Mage::getSingleton('checkout/session')->getQuote();
 
@@ -61,6 +63,66 @@ class Bolt_Boltpay_Model_Observer
             // clear the parent quote ID to re-enable cart cache
             $quote->setParentQuoteId(null);
         }
+    }
+
+    /**
+     * Sets native session variables for the order success method that were made available via params sent by
+     * Bolt.  If this is not an order success call invoked by Bolt, then the function is exited.
+     *
+     * event: controller_front_init_before
+     *
+     * @param Varien_Event_Observer $observer unused
+     */
+    public function setSuccessSessionData($observer)
+    {
+
+        $requestParams = Mage::app()->getRequest()->getParams();
+
+        // Handle only Bolt orders
+        if (!isset($requestParams['bolt_payload'])) {
+            return;
+        }
+
+        $payload = @$requestParams['bolt_payload'];
+        $signature = base64_decode(@$requestParams['bolt_signature']);
+
+        if (!$this->boltHelper()->verify_hook($payload, $signature)) {
+            // If signature verification fails, we log the error and immediately return control to Magento
+            $exception = new Bolt_Boltpay_OrderCreationException(
+                Bolt_Boltpay_OrderCreationException::E_BOLT_GENERAL_ERROR,
+                Bolt_Boltpay_OrderCreationException::E_BOLT_GENERAL_ERROR_TMPL_HMAC
+            );
+            $this->boltHelper()->notifyException($exception, array(), 'warning');
+            $this->boltHelper()->logWarning($exception->getMessage());
+
+            return;
+        }
+
+        /** @var Mage_Checkout_Model_Session $checkoutSession */
+        $checkoutSession = Mage::getSingleton('checkout/session');
+        $checkoutSession
+            ->clearHelperData();
+
+        $quote = $checkoutSession->getQuote();
+
+        /* @var Mage_Sales_Model_Quote $immutableQuote */
+        $immutableQuote = Mage::getModel('sales/quote')->loadByIdWithoutStore($quote->getParentQuoteId());
+
+        $recurringPaymentProfilesIds = array();
+        $recurringPaymentProfiles = $immutableQuote->collectTotals()->prepareRecurringPaymentProfiles();
+
+        /** @var Mage_Payment_Model_Recurring_Profile $profile */
+        foreach((array)$recurringPaymentProfiles as $profile) {
+            $recurringPaymentProfilesIds[] = $profile->getId();
+        }
+
+        $checkoutSession
+            ->setLastQuoteId($requestParams['lastQuoteId'])
+            ->setLastSuccessQuoteId($requestParams['lastSuccessQuoteId'])
+            ->setLastOrderId($requestParams['lastOrderId'])
+            ->setLastRealOrderId($requestParams['lastRealOrderId'])
+            ->setLastRecurringProfileIds($recurringPaymentProfilesIds);
+
     }
 
     /**
@@ -94,12 +156,15 @@ class Bolt_Boltpay_Model_Observer
      *
      * @param Varien_Event_Observer $observer Observer event contains an orderGridCollection object
      */
-    public function hidePreAuthOrders($observer) {
-        if ($this->boltHelper()->getExtraConfig('displayPreAuthOrders')) { return; }
+    public function hidePreAuthOrders($observer)
+    {
+        if ($this->boltHelper()->getExtraConfig('displayPreAuthOrders')) { return; 
+        }
 
         /** @var Mage_Sales_Model_Resource_Order_Grid_Collection $orderGridCollection */
         $orderGridCollection = $observer->getEvent()->getOrderGridCollection();
-        $orderGridCollection->addFieldToFilter('main_table.status',
+        $orderGridCollection->addFieldToFilter(
+            'main_table.status',
             array(
                 'nin'=>array(
                     Bolt_Boltpay_Model_Payment::TRANSACTION_PRE_AUTH_PENDING,
@@ -116,10 +181,10 @@ class Bolt_Boltpay_Model_Observer
      *
      * @param Varien_Event_Observer $observer Observer event contains an order object
      */
-    public function safeguardPreAuthStatus($observer) {
+    public function safeguardPreAuthStatus($observer)
+    {
         $order = $observer->getEvent()->getOrder();
-        if (
-            !Bolt_Boltpay_Helper_Data::$fromHooks
+        if (!Bolt_Boltpay_Helper_Data::$fromHooks
             && in_array(
                 $order->getOrigData('status'),
                 array(
@@ -157,7 +222,8 @@ class Bolt_Boltpay_Model_Observer
      * @throws Bolt_Boltpay_OrderCreationException if the bottom line price total differs by allowed tolerance
      *
      */
-    public function validateBeforeOrderCommit($observer) {
+    public function validateBeforeOrderCommit($observer)
+    {
         /** @var  Bolt_Boltpay_Model_Order $orderModel */
         $orderModel = Mage::getModel('boltpay/order');
         $orderModel->validateBeforeOrderCommit($observer);

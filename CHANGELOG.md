@@ -1,4 +1,9 @@
 # Changelog
+## [V2.0.1](https://s3-us-west-1.amazonaws.com/bolt-public/magento-integration-release/bolt-magento1_v2.0.1.zip) 2019-07-25
+ - Improved logging
+ - Improved multistore support
+ - Add optional global JS injection
+ 
 ## [V2.0.0](https://s3-us-west-1.amazonaws.com/bolt-public/magento-integration-release/bolt-magento1_v2.0.0.zip) 2019-06-12
  - "Pre-auth release"
    - Elimination of inventory errors

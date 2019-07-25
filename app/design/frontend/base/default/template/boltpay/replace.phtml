@@ -80,21 +80,29 @@ $additionalClasses = $this->boltHelper()->getAdditionalButtonClasses();
 
                                 var element = elements[i];
                                 found_elements = true;
-
-                                element.style.display = "none";
-
-                                var bolt_button =  document.createElement("div");
-                                bolt_button.setAttribute("class",selectors[selector]);
-
-                                <?php $buttonColor = $this->boltHelper()->getBoltPrimaryColor();?>
-                                <?php if($buttonColor):?>
-                                    bolt_button.setAttribute("style", "--bolt-primary-action-color:<?php echo $buttonColor?>");
-                                <?php endif; ?>
-
-                                element.parentNode.insertBefore(bolt_button, element);
-
-                                if (element.parentNode.style.display === "") {
-                                    element.parentNode.style.display = "block";
+                                /**
+                                 * Escape double replace buttons
+                                **/
+                                var wasReplaced = element.getAttribute("data-was-replaced");
+                                if (wasReplaced !== "true") {
+                                    element.style.display = "none";
+                                    /**
+                                     * Mark button as replaced
+                                     **/
+                                    element.setAttribute("data-was-replaced", "true");
+                                    var bolt_button =  document.createElement("div");
+                                    bolt_button.setAttribute("class",selectors[selector]);
+    
+                                    <?php $buttonColor = $this->boltHelper()->getBoltPrimaryColor();?>
+                                    <?php if($buttonColor):?>
+                                        bolt_button.setAttribute("style", "--bolt-primary-action-color:<?php echo $buttonColor?>");
+                                    <?php endif; ?>
+    
+                                    element.parentNode.insertBefore(bolt_button, element);
+    
+                                    if (element.parentNode.style.display === "") {
+                                        element.parentNode.style.display = "block";
+                                    }
                                 }
                             }
                         }
@@ -190,6 +198,7 @@ $additionalClasses = $this->boltHelper()->getAdditionalButtonClasses();
         window.onload = initBoltButtons;
     }
 
+    <?=$this->getAdditionalJs();?>
 </script>
 
 <style>

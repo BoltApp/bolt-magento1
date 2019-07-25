@@ -42,7 +42,7 @@ class Bolt_Boltpay_ShippingController
     {
         $this->_cache = Mage::app()->getCache();
         $this->_shippingAndTaxModel = Mage::getModel("boltpay/shippingAndTax");
-        if ($this->getRequest()->getRequestUri() === '/boltpay/shipping/prefetchEstimate/' ) {
+        if ($this->getRequest()->getPathInfo() === '/boltpay/shipping/prefetchEstimate/' ) {
             $this->requestMustBeSigned = false;
         }
     }
@@ -70,15 +70,25 @@ class Bolt_Boltpay_ShippingController
 
             $this->boltHelper()->setCustomerSessionById($quote->getCustomerId());
 
-            /***********************/
-            // Set session quote to real customer quote
+            ///////////////////////////////////////////////////
+            // Set customer session context
+            ///////////////////////////////////////////////////
+            Mage::app()->setCurrentStore($quote->getStore());
             $session = Mage::getSingleton('checkout/session');
             $session->setQuoteId($quoteId);
-            /**************/
+            ///////////////////////////////////////////////////
 
             ////////////////////////////////////////////////////////////////////////////////
             /// Apply shipping address with validation checks
             ////////////////////////////////////////////////////////////////////////////////
+            Mage::dispatchEvent(
+                'bolt_boltpay_shipping_estimate_before',
+                array(
+                    'quote'=> $quote,
+                    'transaction' => $mockTransaction
+                )
+            );
+
             $shippingAddress = $requestData->shipping_address;
             $addressErrorDetails = array();
 
@@ -90,7 +100,7 @@ class Bolt_Boltpay_ShippingController
                 $addressErrorDetails = array('code' => 6101, 'message' => $msg);
                 $this->boltHelper()->logWarning($msg);
             } else {
-                $addressData = $this->_shippingAndTaxModel->applyShippingAddressToQuote($quote, $shippingAddress);
+                $addressData = $this->_shippingAndTaxModel->applyBoltAddressData($quote, $shippingAddress);
 
                 if ($this->shouldDoAddressValidation()) {
                     $magentoAddressErrors = $quote->getShippingAddress()->validate();
@@ -124,7 +134,7 @@ class Bolt_Boltpay_ShippingController
             } else {
                 //Mage::log('Generating address from quote', null, 'shipping_and_tax.log');
                 //Mage::log('Live address: '.var_export($address_data, true), null, 'shipping_and_tax.log');
-                $estimate = $this->_shippingAndTaxModel->getShippingAndTaxEstimate($quote);
+                $estimate = $this->_shippingAndTaxModel->getShippingAndTaxEstimate($quote, $requestData);
                 $this->cacheShippingAndTaxEstimate($estimate, $cachedIdentifier);
                 $cacheBoltHeader = 'MISS';
             }
