@@ -199,6 +199,9 @@ class Bolt_Boltpay_ApiController extends Mage_Core_Controller_Front_Action imple
      * @throws Mage_Core_Model_Store_Exception  if there is a problem locating a reference to the underlying store
      */
     public function create_orderAction() {
+
+        benchmark( "Starting create order controller endpoint" );
+
         try {
             $transaction = $this->getRequestData();
             $displayId = $transaction->order->cart->display_id;
@@ -211,15 +214,19 @@ class Bolt_Boltpay_ApiController extends Mage_Core_Controller_Front_Action imple
                 /** @var  Bolt_Boltpay_Model_Order $orderModel */
                 $orderModel = Mage::getModel('boltpay/order');
                 $order = $orderModel->getOrderByQuoteId($immutableQuoteId);
+                benchmark( "Finished looking up order by quote id" );
             } else {
                 /* @var Mage_Sales_Model_Order $order */
                 $order = Mage::getModel('sales/order')->loadByIncrementId($displayId);
+                benchmark( "Finished looking up order by display id" );
                 $immutableQuoteId = $order->getQuoteId();
             }
 
             if ($order->isObjectNew()) {
+                benchmark( "Calling createOrder function" );
                 /** @var Mage_Sales_Model_Order $order */
                 $order = $orderModel->createOrder($reference = null, $sessionQuoteId = null, $isPreAuthCreation = true, $transaction);
+                benchmark( "Completed createOrder function" );
             } else {
                 if ($order->getStatus() === 'canceled_bolt') {
                     throw new Bolt_Boltpay_OrderCreationException(
@@ -264,6 +271,8 @@ class Bolt_Boltpay_ApiController extends Mage_Core_Controller_Front_Action imple
             $immutableQuote = Mage::getModel('sales/quote')->loadByIdWithoutStore($order->getQuoteId());
             $computedCart = Mage::getModel('boltpay/boltOrder')->buildCart($immutableQuote, false );
             $this->boltHelper()->notifyException($orderCreationException, array( 'magento_order_details' => json_encode($computedCart)));
+        } finally {
+            benchmark( "Response sent to Bolt");
         }
     }
 

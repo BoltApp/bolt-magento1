@@ -25,6 +25,47 @@ class Bolt_Boltpay_Model_Observer
     use Bolt_Boltpay_BoltGlobalTrait;
 
     /**
+     * Initializes the benchmark profiler
+     *
+     * event: controller_front_init_before
+     */
+    public function initializeBenchmarkProfiler()
+    {
+        $hasInitializedProfiler = Mage::registry('initializedBenchmark' );
+
+        if (!$hasInitializedProfiler) {
+
+            Mage::register('bolt/request_start_time', microtime(true), true);
+
+            /**
+             * Logs the time taken to reach the point in the codebase
+             *
+             * @param string $label                  Label to add to the benchmark
+             * @param bool   $shouldLogIndividually  If true, the benchmark will be logged separately in addition to with the full log
+             * @param bool   $shouldIncludeInFullLog If false, this benchmark will not be included in the full log
+             * @param bool   $shouldFlushFullLog     If true, will log the full log up to this benchmark call.
+             */
+            function benchmark( $label, $shouldLogIndividually = false, $shouldIncludeInFullLog = true, $shouldFlushFullLog = false )  {
+                /** @var Bolt_Boltpay_Helper_Data $boltHelper */
+                $boltHelper = Mage::helper('boltpay');
+                $boltHelper->logBenchmark($label, $shouldLogIndividually, $shouldIncludeInFullLog, $shouldFlushFullLog);
+            }
+
+            Mage::register('initializedBenchmark', true, true);
+        }
+    }
+
+    /**
+     * Submits the final benchmark profiler log
+     *
+     * event: controller_front_send_response_after
+     */
+    public function logFullBenchmarkProfile()
+    {
+        benchmark(null, false, false, true );
+    }
+
+    /**
      * Clears the Shopping Cart except product page checkout order after the success page
      *
      * @param Varien_Event_Observer $observer   An Observer object with an empty event object
@@ -48,7 +89,7 @@ class Bolt_Boltpay_Model_Observer
      * the parent quote has been flagged by having a parent quote Id as its own
      * id.
      *
-     * event: controller_front_init_before
+     * event: controller_action_predispatch
      *
      * @param Varien_Event_Observer $observer event contains front (Mage_Core_Controller_Varien_Front)
      */
@@ -68,9 +109,11 @@ class Bolt_Boltpay_Model_Observer
      * Sets native session variables for the order success method that were made available via params sent by
      * Bolt.  If this is not an order success call invoked by Bolt, then the function is exited.
      *
-     * event: controller_front_init_before
+     * event: controller_action_predispatch
      *
      * @param Varien_Event_Observer $observer unused
+     *
+     * @throws Exception when quote totals have not been properly collected
      */
     public function setSuccessSessionData($observer) {
 
