@@ -105,4 +105,35 @@ trait Bolt_Boltpay_Helper_LoggerTrait
             $this->notifyException( new Exception((string)$message) );
         }
     }
+
+    /**
+     * Logs the time taken to reach the point in the codebase
+     */
+    public function logProcessingTime($message) {
+        $index = Mage::registry('bolt/processing_time_index') ?: 0;
+        $startTime = Mage::registry('bolt/request_start_time') ?: microtime(true);
+        $lastTime = Mage::registry('bolt/last_process_timestamp') ?: $startTime;
+        $currentTime = microtime(true);
+
+        $summary = "-- Processing Time $index --\n*$message*\nTime since last timestamp marker: *".round(($currentTime - $lastTime), 3)."s*\n";
+        $summary .= 'Time since request processing start: '.round(($currentTime - $startTime), 3).'s';
+
+        $this->info($summary);
+
+        Mage::register('bolt/request_start_time', $startTime, true);
+        Mage::unregister('bolt/last_process_timestamp');
+        Mage::register('bolt/last_process_timestamp', $currentTime);
+        Mage::unregister('bolt/processing_time_index');
+        Mage::register('bolt/processing_time_index', ++$index);
+
+        $fullSummary = Mage::getSingleton('core/session')->getFullSummary()."\n\n" ?: '';
+
+        $fullSummary .= $summary;
+        Mage::getSingleton('core/session')->setFullSummary($fullSummary);
+
+        if ( $message==="Response sent to Bolt" ) {
+            $this->info($fullSummary);
+        }
+
+    }
 }

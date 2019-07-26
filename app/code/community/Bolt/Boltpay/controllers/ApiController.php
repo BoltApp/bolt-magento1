@@ -199,27 +199,35 @@ class Bolt_Boltpay_ApiController extends Mage_Core_Controller_Front_Action imple
      * @throws Mage_Core_Model_Store_Exception  if there is a problem locating a reference to the underlying store
      */
     public function create_orderAction() {
+
+$this->boltHelper()->logProcessingTime( "Starting create order controller endpoint" );
         try {
             $transaction = $this->getRequestData();
             $displayId = $transaction->order->cart->display_id;
 
             if (strpos($displayId, '|') !== false) {
                 /* This is when the order has not already been created, nor order success URL sent to Bolt */
+$this->boltHelper()->logProcessingTime( "Started looking up order by quote id" );
 
                 $immutableQuoteId = $this->boltHelper()->getImmutableQuoteIdFromTransaction($transaction);
 
                 /** @var  Bolt_Boltpay_Model_Order $orderModel */
                 $orderModel = Mage::getModel('boltpay/order');
                 $order = $orderModel->getOrderByQuoteId($immutableQuoteId);
+$this->boltHelper()->logProcessingTime( "Finished looking up order by quote id" );
             } else {
+$this->boltHelper()->logProcessingTime( "Looking up order by display id" );
                 /* @var Mage_Sales_Model_Order $order */
                 $order = Mage::getModel('sales/order')->loadByIncrementId($displayId);
+$this->boltHelper()->logProcessingTime( "Finished looking up order by display id" );
                 $immutableQuoteId = $order->getQuoteId();
             }
 
             if ($order->isObjectNew()) {
+$this->boltHelper()->logProcessingTime( "Calling createOrder function" );
                 /** @var Mage_Sales_Model_Order $order */
                 $order = $orderModel->createOrder($reference = null, $sessionQuoteId = null, $isPreAuthCreation = true, $transaction);
+$this->boltHelper()->logProcessingTime( "Completed createOrder function" );
             } else {
                 if ($order->getStatus() === 'canceled_bolt') {
                     throw new Bolt_Boltpay_OrderCreationException(
@@ -264,6 +272,8 @@ class Bolt_Boltpay_ApiController extends Mage_Core_Controller_Front_Action imple
             $immutableQuote = Mage::getModel('sales/quote')->loadByIdWithoutStore($order->getQuoteId());
             $computedCart = Mage::getModel('boltpay/boltOrder')->buildCart($immutableQuote, false );
             $this->boltHelper()->notifyException($orderCreationException, array( 'magento_order_details' => json_encode($computedCart)));
+        } finally {
+            $this->boltHelper()->logProcessingTime( "Response sent to Bolt" );
         }
     }
 
