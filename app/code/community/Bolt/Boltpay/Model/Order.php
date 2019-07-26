@@ -53,13 +53,16 @@ class Bolt_Boltpay_Model_Order extends Bolt_Boltpay_Model_Abstract
                 throw new Exception($msg);
             }
 
+$this->boltHelper()->logProcessingTime( "Potentially starting to fetch bolt transaction" );
             $transaction = $transaction ?: $this->boltHelper()->fetchTransaction($reference);
+$this->boltHelper()->logProcessingTime( "Finished fetching bolt transaction. Looking up quotes." );
 
             $immutableQuoteId = $this->boltHelper()->getImmutableQuoteIdFromTransaction($transaction);
             $immutableQuote = $this->getQuoteById($immutableQuoteId);
             $immutableQuote->setParentId($transaction->order->cart->order_reference);
             Mage::app()->setCurrentStore($immutableQuote->getStore());
             $parentQuote = $this->getQuoteById($transaction->order->cart->order_reference);
+$this->boltHelper()->logProcessingTime( "Looked up quotes." );
 
             if (!$parentQuote->getIsActive()) {
                 throw new Exception(
@@ -75,6 +78,7 @@ class Bolt_Boltpay_Model_Order extends Bolt_Boltpay_Model_Abstract
                 $this->boltHelper()->setCustomerSessionByQuoteId($sessionQuoteId);
             }
 
+$this->boltHelper()->logProcessingTime( "Dispatching event bolt_boltpay_order_creation_before" );
             Mage::dispatchEvent(
                 'bolt_boltpay_order_creation_before',
                 array(
@@ -83,9 +87,12 @@ class Bolt_Boltpay_Model_Order extends Bolt_Boltpay_Model_Abstract
                     'transaction' => $transaction
                 )
             );
-
+$this->boltHelper()->logProcessingTime( "Dispatched event bolt_boltpay_order_creation_before" );
+$this->boltHelper()->logProcessingTime( "Validating session data" );
             $this->validateCartSessionData($immutableQuote, $parentQuote, $transaction);
+$this->boltHelper()->logProcessingTime( "Validated session data" );
 
+$this->boltHelper()->logProcessingTime( "Saving customer information" );
             // adding guest user email to order
             if (!$immutableQuote->getCustomerEmail()) {
                 $email = $transaction->order->cart->billing_address->email_address;
@@ -104,13 +111,16 @@ class Bolt_Boltpay_Model_Order extends Bolt_Boltpay_Model_Abstract
                     ->setCustomerLastname($transaction->order->cart->billing_address->last_name);
             }
             $immutableQuote->save();
+$this->boltHelper()->logProcessingTime( "Saved customer information" );
 
+$this->boltHelper()->logProcessingTime( "Saving address info" );
             $immutableQuote->getShippingAddress()->setShouldIgnoreValidation(true)->save();
             $immutableQuote->getBillingAddress()
                 ->setFirstname($transaction->order->cart->billing_address->first_name)
                 ->setLastname($transaction->order->cart->billing_address->last_name)
                 ->setShouldIgnoreValidation(true)
                 ->save();
+$this->boltHelper()->logProcessingTime( "Saved address info" );
 
             //////////////////////////////////////////////////////////////////////////////////
             ///  Apply shipping address and shipping method data to quote directly from
@@ -119,16 +129,19 @@ class Bolt_Boltpay_Model_Order extends Bolt_Boltpay_Model_Abstract
             $packagesToShip = $transaction->order->cart->shipments;
 
             if ($packagesToShip) {
-
+$this->boltHelper()->logProcessingTime( "Applying shipping" );
                 $shippingAddress = $immutableQuote->getShippingAddress();
                 $shippingMethodCode = null;
 
                 /** @var Bolt_Boltpay_Model_ShippingAndTax $shippingAndTaxModel */
                 $shippingAndTaxModel = Mage::getModel("boltpay/shippingAndTax");
+$this->boltHelper()->logProcessingTime( "Applying shipping - Applying shipping address data" );
                 $shippingAndTaxModel->applyBoltAddressData($immutableQuote, $packagesToShip[0]->shipping_address, false);
+$this->boltHelper()->logProcessingTime( "Finished applying shipping - Applying shipping address data" );
                 $shippingMethodCode = $packagesToShip[0]->reference;
 
                 if (!$shippingMethodCode) {
+$this->boltHelper()->logProcessingTime( "Applying shipping - Collecting shipping rates, legacy" );
                     // Legacy transaction does not have shipments reference - fallback to $service field
                     $shippingMethod = $packagesToShip[0]->service;
 
@@ -144,6 +157,7 @@ class Bolt_Boltpay_Model_Order extends Bolt_Boltpay_Model_Abstract
                             break;
                         }
                     }
+$this->boltHelper()->logProcessingTime( "Finished applying shipping - Collecting shipping rates, legacy" );
                 }
 
                 if ($shippingMethodCode) {
@@ -161,6 +175,7 @@ class Bolt_Boltpay_Model_Order extends Bolt_Boltpay_Model_Abstract
                     $this->boltHelper()->logWarning($errorMessage);
                     $this->boltHelper()->notifyException(new Exception($errorMessage), $metaData);
                 }
+$this->boltHelper()->logProcessingTime( "Finished applying shipping" );
             }
             //////////////////////////////////////////////////////////////////////////////////
 
@@ -172,16 +187,21 @@ class Bolt_Boltpay_Model_Order extends Bolt_Boltpay_Model_Abstract
             $payment->setMethod(Bolt_Boltpay_Model_Payment::METHOD_CODE)->save();
             //////////////////////////////////////////////////////////////////////////////////
 
+$this->boltHelper()->logProcessingTime( "Collecting totals to validate" );
             $this->boltHelper()->collectTotals($immutableQuote, true)->save();
+$this->boltHelper()->logProcessingTime( "Finished collecting totals to validate" );
 
             $this->validateCoupons($immutableQuote, $transaction);
+$this->boltHelper()->logProcessingTime( "Validated coupons" );
             $this->validateTotals($immutableQuote, $transaction);
+$this->boltHelper()->logProcessingTime( "Validated subTotals" );
 
             ////////////////////////////////////////////////////////////////////////////
             // reset increment id if needed
             ////////////////////////////////////////////////////////////////////////////
             /* @var Mage_Sales_Model_Order $preExistingOrder */
             $preExistingOrder = Mage::getModel('sales/order')->loadByIncrementId($parentQuote->getReservedOrderId());
+$this->boltHelper()->logProcessingTime( "Searched for existing order" );
 
             if (!$preExistingOrder->isObjectNew()) {
                 ############################
@@ -218,9 +238,10 @@ class Bolt_Boltpay_Model_Order extends Bolt_Boltpay_Model_Abstract
             $service = Mage::getModel('sales/service_quote', $immutableQuote);
 
             try {
-
+$this->boltHelper()->logProcessingTime( "Submitting order" );
                 $service->submitAll();
                 $order = $service->getOrder();
+$this->boltHelper()->logProcessingTime( "Submitted order and validated it" );
 
                 // Add the user_note to the order comments and make it visible for customer.
                 if (isset($transaction->order->user_note)) {
@@ -281,7 +302,7 @@ class Bolt_Boltpay_Model_Order extends Bolt_Boltpay_Model_Abstract
         if ($immutableQuote->getData('is_bolt_pdp') && Mage::getSingleton('customer/session')->isLoggedIn()) {
             $this->associateOrderToCustomerWhenPlacingOnPDP($order->getData('increment_id'));
         }
-
+$this->boltHelper()->logProcessingTime( "Finished post order processing" );
         ///////////////////////////////////////////////////////
         /// Dispatch order save events
         ///////////////////////////////////////////////////////
@@ -291,11 +312,12 @@ class Bolt_Boltpay_Model_Order extends Bolt_Boltpay_Model_Abstract
             'checkout_submit_all_after',
             array('order' => $order, 'quote' => $immutableQuote, 'recurring_profiles' => $recurringPaymentProfiles)
         );
-
+$this->boltHelper()->logProcessingTime( "Dispatched checkout_submit_all_after" );
         Mage::dispatchEvent(
             'bolt_boltpay_order_creation_after',
             array('order'=>$order, 'quote'=>$immutableQuote, 'transaction' => $transaction)
         );
+$this->boltHelper()->logProcessingTime( "Dispatched bolt_boltpay_order_creation_after" );
         ///////////////////////////////////////////////////////
 
         return $order;
