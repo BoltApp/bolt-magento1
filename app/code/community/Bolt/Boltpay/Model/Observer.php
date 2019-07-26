@@ -48,11 +48,13 @@ class Bolt_Boltpay_Model_Observer
      * the parent quote has been flagged by having a parent quote Id as its own
      * id.
      *
-     * event: controller_front_init_before
+     * event: controller_action_predispatch
      *
      * @param Varien_Event_Observer $observer event contains front (Mage_Core_Controller_Varien_Front)
      */
     public function clearCartCacheOnOrderCanceled($observer) {
+
+        Mage::register('bolt/request_start_time', microtime(true), true);
 
         /** @var Mage_Sales_Model_Quote $quote */
         $quote = Mage::getSingleton('checkout/session')->getQuote();
@@ -68,11 +70,15 @@ class Bolt_Boltpay_Model_Observer
      * Sets native session variables for the order success method that were made available via params sent by
      * Bolt.  If this is not an order success call invoked by Bolt, then the function is exited.
      *
-     * event: controller_front_init_before
+     * event: controller_action_predispatch
      *
      * @param Varien_Event_Observer $observer unused
+     *
+     * @throws Exception when quote totals have not been properly collected
      */
     public function setSuccessSessionData($observer) {
+
+        Mage::register('bolt/request_start_time', microtime(true), true);
 
         $requestParams = Mage::app()->getRequest()->getParams();
 
