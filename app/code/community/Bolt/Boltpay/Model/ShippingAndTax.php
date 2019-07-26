@@ -265,10 +265,11 @@ class Bolt_Boltpay_Model_ShippingAndTax extends Bolt_Boltpay_Model_Abstract
     /**
      * Applies shipping rate to quote. Clears previously calculated discounts by clearing address id.
      *
-     * @param Mage_Sales_Model_Quote $quote              Quote which has been updated to use new shipping rate
-     * @param string                 $shippingRateCode   Shipping rate code composed of {carrier}_{method}
+     * @param Mage_Sales_Model_Quote $quote                     Quote which has been updated to use new shipping rate
+     * @param string                 $shippingRateCode          Shipping rate code composed of {carrier}_{method}
+     * @param bool                   $shouldRecalculateShipping Determines if shipping should be recalculated
      */
-    public function applyShippingRate($quote, $shippingRateCode) {
+    public function applyShippingRate($quote, $shippingRateCode, $shouldRecalculateShipping = true ) {
 
         $shippingAddress = $quote->getShippingAddress();
 
@@ -280,7 +281,7 @@ class Bolt_Boltpay_Model_ShippingAndTax extends Bolt_Boltpay_Model_Abstract
 
             $shippingAddress
                 ->setShippingMethod($shippingRateCode)
-                ->setCollectShippingRates(true);
+                ->setCollectShippingRates($shouldRecalculateShipping);
 
             // When multiple shipping methods apply a discount to the sub-total, collect totals doesn't clear the
             // previously set discount, so the previous discount gets added to each subsequent shipping method that
@@ -299,7 +300,7 @@ class Bolt_Boltpay_Model_ShippingAndTax extends Bolt_Boltpay_Model_Abstract
                 )
             );
 
-            $this->boltHelper()->collectTotals($quote, true);
+            $this->boltHelper()->collectTotals($quote, $shouldRecalculateShipping);
 
             if(!empty($shippingAddressId) && $shippingAddressId != $shippingAddress->getData('address_id')) {
                 $shippingAddress->setData('address_id', $shippingAddressId);
