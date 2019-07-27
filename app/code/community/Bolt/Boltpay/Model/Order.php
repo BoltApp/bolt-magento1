@@ -88,16 +88,13 @@ $this->boltHelper()->logProcessingTime( "Dispatching event bolt_boltpay_order_cr
                 )
             );
 $this->boltHelper()->logProcessingTime( "Dispatched event bolt_boltpay_order_creation_before" );
-$this->boltHelper()->logProcessingTime( "Validating session data" );
             $this->validateCartSessionData($immutableQuote, $parentQuote, $transaction);
 $this->boltHelper()->logProcessingTime( "Validated session data" );
 
-$this->boltHelper()->logProcessingTime( "Saving customer information" );
             // adding guest user email to order
             if (!$immutableQuote->getCustomerEmail()) {
                 $email = $transaction->order->cart->billing_address->email_address;
                 $immutableQuote->setCustomerEmail($email);
-                $immutableQuote->save();
             }
 
             // explicitly set quote belong to guest if customer id does not exist
@@ -110,11 +107,9 @@ $this->boltHelper()->logProcessingTime( "Saving customer information" );
                     ->setCustomerFirstname($transaction->order->cart->billing_address->first_name)
                     ->setCustomerLastname($transaction->order->cart->billing_address->last_name);
             }
-            $immutableQuote->save();
 $this->boltHelper()->logProcessingTime( "Saved customer information" );
 
-$this->boltHelper()->logProcessingTime( "Saving address info" );
-            $immutableQuote->getShippingAddress()->setShouldIgnoreValidation(true)->save();
+            $immutableQuote->getShippingAddress()->setShouldIgnoreValidation(true);
             $immutableQuote->getBillingAddress()
                 ->setFirstname($transaction->order->cart->billing_address->first_name)
                 ->setLastname($transaction->order->cart->billing_address->last_name)
@@ -145,9 +140,8 @@ $this->boltHelper()->logProcessingTime( "Applying shipping - Collecting shipping
                     // Legacy transaction does not have shipments reference - fallback to $service field
                     $shippingMethod = $packagesToShip[0]->service;
 
-                    $this->boltHelper()->collectTotals($immutableQuote);
+                    $this->boltHelper()->collectTotals($immutableQuote, false);
 
-                    $shippingAddress->setCollectShippingRates(true)->collectShippingRates();
                     $rates = $shippingAddress->getAllShippingRates();
 
                     foreach ($rates as $rate) {
@@ -162,7 +156,6 @@ $this->boltHelper()->logProcessingTime( "Finished applying shipping - Collecting
 
                 if ($shippingMethodCode) {
                     $shippingAndTaxModel->applyShippingRate($immutableQuote, $shippingMethodCode, false);
-                    $shippingAddress->save();
                 } else {
                     $errorMessage = $this->boltHelper()->__('Shipping method not found');
                     $metaData = array(
@@ -187,6 +180,7 @@ $this->boltHelper()->logProcessingTime( "Finished applying shipping" );
             $payment->setMethod(Bolt_Boltpay_Model_Payment::METHOD_CODE)->save();
             //////////////////////////////////////////////////////////////////////////////////
 
+
 $this->boltHelper()->logProcessingTime( "Collecting totals to validate" );
             $this->boltHelper()->collectTotals($immutableQuote, true)->save();
 $this->boltHelper()->logProcessingTime( "Finished collecting totals to validate" );
@@ -195,6 +189,7 @@ $this->boltHelper()->logProcessingTime( "Finished collecting totals to validate"
 $this->boltHelper()->logProcessingTime( "Validated coupons" );
             $this->validateTotals($immutableQuote, $transaction);
 $this->boltHelper()->logProcessingTime( "Validated subTotals" );
+
 
             ////////////////////////////////////////////////////////////////////////////
             // reset increment id if needed
@@ -225,7 +220,7 @@ $this->boltHelper()->logProcessingTime( "Searched for existing order" );
                     ->reserveOrderId()
                     ->save();
 
-                $immutableQuote->setReservedOrderId($parentQuote->getReservedOrderId());
+                $immutableQuote->setReservedOrderId($parentQuote->getReservedOrderId())->save();
             }
             ////////////////////////////////////////////////////////////////////////////
 
