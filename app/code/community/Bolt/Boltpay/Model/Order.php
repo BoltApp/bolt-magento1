@@ -221,6 +221,10 @@ class Bolt_Boltpay_Model_Order extends Bolt_Boltpay_Model_Abstract
 
                 $service->submitAll();
                 $order = $service->getOrder();
+                if (!$isPreAuthCreation) {
+                    $order->addStatusHistoryComment($this->boltHelper()->__("BOLT notification: Order created via Bolt Webhook API for transaction $reference "));
+                    $order->save();
+                }
 
                 // Add the user_note to the order comments and make it visible for customer.
                 if (isset($transaction->order->user_note)) {
@@ -911,6 +915,7 @@ class Bolt_Boltpay_Model_Order extends Bolt_Boltpay_Model_Abstract
             ->addStatusHistoryComment($userNote)
             ->setIsVisibleOnFront(true)
             ->setIsCustomerNotified(false);
+        $order->save();
 
         return $order;
     }

@@ -74,37 +74,63 @@ class Bolt_Boltpay_Model_Observer
      */
     public function setSuccessSessionData($observer) {
 
+        /** @var Mage_Checkout_Model_Session $checkoutSession */
+        $checkoutSession = Mage::getSingleton('checkout/session');
         $requestParams = Mage::app()->getRequest()->getParams();
 
         // Handle only Bolt orders
-        if (!isset($requestParams['bolt_payload'])) {
+        if (!isset($requestParams['bolt_payload'])  && !isset($requestParams['bolt_transaction_reference'])) {
             return;
         }
 
-        $payload = @$requestParams['bolt_payload'];
-        $signature = base64_decode(@$requestParams['bolt_signature']);
+        if (isset($requestParams['bolt_payload'])) {
+            $payload = @$requestParams['bolt_payload'];
+            $signature = base64_decode(@$requestParams['bolt_signature']);
 
-        if (!$this->boltHelper()->verify_hook($payload, $signature)) {
-            // If signature verification fails, we log the error and immediately return control to Magento
-            $exception = new Bolt_Boltpay_OrderCreationException(
-                Bolt_Boltpay_OrderCreationException::E_BOLT_GENERAL_ERROR,
-                Bolt_Boltpay_OrderCreationException::E_BOLT_GENERAL_ERROR_TMPL_HMAC
-            );
-            $this->boltHelper()->notifyException($exception, array(), 'warning');
-            $this->boltHelper()->logWarning($exception->getMessage());
+            if (!$this->boltHelper()->verify_hook($payload, $signature)) {
+                // If signature verification fails, we log the error and immediately return control to Magento
+                $exception = new Bolt_Boltpay_OrderCreationException(
+                    Bolt_Boltpay_OrderCreationException::E_BOLT_GENERAL_ERROR,
+                    Bolt_Boltpay_OrderCreationException::E_BOLT_GENERAL_ERROR_TMPL_HMAC
+                );
+                $this->boltHelper()->notifyException($exception, array(), 'warning');
+                $this->boltHelper()->logWarning($exception->getMessage());
 
-            return;
+                return;
+            }
+
+            $quote = $checkoutSession->getQuote();
+
+            /* @var Mage_Sales_Model_Quote $immutableQuote */
+            $immutableQuote = Mage::getModel('sales/quote')->loadByIdWithoutStore($quote->getParentQuoteId());
+
+        } else if (isset($requestParams['bolt_transaction_reference'])) {
+            ////////////////////////////////////////////////////////////////////
+            // Orphaned transaction and v 1.x (legacy) Success page handling
+            // Note: order may not have been created at this point so in those
+            // cases, we use a psuedo order id to meet success page rendering
+            // requirements
+            ////////////////////////////////////////////////////////////////////
+
+            /** @var Bolt_Boltpay_Model_Order $orderModel */
+            $orderModel = Mage::getModel('boltpay/order');
+            $transaction = $this->boltHelper()->fetchTransaction($requestParams['bolt_transaction_reference']);
+
+            $immutableQuoteId = $this->boltHelper()->getImmutableQuoteIdFromTransaction($transaction);
+            $immutableQuote = $orderModel->getQuoteById($immutableQuoteId);
+            $incrementId = $this->boltHelper()->getIncrementIdFromTransaction($transaction);
+
+            /** @var Mage_Sales_Model_Order $order */
+            $order = Mage::getModel('sales/order')->loadByIncrementId($incrementId);
+            $orderEntityId = (!$order->isObjectNew()) ? $order->getId() : 4294967295;  # use required max sentinel id if order not yet created
+
+            $requestParams['lastQuoteId'] = $requestParams['lastSuccessQuoteId'] = $immutableQuoteId;
+            $requestParams['lastOrderId'] = $orderEntityId;
+            $requestParams['lastRealOrderId'] = $incrementId;
         }
 
-        /** @var Mage_Checkout_Model_Session $checkoutSession */
-        $checkoutSession = Mage::getSingleton('checkout/session');
         $checkoutSession
             ->clearHelperData();
-
-        $quote = $checkoutSession->getQuote();
-
-        /* @var Mage_Sales_Model_Quote $immutableQuote */
-        $immutableQuote = Mage::getModel('sales/quote')->loadByIdWithoutStore($quote->getParentQuoteId());
 
         $recurringPaymentProfilesIds = array();
         $recurringPaymentProfiles = $immutableQuote->collectTotals()->prepareRecurringPaymentProfiles();

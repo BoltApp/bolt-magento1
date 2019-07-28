@@ -164,6 +164,7 @@ class Bolt_Boltpay_Helper_Data extends Mage_Core_Helper_Abstract
                 }
             }"
             : "function(transaction, callback) {
+                window.bolt_transaction_reference = transaction.reference;
                 $successCustom
                 callback();
             }";
@@ -190,16 +191,33 @@ class Bolt_Boltpay_Helper_Data extends Mage_Core_Helper_Abstract
                     }
                     ";
                 break;
-            case Bolt_Boltpay_Block_Checkout_Boltpay::CHECKOUT_TYPE_FIRECHECKOUT:
-                $javascript .=
-                    "
-                    isFireCheckoutFormValid = false;
-                    initBoltButtons();
-                    ";
-                break;
             case Bolt_Boltpay_Block_Checkout_Boltpay::CHECKOUT_TYPE_PRODUCT_PAGE:
                 $quoteId = Mage::getSingleton('checkout/session')->getQuoteId();
                 $successUrl = $this->getMagentoUrl(Mage::getStoreConfig('payment/boltpay/successpage'), array('checkoutType' => $checkoutType, 'session_quote_id' => $quoteId));
+                break;
+            case Bolt_Boltpay_Block_Checkout_Boltpay::CHECKOUT_TYPE_FIRECHECKOUT:
+                $javascript .=
+                    "
+                    $closeCustom
+                    isFireCheckoutFormValid = false;
+                    initBoltButtons();
+                    ";
+                $closeCustom = '';
+            default:
+                $appendChar = (strpos($successUrl, '?') === false) ? '?' : '&';
+
+                $javascript .=
+                    "
+                    $closeCustom
+                    if (window.bolt_transaction_reference) {
+                         setTimeout(
+                              function() {
+                                   window.location = '$successUrl'+'$appendChar'+'bolt_transaction_reference='+window.bolt_transaction_reference;
+                              },
+                              500
+                         );
+                    }
+                    ";
         }
 
         return $javascript;
