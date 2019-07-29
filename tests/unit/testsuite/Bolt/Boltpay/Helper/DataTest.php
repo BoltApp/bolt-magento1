@@ -193,15 +193,10 @@ class Bolt_Boltpay_Helper_DataTest extends PHPUnit_Framework_TestCase
         $checkoutType = Bolt_Boltpay_Block_Checkout_Boltpay::CHECKOUT_TYPE_MULTI_PAGE;
         $saveOrderUrl = Mage::helper('boltpay')->getMagentoUrl("boltpay/order/save/checkoutType/$checkoutType");
 
-        $onSuccessCallback =
-            "function(transaction, callback) {
-                $successCustom
-                callback();
-            }";
-
         $result = $this->currentMock->buildOnSuccessCallback($successCustom, $checkoutType);
 
-        $this->assertEquals($onSuccessCallback, $result);
+        $this->assertStringStartsWith('function', $result);
+        $this->assertContains($successCustom, $result);
     }
 
     /**
@@ -242,13 +237,12 @@ class Bolt_Boltpay_Helper_DataTest extends PHPUnit_Framework_TestCase
     {
         $successUrl = Mage::helper('boltpay')->getMagentoUrl('checkout/onepage/success');
         $checkoutType = Bolt_Boltpay_Block_Checkout_Boltpay::CHECKOUT_TYPE_ONE_PAGE;
-        $closeCustom = '';
-
-        $expected = '';
+        $closeCustom = 'console.log("test");';
 
         $result = $this->currentMock->buildOnCloseCallback($closeCustom, $checkoutType);
 
-        $this->assertEquals(preg_replace('/\s/', '', $expected), preg_replace('/\s/', '', $result));
+        $this->assertContains($closeCustom, $result);
+        $this->assertNotEquals($closeCustom, $result);
     }
 
     /**

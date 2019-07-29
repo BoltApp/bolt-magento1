@@ -46,7 +46,7 @@ trait Bolt_Boltpay_Controller_Traits_WebHookTrait {
      */
     public function preDispatch()
     {
-$this->boltHelper()->logProcessingTime( "Bolt controller predispatch started" );
+        benchmark( "Bolt controller predispatch started" );
 
         ob_start();
 
@@ -60,7 +60,9 @@ $this->boltHelper()->logProcessingTime( "Bolt controller predispatch started" );
             $this->payload = file_get_contents('php://input');
             $this->verifyBoltSignature($this->payload, @$_SERVER['HTTP_X_BOLT_HMAC_SHA256']);
         }
-$this->boltHelper()->logProcessingTime( "Finished Bolt controller predispatch" );
+
+        benchmark( "Finished Bolt controller predispatch" );
+
         return parent::preDispatch();
     }
 

@@ -25,6 +25,47 @@ class Bolt_Boltpay_Model_Observer
     use Bolt_Boltpay_BoltGlobalTrait;
 
     /**
+     * Initializes the benchmark profiler
+     *
+     * event: controller_front_init_before
+     */
+    public function initializeBenchmarkProfiler()
+    {
+        $hasInitializedProfiler = Mage::registry('initializedBenchmark' );
+
+        if (!$hasInitializedProfiler) {
+
+            Mage::register('bolt/request_start_time', microtime(true), true);
+
+            /**
+             * Logs the time taken to reach the point in the codebase
+             *
+             * @param string $label                  Label to add to the benchmark
+             * @param bool   $shouldLogIndividually  If true, the benchmark will be logged separately in addition to with the full log
+             * @param bool   $shouldIncludeInFullLog If false, this benchmark will not be included in the full log
+             * @param bool   $shouldFlushFullLog     If true, will log the full log up to this benchmark call.
+             */
+            function benchmark( $label, $shouldLogIndividually = false, $shouldIncludeInFullLog = true, $shouldFlushFullLog = false )  {
+                /** @var Bolt_Boltpay_Helper_Data $boltHelper */
+                $boltHelper = Mage::helper('boltpay');
+                $boltHelper->logBenchmark($label, $shouldLogIndividually, $shouldIncludeInFullLog, $shouldFlushFullLog);
+            }
+
+            Mage::register('initializedBenchmark', true, true);
+        }
+    }
+
+    /**
+     * Submits the final benchmark profiler log
+     *
+     * event: controller_front_send_response_after
+     */
+    public function logFullBenchmarkProfile()
+    {
+        benchmark(null, false, false, true );
+    }
+
+    /**
      * Clears the Shopping Cart except product page checkout order after the success page
      *
      * @param Varien_Event_Observer $observer   An Observer object with an empty event object
@@ -54,8 +95,6 @@ class Bolt_Boltpay_Model_Observer
      */
     public function clearCartCacheOnOrderCanceled($observer) {
 
-        Mage::register('bolt/request_start_time', microtime(true), true);
-
         /** @var Mage_Sales_Model_Quote $quote */
         $quote = Mage::getSingleton('checkout/session')->getQuote();
 
@@ -78,39 +117,63 @@ class Bolt_Boltpay_Model_Observer
      */
     public function setSuccessSessionData($observer) {
 
-        Mage::register('bolt/request_start_time', microtime(true), true);
-
+        /** @var Mage_Checkout_Model_Session $checkoutSession */
+        $checkoutSession = Mage::getSingleton('checkout/session');
         $requestParams = Mage::app()->getRequest()->getParams();
 
         // Handle only Bolt orders
-        if (!isset($requestParams['bolt_payload'])) {
+        if (!isset($requestParams['bolt_payload'])  && !isset($requestParams['bolt_transaction_reference'])) {
             return;
         }
 
-        $payload = @$requestParams['bolt_payload'];
-        $signature = base64_decode(@$requestParams['bolt_signature']);
+        if (isset($requestParams['bolt_payload'])) {
+            $payload = @$requestParams['bolt_payload'];
+            $signature = base64_decode(@$requestParams['bolt_signature']);
 
-        if (!$this->boltHelper()->verify_hook($payload, $signature)) {
-            // If signature verification fails, we log the error and immediately return control to Magento
-            $exception = new Bolt_Boltpay_OrderCreationException(
-                Bolt_Boltpay_OrderCreationException::E_BOLT_GENERAL_ERROR,
-                Bolt_Boltpay_OrderCreationException::E_BOLT_GENERAL_ERROR_TMPL_HMAC
-            );
-            $this->boltHelper()->notifyException($exception, array(), 'warning');
-            $this->boltHelper()->logWarning($exception->getMessage());
+            if (!$this->boltHelper()->verify_hook($payload, $signature)) {
+                // If signature verification fails, we log the error and immediately return control to Magento
+                $exception = new Bolt_Boltpay_OrderCreationException(
+                    Bolt_Boltpay_OrderCreationException::E_BOLT_GENERAL_ERROR,
+                    Bolt_Boltpay_OrderCreationException::E_BOLT_GENERAL_ERROR_TMPL_HMAC
+                );
+                $this->boltHelper()->notifyException($exception, array(), 'warning');
+                $this->boltHelper()->logWarning($exception->getMessage());
 
-            return;
+                return;
+            }
+
+            $quote = $checkoutSession->getQuote();
+
+            /* @var Mage_Sales_Model_Quote $immutableQuote */
+            $immutableQuote = Mage::getModel('sales/quote')->loadByIdWithoutStore($quote->getParentQuoteId());
+
+        } else if (isset($requestParams['bolt_transaction_reference'])) {
+            ////////////////////////////////////////////////////////////////////
+            // Orphaned transaction and v 1.x (legacy) Success page handling
+            // Note: order may not have been created at this point so in those
+            // cases, we use a psuedo order id to meet success page rendering
+            // requirements
+            ////////////////////////////////////////////////////////////////////
+
+            /** @var Bolt_Boltpay_Model_Order $orderModel */
+            $orderModel = Mage::getModel('boltpay/order');
+            $transaction = $this->boltHelper()->fetchTransaction($requestParams['bolt_transaction_reference']);
+
+            $immutableQuoteId = $this->boltHelper()->getImmutableQuoteIdFromTransaction($transaction);
+            $immutableQuote = $orderModel->getQuoteById($immutableQuoteId);
+            $incrementId = $this->boltHelper()->getIncrementIdFromTransaction($transaction);
+
+            /** @var Mage_Sales_Model_Order $order */
+            $order = Mage::getModel('sales/order')->loadByIncrementId($incrementId);
+            $orderEntityId = (!$order->isObjectNew()) ? $order->getId() : 4294967295;  # use required max sentinel id if order not yet created
+
+            $requestParams['lastQuoteId'] = $requestParams['lastSuccessQuoteId'] = $immutableQuoteId;
+            $requestParams['lastOrderId'] = $orderEntityId;
+            $requestParams['lastRealOrderId'] = $incrementId;
         }
 
-        /** @var Mage_Checkout_Model_Session $checkoutSession */
-        $checkoutSession = Mage::getSingleton('checkout/session');
         $checkoutSession
             ->clearHelperData();
-
-        $quote = $checkoutSession->getQuote();
-
-        /* @var Mage_Sales_Model_Quote $immutableQuote */
-        $immutableQuote = Mage::getModel('sales/quote')->loadByIdWithoutStore($quote->getParentQuoteId());
 
         $recurringPaymentProfilesIds = array();
         $recurringPaymentProfiles = $immutableQuote->collectTotals()->prepareRecurringPaymentProfiles();

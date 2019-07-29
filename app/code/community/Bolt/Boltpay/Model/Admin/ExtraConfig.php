@@ -298,6 +298,18 @@ JS;
     }
 
     /**
+     * Ensures boolean value for whether bench mark profiling is enabled
+     *
+     * @param mixed $rawConfigValue    The config value pre-filter
+     * @param array  $additionalParams  unused for this filter
+     *
+     * @return bool  the value from the extra config admin forced to boolean
+     */
+    public function filterEnableBenchmarkProfiling($rawConfigValue, $additionalParams = array() ) {
+        return $this->normalizeBoolean($rawConfigValue);
+    }
+
+    /**
      * Normalizes JSON by stripping new lines from the given string and returning null
      * in the case of only white space.
      *
