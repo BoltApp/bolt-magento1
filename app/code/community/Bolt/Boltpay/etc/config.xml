@@ -68,6 +68,22 @@
     </resources>
 
     <events>
+      <controller_front_init_before>
+          <observers>
+              <bolt_boltpay_init_benchmarking>
+                  <class>Bolt_Boltpay_Model_Observer</class>
+                  <method>initializeBenchmarkProfiler</method>
+              </bolt_boltpay_init_benchmarking>
+          </observers>
+      </controller_front_init_before>
+      <controller_front_send_response_after>
+          <observers>
+              <bolt_boltpay_flush_benchmark_logs>
+                  <class>Bolt_Boltpay_Model_Observer</class>
+                  <method>logFullBenchmarkProfile</method>
+              </bolt_boltpay_flush_benchmark_logs>
+          </observers>
+      </controller_front_send_response_after>
       <checkout_onepage_controller_success_action> <!-- Call after order has been saved and forwarded to success page -->
         <observers>
           <bolt_boltpay_clear_shopping_cart>

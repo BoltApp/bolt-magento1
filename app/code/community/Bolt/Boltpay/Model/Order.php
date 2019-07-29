@@ -53,13 +53,16 @@ class Bolt_Boltpay_Model_Order extends Bolt_Boltpay_Model_Abstract
                 throw new Exception($msg);
             }
 
+            benchmark( "Potentially starting to fetch bolt transaction" );
             $transaction = $transaction ?: $this->boltHelper()->fetchTransaction($reference);
+            benchmark( "Finished fetching bolt transaction. Looking up quotes." );
 
             $immutableQuoteId = $this->boltHelper()->getImmutableQuoteIdFromTransaction($transaction);
             $immutableQuote = $this->getQuoteById($immutableQuoteId);
             $immutableQuote->setParentId($transaction->order->cart->order_reference);
             Mage::app()->setCurrentStore($immutableQuote->getStore());
             $parentQuote = $this->getQuoteById($transaction->order->cart->order_reference);
+            benchmark( "Looked up quotes." );
 
             if (!$parentQuote->getIsActive()) {
                 throw new Exception(
@@ -75,6 +78,7 @@ class Bolt_Boltpay_Model_Order extends Bolt_Boltpay_Model_Abstract
                 $this->boltHelper()->setCustomerSessionByQuoteId($sessionQuoteId);
             }
 
+            benchmark( "Dispatching event bolt_boltpay_order_creation_before" );
             Mage::dispatchEvent(
                 'bolt_boltpay_order_creation_before',
                 array(
@@ -83,14 +87,15 @@ class Bolt_Boltpay_Model_Order extends Bolt_Boltpay_Model_Abstract
                     'transaction' => $transaction
                 )
             );
+            benchmark( "Dispatched event bolt_boltpay_order_creation_before" );
 
             $this->validateCartSessionData($immutableQuote, $parentQuote, $transaction);
+            benchmark( "Validated session data" );
 
             // adding guest user email to order
             if (!$immutableQuote->getCustomerEmail()) {
                 $email = $transaction->order->cart->billing_address->email_address;
                 $immutableQuote->setCustomerEmail($email);
-                $immutableQuote->save();
             }
 
             // explicitly set quote belong to guest if customer id does not exist
@@ -103,14 +108,15 @@ class Bolt_Boltpay_Model_Order extends Bolt_Boltpay_Model_Abstract
                     ->setCustomerFirstname($transaction->order->cart->billing_address->first_name)
                     ->setCustomerLastname($transaction->order->cart->billing_address->last_name);
             }
-            $immutableQuote->save();
+            benchmark( "Saved customer information" );
 
-            $immutableQuote->getShippingAddress()->setShouldIgnoreValidation(true)->save();
+            $immutableQuote->getShippingAddress()->setShouldIgnoreValidation(true);
             $immutableQuote->getBillingAddress()
                 ->setFirstname($transaction->order->cart->billing_address->first_name)
                 ->setLastname($transaction->order->cart->billing_address->last_name)
                 ->setShouldIgnoreValidation(true)
                 ->save();
+            benchmark( "Saved address info" );
 
             //////////////////////////////////////////////////////////////////////////////////
             ///  Apply shipping address and shipping method data to quote directly from
@@ -119,22 +125,26 @@ class Bolt_Boltpay_Model_Order extends Bolt_Boltpay_Model_Abstract
             $packagesToShip = $transaction->order->cart->shipments;
 
             if ($packagesToShip) {
-
+                benchmark( "Applying shipping" );
                 $shippingAddress = $immutableQuote->getShippingAddress();
                 $shippingMethodCode = null;
 
                 /** @var Bolt_Boltpay_Model_ShippingAndTax $shippingAndTaxModel */
                 $shippingAndTaxModel = Mage::getModel("boltpay/shippingAndTax");
+
+                benchmark( "Applying shipping - Applying shipping address data" );
                 $shippingAndTaxModel->applyBoltAddressData($immutableQuote, $packagesToShip[0]->shipping_address, false);
+                benchmark( "Finished applying shipping - Applying shipping address data" );
+
                 $shippingMethodCode = $packagesToShip[0]->reference;
 
                 if (!$shippingMethodCode) {
+                    benchmark( "Applying shipping - Collecting shipping rates, legacy" );
                     // Legacy transaction does not have shipments reference - fallback to $service field
                     $shippingMethod = $packagesToShip[0]->service;
 
-                    $this->boltHelper()->collectTotals($immutableQuote);
+                    $this->boltHelper()->collectTotals($immutableQuote, false);
 
-                    $shippingAddress->setCollectShippingRates(true)->collectShippingRates();
                     $rates = $shippingAddress->getAllShippingRates();
 
                     foreach ($rates as $rate) {
@@ -144,11 +154,11 @@ class Bolt_Boltpay_Model_Order extends Bolt_Boltpay_Model_Abstract
                             break;
                         }
                     }
+                    benchmark( "Finished applying shipping - Collecting shipping rates, legacy" );
                 }
 
                 if ($shippingMethodCode) {
                     $shippingAndTaxModel->applyShippingRate($immutableQuote, $shippingMethodCode, false);
-                    $shippingAddress->save();
                 } else {
                     $errorMessage = $this->boltHelper()->__('Shipping method not found');
                     $metaData = array(
@@ -161,6 +171,7 @@ class Bolt_Boltpay_Model_Order extends Bolt_Boltpay_Model_Abstract
                     $this->boltHelper()->logWarning($errorMessage);
                     $this->boltHelper()->notifyException(new Exception($errorMessage), $metaData);
                 }
+                benchmark( "Finished applying shipping" );
             }
             //////////////////////////////////////////////////////////////////////////////////
 
@@ -172,16 +183,24 @@ class Bolt_Boltpay_Model_Order extends Bolt_Boltpay_Model_Abstract
             $payment->setMethod(Bolt_Boltpay_Model_Payment::METHOD_CODE)->save();
             //////////////////////////////////////////////////////////////////////////////////
 
+
+            benchmark( "Collecting totals to validate" );
             $this->boltHelper()->collectTotals($immutableQuote, true)->save();
+            benchmark( "Finished collecting totals to validate" );
 
             $this->validateCoupons($immutableQuote, $transaction);
+            benchmark( "Validated coupons" );
+
             $this->validateTotals($immutableQuote, $transaction);
+            benchmark( "Validated subTotals" );
+
 
             ////////////////////////////////////////////////////////////////////////////
             // reset increment id if needed
             ////////////////////////////////////////////////////////////////////////////
             /* @var Mage_Sales_Model_Order $preExistingOrder */
             $preExistingOrder = Mage::getModel('sales/order')->loadByIncrementId($parentQuote->getReservedOrderId());
+            benchmark( "Searched for existing order" );
 
             if (!$preExistingOrder->isObjectNew()) {
                 ############################
@@ -205,7 +224,7 @@ class Bolt_Boltpay_Model_Order extends Bolt_Boltpay_Model_Abstract
                     ->reserveOrderId()
                     ->save();
 
-                $immutableQuote->setReservedOrderId($parentQuote->getReservedOrderId());
+                $immutableQuote->setReservedOrderId($parentQuote->getReservedOrderId())->save();
             }
             ////////////////////////////////////////////////////////////////////////////
 
@@ -218,9 +237,11 @@ class Bolt_Boltpay_Model_Order extends Bolt_Boltpay_Model_Abstract
             $service = Mage::getModel('sales/service_quote', $immutableQuote);
 
             try {
-
+                benchmark( "Submitting order" );
                 $service->submitAll();
                 $order = $service->getOrder();
+                benchmark( "Submitted order and validated it" );
+
                 if (!$isPreAuthCreation) {
                     $order->addStatusHistoryComment($this->boltHelper()->__("BOLT notification: Order created via Bolt Webhook API for transaction $reference "));
                     $order->save();
@@ -285,21 +306,25 @@ class Bolt_Boltpay_Model_Order extends Bolt_Boltpay_Model_Abstract
         if ($immutableQuote->getData('is_bolt_pdp') && Mage::getSingleton('customer/session')->isLoggedIn()) {
             $this->associateOrderToCustomerWhenPlacingOnPDP($order->getData('increment_id'));
         }
+        benchmark( "Finished post order processing" );
 
         ///////////////////////////////////////////////////////
         /// Dispatch order save events
         ///////////////////////////////////////////////////////
         $recurringPaymentProfiles = $service->getRecurringPaymentProfiles();
 
+        benchmark( 'Running independent merchant third-party code via checkout_submit_all_after');
         Mage::dispatchEvent(
             'checkout_submit_all_after',
             array('order' => $order, 'quote' => $immutableQuote, 'recurring_profiles' => $recurringPaymentProfiles)
         );
+        benchmark( "Finished running independent merchant third-party code via checkout_submit_all_after" );
 
         Mage::dispatchEvent(
             'bolt_boltpay_order_creation_after',
             array('order'=>$order, 'quote'=>$immutableQuote, 'transaction' => $transaction)
         );
+        benchmark( "Dispatched bolt_boltpay_order_creation_after" );
         ///////////////////////////////////////////////////////
 
         return $order;

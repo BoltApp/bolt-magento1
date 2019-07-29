@@ -105,4 +105,50 @@ trait Bolt_Boltpay_Helper_LoggerTrait
             $this->notifyException( new Exception((string)$message) );
         }
     }
+
+    /**
+     * Logs the time taken to reach the point in the codebase
+     *
+     * @param string $label                  Label to add to the benchmark
+     * @param bool   $shouldLogIndividually  If true, the benchmark will be logged separately in addition to with the full log
+     * @param bool   $shouldIncludeInFullLog If false, this benchmark will not be included in the full log
+     * @param bool   $shouldFlushFullLog     If true, will log the full log up to this benchmark call.
+     */
+    public function logBenchmark( $label, $shouldLogIndividually = false, $shouldIncludeInFullLog = true, $shouldFlushFullLog = false ) {
+        if (!$this->getExtraConfig('enableBenchmarkProfiling')) { return; }
+
+        $index = Mage::registry('bolt/processing_time_index') ?: 0;
+        $startTime = Mage::registry('bolt/request_start_time') ?: microtime(true);
+        $lastTime = Mage::registry('bolt/last_process_timestamp') ?: $startTime;
+        $currentTime = microtime(true);
+
+        $summary = "-- Processing Time $index --\n*$label*\nTime since last timestamp marker: *".round(($currentTime - $lastTime), 3)."s*\n";
+        $summary .= 'Time since benchmark profiling start: '.round(($currentTime - $startTime), 3).'s';
+
+        if ($shouldLogIndividually) {$this->info($summary);}
+
+        try {
+            Mage::register('bolt/request_start_time', $startTime, true);
+            Mage::unregister('bolt/last_process_timestamp');
+            Mage::register('bolt/last_process_timestamp', $currentTime);
+            Mage::unregister('bolt/processing_time_index');
+            Mage::register('bolt/processing_time_index', ++$index);
+        } catch ( Mage_Core_Exception $mce ) {
+            // convenience clobber to suppress IDE warnings.  Logic does not permit the exception
+        }
+
+        $fullSummary = Mage::getSingleton('core/session')->getFullSummary() ?: '';
+
+        if ($shouldIncludeInFullLog) {
+            $fullSummary .= ($fullSummary) ? "\n\n".$summary : $summary;
+            Mage::getSingleton('core/session')->setFullSummary($fullSummary);
+        }
+
+        if ( $shouldFlushFullLog ) {
+            if ($fullSummary) {$this->info($fullSummary);}
+            Mage::unregister('bolt/request_start_time');
+            Mage::unregister('bolt/last_process_timestamp');
+            Mage::unregister('bolt/processing_time_index');
+        }
+    }
 }
