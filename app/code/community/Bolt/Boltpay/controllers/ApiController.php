@@ -47,8 +47,8 @@ class Bolt_Boltpay_ApiController extends Mage_Core_Controller_Front_Action imple
             $orderModel = Mage::getModel('boltpay/order');
 
             if ($hookType === 'failed_payment') {
-                $parentQuoteId = $requestData->quote_id;
-                $this->handleFailedPaymentHook($parentQuoteId);
+                $displayId = $requestData->display_id;
+                $this->handleFailedPaymentHook($displayId);
                 return;
             } else if ($hookType === 'discounts.code.apply') {
                 $this->handleDiscountHook();
@@ -315,15 +315,16 @@ class Bolt_Boltpay_ApiController extends Mage_Core_Controller_Front_Action imple
      * Handles failed payment web hooks.  It attempts to cancel a specified pre-auth order
      * in addition to invalidating the cache associated with that orders session.
      *
-     * @param int   $parentQuoteId  the ID of the session quote whose order should be cancelled.
+     * @param string $displayId  the increment ID of the order that should be cancelled.
      *
      * @throws Zend_Controller_Response_Exception if there is an unexpected error in sending a response
      * @throws Mage_Core_Exception if the order cannot be canceled
      */
-    private function handleFailedPaymentHook($parentQuoteId) {
+    private function handleFailedPaymentHook($displayId) {
         /** @var Bolt_Boltpay_Model_Order $orderModel */
         $orderModel = Mage::getModel('boltpay/order');
-        $order =  $orderModel->getOrderByParentQuoteId($parentQuoteId);
+
+        $order = Mage::getModel('sales/order')->load($displayId, 'increment_id');
 
         if (!$order->isObjectNew()) {
             //////////////////////////////////////////////////////////////////////////////////////
@@ -331,7 +332,12 @@ class Bolt_Boltpay_ApiController extends Mage_Core_Controller_Front_Action imple
             // Otherwise, ignore the failed payment hook because it arriving out of sync as
             // a payment has already been recorded
             //////////////////////////////////////////////////////////////////////////////////////
-            if ($order->getStatus() !== Bolt_Boltpay_Model_Payment::TRANSACTION_PRE_AUTH_PENDING) {
+            $payment = $order->getPayment();
+            if (
+                $payment->getAdditionalInformation('bolt_reference')
+                || $payment->getAuthorizationTransaction()
+                || $payment->getLastTransId()
+            ) {
                 $message = $this->boltHelper()->__(
                     'Payment was already recorded. The failed payment hook for order %s seems out of sync.',
                     $order->getIncrementId()
@@ -367,7 +373,7 @@ class Bolt_Boltpay_ApiController extends Mage_Core_Controller_Front_Action imple
         /// cleanup.
         ////////////////////////////////////////////////////////////////////
 
-        $parentQuote = $orderModel->getQuoteById($parentQuoteId);
+        $parentQuote = $orderModel->getParentQuoteFromOrder($order);
         if ($parentQuote->getId()) {
             $parentQuote
                 ->setParentQuoteId($parentQuote->getId())

@@ -15,7 +15,7 @@
  * @license    http://opensource.org/licenses/osl-3.0.php  Open Software License (OSL 3.0)
  */
 
-class Bugsnag_Stacktrace
+class Boltpay_Bugsnag_Stacktrace
 {
     private static $DEFAULT_NUM_LINES = 7;
     private static $MAX_LINE_LENGTH = 200;
@@ -26,7 +26,7 @@ class Bugsnag_Stacktrace
     /**
      * Generate a new stacktrace using the given config.
      *
-     * @param Bugsnag_Configuration $config the configuration instance
+     * @param Boltpay_Bugsnag_Configuration $config the configuration instance
      *
      * @return self
      */
@@ -47,7 +47,7 @@ class Bugsnag_Stacktrace
     /**
      * Create a new stacktrace instance from a frame.
      *
-     * @param Bugsnag_Configuration $config the configuration instance
+     * @param Boltpay_Bugsnag_Configuration $config the configuration instance
      * @param string                $file   the associated file
      * @param int                   $line   the line number
      *
@@ -64,7 +64,7 @@ class Bugsnag_Stacktrace
     /**
      * Create a new stacktrace instance from a backtrace.
      *
-     * @param Bugsnag_Configuration $config    the configuration instance
+     * @param Boltpay_Bugsnag_Configuration $config    the configuration instance
      * @param array                 $backtrace the associated backtrace
      * @param int                   $topFile   the top file to use
      * @param int                   $topLine   the top line to use
@@ -110,13 +110,13 @@ class Bugsnag_Stacktrace
      */
     public static function frameInsideBugsnag($frame)
     {
-        return isset($frame['class']) && strpos($frame['class'], 'Bugsnag_') === 0;
+        return isset($frame['class']) && strpos($frame['class'], 'Boltpay_Bugsnag_') === 0;
     }
 
     /**
      * Create a new stacktrace instance.
      *
-     * @param Bugsnag_Configuration $config the configuration instance
+     * @param Boltpay_Bugsnag_Configuration $config the configuration instance
      *
      * @return void
      */
