@@ -15,7 +15,7 @@
  * @license    http://opensource.org/licenses/osl-3.0.php  Open Software License (OSL 3.0)
  */
 
-class Bugsnag_ErrorTypes
+class Boltpay_Bugsnag_ErrorTypes
 {
     private static $ERROR_TYPES = array(
         E_ERROR => array(

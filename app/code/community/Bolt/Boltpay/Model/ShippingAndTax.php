@@ -339,7 +339,13 @@ class Bolt_Boltpay_Model_ShippingAndTax extends Bolt_Boltpay_Model_Abstract
      */
     public function getAdjustedShippingAmount($originalDiscountTotal, $quote ) {
         $newDiscountTotal = $quote->getSubtotal() - $quote->getSubtotalWithDiscount();
-        return $quote->getShippingAddress()->getShippingAmount() + $originalDiscountTotal - $newDiscountTotal;
+        $adjustedShippingAmount = $quote->getShippingAddress()->getShippingAmount() + $originalDiscountTotal - $newDiscountTotal;
+
+        return $this->boltHelper()->doFilterEvent(
+            'bolt_boltpay_filter_adjusted_shipping_amount',
+            $adjustedShippingAmount,
+            array('originalDiscountTotal' => $originalDiscountTotal, 'quote'=>$quote)
+        );
     }
 
     /**
@@ -351,22 +357,22 @@ class Bolt_Boltpay_Model_ShippingAndTax extends Bolt_Boltpay_Model_Abstract
     public function getShippingLabel($rate) {
         $carrier = $rate->getCarrierTitle();
         $title = $rate->getMethodTitle();
-        if (!$title) {
-            return $carrier;
-        }
+
+        $shippingLabel = $carrier . " - " . $title;
 
         // Apply adhoc rules to return concise string.
-        if ($carrier === "Shipping Table Rates") {
-            return $title;
-        }
-        if ($carrier === "United Parcel Service" && substr( $title, 0, 3 ) === "UPS") {
-            return $title;
-        }
-        if (strncasecmp( $carrier, $title, strlen($carrier) ) === 0) {
-            return $title;
+        if (!$title) {
+            $shippingLabel = $carrier;
+        } else if (
+            ($carrier === "Shipping Table Rates")
+            || ($carrier === "United Parcel Service" && substr( $title, 0, 3 ) === "UPS")
+            || (strncasecmp( $carrier, $title, strlen($carrier) ) === 0)
+        )
+        {
+            $shippingLabel = $title;
         }
 
-        return $this->boltHelper()->doFilterEvent( 'bolt_boltpay_filter_shipping_label', $carrier . " - " . $title, $rate);
+        return $this->boltHelper()->doFilterEvent( 'bolt_boltpay_filter_shipping_label', $shippingLabel, $rate);
     }
 
     /**

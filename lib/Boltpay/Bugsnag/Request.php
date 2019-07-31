@@ -15,7 +15,7 @@
  * @license    http://opensource.org/licenses/osl-3.0.php  Open Software License (OSL 3.0)
  */
 
-class Bugsnag_Request
+class Boltpay_Bugsnag_Request
 {
     /**
      * Are we currently processing a request?

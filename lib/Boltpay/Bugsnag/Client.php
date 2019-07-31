@@ -15,26 +15,26 @@
  * @license    http://opensource.org/licenses/osl-3.0.php  Open Software License (OSL 3.0)
  */
 
-class Bugsnag_Client
+class Boltpay_Bugsnag_Client
 {
     /**
      * The config instance.
      *
-     * @var Bugsnag_Configuration
+     * @var Boltpay_Bugsnag_Configuration
      */
     private $config;
 
     /**
      * The diagnostics instance.
      *
-     * @var Bugsnag_Diagnostics
+     * @var Boltpay_Bugsnag_Diagnostics
      */
     private $diagnostics;
 
     /**
      * The notification instance.
      *
-     * @var Bugsnag_Notification|null
+     * @var Boltpay_Bugsnag_Notification|null
      */
     private $notification;
 
@@ -55,11 +55,11 @@ class Bugsnag_Client
         }
 
         // Create a configuration object
-        $this->config = new Bugsnag_Configuration();
+        $this->config = new Boltpay_Bugsnag_Configuration();
         $this->config->apiKey = $apiKey;
 
         // Build a Diagnostics object
-        $this->diagnostics = new Bugsnag_Diagnostics($this->config);
+        $this->diagnostics = new Boltpay_Bugsnag_Diagnostics($this->config);
 
         // Register a shutdown function to check for fatal errors
         // and flush any buffered errors
@@ -539,7 +539,7 @@ class Bugsnag_Client
     public function notifyException($throwable, array $metaData = null, $severity = null)
     {
         if (is_subclass_of($throwable, 'Throwable') || is_subclass_of($throwable, 'Exception') || get_class($throwable) == 'Exception') {
-            $error = Bugsnag_Error::fromPHPThrowable($this->config, $this->diagnostics, $throwable);
+            $error = Boltpay_Bugsnag_Error::fromPHPThrowable($this->config, $this->diagnostics, $throwable);
             $error->setSeverity($severity);
 
             $this->notify($error, $metaData);
@@ -558,7 +558,7 @@ class Bugsnag_Client
      */
     public function notifyError($name, $message, array $metaData = null, $severity = null)
     {
-        $error = Bugsnag_Error::fromNamedError($this->config, $this->diagnostics, $name, $message);
+        $error = Boltpay_Bugsnag_Error::fromNamedError($this->config, $this->diagnostics, $name, $message);
         $error->setSeverity($severity);
 
         $this->notify($error, $metaData);
@@ -579,7 +579,7 @@ class Bugsnag_Client
             return;
         }
 
-        $error = Bugsnag_Error::fromPHPThrowable($this->config, $this->diagnostics, $throwable);
+        $error = Boltpay_Bugsnag_Error::fromPHPThrowable($this->config, $this->diagnostics, $throwable);
         $error->setSeverity('error');
         $this->notify($error);
     }
@@ -602,7 +602,7 @@ class Bugsnag_Client
             return;
         }
 
-        $error = Bugsnag_Error::fromPHPError($this->config, $this->diagnostics, $errno, $errstr, $errfile, $errline);
+        $error = Boltpay_Bugsnag_Error::fromPHPError($this->config, $this->diagnostics, $errno, $errstr, $errfile, $errline);
         $this->notify($error);
     }
 
@@ -620,8 +620,8 @@ class Bugsnag_Client
         $lastError = error_get_last();
 
         // Check if a fatal error caused this shutdown
-        if (!is_null($lastError) && Bugsnag_ErrorTypes::isFatal($lastError['type']) && $this->config->autoNotify && !$this->config->shouldIgnoreErrorCode($lastError['type'])) {
-            $error = Bugsnag_Error::fromPHPError($this->config, $this->diagnostics, $lastError['type'], $lastError['message'], $lastError['file'], $lastError['line'], true);
+        if (!is_null($lastError) && Boltpay_Bugsnag_ErrorTypes::isFatal($lastError['type']) && $this->config->autoNotify && !$this->config->shouldIgnoreErrorCode($lastError['type'])) {
+            $error = Boltpay_Bugsnag_Error::fromPHPError($this->config, $this->diagnostics, $lastError['type'], $lastError['message'], $lastError['file'], $lastError['line'], true);
             $error->setSeverity('error');
             $this->notify($error);
         }
@@ -636,25 +636,25 @@ class Bugsnag_Client
     /**
      * Batches up errors into notifications for later sending.
      *
-     * @param Bugsnag_Error $error    the error to batch up
+     * @param Boltpay_Bugsnag_Error $error    the error to batch up
      * @param array         $metaData optional meta data to send with the error
      *
      * @return void
      */
-    public function notify(Bugsnag_Error $error, $metaData = array())
+    public function notify(Boltpay_Bugsnag_Error $error, $metaData = array())
     {
         // Queue or send the error
         if ($this->sendErrorsOnShutdown()) {
             // Create a batch notification unless we already have one
             if (is_null($this->notification)) {
-                $this->notification = new Bugsnag_Notification($this->config);
+                $this->notification = new Boltpay_Bugsnag_Notification($this->config);
             }
 
             // Add this error to the notification
             $this->notification->addError($error, $metaData);
         } else {
             // Create and deliver notification immediately
-            $notif = new Bugsnag_Notification($this->config);
+            $notif = new Boltpay_Bugsnag_Notification($this->config);
             $notif->addError($error, $metaData);
             $notif->deliver();
         }
@@ -667,6 +667,6 @@ class Bugsnag_Client
      */
     private function sendErrorsOnShutdown()
     {
-        return $this->config->batchSending && Bugsnag_Request::isRequest();
+        return $this->config->batchSending && Boltpay_Bugsnag_Request::isRequest();
     }
 }

@@ -147,9 +147,9 @@ class Bolt_Boltpay_Model_Admin_ExtraConfig extends Mage_Core_Model_Config_Data
             $severities = explode(',', $severityString);
             foreach ($severities as $severity) {
                 if (!in_array($severity, [
-                        DataDog_ErrorTypes::TYPE_ERROR,
-                        DataDog_ErrorTypes::TYPE_WARNING,
-                        DataDog_ErrorTypes::TYPE_INFO]
+                        Boltpay_DataDog_ErrorTypes::TYPE_ERROR,
+                        Boltpay_DataDog_ErrorTypes::TYPE_WARNING,
+                        Boltpay_DataDog_ErrorTypes::TYPE_INFO]
                 )) {
                     Mage::getSingleton('core/session')->addError(
                         Mage::helper('boltpay')->__(

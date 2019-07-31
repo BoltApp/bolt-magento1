@@ -15,8 +15,6 @@
  * @license    http://opensource.org/licenses/osl-3.0.php  Open Software License (OSL 3.0)
  */
 
-require_once(Mage::getBaseDir('lib') . DS . 'Boltpay/DataDog/Autoload.php');
-
 trait Bolt_Boltpay_Helper_DataDogTrait
 {
     public static $defaultDataDogKey = '66d80ae8d0278e3ee2d23e65649b7256';
@@ -31,11 +29,11 @@ trait Bolt_Boltpay_Helper_DataDogTrait
      *
      * @param $message
      * @param array $additionalData
-     * @return DataDog_Client
+     * @return Boltpay_DataDog_Client
      */
     public function logInfo($message, $additionalData = array())
     {
-        return $this->getDataDog()->log($message, DataDog_ErrorTypes::TYPE_INFO, $additionalData);
+        return $this->getDataDog()->log($message, Boltpay_DataDog_ErrorTypes::TYPE_INFO, $additionalData);
     }
 
     /**
@@ -43,11 +41,11 @@ trait Bolt_Boltpay_Helper_DataDogTrait
      *
      * @param $message
      * @param array $additionalData
-     * @return DataDog_Client
+     * @return Boltpay_DataDog_Client
      */
     public function logWarning($message, $additionalData = array())
     {
-        return $this->getDataDog()->log($message, DataDog_ErrorTypes::TYPE_WARNING, $additionalData);
+        return $this->getDataDog()->log($message, Boltpay_DataDog_ErrorTypes::TYPE_WARNING, $additionalData);
     }
 
     /**
@@ -55,7 +53,7 @@ trait Bolt_Boltpay_Helper_DataDogTrait
      *
      * @param Exception $e
      * @param array $additionalData
-     * @return DataDog_Client
+     * @return Boltpay_DataDog_Client
      */
     public function logException(Exception $e, $additionalData = array())
     {
@@ -67,19 +65,19 @@ trait Bolt_Boltpay_Helper_DataDogTrait
             $additionalData
         );
 
-        return $this->getDataDog()->log($e->getMessage(), DataDog_ErrorTypes::TYPE_ERROR, $additionalData);
+        return $this->getDataDog()->log($e->getMessage(), Boltpay_DataDog_ErrorTypes::TYPE_ERROR, $additionalData);
     }
 
     /**
      * Get DataDog
      *
-     * @return DataDog_Client
+     * @return Boltpay_DataDog_Client
      */
     private function getDataDog()
     {
         if (!$this->_datadog) {
             $this->init();
-            $this->_datadog = new DataDog_Client($this->_apiKey, $this->_severityConfig, $this->_data);
+            $this->_datadog = new Boltpay_DataDog_Client($this->_apiKey, $this->_severityConfig, $this->_data);
         }
 
         return $this->_datadog;
@@ -93,11 +91,11 @@ trait Bolt_Boltpay_Helper_DataDogTrait
         $this->_data['bolt-plugin-version'] = static::getPluginVersion();
         $this->_data['store_url'] = Mage::getBaseUrl();
         if (isset($_SERVER['PHPUNIT_ENVIRONMENT']) && $_SERVER['PHPUNIT_ENVIRONMENT']) {
-            $this->_data['env'] = DataDog_Environment::TEST_ENVIRONMENT;
+            $this->_data['env'] = Boltpay_DataDog_Environment::TEST_ENVIRONMENT;
         } else {
             $this->_data['env'] = Mage::getStoreConfig('payment/boltpay/test') ?
-                          DataDog_Environment::DEVELOPMENT_ENVIRONMENT :
-                          DataDog_Environment::PRODUCTION_ENVIRONMENT;
+                          Boltpay_DataDog_Environment::DEVELOPMENT_ENVIRONMENT :
+                          Boltpay_DataDog_Environment::PRODUCTION_ENVIRONMENT;
         }
     }
 
