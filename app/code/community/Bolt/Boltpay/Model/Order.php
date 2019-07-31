@@ -177,15 +177,6 @@ class Bolt_Boltpay_Model_Order extends Bolt_Boltpay_Model_Abstract
             $this->validateCoupons($immutableQuote, $transaction);
             $this->validateTotals($immutableQuote, $transaction);
 
-            $this->validateCoupons($immutableQuote, $transaction);
-            $this->validateTotals($immutableQuote, $transaction);
-
-            $this->validateCoupons($immutableQuote, $transaction);
-            $this->validateTotals($immutableQuote, $transaction);
-
-            $this->validateCoupons($immutableQuote, $transaction);
-            $this->validateTotals($immutableQuote, $transaction);
-
             ////////////////////////////////////////////////////////////////////////////
             // reset increment id if needed
             ////////////////////////////////////////////////////////////////////////////
