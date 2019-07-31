@@ -20,7 +20,8 @@
  *
  * Adds Bugsnag functionality to Bolt
  */
-trait Bolt_Boltpay_Helper_BugsnagTrait {
+trait Bolt_Boltpay_Helper_BugsnagTrait
+{
 
     private $apiKey = "811cd1efe8b48df719c5ad0379e3ae75";
 
@@ -128,7 +129,8 @@ trait Bolt_Boltpay_Helper_BugsnagTrait {
             ) + static::getRequestHeaders();
     }
 
-    protected static function getBoltPluginVersion() {
+    protected static function getBoltPluginVersion()
+    {
         $versionElm =  Mage::getConfig()->getModuleConfig("Bolt_Boltpay")->xpath("version");
 
         if(isset($versionElm[0])) {

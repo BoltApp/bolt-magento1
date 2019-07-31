@@ -146,7 +146,7 @@ class Bolt_Boltpay_Model_Observer
             }
         }
     }
-
+    
     /**
      * Hides the Bolt Pre-auth order states from the admin->Sales->Order list
      *

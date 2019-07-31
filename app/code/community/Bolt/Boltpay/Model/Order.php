@@ -95,7 +95,7 @@ class Bolt_Boltpay_Model_Order extends Bolt_Boltpay_Model_Abstract
 
             // explicitly set quote belong to guest if customer id does not exist
             $immutableQuote
-                ->setCustomerIsGuest( (($parentQuote->getCustomerId()) ? false : true) );
+                ->setCustomerIsGuest((($parentQuote->getCustomerId()) ? false : true));
 
             // Set the firstname and lastname if guest customer.
             if ($immutableQuote->getCustomerIsGuest()) {
@@ -103,6 +103,7 @@ class Bolt_Boltpay_Model_Order extends Bolt_Boltpay_Model_Abstract
                     ->setCustomerFirstname($transaction->order->cart->billing_address->first_name)
                     ->setCustomerLastname($transaction->order->cart->billing_address->last_name);
             }
+
             $immutableQuote->save();
 
             $immutableQuote->getShippingAddress()->setShouldIgnoreValidation(true)->save();
@@ -119,7 +120,6 @@ class Bolt_Boltpay_Model_Order extends Bolt_Boltpay_Model_Abstract
             $packagesToShip = $transaction->order->cart->shipments;
 
             if ($packagesToShip) {
-
                 $shippingAddress = $immutableQuote->getShippingAddress();
                 $shippingMethodCode = null;
 
@@ -162,6 +162,7 @@ class Bolt_Boltpay_Model_Order extends Bolt_Boltpay_Model_Abstract
                     $this->boltHelper()->notifyException(new Exception($errorMessage), $metaData);
                 }
             }
+
             //////////////////////////////////////////////////////////////////////////////////
 
             //////////////////////////////////////////////////////////////////////////////////
@@ -173,6 +174,14 @@ class Bolt_Boltpay_Model_Order extends Bolt_Boltpay_Model_Abstract
             //////////////////////////////////////////////////////////////////////////////////
 
             $this->boltHelper()->collectTotals($immutableQuote, true)->save();
+            $this->validateCoupons($immutableQuote, $transaction);
+            $this->validateTotals($immutableQuote, $transaction);
+
+            $this->validateCoupons($immutableQuote, $transaction);
+            $this->validateTotals($immutableQuote, $transaction);
+
+            $this->validateCoupons($immutableQuote, $transaction);
+            $this->validateTotals($immutableQuote, $transaction);
 
             $this->validateCoupons($immutableQuote, $transaction);
             $this->validateTotals($immutableQuote, $transaction);
@@ -198,6 +207,7 @@ class Bolt_Boltpay_Model_Order extends Bolt_Boltpay_Model_Abstract
 
                     return $preExistingOrder;
                 }
+
                 ############################
 
                 $parentQuote
@@ -207,6 +217,7 @@ class Bolt_Boltpay_Model_Order extends Bolt_Boltpay_Model_Abstract
 
                 $immutableQuote->setReservedOrderId($parentQuote->getReservedOrderId());
             }
+
             ////////////////////////////////////////////////////////////////////////////
 
             ////////////////////////////////////////////////////////////////////////////
@@ -238,7 +249,6 @@ class Bolt_Boltpay_Model_Order extends Bolt_Boltpay_Model_Abstract
                 $this->boltHelper()->logException($e);
                 throw $e;
             }
-            ////////////////////////////////////////////////////////////////////////////
 
         } catch ( Exception $oce ) {
             // Order creation exception, so mark the parent quote as active so webhooks can retry it
@@ -821,7 +831,8 @@ class Bolt_Boltpay_Model_Order extends Bolt_Boltpay_Model_Abstract
      *
      * @return Mage_Sales_Model_Order   If found, and order with all the details, otherwise a new object order
      */
-    public function getOrderByQuoteId($quoteId) {
+    public function getOrderByQuoteId($quoteId)
+    {
         /* @var Mage_Sales_Model_Resource_Order_Collection $orderCollection */
         $orderCollection = Mage::getResourceModel('sales/order_collection');
 
@@ -837,7 +848,8 @@ class Bolt_Boltpay_Model_Order extends Bolt_Boltpay_Model_Abstract
      *
      * @return Mage_Sales_Model_Quote   The quote which created the order
      */
-    public function getQuoteFromOrder($order) {
+    public function getQuoteFromOrder($order)
+    {
         return Mage::getModel('sales/quote')->loadByIdWithoutStore($order->getQuoteId());
     }
 
@@ -849,13 +861,15 @@ class Bolt_Boltpay_Model_Order extends Bolt_Boltpay_Model_Abstract
      *
      * @return Mage_Sales_Model_Quote   The parent quote of the order that is tied to the Magento session
      */
-    public function getParentQuoteFromOrder($order) {
+    public function getParentQuoteFromOrder($order)
+    {
         $quote = $this->getQuoteFromOrder($order);
         return Mage::getModel('sales/quote')->loadByIdWithoutStore($quote->getParentQuoteId());
     }
 
 
-    protected function getRatesDebuggingData($rates) {
+    protected function getRatesDebuggingData($rates)
+    {
         $rateDebuggingData = '';
 
         if(isset($rates)) {
