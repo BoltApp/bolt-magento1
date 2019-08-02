@@ -132,8 +132,9 @@ class Bolt_Boltpay_Model_Order extends Bolt_Boltpay_Model_Abstract
                 /** @var Bolt_Boltpay_Model_ShippingAndTax $shippingAndTaxModel */
                 $shippingAndTaxModel = Mage::getModel("boltpay/shippingAndTax");
 
+                $shouldRecalculateShipping = (bool) $this->boltHelper()->getExtraConfig("recalculateShipping"); # false by default
                 benchmark( "Applying shipping - Applying shipping address data" );
-                $shippingAndTaxModel->applyBoltAddressData($immutableQuote, $packagesToShip[0]->shipping_address, false);
+                $shippingAndTaxModel->applyBoltAddressData($immutableQuote, $packagesToShip[0]->shipping_address, $shouldRecalculateShipping);
                 benchmark( "Finished applying shipping - Applying shipping address data" );
 
                 $shippingMethodCode = $packagesToShip[0]->reference;
@@ -143,7 +144,7 @@ class Bolt_Boltpay_Model_Order extends Bolt_Boltpay_Model_Abstract
                     // Legacy transaction does not have shipments reference - fallback to $service field
                     $shippingMethod = $packagesToShip[0]->service;
 
-                    $this->boltHelper()->collectTotals($immutableQuote, false);
+                    $this->boltHelper()->collectTotals($immutableQuote, $shouldRecalculateShipping);
 
                     $rates = $shippingAddress->getAllShippingRates();
 
