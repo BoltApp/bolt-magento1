@@ -26,6 +26,7 @@ use Bolt_Boltpay_OrderCreationException as OCE;
 class Bolt_Boltpay_Model_Order extends Bolt_Boltpay_Model_Abstract
 {
     const MERCHANT_BACK_OFFICE = 'merchant_back_office';
+    const MAX_ORDER_ID = 4294967295; # represents the max unsigned int by MySQL and MariaDB
 
     /**
      * Processes Magento order creation. Called from both frontend and API.

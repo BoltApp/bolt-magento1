@@ -122,7 +122,7 @@ class Bolt_Boltpay_Model_Observer
 
             /** @var Mage_Sales_Model_Order $order */
             $order = Mage::getModel('sales/order')->loadByIncrementId($incrementId);
-            $orderEntityId = (!$order->isObjectNew()) ? $order->getId() : 4294967295;  # use required max sentinel id if order not yet created
+            $orderEntityId = (!$order->isObjectNew()) ? $order->getId() : Bolt_Boltpay_Model_Order::MAX_ORDER_ID;  # use required max sentinel id if order not yet created
 
             $requestParams['lastQuoteId'] = $requestParams['lastSuccessQuoteId'] = $immutableQuoteId;
             $requestParams['lastOrderId'] = $orderEntityId;
