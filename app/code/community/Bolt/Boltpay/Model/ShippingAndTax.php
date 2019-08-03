@@ -89,38 +89,55 @@ class Bolt_Boltpay_Model_ShippingAndTax extends Bolt_Boltpay_Model_Abstract
             $primaryShippingAddress = $customer->getPrimaryShippingAddress();
             $primaryBillingAddress = $customer->getPrimaryBillingAddress();
 
-            if (!$primaryShippingAddress) {
-                /** @var Mage_Customer_Model_Address $primaryShippingAddress */
-                $primaryShippingAddress = Mage::getModel('customer/address');
+            /**
+             * Saves a billing or shipping address to the customer address book and sets it as default
+             *
+             * @param string $addressType either 'Shipping'|'Billing'
+             */
+            $saveAddressFunction = function( $addressType ) use ( $customer, $addressData ) {
+                /** @var Mage_Customer_Model_Address $customerAddress */
+                $customerAddress = Mage::getModel('customer/address');
 
-                $primaryShippingAddress
-                    ->setCustomerId($customer->getId())
-                    ->setCustomer($customer)
-                    ->addData($addressData)
-                    ->setIsDefaultShipping('1')
-                    ->setSaveInAddressBook('1')
-                    ->save();
+                try {
+                    $setIsDefaultMethod = 'setIsDefault'.$addressType;
+                    $customerAddress
+                        ->setCustomerId($customer->getId())
+                        ->setCustomer($customer)
+                        ->addData($addressData)
+                        ->$setIsDefaultMethod('1')
+                        ->setSaveInAddressBook('1')
+                        ->save();
+                } catch ( Exception $e ) {
+                    // We catch any exception because they could be thrown from 3rd-party software after save
+                    // If so, we have already accomplished what we need to do.  If the error is before, it is
+                    // still ok because we are doing a non-critical routine of saving to the address book.
+                    $this->boltHelper()->notifyException(
+                        $e,
+                        ['bolt_address_data' => json_encode($addressData)],
+                        'warning'
+                    );
+                }
 
-                $customer->addAddress($primaryShippingAddress)
-                    ->setDefaultShipping($primaryShippingAddress->getId())
-                    ->save();
-            }
+                try {
+                    $setDefaultMethod = 'setDefault'.$addressType;
+                    $customer->addAddress($customerAddress)
+                        ->$setDefaultMethod($customerAddress->getId())
+                        ->save();
+                } catch ( Exception $e ) {
+                    // We catch any exception because they could be thrown from 3rd-party software after save
+                    // If so, we have already accomplished what we need to do.  If the error is before, it is
+                    // still ok because we are doing a non-critical routine of setting a default address
+                    $this->boltHelper()->notifyException(
+                        $e,
+                        ['bolt_address_data' => json_encode($addressData)],
+                        'warning'
+                    );
+                }
+            };
 
-            if (!$primaryBillingAddress) {
-                /** @var Mage_Customer_Model_Address $primaryBillingAddress */
-                $primaryBillingAddress = Mage::getModel('customer/address');
+            if (!$primaryShippingAddress) { $saveAddressFunction( 'Shipping' ); }
+            if (!$primaryBillingAddress) { $saveAddressFunction('Billing' ); }
 
-                $primaryBillingAddress->setCustomerId($customer->getId())
-                    ->setCustomer($customer)
-                    ->addData($addressData)
-                    ->setIsDefaultBilling('1')
-                    ->setSaveInAddressBook('1')
-                    ->save();
-
-                $customer->addAddress($primaryBillingAddress)
-                    ->setDefaultBilling($primaryBillingAddress->getId())
-                    ->save();
-            }
         }
 
         if ($clearCurrentData){
