@@ -38,6 +38,9 @@ trait Bolt_Boltpay_Helper_LoggerTrait
     use Bolt_Boltpay_Helper_BugsnagTrait;
 
     public static $isLoggerEnabled = true;
+
+    /** @var array A two dimensional array of all benchmark labels and times  */
+    public static $benchmarks = [];
     
     /**
      * Runtime errors that do not require immediate action but should typically
@@ -103,6 +106,125 @@ trait Bolt_Boltpay_Helper_LoggerTrait
                 )
             );
             $this->notifyException( new Exception((string)$message) );
+        }
+    }
+
+    /**
+     * Logs the time taken to reach the point in the codebase
+     *
+     * @param string $label                  Label to add to the benchmark
+     * @param bool   $shouldLogIndividually  If true, the benchmark will be logged separately in addition to with the full log
+     * @param bool   $shouldIncludeInFullLog If false, this benchmark will not be included in the full log
+     * @param bool   $shouldFlushFullLog     If true, will log the full log up to this benchmark call.
+     */
+    public function logBenchmark( $label, $shouldLogIndividually = false, $shouldIncludeInFullLog = true, $shouldFlushFullLog = false ) {
+        if (!$this->getExtraConfig('enableBenchmarkProfiling')) { return; }
+
+        $startTime = Mage::registry('bolt/request_start_time') ?: microtime(true);
+        $previousTime = Mage::registry('bolt/last_process_timestamp') ?: $startTime;
+        $currentTime = microtime(true);
+
+        $sectionDivider = '*****************************************************';
+        $summaryHeader = '-- Benchmark ';
+        $summarySinceLastTime = 'Time since previous benchmark: *';
+        $summarySinceStartTime = 'Time since benchmark profiling was started: ';
+
+        if ($shouldLogIndividually) {
+            $summary = "\n".$summaryHeader." --\n";
+            if ($label) {$summary .= "*$label*\n";}
+
+            $summary .=
+                $summarySinceLastTime.round(($currentTime - $previousTime), 3)."s*\n"
+                .$summarySinceStartTime.round(($currentTime - $startTime), 3).'s';
+
+            $this->info($summary);
+        }
+
+        try {
+            Mage::register('bolt/request_start_time', $startTime, true);
+            Mage::unregister('bolt/last_process_timestamp');
+            Mage::register('bolt/last_process_timestamp', $currentTime);
+        } catch ( Mage_Core_Exception $mce ) {
+            // convenience clobber to suppress IDE warnings.  Logic does not permit the exception
+        }
+
+        if ($shouldIncludeInFullLog) {
+            static::$benchmarks[] = [ 'label' => $label, 'time' => $currentTime ];
+        }
+
+        if ( $shouldFlushFullLog ) {
+
+            if (static::$benchmarks) {
+                $fullSummary = "";
+                $finalBenchmarkTime = static::$benchmarks[count(static::$benchmarks) - 1]['time'];
+                $totalTime = $finalBenchmarkTime - $startTime;
+
+                $i = 0;
+                $previousTime = $startTime;
+                $percentSummaryArray = [];
+                foreach (static::$benchmarks as $benchmark) {
+                    $i++;
+                    $summary = $summaryHeader . " $i --\n";
+                    $label = $benchmark['label'];
+                    if ($label) {
+                        $summary .= "*$label*\n";
+                    }
+
+                    $benchmarkTime = $benchmark['time'];
+                    $processingTime = $benchmarkTime - $previousTime;
+                    $processingPercentage = number_format(round(($processingTime / $totalTime) * 100, 2), 2);
+
+                    $summary .=
+                        $summarySinceLastTime . round(($processingTime), 3) . "s*\n"
+                        . $summarySinceStartTime . round(($benchmarkTime - $startTime), 3) . "s\n"
+                        . "Percent of total benchmarked processing time: *$processingPercentage%*";
+
+                    $previousTime = $benchmarkTime;
+
+                    if ($fullSummary) {
+                        $fullSummary .= "\n\n";
+                    }
+                    $fullSummary .= $summary;
+
+                    $percentSummaryArray[] = [
+                        'index' => $i,
+                        'label' => $label ?: '<No Label>',
+                        'percent' => $processingPercentage,
+                        'time' => number_format(round(($processingTime), 3), 3)
+                    ];
+                }
+                usort(
+                    $percentSummaryArray,
+                    function ($a, $b) {
+                        if ($a['percent'] == $b['percent']) {
+                            return 0;
+                        }
+                        return ($a['percent'] < $b['percent']) ? 1 : -1;
+                    }
+                );
+
+                $percentSummary = $percentSummaryArray
+                    ? "\n\n$sectionDivider\n\n-- Aggregate Benchmark Processing Time Summary --\n\n"
+                    : '';
+
+                $i = 0;
+                foreach ($percentSummaryArray as $benchmark) {
+                    if ($i++) {
+                        $percentSummary .= "\n";
+                    }
+                    $percentSummary .= str_pad($benchmark['percent'], 5, ' ', STR_PAD_LEFT)
+                        . '% - Benchmark '. str_pad( $benchmark['index'], 3)
+                        . ' - ' . $benchmark['label'] . ' - *' . $benchmark['time'] . 's*';
+                }
+
+                $totalTime = "\n\nTotal Processing Time: *" . round($totalTime, 3) . "s*\n\n$sectionDivider\n";
+                $this->info("\n$sectionDivider\n\n".$fullSummary.$percentSummary.$totalTime);
+            }
+
+            # fully reset the benchmarks
+            Mage::unregister('bolt/request_start_time');
+            Mage::unregister('bolt/last_process_timestamp');
+            static::$benchmarks = [];
         }
     }
 }
