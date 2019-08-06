@@ -89,6 +89,25 @@ class Bolt_Boltpay_ApiController extends Mage_Core_Controller_Front_Action imple
                 $newTransactionStatus = Bolt_Boltpay_Model_Payment::translateHookTypeToTransactionStatus($hookType, $transaction);
                 $prevTransactionStatus = $orderPayment->getAdditionalInformation('bolt_transaction_status');
 
+                // First we check if the order is already processed
+                if ($this->hookHasBeenHandled(
+                    $order,
+                    $newTransactionStatus,
+                    $prevTransactionStatus,
+                    $hookType
+                )){
+                    $this->boltHelper()->logWarning($this->boltHelper()->__('Order already handled, so hook was ignored'));
+                    $this->sendResponse(
+                        200,
+                        array(
+                            'status' => 'success',
+                            'display_id' => $order->getIncrementId(),
+                            'message' => $this->boltHelper()->__('Order already handled, so hook was ignored')
+                        )
+                    );
+                    return;
+                }
+
                 // Update the transaction id as it may change, ignore the credit hook type,
                 // cause the partial refund need original transaction id to process.
                 if($hookType !== 'credit'){
@@ -139,44 +158,23 @@ class Bolt_Boltpay_ApiController extends Mage_Core_Controller_Front_Action imple
 
         } catch (Bolt_Boltpay_InvalidTransitionException $boltPayInvalidTransitionException) {
             $this->boltHelper()->logException($boltPayInvalidTransitionException);
-            if ($boltPayInvalidTransitionException->getOldStatus() == Bolt_Boltpay_Model_Payment::TRANSACTION_ON_HOLD) {
+
+            if ($prevTransactionStatus == Bolt_Boltpay_Model_Payment::TRANSACTION_ON_HOLD) {
                 $this->getResponse() ->setHeader("Retry-After", "86400");
                 $this->sendResponse(
                     503,
                     array('status' => 'failure', 'error' => array('code' => 6009, 'message' => $this->boltHelper()->__('The order is on-hold and requires manual merchant update before this hook can be processed') ))
                 );
+
                 $this->boltHelper()->logWarning($this->boltHelper()->__('The order is on-hold and requires manual merchant update before this hook can be processed'));
             } else {
-                $isNotRefundOrCaptureHook = !in_array($hookType, array(Bolt_Boltpay_Model_Payment::HOOK_TYPE_REFUND, Bolt_Boltpay_Model_Payment::HOOK_TYPE_CAPTURE));
-                $isRepeatHook = $newTransactionStatus === $prevTransactionStatus;
-                $isRejectionHookForCancelledOrder =
-                    ($prevTransactionStatus === Bolt_Boltpay_Model_Payment::TRANSACTION_CANCELLED)
-                    && in_array($hookType, array(Bolt_Boltpay_Model_Payment::HOOK_TYPE_REJECTED_REVERSIBLE, Bolt_Boltpay_Model_Payment::HOOK_TYPE_REJECTED_IRREVERSIBLE));
-                $isAuthHookForCompletedOrder =
-                    ($prevTransactionStatus === Bolt_Boltpay_Model_Payment::TRANSACTION_COMPLETED)
-                    && ($hookType === Bolt_Boltpay_Model_Payment::HOOK_TYPE_AUTH);
-
-                $canAssumeHookedIsHandled = $isNotRefundOrCaptureHook && ($isRepeatHook || $isRejectionHookForCancelledOrder || $isAuthHookForCompletedOrder);
-
-                if ( $canAssumeHookedIsHandled )
-                {
-                    $this->boltHelper()->logWarning($this->boltHelper()->__('Order already handled, so hook was ignored'));
-                    $this->sendResponse(
-                        200,
-                        array(
-                            'status' => 'success',
-                            'display_id' => $order->getIncrementId(),
-                            'message' => $this->boltHelper()->__('Order already handled, so hook was ignored')
-                        )
-                    );
-                } else {
-                    $this->boltHelper()->logWarning($this->boltHelper()->__('Invalid webhook transition from %s to %s', $prevTransactionStatus, $newTransactionStatus) );
-                    $this->sendResponse(
-                        422,
-                        array('status' => 'failure', 'error' => array('code' => 6009, 'message' => $this->boltHelper()->__('Invalid webhook transition from %s to %s', $prevTransactionStatus, $newTransactionStatus) ))
-                    );
-                }
+                $this->boltHelper()->logWarning($this->boltHelper()->__('Invalid webhook transition from %s to %s', $prevTransactionStatus, $newTransactionStatus) );
+                $this->sendResponse(
+                    422,
+                    array('status' => 'failure', 'error' => array('code' => 6009, 'message' => $this->boltHelper()->__('Invalid webhook transition from %s to %s', $prevTransactionStatus, $newTransactionStatus) ))
+                );
             }
+
         } catch (Exception $e) {
 
             $this->sendResponse(
@@ -412,5 +410,36 @@ class Bolt_Boltpay_ApiController extends Mage_Core_Controller_Front_Action imple
         $couponModel->applyCoupon();
 
         $this->sendResponse($couponModel->getHttpCode(), $couponModel->getResponseData());
+    }
+
+    /**
+     * Check if hook is already handled by one of the previous requests
+     *
+     * @param Mage_Sales_Model_Order $order                     Order we are processing
+     * @param string                 $newTransactionStatus      New transaction status
+     * @param string                 $previousTransactionStatus Transaction status before the hook came in
+     * @param string                 $hookType                  Transaction status the hook is trying to set
+     *
+     * @return bool True if response is sent during the transaction status check
+     */
+    private function hookHasBeenHandled(
+        $order,
+        $newTransactionStatus,
+        $previousTransactionStatus,
+        $hookType
+    )
+    {
+        $isNotRefundOrCaptureHook = !in_array($hookType, array(Bolt_Boltpay_Model_Payment::HOOK_TYPE_REFUND, Bolt_Boltpay_Model_Payment::HOOK_TYPE_CAPTURE));
+        $isRepeatHook = $newTransactionStatus === $previousTransactionStatus;
+        $isRejectionHookForCancelledOrder =
+            ($order->getStatus() === 'canceled_bolt')
+            && in_array($hookType, array(Bolt_Boltpay_Model_Payment::HOOK_TYPE_REJECTED_REVERSIBLE, Bolt_Boltpay_Model_Payment::HOOK_TYPE_REJECTED_IRREVERSIBLE));
+        $isAuthHookForCompletedOrder =
+            ($previousTransactionStatus === Bolt_Boltpay_Model_Payment::TRANSACTION_COMPLETED)
+            && ($hookType === Bolt_Boltpay_Model_Payment::HOOK_TYPE_AUTH);
+
+        $canAssumeHookIsHandled = $isNotRefundOrCaptureHook && ($isRepeatHook || $isRejectionHookForCancelledOrder || $isAuthHookForCompletedOrder);
+
+        return $canAssumeHookIsHandled;
     }
 }
