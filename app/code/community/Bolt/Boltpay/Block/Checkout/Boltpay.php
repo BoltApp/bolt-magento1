@@ -130,18 +130,14 @@ class Bolt_Boltpay_Block_Checkout_Boltpay extends Mage_Checkout_Block_Onepage_Re
      * Generate cart data
      *
      * @param      $orderCreationResponse
-     * @param null $checkoutType
      * @return array
      */
-    public function buildCartData($orderCreationResponse, $checkoutType = null)
+    public function buildCartData($orderCreationResponse)
     {
-        $authCapture = $checkoutType === 'admin' ? true : Mage::getStoreConfigFlag('payment/boltpay/auto_capture');
-
         //////////////////////////////////////////////////////////////////////////
         // Generate JSON cart and hints objects for the javascript returned below.
         //////////////////////////////////////////////////////////////////////////
         $cartData = array(
-            'authcapture' => $authCapture,
             'orderToken' => ($orderCreationResponse) ? $orderCreationResponse->token: '',
         );
 
