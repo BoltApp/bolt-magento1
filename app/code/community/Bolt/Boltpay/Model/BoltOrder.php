@@ -923,7 +923,11 @@ PROMISE;
             $clonedQuote->getShippingAddress()->setCollectShippingRates(true)->collectShippingRates()->save();
         }
 
-        return $clonedQuote;
+        return $this->boltHelper()->dispatchFilterEvent(
+            "bolt_boltpay_filter_cloned_quote",
+            $clonedQuote,
+            ['sourceQuote' => $sourceQuote, 'checkoutType' => $checkoutType]
+        );
     }
 
     /**
