@@ -26,6 +26,7 @@ use Bolt_Boltpay_OrderCreationException as OCE;
 class Bolt_Boltpay_Model_Order extends Bolt_Boltpay_Model_Abstract
 {
     const MERCHANT_BACK_OFFICE = 'merchant_back_office';
+    const MAX_ORDER_ID = 4294967295; # represents the max unsigned int by MySQL and MariaDB
 
     /**
      * Processes Magento order creation. Called from both frontend and API.
@@ -241,6 +242,10 @@ class Bolt_Boltpay_Model_Order extends Bolt_Boltpay_Model_Abstract
                 benchmark( "Submitting order" );
                 $service->submitAll();
                 $order = $service->getOrder();
+                if (!$isPreAuthCreation) {
+                    $order->addStatusHistoryComment($this->boltHelper()->__("BOLT notification: Order created via Bolt Webhook API for transaction $reference "));
+                    $order->save();
+                }
                 benchmark( "Submitted order and validated it" );
 
                 //////////////////////////////////////////////////
@@ -950,6 +955,7 @@ class Bolt_Boltpay_Model_Order extends Bolt_Boltpay_Model_Abstract
             ->addStatusHistoryComment($userNote)
             ->setIsVisibleOnFront(true)
             ->setIsCustomerNotified(false);
+        $order->save();
 
         return $order;
     }

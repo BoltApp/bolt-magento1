@@ -131,9 +131,11 @@ class Bolt_Boltpay_ApiController extends Mage_Core_Controller_Front_Action imple
             }
 
             /////////////////////////////////////////////////////
-            /// Order was not found.  Throw Exception
+            /// Order was not found
+            /// Create order from orphaned transaction
             /////////////////////////////////////////////////////
-            throw new Exception("Could not find order ".$transaction->order->cart->display_id);
+            $orderModel->createOrder($reference, null, false, $transaction);
+            throw new Exception("Could not find order ".$transaction->order->cart->display_id. " Created it instead.");
 
         } catch (Bolt_Boltpay_InvalidTransitionException $boltPayInvalidTransitionException) {
             $this->boltHelper()->logException($boltPayInvalidTransitionException);
