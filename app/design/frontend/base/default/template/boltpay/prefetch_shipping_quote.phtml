@@ -16,7 +16,8 @@
  */
 /* @var $this Bolt_Boltpay_Block_Checkout_Boltpay */
 
-if($this->isBoltActive()) {
+// Only if Bolt is active and an IP Stack key exists, do a prefetch
+if($this->isBoltActive() && Mage::getStoreConfig('payment/boltpay/ipstack_key')) {
     ?>
     <script>
         (function () {
@@ -46,11 +47,11 @@ if($this->isBoltActive()) {
                             country.value = _data.country_id;
                             country.dispatchEvent(evt);
                         }
-                        
+
                         if (city && !city.value.length && _data.city != null) {
                             city.value = _data.city;
                         }
-                        
+
                         if (region_id && !region_id.value.length && _data.region_id != null) {
                             evt.initEvent('change', true, true);
                             region_id.value = _data.region_id;
