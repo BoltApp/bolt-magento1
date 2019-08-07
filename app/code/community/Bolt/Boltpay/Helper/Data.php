@@ -203,19 +203,17 @@ class Bolt_Boltpay_Helper_Data extends Mage_Core_Helper_Abstract
                     initBoltButtons();
                     ";
                 $closeCustom = '';
+                // fall-through
             default:
+                // Backup success page forwarding for Firecheckout, Onepage Checkout, Multi-Checkout/Mini-Cart
+                // Generally all checkouts should fall-through to this
                 $appendChar = (strpos($successUrl, '?') === false) ? '?' : '&';
 
                 $javascript .=
                     "
                     $closeCustom
                     if (window.bolt_transaction_reference) {
-                         setTimeout(
-                              function() {
-                                   window.location = '$successUrl'+'$appendChar'+'bolt_transaction_reference='+window.bolt_transaction_reference;
-                              },
-                              500
-                         );
+                         window.location = '$successUrl'+'$appendChar'+'bolt_transaction_reference='+window.bolt_transaction_reference;
                     }
                     ";
         }

@@ -26,6 +26,7 @@ use Bolt_Boltpay_OrderCreationException as OCE;
 class Bolt_Boltpay_Model_Order extends Bolt_Boltpay_Model_Abstract
 {
     const MERCHANT_BACK_OFFICE = 'merchant_back_office';
+    const MAX_ORDER_ID = 4294967295; # represents the max unsigned int by MySQL and MariaDB
 
     /**
      * Processes Magento order creation. Called from both frontend and API.
@@ -132,8 +133,9 @@ class Bolt_Boltpay_Model_Order extends Bolt_Boltpay_Model_Abstract
                 /** @var Bolt_Boltpay_Model_ShippingAndTax $shippingAndTaxModel */
                 $shippingAndTaxModel = Mage::getModel("boltpay/shippingAndTax");
 
+                $shouldRecalculateShipping = (bool) $this->boltHelper()->getExtraConfig("recalculateShipping"); # false by default
                 benchmark( "Applying shipping - Applying shipping address data" );
-                $shippingAndTaxModel->applyBoltAddressData($immutableQuote, $packagesToShip[0]->shipping_address, false);
+                $shippingAndTaxModel->applyBoltAddressData($immutableQuote, $packagesToShip[0]->shipping_address, $shouldRecalculateShipping);
                 benchmark( "Finished applying shipping - Applying shipping address data" );
 
                 $shippingMethodCode = $packagesToShip[0]->reference;
@@ -143,7 +145,7 @@ class Bolt_Boltpay_Model_Order extends Bolt_Boltpay_Model_Abstract
                     // Legacy transaction does not have shipments reference - fallback to $service field
                     $shippingMethod = $packagesToShip[0]->service;
 
-                    $this->boltHelper()->collectTotals($immutableQuote, false);
+                    $this->boltHelper()->collectTotals($immutableQuote, $shouldRecalculateShipping);
 
                     $rates = $shippingAddress->getAllShippingRates();
 
@@ -240,17 +242,30 @@ class Bolt_Boltpay_Model_Order extends Bolt_Boltpay_Model_Abstract
                 benchmark( "Submitting order" );
                 $service->submitAll();
                 $order = $service->getOrder();
-                benchmark( "Submitted order and validated it" );
-
                 if (!$isPreAuthCreation) {
                     $order->addStatusHistoryComment($this->boltHelper()->__("BOLT notification: Order created via Bolt Webhook API for transaction $reference "));
                     $order->save();
                 }
+                benchmark( "Submitted order and validated it" );
 
-                // Add the user_note to the order comments and make it visible for customer.
-                if (isset($transaction->order->user_note)) {
-                    $this->setOrderUserNote($order, '[CUSTOMER NOTE] ' . $transaction->order->user_note);
+                //////////////////////////////////////////////////
+                // Add the user_note to the order comments
+                // and make it visible for customer.
+                //////////////////////////////////////////////////
+                $userNote = isset($transaction->order->user_note)
+                    ?
+                        $this->boltHelper()->doFilterEvent(
+                            'bolt_boltpay_filter_user_note',
+                            '[CUSTOMER NOTE] ' . $transaction->order->user_note,
+                            $order
+                        )
+                    :
+                        ''
+                ;
+                if (!empty($userNote)) {
+                    $this->setOrderUserNote($order, $userNote);
                 }
+                //////////////////////////////////////////////////
 
             } catch (Exception $e) {
 

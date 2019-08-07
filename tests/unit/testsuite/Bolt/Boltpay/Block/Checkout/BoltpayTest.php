@@ -43,7 +43,6 @@ class Bolt_Boltpay_Block_Checkout_BoltpayTest extends PHPUnit_Framework_TestCase
         $result = $this->currentMock->buildCartData($testBoltResponse);
 
         $cartData = array(
-            'authcapture' => $autoCapture,
             'orderToken' => md5('bolt'),
         );
 
@@ -64,7 +63,6 @@ class Bolt_Boltpay_Block_Checkout_BoltpayTest extends PHPUnit_Framework_TestCase
         $result = $this->currentMock->buildCartData($testBoltResponse);
 
         $cartData = array(
-            'authcapture'   => $autoCapture,
             'orderToken'    => '',
         );
 
@@ -86,7 +84,6 @@ class Bolt_Boltpay_Block_Checkout_BoltpayTest extends PHPUnit_Framework_TestCase
         $result = $this->currentMock->buildCartData($testBoltResponse);
 
         $cartData = array(
-            'authcapture' => $autoCapture,
             'orderToken' => md5('bolt'),
         );
 
@@ -111,7 +108,6 @@ class Bolt_Boltpay_Block_Checkout_BoltpayTest extends PHPUnit_Framework_TestCase
         $result = $this->currentMock->buildCartData($testBoltResponse);
 
         $cartData = array(
-            'authcapture' => $autoCapture,
             'orderToken' => md5('bolt'),
             'error' => $apiErrorMessage
         );
@@ -189,7 +185,6 @@ class Bolt_Boltpay_Block_Checkout_BoltpayTest extends PHPUnit_Framework_TestCase
 
         $cartData = json_encode (
             array(
-                'authcapture' => $autoCapture,
                 'orderToken' => md5('bolt')
             )
         );
