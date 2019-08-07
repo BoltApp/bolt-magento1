@@ -190,7 +190,7 @@ class Bolt_Bolt_Model_Observer extends Amasty_Rules_Model_Observer
     }
 
     /**
-     * Adds the user note to the Bolt order data if it has already been set in the session
+     * Overrides the adjusted shipping amount when Amstay discounts and gift cards are used
      *
      * event: bolt_boltpay_filter_adjusted_shipping_amount
      *
