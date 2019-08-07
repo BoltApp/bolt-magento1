@@ -495,9 +495,9 @@ class Bolt_Boltpay_Model_Payment extends Mage_Payment_Model_Method_Abstract
                 } elseif ($newTransactionStatus == self::TRANSACTION_REJECTED_IRREVERSIBLE) {
                     /** @var Mage_Sales_Model_Order $order */
                     $order = $payment->getOrder();
-                    $order->cancel();
+                    $order->cancel();  # returns inventory
                     $message = $this->boltHelper()->__('BOLT notification: Transaction reference "%s" has been permanently rejected by Bolt', $reference);
-                    $order->addStatusHistoryComment($message)->setIsVisibleOnFront(false)->setIsCustomerNotified(false);
+                    $order->setState(Mage_Sales_Model_Order::STATE_CANCELED, true, $message); # adds message and ensures state changed
                     $order->save();
                 } elseif ($newTransactionStatus == self::TRANSACTION_REJECTED_REVERSIBLE) {
                     $order = $payment->getOrder();
