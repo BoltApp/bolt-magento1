@@ -1068,6 +1068,8 @@ class Bolt_Boltpay_Model_Payment extends Mage_Payment_Model_Method_Abstract
         if (!$authTransaction || $authTransaction->canVoidAuthorizationCompletely()) {
             // True void
             $order->cancel();
+            $message = $this->boltHelper()->__('BOLT notification: The order has been canceled by Bolt');
+            $order->setState(Mage_Sales_Model_Order::STATE_CANCELED, true, $message); # adds message and ensures state changed
         } else if (!$authTransaction->getIsClosed()) {
             // Open authorization has expired and partial capture has taken place.
             // We do not change the order state.  We only need to close the authorization.
