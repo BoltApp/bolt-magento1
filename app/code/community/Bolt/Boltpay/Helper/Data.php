@@ -177,7 +177,11 @@ class Bolt_Boltpay_Helper_Data extends Mage_Core_Helper_Abstract
      */
     public function buildOnCloseCallback($closeCustom, $checkoutType)
     {
-        $successUrl = $this->getMagentoUrl(Mage::getStoreConfig('payment/boltpay/successpage'));
+        // For frontend URLs, we want to session id process the URL to get the correct URL
+        // in the non-multi-store context
+        $successUrl = Mage::getModel('core/url')->sessionUrlVar(
+            $this->getMagentoUrl(Mage::getStoreConfig('payment/boltpay/successpage'))
+        );
         $javascript = "";
         switch ($checkoutType) {
             case Bolt_Boltpay_Block_Checkout_Boltpay::CHECKOUT_TYPE_ADMIN:
