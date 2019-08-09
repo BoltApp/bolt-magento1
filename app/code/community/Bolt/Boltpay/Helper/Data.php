@@ -177,8 +177,8 @@ class Bolt_Boltpay_Helper_Data extends Mage_Core_Helper_Abstract
      */
     public function buildOnCloseCallback($closeCustom, $checkoutType)
     {
-        // For frontend URLs, we want to session id process the URL to get the correct URL
-        // in the non-multi-store context
+        // For frontend URLs, we want to "session id process" the URL to get the 
+        // final format URL which may or may not contain the __SID=(S|U) parameter
         $successUrl = Mage::getModel('core/url')->sessionUrlVar(
             $this->getMagentoUrl(Mage::getStoreConfig('payment/boltpay/successpage'))
         );
