@@ -47,7 +47,10 @@ jobs:
 
   unit-php56-mage19:
     docker:
-      - image: bylexus/apache-php56
+      - image: boltdev/m1-plugin-ci-php56-mage19:v1
+        auth: 
+          username: $DOCKERHUB_USER
+          password: $DOCKERHUB_PASS
       - image: circleci/mysql:5.7
     steps:
       - checkout
@@ -56,7 +59,7 @@ jobs:
           command: |
             mkdir ./artifacts
             export TEST_ENV=php56-mage19
-            PHPUNIT_PHAR=tests/unit/phpunit-5.7.9.phar MAGENTO_VERSION=magento-mirror-1.9.3.6 tests/scripts/ci.sh
+            PHPUNIT_PHAR=tests/unit/phpunit-5.7.9.phar MAGENTO_VERSION=magento-mirror-1.9.3.6 tests/scripts/ci2.sh
       - store_artifacts:
           path: ./artifacts
 
@@ -99,7 +102,7 @@ workflows:
                 - master
                 - develop
                 - circleci
-      - unit-php55-mage18
-      - unit-php55-mage19
-      - unit-php56-mage18
+#      - unit-php55-mage18
+#      - unit-php55-mage19
+#      - unit-php56-mage18
       - unit-php56-mage19
