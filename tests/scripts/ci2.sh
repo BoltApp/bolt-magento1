@@ -4,23 +4,27 @@ set -e
 set -u
 set -x
 
-MAGENTO_DIR='./magento'
 cd /home/circleci
+
+rsync -a project/ var/www/html/
+rm -rf project/*
 
 echo "Waiting for DB..."
 while ! mysql -uroot -h 127.0.0.1 -e "SELECT 1" >/dev/null 2>&1; do
     sleep 1
 done
 
-php -d memroy_limit=512M n98-magerun.phar install --magentoVersionByName=$MAGENTO_VERSION \
-  --installationFolder="${MAGENTO_DIR}" --forceUseDb --noDownload --dbHost=127.0.0.1 --dbUser=root --dbName=circle_test  --dbPass="" \
-  --installSampleData=no --useDefaultConfigParams=yes --baseUrl=http://ci.test.magento1/
-php n98-magerun.phar config:set currency/options/base USD --root-dir $MAGENTO_DIR
-php n98-magerun.phar config:set currency/options/default USD --root-dir $MAGENTO_DIR
-php n98-magerun.phar config:set currency/options/allow USD --root-dir $MAGENTO_DIR
+mysql -u root -h 127.0.0.1 circle_test < magento-sample-data-1.9.2.4/magento_sample_data_for_1.9.2.4.sql
+php -d memroy_limit=512M n98-magerun.phar install --magentoVersionByName=magento-mirror-1.9.3.6 \
+  --installationFolder=/var/www/html --forceUseDb --noDownload --dbHost=127.0.0.1 --dbUser=circleci --dbName=circle_test  --dbPass="" \
+  --installSampleData=yes --useDefaultConfigParams=yes --baseUrl=http://m1-test.integrations.dev.bolt.me
 
-rsync -a project/ magento/
-rm -rf project/*
+cd /var/www/html
+php init-bolt.php $BOLT_SANDBOX_MERCHANT_API_KEY $BOLT_SANDBOX_MERCHANT_SIGNING_SECRET $BOLT_SANDBOX_MERCHANT_PUBLISHABLE_KEY
 
-cd magento
-tests/scripts/run_phpunit_tests.sh
+chown -R www-data:www-data /var/www/html
+
+sudo service apache2 restart
+
+./ngrok authtoken $NGROK_TOKEN
+./ngrok http 80 -hostname=m1-test.integrations.dev.bolt.me &
