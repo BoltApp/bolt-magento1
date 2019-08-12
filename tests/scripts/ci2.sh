@@ -6,7 +6,8 @@ set -x
 
 cd /home/circleci
 
-rsync -a project/ /var/www/html/
+ls -al /var/www/html
+sudo rsync -a project/ /var/www/html/
 rm -rf project/*
 
 echo "Waiting for DB..."
