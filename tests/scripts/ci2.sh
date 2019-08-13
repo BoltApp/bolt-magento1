@@ -10,6 +10,9 @@ ls -al /var/www/html
 sudo rsync -a project/ /var/www/html/
 rm -rf project/*
 
+# TODO: move this to Docker
+sudo apt-get install nodejs
+
 echo "Waiting for DB..."
 while ! mysql -uroot -h 127.0.0.1 -e "SELECT 1" >/dev/null 2>&1; do
     sleep 1
