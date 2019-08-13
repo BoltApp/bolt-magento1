@@ -23,7 +23,7 @@ php -d memroy_limit=512M n98-magerun.phar install --magentoVersionByName=magento
 cd /var/www/html
 php init-bolt.php $BOLT_SANDBOX_MERCHANT_API_KEY $BOLT_SANDBOX_MERCHANT_SIGNING_SECRET $BOLT_SANDBOX_MERCHANT_PUBLISHABLE_KEY
 
-chown -R www-data:www-data /var/www/html
+sudo chown -R www-data:www-data /var/www/html
 
 sudo service apache2 restart
 
