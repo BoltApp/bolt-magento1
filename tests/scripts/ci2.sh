@@ -27,5 +27,6 @@ sudo chown -R www-data:www-data /var/www/html
 
 sudo service apache2 restart
 
+cd /home/circleci
 ./ngrok authtoken $NGROK_TOKEN
 ./ngrok http 80 -hostname=m1-test.integrations.dev.bolt.me &
