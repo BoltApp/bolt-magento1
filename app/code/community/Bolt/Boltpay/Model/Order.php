@@ -109,6 +109,7 @@ class Bolt_Boltpay_Model_Order extends Bolt_Boltpay_Model_Abstract
             $immutableQuote->getBillingAddress()
                 ->setFirstname($transaction->order->cart->billing_address->first_name)
                 ->setLastname($transaction->order->cart->billing_address->last_name)
+                ->setEmail($transaction->order->cart->billing_address->email_address)
                 ->setShouldIgnoreValidation(true)
                 ->save();
 
