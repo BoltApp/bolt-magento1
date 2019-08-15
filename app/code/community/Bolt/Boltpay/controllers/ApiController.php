@@ -305,15 +305,12 @@ class Bolt_Boltpay_ApiController extends Mage_Core_Controller_Front_Action imple
      * @throws Mage_Core_Model_Store_Exception  if for any reason the store can not be found to generate the URL
      */
     private function createSuccessUrl($order, $immutableQuoteId) {
-        /* @var Mage_Sales_Model_Quote $immutableQuote */
-        $immutableQuote = Mage::getModel('sales/quote')->loadByIdWithoutStore($immutableQuoteId);
-
         $successUrlPath = $this->boltHelper()->getMagentoUrl(
             Mage::getStoreConfig('payment/boltpay/successpage'),
             [
                 '_query' => [
-                    'lastQuoteId' => $immutableQuote->getParentQuoteId(),
-                    'lastSuccessQuoteId' => $immutableQuote->getParentQuoteId(),
+                    'lastQuoteId' => $immutableQuoteId,
+                    'lastSuccessQuoteId' => $immutableQuoteId,
                     'lastOrderId' => $order->getId(),
                     'lastRealOrderId' => $order->getIncrementId()
                 ]
