@@ -326,15 +326,6 @@ class Bolt_Boltpay_Model_Order extends Bolt_Boltpay_Model_Abstract
         ///////////////////////////////////////////////////////
         /// Dispatch order save events
         ///////////////////////////////////////////////////////
-        $recurringPaymentProfiles = $service->getRecurringPaymentProfiles();
-
-        benchmark( 'Running independent merchant third-party code via checkout_submit_all_after');
-        Mage::dispatchEvent(
-            'checkout_submit_all_after',
-            array('order' => $order, 'quote' => $immutableQuote, 'recurring_profiles' => $recurringPaymentProfiles)
-        );
-        benchmark( "Finished running independent merchant third-party code via checkout_submit_all_after" );
-
         Mage::dispatchEvent(
             'bolt_boltpay_order_creation_after',
             array('order'=>$order, 'quote'=>$immutableQuote, 'transaction' => $transaction)
@@ -805,6 +796,22 @@ class Bolt_Boltpay_Model_Order extends Bolt_Boltpay_Model_Abstract
         $this->getParentQuoteFromOrder($order)->setIsActive(false)->save();
         $reference = @$payloadObject->transaction_reference ?: $payloadObject->reference;
         $order->getPayment()->setAdditionalInformation('bolt_reference', $reference)->save();
+
+        try {
+            $immutableQuote = $this->getQuoteFromOrder($order);
+            $recurringPaymentProfiles = $immutableQuote->setTotalsCollectedFlag(true)->prepareRecurringPaymentProfiles();
+
+            benchmark( 'Running independent merchant third-party code via checkout_submit_all_after');
+            Mage::dispatchEvent(
+                'checkout_submit_all_after',
+                array('order' => $order, 'quote' => $immutableQuote, 'recurring_profiles' => $recurringPaymentProfiles)
+            );
+            benchmark( "Finished running independent merchant third-party code via checkout_submit_all_after" );
+        } catch ( Exception $e ) {
+            $this->boltHelper()->notifyException($e);
+            $this->boltHelper()->logException($e);
+        }
+
         $this->sendOrderEmail($order);
     }
 
