@@ -1,5 +1,6 @@
 # Dockerfile
 FROM circleci/php:5.6.40-apache
+# FROM circleci/php:5.6.40-apache-node-browsers
 
 USER root
 ENV LANG=C.UTF-8
