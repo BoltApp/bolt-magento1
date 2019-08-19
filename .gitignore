@@ -5,3 +5,4 @@
 docker-container/docker-magento
 docker-container/config.sh
 docker-container/docker_env
+Docker-container/docker-compose.yml

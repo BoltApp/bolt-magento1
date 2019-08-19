@@ -47,52 +47,69 @@
               <show_in_store>1</show_in_store>
             </test>
 
-            <api_key translate="label">
-              <label>API Key</label>
-              <frontend_type>obscure</frontend_type>
-              <backend_model>adminhtml/system_config_backend_encrypted</backend_model>
-              <sort_order>10</sort_order>
-              <show_in_default>1</show_in_default>
-              <show_in_website>1</show_in_website>
-              <show_in_store>1</show_in_store>
-            </api_key>
-            <publishable_key_multipage translate="label">
-              <label> Publishable Key - Multi Step Checkout (default)</label>
-              <frontend_type>text</frontend_type>
-              <sort_order>11</sort_order>
-              <show_in_default>1</show_in_default>
-              <show_in_website>1</show_in_website>
-              <show_in_store>1</show_in_store>
-            </publishable_key_multipage>
-            <publishable_key_admin translate="label">
-              <label> Publishable Key - Backoffice (optional)</label>
-              <comment>This key is required to process payment from magento admin. Please consult with your account manager if you don't have the key.</comment>
-              <frontend_type>text</frontend_type>
-              <sort_order>12</sort_order>
-              <show_in_default>1</show_in_default>
-              <show_in_website>1</show_in_website>
-              <show_in_store>1</show_in_store>
-            </publishable_key_admin>
-            <publishable_key_onepage translate="label">
-              <label> Publishable Key - One Page Checkout (optional)</label>
-              <frontend_type>text</frontend_type>
-              <sort_order>13</sort_order>
-              <show_in_default>1</show_in_default>
-              <show_in_website>1</show_in_website>
-              <show_in_store>1</show_in_store>
-            </publishable_key_onepage>
-            <!--
-                The Bolt Signing Secret Key configuration, used to verify web hook request signature.
-             -->
-            <signing_key translate="label">
-              <label>Signing Secret</label>
-              <frontend_type>obscure</frontend_type>
-              <backend_model>adminhtml/system_config_backend_encrypted</backend_model>
-              <sort_order>15</sort_order>
-              <show_in_default>1</show_in_default>
-              <show_in_website>1</show_in_website>
-              <show_in_store>1</show_in_store>
-            </signing_key>
+            <groups>
+              <keys translate="label" module="boltpay">
+                <label>Keys</label>
+                <frontend_type>text</frontend_type>
+                <sort_order>3</sort_order>
+                <show_in_default>1</show_in_default>
+                <show_in_website>1</show_in_website>
+                <show_in_store>1</show_in_store>
+                <fields>
+                  <api_key translate="label">
+                    <label>API Key</label>
+                    <frontend_type>obscure</frontend_type>
+                    <backend_model>adminhtml/system_config_backend_encrypted</backend_model>
+                    <sort_order>10</sort_order>
+                    <show_in_default>1</show_in_default>
+                    <show_in_website>1</show_in_website>
+                    <show_in_store>1</show_in_store>
+                    <tooltip>Used for calling Bolt API from your backend server.</tooltip>
+                  </api_key>
+                  <!--
+                      The Bolt Signing Secret Key configuration, used to verify web hook request signature.
+                   -->
+                  <signing_key translate="label">
+                    <label>Signing Secret</label>
+                    <frontend_type>obscure</frontend_type>
+                    <backend_model>adminhtml/system_config_backend_encrypted</backend_model>
+                    <sort_order>11</sort_order>
+                    <show_in_default>1</show_in_default>
+                    <show_in_website>1</show_in_website>
+                    <show_in_store>1</show_in_store>
+                    <tooltip>Used for signature verification</tooltip>
+                  </signing_key>
+                  <publishable_key_multipage translate="label">
+                    <label>Publishable Key - Multistep</label>
+                    <frontend_type>text</frontend_type>
+                    <sort_order>12</sort_order>
+                    <show_in_default>1</show_in_default>
+                    <show_in_website>1</show_in_website>
+                    <show_in_store>1</show_in_store>
+                    <tooltip>Used by Bolt JavaScript to display the Multistep Experience</tooltip>
+                  </publishable_key_multipage>
+                  <publishable_key_onepage translate="label">
+                    <label> Publishable Key - Payment Only</label>
+                    <frontend_type>text</frontend_type>
+                    <sort_order>13</sort_order>
+                    <show_in_default>1</show_in_default>
+                    <show_in_website>1</show_in_website>
+                    <show_in_store>1</show_in_store>
+                    <tooltip>Used by Bolt JavaScript to display the Payment Only Experience</tooltip>
+                  </publishable_key_onepage>
+                  <publishable_key_admin translate="label">
+                    <label> Publishable Key - Back Office</label>
+                    <comment>This key is required to process payment from magento admin. Please consult with your account manager if you don't have the key.</comment>
+                    <frontend_type>text</frontend_type>
+                    <sort_order>13</sort_order>
+                    <show_in_default>1</show_in_default>
+                    <show_in_website>1</show_in_website>
+                    <show_in_store>1</show_in_store>
+                    <tooltip>Used by Bolt JavaScript to display the Back Office Experience</tooltip>
+                  </publishable_key_admin>
+                </fields>
+              </keys>
+            </groups>
 
             <ipstack_key translate="label">
               <label>Ipstack Access Key</label>
