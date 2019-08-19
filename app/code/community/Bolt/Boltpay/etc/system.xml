@@ -23,6 +23,7 @@
         <boltpay translate="label" module="boltpay">
           <label>Bolt Pay</label>
           <frontend_type>text</frontend_type>
+          <frontend_class>complex</frontend_class>
           <sort_order>34</sort_order>
           <show_in_default>1</show_in_default>
           <show_in_website>1</show_in_website>
@@ -47,22 +48,15 @@
               <show_in_store>1</show_in_store>
             </test>
 
-            <keys type="group" translate="label">
+            <keys type="group" translate="label comment">
               <label>Keys</label>
+              <comment><![CDATA[Keys and URL Configurations can be found at <a href="merchant.bolt.com/settings">merchant.bolt.com/settings</a> or <a href="merchant-sandbox.bolt.com/settings">merchant-sandbox.bolt.com/settings</a>.]]></comment>
               <frontend_type>text</frontend_type>
-              <sort_order>2</sort_order>
+              <sort_order>3</sort_order>
               <show_in_default>1</show_in_default>
               <show_in_website>1</show_in_website>
               <show_in_store>1</show_in_store>
               <fields>
-                <keys_header translate="label">
-                  <label><![CDATA[Keys and URL Configurations can be found at <a href="merchant.bolt.com/settings">merchant.bolt.com/settings</a> or <a href="merchant-sandbox.bolt.com/settings">merchant-sandbox.bolt.com/settings</a>.]]></label>
-                  <frontend_type>label</frontend_type>
-                  <sort_order>3</sort_order>
-                  <show_in_default>1</show_in_default>
-                  <show_in_website>1</show_in_website>
-                  <show_in_store>1</show_in_store>
-                </keys_header>
                 <api_key translate="label tooltip">
                   <label>API Key</label>
                   <frontend_type>obscure</frontend_type>
