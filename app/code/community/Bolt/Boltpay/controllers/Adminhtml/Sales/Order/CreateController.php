@@ -266,6 +266,14 @@ class Bolt_Boltpay_Adminhtml_Sales_Order_CreateController
         if (!$this->_getOrderCreateModel()->getQuote()->isVirtual()) {
             $this->_getQuote()->getShippingAddress()->setCollectShippingRates(true)->collectShippingRates()->save();
         }
+
+        Mage::dispatchEvent(
+            'bolt_boltpay_admin_normalize_order_data_after',
+            array(
+                'request' => $this->getRequest(),
+                'orderCreateModel' => $this->_getOrderCreateModel()
+            )
+        );
     }
 
 
