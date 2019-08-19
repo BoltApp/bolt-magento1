@@ -62,7 +62,7 @@ jobs:
 
   integration-sandbox:
     docker:
-      - image: boltdev/m1-plugin-ci-php56-mage19:v2
+      - image: boltdev/m1-plugin-ci-php56-mage19:v3
         auth: 
           username: $DOCKERHUB_USER
           password: $DOCKERHUB_PASS
