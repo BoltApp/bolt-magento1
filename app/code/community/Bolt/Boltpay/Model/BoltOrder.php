@@ -593,6 +593,10 @@ class Bolt_Boltpay_Model_BoltOrder extends Bolt_Boltpay_Model_Abstract
             $billingAddress->setCompany($fallbackAddress->getCompany());
         }
 
+        if (!trim($billingAddress->getEmail())) {
+            $billingAddress->setEmail($fallbackAddress->getEmail());
+        }
+
         if ($wasCorrected) {
             $billingAddress->save();
             $quote->save();
