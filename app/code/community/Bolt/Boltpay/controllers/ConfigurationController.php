@@ -43,7 +43,7 @@ class Bolt_Boltpay_ConfigurationController
 
         // Validate for API key
         if (!($this->checkApiKey())) {
-            $this->setErrorResponseData($responseData, $this->boltHelper()->__('Api Key is invalid'));
+            $this->setErrorResponseData($responseData, $this->boltHelper()->__('API Key is invalid'));
         }
 
         // Validate for Signing Secret
@@ -51,12 +51,12 @@ class Bolt_Boltpay_ConfigurationController
             $this->setErrorResponseData($responseData, $this->boltHelper()->__('Signing Secret is invalid'));
         }
 
-        // Validate Publishable Key - Multi-Page Checkout / Publishable Key - One Page Checkout
+        // Validate Publishable Key - Multistep / Publishable Key - Payment Only
         if (!($this->checkPublishableKeyMultiPage())) {
-            $this->setErrorResponseData($responseData, $this->boltHelper()->__('Publishable Key - Multi-Page Checkout is invalid'));
+            $this->setErrorResponseData($responseData, $this->boltHelper()->__('Publishable Key - Multistep is invalid'));
         }
         if (!($this->checkPublishableKeyOnePage())) {
-            $this->setErrorResponseData($responseData, $this->boltHelper()->__('Publishable Key - One Page Checkout is invalid'));
+            $this->setErrorResponseData($responseData, $this->boltHelper()->__('Publishable Key - Payment Only is invalid'));
         }
 
         // Validate database schema
