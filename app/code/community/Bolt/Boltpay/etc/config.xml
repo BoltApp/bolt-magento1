@@ -256,13 +256,13 @@
         <enable_product_page_checkout>0</enable_product_page_checkout>
         <product_page_checkout_selector>.btn-cart</product_page_checkout_selector>
         <additional_css>
-          #checkout-review-submit .bolt-checkout-button {
-            clear:both;
-            float:right;
-          }
-          .col-right.sidebar .block.block-cart .block-content .actions .bolt-checkout-button-button {
-            min-width: max-content!important;
-          }
+#checkout-review-submit .bolt-checkout-button {
+  clear:both;
+  float:right;
+}
+.col-right.sidebar .block.block-cart .block-content .actions .bolt-checkout-button-button {
+  min-width: max-content!important;
+}
         </additional_css>
       </additional_options>
       <advanced_settings>
@@ -271,11 +271,11 @@
         <enable_merchant_scoped_account>0</enable_merchant_scoped_account>
         <selectors><![CDATA[.btn-proceed-checkout, .minicart-actions .checkout-button, body.firecheckout-index-index .button.btn-checkout]]></selectors>
         <selector_styles>
-          .btn-proceed-checkout {
-            .bolt-checkout-button.with-cards {
-              float: right;
-            }
-          }
+.btn-proceed-checkout {
+  .bolt-checkout-button.with-cards {
+    float: right;
+  }
+}
         </selector_styles>
         <successpage>checkout/onepage/success</successpage>
         <allow_po_box>1</allow_po_box>
