@@ -47,14 +47,14 @@ class Bolt_Boltpay_Helper_Data extends Mage_Core_Helper_Abstract
         // opportunity to do full overrides
         //////////////////////////////////////////////////////
 
-        $checkCustom = $this->getPaymentBoltpayConfig('check', $checkoutType);
-        $onCheckoutStartCustom = $this->getPaymentBoltpayConfig('on_checkout_start', $checkoutType);
-        $onEmailEnterCustom = $this->getPaymentBoltpayConfig('on_email_enter', $checkoutType);
-        $onShippingDetailsCompleteCustom = $this->getPaymentBoltpayConfig('on_shipping_details_complete', $checkoutType);
-        $onShippingOptionsCompleteCustom = $this->getPaymentBoltpayConfig('on_shipping_options_complete', $checkoutType);
-        $onPaymentSubmitCustom = $this->getPaymentBoltpayConfig('on_payment_submit', $checkoutType);
-        $successCustom = $this->getPaymentBoltpayConfig('success', $checkoutType);
-        $closeCustom = $this->getPaymentBoltpayConfig('close', $checkoutType);
+        $checkCustom = $this->getPaymentBoltpayConfig('check', $checkoutType, 'advanced_settings');
+        $onCheckoutStartCustom = $this->getPaymentBoltpayConfig('on_checkout_start', $checkoutType, 'advanced_settings');
+        $onEmailEnterCustom = $this->getPaymentBoltpayConfig('on_email_enter', $checkoutType, 'advanced_settings');
+        $onShippingDetailsCompleteCustom = $this->getPaymentBoltpayConfig('on_shipping_details_complete', $checkoutType, 'advanced_settings');
+        $onShippingOptionsCompleteCustom = $this->getPaymentBoltpayConfig('on_shipping_options_complete', $checkoutType, 'advanced_settings');
+        $onPaymentSubmitCustom = $this->getPaymentBoltpayConfig('on_payment_submit', $checkoutType, 'advanced_settings');
+        $successCustom = $this->getPaymentBoltpayConfig('success', $checkoutType, 'advanced_settings');
+        $closeCustom = $this->getPaymentBoltpayConfig('close', $checkoutType, 'advanced_settings');
 
         $onCheckCallback = $this->buildOnCheckCallback($checkoutType, $isVirtualQuote);
         $onSuccessCallback = $this->buildOnSuccessCallback($successCustom, $checkoutType);
@@ -180,7 +180,7 @@ class Bolt_Boltpay_Helper_Data extends Mage_Core_Helper_Abstract
         // For frontend URLs, we want to "session id process" the URL to get the 
         // final format URL which may or may not contain the __SID=(S|U) parameter
         $successUrl = Mage::getModel('core/url')->sessionUrlVar(
-            $this->getMagentoUrl(Mage::getStoreConfig('payment/boltpay/successpage'))
+            $this->getMagentoUrl(Mage::getStoreConfig('payment/advanced_settings/successpage'))
         );
         $javascript = "";
         switch ($checkoutType) {
@@ -197,7 +197,7 @@ class Bolt_Boltpay_Helper_Data extends Mage_Core_Helper_Abstract
                 break;
             case Bolt_Boltpay_Block_Checkout_Boltpay::CHECKOUT_TYPE_PRODUCT_PAGE:
                 $quoteId = Mage::getSingleton('checkout/session')->getQuoteId();
-                $successUrl = $this->getMagentoUrl(Mage::getStoreConfig('payment/boltpay/successpage'), array('checkoutType' => $checkoutType, 'session_quote_id' => $quoteId));
+                $successUrl = $this->getMagentoUrl(Mage::getStoreConfig('payment/advanced_settings/successpage'), array('checkoutType' => $checkoutType, 'session_quote_id' => $quoteId));
                 break;
             case Bolt_Boltpay_Block_Checkout_Boltpay::CHECKOUT_TYPE_FIRECHECKOUT:
                 $javascript .=

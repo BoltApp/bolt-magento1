@@ -55,7 +55,7 @@ trait Bolt_Boltpay_Helper_ApiTrait {
      */
     private function verify_hook_secret($payload, $hmacHeader)
     {
-        $signingSecret = Mage::helper('core')->decrypt(Mage::getStoreConfig('payment/boltpay/signing_key'));
+        $signingSecret = Mage::helper('core')->decrypt(Mage::getStoreConfig('payment/keys/signing_key'));
         $computedHmac  = trim(base64_encode(hash_hmac('sha256', $payload, $signingSecret, true)));
         return $hmacHeader == $computedHmac;
     }
@@ -72,7 +72,7 @@ trait Bolt_Boltpay_Helper_ApiTrait {
         try {
             $url = $this->getApiUrl() . "/v1/merchant/verify_signature";
 
-            $key = Mage::helper('core')->decrypt(Mage::getStoreConfig('payment/boltpay/api_key'));
+            $key = Mage::helper('core')->decrypt(Mage::getStoreConfig('payment/keys/api_key'));
 
             $ch = curl_init($url);
 
@@ -149,9 +149,9 @@ trait Bolt_Boltpay_Helper_ApiTrait {
         }
 
         if ($command == '' && $type == '' && $object == 'merchant') {
-            $key = Mage::getStoreConfig('payment/boltpay/publishable_key_multipage', $storeId);
+            $key = Mage::getStoreConfig('payment/keys/publishable_key_multipage', $storeId);
         } else {
-            $key = Mage::getStoreConfig('payment/boltpay/api_key', $storeId);
+            $key = Mage::getStoreConfig('payment/keys/api_key', $storeId);
         }
 
         $contextInfo = $this->getContextInfo();

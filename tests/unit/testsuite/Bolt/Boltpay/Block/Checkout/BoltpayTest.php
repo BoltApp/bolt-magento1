@@ -131,7 +131,7 @@ class Bolt_Boltpay_Block_Checkout_BoltpayTest extends PHPUnit_Framework_TestCase
     {
         $style = '.test-selector { color: red; }';
 
-        $this->app->getStore()->setConfig('payment/boltpay/additional_css', $style);
+        $this->app->getStore()->setConfig('payment/additional_options/additional_css', $style);
 
         $result = $this->currentMock->getAdditionalCSS();
 
@@ -145,7 +145,7 @@ class Bolt_Boltpay_Block_Checkout_BoltpayTest extends PHPUnit_Framework_TestCase
     {
         $js = 'jQuery("body div").text("Hello, world.")';
 
-        $this->app->getStore()->setConfig('payment/boltpay/additional_js', $js);
+        $this->app->getStore()->setConfig('payment/additional_options/additional_js', $js);
 
         $result = $this->currentMock->getAdditionalJs();
 
@@ -158,7 +158,7 @@ class Bolt_Boltpay_Block_Checkout_BoltpayTest extends PHPUnit_Framework_TestCase
     public function testGetSuccessURL()
     {
         $url = 'checkout/onepage/success';
-        $this->app->getStore()->setConfig('payment/boltpay/successpage', $url);
+        $this->app->getStore()->setConfig('payment/advanced_settings/successpage', $url);
         $expected = Mage::helper('boltpay')->getMagentoUrl($url);
 
         $result = $this->currentMock->getSuccessUrl();
@@ -203,13 +203,13 @@ class Bolt_Boltpay_Block_Checkout_BoltpayTest extends PHPUnit_Framework_TestCase
 
         $checkoutType = Bolt_Boltpay_Block_Checkout_Boltpay::CHECKOUT_TYPE_MULTI_PAGE;
 
-        $this->app->getStore()->setConfig('payment/boltpay/check', '');
-        $this->app->getStore()->setConfig('payment/boltpay/on_checkout_start', '');
-        $this->app->getStore()->setConfig('payment/boltpay/on_shipping_details_complete', '');
-        $this->app->getStore()->setConfig('payment/boltpay/on_shipping_options_complete', '');
-        $this->app->getStore()->setConfig('payment/boltpay/on_payment_submit', '');
-        $this->app->getStore()->setConfig('payment/boltpay/success', '');
-        $this->app->getStore()->setConfig('payment/boltpay/close', '');
+        $this->app->getStore()->setConfig('payment/advanced_settings/check', '');
+        $this->app->getStore()->setConfig('payment/advanced_settings/on_checkout_start', '');
+        $this->app->getStore()->setConfig('payment/advanced_settings/on_shipping_details_complete', '');
+        $this->app->getStore()->setConfig('payment/advanced_settings/on_shipping_options_complete', '');
+        $this->app->getStore()->setConfig('payment/advanced_settings/on_payment_submit', '');
+        $this->app->getStore()->setConfig('payment/advanced_settings/success', '');
+        $this->app->getStore()->setConfig('payment/advanced_settings/close', '');
 
         $quote = Mage::getModel('sales/quote');
         $quote->setId(6);

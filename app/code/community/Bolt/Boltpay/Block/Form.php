@@ -36,6 +36,6 @@ class Bolt_Boltpay_Block_Form extends Mage_Payment_Block_Form_Cc
             $this->setMethodLabelAfterHtml($markBlock->toHtml());
         }
 
-        $this->setTemplate('boltpay/form.phtml')->setMethodTitle(Mage::getStoreConfig('payment/boltpay/title'));
+        $this->setTemplate('boltpay/form.phtml')->setMethodTitle(Mage::getStoreConfig('payment/advanced_settings/title'));
     }
 }

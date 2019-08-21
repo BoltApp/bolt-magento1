@@ -74,7 +74,7 @@ class Bolt_Boltpay_Helper_DataTest extends PHPUnit_Framework_TestCase
     public function testCanUseBoltReturnsTrueIfSkipPaymentIsEnabled()
     {
         $this->app->getStore()->setConfig('payment/boltpay/active', 1);
-        $this->app->getStore()->setConfig('payment/boltpay/skip_payment', 1);
+        $this->app->getStore()->setConfig('payment/advanced_settings/skip_payment', 1);
         $this->testHelper->createCheckout('guest');
         $cart = $this->testHelper->addProduct(self::$productId, 2);
 
@@ -87,8 +87,8 @@ class Bolt_Boltpay_Helper_DataTest extends PHPUnit_Framework_TestCase
     public function testCanUseBoltReturnsFalseIfBillingCountryNotWhitelisted()
     {
         $this->app->getStore()->setConfig('payment/boltpay/active', 1);
-        $this->app->getStore()->setConfig('payment/boltpay/allowspecific', 1);
-        $this->app->getStore()->setConfig('payment/boltpay/specificcountry', 'CA,UK');
+        $this->app->getStore()->setConfig('payment/advanced_settings/allowspecific', 1);
+        $this->app->getStore()->setConfig('payment/advanced_settings/specificcountry', 'CA,UK');
         $this->testHelper->createCheckout('guest');
         $this->testHelper->addTestBillingAddress();
         $cart = $this->testHelper->addProduct(self::$productId, 2);
@@ -100,8 +100,8 @@ class Bolt_Boltpay_Helper_DataTest extends PHPUnit_Framework_TestCase
     public function testCanUseBoltReturnsTrueIfBillingCountryIsWhitelisted()
     {
         $this->app->getStore()->setConfig('payment/boltpay/active', 1);
-        $this->app->getStore()->setConfig('payment/boltpay/allowspecific', 1);
-        $this->app->getStore()->setConfig('payment/boltpay/specificcountry', 'CA,US,UK');
+        $this->app->getStore()->setConfig('payment/advanced_settings/allowspecific', 1);
+        $this->app->getStore()->setConfig('payment/advanced_settings/specificcountry', 'CA,US,UK');
         $this->testHelper->createCheckout('guest');
         $this->testHelper->addTestBillingAddress();
         $cart = $this->testHelper->addProduct(self::$productId, 2);
@@ -113,9 +113,9 @@ class Bolt_Boltpay_Helper_DataTest extends PHPUnit_Framework_TestCase
     public function testCanUseBoltReturnsTrueIfSkipPaymentEvenIfBillingCountryIsNotWhitelisted()
     {
         $this->app->getStore()->setConfig('payment/boltpay/active', 1);
-        $this->app->getStore()->setConfig('payment/boltpay/skip_payment', 1);
-        $this->app->getStore()->setConfig('payment/boltpay/allowspecific', 1);
-        $this->app->getStore()->setConfig('payment/boltpay/specificcountry', 'CA,UK');
+        $this->app->getStore()->setConfig('payment/advanced_settings/skip_payment', 1);
+        $this->app->getStore()->setConfig('payment/advanced_settings/allowspecific', 1);
+        $this->app->getStore()->setConfig('payment/advanced_settings/specificcountry', 'CA,UK');
         $this->testHelper->createCheckout('guest');
         $this->testHelper->addTestBillingAddress();
         $cart = $this->testHelper->addProduct(self::$productId, 2);
@@ -127,7 +127,7 @@ class Bolt_Boltpay_Helper_DataTest extends PHPUnit_Framework_TestCase
     public function testCanUseBoltReturnsTrueIfAllowSpecificIsFalse()
     {
         $this->app->getStore()->setConfig('payment/boltpay/active', 1);
-        $this->app->getStore()->setConfig('payment/boltpay/allowspecific', 0);
+        $this->app->getStore()->setConfig('payment/advanced_settings/allowspecific', 0);
         $this->testHelper->createCheckout('guest');
         $this->testHelper->addTestBillingAddress();
         $cart = $this->testHelper->addProduct(self::$productId, 2);
@@ -188,7 +188,7 @@ class Bolt_Boltpay_Helper_DataTest extends PHPUnit_Framework_TestCase
      */
     public function testBuildOnSuccessCallback()
     {
-        $this->app->getStore()->setConfig('payment/boltpay/success', '');
+        $this->app->getStore()->setConfig('payment/advanced_settings/success', '');
         $successCustom = "console.log('test')";
         $checkoutType = Bolt_Boltpay_Block_Checkout_Boltpay::CHECKOUT_TYPE_MULTI_PAGE;
         $saveOrderUrl = Mage::helper('boltpay')->getMagentoUrl("boltpay/order/save/checkoutType/$checkoutType");
@@ -204,7 +204,7 @@ class Bolt_Boltpay_Helper_DataTest extends PHPUnit_Framework_TestCase
      */
     public function testBuildOnSuccessCallbackIfAdminArea()
     {
-        $this->app->getStore()->setConfig('payment/boltpay/success', '');
+        $this->app->getStore()->setConfig('payment/advanced_settings/success', '');
         $successCustom = "console.log('test')";
         $checkoutType = Bolt_Boltpay_Block_Checkout_Boltpay::CHECKOUT_TYPE_ADMIN;
 

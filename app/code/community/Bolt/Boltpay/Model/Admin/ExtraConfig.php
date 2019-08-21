@@ -71,7 +71,7 @@ class Bolt_Boltpay_Model_Admin_ExtraConfig extends Mage_Core_Model_Config_Data
         $methodPostfix = ucfirst($configName);
         $filterMethod = 'filter'.$methodPostfix;
 
-        $allExtraConfigs = (array) json_decode($this->normalizeJSON(Mage::getStoreConfig('payment/boltpay/extra_options')), true);
+        $allExtraConfigs = (array) json_decode($this->normalizeJSON(Mage::getStoreConfig('payment/advanced_settings/extra_options')), true);
         $rawValue = @$allExtraConfigs[$configName] ?: '';
 
         return method_exists($this, $filterMethod)
@@ -224,7 +224,7 @@ JS;
      */
     public function filterDatadogKeySeverity($rawConfigValue, $additionalParams = array())
     {
-        $allExtraConfigs = (array)json_decode($this->normalizeJSON(Mage::getStoreConfig('payment/boltpay/extra_options')), true);
+        $allExtraConfigs = (array)json_decode($this->normalizeJSON(Mage::getStoreConfig('payment/advanced_settings/extra_options')), true);
         return (array_key_exists("datadogKeySeverity", $allExtraConfigs)) ? $rawConfigValue : Bolt_Boltpay_Helper_DataDogTrait::$defaultSeverityConfig;
     }
 

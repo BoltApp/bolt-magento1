@@ -267,20 +267,11 @@
                   <show_in_website>1</show_in_website>
                   <show_in_store>1</show_in_store>
                 </successpage>
-                <disable_complete_authorize translate="label">
-                  <label>Disable Complete Authorize</label>
-                  <frontend_type>select</frontend_type>
-                  <source_model>adminhtml/system_config_source_yesno</source_model>
-                  <sort_order>80</sort_order>
-                  <show_in_default>1</show_in_default>
-                  <show_in_website>1</show_in_website>
-                  <show_in_store>1</show_in_store>
-                </disable_complete_authorize>
                 <enable_merchant_scoped_account translate="label">
                   <label>Enable merchant scoped account</label>
                   <frontend_type>select</frontend_type>
                   <source_model>adminhtml/system_config_source_yesno</source_model>
-                  <sort_order>90</sort_order>
+                  <sort_order>80</sort_order>
                   <show_in_default>1</show_in_default>
                   <show_in_website>1</show_in_website>
                   <show_in_store>1</show_in_store>
@@ -289,7 +280,7 @@
                   <label>Allow Shipping To PO Box</label>
                   <frontend_type>select</frontend_type>
                   <source_model>adminhtml/system_config_source_yesno</source_model>
-                  <sort_order>100</sort_order>
+                  <sort_order>90</sort_order>
                   <show_in_default>1</show_in_default>
                   <show_in_website>1</show_in_website>
                   <show_in_store>1</show_in_store>
@@ -299,7 +290,7 @@
                   <frontend_type>select</frontend_type>
                   <source_model>adminhtml/system_config_source_yesno</source_model>
                   <comment>Makes Bolt the only payment method when available</comment>
-                  <sort_order>110</sort_order>
+                  <sort_order>100</sort_order>
                   <show_in_default>1</show_in_default>
                   <show_in_website>1</show_in_website>
                   <show_in_store>1</show_in_store>
@@ -307,7 +298,7 @@
                 <allowspecific translate="label">
                   <label>Payment from Applicable Countries</label>
                   <frontend_type>allowspecific</frontend_type>
-                  <sort_order>120</sort_order>
+                  <sort_order>110</sort_order>
                   <source_model>adminhtml/system_config_source_payment_allspecificcountries</source_model>
                   <show_in_default>1</show_in_default>
                   <show_in_website>1</show_in_website>
@@ -317,7 +308,7 @@
                 <specificcountry translate="label">
                   <label>Payment from Specific Countries</label>
                   <frontend_type>multiselect</frontend_type>
-                  <sort_order>130</sort_order>
+                  <sort_order>120</sort_order>
                   <source_model>adminhtml/system_config_source_country</source_model>
                   <show_in_default>1</show_in_default>
                   <show_in_website>1</show_in_website>
@@ -331,7 +322,7 @@
                   <show_in_default>1</show_in_default>
                   <show_in_website>1</show_in_website>
                   <show_in_store>1</show_in_store>
-                  <sort_order>140</sort_order>
+                  <sort_order>130</sort_order>
                 </check>
                 <on_checkout_start translate="label comment">
                   <label>Javascript: onCheckoutStart</label>
@@ -340,7 +331,7 @@
                   <show_in_default>1</show_in_default>
                   <show_in_website>1</show_in_website>
                   <show_in_store>1</show_in_store>
-                  <sort_order>150</sort_order>
+                  <sort_order>140</sort_order>
                 </on_checkout_start>
                 <on_email_enter translate="label comment">
                   <label>Javascript: onEmailEnter</label>
@@ -349,7 +340,7 @@
                   <show_in_default>1</show_in_default>
                   <show_in_website>1</show_in_website>
                   <show_in_store>1</show_in_store>
-                  <sort_order>160</sort_order>
+                  <sort_order>150</sort_order>
                 </on_email_enter>
                 <on_shipping_details_complete translate="label comment">
                   <label>Javascript: onShippingDetailsComplete</label>
@@ -358,7 +349,7 @@
                   <show_in_default>1</show_in_default>
                   <show_in_website>1</show_in_website>
                   <show_in_store>1</show_in_store>
-                  <sort_order>170</sort_order>
+                  <sort_order>160</sort_order>
                 </on_shipping_details_complete>
                 <on_shipping_options_complete translate="label comment">
                   <label>Javascript: onShippingOptionsComplete</label>
@@ -367,7 +358,7 @@
                   <show_in_default>1</show_in_default>
                   <show_in_website>1</show_in_website>
                   <show_in_store>1</show_in_store>
-                  <sort_order>180</sort_order>
+                  <sort_order>170</sort_order>
                 </on_shipping_options_complete>
                 <on_payment_submit translate="label comment">
                   <label>onPaymentSubmit</label>
@@ -376,7 +367,7 @@
                   <show_in_default>1</show_in_default>
                   <show_in_website>1</show_in_website>
                   <show_in_store>1</show_in_store>
-                  <sort_order>190</sort_order>
+                  <sort_order>180</sort_order>
                 </on_payment_submit>
                 <success translate="label comment">
                   <label>Javascript: success</label>
@@ -385,7 +376,7 @@
                   <show_in_default>1</show_in_default>
                   <show_in_website>1</show_in_website>
                   <show_in_store>1</show_in_store>
-                  <sort_order>200</sort_order>
+                  <sort_order>190</sort_order>
                 </success>
                 <close translate="label comment">
                   <label>Javascript: close</label>
@@ -394,32 +385,22 @@
                   <show_in_default>1</show_in_default>
                   <show_in_website>1</show_in_website>
                   <show_in_store>1</show_in_store>
-                  <sort_order>210</sort_order>
+                  <sort_order>200</sort_order>
                 </close>
                 <use_javascript_in_admin translate="label comment">
                   <label>Use Custom Javascript in Admin Order Creation?</label>
                   <frontend_type>select</frontend_type>
                   <source_model>adminhtml/system_config_source_yesno</source_model>
-                  <comment>The javascript events above are usually intended for the frontend store pages.  Enable this option if you also want them applied to the admin order creation interface.</comment>
-                  <sort_order>220</sort_order>
+                  <comment>The javascript events above are usually intended for the frontend store pages. Enable this option if you also want them applied to the admin order creation interface.</comment>
+                  <sort_order>210</sort_order>
                   <show_in_default>1</show_in_default>
                   <show_in_website>1</show_in_website>
                   <show_in_store>1</show_in_store>
                 </use_javascript_in_admin>
-                <sort_order translate="label comment">
-                  <label>Sort Order</label>
-                  <frontend_type>text</frontend_type>
-                  <comment>Influences display order on checkout pages relative to other payment options.  This does not affect any other pages including the shopping cart and product pages.</comment>
-                  <sort_order>230</sort_order>
-                  <show_in_default>1</show_in_default>
-                  <show_in_website>1</show_in_website>
-                  <show_in_store>1</show_in_store>
-                  <frontend_class>validate-number</frontend_class>
-                </sort_order>
                 <extra_options translate="label">
                   <label>Extra config</label>
                   <frontend_type>textarea</frontend_type>
-                  <sort_order>240</sort_order>
+                  <sort_order>220</sort_order>
                   <show_in_default>1</show_in_default>
                   <show_in_website>1</show_in_website>
                   <show_in_store>1</show_in_store>
@@ -429,7 +410,7 @@
                   <label>Check Boltpay API</label>
                   <frontend_type>button</frontend_type>
                   <frontend_model>boltpay/adminhtml_system_config_form_button</frontend_model>
-                  <sort_order>250</sort_order>
+                  <sort_order>230</sort_order>
                   <show_in_default>1</show_in_default>
                   <show_in_website>1</show_in_website>
                   <show_in_store>1</show_in_store>

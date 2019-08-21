@@ -131,7 +131,7 @@ class Bolt_Boltpay_Block_Catalog_Product_Boltpay extends Mage_Core_Block_Templat
      */
     public function buildOnCloseCallback($closeCustom = '')
     {
-        $successUrl = $this->boltHelper()->getMagentoUrl(Mage::getStoreConfig('payment/boltpay/successpage'));
+        $successUrl = $this->boltHelper()->getMagentoUrl(Mage::getStoreConfig('payment/advanced_settings/successpage'));
         $javascript = $closeCustom;
 
         return $javascript .

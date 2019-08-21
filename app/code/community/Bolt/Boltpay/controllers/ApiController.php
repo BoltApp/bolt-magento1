@@ -309,7 +309,7 @@ class Bolt_Boltpay_ApiController extends Mage_Core_Controller_Front_Action imple
         $immutableQuote = Mage::getModel('sales/quote')->loadByIdWithoutStore($immutableQuoteId);
 
         $successUrlPath = $this->boltHelper()->getMagentoUrl(
-            Mage::getStoreConfig('payment/boltpay/successpage'),
+            Mage::getStoreConfig('payment/advanced_settings/successpage'),
             [
                 '_query' => [
                     'lastQuoteId' => $immutableQuote->getParentQuoteId(),

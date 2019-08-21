@@ -121,7 +121,7 @@ class Bolt_Boltpay_Model_PaymentTest extends PHPUnit_Framework_TestCase
 
     public function testGetConfigDataIfSkipPaymentEnableAndAllowSpecific()
     {
-        $this->app->getStore()->setConfig('payment/boltpay/skip_payment', 1);
+        $this->app->getStore()->setConfig('payment/advanced_settings/skip_payment', 1);
 
         $currentMock = $this->getMockBuilder('Bolt_Boltpay_Model_Payment')
             ->setMethods(array('isAdminArea'))
@@ -141,7 +141,7 @@ class Bolt_Boltpay_Model_PaymentTest extends PHPUnit_Framework_TestCase
 
     public function testGetConfigDataIfSkipPaymentEnableAndSpecificCountry()
     {
-        $this->app->getStore()->setConfig('payment/boltpay/skip_payment', 1);
+        $this->app->getStore()->setConfig('payment/advanced_settings/skip_payment', 1);
 
         $currentMock = $this->getMockBuilder('Bolt_Boltpay_Model_Payment')
             ->setMethods(array('isAdminArea'))
@@ -161,7 +161,7 @@ class Bolt_Boltpay_Model_PaymentTest extends PHPUnit_Framework_TestCase
 
     public function testGetConfigDataAdminAreaWithFieldTitle()
     {
-        $this->app->getStore()->setConfig('payment/boltpay/skip_payment', 0);
+        $this->app->getStore()->setConfig('payment/advanced_settings/skip_payment', 0);
 
         $currentMock = $this->getMockBuilder('Bolt_Boltpay_Model_Payment')
             ->setMethods(array('isAdminArea'))
@@ -181,7 +181,7 @@ class Bolt_Boltpay_Model_PaymentTest extends PHPUnit_Framework_TestCase
 
     public function testGetConfigDataNotAdminAreaWithFieldTitle()
     {
-        $this->app->getStore()->setConfig('payment/boltpay/skip_payment', 0);
+        $this->app->getStore()->setConfig('payment/advanced_settings/skip_payment', 0);
 
         $currentMock = $this->getMockBuilder('Bolt_Boltpay_Model_Payment')
             ->setMethods(array('isAdminArea'))

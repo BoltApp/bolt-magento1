@@ -114,7 +114,7 @@ class Bolt_Boltpay_ConfigurationController
      */
     protected function checkPublishableKeyMultiPage()
     {
-        $keyMultiplePage = Mage::getStoreConfig('payment/boltpay/publishable_key_multipage', $this->_storeId);
+        $keyMultiplePage = Mage::getStoreConfig('payment/keys/publishable_key_multipage', $this->_storeId);
 
         return !$keyMultiplePage || $this->curlCheckPublishableKey($keyMultiplePage);
     }
@@ -150,7 +150,7 @@ class Bolt_Boltpay_ConfigurationController
      */
     protected function checkPublishableKeyOnePage()
     {
-        $keyOnePage = Mage::getStoreConfig('payment/boltpay/publishable_key_onepage', $this->_storeId);
+        $keyOnePage = Mage::getStoreConfig('payment/keys/publishable_key_onepage', $this->_storeId);
 
         return !$keyOnePage || $this->curlCheckPublishableKey($keyOnePage);
     }

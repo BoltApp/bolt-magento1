@@ -31,7 +31,7 @@ class Bolt_Boltpay_Block_Rewrite_OnepageTest extends PHPUnit_Framework_TestCase
      */
     public function testStepsWhenSkipPaymentIsTrue()
     {
-        $this->app->getStore()->setConfig('payment/boltpay/skip_payment', 1);
+        $this->app->getStore()->setConfig('payment/advanced_settings/skip_payment', 1);
         $onepageRewrite = new $this->onepageRewriteClass;
 
         $result = array(
@@ -53,7 +53,7 @@ class Bolt_Boltpay_Block_Rewrite_OnepageTest extends PHPUnit_Framework_TestCase
      */
     public function testStepsWhenSkipPaymentIsFalse()
     {
-        $this->app->getStore()->setConfig('payment/boltpay/skip_payment', 0);
+        $this->app->getStore()->setConfig('payment/advanced_settings/skip_payment', 0);
         $onepageRewrite = new $this->onepageRewriteClass;
 
         $result = array(

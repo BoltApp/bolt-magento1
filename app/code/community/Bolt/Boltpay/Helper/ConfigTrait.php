@@ -37,7 +37,7 @@ trait Bolt_Boltpay_Helper_ConfigTrait {
      */
     public function getPublishableKeyMultiPage()
     {
-        return Mage::getStoreConfig('payment/boltpay/publishable_key_multipage');
+        return Mage::getStoreConfig('payment/keys/publishable_key_multipage');
     }
 
     /**
@@ -47,7 +47,7 @@ trait Bolt_Boltpay_Helper_ConfigTrait {
      */
     public function getPublishableKeyOnePage()
     {
-        return Mage::getStoreConfig('payment/boltpay/publishable_key_onepage');
+        return Mage::getStoreConfig('payment/keys/publishable_key_onepage');
     }
 
     /**
@@ -57,7 +57,7 @@ trait Bolt_Boltpay_Helper_ConfigTrait {
      */
     public function getPublishableKeyBackOffice()
     {
-        return Mage::getStoreConfig('payment/boltpay/publishable_key_admin');
+        return Mage::getStoreConfig('payment/keys/publishable_key_admin');
     }
 
     /**
@@ -86,7 +86,7 @@ trait Bolt_Boltpay_Helper_ConfigTrait {
      */
     public function getAdditionalButtonClasses()
     {
-        return Mage::getStoreConfig('payment/boltpay/button_classes');
+        return Mage::getStoreConfig('payment/advanced_settings/button_classes');
     }
 
     /**
@@ -94,7 +94,7 @@ trait Bolt_Boltpay_Helper_ConfigTrait {
      */
     public function isEnabledProductPageCheckout()
     {
-        return Mage::getStoreConfigFlag('payment/boltpay/enable_product_page_checkout');
+        return Mage::getStoreConfigFlag('payment/additional_options/enable_product_page_checkout');
     }
 
     /**
@@ -102,7 +102,7 @@ trait Bolt_Boltpay_Helper_ConfigTrait {
      */
     public function getProductPageCheckoutSelector()
     {
-        return Mage::getStoreConfig('payment/boltpay/product_page_checkout_selector');
+        return Mage::getStoreConfig('payment/additional_options/product_page_checkout_selector');
     }
 
     /**
@@ -110,14 +110,15 @@ trait Bolt_Boltpay_Helper_ConfigTrait {
      *
      * @param $configPath
      * @param $checkoutType
+     * @param string $parentTag
      * @return string
      */
-    public function getPaymentBoltpayConfig($configPath, $checkoutType)
+    public function getPaymentBoltpayConfig($configPath, $checkoutType, $parentTag = 'boltpay')
     {
         /** @var string $configValue */
-        $configValue = Mage::getStoreConfig('payment/boltpay/'.$configPath);
+        $configValue = Mage::getStoreConfig('payment/'.$parentTag.'/'.$configPath);
 
-        return ($checkoutType === Bolt_Boltpay_Block_Checkout_Boltpay::CHECKOUT_TYPE_ADMIN) && !Mage::getStoreConfig('payment/boltpay/use_javascript_in_admin') ? '' : $configValue;
+        return ($checkoutType === Bolt_Boltpay_Block_Checkout_Boltpay::CHECKOUT_TYPE_ADMIN) && !Mage::getStoreConfig('payment/advanced_settings/use_javascript_in_admin') ? '' : $configValue;
     }
 
     /**
@@ -126,7 +127,7 @@ trait Bolt_Boltpay_Helper_ConfigTrait {
     public function getAllowedButtonByCustomRoutes()
     {
         $checkoutType = Bolt_Boltpay_Block_Checkout_Boltpay::CHECKOUT_TYPE_MULTI_PAGE;
-        $config = $this->getPaymentBoltpayConfig('allowed_button_by_custom_routes', $checkoutType);
+        $config = $this->getPaymentBoltpayConfig('allowed_button_by_custom_routes', $checkoutType, 'advanced_settings');
         // removes all NULL, FALSE and Empty Strings but leaves 0 (zero) values
         $configData = explode(',', $config);
         $result = array_values(array_filter(array_map('trim', $configData), 'strlen'));
@@ -147,13 +148,13 @@ trait Bolt_Boltpay_Helper_ConfigTrait {
             return false;
         }
 
-        if (Mage::getStoreConfig('payment/boltpay/skip_payment') == 1) {
+        if (Mage::getStoreConfig('payment/advanced_settings/skip_payment') == 1) {
             return true;
         }
 
-        if (Mage::getStoreConfig('payment/boltpay/allowspecific') == 1) {
+        if (Mage::getStoreConfig('payment/advanced_settings/allowspecific') == 1) {
             $availableCountries =
-                explode(',', Mage::getStoreConfig('payment/boltpay/specificcountry'));
+                explode(',', Mage::getStoreConfig('payment/advanced_settings/specificcountry'));
             if (!in_array($country, $availableCountries)){
                 return false;
             }

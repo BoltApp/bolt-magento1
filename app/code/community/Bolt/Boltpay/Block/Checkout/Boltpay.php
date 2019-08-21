@@ -123,7 +123,7 @@ class Bolt_Boltpay_Block_Checkout_Boltpay extends Mage_Checkout_Block_Onepage_Re
      */
     protected function isAdminAndUseJsInAdmin($checkoutType)
     {
-        return ($checkoutType === self::CHECKOUT_TYPE_ADMIN) && !Mage::getStoreConfig('payment/boltpay/use_javascript_in_admin');
+        return ($checkoutType === self::CHECKOUT_TYPE_ADMIN) && !Mage::getStoreConfig('payment/advanced_settings/use_javascript_in_admin');
     }
 
     /**
@@ -173,7 +173,7 @@ class Bolt_Boltpay_Block_Checkout_Boltpay extends Mage_Checkout_Block_Onepage_Re
         $jsonHints = json_encode($hintData, JSON_FORCE_OBJECT);
 
         $callbacks = $this->boltHelper()->getBoltCallbacks($checkoutType, $quote);
-        $checkCustom = $this->boltHelper()->getPaymentBoltpayConfig('check', $checkoutType);
+        $checkCustom = $this->boltHelper()->getPaymentBoltpayConfig('check', $checkoutType, 'advanced_settings');
         $onCheckCallback = $this->boltHelper()->buildOnCheckCallback($checkoutType, $quote);
 
         $hintsTransformFunction = $this->boltHelper()->getExtraConfig('hintsTransform');
@@ -376,7 +376,7 @@ class Bolt_Boltpay_Block_Checkout_Boltpay extends Mage_Checkout_Block_Onepage_Re
     public function getSelectorsCSS()
     {
 
-        $selectorStyles = Mage::getStoreConfig('payment/boltpay/selector_styles');
+        $selectorStyles = Mage::getStoreConfig('payment/advanced_settings/selector_styles');
 
         $selectorStyles = array_map('trim', explode('||', trim($selectorStyles)));
 
@@ -418,7 +418,7 @@ class Bolt_Boltpay_Block_Checkout_Boltpay extends Mage_Checkout_Block_Onepage_Re
      */
     public function getAdditionalCSS()
     {
-        return Mage::getStoreConfig('payment/boltpay/additional_css');
+        return Mage::getStoreConfig('payment/additional_options/additional_css');
     }
 
     /**
@@ -428,7 +428,7 @@ class Bolt_Boltpay_Block_Checkout_Boltpay extends Mage_Checkout_Block_Onepage_Re
      */
     public function getAdditionalJs()
     {
-        return Mage::getStoreConfig('payment/boltpay/additional_js');
+        return Mage::getStoreConfig('payment/additional_options/additional_js');
     }
 
     /**
@@ -446,7 +446,7 @@ class Bolt_Boltpay_Block_Checkout_Boltpay extends Mage_Checkout_Block_Onepage_Re
      */
     function getConfigSelectors()
     {
-        return json_encode(array_filter(explode(',', Mage::getStoreConfig('payment/boltpay/selectors'))));
+        return json_encode(array_filter(explode(',', Mage::getStoreConfig('payment/advanced_settings/selectors'))));
     }
 
     /**
@@ -455,7 +455,7 @@ class Bolt_Boltpay_Block_Checkout_Boltpay extends Mage_Checkout_Block_Onepage_Re
      */
     function isBoltOnlyPayment()
     {
-        return Mage::getStoreConfig('payment/boltpay/skip_payment');
+        return Mage::getStoreConfig('payment/advanced_settings/skip_payment');
     }
 
     /**
@@ -464,7 +464,7 @@ class Bolt_Boltpay_Block_Checkout_Boltpay extends Mage_Checkout_Block_Onepage_Re
      */
     function isEnableMerchantScopedAccount()
     {
-        return Mage::getStoreConfig('payment/boltpay/enable_merchant_scoped_account');
+        return Mage::getStoreConfig('payment/advanced_settings/enable_merchant_scoped_account');
     }
 
     /**
@@ -473,7 +473,7 @@ class Bolt_Boltpay_Block_Checkout_Boltpay extends Mage_Checkout_Block_Onepage_Re
      */
     public function getSuccessURL()
     {
-        return $this->boltHelper()->getMagentoUrl(Mage::getStoreConfig('payment/boltpay/successpage'));
+        return $this->boltHelper()->getMagentoUrl(Mage::getStoreConfig('payment/advanced_settings/successpage'));
     }
 
     /**
@@ -564,7 +564,7 @@ class Bolt_Boltpay_Block_Checkout_Boltpay extends Mage_Checkout_Block_Onepage_Re
 
         if (empty($locationInfo)) {
             //To receive the API results in the old freegeoip format, we need ipstack Access Key
-            $ipstackAccessKey = Mage::helper('core')->decrypt(Mage::getStoreConfig('payment/boltpay/ipstack_key'));
+            $ipstackAccessKey = Mage::helper('core')->decrypt(Mage::getStoreConfig('payment/advanced_settings/ipstack_key'));
             if(!empty($ipstackAccessKey)){
                $locationInfo = $this->url_get_contents("http://api.ipstack.com/".$this->getIpAddress()."?access_key=".$ipstackAccessKey."&output=json&legacy=1");
                Mage::getSingleton('core/session')->setLocationInfo($locationInfo);

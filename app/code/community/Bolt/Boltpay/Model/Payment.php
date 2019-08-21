@@ -143,7 +143,7 @@ class Bolt_Boltpay_Model_Payment extends Mage_Payment_Model_Method_Abstract
 
     public function getConfigData($field, $storeId = null)
     {
-        if (Mage::getStoreConfig('payment/boltpay/skip_payment') == 1) {
+        if (Mage::getStoreConfig('payment/advanced_settings/skip_payment') == 1) {
             if ($field == 'allowspecific' || $field == 'specificcountry') {
                 return null;
             }

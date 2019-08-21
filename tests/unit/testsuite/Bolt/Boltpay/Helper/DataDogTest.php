@@ -33,7 +33,7 @@ class Bolt_Boltpay_Helper_DataDogTest extends PHPUnit_Framework_TestCase
             'datadogKeySeverity' => 'error,info,warning'
         );
 
-        Mage::app()->getStore()->setConfig('payment/boltpay/extra_options', json_encode($datadogOptions));
+        Mage::app()->getStore()->setConfig('payment/advanced_settings/extra_options', json_encode($datadogOptions));
         $this->datadogHelper = Mage::helper('boltpay');
     }
 
