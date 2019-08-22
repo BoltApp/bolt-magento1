@@ -247,7 +247,6 @@
   <default>
     <payment>
       <boltpay>
-        <model>boltpay/payment</model>
         <active>1</active>
         <test>0</test>
         <hide_on_checkout>0</hide_on_checkout>
@@ -258,8 +257,8 @@
         <product_page_checkout_selector>.btn-cart</product_page_checkout_selector>
         <additional_css>
 #checkout-review-submit .bolt-checkout-button {
-  clear:both;
-  float:right;
+  clear: both;
+  float: left;
 }
 .col-right.sidebar .block.block-cart .block-content .actions .bolt-checkout-button-button {
   min-width: max-content!important;
