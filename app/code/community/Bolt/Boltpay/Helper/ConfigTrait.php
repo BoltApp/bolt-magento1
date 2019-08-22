@@ -127,7 +127,7 @@ trait Bolt_Boltpay_Helper_ConfigTrait {
     public function getAllowedButtonByCustomRoutes()
     {
         $checkoutType = Bolt_Boltpay_Block_Checkout_Boltpay::CHECKOUT_TYPE_MULTI_PAGE;
-        $config = $this->getPaymentBoltpayConfig('allowed_button_by_custom_routes', $checkoutType, 'advanced_settings');
+        $config = $this->getPaymentBoltpayConfig('allowed_button_by_custom_routes', $checkoutType, 'where_to_add_bolt');
         // removes all NULL, FALSE and Empty Strings but leaves 0 (zero) values
         $configData = explode(',', $config);
         $result = array_values(array_filter(array_map('trim', $configData), 'strlen'));

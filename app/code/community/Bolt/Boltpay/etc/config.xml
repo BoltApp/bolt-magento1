@@ -253,6 +253,7 @@
       <where_to_add_bolt>
         <hide_on_checkout>0</hide_on_checkout>
         <add_button_everywhere>0</add_button_everywhere>
+        <selectors><![CDATA[.btn-proceed-checkout, .minicart-actions .checkout-button, body.firecheckout-index-index .button.btn-checkout]]></selectors>
       </where_to_add_bolt>
       <additional_options>
         <enable_product_page_checkout>0</enable_product_page_checkout>
@@ -271,7 +272,6 @@
         <button_classes>with-cards</button_classes>
         <title>Credit card</title>
         <enable_merchant_scoped_account>0</enable_merchant_scoped_account>
-        <selectors><![CDATA[.btn-proceed-checkout, .minicart-actions .checkout-button, body.firecheckout-index-index .button.btn-checkout]]></selectors>
         <selector_styles>
 .btn-proceed-checkout {
   .bolt-checkout-button.with-cards {

@@ -34,7 +34,7 @@ if(!$this->boltHelper()->canUseBolt($this->getQuote(), false) || Mage::getStoreC
     var initializeBolt = function(){
 
         var addBoltButtons = function() {
-            place_order_buttons = document.querySelectorAll('<?=Mage::getStoreConfig('payment/advanced_settings/selectors');?>');
+            place_order_buttons = document.querySelectorAll('<?=Mage::getStoreConfig('payment/where_to_add_bolt/selectors');?>');
 
             for (var i = 0; i < place_order_buttons.length; i++) {
                 place_order_button = place_order_buttons[i];

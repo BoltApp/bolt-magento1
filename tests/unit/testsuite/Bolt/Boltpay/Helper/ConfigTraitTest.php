@@ -34,7 +34,7 @@ class Bolt_Boltpay_Helper_ConfigTraitTest extends PHPUnit_Framework_TestCase
     {
         $this->currentMock->expects($this->once())
             ->method('getPaymentBoltpayConfig')
-            ->with('allowed_button_by_custom_routes', Bolt_Boltpay_Block_Checkout_Boltpay::CHECKOUT_TYPE_MULTI_PAGE, 'advanced_settings')
+            ->with('allowed_button_by_custom_routes', Bolt_Boltpay_Block_Checkout_Boltpay::CHECKOUT_TYPE_MULTI_PAGE, 'where_to_add_bolt')
             ->will($this->returnValue(''));
 
         $this->assertEmpty($this->currentMock->getAllowedButtonByCustomRoutes());
@@ -44,7 +44,7 @@ class Bolt_Boltpay_Helper_ConfigTraitTest extends PHPUnit_Framework_TestCase
     {
         $this->currentMock->expects($this->once())
             ->method('getPaymentBoltpayConfig')
-            ->with('allowed_button_by_custom_routes', Bolt_Boltpay_Block_Checkout_Boltpay::CHECKOUT_TYPE_MULTI_PAGE, 'advanced_settings')
+            ->with('allowed_button_by_custom_routes', Bolt_Boltpay_Block_Checkout_Boltpay::CHECKOUT_TYPE_MULTI_PAGE, 'where_to_add_bolt')
             ->will($this->returnValue("testroute, test-route, \r, \n, \r\n, 0, a"));
 
         $result = ['testroute', 'test-route', '0', 'a'];
@@ -56,7 +56,7 @@ class Bolt_Boltpay_Helper_ConfigTraitTest extends PHPUnit_Framework_TestCase
     {
         $this->currentMock->expects($this->once())
             ->method('getPaymentBoltpayConfig')
-            ->with('allowed_button_by_custom_routes', Bolt_Boltpay_Block_Checkout_Boltpay::CHECKOUT_TYPE_MULTI_PAGE, 'advanced_settings')
+            ->with('allowed_button_by_custom_routes', Bolt_Boltpay_Block_Checkout_Boltpay::CHECKOUT_TYPE_MULTI_PAGE, 'where_to_add_bolt')
             ->will($this->returnValue('testroute test-route'));
 
         $result = ['testroute test-route'];

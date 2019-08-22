@@ -446,7 +446,7 @@ class Bolt_Boltpay_Block_Checkout_Boltpay extends Mage_Checkout_Block_Onepage_Re
      */
     function getConfigSelectors()
     {
-        return json_encode(array_filter(explode(',', Mage::getStoreConfig('payment/advanced_settings/selectors'))));
+        return json_encode(array_filter(explode(',', Mage::getStoreConfig('payment/where_to_add_bolt/selectors'))));
     }
 
     /**
