@@ -23,7 +23,7 @@
 </div>
 <?php
 $publishableKey = $this->boltHelper()->getPublishableKeyOnePage();
-if (Mage::getStoreConfig('payment/boltpay/hide_on_checkout') || !$publishableKey) {
+if (Mage::getStoreConfig('payment/where_to_add_bolt/hide_on_checkout') || !$publishableKey) {
     ?>
 <script>
     var bolt_payment_method = document.querySelectorAll('#p_method_boltpay');

@@ -110,29 +110,39 @@
               </fields>
             </keys>
 
-            <hide_on_checkout translate="label">
-              <label>Hide On Checkout Page</label>
+            <where_to_add_bolt type="group" translate="label">
+              <label>Where to add Bolt?</label>
               <sort_order>40</sort_order>
-              <frontend_type>select</frontend_type>
-              <source_model>adminhtml/system_config_source_yesno</source_model>
               <show_in_default>1</show_in_default>
               <show_in_website>1</show_in_website>
               <show_in_store>1</show_in_store>
-            </hide_on_checkout>
-            <add_button_everywhere translate="label comment">
-              <label>Add Bolt Button Everywhere</label>
-              <frontend_type>select</frontend_type>
-              <source_model>adminhtml/system_config_source_yesno</source_model>
-              <comment>By default, Bolt checkout button is displayed in cart page. Enable this option if you plan to display Bolt checkout outside of cart page, such as mini cart.</comment>
-              <sort_order>50</sort_order>
-              <show_in_default>1</show_in_default>
-              <show_in_website>1</show_in_website>
-              <show_in_store>1</show_in_store>
-            </add_button_everywhere>
+              <expanded>1</expanded>
+              <fields>
+                <hide_on_checkout translate="label">
+                  <label>Hide On Checkout Page</label>
+                  <sort_order>10</sort_order>
+                  <frontend_type>select</frontend_type>
+                  <source_model>adminhtml/system_config_source_yesno</source_model>
+                  <show_in_default>1</show_in_default>
+                  <show_in_website>1</show_in_website>
+                  <show_in_store>1</show_in_store>
+                </hide_on_checkout>
+                <add_button_everywhere translate="label comment">
+                  <label>Display Bolt Checkout in the Mini Cart</label>
+                  <frontend_type>select</frontend_type>
+                  <source_model>adminhtml/system_config_source_yesno</source_model>
+                  <comment>By default, Bolt checkout button is displayed in cart page. Enable this option if you plan to display Bolt checkout outside of cart page, such as mini cart.</comment>
+                  <sort_order>20</sort_order>
+                  <show_in_default>1</show_in_default>
+                  <show_in_website>1</show_in_website>
+                  <show_in_store>1</show_in_store>
+                </add_button_everywhere>
+              </fields>
+            </where_to_add_bolt>
 
             <additional_options type="group" translate="label">
               <label>Additional Options</label>
-              <sort_order>60</sort_order>
+              <sort_order>50</sort_order>
               <show_in_default>1</show_in_default>
               <show_in_website>1</show_in_website>
               <show_in_store>1</show_in_store>
@@ -180,7 +190,7 @@
 
             <advanced_settings type="group" translate="label">
               <label>Configure Advanced Settings</label>
-              <sort_order>70</sort_order>
+              <sort_order>60</sort_order>
               <show_in_default>1</show_in_default>
               <show_in_website>1</show_in_website>
               <show_in_store>1</show_in_store>

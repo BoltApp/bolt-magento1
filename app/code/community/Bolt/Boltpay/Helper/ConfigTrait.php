@@ -67,7 +67,7 @@ trait Bolt_Boltpay_Helper_ConfigTrait {
      */
     public function shouldAddButtonEverywhere()
     {
-        return Mage::getStoreConfigFlag('payment/boltpay/add_button_everywhere');
+        return Mage::getStoreConfigFlag('payment/where_to_add_bolt/add_button_everywhere');
     }
 
     /**
