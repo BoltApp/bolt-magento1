@@ -249,8 +249,8 @@
       <boltpay>
         <active>1</active>
         <test>0</test>
-        <hide_on_checkout>1</hide_on_checkout>
-        <add_button_everywhere>1</add_button_everywhere>
+        <hide_on_checkout>0</hide_on_checkout>
+        <add_button_everywhere>0</add_button_everywhere>
       </boltpay>
       <additional_options>
         <enable_product_page_checkout>0</enable_product_page_checkout>
