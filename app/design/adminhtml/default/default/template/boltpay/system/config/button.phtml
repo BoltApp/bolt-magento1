@@ -18,7 +18,7 @@
 /** @var Bolt_Boltpay_Block_Adminhtml_System_Config_Form_Button $this */
 ?>
 <style>
-    #row_payment_advanced_settings_checkapi p.check_boltpay_api_error {
+    #row_payment_keys_checkapi p.check_boltpay_api_error {
         color: red;
     }
 </style>
@@ -28,7 +28,7 @@
         var signingSecret = document.getElementById("payment_keys_signing_key").value;
         var keyMultiPage = document.getElementById("payment_keys_publishable_key_multipage").value;
         var keyOnePage = document.getElementById("payment_keys_publishable_key_onepage").value;
-        var errorElement = document.querySelector('#row_payment_advanced_settings_checkapi p.check_boltpay_api_error');
+        var errorElement = document.querySelector('#row_payment_keys_checkapi p.check_boltpay_api_error');
         var loadingElement = document.getElementById("loading-mask");
         var boltButtonElement = document.getElementById('boltpay_check_button');
 
