@@ -94,7 +94,7 @@ trait Bolt_Boltpay_Helper_ConfigTrait {
      */
     public function isEnabledProductPageCheckout()
     {
-        return Mage::getStoreConfigFlag('payment/additional_options/enable_product_page_checkout');
+        return Mage::getStoreConfigFlag('payment/boltpay/additional_options/enable_product_page_checkout');
     }
 
     /**
