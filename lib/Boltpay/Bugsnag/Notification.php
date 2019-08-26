@@ -171,16 +171,11 @@ class Boltpay_Bugsnag_Notification
             return;
         }
 
-        // Prefer cURL if it is installed, otherwise fall back to fopen()
-        // cURL supports both timeouts and proxies
-
         try {
-            if (function_exists('curl_version')) {
-                $this->postWithCurl($url, $body);
-            } elseif (ini_get('allow_url_fopen')) {
-                $this->postWithFopen($url, $body);
-            } else {
-                error_log('Bugsnag Warning: Couldn\'t notify (neither cURL or allow_url_fopen are available on your PHP installation)');
+            if (method_exists('GuzzleHttp\Client','sendAsync')) {
+                $this->sendToBugsnag($url, $body);
+            }else {
+                error_log('Bugsnag Warning: Couldn\'t notify ( Guzzle isn\'t available on your PHP installation)');
             }
         } catch (Exception $e) {
             error_log('Bugsnag Warning: Couldn\'t notify. '.$e->getMessage());
@@ -228,109 +223,21 @@ class Boltpay_Bugsnag_Notification
     }
 
     /**
-     * Post the given info to Bugsnag using cURL.
+     * Post the given info to Bugsnag using guzzle
      *
      * @param string $url  the url to hit
      * @param string $body the request body
      *
      * @return void
      */
-    private function postWithCurl($url, $body)
+    private function sendToBugsnag($url, $body)
     {
-        $http = curl_init($url);
-
-        // Default curl settings
-        curl_setopt($http, CURLOPT_HEADER, false);
-        curl_setopt($http, CURLOPT_RETURNTRANSFER, true);
-        curl_setopt($http, CURLOPT_POST, true);
-        curl_setopt($http, CURLOPT_HTTPHEADER, array(self::$CONTENT_TYPE_HEADER, 'Expect:'));
-        curl_setopt($http, CURLOPT_POSTFIELDS, $body);
-        curl_setopt($http, CURLOPT_CONNECTTIMEOUT, $this->config->timeout);
-        curl_setopt($http, CURLOPT_SSL_VERIFYPEER, false);
-        curl_setopt($http, CURLOPT_VERBOSE, false);
-        if (defined('HHVM_VERSION')) {
-            curl_setopt($http, CURLOPT_IPRESOLVE, CURL_IPRESOLVE_V4);
-        } else {
-            curl_setopt($http, CURL_IPRESOLVE_V4, true);
+        try {
+            $client = new Boltpay_Guzzle_ApiClient();
+            $client->post($url, $body);
+        }catch (\Exception $exception){
+            error_log($exception->getMessage());
         }
 
-        if (!empty($this->config->curlOptions)) {
-            foreach ($this->config->curlOptions as $option => $value) {
-                curl_setopt($http, $option, $value);
-            }
-        }
-        // Apply proxy settings (if present)
-        if (count($this->config->proxySettings)) {
-            if (isset($this->config->proxySettings['host'])) {
-                curl_setopt($http, CURLOPT_PROXY, $this->config->proxySettings['host']);
-            }
-            if (isset($this->config->proxySettings['port'])) {
-                curl_setopt($http, CURLOPT_PROXYPORT, $this->config->proxySettings['port']);
-            }
-            if (isset($this->config->proxySettings['user'])) {
-                $userPassword = $this->config->proxySettings['user'].':';
-                $userPassword .= isset($this->config->proxySettings['password']) ? $this->config->proxySettings['password'] : '';
-                curl_setopt($http, CURLOPT_PROXYUSERPWD, $userPassword);
-            }
-        }
-
-        // Execute the request and fetch the response
-        $responseBody = curl_exec($http);
-        $statusCode = curl_getinfo($http, CURLINFO_HTTP_CODE);
-
-        if ($statusCode > 200) {
-            error_log('Bugsnag Warning: Couldn\'t notify ('.$responseBody.')');
-
-            if ($this->config->debug) {
-                error_log('Bugsnag Debug: Attempted to post to URL - "'.$url.'"');
-                error_log('Bugsnag Debug: Attempted to post payload - "'.$body.'"');
-            }
-        }
-
-        if (curl_errno($http)) {
-            error_log('Bugsnag Warning: Couldn\'t notify ('.curl_error($http).')');
-        }
-
-        curl_close($http);
-    }
-
-    /**
-     * Post the given info to Bugsnag using fopen.
-     *
-     * @param string $url  the url to hit
-     * @param string $body the request body
-     *
-     * @return void
-     */
-    private function postWithFopen($url, $body)
-    {
-        // Warn about lack of proxy support if we are using fopen()
-        if (count($this->config->proxySettings)) {
-            error_log('Bugsnag Warning: Can\'t use proxy settings unless cURL is installed');
-        }
-
-        // Create the request context
-        $context = stream_context_create(array(
-            'http' => array(
-                'method' => 'POST',
-                'header' => self::$CONTENT_TYPE_HEADER.'\r\n',
-                'content' => $body,
-                'timeout' => $this->config->timeout,
-            ),
-            'ssl' => array(
-                'verify_peer' => false,
-            ),
-        ));
-
-        // Execute the request and fetch the response
-        if ($stream = fopen($url, 'rb', false, $context)) {
-            $response = stream_get_contents($stream);
-
-            if (!$response) {
-                error_log('Bugsnag Warning: Couldn\'t notify (no response)');
-            }
-        } else {
-            error_log('Bugsnag Warning: Couldn\'t notify (fopen failed)');
-        }
     }
 }
