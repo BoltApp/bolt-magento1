@@ -340,13 +340,14 @@ class Bolt_Boltpay_Model_Order extends Bolt_Boltpay_Model_Abstract
     /**
      * Checks several indicators to see if the Magento session or cart has expired
      *
-     * @param Mage_Sales_Model_Quote $immutableQuote    Copy of the Magento session quote used by Bolt
-     * @param Mage_Sales_Model_Quote $parentQuote       The Magento session quote holding cart data
-     * @param object                 $transaction       The Bolt transaction object sent from the Bolt server
+     * @param Mage_Sales_Model_Quote $immutableQuote Copy of the Magento session quote used by Bolt
+     * @param Mage_Sales_Model_Quote $parentQuote    The Magento session quote holding cart data
+     * @param object                 $transaction    The Bolt transaction object sent from the Bolt server
+     * @param bool                   $isPreAuthCreation
      *
-     * @throws Bolt_Boltpay_OrderCreationException  on failure of session validation
+     * @throws Bolt_Boltpay_OrderCreationException on failure of session validation
      */
-    protected function validateCartSessionData($immutableQuote, $parentQuote, $transaction) {
+    protected function validateCartSessionData($immutableQuote, $parentQuote, $transaction, $isPreAuthCreation = false) {
 
         if ($immutableQuote->isEmpty()) {
             throw new Bolt_Boltpay_OrderCreationException(
@@ -363,7 +364,13 @@ class Bolt_Boltpay_Model_Order extends Bolt_Boltpay_Model_Abstract
             );
         }
 
-        if ($parentQuote->isEmpty() || ($parentQuote->getParentQuoteId() === $immutableQuote->getId())) {
+        if (
+            $parentQuote->isEmpty() ||
+            (
+                $isPreAuthCreation &&
+                $parentQuote->getParentQuoteId() === $immutableQuote->getId()
+            )
+        ) {
             throw new Bolt_Boltpay_OrderCreationException(
                 OCE::E_BOLT_CART_HAS_EXPIRED,
                 OCE::E_BOLT_CART_HAS_EXPIRED_TMPL_EXPIRED
