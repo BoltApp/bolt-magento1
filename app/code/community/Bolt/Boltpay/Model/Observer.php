@@ -98,10 +98,10 @@ class Bolt_Boltpay_Model_Observer
         /** @var Mage_Sales_Model_Quote $quote */
         $quote = Mage::getSingleton('checkout/session')->getQuote();
 
-        if ($quote && is_int($quote->getId()) && $quote->getId() === $quote->getParentQuoteId()) {
+        if ($quote && is_int($quote->getParentQuoteId()) && $quote->getIsActive()) {
             Mage::getSingleton('core/session')->unsCachedCartData();
             // clear the parent quote ID to re-enable cart cache
-            $quote->setParentQuoteId(null);
+            $quote->setParentQuoteId(null)->save();
         }
     }
 

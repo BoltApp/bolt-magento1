@@ -298,6 +298,18 @@ JS;
     }
 
     /**
+     * Ensures boolean value for whether to keep for pre-auth orders after failed payment hoods
+     *
+     * @param mixed $rawConfigValue    The config value pre-filter
+     * @param array  $additionalParams  unused for this filter
+     *
+     * @return bool  the value from the extra config admin forced to boolean
+     */
+    public function filterKeepPreAuthOrders($rawConfigValue, $additionalParams = array() ) {
+        return $this->normalizeBoolean($rawConfigValue);
+    }
+
+    /**
      * Ensures boolean value for whether bench mark profiling is enabled
      *
      * @param mixed $rawConfigValue    The config value pre-filter
