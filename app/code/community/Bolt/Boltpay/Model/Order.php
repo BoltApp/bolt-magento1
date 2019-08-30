@@ -115,6 +115,7 @@ class Bolt_Boltpay_Model_Order extends Bolt_Boltpay_Model_Abstract
             $immutableQuote->getBillingAddress()
                 ->setFirstname($transaction->order->cart->billing_address->first_name)
                 ->setLastname($transaction->order->cart->billing_address->last_name)
+                ->setEmail($transaction->order->cart->billing_address->email_address)
                 ->setShouldIgnoreValidation(true)
                 ->save();
             benchmark( "Saved address info" );
@@ -348,7 +349,7 @@ class Bolt_Boltpay_Model_Order extends Bolt_Boltpay_Model_Abstract
      */
     protected function validateCartSessionData($immutableQuote, $parentQuote, $transaction) {
 
-        if ($immutableQuote->isEmpty()) {
+        if ($immutableQuote->isObjectNew()) {
             throw new Bolt_Boltpay_OrderCreationException(
                 OCE::E_BOLT_CART_HAS_EXPIRED,
                 OCE::E_BOLT_CART_HAS_EXPIRED_TMPL_NOT_FOUND,
@@ -363,7 +364,7 @@ class Bolt_Boltpay_Model_Order extends Bolt_Boltpay_Model_Abstract
             );
         }
 
-        if ($parentQuote->isEmpty() || ($parentQuote->getParentQuoteId() === $immutableQuote->getId())) {
+        if ($parentQuote->isObjectNew() || ($parentQuote->getParentQuoteId() === $immutableQuote->getId())) {
             throw new Bolt_Boltpay_OrderCreationException(
                 OCE::E_BOLT_CART_HAS_EXPIRED,
                 OCE::E_BOLT_CART_HAS_EXPIRED_TMPL_EXPIRED
