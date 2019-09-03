@@ -25,10 +25,12 @@ class Bolt_Boltpay_ProductProvider
      *
      * @param string $sku            The SKU of the product
      * @param array  $additionalData An array with (additional) data
+     * @param int    $quantity       Product stock quantity
+     *
      * @return int The Product ID of the newly created product
-     * @throws Varien_Exception
+     * @throws Exception
      */
-    public static function createDummyProduct($sku, $additionalData = array())
+    public static function createDummyProduct($sku, $additionalData = array(), $quantity = 10)
     {
         if (!self::$attributeSetId) {
             self::$attributeSetId = Mage::getModel('catalog/product')->getDefaultAttributeSetId();
@@ -69,7 +71,7 @@ class Bolt_Boltpay_ProductProvider
             'attribute_set_id' => self::$attributeSetId,
             'tax_class_id' => self::$taxClassId,
             'stock_data' => array(
-                'qty' => 10,
+                'qty' => $quantity,
                 'is_in_stock' => 1,
                 'use_config_manage_stock' => 0,
                 'manage_stock' => 1
