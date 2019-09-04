@@ -221,7 +221,7 @@ class Bolt_Boltpay_Model_ShippingAndTax extends Bolt_Boltpay_Model_Abstract
                     $exception = new Exception($this->boltHelper()->__("Error getting shipping option for %s: %s", $rate->getCarrierTitle(), $rate->getErrorMessage()));
                     $metaData = array('quote' => var_export($quote->debug(), true));
                     $this->boltHelper()->logWarning($exception->getMessage(),$metaData);
-                    $this->boltHelper()->notifyException($exception->getMessage(), $metaData);
+                    $this->boltHelper()->notifyException($exception, $metaData);
                     continue;
                 }
 
