@@ -184,8 +184,13 @@ $additionalClasses = $this->boltHelper()->getAdditionalButtonClasses();
              * have been removed in the regeneration
              *************************************************************/
             Minicart.prototype.hideOverlay = function(){
-                initBoltButtons();
-                $j(this.selectors.overlay).removeClass('loading');
+                setTimeout(
+                    function(){
+                        initBoltButtons();
+                        $j(this.selectors.overlay).removeClass('loading');
+                    },
+                    300
+                );
             };
         }
     };
