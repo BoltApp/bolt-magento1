@@ -208,20 +208,18 @@ class Bolt_Boltpay_ApiController extends Mage_Core_Controller_Front_Action imple
             $transaction = $this->getRequestData();
             $displayId = $transaction->order->cart->display_id;
 
+            /** @var  Bolt_Boltpay_Model_Order $orderModel */
+            $orderModel = Mage::getModel('boltpay/order');
+            $immutableQuoteId = $this->boltHelper()->getImmutableQuoteIdFromTransaction($transaction);
+
             if (strpos($displayId, '|') !== false) {
                 /* This is when the order has not already been created, nor order success URL sent to Bolt */
-
-                $immutableQuoteId = $this->boltHelper()->getImmutableQuoteIdFromTransaction($transaction);
-
-                /** @var  Bolt_Boltpay_Model_Order $orderModel */
-                $orderModel = Mage::getModel('boltpay/order');
                 $order = $orderModel->getOrderByQuoteId($immutableQuoteId);
-                benchmark( "Finished looking up order by quote id" );
+                benchmark( "Finished looking up order details by quote id" );
             } else {
                 /* @var Mage_Sales_Model_Order $order */
                 $order = Mage::getModel('sales/order')->loadByIncrementId($displayId);
-                benchmark( "Finished looking up order by display id" );
-                $immutableQuoteId = $order->getQuoteId();
+                benchmark( "Finished looking up order details by display id" );
             }
 
             if ($order->isObjectNew()) {
@@ -305,15 +303,12 @@ class Bolt_Boltpay_ApiController extends Mage_Core_Controller_Front_Action imple
      * @throws Mage_Core_Model_Store_Exception  if for any reason the store can not be found to generate the URL
      */
     private function createSuccessUrl($order, $immutableQuoteId) {
-        /* @var Mage_Sales_Model_Quote $immutableQuote */
-        $immutableQuote = Mage::getModel('sales/quote')->loadByIdWithoutStore($immutableQuoteId);
-
         $successUrlPath = $this->boltHelper()->getMagentoUrl(
             Mage::getStoreConfig('payment/boltpay/successpage'),
             [
                 '_query' => [
-                    'lastQuoteId' => $immutableQuote->getParentQuoteId(),
-                    'lastSuccessQuoteId' => $immutableQuote->getParentQuoteId(),
+                    'lastQuoteId' => $immutableQuoteId,
+                    'lastSuccessQuoteId' => $immutableQuoteId,
                     'lastOrderId' => $order->getId(),
                     'lastRealOrderId' => $order->getIncrementId()
                 ]
@@ -367,28 +362,6 @@ class Bolt_Boltpay_ApiController extends Mage_Core_Controller_Front_Action imple
             //////////////////////////////////////////////////////////////////////////////////////
 
             $orderModel->removePreAuthOrder($order);
-        }
-
-        ////////////////////////////////////////////////////////////////////
-        /// We treat Bolt initiated failed payment cancels to be the same as a directive
-        /// to expire the cached immutable quote that is stored in the session,
-        /// otherwise, the Bolt checkout could result in a locked state where the end
-        /// user will repeatedly be told that his cart has expired and to refresh. However,
-        /// since we are operating outside the session we cannot directly clear
-        /// the cache session from data
-        ///
-        /// Instead, we mark the Bolt order token cache to be expired by setting
-        /// the parent quote to be the parent quote of itself.  We take care of this
-        /// via an observer that watches for this condition.  This will preserve
-        /// native abandoned cart behavior while not marking the quote for
-        /// cleanup.
-        ////////////////////////////////////////////////////////////////////
-
-        $parentQuote = $orderModel->getParentQuoteFromOrder($order);
-        if ($parentQuote->getId()) {
-            $parentQuote
-                ->setParentQuoteId($parentQuote->getId())
-                ->save();
         }
 
         $this->sendResponse(

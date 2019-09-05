@@ -42,7 +42,7 @@ class Bolt_Boltpay_ShippingController
     {
         $this->_cache = Mage::app()->getCache();
         $this->_shippingAndTaxModel = Mage::getModel("boltpay/shippingAndTax");
-        if ($this->getRequest()->getPathInfo() === '/boltpay/shipping/prefetchEstimate/' ) {
+        if (strpos($this->getRequest()->getPathInfo(), 'prefetchEstimate')) {
             $this->requestMustBeSigned = false;
         }
     }

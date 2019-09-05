@@ -209,14 +209,19 @@ class Bolt_Boltpay_Model_Payment extends Mage_Payment_Model_Method_Abstract
             }
 
             $transactionStatus = strtolower($response->status);
-            
+
+            /** @var Mage_Sales_Model_Order $order */
+            $order = $payment->getOrder();
+            $prevTransactionStatus = ($order && ($order->getState() === Mage_Sales_Model_Order::STATE_PAYMENT_REVIEW))
+                ? self::TRANSACTION_PENDING
+                : $payment->getAdditionalInformation('bolt_transaction_status');
+
             if ($transactionStatus === self::TRANSACTION_PENDING) {
                 $message = $this->boltHelper()->__('Bolt is still reviewing this transaction.  The order status will be updated automatically after review.');
                 $this->boltHelper()->logWarning($message);
                 Mage::getSingleton('adminhtml/session')->addNotice($message);
             }
-
-            $this->handleTransactionUpdate($payment, $transactionStatus, self::TRANSACTION_PENDING);
+            $this->handleTransactionUpdate($payment, $transactionStatus, $prevTransactionStatus);
             //Mage::log(sprintf('Fetch transaction info completed for payment id: %d', $payment->getId()), null, 'bolt.log');
         } catch (Exception $e) {
             $this->boltHelper()->logException($e);
@@ -487,7 +492,7 @@ class Bolt_Boltpay_Model_Payment extends Mage_Payment_Model_Method_Abstract
                 } elseif ($newTransactionStatus == self::TRANSACTION_PENDING) {
                     $order = $payment->getOrder();
                     $message = $this->boltHelper()->__('BOLT notification: Payment is under review');
-                    $order->setState(Mage_Sales_Model_Order::STATE_PAYMENT_REVIEW, '', $message);
+                    $order->setState(Mage_Sales_Model_Order::STATE_PAYMENT_REVIEW, true, $message);
                     $order->save();
                 } elseif ($newTransactionStatus == self::TRANSACTION_CANCELLED) {
                     $this->handleVoidTransactionUpdate($payment);
