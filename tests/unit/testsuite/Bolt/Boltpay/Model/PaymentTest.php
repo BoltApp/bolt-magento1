@@ -5,12 +5,7 @@ require_once('OrderHelper.php');
 class Bolt_Boltpay_Model_PaymentTest extends PHPUnit_Framework_TestCase
 {
     private $app;
-
-    /**
-     * @var int|null
-     */
-    private static $productId = null;
-
+    
     /**
      * @var Bolt_Boltpay_TestHelper|null
      */
