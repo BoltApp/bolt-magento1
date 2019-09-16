@@ -925,6 +925,7 @@ PROMISE;
             ->save();
 
         if ($checkoutType == Bolt_Boltpay_Block_Checkout_Boltpay::CHECKOUT_TYPE_ADMIN){
+            $clonedQuote->getShippingAddress()->collectTotals();
             $clonedQuote->getShippingAddress()->setCollectShippingRates(true)->collectShippingRates()->save();
         }
 
