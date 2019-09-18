@@ -56,8 +56,8 @@ class Bolt_Boltpay_ShippingController
     public function indexAction()
     {
         try {
-
-            set_time_limit(30);
+            $timeout = $this->boltHelper()->getExtraConfig('shippingTimeout');
+            set_time_limit($timeout);
             ignore_user_abort(true);
 
             $requestData = $this->getRequestData();

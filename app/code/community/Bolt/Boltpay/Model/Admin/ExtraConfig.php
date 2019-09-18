@@ -261,6 +261,18 @@ JS;
     }
 
     /**
+     * Defines the default value for shipping and tax timeout to be 30 seconds
+     *
+     * @param int|string $rawConfigValue    The config value pre-filter. Will be an int for seconds or an empty string
+     * @param array      $additionalParams  unused for this filter
+     *
+     * @return int  the number of seconds defined in the extra config admin.  If not defined, the default of 30
+     */
+    public function filterShippingTimeout($rawConfigValue, $additionalParams = array()) {
+        return is_int($rawConfigValue) ? abs($rawConfigValue) : 30;
+    }
+
+    /**
      * Defines the default value as a 1 cent tolerance for Bolt and Magento grand total
      * difference
      *
