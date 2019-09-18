@@ -579,8 +579,10 @@ class Bolt_Boltpay_Model_Order extends Bolt_Boltpay_Model_Abstract
                 $couponExists = (bool) $magentoCoupon->getId();
 
                 if ($couponExists) {
-                    $magentoCouponCodes = $immutableQuote->getCouponCode() ? explode(',', (string) $immutableQuote->getCouponCode()) : array();
-                    if (!in_array($boltCoupon->reference, $magentoCouponCodes)) {
+                    $magentoCouponCodes = $immutableQuote->getCouponCode()
+                        ? explode(',', strtolower((string) $immutableQuote->getCouponCode()))
+                        : array();
+                    if (!in_array(strtolower($boltCoupon->reference), $magentoCouponCodes)) {
                         /** @var Mage_SalesRule_Model_Rule $rule */
                         $rule = (@$cachedRules[$magentoCoupon->getRuleId()]) ?: Mage::getModel('salesrule/rule')->load($magentoCoupon->getRuleId());
                         $toTime = $rule->getToDate() ? ((int) strtotime($rule->getToDate()) + Mage_CatalogRule_Model_Resource_Rule::SECONDS_IN_DAY - 1) : 0;
