@@ -367,6 +367,22 @@ class Bolt_Boltpay_Model_Payment extends Mage_Payment_Model_Method_Abstract
         }
     }
 
+    /**
+     * Check void availability
+     *
+     * @param   Varien_Object $payment
+     * @return  bool
+     */
+    public function canVoid(Varien_Object $payment)
+    {
+        // Disable sending void requests to Bolt if the request came from Bolt
+        if (Bolt_Boltpay_Helper_Data::$fromHooks){
+            return false;
+        }
+
+        return parent::canVoid($payment);
+    }
+
     public function void(Varien_Object $payment)
     {
         try {

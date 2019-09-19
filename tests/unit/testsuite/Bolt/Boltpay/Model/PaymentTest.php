@@ -7,11 +7,6 @@ class Bolt_Boltpay_Model_PaymentTest extends PHPUnit_Framework_TestCase
     private $app;
 
     /**
-     * @var int|null
-     */
-    private static $productId = null;
-
-    /**
      * @var Bolt_Boltpay_TestHelper|null
      */
     private $testHelper = null;
@@ -209,6 +204,14 @@ class Bolt_Boltpay_Model_PaymentTest extends PHPUnit_Framework_TestCase
         $orderPayment = new Mage_Sales_Model_Order_Payment();
         $orderPayment->setAdditionalInformation('bolt_transaction_status', Bolt_Boltpay_Model_Payment::TRANSACTION_REJECTED_REVERSIBLE);
         $this->assertTrue($this->_currentMock->canReviewPayment($orderPayment));
+    }
+
+    public function testCannotVoidIfTheRequestIsFromBolt()
+    {
+        $orderPayment = new Mage_Sales_Model_Order_Payment();
+        Bolt_Boltpay_Helper_Data::$fromHooks = true;
+
+        $this->assertFalse($this->_currentMock->canVoid($orderPayment));
     }
 
     /**
