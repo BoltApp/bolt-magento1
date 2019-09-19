@@ -585,6 +585,7 @@ class Bolt_Boltpay_Model_Order extends Bolt_Boltpay_Model_Abstract
                         : array();
 
                     if (!in_array(trim(strtolower($boltCoupon->reference)), $magentoCouponCodes)) {
+
                         /** @var Mage_SalesRule_Model_Rule $rule */
                         $rule = (@$cachedRules[$magentoCoupon->getRuleId()]) ?: Mage::getModel('salesrule/rule')->load($magentoCoupon->getRuleId());
                         $toTime = $rule->getToDate() ? ((int) strtotime($rule->getToDate()) + Mage_CatalogRule_Model_Resource_Rule::SECONDS_IN_DAY - 1) : 0;
@@ -841,7 +842,7 @@ class Bolt_Boltpay_Model_Order extends Bolt_Boltpay_Model_Abstract
 
         $session->unsBoltUserId();
     }
-    
+
     /**
      * Sends an email if an order email has not already been sent.
      *
@@ -945,6 +946,8 @@ class Bolt_Boltpay_Model_Order extends Bolt_Boltpay_Model_Abstract
             $previousStoreId = Mage::app()->getStore()->getId();
             Mage::app()->setCurrentStore(Mage_Core_Model_App::ADMIN_STORE_ID);
             $order->delete();
+            Mage::dispatchEvent('bolt_boltpay_failed_order_removed_after', array('order' => $order));
+            $this->reactivateUsedPromotion($order);
             Mage::app()->setCurrentStore($previousStoreId);
             ###########################################################
 
@@ -953,6 +956,37 @@ class Bolt_Boltpay_Model_Order extends Bolt_Boltpay_Model_Abstract
             ##########################################################
             $parentQuote->setIsActive(true)->save();
             ###########################################################
+        }
+    }
+
+    /**
+     * Reactivates the promotion if it was used in failed orders
+     *
+     * @param Mage_Sales_Model_Order $order
+     */
+    public function reactivateUsedPromotion(Mage_Sales_Model_Order $order)
+    {
+        try {
+            /** @var Bolt_Boltpay_Model_Coupon $couponModel */
+            $couponModel = Mage::getModel('boltpay/coupon');
+            $customerId = $order->getCustomerId();
+
+            if ($code = $order->getCouponCode()){
+                $coupon = $couponModel->decreaseCouponTimesUsed($code);
+                if ($customerId){
+                    $couponModel->decreaseCustomerCouponTimesUsed($customerId, $coupon);
+                }
+            }
+
+            $ruleIds = explode(',', $order->getAppliedRuleIds());
+            if ($ruleIds && $customerId){
+                foreach ($ruleIds as $ruleId) {
+                    $couponModel->decreaseCustomerRuleTimesUsed($customerId, $ruleId);
+                }
+            }
+        } catch (\Exception $e) {
+            $this->boltHelper()->logException($e);
+            $this->boltHelper()->notifyException($e);
         }
     }
 
