@@ -56,7 +56,7 @@ class Bolt_Boltpay_Block_Catalog_Product_Boltpay extends Mage_Core_Block_Templat
             $_product = Mage::registry('current_product');
             if (!$_product) {
                 $msg = 'Bolt: Cannot find product info';
-                $this->boltHelper()->notifyException($msg);
+                $this->boltHelper()->notifyException(new Exception($msg));
                 return '""';
             }
 
