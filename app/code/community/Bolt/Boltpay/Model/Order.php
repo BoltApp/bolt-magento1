@@ -81,7 +81,7 @@ class Bolt_Boltpay_Model_Order extends Bolt_Boltpay_Model_Abstract
             );
             benchmark( "Dispatched event bolt_boltpay_order_creation_before" );
 
-            $this->validateCartSessionData($immutableQuote, $parentQuote, $transaction);
+            $this->validateCartSessionData($immutableQuote, $parentQuote, $transaction, $isPreAuthCreation);
             benchmark( "Validated session data" );
 
             $parentQuote->setIsActive(false)->save();  # block synchronous processing of cart
@@ -337,10 +337,11 @@ class Bolt_Boltpay_Model_Order extends Bolt_Boltpay_Model_Abstract
      * @param Mage_Sales_Model_Quote $immutableQuote    Copy of the Magento session quote used by Bolt
      * @param Mage_Sales_Model_Quote $parentQuote       The Magento session quote holding cart data
      * @param object                 $transaction       The Bolt transaction object sent from the Bolt server
+     * @param bool                   $isPreAuthCreation true if this validation is happening via pre-auth, otherwise false
      *
      * @throws Bolt_Boltpay_OrderCreationException  on failure of session validation
      */
-    protected function validateCartSessionData($immutableQuote, $parentQuote, $transaction) {
+    protected function validateCartSessionData($immutableQuote, $parentQuote, $transaction, $isPreAuthCreation) {
 
         if ($immutableQuote->isObjectNew()) {
             throw new Bolt_Boltpay_OrderCreationException(
@@ -350,7 +351,7 @@ class Bolt_Boltpay_Model_Order extends Bolt_Boltpay_Model_Abstract
             );
         }
 
-        if (!$parentQuote->getItemsCount() && !$immutableQuote->getItemsCount()) {
+        if ($isPreAuthCreation && !$parentQuote->getItemsCount()) {
             throw new Bolt_Boltpay_OrderCreationException(
                 OCE::E_BOLT_CART_HAS_EXPIRED,
                 OCE::E_BOLT_CART_HAS_EXPIRED_TMPL_EMPTY
