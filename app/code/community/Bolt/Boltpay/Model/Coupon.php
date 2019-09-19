@@ -662,4 +662,63 @@ class Bolt_Boltpay_Model_Coupon extends Bolt_Boltpay_Model_Abstract
     {
         return $this->httpCode;
     }
+
+    /**
+     * @param $code
+     *
+     * @return Mage_SalesRule_Model_Coupon
+     * @throws Exception
+     */
+    public function decreaseCouponTimesUsed($code)
+    {
+        /** @var Mage_SalesRule_Model_Coupon $coupon */
+        $coupon = Mage::getModel('salesrule/coupon')->load($code, 'code');
+
+        $coupon->setTimesUsed($coupon->getTimesUsed() - 1);
+        $coupon->save();
+        return $coupon;
+    }
+
+    /**
+     * @param                             $customerId
+     * @param Mage_SalesRule_Model_Coupon $coupon
+     */
+    public function decreaseCustomerCouponTimesUsed($customerId, Mage_SalesRule_Model_Coupon $coupon)
+    {
+        $couponUsage = new Varien_Object();
+        Mage::getResourceModel('salesrule/coupon_usage')->loadByCustomerCoupon($couponUsage, $customerId,
+            $coupon->getId());
+
+        if ($couponUsage->getCouponId()){
+            /** @var Mage_Core_Model_Resource $resource */
+            $resource = Mage::getSingleton('core/resource');
+            /** @var Magento_Db_Adapter_Pdo_Mysql $writeConnection */
+            $writeConnection = $resource->getConnection('core_write');
+            $table = $resource->getTableName('salesrule/coupon_usage');
+            $where = array('coupon_id = ?' => $coupon->getId(), 'customer_id = ?' => $customerId,);
+
+            if ($couponUsage->getTimesUsed() > 1){
+                $writeConnection->update($table, array('times_used' => $couponUsage->getTimesUsed() - 1), $where);
+            } else {
+                $writeConnection->delete($table, $where);
+            }
+        }
+    }
+
+    /**
+     * @param                             $customerId
+     * @param                             $ruleId
+     *
+     * @throws Exception
+     */
+    public function decreaseCustomerRuleTimesUsed($customerId, $ruleId)
+    {
+        /** @var Mage_SalesRule_Model_Rule_Customer $customerRule */
+        $customerRule = Mage::getModel('salesrule/rule_customer')->loadByCustomerRule($customerId, $ruleId);
+
+        if ($customerRule->getId()){
+            $customerRule->setTimesUsed($customerRule->getTimesUsed() - 1);
+            $customerRule->save();
+        }
+    }
 }

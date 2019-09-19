@@ -58,6 +58,7 @@ If you would like to pull the latest Bolt code from the Git repo and update Mage
 | bolt_boltpay_validate_totals_before | global | Entry for altering the behavior of subtotal validation prior to standard subtotal validation.  Each subtotal validation may be canceled by setting to false the respective values for _transaction->shouldDoTaxTotalValidation_, _$transaction->shouldDoDiscountTotalValidation_, and _$transaction->shouldDoShippingTotalValidation_ | **quote**<br>_Mage_Sales_Model_Quote_<br>the Magento cart copy of the Bolt order<br><br>**transaction**<br>_object_<br>Bolt payload |
 | bolt_boltpay_validate_totals_after | global | Entry for adding additional subtotal validation behavior performed after standard subtotal validation | **quote**<br>_Mage_Sales_Model_Quote_<br>the Magento cart copy of the Bolt order<br><br>**transaction**<br>_object_<br>Bolt payload |
 | bolt_boltpay_admin_normalize_order_data_after | global | Entry for additional normalization of admin order data performed after standard order data normalization | **request**<br>_Zend_Controller_Request_Abstract_<br>request object containing the post data to the order creation controller call<br><br>**orderCreateModel**<br>_Mage_Adminhtml_Model_Sales_Order_Create_<br>order create model |
+| bolt_boltpay_failed_order_removed_after | global | Execute after deleting the failed order | **order**<br>_Mage_Sales_Model_Order_<br>removed order object |
 
 ## Custom Bolt Filter Event Reference
 
