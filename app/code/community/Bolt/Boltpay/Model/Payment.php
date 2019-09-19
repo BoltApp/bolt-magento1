@@ -127,8 +127,13 @@ class Bolt_Boltpay_Model_Payment extends Mage_Payment_Model_Method_Abstract
     {
         $stateObject
             ->setState(Mage_Sales_Model_Order::STATE_PENDING_PAYMENT)
-            ->setStatus('pending_bolt')
             ->setIsNotified(false);
+
+        if ($this->isAdminArea()){
+            $stateObject->setStatus('pending');
+        } else {
+            $stateObject->setStatus('pending_bolt');
+        }
 
         return parent::initialize($paymentAction, $stateObject);
     }
@@ -138,7 +143,7 @@ class Bolt_Boltpay_Model_Payment extends Mage_Payment_Model_Method_Abstract
      */
     public function isAdminArea()
     {
-        return (Mage::app()->getStore()->isAdmin() && Mage::getDesign()->getArea() === 'adminhtml');
+        return (Mage::app()->getStore()->isAdmin() || Mage::getDesign()->getArea() === 'adminhtml');
     }
 
     public function getConfigData($field, $storeId = null)
