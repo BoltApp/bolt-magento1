@@ -1,5 +1,9 @@
 #!/usr/bin/env bash
 
+set -e
+set -u
+set -x
+
 export TEST_ENV=local
 export PHPUNIT_ENVIRONMENT=true
 
