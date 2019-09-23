@@ -126,13 +126,16 @@ class Bolt_Boltpay_Model_Payment extends Mage_Payment_Model_Method_Abstract
     public function initialize($paymentAction, $stateObject)
     {
         $stateObject
-            ->setState(Mage_Sales_Model_Order::STATE_PENDING_PAYMENT)
             ->setIsNotified(false);
 
         if ($this->isAdminArea()){
-            $stateObject->setStatus('pending');
+            $stateObject
+                ->setState(Mage_Sales_Model_Order::STATE_NEW)
+                ->setStatus('pending');
         } else {
-            $stateObject->setStatus('pending_bolt');
+            $stateObject
+                ->setState(Mage_Sales_Model_Order::STATE_PENDING_PAYMENT)
+                ->setStatus('pending_bolt');
         }
 
         return parent::initialize($paymentAction, $stateObject);
