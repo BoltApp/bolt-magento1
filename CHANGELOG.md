@@ -1,4 +1,10 @@
 # Changelog
+## [V2.0.2](https://s3-us-west-1.amazonaws.com/bolt-public/magento-integration-release/bolt-magento1_v2.0.2.zip) 2019-09-26
+ - Internal testing fixes
+ - Order note support
+ - Add additional filter support
+ - Increased datadog support
+ - Some pre-auth fixes
 ## [V2.0.1](https://s3-us-west-1.amazonaws.com/bolt-public/magento-integration-release/bolt-magento1_v2.0.1.zip) 2019-07-03
  - Improved logging
  - Improved multistore support
