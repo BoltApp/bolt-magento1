@@ -126,7 +126,7 @@ class Bolt_Boltpay_Model_Order extends Bolt_Boltpay_Model_Abstract
 
                 /** @var Bolt_Boltpay_Model_ShippingAndTax $shippingAndTaxModel */
                 $shippingAndTaxModel = Mage::getModel("boltpay/shippingAndTax");
-                $shouldRecalculateShipping = (bool) $this->boltHelper()->getExtraConfig("recalculateShipping"); # false by default
+                $shouldRecalculateShipping = ((bool) $this->boltHelper()->getExtraConfig("recalculateShipping")) || !$isPreAuthCreation; # false by default
 
                 benchmark( "Applying shipping - Applying shipping address data" );
                 $shippingAndTaxModel->applyBoltAddressData($immutableQuote, $packagesToShip[0]->shipping_address, $shouldRecalculateShipping);
