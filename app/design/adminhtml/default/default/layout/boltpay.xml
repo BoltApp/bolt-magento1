@@ -25,4 +25,27 @@
             <block type="boltpay/checkout_boltpay" name="connect_js" as="connect_js" template="boltpay/connectjs.phtml" />
         </reference>
     </adminhtml_sales_order_create_index>
+
+    <adminhtml_sales_order_view>
+        <reference name="before_body_end">
+            <block type="boltpay/checkout_boltpay" name="bolt_refund_popup" as="bolt_popup" template="boltpay/refund_popup.phtml" />
+
+            <!-- ******************************************************************************** -->
+            <!-- * We re-use a frontend template in the backend by temporarily changing the area, -->
+            <!-- * which afterwards we immediately restore to not affect potential other modules  -->
+            <!-- ******************************************************************************** -->
+            <block type="boltpay/checkout_boltpay" name="bolt_popup" as="bolt_popup" template="boltpay/popup.phtml">
+                <action method="setArea">
+                    <params>frontend</params>
+                </action>
+            </block>
+            <block type="boltpay/checkout_boltpay" name="reset_area_to_adminhtml" as="reset_area">
+                <action method="setArea">
+                    <params>adminhtml</params>
+                </action>
+            </block>
+            <!-- ******************************************************************************** -->
+
+        </reference>
+    </adminhtml_sales_order_view>
 </layout>

@@ -23,9 +23,9 @@
         <div class="popup-title"><?php echo $this->__('Bolt Checkout'); ?></div>
         <div class="popup-content"><?php echo $this->__('Sorry, but something went wrong. Please contact the seller.'); ?></div>
         <div class="popup-action">
-            <button class="popup-close btn-close"><?php echo $this->__('Close')?></button>
+            <button id="bolt-popup-btn-close" class="popup-close btn-close"><?php echo $this->__('Close')?></button>
         </div>
-        <div class="popup-close icon-close">x</div>
+        <div id="bolt-popup-icon-close" class="popup-close icon-close">x</div>
     </div>
 </div>
 
@@ -66,10 +66,13 @@
                 if (op <= 0.1){
                     clearInterval(timer);
                     element.style.display = 'none';
+                    element.style.opacity = 1;
+                    element.style.filter = 'alpha(opacity=100)';
+                    return;
                 }
                 element.style.opacity = op;
                 element.style.filter = 'alpha(opacity=' + op * 100 + ")";
-                op -= op * 0.1;
+                op -= op * 0.18;
             }, 50);
         },
         addMessage: function(message) {

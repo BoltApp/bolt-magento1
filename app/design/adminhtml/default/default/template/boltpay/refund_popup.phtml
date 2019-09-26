@@ -1,0 +1,138 @@
+<?php
+/**
+ * Bolt magento plugin
+ *
+ * NOTICE OF LICENSE
+ *
+ * This source file is subject to the Open Software License (OSL 3.0)
+ * that is bundled with this package in the file LICENSE.txt.
+ * It is also available through the world-wide-web at this URL:
+ * http://opensource.org/licenses/osl-3.0.php
+ *
+ * @category   Bolt
+ * @package    Bolt_Boltpay
+ * @copyright  Copyright (c) 2019 Bolt Financial, Inc (https://www.bolt.com)
+ * @license    http://opensource.org/licenses/osl-3.0.php  Open Software License (OSL 3.0)
+ */
+
+/* @var $this Mage_Core_Block_Template */
+
+
+////////////////////////////////////////////////////////////////
+/// For non-Bolt orders, we will skip the popup message to
+/// preserve user experience expected by merchants
+////////////////////////////////////////////////////////////////
+$orderId = $this->getRequest()->getParam('order_id');
+/** @var Mage_Sales_Model_Order $order */
+$order = Mage::getModel('sales/order')->load($orderId);
+$paymentMethod = $order->getPayment()->getMethod();
+
+if ($paymentMethod !== 'boltpay') {return;}
+////////////////////////////////////////////////////////////////
+?>
+
+<script>
+
+    ////////////////////////////////////////////////////////////////
+    // Add custom elements to the standard popup
+    ////////////////////////////////////////////////////////////////
+    var refund_offline_button = document.createElement("button");
+    refund_offline_button.setAttribute('id', 'bolt-popup-btn-offline');
+    refund_offline_button.setAttribute('class', 'popup-action btn-close');
+    refund_offline_button.innerHTML = '<?= $this->__('Issue memo to create an offline refund without syncing with Bolt (not recommended)')?>';
+
+    var refund_bolt_button = document.createElement("button");
+    refund_bolt_button.setAttribute('id', 'bolt-popup-btn-online');
+    refund_bolt_button.setAttribute('class', 'popup-action btn-close');
+    refund_bolt_button.innerHTML = "<img src='<?=$this->getSkinUrl('boltpay/images/bolt-arrow-white.png')?>'/><?= $this->__('Go to Invoices')?>";
+    ////////////////////////////////////////////////////////////////
+
+    var refundOfflineAction = '';
+    var intervalId = setInterval(
+        function() {
+            var buttons = document.getElementsByTagName("button");
+
+            if ((typeof BoltPopup !== 'undefined') && buttons) {
+                BoltPopup.setTitle('<?= $this->__('Did you mean to issue a refund with Bolt on this order?'); ?>');
+                BoltPopup.setMessage('<?= $this->__('Issue a refund by selecting an <b>Invoice</b> and then issuing a <b>Credit Memo</b> from the Invoice.<br/>Instructions manual: <a href="https://docs.bolt.com/docs/magento-1-operations">LINK</a>'); ?>');
+
+                var button_container = document.querySelector('#bolt-popup .popup-action');
+                button_container.prepend(refund_offline_button);
+                button_container.prepend(refund_bolt_button);
+
+                var close_button = document.getElementById('bolt-popup-btn-close');
+                close_button.innerText = 'Cancel';
+
+                for (var i=0; i < buttons.length; i++) {
+
+                    var button = buttons[i];
+                    if (button.title == 'Credit Memo') {
+                        refundOfflineAction = button.onclick;
+
+                        var btnOffline = document.getElementById('bolt-popup-btn-offline');
+                        btnOffline.onclick = refundOfflineAction;
+
+                        var btnOnline = document.getElementById('bolt-popup-btn-online');
+                        btnOnline.onclick = function(){
+                            var invoicesLink = document.getElementById('sales_order_view_tabs_order_invoices');
+                            BoltPopup.close();
+                            invoicesLink.click();
+                        };
+
+                        button.onclick = function(){
+                            BoltPopup.show();
+                        };
+
+                        clearInterval(intervalId);
+                    }
+                };
+            }
+        },500
+    );
+</script>
+<style>
+    .bolt-popup .popup-wrapper .popup-content {
+        margin: 10px 0;
+        font-size: 14px;
+    }
+    .bolt-popup .popup-wrapper .popup-title {
+        font-weight: bold;
+        font-size: 15px !important;
+        text-align: left !important;
+    }
+    .bolt-popup .popup-wrapper .popup-action button {
+        margin: 5px 0 !important;
+    }
+
+    /* Bolt icon */
+    .bolt-popup .popup-wrapper #bolt-popup-btn-online img {
+        height: 14px;
+        margin-right: 3px;
+    }
+
+    .bolt-popup a {
+        color: #61B8FF;
+    }
+
+    .bolt-popup .popup-wrapper .popup-action button {
+        margin: auto !important;
+        display: block;
+    }
+
+    .bolt-popup button#bolt-popup-btn-offline {
+        margin-top: 16px !important;
+        font-size: 13px;
+        text-decoration: underline;
+        background: none;
+        border: none;
+        color: #61B8FF;
+    }
+
+    .bolt-popup button#bolt-popup-btn-close {
+        font-size: 13px;
+        text-decoration: underline;
+        background: none;
+        border: none;
+        color: #AFAFAF;
+    }
+</style>
