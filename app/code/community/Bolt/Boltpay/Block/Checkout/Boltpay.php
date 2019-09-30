@@ -457,7 +457,16 @@ class Bolt_Boltpay_Block_Checkout_Boltpay extends Mage_Checkout_Block_Onepage_Re
     {
         return Mage::getStoreConfig('payment/boltpay/skip_payment');
     }
-
+    
+    /**
+     * Return disabled customer groups for Bolt
+     * @return array
+     */
+    public function disableCustomerGroups()
+    {
+        return explode(',', Mage::getStoreConfig('payment/boltpay/bolt_disabled_customer_groups'));
+    }
+    
     /**
      * Returns whether enable merchant scoped account.
      * @return string
@@ -613,6 +622,13 @@ class Bolt_Boltpay_Block_Checkout_Boltpay extends Mage_Checkout_Block_Onepage_Re
      */
     private function isAllowedOnCurrentPageByRoute()
     {
+        $isAllowed = false;
+        $quote = $this->getQuote();
+        $customerGroupId = $quote->getCustomerGroupId();
+        $disabledGroups = $this->disableCustomerGroups();
+        if ($customerGroupId && in_array($customerGroupId, $disabledGroups)) {
+            return $isAllowed;
+        }
         $routeName = $this->getRequest()->getRouteName();
         $controllerName = $this->getRequest()->getControllerName();
 
