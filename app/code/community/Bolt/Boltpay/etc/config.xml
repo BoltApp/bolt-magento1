@@ -130,6 +130,15 @@
           </bolt_boltpay_safeguard_preauth_status>
         </observers>
       </sales_order_save_before>
+      <sales_order_shipment_save_after>
+        <observers>
+          <bolt_boltpay_create_invoice_after_creating_shipment>
+            <type>singleton</type>
+            <class>Bolt_Boltpay_Model_Observer</class>
+            <method>createInvoiceAfterCreatingShipment</method>
+          </bolt_boltpay_create_invoice_after_creating_shipment>
+        </observers>
+      </sales_order_shipment_save_after>
     </events>
 
     <sales>
@@ -282,6 +291,7 @@
         <use_javascript_in_admin>0</use_javascript_in_admin>
         <add_button_everywhere>0</add_button_everywhere>
         <sort_order>0</sort_order>
+        <auto_create_invoice_after_creating_shipment>0</auto_create_invoice_after_creating_shipment>
       </boltpay>
     </payment>
   </default>
