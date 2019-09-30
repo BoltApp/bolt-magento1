@@ -130,6 +130,15 @@
           </bolt_boltpay_safeguard_preauth_status>
         </observers>
       </sales_order_save_before>
+      <sales_order_shipment_save_after>
+        <observers>
+          <bolt_custom_model_observer>
+            <type>singleton</type>
+            <class>Bolt_Boltpay_Model_Observer</class>
+            <method>createInvoiceAfterCreatingShipment</method>
+          </bolt_custom_model_observer>
+        </observers>
+      </sales_order_shipment_save_after>
     </events>
 
     <sales>

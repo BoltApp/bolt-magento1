@@ -291,4 +291,66 @@ class Bolt_Boltpay_Model_Observer
         $orderModel = Mage::getModel('boltpay/order');
         $orderModel->validateBeforeOrderCommit($observer);
     }
+
+    /**
+     * Automatically create an invoice after creating the shipment if createInvoiceAfterCreatingShipment setting is set to yes
+     * @param $observer
+     * @return $this
+     */
+    public function createInvoiceAfterCreatingShipment($observer)
+    {
+        $shipment = $observer->getEvent()->getShipment();
+        $order = $shipment->getOrder();
+        if (
+            !$this->boltHelper()->getExtraConfig('createInvoiceAfterCreatingShipment')
+            || !Mage::getModel('boltpay/order')->isBoltOrder($order)
+        ) {
+            return;
+        }
+
+        try {
+            if ($order->canInvoice()) {
+                $invoiceItems = array();
+                $shipmentItems = $shipment->getAllItems();
+                foreach ($shipmentItems as $shipmentItem) {
+                    $qty = $this->getApplicableQtyToInvoice($order, $shipmentItem);
+                    if ($qty > 0) {
+                        $invoiceItems[$shipmentItem->getOrderItemId()] = $qty;
+                    }
+                }
+                if(count($invoiceItems) > 0){
+                    $invoice = Mage::getModel('sales/service_order', $order)->prepareInvoice($invoiceItems);
+                    $invoice->setRequestedCaptureCase(Mage_Sales_Model_Order_Invoice::CAPTURE_ONLINE);
+                    $invoice->register();
+                    $transaction = Mage::getModel('core/resource_transaction')
+                        ->addObject($invoice)
+                        ->addObject($order);
+                    $transaction->save();
+                }
+            }
+        } catch (\Exception $exception) {
+            $this->boltHelper()->logException($exception);
+            $this->boltHelper()->notifyException($exception);
+        }
+
+    }
+
+    /**
+     * @param $order
+     * @param $shipmentItem
+     * @return bool|float
+     */
+    private function getApplicableQtyToInvoice($order, $shipmentItem)
+    {
+        foreach ($order->getAllVisibleItems() as $orderItem) {
+            if ($orderItem->canInvoice() && $orderItem->getItemId() == $shipmentItem->getOrderItemId()) {
+                $maximumQtyCanBeInvoiced = (float)($orderItem->getQtyOrdered() - $orderItem->getQtyInvoiced());
+                $shippedQty = $shipmentItem->getQty();
+                return ($shippedQty > $maximumQtyCanBeInvoiced) ? $maximumQtyCanBeInvoiced : $shippedQty;
+            }
+        }
+
+        return false;
+    }
+
 }
