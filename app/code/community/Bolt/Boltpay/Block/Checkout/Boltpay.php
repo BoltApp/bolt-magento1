@@ -459,10 +459,10 @@ class Bolt_Boltpay_Block_Checkout_Boltpay extends Mage_Checkout_Block_Onepage_Re
     }
     
     /**
-     * Return disabled customer groups for Bolt
+     * Return disabled customer groups for the Bolt plugin
      * @return array
      */
-    public function disableCustomerGroups()
+    public function getDisabledCustomerGroups()
     {
         return explode(',', Mage::getStoreConfig('payment/boltpay/bolt_disabled_customer_groups'));
     }
@@ -615,6 +615,18 @@ class Bolt_Boltpay_Block_Checkout_Boltpay extends Mage_Checkout_Block_Onepage_Re
     }
 
     /**
+     * Check if customer group ID in the disabled groups fo the Bolt Plugin
+     *
+     * @param integer $customerGroupId
+     * @return boolean
+     */
+    private function isCustomerGroupDisabled($customerGroupId)
+    {
+        $disabledCustomerGroups = $this->getDisabledCustomerGroups();
+        return in_array($customerGroupId, $disabledCustomerGroups);
+    }
+
+    /**
      * Checking if allows to insert connectjs or replace by route name
      *
      * @return bool
@@ -622,12 +634,11 @@ class Bolt_Boltpay_Block_Checkout_Boltpay extends Mage_Checkout_Block_Onepage_Re
      */
     private function isAllowedOnCurrentPageByRoute()
     {
-        $isAllowed = false;
         $quote = $this->getQuote();
         $customerGroupId = $quote->getCustomerGroupId();
-        $disabledGroups = $this->disableCustomerGroups();
-        if ($customerGroupId && in_array($customerGroupId, $disabledGroups)) {
-            return $isAllowed;
+        $isCustomerGroupDisabled = $this->isCustomerGroupDisabled($customerGroupId);
+        if ($isCustomerGroupDisabled) {
+            return false;
         }
         $routeName = $this->getRequest()->getRouteName();
         $controllerName = $this->getRequest()->getControllerName();
