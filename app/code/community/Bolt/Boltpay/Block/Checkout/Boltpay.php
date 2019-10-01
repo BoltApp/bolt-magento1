@@ -453,13 +453,13 @@ class Bolt_Boltpay_Block_Checkout_Boltpay extends Mage_Checkout_Block_Onepage_Re
      * Returns the Skip Payment Method Step configuration.
      * @return string
      */
-    function isBoltOnlyPayment()
+    public function isBoltOnlyPayment()
     {
         return Mage::getStoreConfig('payment/boltpay/skip_payment');
     }
     
     /**
-     * Return disabled customer groups for the Bolt plugin
+     * Returns disabled customer group Ids for the Bolt plugin
      * @return array
      */
     public function getDisabledCustomerGroups()
@@ -471,7 +471,7 @@ class Bolt_Boltpay_Block_Checkout_Boltpay extends Mage_Checkout_Block_Onepage_Re
      * Returns whether enable merchant scoped account.
      * @return string
      */
-    function isEnableMerchantScopedAccount()
+    public function isEnableMerchantScopedAccount()
     {
         return Mage::getStoreConfig('payment/boltpay/enable_merchant_scoped_account');
     }
