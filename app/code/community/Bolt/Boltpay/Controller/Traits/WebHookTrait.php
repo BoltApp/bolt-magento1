@@ -46,9 +46,12 @@ trait Bolt_Boltpay_Controller_Traits_WebHookTrait {
      */
     public function preDispatch()
     {
+        # disables web server compression if enabled
+        @ini_set("zlib.output_compression", 0);
+
         benchmark( "Bolt controller predispatch started" );
 
-        ob_start();
+        ob_start();  # buffer to catch any warning output or any random echo or print output
 
         $this->getResponse()->clearAllHeaders()->clearBody();
         $this->boltHelper()->setResponseContextHeaders();
@@ -93,27 +96,57 @@ trait Bolt_Boltpay_Controller_Traits_WebHookTrait {
     }
 
     /**
-     * POST data in response to a request
+     * Immediately sends JSON response data to an Webhook or API request
      *
-     * @param int                 $httpCode       standard HTTP response code
-     * @param string|object|array $data           a JSON string or PHP object or array to be encoded representing the
-     *                                            JSON to be sent as a response body to Bolt
+     * @param int                 $httpCode         standard HTTP response code
+     * @param string|object|array $data             a JSON string or PHP object or array to be encoded representing the
+     *                                              JSON to be sent as a response body to Bolt
+     * @param bool                $exitImmediately  If true, script will end immediately after this call, otherwise the
+     *                                              the output is flushed immediately and the script continues to
+     *                                              execute
      *
      * @throws Zend_Controller_Response_Exception if the error code is not within the valid range
      */
-    protected function sendResponse($httpCode, $data = array())
+    protected function sendResponse($httpCode, $data = array(), $exitImmediately = true)
     {
-        ob_end_clean();
-        $content = is_string($data) ? $data : json_encode($data);
-        $length = strlen($content);
+        while (ob_get_level()) { ob_end_clean(); } # discard all unexpected output
 
+        $content = is_string($data) ? $data : json_encode($data);
+
+        ini_set("implicit_flush", 1);
         $this->getResponse()
             ->setHttpResponseCode($httpCode)
-            ->setHeader('Content-Length', $length, true)
-            ->setBody($content)
-            ->sendResponse();
+            ->sendHeaders();
 
-        while (ob_get_level()) { ob_end_clean(); }
+        if ($exitImmediately) {
+            echo $content;
+            exit;
+        }
+
+        ///////////////////////////////////////////////////////////
+        // This will handle general flushing (e.g. Apache)
+        ///////////////////////////////////////////////////////////
+        header( 'Content-Length: ' . strlen($content) );
+        header('X-Accel-Buffering: no'); # tells Nginx to disable fastcgi_buffering and disable gzip for request
+        header( 'Connection: Close' );
+
+        # Send the prepared output
+        echo $content;
+        @flush();
+        ///////////////////////////////////////////////////////////
+
+        ///////////////////////////////////////////////////////////
+        // Code to explicitly flush and end request on Ngnix/PHP-FPM
+        ///////////////////////////////////////////////////////////
+        if ( function_exists( 'fastcgi_finish_request' ) ) {
+            fastcgi_finish_request();
+        }
+        ///////////////////////////////////////////////////////////
+
+        # Allow session to be accessed by other request while doing background processing
+        if ( session_id() ) {
+            session_write_close();
+        }
     }
 
     /**

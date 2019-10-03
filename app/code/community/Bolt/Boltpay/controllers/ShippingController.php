@@ -117,7 +117,6 @@ class Bolt_Boltpay_ShippingController
                     422,
                     array('status' => 'failure','error' => $addressErrorDetails)
                 );
-                return;
             }
             ////////////////////////////////////////////////////////////////////////////////
 
@@ -184,7 +183,6 @@ class Bolt_Boltpay_ShippingController
             $this->sendResponse(
                 200
             );
-            return;
         }
 
         $requiredAddressFields = array('city'=>'','region'=>'','region_id'=>'','postcode'=>'','country_id'=>'');
