@@ -852,7 +852,9 @@ class Bolt_Boltpay_Model_Order extends Bolt_Boltpay_Model_Abstract
     {
         try {
             if (!$order->getEmailSent()) {
-                $order->queueNewOrderEmail();
+                $emailWasSent = method_exists($order, 'queueNewOrderEmail')
+                    ? $order->queueNewOrderEmail()
+                    : $order->sendNewOrderEmail();
                 $history = $order->addStatusHistoryComment( $this->boltHelper()->__('Email sent for order %s', $order->getIncrementId()) );
                 $history->setIsCustomerNotified(true);
             }
