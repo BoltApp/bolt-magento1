@@ -260,7 +260,7 @@ class Bolt_Boltpay_Model_ShippingAndTax extends Bolt_Boltpay_Model_Abstract
                     "tax_amount" => abs(round($shippingAddress->getTaxAmount() * 100))
                 );
 
-                $response['shipping_options'][] = $option;
+#                $response['shipping_options'][] = $option;
 
                 Mage::dispatchEvent(
                     'bolt_boltpay_shipping_option_added',
