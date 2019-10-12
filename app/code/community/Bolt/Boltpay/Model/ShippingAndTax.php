@@ -221,7 +221,7 @@ class Bolt_Boltpay_Model_ShippingAndTax extends Bolt_Boltpay_Model_Abstract
                     $exception = new Exception($this->boltHelper()->__("Error getting shipping option for %s: %s", $rate->getCarrierTitle(), $rate->getErrorMessage()));
                     $metaData = array('quote' => var_export($quote->debug(), true));
                     $this->boltHelper()->logWarning($exception->getMessage(),$metaData);
-                    $this->boltHelper()->notifyException($exception->getMessage(), $metaData);
+                    $this->boltHelper()->notifyException($exception, $metaData);
                     continue;
                 }
 
@@ -251,7 +251,7 @@ class Bolt_Boltpay_Model_ShippingAndTax extends Bolt_Boltpay_Model_Abstract
                     continue;
                 }
 
-                $adjustedShippingAmount = $this->getAdjustedShippingAmount($originalDiscountTotal, $quote);
+                $adjustedShippingAmount = $this->getAdjustedShippingAmount($originalDiscountTotal, $quote, $boltOrder);
 
                 $option = array(
                     "service" => $this->getShippingLabel($rate),
@@ -352,17 +352,18 @@ class Bolt_Boltpay_Model_ShippingAndTax extends Bolt_Boltpay_Model_Abstract
      *
      * @param float                     $originalDiscountTotal    Original discount
      * @param Mage_Sales_Model_Quote    $quote    Quote which has been updated to use new shipping rate
+     * @param object                    $boltOrder  The order data sent as reported by Bolt
      *
      * @return float    Discount modified as a result of the new shipping method
      */
-    public function getAdjustedShippingAmount($originalDiscountTotal, $quote ) {
+    public function getAdjustedShippingAmount($originalDiscountTotal, $quote, $boltOrder = null ) {
         $newDiscountTotal = $quote->getSubtotal() - $quote->getSubtotalWithDiscount();
         $adjustedShippingAmount = $quote->getShippingAddress()->getShippingAmount() + $originalDiscountTotal - $newDiscountTotal;
 
         return $this->boltHelper()->doFilterEvent(
             'bolt_boltpay_filter_adjusted_shipping_amount',
             $adjustedShippingAmount,
-            array('originalDiscountTotal' => $originalDiscountTotal, 'quote'=>$quote)
+            array('originalDiscountTotal' => $originalDiscountTotal, 'quote'=>$quote, 'boltOrder' => $boltOrder)
         );
     }
 

@@ -60,19 +60,10 @@ class Bolt_Boltpay_Model_Order extends Bolt_Boltpay_Model_Abstract
 
             $immutableQuoteId = $this->boltHelper()->getImmutableQuoteIdFromTransaction($transaction);
             $immutableQuote = $this->getQuoteById($immutableQuoteId);
-            $immutableQuote->setParentId($transaction->order->cart->order_reference);
+            $immutableQuote->setParentQuoteId($transaction->order->cart->order_reference);
             Mage::app()->setCurrentStore($immutableQuote->getStore());
             $parentQuote = $this->getQuoteById($transaction->order->cart->order_reference);
             benchmark( "Looked up quotes." );
-
-            if (!$parentQuote->getIsActive()) {
-                throw new Exception(
-                    $this->boltHelper()->__("Bolt expects the parent quote [%s] to be available.  Instead it found that the parent quote [%s] for the immutable quote [%s] is currently being processed, has been processed, or can not be processed for order [#%s]. Check quote [%s] for details.",
-                        $transaction->order->cart->order_reference, $parentQuote->getId(), $immutableQuote->getId(), $parentQuote->getReservedOrderId(), $parentQuote->getParentQuoteId() )
-                );
-            }
-
-            $parentQuote->setIsActive(false)->save();
 
             if (!$sessionQuoteId){
                 $sessionQuoteId = $immutableQuote->getParentQuoteId();
@@ -90,8 +81,10 @@ class Bolt_Boltpay_Model_Order extends Bolt_Boltpay_Model_Abstract
             );
             benchmark( "Dispatched event bolt_boltpay_order_creation_before" );
 
-            $this->validateCartSessionData($immutableQuote, $parentQuote, $transaction);
+            $this->validateCartSessionData($immutableQuote, $parentQuote, $transaction, $isPreAuthCreation);
             benchmark( "Validated session data" );
+
+            $parentQuote->setIsActive(false)->save();  # block synchronous processing of cart
 
             // adding guest user email to order
             if (!$immutableQuote->getCustomerEmail()) {
@@ -115,6 +108,7 @@ class Bolt_Boltpay_Model_Order extends Bolt_Boltpay_Model_Abstract
             $immutableQuote->getBillingAddress()
                 ->setFirstname($transaction->order->cart->billing_address->first_name)
                 ->setLastname($transaction->order->cart->billing_address->last_name)
+                ->setEmail($transaction->order->cart->billing_address->email_address)
                 ->setShouldIgnoreValidation(true)
                 ->save();
             benchmark( "Saved address info" );
@@ -132,8 +126,8 @@ class Bolt_Boltpay_Model_Order extends Bolt_Boltpay_Model_Abstract
 
                 /** @var Bolt_Boltpay_Model_ShippingAndTax $shippingAndTaxModel */
                 $shippingAndTaxModel = Mage::getModel("boltpay/shippingAndTax");
+                $shouldRecalculateShipping = ((bool) $this->boltHelper()->getExtraConfig("recalculateShipping")) || !$isPreAuthCreation; # false by default
 
-                $shouldRecalculateShipping = (bool) $this->boltHelper()->getExtraConfig("recalculateShipping"); # false by default
                 benchmark( "Applying shipping - Applying shipping address data" );
                 $shippingAndTaxModel->applyBoltAddressData($immutableQuote, $packagesToShip[0]->shipping_address, $shouldRecalculateShipping);
                 benchmark( "Finished applying shipping - Applying shipping address data" );
@@ -160,7 +154,7 @@ class Bolt_Boltpay_Model_Order extends Bolt_Boltpay_Model_Abstract
                 }
 
                 if ($shippingMethodCode) {
-                    $shippingAndTaxModel->applyShippingRate($immutableQuote, $shippingMethodCode, false);
+                    $shippingAndTaxModel->applyShippingRate($immutableQuote, $shippingMethodCode, $shouldRecalculateShipping);
                 } else {
                     $errorMessage = $this->boltHelper()->__('Shipping method not found');
                     $metaData = array(
@@ -326,15 +320,6 @@ class Bolt_Boltpay_Model_Order extends Bolt_Boltpay_Model_Abstract
         ///////////////////////////////////////////////////////
         /// Dispatch order save events
         ///////////////////////////////////////////////////////
-        $recurringPaymentProfiles = $service->getRecurringPaymentProfiles();
-
-        benchmark( 'Running independent merchant third-party code via checkout_submit_all_after');
-        Mage::dispatchEvent(
-            'checkout_submit_all_after',
-            array('order' => $order, 'quote' => $immutableQuote, 'recurring_profiles' => $recurringPaymentProfiles)
-        );
-        benchmark( "Finished running independent merchant third-party code via checkout_submit_all_after" );
-
         Mage::dispatchEvent(
             'bolt_boltpay_order_creation_after',
             array('order'=>$order, 'quote'=>$immutableQuote, 'transaction' => $transaction)
@@ -352,12 +337,13 @@ class Bolt_Boltpay_Model_Order extends Bolt_Boltpay_Model_Abstract
      * @param Mage_Sales_Model_Quote $immutableQuote    Copy of the Magento session quote used by Bolt
      * @param Mage_Sales_Model_Quote $parentQuote       The Magento session quote holding cart data
      * @param object                 $transaction       The Bolt transaction object sent from the Bolt server
+     * @param bool                   $isPreAuthCreation true if this validation is happening via pre-auth, otherwise false
      *
      * @throws Bolt_Boltpay_OrderCreationException  on failure of session validation
      */
-    protected function validateCartSessionData($immutableQuote, $parentQuote, $transaction) {
+    protected function validateCartSessionData($immutableQuote, $parentQuote, $transaction, $isPreAuthCreation) {
 
-        if ($immutableQuote->isEmpty()) {
+        if ($immutableQuote->isObjectNew()) {
             throw new Bolt_Boltpay_OrderCreationException(
                 OCE::E_BOLT_CART_HAS_EXPIRED,
                 OCE::E_BOLT_CART_HAS_EXPIRED_TMPL_NOT_FOUND,
@@ -365,14 +351,14 @@ class Bolt_Boltpay_Model_Order extends Bolt_Boltpay_Model_Abstract
             );
         }
 
-        if (!$parentQuote->getItemsCount()) {
+        if ($isPreAuthCreation && !$parentQuote->getItemsCount()) {
             throw new Bolt_Boltpay_OrderCreationException(
                 OCE::E_BOLT_CART_HAS_EXPIRED,
                 OCE::E_BOLT_CART_HAS_EXPIRED_TMPL_EMPTY
             );
         }
 
-        if ($parentQuote->isEmpty() || ($parentQuote->getParentQuoteId() === $immutableQuote->getId())) {
+        if ($parentQuote->isObjectNew() || !$parentQuote->getIsActive()) {
             throw new Bolt_Boltpay_OrderCreationException(
                 OCE::E_BOLT_CART_HAS_EXPIRED,
                 OCE::E_BOLT_CART_HAS_EXPIRED_TMPL_EXPIRED
@@ -594,8 +580,12 @@ class Bolt_Boltpay_Model_Order extends Bolt_Boltpay_Model_Abstract
                 $couponExists = (bool) $magentoCoupon->getId();
 
                 if ($couponExists) {
-                    $magentoCouponCodes = $immutableQuote->getCouponCode() ? explode(',', (string) $immutableQuote->getCouponCode()) : array();
-                    if (!in_array($boltCoupon->reference, $magentoCouponCodes)) {
+                    $magentoCouponCodes = $immutableQuote->getCouponCode()
+                        ? explode(',', trim(strtolower((string) $immutableQuote->getCouponCode())))
+                        : array();
+
+                    if (!in_array(trim(strtolower($boltCoupon->reference)), $magentoCouponCodes)) {
+
                         /** @var Mage_SalesRule_Model_Rule $rule */
                         $rule = (@$cachedRules[$magentoCoupon->getRuleId()]) ?: Mage::getModel('salesrule/rule')->load($magentoCoupon->getRuleId());
                         $toTime = $rule->getToDate() ? ((int) strtotime($rule->getToDate()) + Mage_CatalogRule_Model_Resource_Rule::SECONDS_IN_DAY - 1) : 0;
@@ -655,6 +645,7 @@ class Bolt_Boltpay_Model_Order extends Bolt_Boltpay_Model_Abstract
         foreach ($transaction->order->cart->items as $boltCartItem) {
 
             $cartItem = $immutableQuote->getItemById($boltCartItem->reference);
+            if ( !($cartItem instanceof Mage_Sales_Model_Quote_Item) ) { continue; }
 
             $cartItem->shouldNotBeValidated = false;
             Mage::dispatchEvent(
@@ -805,6 +796,22 @@ class Bolt_Boltpay_Model_Order extends Bolt_Boltpay_Model_Abstract
         $this->getParentQuoteFromOrder($order)->setIsActive(false)->save();
         $reference = @$payloadObject->transaction_reference ?: $payloadObject->reference;
         $order->getPayment()->setAdditionalInformation('bolt_reference', $reference)->save();
+
+        try {
+            $immutableQuote = $this->getQuoteFromOrder($order);
+            $recurringPaymentProfiles = $immutableQuote->setTotalsCollectedFlag(true)->prepareRecurringPaymentProfiles();
+
+            benchmark( 'Running independent merchant third-party code via checkout_submit_all_after');
+            Mage::dispatchEvent(
+                'checkout_submit_all_after',
+                array('order' => $order, 'quote' => $immutableQuote, 'recurring_profiles' => $recurringPaymentProfiles)
+            );
+            benchmark( "Finished running independent merchant third-party code via checkout_submit_all_after" );
+        } catch ( Exception $e ) {
+            $this->boltHelper()->notifyException($e);
+            $this->boltHelper()->logException($e);
+        }
+
         $this->sendOrderEmail($order);
     }
 
@@ -835,7 +842,7 @@ class Bolt_Boltpay_Model_Order extends Bolt_Boltpay_Model_Abstract
 
         $session->unsBoltUserId();
     }
-    
+
     /**
      * Sends an email if an order email has not already been sent.
      *
@@ -920,13 +927,66 @@ class Bolt_Boltpay_Model_Order extends Bolt_Boltpay_Model_Abstract
      */
     public function removePreAuthOrder($order) {
         if ($this->isBoltOrder($order)) {
+
+            $parentQuote = $this->getParentQuoteFromOrder($order);
+
+            ##############################################################
+            # Cancel order for restocking inventory and triggering events
+            ##############################################################
             if ($order->getStatus() !== 'canceled_bolt') {
-                $order->cancel()->setQuoteId(null)->setStatus('canceled_bolt')->save();
+                $order->setQuoteId(null)->save();
+                $order->cancel()->setStatus('canceled_bolt')->save();
             }
+            ##############################################################
+
+            ###########################################################
+            # Permanently delete order
+            ###########################################################
+            if ($this->boltHelper()->getExtraConfig('keepPreAuthOrders')) {return;}
             $previousStoreId = Mage::app()->getStore()->getId();
             Mage::app()->setCurrentStore(Mage_Core_Model_App::ADMIN_STORE_ID);
             $order->delete();
+            Mage::dispatchEvent('bolt_boltpay_failed_order_removed_after', array('order' => $order));
+            $this->reactivateUsedPromotion($order);
             Mage::app()->setCurrentStore($previousStoreId);
+            ###########################################################
+
+            ##########################################################
+            # Unblock quote to allow order to be re-processed
+            ##########################################################
+            $parentQuote->setIsActive(true)->save();
+            ###########################################################
+        }
+    }
+
+    /**
+     * Reactivates the promotion if it was used in failed orders
+     *
+     * @param Mage_Sales_Model_Order $order
+     */
+    public function reactivateUsedPromotion(Mage_Sales_Model_Order $order)
+    {
+        try {
+            /** @var Bolt_Boltpay_Model_Coupon $couponModel */
+            $couponModel = Mage::getModel('boltpay/coupon');
+            $customerId = $order->getCustomerId();
+
+            if ($code = $order->getCouponCode()){
+                $coupon = $couponModel->decreaseCouponTimesUsed($code);
+                if ($customerId){
+                    $couponModel->decreaseCustomerCouponTimesUsed($customerId, $coupon);
+                }
+            }
+
+            $ruleIds = explode(',', $order->getAppliedRuleIds());
+            if ($ruleIds && $customerId){
+                foreach ($ruleIds as $ruleId) {
+                    $couponModel->decreaseCustomerRuleTimesUsed($customerId, $ruleId);
+                }
+            }
+        } catch (\Exception $e) {
+            $this->boltHelper()->logException($e);
+            $this->boltHelper()->notifyException($e);
         }
     }
 
@@ -984,4 +1044,5 @@ class Bolt_Boltpay_Model_Order extends Bolt_Boltpay_Model_Abstract
             $this->boltHelper()->logWarning($e->getMessage());
         }
     }
+
 }

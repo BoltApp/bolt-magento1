@@ -126,9 +126,17 @@ class Bolt_Boltpay_Model_Payment extends Mage_Payment_Model_Method_Abstract
     public function initialize($paymentAction, $stateObject)
     {
         $stateObject
-            ->setState(Mage_Sales_Model_Order::STATE_PENDING_PAYMENT)
-            ->setStatus('pending_bolt')
             ->setIsNotified(false);
+
+        if ($this->isAdminArea()){
+            $stateObject
+                ->setState(Mage_Sales_Model_Order::STATE_NEW)
+                ->setStatus('pending');
+        } else {
+            $stateObject
+                ->setState(Mage_Sales_Model_Order::STATE_PENDING_PAYMENT)
+                ->setStatus('pending_bolt');
+        }
 
         return parent::initialize($paymentAction, $stateObject);
     }
@@ -138,7 +146,7 @@ class Bolt_Boltpay_Model_Payment extends Mage_Payment_Model_Method_Abstract
      */
     public function isAdminArea()
     {
-        return (Mage::app()->getStore()->isAdmin() && Mage::getDesign()->getArea() === 'adminhtml');
+        return (Mage::app()->getStore()->isAdmin() || Mage::getDesign()->getArea() === 'adminhtml');
     }
 
     public function getConfigData($field, $storeId = null)
@@ -209,14 +217,18 @@ class Bolt_Boltpay_Model_Payment extends Mage_Payment_Model_Method_Abstract
             }
 
             $transactionStatus = strtolower($response->status);
-            $prevTransactionStatus = $payment->getAdditionalInformation('bolt_transaction_status');
+
+            /** @var Mage_Sales_Model_Order $order */
+            $order = $payment->getOrder();
+            $prevTransactionStatus = ($order && ($order->getState() === Mage_Sales_Model_Order::STATE_PAYMENT_REVIEW))
+                ? self::TRANSACTION_PENDING
+                : $payment->getAdditionalInformation('bolt_transaction_status');
 
             if ($transactionStatus === self::TRANSACTION_PENDING) {
                 $message = $this->boltHelper()->__('Bolt is still reviewing this transaction.  The order status will be updated automatically after review.');
                 $this->boltHelper()->logWarning($message);
                 Mage::getSingleton('adminhtml/session')->addNotice($message);
             }
-
             $this->handleTransactionUpdate($payment, $transactionStatus, $prevTransactionStatus);
             //Mage::log(sprintf('Fetch transaction info completed for payment id: %d', $payment->getId()), null, 'bolt.log');
         } catch (Exception $e) {
@@ -361,6 +373,22 @@ class Bolt_Boltpay_Model_Payment extends Mage_Payment_Model_Method_Abstract
             $this->boltHelper()->notifyException($e);
             throw $e;
         }
+    }
+
+    /**
+     * Check void availability
+     *
+     * @param   Varien_Object $payment
+     * @return  bool
+     */
+    public function canVoid(Varien_Object $payment)
+    {
+        // Disable sending void requests to Bolt if the request came from Bolt
+        if (Bolt_Boltpay_Helper_Data::$fromHooks){
+            return false;
+        }
+
+        return parent::canVoid($payment);
     }
 
     public function void(Varien_Object $payment)

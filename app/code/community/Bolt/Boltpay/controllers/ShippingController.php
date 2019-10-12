@@ -42,7 +42,7 @@ class Bolt_Boltpay_ShippingController
     {
         $this->_cache = Mage::app()->getCache();
         $this->_shippingAndTaxModel = Mage::getModel("boltpay/shippingAndTax");
-        if ($this->getRequest()->getPathInfo() === '/boltpay/shipping/prefetchEstimate/' ) {
+        if (strpos($this->getRequest()->getPathInfo(), 'prefetchEstimate')) {
             $this->requestMustBeSigned = false;
         }
     }
@@ -56,8 +56,8 @@ class Bolt_Boltpay_ShippingController
     public function indexAction()
     {
         try {
-
-            set_time_limit(30);
+            $timeout = $this->boltHelper()->getExtraConfig('shippingTimeout');
+            set_time_limit($timeout);
             ignore_user_abort(true);
 
             $requestData = $this->getRequestData();

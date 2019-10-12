@@ -593,6 +593,11 @@ class Bolt_Boltpay_Model_BoltOrder extends Bolt_Boltpay_Model_Abstract
             $billingAddress->setCompany($fallbackAddress->getCompany());
         }
 
+        if (!trim($billingAddress->getEmail())) {
+            $billingAddress->setEmail($fallbackAddress->getEmail());
+            $wasCorrected = true;
+        }
+
         if ($wasCorrected) {
             $billingAddress->save();
             $quote->save();
@@ -920,10 +925,15 @@ PROMISE;
             ->save();
 
         if ($checkoutType == Bolt_Boltpay_Block_Checkout_Boltpay::CHECKOUT_TYPE_ADMIN){
+            $clonedQuote->getShippingAddress()->collectTotals();
             $clonedQuote->getShippingAddress()->setCollectShippingRates(true)->collectShippingRates()->save();
         }
 
-        return $clonedQuote;
+        return $this->boltHelper()->dispatchFilterEvent(
+            "bolt_boltpay_filter_cloned_quote",
+            $clonedQuote,
+            ['sourceQuote' => $sourceQuote, 'checkoutType' => $checkoutType]
+        );
     }
 
     /**

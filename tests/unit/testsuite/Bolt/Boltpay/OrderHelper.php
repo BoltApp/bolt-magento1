@@ -83,10 +83,11 @@ class Bolt_Boltpay_OrderHelper
      * @param $productId
      *
      * @param int $qty
+     * @param string $paymentMethod
      * @return Mage_Sales_Model_Order
      * @throws Mage_Core_Exception
      */
-    public static function createDummyOrder($productId, $qty = 2)
+    public static function createDummyOrder($productId, $qty = 2, $paymentMethod = 'checkmo')
     {
         $testHelper = new Bolt_Boltpay_TestHelper();
         $testHelper->addTestBillingAddress();
@@ -100,12 +101,12 @@ class Bolt_Boltpay_OrderHelper
             'country_id' => 'US',
             'region_id' => 12
         );
-        $testHelper->addTestFlatRateShippingAddress($addressData, 'checkmo');
+        $testHelper->addTestFlatRateShippingAddress($addressData, $paymentMethod);
         $cart = $testHelper->addProduct($productId, $qty);
         $quote = $cart->getQuote();
 
         // Set payment method for the quote
-        $quote->getPayment()->importData(array('method' => 'checkmo'));
+        $quote->getPayment()->importData(array('method' => $paymentMethod));
         $service = Mage::getModel('sales/service_quote', $quote);
         $service->submitAll();
         /** @var Mage_Sales_Model_Order $order */

@@ -56,7 +56,7 @@ class Bolt_Boltpay_Block_Catalog_Product_Boltpay extends Mage_Core_Block_Templat
             $_product = Mage::registry('current_product');
             if (!$_product) {
                 $msg = 'Bolt: Cannot find product info';
-                $this->boltHelper()->notifyException($msg);
+                $this->boltHelper()->notifyException(new Exception($msg));
                 return '""';
             }
 
@@ -66,12 +66,12 @@ class Bolt_Boltpay_Block_Catalog_Product_Boltpay extends Mage_Core_Block_Templat
 
             $productCheckoutCartItem[] = [
                 'reference' => $_product->getId(),
-                'price' => $_product->getPrice(),
+                'price' => $_product->getFinalPrice(),
                 'quantity' => 1,
                 'image' => $_product->getImageUrl(),
                 'name' => $_product->getName(),
             ];
-            $totalAmount = $_product->getPrice();
+            $totalAmount = $_product->getFinalPrice();
 
 
             $productCheckoutCart = [
