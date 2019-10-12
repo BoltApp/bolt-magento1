@@ -73,7 +73,7 @@ jobs:
       - run:
           name: Integration test
           command: |  
-              MAGENTO_VERSION=magento-mirror-1.9.3.6 tests/scripts/ci2.sh
+              MAGENTO_VERSION=magento-mirror-1.9.3.6 tests/scripts/setup_integration.sh
               echo "Running integraiton test"
               git clone git@github.com:BoltApp/integration-tests.git
               cd integration-tests
