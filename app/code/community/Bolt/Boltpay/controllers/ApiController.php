@@ -116,6 +116,8 @@ class Bolt_Boltpay_ApiController extends Mage_Core_Controller_Front_Action imple
                     ->setStore($order->getStoreId())
                     ->handleTransactionUpdate($orderPayment, $newTransactionStatus, $prevTransactionStatus, $transactionAmount, $transaction);
 
+                $this->boltHelper()->logInfo($this->boltHelper()->__( 'Updated existing order %d', $order->getIncrementId() ));
+
                 $this->sendResponse(
                     200,
                     array(
@@ -124,10 +126,6 @@ class Bolt_Boltpay_ApiController extends Mage_Core_Controller_Front_Action imple
                         'message' => $this->boltHelper()->__( 'Updated existing order %d', $order->getIncrementId() )
                     )
                 );
-
-                $this->boltHelper()->logInfo($this->boltHelper()->__( 'Updated existing order %d', $order->getIncrementId() ));
-
-                return;
             }
 
             /////////////////////////////////////////////////////
@@ -140,12 +138,15 @@ class Bolt_Boltpay_ApiController extends Mage_Core_Controller_Front_Action imple
         } catch (Bolt_Boltpay_InvalidTransitionException $boltPayInvalidTransitionException) {
             $this->boltHelper()->logException($boltPayInvalidTransitionException);
             if ($boltPayInvalidTransitionException->getOldStatus() == Bolt_Boltpay_Model_Payment::TRANSACTION_ON_HOLD) {
+                $message = $this->boltHelper()->__('The order is on-hold and requires manual merchant update before this hook can be processed');
+                $this->boltHelper()->logWarning($message);
+
                 $this->getResponse() ->setHeader("Retry-After", "86400");
+
                 $this->sendResponse(
                     503,
-                    array('status' => 'failure', 'error' => array('code' => 6009, 'message' => $this->boltHelper()->__('The order is on-hold and requires manual merchant update before this hook can be processed') ))
+                    array('status' => 'failure', 'error' => array('code' => 6009, 'message' => $message ))
                 );
-                $this->boltHelper()->logWarning($this->boltHelper()->__('The order is on-hold and requires manual merchant update before this hook can be processed'));
             } else {
                 $isNotRefundOrCaptureHook = !in_array($hookType, array(Bolt_Boltpay_Model_Payment::HOOK_TYPE_REFUND, Bolt_Boltpay_Model_Payment::HOOK_TYPE_CAPTURE));
                 $isRepeatHook = $newTransactionStatus === $prevTransactionStatus;
@@ -160,30 +161,26 @@ class Bolt_Boltpay_ApiController extends Mage_Core_Controller_Front_Action imple
 
                 if ( $canAssumeHookedIsHandled )
                 {
-                    $this->boltHelper()->logWarning($this->boltHelper()->__('Order already handled, so hook was ignored'));
+                    $message = $this->boltHelper()->__('Order already handled, so hook was ignored');
+                    $this->boltHelper()->logWarning($message);
                     $this->sendResponse(
                         200,
                         array(
                             'status' => 'success',
                             'display_id' => $order->getIncrementId(),
-                            'message' => $this->boltHelper()->__('Order already handled, so hook was ignored')
+                            'message' => $message
                         )
                     );
                 } else {
-                    $this->boltHelper()->logWarning($this->boltHelper()->__('Invalid webhook transition from %s to %s', $prevTransactionStatus, $newTransactionStatus) );
+                    $message = $this->boltHelper()->__('Invalid webhook transition from %s to %s', $prevTransactionStatus, $newTransactionStatus);
+                    $this->boltHelper()->logWarning($message);
                     $this->sendResponse(
                         422,
-                        array('status' => 'failure', 'error' => array('code' => 6009, 'message' => $this->boltHelper()->__('Invalid webhook transition from %s to %s', $prevTransactionStatus, $newTransactionStatus) ))
+                        array('status' => 'failure', 'error' => array('code' => 6009, 'message' => $message ))
                     );
                 }
             }
         } catch (Exception $e) {
-
-            $this->sendResponse(
-                422,
-                array('status' => 'failure', 'error' => array('code' => 6009, 'message' => $e->getMessage()))
-            );
-
             $metaData = array();
             if (isset($quote)){
                 $metaData['quote'] = var_export($quote->debug(), true);
@@ -191,6 +188,11 @@ class Bolt_Boltpay_ApiController extends Mage_Core_Controller_Front_Action imple
 
             $this->boltHelper()->notifyException($e, $metaData);
             $this->boltHelper()->logException($e, $metaData);
+
+            $this->sendResponse(
+                422,
+                array('status' => 'failure', 'error' => array('code' => 6009, 'message' => $e->getMessage()))
+            );
         }
     }
 
@@ -249,6 +251,8 @@ class Bolt_Boltpay_ApiController extends Mage_Core_Controller_Front_Action imple
             );
             /////////////////////////////////
 
+            # We flush the response immediately, however, we'll continue to process.  As such, third party code
+            # may be deferred to run after as to not block quick notification to Bolt of order creation or failure
             $this->sendResponse(
                 200,
                 array(
@@ -256,7 +260,8 @@ class Bolt_Boltpay_ApiController extends Mage_Core_Controller_Front_Action imple
                     'display_id' => $order->getIncrementId(),
                     'total' => (int)($order->getGrandTotal() * 100),
                     'order_received_url' => $orderSuccessUrl
-                )
+                ),
+                false
             );
         } catch ( Bolt_Boltpay_OrderCreationException $orderCreationException ) {
             $this->sendResponse(
@@ -271,6 +276,8 @@ class Bolt_Boltpay_ApiController extends Mage_Core_Controller_Front_Action imple
             $immutableQuote = Mage::getModel('sales/quote')->loadByIdWithoutStore($order->getQuoteId());
             $computedCart = Mage::getModel('boltpay/boltOrder')->buildCart($immutableQuote, false );
             $this->boltHelper()->notifyException($orderCreationException, array( 'magento_order_details' => json_encode($computedCart)));
+            //////////////////////////////////////////////////////
+
         } finally {
             benchmark( "Response sent to Bolt");
         }
@@ -355,9 +362,9 @@ class Bolt_Boltpay_ApiController extends Mage_Core_Controller_Front_Action imple
                     array(
                         'status' => 'success',
                         'message' => $message
-                    )
+                    ),
+                    $exitImmediately = true
                 );
-                return;
             }
             //////////////////////////////////////////////////////////////////////////////////////
 
