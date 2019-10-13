@@ -77,9 +77,10 @@ jobs:
               echo "Running integraiton test"
               git clone git@github.com:BoltApp/integration-tests.git
               cd integration-tests
+              git checkout m1_ci
               npm install
               mkdir -p ./screenshots
-              JUNIT_REPORT_DIR=./test-results SCREENSHOT_DIR=./screenshots TEST_ENV=sandbox npm run test-checkout-magento1
+              JUNIT_REPORT_DIR=./test-results SCREENSHOT_DIR=./screenshots TEST_ENV=plugin_ci npm run test-checkout-magento1
       - store_test_results:
           path: ./integration-tests/test-results
       - store_artifacts:
