@@ -60,7 +60,7 @@ jobs:
       - store_artifacts:
           path: ./artifacts
 
-  integration-sandbox:
+  integration-tests:
     docker:
       - image: boltdev/m1-plugin-ci-php56-mage19:v3
         auth: 
@@ -98,7 +98,7 @@ workflows:
   version: 2
   tests:
     jobs:
-      - integration-sandbox
+      - integration-tests
 #      - unit-php55-mage18
 #      - unit-php55-mage19
 #      - unit-php56-mage18
