@@ -75,7 +75,7 @@ jobs:
           command: |  
               MAGENTO_VERSION=magento-mirror-1.9.3.6 tests/scripts/setup_integration.sh
               echo "Running integraiton test"
-              git clone git@github.com:BoltApp/integration-tests.git
+              git clone --depth 1 git@github.com:BoltApp/integration-tests.git
               cd integration-tests
               git checkout m1_ci
               npm install
