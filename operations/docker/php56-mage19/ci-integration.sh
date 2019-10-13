@@ -4,6 +4,7 @@ php -d memroy_limit=512M n98-magerun.phar install --magentoVersionByName=magento
   --installSampleData=yes --useDefaultConfigParams=yes --baseUrl=http://m1-test.kazuki.dev.bolt.me
 
 cd /var/www/html
-php init-bolt.php TODO
+# we can do this when we include DB in docker
+# php init-bolt.php TODO
 
 chown -R www-data:www-data /var/www/html

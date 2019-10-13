@@ -22,6 +22,10 @@ php -d memroy_limit=512M n98-magerun.phar install --magentoVersionByName=magento
 
 cd /var/www/html
 php init-bolt.php $BOLT_SANDBOX_MERCHANT_API_KEY $BOLT_SANDBOX_MERCHANT_SIGNING_SECRET $BOLT_SANDBOX_MERCHANT_PUBLISHABLE_KEY
+# update country
+php -r 'include_once "app/Mage.php"; Mage::init(); \
+Mage::getModel("core/config")->saveConfig("general/country/allow", "US", "default", 0); \
+Mage::app()->getCacheInstance()->flush();'
 
 sudo chown -R www-data:www-data /var/www/html
 
