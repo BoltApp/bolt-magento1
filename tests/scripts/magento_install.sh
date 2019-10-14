@@ -23,4 +23,5 @@ php -d memroy_limit=512M n98-magerun.phar install --magentoVersionByName=$MAGENT
 php n98-magerun.phar config:set currency/options/base USD --root-dir $MAGENTO_DIR
 php n98-magerun.phar config:set currency/options/default USD --root-dir $MAGENTO_DIR
 php n98-magerun.phar config:set currency/options/allow USD --root-dir $MAGENTO_DIR
+php n98-magerun.phar config:set general/locale/code en_US --root-dir $MAGENTO_DIR
 cp -r magento/. .
