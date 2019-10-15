@@ -236,7 +236,7 @@ class Bolt_Boltpay_Model_Productpage_Cart extends Bolt_Boltpay_Model_Abstract
     protected function setCartResponse($quote)
     {
         $this->cartResponse = array(
-            'order_reference' => $quote->getId(),
+            'order_reference' => $quote->getParentQuoteId(),
             'currency'        => $quote->getQuoteCurrencyCode(),
             'items'           => $this->getGeneratedItems($quote),
             'total_amount'    => $this->getGeneratedTotal()
