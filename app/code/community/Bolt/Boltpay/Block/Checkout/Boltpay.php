@@ -459,14 +459,26 @@ class Bolt_Boltpay_Block_Checkout_Boltpay extends Mage_Checkout_Block_Onepage_Re
     }
     
     /**
-     * Returns disabled customer group Ids for the Bolt plugin
+     * Returns array of disabled customer group Id integers for the Bolt plugin
      * @return array
      */
     public function getDisabledCustomerGroups()
     {
         return explode(',', Mage::getStoreConfig('payment/boltpay/bolt_disabled_customer_groups'));
     }
-    
+
+    /**
+     * Check if customer group ID in the disabled groups fo the Bolt Plugin
+     *
+     * @param integer $customerGroupId
+     * @return boolean
+     */
+    private function isCustomerGroupDisabled($customerGroupId)
+    {
+        $disabledCustomerGroups = $this->getDisabledCustomerGroups();
+        return in_array($customerGroupId, $disabledCustomerGroups);
+    }
+
     /**
      * Returns whether enable merchant scoped account.
      * @return string
@@ -615,18 +627,6 @@ class Bolt_Boltpay_Block_Checkout_Boltpay extends Mage_Checkout_Block_Onepage_Re
     }
 
     /**
-     * Check if customer group ID in the disabled groups fo the Bolt Plugin
-     *
-     * @param integer $customerGroupId
-     * @return boolean
-     */
-    private function isCustomerGroupDisabled($customerGroupId)
-    {
-        $disabledCustomerGroups = $this->getDisabledCustomerGroups();
-        return in_array($customerGroupId, $disabledCustomerGroups);
-    }
-
-    /**
      * Checking if allows to insert connectjs or replace by route name
      *
      * @return bool
@@ -634,12 +634,6 @@ class Bolt_Boltpay_Block_Checkout_Boltpay extends Mage_Checkout_Block_Onepage_Re
      */
     private function isAllowedOnCurrentPageByRoute()
     {
-        $quote = $this->getQuote();
-        $customerGroupId = $quote->getCustomerGroupId();
-        $isCustomerGroupDisabled = $this->isCustomerGroupDisabled($customerGroupId);
-        if ($isCustomerGroupDisabled) {
-            return false;
-        }
         $routeName = $this->getRequest()->getRouteName();
         $controllerName = $this->getRequest()->getControllerName();
 
@@ -686,6 +680,13 @@ class Bolt_Boltpay_Block_Checkout_Boltpay extends Mage_Checkout_Block_Onepage_Re
      */
     public function isAllowedConnectJsOnCurrentPage()
     {
+        $quote = $this->getQuote();
+        $customerGroupId = $quote->getCustomerGroupId();
+        $isCustomerGroupDisabled = $this->isCustomerGroupDisabled($customerGroupId);
+        if ($isCustomerGroupDisabled) {
+            return false;
+        }
+
         $canAddEverywhere = $this->boltHelper()->canUseEverywhere();
 
         $isAllowedOnCurrentPage = $this->isAllowedOnCurrentPageByRoute();
