@@ -428,11 +428,17 @@ class Bolt_Boltpay_Model_Payment extends Mage_Payment_Model_Method_Abstract
     }
 
     /**
-     * Cancel is the same as void
+     * Voids an item at the Bolt server side
+     *
+     * @param Varien_Object $payment      The payment for the transaction to be voided
+     *
+     * @return Bolt_Boltpay_Model_Payment|Mage_Payment_Model_Abstract   The payment for the transaction to be voided
+     *
+     * @throws Exception    if there is a problem voiding an order at Bolt
      */
     public function cancel(Varien_Object $payment)
     {
-        return $this->void($payment);
+        return $this->canVoid($payment) ? $this->void($payment) : $this;
     }
 
     public function handleOrderUpdate(Varien_Object $order)
