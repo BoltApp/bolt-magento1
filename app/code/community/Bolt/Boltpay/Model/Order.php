@@ -795,6 +795,8 @@ class Bolt_Boltpay_Model_Order extends Bolt_Boltpay_Model_Abstract
         if (empty($order->getCreatedAt())) { $order->setCreatedAt(Mage::getModel('core/date')->gmtDate())->save(); }
         $this->getParentQuoteFromOrder($order)->setIsActive(false)->save();
         $reference = @$payloadObject->transaction_reference ?: $payloadObject->reference;
+        $hookType = @$payloadObject->notification_type ?: $payloadObject->type;
+
         $order->getPayment()->setAdditionalInformation('bolt_reference', $reference)->save();
 
         try {
@@ -812,7 +814,14 @@ class Bolt_Boltpay_Model_Order extends Bolt_Boltpay_Model_Abstract
             $this->boltHelper()->logException($e);
         }
 
-        $this->sendOrderEmail($order);
+        ////////////////////////////////////////////////////////////////////////////////////////////////
+        // Send emails for payment once it is authorized except for irreversibly rejected transactions
+        // This list maybe extended in the future, perhaps for reversibly rejected, as the need arises
+        ////////////////////////////////////////////////////////////////////////////////////////////////
+        if (!in_array($hookType, ['rejected_irreversible'])) {
+            $this->sendOrderEmail($order);
+        }
+        ////////////////////////////////////////////////////////////////////////////////////////////////
     }
 
     /**
