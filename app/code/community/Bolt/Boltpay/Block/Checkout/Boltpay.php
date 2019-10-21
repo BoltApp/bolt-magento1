@@ -457,15 +457,6 @@ class Bolt_Boltpay_Block_Checkout_Boltpay extends Mage_Checkout_Block_Onepage_Re
     {
         return Mage::getStoreConfig('payment/boltpay/skip_payment');
     }
-    
-    /**
-     * Returns array of disabled customer group Id integers for the Bolt plugin
-     * @return array
-     */
-    public function getDisabledCustomerGroups()
-    {
-        return explode(',', Mage::getStoreConfig('payment/boltpay/bolt_disabled_customer_groups'));
-    }
 
     /**
      * Check if customer group ID in the disabled groups fo the Bolt Plugin
@@ -475,7 +466,7 @@ class Bolt_Boltpay_Block_Checkout_Boltpay extends Mage_Checkout_Block_Onepage_Re
      */
     private function isCustomerGroupDisabled($customerGroupId)
     {
-        $disabledCustomerGroups = $this->getDisabledCustomerGroups();
+        $disabledCustomerGroups = explode(',', Mage::getStoreConfig('payment/boltpay/bolt_disabled_customer_groups'));
         return in_array($customerGroupId, $disabledCustomerGroups);
     }
 
