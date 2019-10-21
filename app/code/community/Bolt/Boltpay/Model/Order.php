@@ -802,6 +802,7 @@ class Bolt_Boltpay_Model_Order extends Bolt_Boltpay_Model_Abstract
             $recurringPaymentProfiles = $immutableQuote->setTotalsCollectedFlag(true)->prepareRecurringPaymentProfiles();
 
             benchmark( 'Running independent merchant third-party code via checkout_submit_all_after');
+            $immutableQuote->setInventoryProcessed(true);
             Mage::dispatchEvent(
                 'checkout_submit_all_after',
                 array('order' => $order, 'quote' => $immutableQuote, 'recurring_profiles' => $recurringPaymentProfiles)
@@ -939,6 +940,15 @@ class Bolt_Boltpay_Model_Order extends Bolt_Boltpay_Model_Abstract
                 $order->setQuoteId(null)->save();
                 $order->cancel()->setStatus('canceled_bolt')->save();
             }
+
+            $event = new Varien_Event(['quote' => $this->getQuoteFromOrder($order)]);
+            $observer = new Varien_Event_Observer();
+            $observer->setName('Bolt_Failed_Payment_Observer')->setEvent($event);
+            $event->addObserver($observer);
+
+            /** @var Mage_CatalogInventory_Model_Observer $inventoryObserver */
+            $inventoryObserver = Mage::getModel('cataloginventory/observer');
+            $inventoryObserver->reindexQuoteInventory($observer);
             ##############################################################
 
             ###########################################################
