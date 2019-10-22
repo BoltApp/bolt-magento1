@@ -453,16 +453,28 @@ class Bolt_Boltpay_Block_Checkout_Boltpay extends Mage_Checkout_Block_Onepage_Re
      * Returns the Skip Payment Method Step configuration.
      * @return string
      */
-    function isBoltOnlyPayment()
+    public function isBoltOnlyPayment()
     {
         return Mage::getStoreConfig('payment/boltpay/skip_payment');
+    }
+
+    /**
+     * Check if customer group ID in the disabled groups fo the Bolt Plugin
+     *
+     * @param integer $customerGroupId
+     * @return boolean
+     */
+    private function isCustomerGroupDisabled($customerGroupId)
+    {
+        $disabledCustomerGroups = explode(',', Mage::getStoreConfig('payment/boltpay/bolt_disabled_customer_groups'));
+        return in_array($customerGroupId, $disabledCustomerGroups);
     }
 
     /**
      * Returns whether enable merchant scoped account.
      * @return string
      */
-    function isEnableMerchantScopedAccount()
+    public function isEnableMerchantScopedAccount()
     {
         return Mage::getStoreConfig('payment/boltpay/enable_merchant_scoped_account');
     }
@@ -659,6 +671,13 @@ class Bolt_Boltpay_Block_Checkout_Boltpay extends Mage_Checkout_Block_Onepage_Re
      */
     public function isAllowedConnectJsOnCurrentPage()
     {
+        $quote = $this->getQuote();
+        $customerGroupId = $quote->getCustomerGroupId();
+        $isCustomerGroupDisabled = $this->isCustomerGroupDisabled($customerGroupId);
+        if ($isCustomerGroupDisabled) {
+            return false;
+        }
+
         $canAddEverywhere = $this->boltHelper()->canUseEverywhere();
 
         $isAllowedOnCurrentPage = $this->isAllowedOnCurrentPageByRoute();
