@@ -792,7 +792,8 @@ class Bolt_Boltpay_Model_Order extends Bolt_Boltpay_Model_Abstract
      */
     private function activateOrder(Mage_Sales_Model_Order $order, $payloadObject)
     {
-        if (empty($order->getCreatedAt())) { $order->setCreatedAt(Mage::getModel('core/date')->gmtDate())->save(); }
+        $createdAt = $order->getCreatedAt();
+        if (empty($createdAt)) { $order->setCreatedAt(Mage::getModel('core/date')->gmtDate())->save(); }
         $this->getParentQuoteFromOrder($order)->setIsActive(false)->save();
         $reference = @$payloadObject->transaction_reference ?: $payloadObject->reference;
         $hookType = @$payloadObject->notification_type ?: $payloadObject->type;

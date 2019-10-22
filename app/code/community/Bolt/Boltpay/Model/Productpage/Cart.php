@@ -123,13 +123,13 @@ class Bolt_Boltpay_Model_Productpage_Cart extends Bolt_Boltpay_Model_Abstract
     protected function validateProductsExist()
     {
         $cartItems = json_decode(json_encode($this->getCartRequestItems()), true);
-        $productIds = array_column($cartItems, 'reference');
+        $productIds = $this->boltHelper()->arrayColumn($cartItems, 'reference');
 
         /** @var Mage_Catalog_Model_Resource_Product_Collection $productCollection */
         $productCollection = Mage::getModel('catalog/product')->getCollection();
         $productCollection->addFieldToFilter('entity_id', array('in' => $productIds));
 
-        $dbProductIds = array_column($productCollection->getData(), 'entity_id');
+        $dbProductIds = $this->boltHelper()->arrayColumn($productCollection->getData(), 'entity_id');
         $diffIds = array_values(array_diff($productIds, $dbProductIds));
 
         if (count($diffIds) > 0) {

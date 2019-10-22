@@ -224,4 +224,20 @@ class Bolt_Boltpay_Helper_Data extends Mage_Core_Helper_Abstract
 
         return $javascript;
     }
+
+    /**
+     * array_column require PHP 5 >= 5.5.0, PHP 7
+     * @param array $array
+     * @param mixed $columnName
+     * @param mixed $indexKey
+     * @return array
+     */
+    public function arrayColumn($array, $columnName, $indexKey = null)
+    {
+        if(!function_exists("array_column"))
+        {
+            return array_map(function($element) use($columnName){return $element[$columnName];}, $array);
+        }
+        return array_column($array, $columnName, $indexKey);
+    }
 }

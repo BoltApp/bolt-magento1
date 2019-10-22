@@ -162,7 +162,7 @@ class Bolt_Boltpay_Model_BoltOrder extends Bolt_Boltpay_Model_Abstract
         /////////////////////////////////////////////////////////////////////////
         $this->addDiscounts($totals, $cartSubmissionData, $quote);
         $this->dispatchCartDataEvent('bolt_boltpay_discounts_applied_to_bolt_order', $quote, $cartSubmissionData);
-        $totalDiscount = isset($cartSubmissionData['discounts']) ? array_sum(array_column($cartSubmissionData['discounts'], 'amount')) : 0;
+        $totalDiscount = isset($cartSubmissionData['discounts']) ? array_sum($this->boltHelper()->arrayColumn($cartSubmissionData['discounts'], 'amount')) : 0;
 
         $calculatedTotal -= $totalDiscount;
         /////////////////////////////////////////////////////////////////////////
@@ -297,7 +297,7 @@ class Bolt_Boltpay_Model_BoltOrder extends Bolt_Boltpay_Model_Abstract
                     }
                 }
 
-                $calculatedTotal += isset($cartSubmissionData['shipments']) ? array_sum(array_column($cartSubmissionData['shipments'], 'cost')) : 0;
+                $calculatedTotal += isset($cartSubmissionData['shipments']) ? array_sum($this->boltHelper()->arrayColumn($cartSubmissionData['shipments'], 'cost')) : 0;
             }
 
             # It is possible that no shipments were added which could be used as indicative of an In-Store Pickup/No Shipping Required

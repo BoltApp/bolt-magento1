@@ -277,8 +277,8 @@ class Bolt_Boltpay_ApiController extends Mage_Core_Controller_Front_Action imple
             $computedCart = Mage::getModel('boltpay/boltOrder')->buildCart($immutableQuote, false );
             $this->boltHelper()->notifyException($orderCreationException, array( 'magento_order_details' => json_encode($computedCart)));
             //////////////////////////////////////////////////////
-
-        } finally {
+            // finally requre PHP => 5.5
+//         } finally {
             benchmark( "Response sent to Bolt");
         }
     }
