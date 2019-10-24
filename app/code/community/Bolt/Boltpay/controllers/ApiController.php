@@ -76,7 +76,10 @@ class Bolt_Boltpay_ApiController extends Mage_Core_Controller_Front_Action imple
                 }
 
                 $orderPayment = $order->getPayment();
-                if (!$orderPayment->getAdditionalInformation('bolt_reference')) {
+                if (
+                    !$orderPayment->getAdditionalInformation('bolt_reference')
+                    && $hookType !== Bolt_Boltpay_Model_Payment::HOOK_TYPE_REJECTED_IRREVERSIBLE
+                ) {
                     /////////////////////////////////////////////////////////////////////////////
                     /// We've reached a case where authorization was not finalized via the browser
                     /// session.  We'll complete the post authorization steps prior to processing
