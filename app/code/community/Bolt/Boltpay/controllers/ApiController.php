@@ -41,14 +41,15 @@ class Bolt_Boltpay_ApiController extends Mage_Core_Controller_Front_Action imple
             $reference = $requestData->reference;
             $transactionId = @$requestData->transaction_id ?: $requestData->id;
             $hookType = @$requestData->notification_type ?: $requestData->type;
-            $incrementId = @$requestData->display_id;
+            $incrementId = (strpos(@$requestData->display_id, '|') !== false)
+                ? explode("|", $requestData->display_id)[0]
+                : @$requestData->display_id;
 
             /** @var Bolt_Boltpay_Model_Order $orderModel */
             $orderModel = Mage::getModel('boltpay/order');
 
             if ($hookType === 'failed_payment') {
-                $displayId = $requestData->display_id;
-                $this->handleFailedPaymentHook($displayId);
+                $this->handleFailedPaymentHook($incrementId);
                 return;
             } else if ($hookType === 'discounts.code.apply') {
                 $this->handleDiscountHook();
