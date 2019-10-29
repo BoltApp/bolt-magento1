@@ -466,7 +466,12 @@ class Bolt_Boltpay_Block_Checkout_Boltpay extends Mage_Checkout_Block_Onepage_Re
      */
     private function isCustomerGroupDisabled($customerGroupId)
     {
-        $disabledCustomerGroups = explode(',', Mage::getStoreConfig('payment/boltpay/bolt_disabled_customer_groups'));
+        $disabledCustomerGroups = Mage::getStoreConfig('payment/boltpay/bolt_disabled_customer_groups');
+        // Case ot empty groups
+        if (empty($disabledCustomerGroups)) {
+            return false;
+        }
+        $disabledCustomerGroups = explode(',', $disabledCustomerGroups);
         return in_array($customerGroupId, $disabledCustomerGroups);
     }
 
