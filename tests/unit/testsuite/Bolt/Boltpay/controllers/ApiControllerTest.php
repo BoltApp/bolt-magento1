@@ -142,4 +142,73 @@ class Bolt_Boltpay_ApiControllerTest extends PHPUnit_Framework_TestCase
         );
         $this->assertTrue(self::$_mockOrder->isCanceled());
     }
+
+    /**
+     *  Test makes sure that the non-piped format of display_id is supported for failed_payment hooks
+     */
+    public function testHookAction_thatStandardDisplayIdIsSupportedForFailedPayment() {
+
+        /** @var Bolt_Boltpay_ApiController|PHPUnit_Framework_MockObject_MockObject $apiControllerMock */
+        $apiControllerMock = $this->_apiControllerBuilder
+            ->setMethods(['getRequestData', 'handleFailedPaymentHook'])
+            ->getMock();
+
+        ///////////////////////////////////////////////////////////////////////
+        /// Create a pseudo transaction data and map to request and responses
+        ///////////////////////////////////////////////////////////////////////
+        $stubbedRequestData = new stdClass();
+        $stubbedRequestData->reference = 'TEST-BOLT-TRNX';
+        $stubbedRequestData->id = 'TRboltx0test1';
+        $stubbedRequestData->type = 'failed_payment';
+        $stubbedRequestData->display_id = '9876543210';
+
+        /** @var Bolt_Boltpay_ApiController|PHPUnit_Framework_MockObject_MockObject $apiControllerMock */
+        $apiControllerMock = $this->_apiControllerBuilder
+            ->setMethods(['getRequestData', 'handleFailedPaymentHook'])
+            ->getMock();
+
+        $apiControllerMock->method('getRequestData')->willReturn($stubbedRequestData);
+        $apiControllerMock
+            ->expects($this->once())
+            ->method('handleFailedPaymentHook')
+            ->with($this->equalTo('9876543210'));
+
+        ######################################
+        # Calling the subject method
+        ######################################
+        $apiControllerMock->hookAction();
+        ######################################
+    }
+
+    /**
+     *  Test makes sure that the piped format of display_id is supported for failed_payment hooks
+     */
+    public function testHookAction_thatPipedDisplayIdIsSupportedForFailedPayment() {
+
+        /** @var Bolt_Boltpay_ApiController|PHPUnit_Framework_MockObject_MockObject $apiControllerMock */
+        $apiControllerMock = $this->_apiControllerBuilder
+            ->setMethods(['getRequestData', 'handleFailedPaymentHook'])
+            ->getMock();
+
+        ///////////////////////////////////////////////////////////////////////
+        /// Create a pseudo transaction data and map to request and responses
+        ///////////////////////////////////////////////////////////////////////
+        $stubbedRequestData = new stdClass();
+        $stubbedRequestData->reference = 'TEST-BOLT-TRNX';
+        $stubbedRequestData->id = 'TRboltx0test1';
+        $stubbedRequestData->type = 'failed_payment';
+        $stubbedRequestData->display_id = '1234567890|44444';
+
+        $apiControllerMock->method('getRequestData')->willReturn($stubbedRequestData);
+        $apiControllerMock
+            ->expects($this->once())
+            ->method('handleFailedPaymentHook')
+            ->with($this->equalTo('1234567890'));
+
+        ######################################
+        # Calling the subject method
+        ######################################
+        $apiControllerMock->hookAction();
+        ######################################
+    }
 }
