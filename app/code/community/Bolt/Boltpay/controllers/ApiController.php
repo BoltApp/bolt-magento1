@@ -263,6 +263,7 @@ class Bolt_Boltpay_ApiController extends Mage_Core_Controller_Front_Action imple
                 ),
                 false
             );
+            benchmark( "Response sent to Bolt");
         } catch ( Bolt_Boltpay_OrderCreationException $orderCreationException ) {
             $this->sendResponse(
                 $orderCreationException->getHttpCode(),

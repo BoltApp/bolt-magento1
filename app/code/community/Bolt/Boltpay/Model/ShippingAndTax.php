@@ -275,7 +275,7 @@ class Bolt_Boltpay_Model_ShippingAndTax extends Bolt_Boltpay_Model_Abstract
         } catch(Exception $e) {
             $quote->setCouponCode($originalCouponCode);
         }
-
+        $quote->setCouponCode($originalCouponCode);
         return $response;
     }
 

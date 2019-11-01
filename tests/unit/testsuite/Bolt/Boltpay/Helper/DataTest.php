@@ -63,6 +63,10 @@ class Bolt_Boltpay_Helper_DataTest extends PHPUnit_Framework_TestCase
         ;
     }
 
+    /**
+     * @test
+     * @group Helper
+     */
     public function testCanUseBoltReturnsFalseIfDisabled()
     {
         $this->app->getStore()->setConfig('payment/boltpay/active', 0);
@@ -71,6 +75,10 @@ class Bolt_Boltpay_Helper_DataTest extends PHPUnit_Framework_TestCase
         $this->assertFalse($this->dataHelper->canUseBolt($quote));
     }
 
+    /**
+     * @test
+     * @group Helper
+     */
     public function testCanUseBoltReturnsTrueIfSkipPaymentIsEnabled()
     {
         $this->app->getStore()->setConfig('payment/boltpay/active', 1);
@@ -84,6 +92,10 @@ class Bolt_Boltpay_Helper_DataTest extends PHPUnit_Framework_TestCase
         $this->assertTrue($result);
     }
 
+    /**
+     * @test
+     * @group Helper
+     */
     public function testCanUseBoltReturnsFalseIfBillingCountryNotWhitelisted()
     {
         $this->app->getStore()->setConfig('payment/boltpay/active', 1);
@@ -97,6 +109,10 @@ class Bolt_Boltpay_Helper_DataTest extends PHPUnit_Framework_TestCase
         $this->assertFalse($this->dataHelper->canUseBolt($quote));
     }
 
+    /**
+     * @test
+     * @group Helper
+     */
     public function testCanUseBoltReturnsTrueIfBillingCountryIsWhitelisted()
     {
         $this->app->getStore()->setConfig('payment/boltpay/active', 1);
@@ -110,6 +126,10 @@ class Bolt_Boltpay_Helper_DataTest extends PHPUnit_Framework_TestCase
         $this->assertTrue($this->dataHelper->canUseBolt($quote));
     }
 
+    /**
+     * @test
+     * @group Helper
+     */
     public function testCanUseBoltReturnsTrueIfSkipPaymentEvenIfBillingCountryIsNotWhitelisted()
     {
         $this->app->getStore()->setConfig('payment/boltpay/active', 1);
@@ -124,6 +144,10 @@ class Bolt_Boltpay_Helper_DataTest extends PHPUnit_Framework_TestCase
         $this->assertTrue($this->dataHelper->canUseBolt($quote));
     }
 
+    /**
+     * @test
+     * @group Helper
+     */
     public function testCanUseBoltReturnsTrueIfAllowSpecificIsFalse()
     {
         $this->app->getStore()->setConfig('payment/boltpay/active', 1);
@@ -137,6 +161,7 @@ class Bolt_Boltpay_Helper_DataTest extends PHPUnit_Framework_TestCase
     }
 
     /**
+     * @group Helper
      * @inheritdoc
      */
     public function testBuildOnCheckCallback()
@@ -151,6 +176,7 @@ class Bolt_Boltpay_Helper_DataTest extends PHPUnit_Framework_TestCase
     }
 
     /**
+     * @group Helper
      * @inheritdoc
      */
     public function testBuildOnCheckCallbackIfAdminArea()
@@ -200,6 +226,7 @@ class Bolt_Boltpay_Helper_DataTest extends PHPUnit_Framework_TestCase
     }
 
     /**
+     * @group Helper
      * @inheritdoc
      */
     public function testBuildOnSuccessCallbackIfAdminArea()
@@ -231,6 +258,7 @@ class Bolt_Boltpay_Helper_DataTest extends PHPUnit_Framework_TestCase
     }
 
     /**
+     * @group Helper
      * @inheritdoc
      */
     public function testBuildOnCloseCallback()
@@ -246,6 +274,7 @@ class Bolt_Boltpay_Helper_DataTest extends PHPUnit_Framework_TestCase
     }
 
     /**
+     * @group Helper
      * @inheritdoc
      */
     public function testBuildOnCloseCallbackIfAdminArea()
@@ -265,6 +294,103 @@ class Bolt_Boltpay_Helper_DataTest extends PHPUnit_Framework_TestCase
         $result = $this->currentMock->buildOnCloseCallback($closeCustom, $checkoutType);
 
         $this->assertEquals(preg_replace('/\s/', '', $expected), preg_replace('/\s/', '', $result));
+    }
+
+    /**
+     * @test
+     * @group Helper
+     * @group inProgress
+     * @dataProvider arrayColumnData
+     */
+    public function arrayColumn($data)
+    {
+        $result = $this->currentMock->arrayColumn($data['array'], $data['column']);
+        $this->assertInternalType('array', $result);
+        $this->assertEquals($data['expect'], $result);
+    }
+
+    /**
+     * Test cases
+     * @return string[][][]|string[][][][]|array[][][]|number[][][][][]|string[][][][][]|string[][][][][][]
+     */
+    public function arrayColumnData()
+    {
+        $array = array(
+            array(
+                'id' => 456,
+                'first_name' => 'John',
+                'last_name' => 'Lennon',
+                'cart' => array(
+                    'guitar',
+                    'vocal'
+                )
+            ),
+            array(
+                'id' => 7647654,
+                'first_name' => 'Paul',
+                'last_name' => 'Mccartney',
+                'cart' => array(
+                    'bass guitar',
+                    'vocal'
+                )
+            ),
+            array(
+                'id' => 4756,
+                'first_name' => 'George',
+                'last_name' => 'Harrison',
+                'cart' => array(
+                   'guitar'
+                )
+            ),
+            array(
+                'id' => 76474,
+                'first_name' => 'Ringo',
+                'last_name' => 'Starr',
+                'cart' => array(
+                    'drums'
+                )
+            ),
+            
+        );
+        return array(
+            array(
+                'data' => array(
+                    'expect' => array('John', 'Paul', 'George', 'Ringo'),
+                    'array' => $array,
+                    'column' => 'first_name'
+                )
+            ),
+            array(
+                'data' => array(
+                    'expect' => array('Lennon', 'Mccartney', 'Harrison', 'Starr'),
+                    'array' => $array,
+                    'column' => 'last_name'
+                )
+            ),
+            array(
+                'data' => array(
+                    'expect' => array(
+                        array(
+                            'guitar',
+                            'vocal'
+                        ),
+                        array(
+                            'bass guitar',
+                            'vocal'
+                        ),
+                        array(
+                            'guitar'
+                        ),
+                        array(
+                            'drums'
+                        )
+                    ),
+                    'array' => $array,
+                    'column' => 'cart'
+                )
+            ),
+            
+        );
     }
 
 }
