@@ -435,9 +435,17 @@ class Bolt_Boltpay_Block_Checkout_BoltpayTest extends PHPUnit_Framework_TestCase
      */
     public function isBoltActive($data)
     {
-        
+        $this->app->getStore()->resetConfig();
+        $this->app->getStore()->setConfig('payment/boltpay/active', $data['active']);
+        $result = $this->currentMock->isBoltActive();
+        $this->assertInternalType('boolean', $result);
+        $this->assertEquals($data['expect'], $result);
     }
 
+    /**
+     * Test cases
+     * @return boolean[][][]
+     */
     public function isBoltActiveData()
     {
         return array(
@@ -490,7 +498,6 @@ class Bolt_Boltpay_Block_Checkout_BoltpayTest extends PHPUnit_Framework_TestCase
     /**
      * @test
      * @group Block
-     * @group inProgress
      * @dataProvider isAllowedConnectJsOnCurrentPageData
      */
     public function isAllowedConnectJsOnCurrentPage($data)
@@ -580,6 +587,36 @@ class Bolt_Boltpay_Block_Checkout_BoltpayTest extends PHPUnit_Framework_TestCase
                 )
             ),
             
+        );
+    }
+
+    /**
+     * @test
+     * @group Block
+     * @dataProvider getQuoteData
+     */
+    public function getQuote($data)
+    {
+        $quote = Mage::getSingleton('checkout/session')->getQuote();
+        $quote->setIsActive($data['active']);
+        $quote->setIsVirtual($data['virtual']);
+        var_dump($quote);
+        $this->assertEquals($quote, $this->currentMock->getQuote());
+    }
+
+    /**
+     * Test cases
+     * @return boolean[][][]
+     */
+    public function getQuoteData()
+    {
+        return array(
+            array(
+                'data' => array(
+                    'active' => 1,
+                    'virtual' => 0
+                )
+            ),
         );
     }
 }
