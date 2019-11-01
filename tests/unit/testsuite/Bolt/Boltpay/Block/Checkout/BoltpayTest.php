@@ -600,7 +600,6 @@ class Bolt_Boltpay_Block_Checkout_BoltpayTest extends PHPUnit_Framework_TestCase
         $quote = Mage::getSingleton('checkout/session')->getQuote();
         $quote->setIsActive($data['active']);
         $quote->setIsVirtual($data['virtual']);
-        var_dump($quote);
         $this->assertEquals($quote, $this->currentMock->getQuote());
     }
 
