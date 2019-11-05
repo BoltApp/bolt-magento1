@@ -263,7 +263,6 @@ class Bolt_Boltpay_ApiController extends Mage_Core_Controller_Front_Action imple
                 ),
                 false
             );
-            benchmark( "Response sent to Bolt");
         } catch ( Bolt_Boltpay_OrderCreationException $orderCreationException ) {
             $this->sendResponse(
                 $orderCreationException->getHttpCode(),
@@ -278,10 +277,13 @@ class Bolt_Boltpay_ApiController extends Mage_Core_Controller_Front_Action imple
             $computedCart = Mage::getModel('boltpay/boltOrder')->buildCart($immutableQuote, false );
             $this->boltHelper()->notifyException($orderCreationException, array( 'magento_order_details' => json_encode($computedCart)));
             //////////////////////////////////////////////////////
-            // finally requre PHP => 5.5
+            // finally requires PHP => 5.5
             //} finally {
-            benchmark( "Response sent to Bolt");
+        } catch (Exception $e) {
+            // catch-all workaround for finally not being supported in PHP 5.4
         }
+        benchmark( "Response sent to Bolt");
+        
     }
 
     /**

@@ -175,9 +175,8 @@ class Bolt_Boltpay_Model_ShippingAndTax extends Bolt_Boltpay_Model_Abstract
                 "amount" => 0
             ),
         );
-
+        $originalCouponCode = $quote->getCouponCode();
         try {
-            $originalCouponCode = $quote->getCouponCode();
             if ($parentQuote) $quote->setCouponCode($parentQuote->getCouponCode());
             $this->boltHelper()->collectTotals(Mage::getModel('sales/quote')->load($quote->getId()), true);
 
@@ -271,9 +270,9 @@ class Bolt_Boltpay_Model_ShippingAndTax extends Bolt_Boltpay_Model_Abstract
                     )
                 );
             }
-            // finally requre PHP => 5.5
+            // finally requires PHP => 5.5
         } catch(Exception $e) {
-            $quote->setCouponCode($originalCouponCode);
+            // Nothing to do
         }
         $quote->setCouponCode($originalCouponCode);
         return $response;
