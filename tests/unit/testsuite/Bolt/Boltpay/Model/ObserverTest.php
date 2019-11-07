@@ -1,10 +1,25 @@
 <?php
+require_once('TestHelper.php');
+require_once('MockingTrait.php');
 
+use Bolt_Boltpay_TestHelper as TestHelper;
 /**
  * Class Bolt_Boltpay_Model_ObserverTest
  */
 class Bolt_Boltpay_Model_ObserverTest extends PHPUnit_Framework_TestCase
 {
+    use Bolt_Boltpay_MockingTrait;
+
+    /**
+     * @var string The class name of the subject of these test
+     */
+    protected $testClassName = 'Bolt_Boltpay_Model_Observer';
+
+    /**
+     * @var Bolt_Boltpay_Model_Observer  The mocked instance the test class
+     */
+    private $testClassMock;
+
     /**
      * @var int|null
      */
@@ -72,6 +87,39 @@ class Bolt_Boltpay_Model_ObserverTest extends PHPUnit_Framework_TestCase
 
         $this->assertEquals('Magento Order ID: "'.$incrementId.'".', $orderPayment->getData('prepared_message'));
     }
+
+    /**
+     * @inheritdoc
+     */
+    public function testGetInvoiceItemsFromShipment()
+    {
+        $this->testClassMock = $this->getTestClassPrototype()->setMethods(null)->getMock();
+
+        $orderItem = $this->getMockBuilder('Mage_Sales_Model_Order_Item')
+            ->setMethods(['getQtyOrdered','getQtyInvoiced','canInvoice'])
+            ->getMock();
+        $orderItem->method('getQtyOrdered')->willReturn(3);
+        $orderItem->method('getQtyInvoiced')->willReturn(1);
+        $orderItem->method('canInvoice')->willReturn(true);
+
+        $shipmentItem = $this->getMockBuilder('Mage_Sales_Model_Order_Shipment_Item')
+            ->setMethods(['getOrderItem','getOrderItemId','getQty'])
+            ->getMock();
+        $shipmentItem->method('getOrderItem')->willReturn($orderItem);
+        $shipmentItem->method('getOrderItemId')->willReturn('100000001');
+        $shipmentItem->method('getQty')->willReturn(3);
+
+        $shipment = $this->getMockBuilder('Mage_Sales_Model_Order_Shipment')
+            ->setMethods(['getAllItems'])
+            ->getMock();
+        $shipment->method('getAllItems')->willReturn([$shipmentItem]);
+
+        $expected = ['100000001'=> 2];
+        $result = TestHelper::callNonPublicFunction($this->testClassMock, 'getInvoiceItemsFromShipment', [$shipment]);
+
+        $this->assertEquals($expected,$result);
+    }
+
 
     /**
      * @inheritdoc
