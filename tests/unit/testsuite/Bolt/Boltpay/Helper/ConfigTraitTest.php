@@ -868,7 +868,6 @@ class Bolt_Boltpay_Helper_ConfigTraitNewTest extends PHPUnit_Framework_TestCase
     /**
      * @test
      * @group Trait
-     * @group inProgress
      * @dataProvider getApiKeyConfigCases
      * @param array $case
      */
@@ -903,7 +902,43 @@ class Bolt_Boltpay_Helper_ConfigTraitNewTest extends PHPUnit_Framework_TestCase
             
         );
     }
-    
+
+    /**
+     * @test
+     * @group Trait
+     * @dataProvider getSeverityConfigCases
+     * @param array $case
+     */
+    public function getSeverityConfig(array $case)
+    {
+        $this->app->getStore()->setConfig('payment/boltpay/extra_options', $case['extra_options']);
+        $result = $this->mock->getSeverityConfig();
+        $this->assertInternalType('array', $result);
+        $this->assertEquals($case['expect'], $result);
+    }
+
+    /**
+     * Test cases
+     * @return array
+     */
+    public function getSeverityConfigCases()
+    {
+        return array(
+            array(
+                'case' => array(
+                    'expect' => array(''),
+                    'extra_options' => '{"datadogKeySeverity": ""}'
+                )
+            ),
+            array(
+                'case' => array(
+                    'expect' => array('1', '2', '5', '6'),
+                    'extra_options' => '{"datadogKeySeverity": "1,2,              5                , 6"}'
+                )
+            ),
+        );
+    }
+
     public function tearDown()
     {
         Mage::reset();
