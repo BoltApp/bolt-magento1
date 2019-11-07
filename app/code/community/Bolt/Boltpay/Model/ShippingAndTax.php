@@ -190,6 +190,7 @@ class Bolt_Boltpay_Model_ShippingAndTax extends Bolt_Boltpay_Model_Abstract
                     "tax_amount" => abs(round($quote->getBillingAddress()->getTaxAmount() * 100))
                 );
                 $response['shipping_options'][] = $option;
+                $quote->setCouponCode($originalCouponCode);
                 $quote->setTotalsCollectedFlag(true);
                 return $response;
             }
