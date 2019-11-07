@@ -4,7 +4,7 @@
  * @author aymelyanov <ayemelyanov@bolt.com>
  *
  */
-class Bolt_Boltpay_Helper_ConfigTraitNewTest extends PHPUnit_Framework_TestCase
+class Bolt_Boltpay_Helper_ConfigTraitTest extends PHPUnit_Framework_TestCase
 {
     private $app;
 
@@ -941,6 +941,6 @@ class Bolt_Boltpay_Helper_ConfigTraitNewTest extends PHPUnit_Framework_TestCase
 
     public function tearDown()
     {
-        Mage::reset();
+        //Mage::reset();
     }
 }
