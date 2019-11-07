@@ -61,43 +61,30 @@ class Boltpay_DataDog_Client
         $data['store_url'] = $this->getData('store_url');
 
         $jsonData = json_encode(array_merge($data, $additionalData));
-        $this->postWithCurl($jsonData);
+        $this->sendToDatadog($jsonData);
 
         return $this;
     }
 
     /**
-     * Post the given info to DataDog using cURL.
+     * Post the given info to DataDog using Guzzle.
      *
      * @param $body
      */
-    public function postWithCurl($body)
+    public function sendToDatadog($body)
     {
         if ($this->getData('env') == Boltpay_DataDog_Environment::TEST_ENVIRONMENT){
             return $this->setLastResponseStatus(true);
         }
 
-        $url = self::URL . $this->_apiKey;
-        $http = curl_init($url);
-        // Default curl settings
-        curl_setopt($http, CURLOPT_HTTPHEADER, array('Content-Type: application/json'));
-        curl_setopt($http, CURLOPT_RETURNTRANSFER, true);
-        curl_setopt($http, CURLOPT_POST, true);
-        curl_setopt($http, CURLOPT_POSTFIELDS, $body);
-        // Execute the request and fetch the response
-        $responseBody = curl_exec($http);
-        $statusCode = curl_getinfo($http, CURLINFO_HTTP_CODE);
-        if ($statusCode > 200) {
-            error_log('DataDog Warning: Couldn\'t notify (' . $responseBody . ')');
-            $this->setLastResponseStatus(false);
-        }elseif (curl_errno($http)) {
-            error_log('DataDog Warning: Couldn\'t notify (' . curl_error($http) . ')');
-            $this->setLastResponseStatus(false);
-        }else{
+        try {
+            $client = new Boltpay_Guzzle_ApiClient();
+            $client->post(self::URL . $this->_apiKey, $body);
             $this->setLastResponseStatus(true);
-        }
 
-        curl_close($http);
+        }catch (\Exception $exception){
+            $this->setLastResponseStatus(false);
+        }
     }
 
     /**
