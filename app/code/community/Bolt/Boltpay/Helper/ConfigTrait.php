@@ -106,6 +106,13 @@ trait Bolt_Boltpay_Helper_ConfigTrait {
     }
 
     /**
+     * @return mixed
+     */
+    public function getAutoCreateInvoiceAfterCreatingShipment(){
+        return Mage::getStoreConfig('payment/boltpay/auto_create_invoice_after_creating_shipment');
+    }
+
+    /**
      * Get config value from specific bolt config and depending on checkoutType.
      *
      * @param $configPath
