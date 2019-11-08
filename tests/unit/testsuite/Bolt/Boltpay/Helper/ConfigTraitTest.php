@@ -938,9 +938,4 @@ class Bolt_Boltpay_Helper_ConfigTraitTest extends PHPUnit_Framework_TestCase
             ),
         );
     }
-
-    public function tearDown()
-    {
-        //Mage::reset();
-    }
 }
