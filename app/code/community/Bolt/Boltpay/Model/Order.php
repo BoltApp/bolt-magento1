@@ -966,8 +966,6 @@ class Bolt_Boltpay_Model_Order extends Bolt_Boltpay_Model_Abstract
             if ($this->boltHelper()->getExtraConfig('keepPreAuthOrders')) {return;}
             $previousStoreId = Mage::app()->getStore()->getId();
             Mage::app()->setCurrentStore(Mage_Core_Model_App::ADMIN_STORE_ID);
-            $adminEntry = Mage::getModel('sales/order_grid')->load($order->getId());
-            $adminEntry->delete();
             $order->delete();
             Mage::dispatchEvent('bolt_boltpay_failed_order_removed_after', array('order' => $order));
             $this->reactivateUsedPromotion($order);

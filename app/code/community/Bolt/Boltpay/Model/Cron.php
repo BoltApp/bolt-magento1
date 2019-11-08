@@ -25,10 +25,10 @@ class Bolt_Boltpay_Model_Cron
     use Bolt_Boltpay_BoltGlobalTrait;
 
     /*
-     * We will have a conservative tolerance of 6 hours for non-confirmed pre-auth orders before we allow the system
+     * We will have a conservative tolerance of 30 minutes for non-confirmed pre-auth orders before we allow the system
      * to remove them
      */
-    const PRE_AUTH_STATE_TIME_LIMIT_MINUTES = 600;
+    const PRE_AUTH_STATE_TIME_LIMIT_MINUTES = 30;
 
     /**
      * After an immutable quote / unused generated session quote on PDP has existed for 2 weeks or more, we remove it from the system.
