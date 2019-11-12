@@ -30,6 +30,7 @@ class Bolt_Boltpay_Block_Checkout_BoltpayTest extends PHPUnit_Framework_TestCase
 
     /**
      * @inheritdoc
+     * @group Block
      */
     public function testBuildCartData()
     {
@@ -51,6 +52,7 @@ class Bolt_Boltpay_Block_Checkout_BoltpayTest extends PHPUnit_Framework_TestCase
 
     /**
      * @inheritdoc
+     * @group Block
      */
     public function testBuildCartDataWithEmptyTokenField()
     {
@@ -71,6 +73,7 @@ class Bolt_Boltpay_Block_Checkout_BoltpayTest extends PHPUnit_Framework_TestCase
 
     /**
      * @inheritdoc
+     * @group Block
      */
     public function testBuildCartDataWithoutAutoCapture()
     {
@@ -92,6 +95,7 @@ class Bolt_Boltpay_Block_Checkout_BoltpayTest extends PHPUnit_Framework_TestCase
 
     /**
      * @inheritdoc
+     * @group Block
      */
     public function testBuildCartDataWithApiError()
     {
@@ -117,6 +121,7 @@ class Bolt_Boltpay_Block_Checkout_BoltpayTest extends PHPUnit_Framework_TestCase
 
     /**
      * @inheritdoc
+     * @group Block
      */
     public function testGetCartURL()
     {
@@ -139,7 +144,8 @@ class Bolt_Boltpay_Block_Checkout_BoltpayTest extends PHPUnit_Framework_TestCase
     }
 
     /**
-     *  Test that additional Js is present
+     * Test that additional Js is present
+     * @group Block
      */
     public function testGetAdditionalJs()
     {
@@ -154,6 +160,7 @@ class Bolt_Boltpay_Block_Checkout_BoltpayTest extends PHPUnit_Framework_TestCase
 
     /**
      * @inheritdoc
+     * @group Block
      */
     public function testGetSuccessURL()
     {
@@ -168,6 +175,7 @@ class Bolt_Boltpay_Block_Checkout_BoltpayTest extends PHPUnit_Framework_TestCase
 
     /**
      * @inheritdoc
+     * @group Block
      */
     public function testBuildBoltCheckoutJavascript()
     {
@@ -236,6 +244,7 @@ class Bolt_Boltpay_Block_Checkout_BoltpayTest extends PHPUnit_Framework_TestCase
 
     /**
      * @inheritdoc
+     * @group Block
      */
     public function testGetSaveOrderURL()
     {
@@ -244,5 +253,369 @@ class Bolt_Boltpay_Block_Checkout_BoltpayTest extends PHPUnit_Framework_TestCase
         $result = $this->currentMock->getSaveOrderUrl();
 
         $this->assertEquals($expected, $result);
+    }
+
+    /**
+     * @test
+     * @group Block
+     * @dataProvider isTestModeData
+     */
+    public function isTestMode($data)
+    {
+        $this->app->getStore()->resetConfig();
+        $this->app->getStore()->setConfig('payment/boltpay/test', $data['test']);
+        $result = $this->currentMock->isTestMode();
+        $this->assertInternalType('boolean', $result);
+        $this->assertEquals($data['expect'], $result);
+    }
+
+    /**
+     * Test cases
+     * @return boolean[][][]
+     */
+    public function isTestModeData()
+    {
+        return array(
+            array(
+                'data' => array(
+                    'expect' => true,
+                    'test' => true
+                )
+            ),
+            array(
+                'data' => array(
+                    'expect' => false,
+                    'test' => false
+                )
+            )
+        );
+    }
+
+    /**
+     * @test
+     * @group Block
+     * @dataProvider getConfigSelectorsData
+     */
+    public function getConfigSelectors($data)
+    {
+        $this->app->getStore()->resetConfig();
+        $this->app->getStore()->setConfig('payment/boltpay/selectors', $data['selectors']);
+        $result = $this->currentMock->getConfigSelectors();
+        $this->assertInternalType('string', $result);
+        $this->assertEquals($data['expect'], $result);
+    }
+
+    /**
+     * Test cases
+     * @return string[][][]
+     */
+    public function getConfigSelectorsData()
+    {
+        return array(
+            array(
+                'data' => array(
+                    'expect' => '[]',
+                    'selectors' => ''
+                )
+            ),
+            array(
+                'data' => array(
+                    'expect' => '[".btn"]',
+                    'selectors' => '.btn'
+                )
+            ),
+            array(
+                'data' => array(
+                    'expect' => '[".btn"," div.checkout"]',
+                    'selectors' => '.btn, div.checkout'
+                )
+            ),
+        );
+    }
+
+    /**
+     * @test
+     * @group Block
+     * @dataProvider isBoltOnlyPaymentData
+     */
+    public function isBoltOnlyPayment($data)
+    {
+        $this->app->getStore()->resetConfig();
+        $this->app->getStore()->setConfig('payment/boltpay/skip_payment', $data['skip_payment']);
+        $result = $this->currentMock->isBoltOnlyPayment();
+        $this->assertInternalType('string', $result);
+        $this->assertEquals($data['expect'], $result);
+    }
+
+    /**
+     * Test cases
+     * @return array[]
+     */
+    public function isBoltOnlyPaymentData()
+    {
+        return array(
+            array(
+                'data' => array(
+                    'expect' => '1',
+                    'skip_payment' => true
+                )
+            ),
+            array(
+                'data' => array(
+                    'expect' => '',
+                    'skip_payment' => false
+                )
+            ),
+        );
+    }
+
+    /**
+     * @test
+     * @group Block
+     * @dataProvider isCustomerGroupDisabledData
+     */
+    public function isCustomerGroupDisabled($data)
+    {
+        $this->app->getStore()->resetConfig();
+        $this->app->getStore()->setConfig('payment/boltpay/bolt_disabled_customer_groups', $data['groups']);
+        $result = $this->testHelper->callNonPublicFunction($this->currentMock, 'isCustomerGroupDisabled', array($data['customerGroupId']));
+        $this->assertInternalType('boolean', $result);
+        $this->assertEquals($data['expect'], $result);
+    }
+
+    /**
+     * Test cases
+     * @return array
+     */
+    public function isCustomerGroupDisabledData()
+    {
+        return array(
+            array(
+                'data' => array(
+                    'expect' => false,
+                    'customerGroupId' => 0,
+                    'groups' => ''
+                )
+            ),
+            array(
+                'data' => array(
+                    'expect' => false,
+                    'customerGroupId' => 0,
+                    'groups' => '0'
+                )
+            ),
+            array(
+                'data' => array(
+                    'expect' => false,
+                    'customerGroupId' => 1,
+                    'groups' => ''
+                )
+            ),
+            array(
+                'data' => array(
+                    'expect' => true,
+                    'customerGroupId' => 1,
+                    'groups' => '1,2'
+                )
+            ),
+            array(
+                'data' => array(
+                    'expect' => false,
+                    'customerGroupId' => 0,
+                    'groups' => '1,2'
+                )
+            ),
+        );
+    }
+
+    /**
+     * @test
+     * @group Block
+     * @dataProvider isBoltActiveData
+     */
+    public function isBoltActive($data)
+    {
+        $this->app->getStore()->resetConfig();
+        $this->app->getStore()->setConfig('payment/boltpay/active', $data['active']);
+        $result = $this->currentMock->isBoltActive();
+        $this->assertInternalType('boolean', $result);
+        $this->assertEquals($data['expect'], $result);
+    }
+
+    /**
+     * Test cases
+     * @return boolean[][][]
+     */
+    public function isBoltActiveData()
+    {
+        return array(
+            array(
+                'data' => array(
+                    'expect' => true,
+                    'active' => true
+                )
+            )
+        );
+    }
+
+    /**
+     * @test
+     * @group Block
+     * @dataProvider isEnableMerchantScopedAccountData
+     */
+    public function isEnableMerchantScopedAccount($data)
+    {
+        $this->app->getStore()->resetConfig();
+        $this->app->getStore()->setConfig('payment/boltpay/enable_merchant_scoped_account', $data['enabled']);
+        $result = $this->currentMock->isEnableMerchantScopedAccount();
+        $this->assertInternalType('string', $result);
+        $this->assertEquals($data['expect'], $result);
+    }
+
+    /**
+     * Test cases
+     * @return boolean[][][]
+     */
+    public function isEnableMerchantScopedAccountData()
+    {
+        return array(
+            array(
+                'data' => array(
+                    'expect' => '1',
+                    'enabled' => true
+                )
+            ),
+            array(
+                'data' => array(
+                    'expect' => '',
+                    'enabled' => false
+                )
+            ),
+            
+        );
+    }
+
+    /**
+     * @test
+     * @group Block
+     * @dataProvider isAllowedConnectJsOnCurrentPageData
+     */
+    public function isAllowedConnectJsOnCurrentPage($data)
+    {
+        $quote = $this->currentMock->getQuote();
+        $quote->setCustomerGroupId($data['customerGroupId']);
+
+        Mage::app()->getRequest()->setRouteName($data['route'])->setControllerName($data['controller']);
+
+        $this->app->getStore()->resetConfig();
+        $this->app->getStore()->setConfig('payment/boltpay/bolt_disabled_customer_groups', $data['groups']);
+        $this->app->getStore()->setConfig('payment/boltpay/active', $data['active']);
+        $this->app->getStore()->setConfig('payment/boltpay/add_button_everywhere', $data['everywhere']);
+
+        $result = $this->currentMock->isAllowedConnectJsOnCurrentPage();
+        $this->assertInternalType('boolean', $result);
+        $this->assertEquals($data['expected'], $result);
+    }
+
+    public function isAllowedConnectJsOnCurrentPageData()
+    {
+        return array(
+            array(
+                'data' => array(
+                    'expected' => true,
+                    'active' => true,// Bolt is active
+                    'customerGroupId' => 0,//Guest
+                    'groups' => '',//all groups are allowed
+                    'route' => 'checkout',//checkout
+                    'controller' => 'cart',// cart
+                    'everywhere' => true// Bolt allow everywhree
+                )
+            ),
+            array(
+                'data' => array(
+                    'expected' => true,
+                    'active' => true,
+                    'customerGroupId' => 0,
+                    'groups' => '',
+                    'route' => 'checkout',
+                    'controller' => 'cart',
+                    'everywhere' => false
+                )
+            ),
+            array(
+                'data' => array(
+                    'expected' => true,
+                    'active' => true,
+                    'customerGroupId' => 0,
+                    'groups' => '1,2,3',
+                    'route' => 'checkout',
+                    'controller' => 'cart',
+                    'everywhere' => false
+                )
+            ),
+            array(
+                'data' => array(
+                    'expected' => false,
+                    'active' => true,
+                    'customerGroupId' => 1,
+                    'groups' => '1,2,3',
+                    'route' => 'checkout',
+                    'controller' => 'cart',
+                    'everywhere' => false
+                )
+            ),
+            array(
+                'data' => array(
+                    'expected' => true,
+                    'active' => true,
+                    'customerGroupId' => 1,
+                    'groups' => '2,3',
+                    'route' => 'checkout',
+                    'controller' => 'cart',
+                    'everywhere' => false
+                )
+            ),
+            array(
+                'data' => array(
+                    'expected' => false,
+                    'active' => false,
+                    'customerGroupId' => 1,
+                    'groups' => '2,3',
+                    'route' => 'product',
+                    'controller' => 'view',
+                    'everywhere' => false
+                )
+            ),
+            
+        );
+    }
+
+    /**
+     * @test
+     * @group Block
+     * @dataProvider getQuoteData
+     */
+    public function getQuote($data)
+    {
+        $quote = Mage::getSingleton('checkout/session')->getQuote();
+        $quote->setIsActive($data['active']);
+        $quote->setIsVirtual($data['virtual']);
+        $this->assertEquals($quote, $this->currentMock->getQuote());
+    }
+
+    /**
+     * Test cases
+     * @return boolean[][][]
+     */
+    public function getQuoteData()
+    {
+        return array(
+            array(
+                'data' => array(
+                    'active' => 1,
+                    'virtual' => 0
+                )
+            ),
+        );
     }
 }
