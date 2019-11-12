@@ -17,6 +17,14 @@
 
 /* @var $this Bolt_Boltpay_Block_Catalog_Product_Boltpay */
 ?>
-<?php if ($this->isEnabledProductPageCheckout() && $this->isSupportedProductType()): ?>
+<?php if ($this->isEnabledProductPageCheckout()): ?>
+    <?php if ($this->isSimpleProduct()):?>
     <div class="bolt-product-checkout-button"></div>
+    <?php else:?>
+    <div type="button" title="PPC" class="button btn-cart validation-passed" onclick="productPageCheckout.click(this)">
+        <span>
+            <span>Buy Now</span>
+        </span>
+    </div>
+    <?php endif;?>
 <?php endif; ?>

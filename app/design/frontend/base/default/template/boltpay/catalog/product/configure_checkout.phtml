@@ -17,94 +17,31 @@
 
 /* @var $this Bolt_Boltpay_Block_Catalog_Product_Boltpay */
 ?>
-<?php if ($this->isEnabledProductPageCheckout() && $this->isSupportedProductType()): ?>
-<script type="text/javascript">
-var productPageCheckoutSelector = '<?php $this->escapeHtml($this->getProductPageCheckoutSelector()) ?>';
-var order_completed = false;
-var do_checks = 1;
-<?php $productTierPrice = $this->getProductTierPrice(); ?>
-var boltConfigPDP = {
-    _jsonProductCart: <?php echo $this->getCartDataJsForProductPage(); ?>,
-    _tierPrices : <?php echo json_encode($productTierPrice) ?>,
-    getPrice : function (qty) {
-        qty = Number(qty);
-        var i;
-        for (i = this._tierPrices.length; i > 0; --i) {
-            if (qty >= this._tierPrices[i-1]['price_qty']){
-                return this._tierPrices[i-1]['price'];
-            }
-        }
-
-        return this._jsonProductCart.items[0].price;
-    },
-
-    increaseQty: function(number) {
-        if (this._jsonProductCart) {
-            this._jsonProductCart.items[0].quantity = parseInt(number);
-            if(this._tierPrices){
-                this._jsonProductCart.items[0].price = this.getPrice(number);
-            }
-            this._jsonProductCart.total = parseFloat(this._jsonProductCart.items[0].price) * number;
-        } else {
-            console.log('There is no json product data');
-        }
-    },
-    init: function(removeItems) {
-        // copy object that we always have correct product data.
-        var jsonProductCart = Object.assign({}, this._jsonProductCart),
-            boltJsonProductHints = null;
-
-        if (removeItems === true) {
-            jsonProductCart.items = [];
-        }
-
-        window.BoltModal = BoltCheckout.configureProductCheckout(
-            jsonProductCart,
-            boltJsonProductHints,
-            <?php echo $this->getBoltCallbacks(); ?>,
-            { checkoutButtonClassName: 'bolt-product-checkout-button' }
-        );
-    }
-};
-
-document.addEventListener("DOMContentLoaded", function() {
-    var processIntervalCounter = 0;
-    /*
-     * This Interval function prevents error or even the lack of a button.
-     * It is similar an Interval functionality in boltpay/replace.phtml
-     */
-    var processIntervalProd = setInterval(
-        function() {
-            processIntervalCounter++;
-            if (typeof BoltCheckout !== "undefined") {
-                clearInterval(processIntervalProd);
-                var qtyValue = parseInt(document.getElementById('qty').value);
-
-                if (qtyValue > 0 && !isNaN(qtyValue)) {
-                    boltConfigPDP.increaseQty(qtyValue);
-                    boltConfigPDP.init();
-                } else {
-                    boltConfigPDP.init(true);
+<?php if ($this->isEnabledProductPageCheckout()): ?>
+    <?php if (!$this->isSimpleProduct()):?>
+    <script type="text/javascript">
+        var productPageCheckout = new VarienForm('product_addtocart_form');
+        productPageCheckout.click = function() {
+            if (this.validator.validate()) {
+                var data = this.form.serialize();
+                data += '&isAjax=1';
+                jQuery('#ajax_loader').show();
+                console.log(data);
+                try {
+                    jQuery.ajax( {
+                        url : "/boltpay/order/ppc",
+                        dataType : 'json',
+                        type : 'post',
+                        data : data,
+                        success : function(data) {
+                            jQuery('#ajax_loader').hide();
+                            parent.setAjaxData(data,true);
+                        }
+                    });
+                } catch (e) {
                 }
             }
-
-            if (processIntervalCounter > 50) {
-                clearInterval(processIntervalProd);
-            }
-        }, 50
-    );
-
-    document.getElementById('qty').addEventListener('input', function() {
-        var qtyValue = parseInt(this.value);
-
-        if (qtyValue > 0 && !isNaN(qtyValue)) {
-            boltConfigPDP.increaseQty(qtyValue);
-            boltConfigPDP.init();
-        } else {
-            boltConfigPDP.init(true);
-        }
-    });
-});
-
-</script>
+        }.bind(productPageCheckout);
+    </script>
+    <?php endif;?>
 <?php endif; ?>

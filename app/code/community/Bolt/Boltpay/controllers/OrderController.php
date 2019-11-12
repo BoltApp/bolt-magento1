@@ -208,4 +208,51 @@ class Bolt_Boltpay_OrderController
         }
     }
 
+    /**
+     * Create ppcQuote and return token for the BoltProductCheckout
+     */
+    public function ppcAction()
+    {
+        if (!$this->getRequest()->isAjax()) {
+            Mage::throwException($this->boltHelper()->__("Bolt_Boltpay_OrderController::ppcAction called with a non AJAX call"));
+            return;
+        }
+        if (!$this->_validateFormKey()) {
+            Mage::throwException($this->boltHelper()->__("Bolt_Boltpay_OrderController::ppcAction form key is invalid"));
+            return;
+        }
+        $product = $this->_initProduct();
+        //$params = $this->getRequest()->getParams();
+        //$related = $this->getRequest()->getParam('related_product');
+        /**
+         * Check product availability
+         */
+        if (!$product) {
+            Mage::throwException($this->boltHelper()->__("Bolt_Boltpay_OrderController::ppcAction product is empty"));
+            return;
+        }
+        // Take a look app/code/core/Mage/Checkout/Model/Cart.php
+        // We need to generate ppcQoute and then add this product to this temporary quote
+        $this->getResponse()->setHeader('Content-type', 'application/json', true);
+        return $this->getResponse()->setBody(Mage::helper('core')->jsonEncode($product));
+        
+    }
+
+    /**
+     * 
+     * @return Mage_Catalog_Model_Product|boolean
+     */
+    protected function _initProduct()
+    {
+        $productId = (int) $this->getRequest()->getParam('product');
+        if ($productId) {
+            $product = Mage::getModel('catalog/product')
+                ->setStoreId(Mage::app()->getStore()->getId())
+                ->load($productId);
+            if ($product->getId()) {
+                return $product;
+            }
+        }
+        return false;
+    }
 }
