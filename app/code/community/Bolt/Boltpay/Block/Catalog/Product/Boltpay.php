@@ -87,6 +87,7 @@ class Bolt_Boltpay_Block_Catalog_Product_Boltpay extends Mage_Core_Block_Templat
 
         $ppcQuote->addProduct($this->getCurrentProduct());
 
+        $ppcQuote->getBillingAddress();
         $ppcQuote->getShippingAddress()->setCollectShippingRates(true);
         $ppcQuote->collectTotals()
             ->save();
