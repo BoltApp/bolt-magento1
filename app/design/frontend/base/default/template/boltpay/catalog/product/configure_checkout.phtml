@@ -18,7 +18,7 @@
 /* @var $this Bolt_Boltpay_Block_Catalog_Product_Boltpay */
 ?>
 <?php if ($this->isEnabledProductPageCheckout()): ?>
-    <?php if (!$this->isSimpleProduct()):?>
+    <?php if (!$this->isSupportedProductType()):?>
     <script type="text/javascript">
         var productPageCheckout = new VarienForm('product_addtocart_form');
         productPageCheckout.click = function() {
