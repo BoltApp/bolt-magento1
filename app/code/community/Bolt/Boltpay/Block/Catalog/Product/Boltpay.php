@@ -31,114 +31,56 @@ class Bolt_Boltpay_Block_Catalog_Product_Boltpay extends Mage_Core_Block_Templat
     use Bolt_Boltpay_BoltGlobalTrait;
 
     /**
-     * Get Product Tier Price
-     * @return mixed
+     * @return mixed|NULL
      */
-    public function getProductTierPrice()
+    public function getCurrentProduct()
     {
-        return Mage::registry('current_product')->getData('tier_price');
+        return Mage::registry('current_product');
     }
 
     /**
-     * Initiates sets up BoltCheckout config.
-     *
-     * @return string
+     * @return Mage_Core_Model_Abstract
      */
-    public function getCartDataJsForProductPage()
+    public function getSession()
     {
-        try {
-            $currency = Mage::app()->getStore()->getCurrentCurrencyCode();
+        return Mage::getSingleton('catalog/session');
+    }
 
-            $productCheckoutCartItem = [];
-            $totalAmount = (float) 0;
+    /**
+     * @return Mage_Core_Model_Store
+     */
+    public function getStore()
+    {
+        return Mage::app()->getStore();
+    }
 
-            /** @var Mage_Catalog_Model_Product $_product */
-            $_product = Mage::registry('current_product');
-            if (!$_product) {
-                $msg = 'Bolt: Cannot find product info';
-                $this->boltHelper()->notifyException(new Exception($msg));
-                return '""';
-            }
-
-            if (!$_product->isInStock()) {
-                return '""';
-            }
-
-            $productCheckoutCartItem[] = [
-                'reference' => $_product->getId(),
-                'price' => $_product->getFinalPrice(),
-                'quantity' => 1,
-                'image' => $_product->getImageUrl(),
-                'name' => $_product->getName(),
-            ];
-            $totalAmount = $_product->getFinalPrice();
-
-
-            $productCheckoutCart = [
-                'currency' => $currency,
-                'items' => $productCheckoutCartItem,
-                'total' => $totalAmount,
-            ];
-
-             return json_encode($productCheckoutCart);
-        } catch (Exception $e) {
-            $this->boltHelper()->notifyException($e);
-            return '""';
+    /**
+     * @return Mage_Core_Model_Abstract|false
+     */
+    public function getQuote()
+    {
+        $ppcQuoteId = $this->getSession()->getData('ppcQuote');
+        if ($ppcQuoteId) {
+            $ppcQuote = Mage::getModel('sales/quote')->loadByIdWithoutStore($ppcQuoteId);
+            $ppcQuote->removeAllItems();
+        } else {
+            $ppcQuote = Mage::getModel('sales/quote');
+            $ppcQuote->setStore($this->getStore());
+            $ppcQuote->collectTotals()->save();
+            $this->getSession()->setData('ppcQuote', $ppcQuote->getId());
         }
+        return $ppcQuote;
     }
 
     /**
-     * Collect callbacks for BoltCheckout.configureProductCheckout
-     *
-     * @param string $checkoutType
-     * @param bool   $isVirtualQuote
-     *
-     * @return string
+     * @return Mage_Core_Model_Abstract|false
      */
-    public function getBoltCallbacks($checkoutType = Bolt_Boltpay_Block_Checkout_Boltpay::CHECKOUT_TYPE_PRODUCT_PAGE, $isVirtualQuote = false )
+    public function getQuoteWithCurrentProduct()
     {
-        return $this->boltHelper()->getBoltCallbacks($checkoutType, $isVirtualQuote);
-    }
-
-    /**
-     * @param string $successCustom
-     * @return string
-     */
-    public function buildOnSuccessCallback($successCustom = '')
-    {
-        $saveOrderUrl = $this->boltHelper()->getMagentoUrl('boltpay/order/save');
-
-        return "function(transaction, callback) {
-                new Ajax.Request(
-                    '$saveOrderUrl',
-                    {
-                        method:'post',
-                        onSuccess:
-                            function() {
-                                $successCustom
-                                order_completed = true;
-                                callback();
-                            },
-                        parameters: 'reference='+transaction.reference
-                    }
-                );
-            }";
-    }
-
-    /**
-     * @param $closeCustom
-     * @return string
-     */
-    public function buildOnCloseCallback($closeCustom = '')
-    {
-        $successUrl = $this->boltHelper()->getMagentoUrl(Mage::getStoreConfig('payment/boltpay/successpage'));
-        $javascript = $closeCustom;
-
-        return $javascript .
-            "if (order_completed) {
-                location.href = '$successUrl';
-            }
-            ";
+        $ppcQuote = $this->getQuote();
+        $ppcQuote->addProduct($this->getCurrentProduct());
+        $ppcQuote->collectTotals()->save();
+        return $ppcQuote;
     }
 
     /**
@@ -172,9 +114,16 @@ class Bolt_Boltpay_Block_Catalog_Product_Boltpay extends Mage_Core_Block_Templat
     public function isSupportedProductType()
     {
         /** @var Mage_Catalog_Model_Product $product */
-        $product = Mage::registry('current_product');
+        $product =$this->getCurrentProduct();
 
         return ($product && in_array($product->getTypeId(), $this->getProductSupportedTypes()));
+    }
+
+    public function getBoltToken()
+    {
+        if ($this->isSupportedProductType()) {
+            $ppcQuote = $this->getQuoteWithCurrentProduct();
+        }
     }
 
     /**
@@ -183,7 +132,8 @@ class Bolt_Boltpay_Block_Catalog_Product_Boltpay extends Mage_Core_Block_Templat
     protected function getProductSupportedTypes()
     {
         return [
-            Mage_Catalog_Model_Product_Type::TYPE_SIMPLE
+            Mage_Catalog_Model_Product_Type::TYPE_SIMPLE,
+            Mage_Catalog_Model_Product_Type::TYPE_VIRTUAL
         ];
     }
 }

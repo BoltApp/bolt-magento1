@@ -63,4 +63,66 @@ class Bolt_Boltpay_Block_Catalod_Product_BoltpayTest  extends PHPUnit_Framework_
             
         );
     }
+
+    /**
+     * @test
+     * @group BlockCatalogProduct
+     * @dataProvider isEnabledProductPageCheckoutCases
+     * @param array $case
+     */
+    public function isEnabledProductPageCheckout(array $case)
+    {
+        $this->app->getStore()->setConfig('payment/boltpay/active', $case['active']);
+        $this->app->getStore()->setConfig('payment/boltpay/enable_product_page_checkout', $case['ppc']);
+        $mock = $this->mockBuilder->setMethodsExcept(array('isEnabledProductPageCheckout', 'isBoltActive', 'boltHelper'))->getMock();
+        $result = $mock->isEnabledProductPageCheckout();
+        $this->assertInternalType('boolean', $result);
+        $this->assertEquals($case['expect'], $result);
+    }
+
+    /**
+     * Test cases
+     * @return array
+     */
+    public function isEnabledProductPageCheckoutCases()
+    {
+        return array(
+            array(
+                'case' => array(
+                    'expect' => false,
+                    'active' => '',
+                    'ppc' => ''
+                )
+            ),
+            array(
+                'case' => array(
+                    'expect' => false,
+                    'active' => true,
+                    'ppc' => ''
+                )
+            ),
+            array(
+                'case' => array(
+                    'expect' => false,
+                    'active' => '',
+                    'ppc' => true
+                )
+            ),
+            array(
+                'case' => array(
+                    'expect' => false,
+                    'active' => false,
+                    'ppc' => true
+                )
+            ),
+            array(
+                'case' => array(
+                    'expect' => true,
+                    'active' => true,
+                    'ppc' => true
+                )
+            ),
+            
+        );
+    }
 }
