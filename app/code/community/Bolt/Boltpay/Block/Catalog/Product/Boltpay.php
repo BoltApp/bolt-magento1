@@ -48,6 +48,7 @@ class Bolt_Boltpay_Block_Catalog_Product_Boltpay extends Mage_Core_Block_Templat
 
     /**
      * @return Mage_Core_Model_Store
+     * @throws Mage_Core_Model_Store_Exception
      */
     public function getStore()
     {
@@ -55,33 +56,41 @@ class Bolt_Boltpay_Block_Catalog_Product_Boltpay extends Mage_Core_Block_Templat
     }
 
     /**
-     * @return Mage_Core_Model_Abstract|false
+     * @return Mage_Sales_Model_Quote
      */
     public function getQuote()
     {
         $ppcQuoteId = $this->getSession()->getData('ppcQuote');
         if ($ppcQuoteId) {
+            /** @var Mage_Sales_Model_Quote $ppcQuote */
             $ppcQuote = Mage::getModel('sales/quote')->loadByIdWithoutStore($ppcQuoteId);
             $ppcQuote->removeAllItems();
-            $ppcQuote->collectTotals()->save();
+//            $ppcQuote->collectTotals()->save();
         } else {
+            /** @var Mage_Sales_Model_Quote $ppcQuote */
             $ppcQuote = Mage::getModel('sales/quote');
             $ppcQuote->setStore($this->getStore());
-            $ppcQuote->setIsMultiShipping(false);
-            $ppcQuote->collectTotals()->save();
+//            $ppcQuote->collectTotals()->save();
             $this->getSession()->setData('ppcQuote', $ppcQuote->getId());
         }
+
         return $ppcQuote;
     }
 
     /**
-     * @return Mage_Core_Model_Abstract|false
+     * @return Mage_Sales_Model_Quote
      */
     public function getQuoteWithCurrentProduct()
     {
+        /** @var Mage_Sales_Model_Quote $ppcQuote */
         $ppcQuote = $this->getQuote();
+
         $ppcQuote->addProduct($this->getCurrentProduct());
-        $ppcQuote->setTotalsCollectedFlag(false)->collectTotals()->save();
+
+        $ppcQuote->getShippingAddress()->setCollectShippingRates(true);
+        $ppcQuote->collectTotals()
+            ->save();
+
         return $ppcQuote;
     }
 
@@ -121,10 +130,15 @@ class Bolt_Boltpay_Block_Catalog_Product_Boltpay extends Mage_Core_Block_Templat
         return ($product && in_array($product->getTypeId(), $this->getProductSupportedTypes()));
     }
 
+    /**
+     * @return object|string
+     */
     public function getBoltToken()
     {
         if ($this->isSupportedProductType()) {
+            /** @var Mage_Sales_Model_Quote $ppcQuote */
             $ppcQuote = $this->getQuoteWithCurrentProduct();
+
             $boltOrder = new Bolt_Boltpay_Model_BoltOrder();
             $token = $boltOrder->getBoltOrderToken($ppcQuote, Bolt_Boltpay_Block_Checkout_Boltpay::CHECKOUT_TYPE_MULTI_PAGE);
             return $token;
