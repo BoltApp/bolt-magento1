@@ -29,10 +29,3 @@ export default function test() {
     }
 }
 
-/*export default function test() {
-    const body = {"cart":[{"id":1}]}; 
-    const header = create_header(body); 
-    console.log(JSON.stringify(body)); 
-    console.log(header["X-Bolt-Hmac-Sha256"]);
-
-}*/
