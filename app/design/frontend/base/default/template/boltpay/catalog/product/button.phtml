@@ -15,18 +15,73 @@
  * @license    http://opensource.org/licenses/osl-3.0.php  Open Software License (OSL 3.0)
  */
 
+
 /* @var $this Bolt_Boltpay_Block_Catalog_Product_Boltpay */
-$token = $this->getBoltToken();
 ?>
 <?php if ($this->isEnabledProductPageCheckout()): ?>
     <!-- Bolt need this for all cases of PPC -->
     <div class="bolt-product-checkout-button"></div>
     <?php if ($this->isSupportedProductType()):?>
+    <?php $token = $this->getBoltToken()->token;?>
     <?php if ($token):?>
-    
+        <script type="text/javascript">
+        jQuery(document).ready(function() {
+                var cart = {
+                    "orderToken": "<?php echo $token;?>"
+                };
+                var hints = {};
+                var callbacks = {
+                        check: function() {
+                          // This function is called just before the checkout form loads.
+                          // This is a hook to determine whether Bolt can actually proceed
+                          // with checkout at this point. This function MUST return a boolean.
+                          return true;
+                        },
+
+                        onCheckoutStart: function() {
+                            // This function is called after the checkout form is presented to the user.
+                            console.log('start');
+                        },
+
+                        onEmailEnter: function(email) {
+                            // This function is called after the user enters their email address.
+                        },
+
+                        onShippingDetailsComplete: function() {
+                          // This function is called when the user proceeds to the shipping options page.
+                          // This is applicable only to multi-step checkout.
+                        },
+
+                        onShippingOptionsComplete: function() {
+                          // This function is called when the user proceeds to the payment details page.
+                          // This is applicable only to multi-step checkout.
+                        },
+
+                        onPaymentSubmit: function() {
+                          // This function is called after the user clicks the pay button.
+                        },
+
+                        success: function(transaction, callback) {
+                          // This function is called when the Bolt checkout transaction is successful.
+                          console.log('success');
+                          // ... Add your code here ...
+                              
+                          // **IMPORTANT** callback must be executed at the end of this function if `success`
+                          // is defined.
+                          callback();
+                        },
+
+                        close: function() {
+                          // This function is called when the Bolt checkout modal is closed.
+                        }
+                    };
+
+                BoltCheckout.configureProductCheckout(cart, hints, callbacks);
+        });
+        </script>
     <?php endif;?>
     <?php else:?>
-    <div type="button" title="PPC" class="button btn-cart validation-passed" onclick="productPageCheckout.click(this)">
+    <div title="PPC" class="button btn-cart validation-passed" onclick="productPageCheckout.click(this)">
         <span>
             <span>Buy Now</span>
         </span>
