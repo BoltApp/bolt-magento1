@@ -145,7 +145,11 @@ class Bolt_Boltpay_OrderHelper
      */
     public static function deleteDummyOrder(Mage_Sales_Model_Order $order)
     {
-        self::deleteDummyOrderByIncrementId($order->getIncrementId());
-
+        if (!empty($order)) {
+            $id = $order->getIncrementId();
+            if (!empty($id)) {
+                self::deleteDummyOrderByIncrementId($id);
+            }
+        }
     }
 }
