@@ -65,12 +65,12 @@ class Bolt_Boltpay_Block_Catalog_Product_Boltpay extends Mage_Core_Block_Templat
             /** @var Mage_Sales_Model_Quote $ppcQuote */
             $ppcQuote = Mage::getModel('sales/quote')->loadByIdWithoutStore($ppcQuoteId);
             $ppcQuote->removeAllItems();
-//            $ppcQuote->collectTotals()->save();
         } else {
             /** @var Mage_Sales_Model_Quote $ppcQuote */
             $ppcQuote = Mage::getModel('sales/quote');
             $ppcQuote->setStore($this->getStore());
-//            $ppcQuote->collectTotals()->save();
+            $ppcQuote->reserveOrderId();
+            $ppcQuote->collectTotals()->save();
             $this->getSession()->setData('ppcQuote', $ppcQuote->getId());
         }
 
@@ -84,13 +84,9 @@ class Bolt_Boltpay_Block_Catalog_Product_Boltpay extends Mage_Core_Block_Templat
     {
         /** @var Mage_Sales_Model_Quote $ppcQuote */
         $ppcQuote = $this->getQuote();
-
         $ppcQuote->addProduct($this->getCurrentProduct());
-
-        $ppcQuote->getBillingAddress();
         $ppcQuote->getShippingAddress()->setCollectShippingRates(true);
-        $ppcQuote->collectTotals()
-            ->save();
+        $ppcQuote->collectTotals()->save();
 
         return $ppcQuote;
     }
