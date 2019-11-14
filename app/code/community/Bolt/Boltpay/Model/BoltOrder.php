@@ -473,8 +473,8 @@ class Bolt_Boltpay_Model_BoltOrder extends Bolt_Boltpay_Model_Abstract
     protected function getCorrectedTotal($projectedTotal, $magentoDerivedCartData)
     {
         // we'll check if we can simply dividing by two corrects the problem
-        if ($projectedTotal == (int)($magentoDerivedCartData['total_amount']/2)) {
-            $magentoDerivedCartData["total_amount"] = (int)($magentoDerivedCartData['total_amount']/2);
+        if ($projectedTotal == (int)round($magentoDerivedCartData['total_amount']/2)) {
+            $magentoDerivedCartData["total_amount"] = (int)round($magentoDerivedCartData['total_amount']/2);
 
             /*  I will defer handling discounts, tax, and shipping until more info is collected
             /*  The placeholder code is left below to be filled in if and when more cases arise

@@ -659,8 +659,8 @@ class Bolt_Boltpay_Model_Order extends Bolt_Boltpay_Model_Abstract
 
             if ( $cartItem->shouldNotBeValidated ){ continue; }
 
-            $boltPrice = (int)$boltCartItem->total_amount->amount;
-            $magentoRowPrice = (int) ( $cartItem->getRowTotalWithDiscount() * 100 );
+            $boltPrice = (int)round($boltCartItem->total_amount->amount);
+            $magentoRowPrice = (int)round( $cartItem->getRowTotalWithDiscount() * 100 );
             $magentoCalculatedPrice = (int) round($cartItem->getCalculationPrice() * 100 * $cartItem->getQty());
 
             if ( !in_array($boltPrice, [$magentoRowPrice, $magentoCalculatedPrice]) ) {
@@ -683,7 +683,7 @@ class Bolt_Boltpay_Model_Order extends Bolt_Boltpay_Model_Abstract
 
         if ($transaction->shouldDoTaxTotalValidation) {
             $magentoTaxTotal = (int)(( @$magentoTotals['tax']) ? round($magentoTotals['tax']->getValue() * 100) : 0 );
-            $boltTaxTotal = (int)$transaction->order->cart->tax_amount->amount;
+            $boltTaxTotal = (int)round($transaction->order->cart->tax_amount->amount);
             $difference = abs($magentoTaxTotal - $boltTaxTotal);
             if ( $difference > $priceFaultTolerance ) {
                 throw new Bolt_Boltpay_OrderCreationException(
@@ -701,8 +701,8 @@ class Bolt_Boltpay_Model_Order extends Bolt_Boltpay_Model_Abstract
         if ($transaction->shouldSkipDiscountAndShippingTotalValidation) return;
 
         if ($transaction->shouldDoDiscountTotalValidation) {
-            $magentoDiscountTotal = (int)(($immutableQuote->getBaseSubtotal() - $immutableQuote->getBaseSubtotalWithDiscount()) * 100);
-            $boltDiscountTotal = (int)$transaction->order->cart->discount_amount->amount;
+            $magentoDiscountTotal = (int)round(($immutableQuote->getBaseSubtotal() - $immutableQuote->getBaseSubtotalWithDiscount()) * 100);
+            $boltDiscountTotal = (int)round($transaction->order->cart->discount_amount->amount);
             $difference = abs($magentoDiscountTotal - $boltDiscountTotal);
             if ( $difference > $priceFaultTolerance ) {
                 throw new Bolt_Boltpay_OrderCreationException(
@@ -719,8 +719,8 @@ class Bolt_Boltpay_Model_Order extends Bolt_Boltpay_Model_Abstract
 
         if ( $transaction->shouldDoShippingTotalValidation && !$immutableQuote->isVirtual() ) {
             $shippingAddress = $immutableQuote->getShippingAddress();
-            $magentoShippingTotal = (int) (($shippingAddress->getShippingAmount() - $shippingAddress->getBaseShippingDiscountAmount()) * 100);
-            $boltShippingTotal = (int)$transaction->order->cart->shipping_amount->amount;
+            $magentoShippingTotal = (int)round(($shippingAddress->getShippingAmount() - $shippingAddress->getBaseShippingDiscountAmount()) * 100);
+            $boltShippingTotal = (int)round($transaction->order->cart->shipping_amount->amount);
             $difference = abs($magentoShippingTotal - $boltShippingTotal);
             if ( $difference > $priceFaultTolerance ) {
                 throw new Bolt_Boltpay_OrderCreationException(

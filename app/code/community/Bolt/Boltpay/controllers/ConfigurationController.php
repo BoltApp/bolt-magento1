@@ -136,7 +136,7 @@ class Bolt_Boltpay_ConfigurationController
         try{
             $client = $this->boltHelper()->getApiClient();
             $response = $client->get($url,$headerInfo)->getStatusCode();
-            return (int)($response / 100) == 2;
+            return (int)round($response / 100) == 2;
         }catch (\Exception $exception){
             $this->boltHelper()->notifyException($exception);
             $this->boltHelper()->logException($exception);

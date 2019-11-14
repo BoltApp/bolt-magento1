@@ -262,7 +262,7 @@ class Bolt_Boltpay_ApiController extends Mage_Core_Controller_Front_Action imple
                 array(
                     'status' => 'success',
                     'display_id' => $order->getIncrementId(),
-                    'total' => (int)($order->getGrandTotal() * 100),
+                    'total' => (int)round($order->getGrandTotal() * 100),
                     'order_received_url' => $orderSuccessUrl
                 ),
                 false
