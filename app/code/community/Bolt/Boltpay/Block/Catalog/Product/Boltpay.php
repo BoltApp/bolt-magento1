@@ -55,23 +55,36 @@ class Bolt_Boltpay_Block_Catalog_Product_Boltpay extends Mage_Core_Block_Templat
         return Mage::app()->getStore();
     }
 
+    protected function getQuoteIdKey()
+    {
+        return 'ppc_quote_id_' . Mage::app()->getStore()->getId();
+    }
+
     /**
+     * Get Quote for Product page
      * @return Mage_Sales_Model_Quote
      */
     public function getQuote()
     {
-        $ppcQuoteId = $this->getSession()->getData('ppcQuote');
+        $hasOrder = false;
+        $ppcQuoteId = $this->getSession()->getData($this->getQuoteIdKey());
         if ($ppcQuoteId) {
+            $order = Mage::getModel('sales/order')->loadByIncrementId(Mage::getSingleton('checkout/session')->getLastRealOrderId());
+            $orderQuoteId = $order->getQuoteId();
             /** @var Mage_Sales_Model_Quote $ppcQuote */
             $ppcQuote = Mage::getModel('sales/quote')->loadByIdWithoutStore($ppcQuoteId);
-            $ppcQuote->removeAllItems();
-        } else {
+            if ($ppcQuoteId == $orderQuoteId) {
+                $ppcQuote->setIsActive(false);
+                $ppcQuote->delete();
+                $hasOrder = true;
+            }
+         }
+         if (!$hasOrder || empty($ppcQuote)) {
             /** @var Mage_Sales_Model_Quote $ppcQuote */
             $ppcQuote = Mage::getModel('sales/quote');
             $ppcQuote->setStore($this->getStore());
             $ppcQuote->reserveOrderId();
-            $ppcQuote->collectTotals()->save();
-            $this->getSession()->setData('ppcQuote', $ppcQuote->getId());
+            $this->getSession()->setData($this->getQuoteIdKey(), $ppcQuote->getId());
         }
 
         return $ppcQuote;
@@ -84,10 +97,14 @@ class Bolt_Boltpay_Block_Catalog_Product_Boltpay extends Mage_Core_Block_Templat
     {
         /** @var Mage_Sales_Model_Quote $ppcQuote */
         $ppcQuote = $this->getQuote();
+        $ppcQuote->removeAllItems();
         $ppcQuote->addProduct($this->getCurrentProduct());
+        $ppcQuote->setParentQuoteId($ppcQuote->getId());
         $ppcQuote->getShippingAddress()->setCollectShippingRates(true);
         $ppcQuote->collectTotals()->save();
-
+        $ppcQuote->setParentQuoteId($ppcQuote->getId());
+        $ppcQuote->collectTotals()->save();
+        
         return $ppcQuote;
     }
 
@@ -137,14 +154,13 @@ class Bolt_Boltpay_Block_Catalog_Product_Boltpay extends Mage_Core_Block_Templat
             $ppcQuote = $this->getQuoteWithCurrentProduct();
 
             $boltOrder = new Bolt_Boltpay_Model_BoltOrder();
-            $token = $boltOrder->getBoltOrderToken($ppcQuote, Bolt_Boltpay_Block_Checkout_Boltpay::CHECKOUT_TYPE_MULTI_PAGE);
-            return $token;
+            $response = $boltOrder->getBoltOrderToken($ppcQuote, Bolt_Boltpay_Block_Checkout_Boltpay::CHECKOUT_TYPE_MULTI_PAGE);
+            if ($response && $response->token) {
+                return $response->token;
+            }
+            return '';
         }
     }
-    ///// create order from quote
-//    $service = Mage::getModel('sales/service_quote', $quote);
-//    $service->submitAll();
-//    $increment_id = $service->getOrder()->getRealOrderId();
 
     /**
      * @return array
