@@ -134,11 +134,13 @@ class Bolt_Boltpay_Block_Catalod_Product_BoltpayTest  extends PHPUnit_Framework_
      */
     public function getQuoteIdKey(array $case)
     {
+        $storeId = $this->app->getStore()->getId();
         $this->app->getStore()->setId($case['store_id']);
         $mock = $this->mockBuilder->setMethodsExcept(array('getQuoteIdKey'))->getMock();
         $result = Bolt_Boltpay_TestHelper::callNonPublicFunction($mock, 'getQuoteIdKey');
         $this->assertInternalType('string', $result);
         $this->assertEquals($case['expect'], $result);
+        $this->app->getStore()->setId($storeId);
     }
 
     /**
