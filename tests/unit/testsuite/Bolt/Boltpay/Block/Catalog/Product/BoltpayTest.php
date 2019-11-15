@@ -24,7 +24,7 @@ class Bolt_Boltpay_Block_Catalod_Product_BoltpayTest  extends PHPUnit_Framework_
     {
         $this->app->getStore()->setConfig('payment/boltpay/active', $case['active']);
         $mock = $this->mockBuilder->setMethodsExcept(array('isBoltActive', 'boltHelper'))->getMock();
-        $result = $mock->isBoltActive();
+        $result = Bolt_Boltpay_TestHelper::callNonPublicFunction($mock, 'isBoltActive');
         $this->assertInternalType('boolean', $result);
         $this->assertEquals($case['expect'], $result);
     }
@@ -124,5 +124,60 @@ class Bolt_Boltpay_Block_Catalod_Product_BoltpayTest  extends PHPUnit_Framework_
             ),
             
         );
+    }
+
+    /**
+     * @test
+     * @group BlockCatalogProduct
+     * @dataProvider getQuoteIdKeyCases
+     * @param array $case
+     */
+    public function getQuoteIdKey(array $case)
+    {
+        $this->app->getStore()->setId($case['store_id']);
+        $mock = $this->mockBuilder->setMethodsExcept(array('getQuoteIdKey'))->getMock();
+        $result = Bolt_Boltpay_TestHelper::callNonPublicFunction($mock, 'getQuoteIdKey');
+        $this->assertInternalType('string', $result);
+        $this->assertEquals($case['expect'], $result);
+    }
+
+    /**
+     * Test cases
+     * @return array
+     */
+    public function getQuoteIdKeyCases()
+    {
+        return array(
+            array(
+                'case' => array(
+                    'expect' => 'ppc_quote_id_1',
+                    'store_id' => 1
+                )
+            ),
+            array(
+                'case' => array(
+                    'expect' => 'ppc_quote_id_5',
+                    'store_id' => 5
+                )
+            ),
+            
+        );
+    }
+
+    /**
+     * @test
+     * @group BlockCatalogProduct
+     */
+    public function getProductSupportedTypes()
+    {
+        $expect = array(
+            'simple',
+            'virtual'
+        );
+        $mock = $this->mockBuilder->setMethodsExcept(array('getProductSupportedTypes'))->getMock();
+        $result = Bolt_Boltpay_TestHelper::callNonPublicFunction($mock, 'getProductSupportedTypes');
+        $this->assertInternalType('array', $result);
+        $this->assertEquals($expect, $result);
+        
     }
 }

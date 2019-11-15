@@ -30,10 +30,15 @@ class Bolt_Boltpay_Block_Catalog_Product_Boltpay extends Mage_Core_Block_Templat
 {
     use Bolt_Boltpay_BoltGlobalTrait;
 
+    public static $simpleProductTypes = array(
+        Mage_Catalog_Model_Product_Type::TYPE_SIMPLE,
+        Mage_Catalog_Model_Product_Type::TYPE_VIRTUAL
+    );
+
     /**
      * @return mixed|NULL
      */
-    public function getCurrentProduct()
+    private function getCurrentProduct()
     {
         return Mage::registry('current_product');
     }
@@ -41,7 +46,7 @@ class Bolt_Boltpay_Block_Catalog_Product_Boltpay extends Mage_Core_Block_Templat
     /**
      * @return Mage_Core_Model_Abstract
      */
-    public function getSession()
+    private function getSession()
     {
         return Mage::getSingleton('catalog/session');
     }
@@ -50,12 +55,12 @@ class Bolt_Boltpay_Block_Catalog_Product_Boltpay extends Mage_Core_Block_Templat
      * @return Mage_Core_Model_Store
      * @throws Mage_Core_Model_Store_Exception
      */
-    public function getStore()
+    private function getStore()
     {
         return Mage::app()->getStore();
     }
 
-    protected function getQuoteIdKey()
+    private function getQuoteIdKey()
     {
         return 'ppc_quote_id_' . Mage::app()->getStore()->getId();
     }
@@ -64,16 +69,19 @@ class Bolt_Boltpay_Block_Catalog_Product_Boltpay extends Mage_Core_Block_Templat
      * Get Quote for Product page
      * @return Mage_Sales_Model_Quote
      */
-    public function getQuote()
+    private  function getQuote()
     {
         $hasOrder = false;
+        $orderQuoteId = false;
         $ppcQuoteId = $this->getSession()->getData($this->getQuoteIdKey());
         if ($ppcQuoteId) {
             $order = Mage::getModel('sales/order')->loadByIncrementId(Mage::getSingleton('checkout/session')->getLastRealOrderId());
-            $orderQuoteId = $order->getQuoteId();
+            if ($order instanceof Mage_Sales_Model_Order) {
+                $orderQuoteId = $order->getQuoteId();
+            }
             /** @var Mage_Sales_Model_Quote $ppcQuote */
             $ppcQuote = Mage::getModel('sales/quote')->loadByIdWithoutStore($ppcQuoteId);
-            if ($ppcQuoteId == $orderQuoteId) {
+            if ($orderQuoteId && $ppcQuoteId == $orderQuoteId) {
                 $ppcQuote->setIsActive(false);
                 $ppcQuote->delete();
                 $hasOrder = true;
@@ -93,7 +101,7 @@ class Bolt_Boltpay_Block_Catalog_Product_Boltpay extends Mage_Core_Block_Templat
     /**
      * @return Mage_Sales_Model_Quote
      */
-    public function getQuoteWithCurrentProduct()
+    private function getQuoteWithCurrentProduct()
     {
         /** @var Mage_Sales_Model_Quote $ppcQuote */
         $ppcQuote = $this->getQuote();
@@ -112,7 +120,7 @@ class Bolt_Boltpay_Block_Catalog_Product_Boltpay extends Mage_Core_Block_Templat
      * Returns the Enabled Bolt configuration option value.
      * @return bool
      */
-    public function isBoltActive()
+    private function isBoltActive()
     {
         return $this->boltHelper()->isBoltPayActive();
     }
@@ -126,20 +134,12 @@ class Bolt_Boltpay_Block_Catalog_Product_Boltpay extends Mage_Core_Block_Templat
     }
 
     /**
-     * @return string
-     */
-    public function getProductPageCheckoutSelector()
-    {
-        return $this->boltHelper()->getProductPageCheckoutSelector();
-    }
-
-    /**
      * @return bool
      */
     public function isSupportedProductType()
     {
         /** @var Mage_Catalog_Model_Product $product */
-        $product =$this->getCurrentProduct();
+        $product = $this->getCurrentProduct();
 
         return ($product && in_array($product->getTypeId(), $this->getProductSupportedTypes()));
     }
@@ -165,11 +165,8 @@ class Bolt_Boltpay_Block_Catalog_Product_Boltpay extends Mage_Core_Block_Templat
     /**
      * @return array
      */
-    protected function getProductSupportedTypes()
+    private function getProductSupportedTypes()
     {
-        return [
-            Mage_Catalog_Model_Product_Type::TYPE_SIMPLE,
-            Mage_Catalog_Model_Product_Type::TYPE_VIRTUAL
-        ];
+        return self::$simpleProductTypes;
     }
 }
