@@ -101,7 +101,7 @@ class Bolt_Boltpay_Block_Catalog_Product_Boltpay extends Mage_Core_Block_Templat
     /**
      * @return Mage_Sales_Model_Quote
      */
-    private function getQuoteWithCurrentProduct()
+    public function getQuoteWithCurrentProduct()
     {
         /** @var Mage_Sales_Model_Quote $ppcQuote */
         $ppcQuote = $this->getQuote();
@@ -147,19 +147,18 @@ class Bolt_Boltpay_Block_Catalog_Product_Boltpay extends Mage_Core_Block_Templat
     /**
      * @return object|string
      */
-    public function getBoltToken()
+    public function getBoltToken(Bolt_Boltpay_Model_BoltOrder $boltOrder)
     {
-        if ($this->isSupportedProductType()) {
+        if ($this->isSupportedProductType() && $this->isEnabledProductPageCheckout()) {
             /** @var Mage_Sales_Model_Quote $ppcQuote */
             $ppcQuote = $this->getQuoteWithCurrentProduct();
-
-            $boltOrder = new Bolt_Boltpay_Model_BoltOrder();
             $response = $boltOrder->getBoltOrderToken($ppcQuote, Bolt_Boltpay_Block_Checkout_Boltpay::CHECKOUT_TYPE_MULTI_PAGE);
             if ($response && $response->token) {
                 return $response->token;
             }
             return '';
         }
+        return '';
     }
 
     /**

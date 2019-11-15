@@ -178,6 +178,79 @@ class Bolt_Boltpay_Block_Catalod_Product_BoltpayTest  extends PHPUnit_Framework_
         $result = Bolt_Boltpay_TestHelper::callNonPublicFunction($mock, 'getProductSupportedTypes');
         $this->assertInternalType('array', $result);
         $this->assertEquals($expect, $result);
-        
+    }
+
+    /**
+     * @test
+     * @group BlockCatalogProduct
+     * @group inProgress
+     * @dataProvider getBoltTokenCases
+     * @param array $case
+     */
+    public function getBoltToken(array $case)
+    {
+        $quoteStub = $this->getMockBuilder(Mage_Sales_Model_Quote::class)->getMock();
+        $boltOrderMock = $this->getMockBuilder(Bolt_Boltpay_Model_BoltOrder::class)->getMock();
+        $boltOrderMock->expects($this->any())->method('getBoltOrderToken')->will($this->returnValue($case['response']));
+        $mock = $this->mockBuilder->setMethodsExcept(array('getBoltToken'))->getMock();
+        $mock->expects($this->once())->method('isSupportedProductType')->will($this->returnValue($case['is_supported']));
+        $mock->expects($this->any())->method('isEnabledProductPageCheckout')->will($this->returnValue($case['enabled']));
+        $mock->expects($this->any())->method('getQuoteWithCurrentProduct')->will($this->returnValue($quoteStub));
+        $result = $mock->getBoltToken($boltOrderMock);
+        $this->assertInternalType('string', $result);
+        $this->assertEquals($case['expect'], $result);
+    }
+
+    /**
+     * Test cases
+     * @return array
+     */
+    public function getBoltTokenCases()
+    {
+        $response = new stdClass();
+        $response->token = 'test.token';
+        return array(
+            array(
+                'case' => array(
+                    'expect' => '',
+                    'response' => $response,
+                    'is_supported' => false,
+                    'enabled' => false
+                )
+            ),
+            array(
+                'case' => array(
+                    'expect' => '',
+                    'response' => $response,
+                    'is_supported' => true,
+                    'enabled' => false
+                )
+            ),
+            array(
+                'case' => array(
+                    'expect' => '',
+                    'response' => $response,
+                    'is_supported' => false,
+                    'enabled' => true
+                )
+            ),
+            array(
+                'case' => array(
+                    'expect' => $response->token,
+                    'response' => $response,
+                    'is_supported' => true,
+                    'enabled' => true
+                )
+            ),
+            array(
+                'case' => array(
+                    'expect' => '',
+                    'response' => '',
+                    'is_supported' => true,
+                    'enabled' => true
+                )
+            ),
+            
+        );
     }
 }
