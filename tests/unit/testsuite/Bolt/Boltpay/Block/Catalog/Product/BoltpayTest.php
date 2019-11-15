@@ -183,7 +183,6 @@ class Bolt_Boltpay_Block_Catalod_Product_BoltpayTest  extends PHPUnit_Framework_
     /**
      * @test
      * @group BlockCatalogProduct
-     * @group inProgress
      * @dataProvider getBoltTokenCases
      * @param array $case
      */
@@ -250,7 +249,39 @@ class Bolt_Boltpay_Block_Catalod_Product_BoltpayTest  extends PHPUnit_Framework_
                     'enabled' => true
                 )
             ),
-            
+        );
+    }
+
+    /**
+     * @test
+     * @group BlockCatalogProduct
+     * @dataProvider isSupportedProductTypeCases
+     * @param array $case
+     */
+    public function isSupportedProductType(array $case)
+    {
+        $productMock = $this->getMockBuilder(Mage_Catalog_Model_Product::class)->getMock();
+        $productMock->expects($this->once())->method('getTypeId')->will($this->returnValue($case['type']));
+        Mage::register('current_product', $productMock);
+        $mock = $this->mockBuilder->setMethodsExcept(array('isSupportedProductType', 'getCurrentProduct', 'getProductSupportedTypes'))->getMock();
+        $result = $mock->isSupportedProductType();
+        $this->assertInternalType('boolean', $result);
+        $this->assertEquals($case['expect'], $result);
+    }
+
+    /**
+     * Test cases
+     * @return array
+     */
+    public function isSupportedProductTypeCases()
+    {
+        return array(
+            array(
+                'case' => array(
+                    'expect' => false,
+                    'type' => 'dummy',
+                )
+            ),
         );
     }
 }
