@@ -701,7 +701,7 @@ class Bolt_Boltpay_Model_Order extends Bolt_Boltpay_Model_Abstract
         if ($transaction->shouldSkipDiscountAndShippingTotalValidation) return;
 
         if ($transaction->shouldDoDiscountTotalValidation) {
-            $magentoDiscountTotal = (int)(($immutableQuote->getBaseSubtotal() - $immutableQuote->getBaseSubtotalWithDiscount()) * 100);
+            $magentoDiscountTotal = (int)round(($immutableQuote->getBaseSubtotal() - $immutableQuote->getBaseSubtotalWithDiscount()) * 100);
             $boltDiscountTotal = (int)$transaction->order->cart->discount_amount->amount;
             $difference = abs($magentoDiscountTotal - $boltDiscountTotal);
             if ( $difference > $priceFaultTolerance ) {
