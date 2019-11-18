@@ -221,20 +221,16 @@ class Bolt_Boltpay_OrderController
             Mage::throwException($this->boltHelper()->__("Bolt_Boltpay_OrderController::ppcAction form key is invalid"));
             return;
         }
-        $product = $this->_initProduct();
-        //$params = $this->getRequest()->getParams();
-        //$related = $this->getRequest()->getParam('related_product');
+        $token = $this->_initProduct();
         /**
          * Check product availability
          */
-        if (!$product) {
+        if (!$token) {
             Mage::throwException($this->boltHelper()->__("Bolt_Boltpay_OrderController::ppcAction product is empty"));
             return;
         }
-        // Take a look app/code/core/Mage/Checkout/Model/Cart.php
-        // We need to generate ppcQoute and then add this product to this temporary quote
         $this->getResponse()->setHeader('Content-type', 'application/json', true);
-        return $this->getResponse()->setBody(Mage::helper('core')->jsonEncode($product));
+        return $this->getResponse()->setBody(Mage::helper('core')->jsonEncode($token));
         
     }
 
@@ -249,17 +245,19 @@ class Bolt_Boltpay_OrderController
             $product = Mage::getModel('catalog/product')
                 ->setStoreId(Mage::app()->getStore()->getId())
                 ->load($productId);
-            if ($product->getId()) {
+            if ($product instanceof Mage_Catalog_Model_Product && $product->getId()) {
                 // See Mage_Checkout_CartController::addAction
                 $helper = new Bolt_Boltpay_Helper_CatalogHelper();
                 $request = $helper->getProductRequest($this->getRequest()->getParams());
                 $ppcQuote = $helper->getQuoteWithCurrentProduct($product, $request);
-                $boltOrder = new Bolt_Boltpay_Model_BoltOrder();
-                $response = $boltOrder->getBoltOrderToken($ppcQuote, Bolt_Boltpay_Block_Checkout_Boltpay::CHECKOUT_TYPE_MULTI_PAGE);
+                if ($ppcQuote instanceof Mage_Sales_Model_Quote) {
+                    $boltOrder = new Bolt_Boltpay_Model_BoltOrder();
+                    $response = $boltOrder->getBoltOrderToken($ppcQuote, Bolt_Boltpay_Block_Checkout_Boltpay::CHECKOUT_TYPE_MULTI_PAGE);
+                }
                 if ($response && $response->token) {
                     return $response->token;
                 }
-                return '';
+                return false;
             }
         }
         return false;

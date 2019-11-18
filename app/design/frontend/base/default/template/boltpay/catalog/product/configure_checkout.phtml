@@ -35,8 +35,9 @@
                         data : data,
                         success : function(data) {
                             jQuery('#ajax_loader').hide();
-                            alert("development in progress");
-                            //parent.setAjaxData(data,true);
+                            jQuery('#ppcBuyNow').hide();
+                            //alert(data);
+                            BoltCheckout.configureProductCheckout({"orderToken": data}, {}, {});
                         }
                     });
                 } catch (e) {

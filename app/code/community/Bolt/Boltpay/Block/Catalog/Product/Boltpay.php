@@ -35,6 +35,8 @@ class Bolt_Boltpay_Block_Catalog_Product_Boltpay extends Mage_Core_Block_Templat
         Mage_Catalog_Model_Product_Type::TYPE_VIRTUAL
     );
 
+    
+
     /**
      * @return mixed|NULL
      */
