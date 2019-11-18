@@ -136,6 +136,16 @@ class Bolt_Boltpay_Helper_DataTest extends PHPUnit_Framework_TestCase
         $this->assertTrue($this->dataHelper->canUseBolt($quote));
     }
 
+    public function testCanUseBoltReturnsTrueIfCartIsEmpty()
+    {
+        $this->app->getStore()->setConfig('payment/boltpay/active', 1);
+        $this->app->getStore()->setConfig('payment/boltpay/allowspecific', 0);
+        $this->testHelper->createCheckout('guest');
+        $quote = Mage::getModel('sales/quote');
+
+        $this->assertTrue($this->dataHelper->canUseBolt($quote));
+    }
+
     /**
      * @inheritdoc
      */
