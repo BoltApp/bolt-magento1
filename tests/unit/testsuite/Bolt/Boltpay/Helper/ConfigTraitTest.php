@@ -821,6 +821,7 @@ class Bolt_Boltpay_Helper_ConfigTraitTest extends PHPUnit_Framework_TestCase
     {
         $this->app->getStore()->setConfig('payment/boltpay/active', $case['active']);
         $this->app->getStore()->setConfig('payment/boltpay/add_button_everywhere', $case['everywhere']);
+        $this->app->getStore()->setConfig('payment/boltpay/enable_product_page_checkout', $case['ppc']);
         $result = $this->mock->canUseEverywhere();
         $this->assertInternalType('boolean', $result);
         $this->assertEquals($case['expect'], $result);
@@ -837,28 +838,32 @@ class Bolt_Boltpay_Helper_ConfigTraitTest extends PHPUnit_Framework_TestCase
                 'case' => array(
                     'expect' => false,
                     'active' => '',
-                    'everywhere' => ''
+                    'everywhere' => '',
+                    'ppc' => '',
                 )
             ),
             array(
                 'case' => array(
                     'expect' => false,
                     'active' => true,
-                    'everywhere' => false
+                    'everywhere' => false,
+                    'ppc' => false
                 )
             ),
             array(
                 'case' => array(
                     'expect' => false,
                     'active' => false,
-                    'everywhere' => true
+                    'everywhere' => true,
+                    'ppc' => false
                 )
             ),
             array(
                 'case' => array(
                     'expect' => true,
                     'active' => true,
-                    'everywhere' => true
+                    'everywhere' => true,
+                    'ppc' => true
                 )
             ),
             
