@@ -44,79 +44,6 @@ class Bolt_Boltpay_Block_Catalog_Product_Boltpay extends Mage_Core_Block_Templat
     }
 
     /**
-     * @return Mage_Core_Model_Abstract
-     */
-    private function getSession()
-    {
-        return Mage::getSingleton('catalog/session');
-    }
-
-    /**
-     * @return Mage_Core_Model_Store
-     * @throws Mage_Core_Model_Store_Exception
-     */
-    private function getStore()
-    {
-        return Mage::app()->getStore();
-    }
-
-    private function getQuoteIdKey()
-    {
-        return 'ppc_quote_id_' . Mage::app()->getStore()->getId();
-    }
-
-    /**
-     * Get Quote for Product page
-     * @return Mage_Sales_Model_Quote
-     */
-    private  function getQuote()
-    {
-        $hasOrder = false;
-        $orderQuoteId = false;
-        $ppcQuoteId = $this->getSession()->getData($this->getQuoteIdKey());
-        if ($ppcQuoteId) {
-            $order = Mage::getModel('sales/order')->loadByIncrementId(Mage::getSingleton('checkout/session')->getLastRealOrderId());
-            if ($order instanceof Mage_Sales_Model_Order) {
-                $orderQuoteId = $order->getQuoteId();
-            }
-            /** @var Mage_Sales_Model_Quote $ppcQuote */
-            $ppcQuote = Mage::getModel('sales/quote')->loadByIdWithoutStore($ppcQuoteId);
-            if ($orderQuoteId && $ppcQuoteId == $orderQuoteId) {
-                $ppcQuote->setIsActive(false);
-                $ppcQuote->delete();
-                $hasOrder = true;
-            }
-         }
-         if (!$hasOrder || empty($ppcQuote)) {
-            /** @var Mage_Sales_Model_Quote $ppcQuote */
-            $ppcQuote = Mage::getModel('sales/quote');
-            $ppcQuote->setStore($this->getStore());
-            $ppcQuote->reserveOrderId();
-            $this->getSession()->setData($this->getQuoteIdKey(), $ppcQuote->getId());
-        }
-
-        return $ppcQuote;
-    }
-
-    /**
-     * @return Mage_Sales_Model_Quote
-     */
-    public function getQuoteWithCurrentProduct()
-    {
-        /** @var Mage_Sales_Model_Quote $ppcQuote */
-        $ppcQuote = $this->getQuote();
-        $ppcQuote->removeAllItems();
-        $ppcQuote->addProduct($this->getCurrentProduct());
-        $ppcQuote->setParentQuoteId($ppcQuote->getId());
-        $ppcQuote->getShippingAddress()->setCollectShippingRates(true);
-        $ppcQuote->collectTotals()->save();
-        $ppcQuote->setParentQuoteId($ppcQuote->getId());
-        $ppcQuote->collectTotals()->save();
-        
-        return $ppcQuote;
-    }
-
-    /**
      * Returns the Enabled Bolt configuration option value.
      * @return bool
      */
@@ -150,8 +77,9 @@ class Bolt_Boltpay_Block_Catalog_Product_Boltpay extends Mage_Core_Block_Templat
     public function getBoltToken(Bolt_Boltpay_Model_BoltOrder $boltOrder)
     {
         if ($this->isSupportedProductType() && $this->isEnabledProductPageCheckout()) {
+            $helper = new Bolt_Boltpay_Helper_CatalogHelper();
             /** @var Mage_Sales_Model_Quote $ppcQuote */
-            $ppcQuote = $this->getQuoteWithCurrentProduct();
+            $ppcQuote = $helper->getQuoteWithCurrentProduct($this->getCurrentProduct());
             $response = $boltOrder->getBoltOrderToken($ppcQuote, Bolt_Boltpay_Block_Checkout_Boltpay::CHECKOUT_TYPE_MULTI_PAGE);
             if ($response && $response->token) {
                 return $response->token;

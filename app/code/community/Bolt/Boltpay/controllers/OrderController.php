@@ -250,7 +250,16 @@ class Bolt_Boltpay_OrderController
                 ->setStoreId(Mage::app()->getStore()->getId())
                 ->load($productId);
             if ($product->getId()) {
-                return $product;
+                // See Mage_Checkout_CartController::addAction
+                $helper = new Bolt_Boltpay_Helper_CatalogHelper();
+                $request = $helper->getProductRequest($this->getRequest()->getParams());
+                $ppcQuote = $helper->getQuoteWithCurrentProduct($product, $request);
+                $boltOrder = new Bolt_Boltpay_Model_BoltOrder();
+                $response = $boltOrder->getBoltOrderToken($ppcQuote, Bolt_Boltpay_Block_Checkout_Boltpay::CHECKOUT_TYPE_MULTI_PAGE);
+                if ($response && $response->token) {
+                    return $response->token;
+                }
+                return '';
             }
         }
         return false;
