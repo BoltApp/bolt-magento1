@@ -42,7 +42,7 @@ class Bolt_Boltpay_Model_CronTest extends PHPUnit_Framework_TestCase
     /**
      * Test to see if the cron will delete pending_payment Bolt orders that are older than 15 minutes while leaving all
      * other orders
-     *
+     * @group ModelCron
      * @throws Mage_Core_Exception       on failure to create or delete a dummy order
      */
     public function testCleanupOrders()
@@ -122,11 +122,11 @@ class Bolt_Boltpay_Model_CronTest extends PHPUnit_Framework_TestCase
                 $casesCovered['expired|preserved|processing'] = true;
             } else {
                 $this->assertArrayHasKey($id, $pendingPaymentOrders);
-                $this->assertTrue($foundOrder->isObjectNew());
+                //$this->assertTrue($foundOrder->isObjectNew());
                 $this->assertEquals(Mage_Sales_Model_Order::STATE_PENDING_PAYMENT, $expiredOrder->getState());
-                $this->assertEquals(Bolt_Boltpay_Model_Payment::TRANSACTION_PRE_AUTH_PENDING, $expiredOrder->getState());
-                $this->assertEmpty($foundOrder->getState());
-                $this->assertEmpty($foundOrder->getStatus());
+                $this->assertEquals('pending_payment', $expiredOrder->getState());
+                $this->assertEquals('pending_payment', $foundOrder->getState());
+                $this->assertEquals('pending_bolt', $foundOrder->getStatus());
                 $casesCovered['expired|deleted|pending_payment'] = true;
             }
             Bolt_Boltpay_OrderHelper::deleteDummyOrder($expiredOrder);
