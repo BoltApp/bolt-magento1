@@ -29,10 +29,10 @@ class Bolt_Boltpay_Model_CartDataLoadTest extends Bolt_Boltpay_Model_Abstract
      * @return  void
      *
      */
-    public function saveCart($cart_items) {
+    public function saveCart($cartItems) {
         // add items to a cart
         $quote = Mage::getSingleton('checkout/session')->getQuote();
-        foreach ($cart_items as $item) {
+        foreach ($cartItems as $item) {
             $product = Mage::getModel('catalog/product')->load($item->id);
             $quote->addProduct($product, 1);
         }
