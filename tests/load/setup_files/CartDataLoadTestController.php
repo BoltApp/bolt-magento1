@@ -49,8 +49,8 @@ class Bolt_Boltpay_CartDataLoadTestController
     {
         try {
             // creates a cart in session
-            $cart_items = $this->getRequestData()->cart;
-            $this->_cartDataLoadTest->saveCart($cart_items);
+            $cartItems = $this->getRequestData()->cart;
+            $this->_cartDataLoadTest->saveCart($cartItems);
 
             // OrderControllerTrait::createAction():
             $boltpayCheckout = Mage::app()->getLayout()->createBlock('boltpay/checkout_boltpay');
@@ -61,16 +61,16 @@ class Bolt_Boltpay_CartDataLoadTestController
             /** @var Bolt_Boltpay_Model_BoltOrder $boltOrder */
             $boltOrder = Mage::getModel('boltpay/boltOrder');
 
-            $cart_data = $boltOrder->getCachedCartData($quote, Bolt_Boltpay_Block_Checkout_Boltpay::CHECKOUT_TYPE_MULTI_PAGE);
+            $cartData = $boltOrder->getCachedCartData($quote, Bolt_Boltpay_Block_Checkout_Boltpay::CHECKOUT_TYPE_MULTI_PAGE);
 
-            if (!$cart_data) {
+            if (!$cartData) {
                 $immutableQuote = $boltOrder->cloneQuote($quote, Bolt_Boltpay_Block_Checkout_Boltpay::CHECKOUT_TYPE_MULTI_PAGE);
-                $cart_data = $boltpayCheckout->buildCartData($boltOrder->getBoltOrderToken($immutableQuote, Bolt_Boltpay_Block_Checkout_Boltpay::CHECKOUT_TYPE_MULTI_PAGE));
+                $cartData = $boltpayCheckout->buildCartData($boltOrder->getBoltOrderToken($immutableQuote, Bolt_Boltpay_Block_Checkout_Boltpay::CHECKOUT_TYPE_MULTI_PAGE));
             }
 
             $this->getResponse()->setHeader('Content-type', 'application/json', true);
-            $cart_data["order_reference"] = $immutableQuote->getParentQuoteId();
-            $responseJSON = json_encode($cart_data, JSON_PRETTY_PRINT);
+            $cartData["order_reference"] = $immutableQuote->getParentQuoteId();
+            $responseJSON = json_encode($cartData, JSON_PRETTY_PRINT);
             $this->sendResponse(
                 200,
                 $responseJSON
