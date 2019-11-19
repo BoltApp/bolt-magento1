@@ -32,7 +32,9 @@
             jQuery('#ppcBuyNow').show();
             jQuery('div.bolt-product-checkout-button').html('');
         }
-        spConfig.configureObservers.push(startBolt);
+        if (typeof spConfig != 'undefined' && typeof spConfig.configureObservers != 'undefined') {
+            spConfig.configureObservers.push(startBolt);
+        }
 
         var productPageCheckout = new VarienForm('product_addtocart_form');
         productPageCheckout.form.observe('change', function(){
