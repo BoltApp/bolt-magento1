@@ -306,6 +306,12 @@ class Bolt_Boltpay_Model_Order extends Bolt_Boltpay_Model_Abstract
         $parentQuote->setParentQuoteId($immutableQuote->getId())
             ->save();
         ///////////////////////////////////////////////////////
+        // add order information to the session for Product Page Checkout
+        Mage::getSingleton('catalog/session')
+            ->setLastQuoteId($immutableQuote->getId())
+            ->setLastSuccessQuoteId($immutableQuote->getId())
+            ->setLastOrderId($order->getId())
+            ->setLastRealOrderId($order->getIncrementId());
 
         // We set the created_at and updated_at date to null to hide the order from ERP until authorized
         if (!$this->boltHelper()->getExtraConfig('keepPreAuthOrderTimeStamps')) {

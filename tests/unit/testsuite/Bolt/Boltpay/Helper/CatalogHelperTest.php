@@ -48,7 +48,11 @@ class Bolt_Boltpay_Helper_CatalogHelperTest extends PHPUnit_Framework_TestCase
                             'store_id' => 5
                         )
             ),
-    
         );
+    }
+
+    public function getQuote()
+    {
+        
     }
 }

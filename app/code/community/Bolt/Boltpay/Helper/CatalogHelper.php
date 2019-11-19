@@ -10,6 +10,11 @@ class Bolt_Boltpay_Helper_CatalogHelper extends Mage_Core_Helper_Abstract
         return Mage::getSingleton('catalog/session');
     }
 
+    public function getLastRealOrderId()
+    {
+        return Mage::getSingleton('catalog/session')->getLastRealOrderId();
+    }
+
     /**
      * @param string $scope
      * @return string
@@ -29,7 +34,7 @@ class Bolt_Boltpay_Helper_CatalogHelper extends Mage_Core_Helper_Abstract
         $orderQuoteId = false;
         $ppcQuoteId = $this->getSession()->getData($this->getQuoteIdKey());
         if ($ppcQuoteId) {
-            $order = Mage::getModel('sales/order')->loadByIncrementId(Mage::getSingleton('catalog/session')->getLastRealOrderId());
+            $order = Mage::getModel('sales/order')->loadByIncrementId($this->getLastRealOrderId());
             if ($order instanceof Mage_Sales_Model_Order) {
                 $orderQuoteId = $order->getQuoteId();
             }
@@ -41,12 +46,11 @@ class Bolt_Boltpay_Helper_CatalogHelper extends Mage_Core_Helper_Abstract
                 $hasOrder = true;
             }
         }
-        if (!$hasOrder || empty($ppcQuote)) {
+        if ($hasOrder || empty($ppcQuote)) {
             /** @var Mage_Sales_Model_Quote $ppcQuote */
             $ppcQuote = Mage::getModel('sales/quote');
             $ppcQuote->setStore(Mage::app()->getStore());
             $ppcQuote->reserveOrderId();
-            $this->getSession()->setData($this->getQuoteIdKey(), $ppcQuote->getId());
         }
         return $ppcQuote;
     }
@@ -65,6 +69,7 @@ class Bolt_Boltpay_Helper_CatalogHelper extends Mage_Core_Helper_Abstract
         $ppcQuote->collectTotals()->save();
         $ppcQuote->setParentQuoteId($ppcQuote->getId());
         $ppcQuote->collectTotals()->save();
+        $this->getSession()->setData($this->getQuoteIdKey(), $ppcQuote->getId());
         
         return $ppcQuote;
     }

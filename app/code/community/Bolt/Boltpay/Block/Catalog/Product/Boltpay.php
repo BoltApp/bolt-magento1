@@ -81,6 +81,7 @@ class Bolt_Boltpay_Block_Catalog_Product_Boltpay extends Mage_Core_Block_Templat
         if ($this->isSupportedProductType() && $this->isEnabledProductPageCheckout()) {
             /** @var Mage_Sales_Model_Quote $ppcQuote */
             $ppcQuote = $helper->getQuoteWithCurrentProduct($this->getCurrentProduct());
+            //var_dump($ppcQuote); exit;
             $response = $boltOrder->getBoltOrderToken($ppcQuote, Bolt_Boltpay_Block_Checkout_Boltpay::CHECKOUT_TYPE_MULTI_PAGE);
             if ($response && $response->token) {
                 return $response->token;
