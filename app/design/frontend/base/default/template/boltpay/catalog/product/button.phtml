@@ -22,7 +22,7 @@
     <!-- Bolt need this for all cases of PPC -->
     <div class="bolt-product-checkout-button"></div>
     <?php if ($this->isSupportedProductType()):?>
-    <?php $token = $this->getBoltToken(new Bolt_Boltpay_Model_BoltOrder());?>
+    <?php $token = $this->getBoltToken(new Bolt_Boltpay_Model_BoltOrder(), new Bolt_Boltpay_Helper_CatalogHelper());?>
     <?php if ($token):?>
         <script type="text/javascript">
         jQuery(document).ready(function() {

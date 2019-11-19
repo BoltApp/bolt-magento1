@@ -76,10 +76,9 @@ class Bolt_Boltpay_Block_Catalog_Product_Boltpay extends Mage_Core_Block_Templat
     /**
      * @return object|string
      */
-    public function getBoltToken(Bolt_Boltpay_Model_BoltOrder $boltOrder)
+    public function getBoltToken(Bolt_Boltpay_Model_BoltOrder $boltOrder, Bolt_Boltpay_Helper_CatalogHelper $helper)
     {
         if ($this->isSupportedProductType() && $this->isEnabledProductPageCheckout()) {
-            $helper = new Bolt_Boltpay_Helper_CatalogHelper();
             /** @var Mage_Sales_Model_Quote $ppcQuote */
             $ppcQuote = $helper->getQuoteWithCurrentProduct($this->getCurrentProduct());
             $response = $boltOrder->getBoltOrderToken($ppcQuote, Bolt_Boltpay_Block_Checkout_Boltpay::CHECKOUT_TYPE_MULTI_PAGE);

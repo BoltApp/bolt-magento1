@@ -126,45 +126,6 @@ class Bolt_Boltpay_Block_Catalod_Product_BoltpayTest  extends PHPUnit_Framework_
         );
     }
 
-    /**
-     * @test
-     * @group BlockCatalogProduct
-     * @dataProvider getQuoteIdKeyCases
-     * @param array $case
-     */
-    public function getQuoteIdKey(array $case)
-    {
-        $storeId = $this->app->getStore()->getId();
-        $this->app->getStore()->setId($case['store_id']);
-        $mock = $this->mockBuilder->setMethodsExcept(array('getQuoteIdKey'))->getMock();
-        $result = Bolt_Boltpay_TestHelper::callNonPublicFunction($mock, 'getQuoteIdKey');
-        $this->assertInternalType('string', $result);
-        $this->assertEquals($case['expect'], $result);
-        $this->app->getStore()->setId($storeId);
-    }
-
-    /**
-     * Test cases
-     * @return array
-     */
-    public function getQuoteIdKeyCases()
-    {
-        return array(
-            array(
-                'case' => array(
-                    'expect' => 'ppc_quote_id_1',
-                    'store_id' => 1
-                )
-            ),
-            array(
-                'case' => array(
-                    'expect' => 'ppc_quote_id_5',
-                    'store_id' => 5
-                )
-            ),
-            
-        );
-    }
 
     /**
      * @test
@@ -191,13 +152,14 @@ class Bolt_Boltpay_Block_Catalod_Product_BoltpayTest  extends PHPUnit_Framework_
     public function getBoltToken(array $case)
     {
         $quoteStub = $this->getMockBuilder(Mage_Sales_Model_Quote::class)->getMock();
+        $helperMock = $this->getMockBuilder(Bolt_Boltpay_Helper_CatalogHelper::class)->getMock();
+        $helperMock->method('getQuoteWithCurrentProduct')->will($this->returnValue($quoteStub));
         $boltOrderMock = $this->getMockBuilder(Bolt_Boltpay_Model_BoltOrder::class)->getMock();
         $boltOrderMock->expects($this->any())->method('getBoltOrderToken')->will($this->returnValue($case['response']));
         $mock = $this->mockBuilder->setMethodsExcept(array('getBoltToken'))->getMock();
         $mock->expects($this->once())->method('isSupportedProductType')->will($this->returnValue($case['is_supported']));
         $mock->expects($this->any())->method('isEnabledProductPageCheckout')->will($this->returnValue($case['enabled']));
-        $mock->expects($this->any())->method('getQuoteWithCurrentProduct')->will($this->returnValue($quoteStub));
-        $result = $mock->getBoltToken($boltOrderMock);
+        $result = $mock->getBoltToken($boltOrderMock, $helperMock);
         $this->assertInternalType('string', $result);
         $this->assertEquals($case['expect'], $result);
     }

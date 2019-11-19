@@ -21,6 +21,10 @@
     <?php if (!$this->isSupportedProductType()):?>
     <script type="text/javascript">
         var productPageCheckout = new VarienForm('product_addtocart_form');
+        productPageCheckout.form.observe('change', function(changes){
+        console.log(changes);
+            });
+        
         productPageCheckout.click = function() {
             if (this.validator.validate()) {
                 var data = this.form.serialize();
