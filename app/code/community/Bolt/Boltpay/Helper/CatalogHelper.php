@@ -34,7 +34,7 @@ class Bolt_Boltpay_Helper_CatalogHelper extends Mage_Core_Helper_Abstract
         $orderQuoteId = false;
         $ppcQuoteId = $this->getSession()->getData($this->getQuoteIdKey());
         if ($ppcQuoteId) {
-            $order = Mage::getModel('sales/order')->load($this->getLastRealOrderId());
+            $order = Mage::getModel('sales/order')->getCollection()->addAttributeToFilter('entity_id', $this->getLastRealOrderId())->getFirstItem();
             if ($order instanceof Mage_Sales_Model_Order) {
                 $orderQuoteId = $order->getQuoteId();
             }
