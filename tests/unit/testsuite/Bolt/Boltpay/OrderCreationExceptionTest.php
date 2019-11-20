@@ -387,7 +387,7 @@ class Bolt_Boltpay_OrderCreationExceptionTest extends PHPUnit_Framework_TestCase
             Bolt_Boltpay_OrderCreationException::E_BOLT_GENERAL_ERROR_TMPL_GENERIC,
             $templateData,
             $errorMessage
-        ))->setMethodsExcept(array('createJson', 'boltHelper', 'getJson'))->getMock();
+        ))->setMethods(null)->getMock();
         $result = Bolt_Boltpay_TestHelper::callNonPublicFunction($mock, 'createJson', array(
             12345,
             Bolt_Boltpay_OrderCreationException::E_BOLT_GENERAL_ERROR_TMPL_GENERIC,
