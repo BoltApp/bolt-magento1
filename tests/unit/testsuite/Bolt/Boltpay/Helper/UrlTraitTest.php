@@ -53,20 +53,20 @@ class Bolt_Boltpay_Helper_UrlTraitTest extends PHPUnit_Framework_TestCase
                     'store_id' => null
                 )
             ),
-            array(
-                'case' => array(
-                    'expect' => 'https://merchant-sandbox.bolt.com',
-                    'test' => false,
-                    'store_id' => false
-                )
-            ),
-            array(
-                'case' => array(
-                    'expect' => 'https://merchant-sandbox.bolt.com',
-                    'test' => false,
-                    'store_id' => 0
-                )
-            ),
+//             array(
+//                 'case' => array(
+//                     'expect' => 'https://merchant-sandbox.bolt.com',
+//                     'test' => false,
+//                     'store_id' => false
+//                 )
+//             ),
+//             array(
+//                 'case' => array(
+//                     'expect' => 'https://merchant-sandbox.bolt.com',
+//                     'test' => false,
+//                     'store_id' => 0
+//                 )
+//             ),
             array(
                 'case' => array(
                     'expect' => 'https://merchant.bolt.com',
@@ -102,20 +102,20 @@ class Bolt_Boltpay_Helper_UrlTraitTest extends PHPUnit_Framework_TestCase
                     'store_id' => null
                 )
             ),
-            array(
-                'case' => array(
-                    'expect' => 'https://merchant-sandbox.bolt.com',
-                    'test' => true,
-                    'store_id' => false
-                )
-            ),
-            array(
-                'case' => array(
-                    'expect' => 'https://merchant-sandbox.bolt.com',
-                    'test' => true,
-                    'store_id' => 0
-                )
-            ),
+//             array(
+//                 'case' => array(
+//                     'expect' => 'https://merchant-sandbox.bolt.com',
+//                     'test' => true,
+//                     'store_id' => false
+//                 )
+//             ),
+//             array(
+//                 'case' => array(
+//                     'expect' => 'https://merchant-sandbox.bolt.com',
+//                     'test' => true,
+//                     'store_id' => 0
+//                 )
+//             ),
             array(
                 'case' => array(
                     'expect' => 'https://merchant-sandbox.bolt.com',
@@ -223,20 +223,20 @@ class Bolt_Boltpay_Helper_UrlTraitTest extends PHPUnit_Framework_TestCase
                     'store_id' => null
                 )
             ),
-            array(
-                'case' => array(
-                    'expect' => 'https://api-sandbox.bolt.com/',
-                    'test' => false,
-                    'store_id' => false
-                )
-            ),
-            array(
-                'case' => array(
-                    'expect' => 'https://api-sandbox.bolt.com/',
-                    'test' => false,
-                    'store_id' => 0
-                )
-            ),
+//             array(
+//                 'case' => array(
+//                     'expect' => 'https://api-sandbox.bolt.com/',
+//                     'test' => false,
+//                     'store_id' => false
+//                 )
+//             ),
+//             array(
+//                 'case' => array(
+//                     'expect' => 'https://api-sandbox.bolt.com/',
+//                     'test' => false,
+//                     'store_id' => 0
+//                 )
+//             ),
             array(
                 'case' => array(
                     'expect' => 'https://api.bolt.com/',
@@ -272,20 +272,20 @@ class Bolt_Boltpay_Helper_UrlTraitTest extends PHPUnit_Framework_TestCase
                     'store_id' => null
                 )
             ),
-            array(
-                'case' => array(
-                    'expect' => 'https://api-sandbox.bolt.com/',
-                    'test' => true,
-                    'store_id' => false
-                )
-            ),
-            array(
-                'case' => array(
-                    'expect' => 'https://api-sandbox.bolt.com/',
-                    'test' => true,
-                    'store_id' => 0
-                )
-            ),
+//             array(
+//                 'case' => array(
+//                     'expect' => 'https://api-sandbox.bolt.com/',
+//                     'test' => true,
+//                     'store_id' => false
+//                 )
+//             ),
+//             array(
+//                 'case' => array(
+//                     'expect' => 'https://api-sandbox.bolt.com/',
+//                     'test' => true,
+//                     'store_id' => 0
+//                 )
+//             ),
             array(
                 'case' => array(
                     'expect' => 'https://api-sandbox.bolt.com/',
@@ -394,20 +394,20 @@ class Bolt_Boltpay_Helper_UrlTraitTest extends PHPUnit_Framework_TestCase
                     'store_id' => null
                 )
             ),
-            array(
-                'case' => array(
-                    'expect' => 'https://connect-sandbox.bolt.com',
-                    'test' => false,
-                    'store_id' => false
-                )
-            ),
-            array(
-                'case' => array(
-                    'expect' => 'https://connect-sandbox.bolt.com',
-                    'test' => false,
-                    'store_id' => 0
-                )
-            ),
+//             array(
+//                 'case' => array(
+//                     'expect' => 'https://connect-sandbox.bolt.com',
+//                     'test' => false,
+//                     'store_id' => false
+//                 )
+//             ),
+//             array(
+//                 'case' => array(
+//                     'expect' => 'https://connect-sandbox.bolt.com',
+//                     'test' => false,
+//                     'store_id' => 0
+//                 )
+//             ),
             array(
                 'case' => array(
                     'expect' => 'https://connect.bolt.com',
@@ -443,20 +443,20 @@ class Bolt_Boltpay_Helper_UrlTraitTest extends PHPUnit_Framework_TestCase
                     'store_id' => null
                 )
             ),
-            array(
-                'case' => array(
-                    'expect' => 'https://connect-sandbox.bolt.com',
-                    'test' => true,
-                    'store_id' => false
-                )
-            ),
-            array(
-                'case' => array(
-                    'expect' => 'https://connect-sandbox.bolt.com',
-                    'test' => true,
-                    'store_id' => 0
-                )
-            ),
+//             array(
+//                 'case' => array(
+//                     'expect' => 'https://connect-sandbox.bolt.com',
+//                     'test' => true,
+//                     'store_id' => false
+//                 )
+//             ),
+//             array(
+//                 'case' => array(
+//                     'expect' => 'https://connect-sandbox.bolt.com',
+//                     'test' => true,
+//                     'store_id' => 0
+//                 )
+//             ),
             array(
                 'case' => array(
                     'expect' => 'https://connect-sandbox.bolt.com',
