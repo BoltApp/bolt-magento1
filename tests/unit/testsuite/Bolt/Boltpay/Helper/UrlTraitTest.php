@@ -527,4 +527,91 @@ class Bolt_Boltpay_Helper_UrlTraitTest extends PHPUnit_Framework_TestCase
             ),
         );
     }
+
+    /**
+     * @test
+     * @group UrlTrait
+     * @dataProvider getConnectJsUrlCases
+     * @param array $case
+     */
+    public function getConnectJsUrl(array $case)
+    {
+        $this->app->getStore()->setConfig('payment/boltpay/test', $case['test']);
+        $result = $this->mock->getConnectJsUrl();
+        $this->assertInternalType('string', $result);
+        $this->assertEquals($case['expect'], $result);
+    }
+
+    /**
+     * Test cases
+     * @return array
+     */
+    public function getConnectJsUrlCases()
+    {
+        return array(
+            array(
+                'case' => array(
+                    'expect' => 'https://connect.bolt.com/connect.js',
+                    'test' => ''
+                )
+            ),
+            array(
+                'case' => array(
+                    'expect' => 'https://connect.bolt.com/connect.js',
+                    'test' => '0'
+                )
+            ),
+            array(
+                'case' => array(
+                    'expect' => 'https://connect-sandbox.bolt.com/connect.js',
+                    'test' => '1'
+                )
+            ),
+            array(
+                'case' => array(
+                    'expect' => 'https://connect.bolt.com/connect.js',
+                    'test' => false
+                )
+            ),
+            array(
+                'case' => array(
+                    'expect' => 'https://connect-sandbox.bolt.com/connect.js',
+                    'test' => true
+                )
+            ),
+            
+        );
+    }
+
+    /**
+     * @test
+     * @group UrlTrait
+     * @group iks
+     * @dataProvider getMagentoUrlCases
+     * @param array $case
+     */
+    public function getMagentoUrl(array $case)
+    {
+        $result = $this->mock->getMagentoUrl($case['route'], $case['patams'], $case['is_admin']);
+        $this->assertInternalType('string', $result);
+        //$this->assertEquals($case['expect'], $result);
+    }
+
+    /**
+     * Test cases
+     * @return array
+     */
+    public function getMagentoUrlCases()
+    {
+        return array(
+            array(
+                'case' => array(
+                    'expect' => '',
+                    'route' => '',
+                    'patams' => array(),
+                    'is_admin' => ''
+                )
+            ),
+        );
+    }
 }
