@@ -32,12 +32,9 @@ class Bolt_Boltpay_Helper_CatalogHelper extends Mage_Core_Helper_Abstract
     {
         $hasOrder = false;
         $orderQuoteId = false;
-        //var_dump($this->getSession());
         $ppcQuoteId = $this->getSession()->getData($this->getQuoteIdKey());
-        //echo "********************".$ppcQuoteId."\n";
         if ($ppcQuoteId) {
-            $order = Mage::getModel('sales/order')->loadByIncrementId($this->getLastRealOrderId());
-            //var_dump($order);
+            $order = Mage::getModel('sales/order')->load($this->getLastRealOrderId());
             if ($order instanceof Mage_Sales_Model_Order) {
                 $orderQuoteId = $order->getQuoteId();
             }
@@ -69,7 +66,6 @@ class Bolt_Boltpay_Helper_CatalogHelper extends Mage_Core_Helper_Abstract
         $ppcQuote->addProduct($product, $request);
         $ppcQuote->setParentQuoteId($ppcQuote->getId());
         $ppcQuote->getShippingAddress()->setCollectShippingRates(true);
-        $ppcQuote->collectTotals()->save();
         $ppcQuote->setParentQuoteId($ppcQuote->getId());
         $ppcQuote->collectTotals()->save();
         $this->getSession()->setData($this->getQuoteIdKey(), $ppcQuote->getId());

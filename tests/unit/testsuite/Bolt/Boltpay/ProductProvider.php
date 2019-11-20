@@ -30,7 +30,7 @@ class Bolt_Boltpay_ProductProvider
      * @return int The Product ID of the newly created product
      * @throws Exception
      */
-    public static function createDummyProduct($sku, $additionalData = array(), $quantity = 10)
+    public static function createDummyProduct($sku, $additionalData = array(), $quantity = 100)
     {
         if (!self::$attributeSetId) {
             self::$attributeSetId = Mage::getModel('catalog/product')->getDefaultAttributeSetId();

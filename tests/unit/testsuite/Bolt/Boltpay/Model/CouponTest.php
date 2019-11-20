@@ -91,7 +91,7 @@ class Bolt_Boltpay_Model_CouponTest extends PHPUnit_Framework_TestCase
                 array('customer_id' => self::$customerId, 'coupon_code', self::$invalidCouponCode)
             );
             self::$couponCodeId = Bolt_Boltpay_CouponHelper::getCouponIdByCode(self::$invalidCouponCode);
-            self::$productId = Bolt_Boltpay_ProductProvider::createDummyProduct('PHPUNIT_TEST_1');
+            self::$productId = Bolt_Boltpay_ProductProvider::createDummyProduct('PHPUNIT_TEST_'.time());
         } catch (\Exception $e) {
             self::tearDownAfterClass();
         }

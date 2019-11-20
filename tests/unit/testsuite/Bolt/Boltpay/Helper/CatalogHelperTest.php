@@ -8,12 +8,22 @@ class Bolt_Boltpay_Helper_CatalogHelperTest extends PHPUnit_Framework_TestCase
     public static $productId;
     public static $orderId;
     public static $quoteId;
+    public static $addressData = array(
+        'firstname' => 'Luke',
+        'lastname' => 'Skywalker',
+        'street' => 'Sample Street 10',
+        'city' => 'Los Angeles',
+        'postcode' => '90014',
+        'telephone' => '+1 867 345 123 5681',
+        'country_id' => 'US',
+        'region_id' => 12
+    );
     
     
     public static function setUpBeforeClass()
     {
         // Create some dummy product:
-        self::$productId = Bolt_Boltpay_ProductProvider::createDummyProduct('PHPUNIT_TEST_' . 1);
+        self::$productId = Bolt_Boltpay_ProductProvider::createDummyProduct('PHPUNIT_TEST_' . 2);
         self::$orderId = Bolt_Boltpay_OrderHelper::createDummyOrder(self::$productId);
         self::$quoteId = Bolt_Boltpay_OrderHelper::createDummyQuote();
     }
@@ -74,8 +84,6 @@ class Bolt_Boltpay_Helper_CatalogHelperTest extends PHPUnit_Framework_TestCase
     /**
      * @test
      * @group HelperCatalog
-     * @group inProgress
-     * @param array $case
      */
     public function getQuoteNew()
     {
@@ -83,6 +91,7 @@ class Bolt_Boltpay_Helper_CatalogHelperTest extends PHPUnit_Framework_TestCase
         $session->setData('ppc_quote_id_'.$this->app->getStore()->getId(), null);
         $mock = $this->mockBuilder->setMethodsExcept(array('getQuote', 'getQuoteIdKey'))->getMock();
         $mock->expects($this->once())->method('getSession')->will($this->returnValue($session));
+        // Start testing
         $result = $mock->getQuote();
         $this->assertInstanceOf(Mage_Sales_Model_Quote::class, $result);
         $quoteId = $result->getId();
@@ -92,38 +101,148 @@ class Bolt_Boltpay_Helper_CatalogHelperTest extends PHPUnit_Framework_TestCase
     /**
      * @test
      * @group HelperCatalog
-     * @group inProgress
-     * @param array $case
      */
-    public function getQuoteExisting()
+    public function getQuoteExistingQuote()
     {
         $session = Mage::getSingleton('catalog/session');
         $session->setData('ppc_quote_id_'.$this->app->getStore()->getId(), self::$quoteId);
         $mock = $this->mockBuilder->setMethodsExcept(array('getQuote', 'getQuoteIdKey'))->getMock();
         $mock->expects($this->once())->method('getSession')->will($this->returnValue($session));
+        // Start testing
         $result = $mock->getQuote();
         $this->assertInstanceOf(Mage_Sales_Model_Quote::class, $result);
         $quoteId = $result->getId();
         $this->assertEquals(self::$quoteId, $quoteId);
     }
 
-//     /**
-//      * @test
-//      * @group HelperCatalog
-//      * @group inProgress
-//      * @param array $case
-//      */
-//     public function getQuoteExistingOrder()
-//     {
-//         $session = Mage::getSingleton('catalog/session');
-//         $session->setData('ppc_quote_id_'.$this->app->getStore()->getId(), self::$quoteId);
-//         $session->setLastRealOrderId(self::$orderId);
-//         $mock = $this->mockBuilder->setMethodsExcept(array('getQuote', 'getQuoteIdKey'))->getMock();
-//         $mock->expects($this->once())->method('getSession')->will($this->returnValue($session));
-//         $result = $mock->getQuote();
-//         $this->assertInstanceOf(Mage_Sales_Model_Quote::class, $result);
-//         $quoteId = $result->getId();
-//         $this->assertEquals(self::$quoteId, $quoteId);
-//     }
-    
+    /**
+     * @test
+     * @group HelperCatalog
+     */
+    public function getQuoteExistingQuoteAndOrder()
+    {
+        $session = Mage::getSingleton('catalog/session');
+        $session->setData('ppc_quote_id_'.$this->app->getStore()->getId(), self::$quoteId);
+        $mock = $this->mockBuilder->setMethodsExcept(array('getQuote', 'getQuoteIdKey'))->getMock();
+        $mock->expects($this->once())->method('getSession')->will($this->returnValue($session));
+        $mock->expects($this->once())->method('getLastRealOrderId')->will($this->returnValue(self::$orderId));
+        // Start testing
+        $result = $mock->getQuote();
+        $this->assertInstanceOf(Mage_Sales_Model_Quote::class, $result);
+        $quoteId = $result->getId();
+        $this->assertEquals(self::$quoteId, $quoteId);
+    }
+
+    /**
+     * @test
+     * @group HelperCatalog
+     */
+    public function getQuoteExistingQuoteAndOrderWithQuote()
+    {
+        $this->app->getStore()->setConfig('carriers/flatrate/active', 1);
+        $quote = Mage::getModel('sales/quote')->loadByIdWithoutStore(self::$quoteId);
+        $product = Mage::getModel('catalog/product')->load(self::$productId);
+        
+        $quote->setParentQuoteId($quote->getId());
+        $quote->reserveOrderId();
+        $quote->addProduct($product);
+        
+        
+        $quote->getBillingAddress()->addData(self::$addressData);
+        $quote->getShippingAddress()->addData(self::$addressData);
+        $quote->getShippingAddress()->setTotalsCollectedFlag(false)->collectShippingRates()->setShippingMethod('flatrate_flatrate');
+        $quote->getPayment()->importData(array('method' => 'boltpay'));
+        $quote->save();
+
+        $service = Mage::getModel('sales/service_quote', $quote);
+        $service->submitAll();
+        /** @var Mage_Sales_Model_Order $order */
+        $order = $service->getOrder();
+        $session = Mage::getSingleton('catalog/session');
+        $session->setData('ppc_quote_id_'.$this->app->getStore()->getId(), self::$quoteId);
+        $mock = $this->mockBuilder->setMethodsExcept(array('getQuote', 'getQuoteIdKey'))->getMock();
+        $mock->expects($this->once())->method('getSession')->will($this->returnValue($session));
+        $mock->expects($this->once())->method('getLastRealOrderId')->will($this->returnValue($order->getId()));
+        // Start testing
+        $result = $mock->getQuote();
+        $this->assertInstanceOf(Mage_Sales_Model_Quote::class, $result);
+        $quoteId = $result->getId();
+        $this->assertEquals(null, $quoteId);
+        Mage::register('isSecureArea', true);
+        $order->delete();
+        Mage::unregister('isSecureArea');
+    }
+
+    /**
+     * @test
+     * @group HelperCatalog
+     * @group iks
+     * @dataProvider getProductRequestCases
+     * @param array $case
+     */
+    public function getProductRequest(array $case)
+    {
+        $mock = $this->mockBuilder->setMethodsExcept(array('getProductRequest'))->getMock();
+        $result = $mock->getProductRequest($case['request']);
+        $this->assertInstanceOf(Varien_Object::class, $result);
+        $this->assertEquals($case['expect'], $result);
+    }
+
+    /**
+     * Test cases
+     * @return array
+     */
+    public function getProductRequestCases()
+    {
+        $cases = array();
+        $request = array(
+            'qty' => 1,
+            'sku' => 'jdbfkjbsjkbk'
+        );
+        $cases[] = array(
+            'case' => array(
+                'expect' => new Varien_Object(),
+                'request' => null
+            )
+        );
+        $cases[] = array(
+            'case' => array(
+                'expect' => new Varien_Object(),
+                'request' => ''
+            )
+        );
+        $cases[] = array(
+            'case' => array(
+                'expect' => new Varien_Object(array('qty' => 1)),
+                'request' => 1
+            )
+        );
+        $cases[] = array(
+            'case' => array(
+                'expect' => new Varien_Object(),
+                'request' => new Varien_Object()
+            )
+        );
+        $cases[] = array(
+            'case' => array(
+                'expect' => new Varien_Object($request),
+                'request' => new Varien_Object($request)
+            )
+        );
+        $cases[] = array(
+            'case' => array(
+                'expect' => new Varien_Object('dummy.text'),
+                'request' => 'dummy.text'
+            )
+        );
+        $cases[] = array(
+            'case' => array(
+                'expect' => new Varien_Object($request),
+                'request' => $request
+            )
+        );
+        
+        return $cases;
+    }
+
 }
