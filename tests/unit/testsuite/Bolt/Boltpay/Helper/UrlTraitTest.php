@@ -145,12 +145,13 @@ class Bolt_Boltpay_Helper_UrlTraitTest extends PHPUnit_Framework_TestCase
      * @group Trait
      * @group UrlTrait
      * @dataProvider getBoltMerchantUrlExceptionCases
+     * @expectedException Mage_Core_Model_Store_Exception
      * @param array $case
      */
     public function getBoltMerchantUrlException(array $case)
     {
         $this->app->getStore()->setConfig('payment/boltpay/test', $case['test']);
-        $this->expectException(Mage_Core_Model_Store_Exception::class);
+        //$this->expectException(Mage_Core_Model_Store_Exception::class);
         $this->mock->getBoltMerchantUrl($case['store_id']);
     }
     /**
@@ -315,12 +316,13 @@ class Bolt_Boltpay_Helper_UrlTraitTest extends PHPUnit_Framework_TestCase
      * @group Trait
      * @group UrlTrait
      * @dataProvider getApiUrlExceptionCases
+     * @expectedException Mage_Core_Model_Store_Exception
      * @param array $case
      */
     public function getApiUrlException(array $case)
     {
         $this->app->getStore()->setConfig('payment/boltpay/test', $case['test']);
-        $this->expectException(Mage_Core_Model_Store_Exception::class);
+        //$this->expectException(Mage_Core_Model_Store_Exception::class);
         $this->mock->getApiUrl($case['store_id']);
     }
     /**
@@ -486,12 +488,13 @@ class Bolt_Boltpay_Helper_UrlTraitTest extends PHPUnit_Framework_TestCase
      * @group Trait
      * @group UrlTrait
      * @dataProvider getJsUrlExceptionCases
+     * @expectedException Mage_Core_Model_Store_Exception
      * @param array $case
      */
     public function getJsUrlException(array $case)
     {
         $this->app->getStore()->setConfig('payment/boltpay/test', $case['test']);
-        $this->expectException(Mage_Core_Model_Store_Exception::class);
+        //$this->expectException(Mage_Core_Model_Store_Exception::class);
         $this->mock->getJsUrl($case['store_id']);
     }
     /**

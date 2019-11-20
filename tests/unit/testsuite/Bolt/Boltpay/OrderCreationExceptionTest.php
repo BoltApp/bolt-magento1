@@ -465,7 +465,7 @@ class Bolt_Boltpay_OrderCreationExceptionTest extends PHPUnit_Framework_TestCase
      */
     public function createJson(array $case)
     {
-        $mock = $this->mockBuilder->setMethodsExcept(array('createJson', 'boltHelper'))->getMock();
+        $mock = $this->mockBuilder->setMethods(null)->getMock();
         $result = Bolt_Boltpay_TestHelper::callNonPublicFunction($mock, 'createJson', array($case['code'], $case['template'], $case['values']));
         $this->assertInternalType('string', $result);
         $this->assertEquals($case['expect'], $result);

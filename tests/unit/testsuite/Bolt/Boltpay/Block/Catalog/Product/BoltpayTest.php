@@ -10,7 +10,7 @@ class Bolt_Boltpay_Block_Catalod_Product_BoltpayTest  extends PHPUnit_Framework_
     {
         $this->app = Mage::app('default');
         $this->app->getStore()->resetConfig();
-        $this->mockBuilder = $this->getMockBuilder('Bolt_Boltpay_Block_Catalog_Product_Boltpay')
+        $this->mockBuilder = $this->getMockBuilder(Bolt_Boltpay_Block_Catalog_Product_Boltpay::class)
         ;
     }
 
@@ -23,7 +23,7 @@ class Bolt_Boltpay_Block_Catalod_Product_BoltpayTest  extends PHPUnit_Framework_
     public function isBoltActive(array $case)
     {
         $this->app->getStore()->setConfig('payment/boltpay/active', $case['active']);
-        $mock = $this->mockBuilder->setMethodsExcept(array('isBoltActive', 'boltHelper'))->getMock();
+        $mock = $this->mockBuilder->setMethods(null)->getMock();
         $result = Bolt_Boltpay_TestHelper::callNonPublicFunction($mock, 'isBoltActive');
         $this->assertInternalType('boolean', $result);
         $this->assertEquals($case['expect'], $result);
@@ -74,7 +74,7 @@ class Bolt_Boltpay_Block_Catalod_Product_BoltpayTest  extends PHPUnit_Framework_
     {
         $this->app->getStore()->setConfig('payment/boltpay/active', $case['active']);
         $this->app->getStore()->setConfig('payment/boltpay/enable_product_page_checkout', $case['ppc']);
-        $mock = $this->mockBuilder->setMethodsExcept(array('isEnabledProductPageCheckout', 'isBoltActive', 'boltHelper'))->getMock();
+        $mock = $this->mockBuilder->setMethods(null)->getMock();
         $result = $mock->isEnabledProductPageCheckout();
         $this->assertInternalType('boolean', $result);
         $this->assertEquals($case['expect'], $result);
@@ -137,7 +137,7 @@ class Bolt_Boltpay_Block_Catalod_Product_BoltpayTest  extends PHPUnit_Framework_
             'simple',
             'virtual'
         );
-        $mock = $this->mockBuilder->setMethodsExcept(array('getProductSupportedTypes'))->getMock();
+        $mock = $this->mockBuilder->setMethods(null)->getMock();
         $result = Bolt_Boltpay_TestHelper::callNonPublicFunction($mock, 'getProductSupportedTypes');
         $this->assertInternalType('array', $result);
         $this->assertEquals($expect, $result);
@@ -156,7 +156,7 @@ class Bolt_Boltpay_Block_Catalod_Product_BoltpayTest  extends PHPUnit_Framework_
         $helperMock->method('getQuoteWithCurrentProduct')->will($this->returnValue($quoteStub));
         $boltOrderMock = $this->getMockBuilder(Bolt_Boltpay_Model_BoltOrder::class)->getMock();
         $boltOrderMock->expects($this->any())->method('getBoltOrderToken')->will($this->returnValue($case['response']));
-        $mock = $this->mockBuilder->setMethodsExcept(array('getBoltToken'))->getMock();
+        $mock = $this->mockBuilder->setMethods(array('isSupportedProductType', 'isEnabledProductPageCheckout'))->getMock();
         $mock->expects($this->once())->method('isSupportedProductType')->will($this->returnValue($case['is_supported']));
         $mock->expects($this->any())->method('isEnabledProductPageCheckout')->will($this->returnValue($case['enabled']));
         $result = $mock->getBoltToken($boltOrderMock, $helperMock);
@@ -227,7 +227,7 @@ class Bolt_Boltpay_Block_Catalod_Product_BoltpayTest  extends PHPUnit_Framework_
         $productMock = $this->getMockBuilder(Mage_Catalog_Model_Product::class)->getMock();
         $productMock->expects($this->once())->method('getTypeId')->will($this->returnValue($case['type']));
         Mage::register('current_product', $productMock);
-        $mock = $this->mockBuilder->setMethodsExcept(array('isSupportedProductType', 'getCurrentProduct', 'getProductSupportedTypes'))->getMock();
+        $mock = $this->mockBuilder->setMethods(null)->getMock();
         $result = $mock->isSupportedProductType();
         $this->assertInternalType('boolean', $result);
         $this->assertEquals($case['expect'], $result);

@@ -52,7 +52,7 @@ class Bolt_Boltpay_Helper_CatalogHelperTest extends PHPUnit_Framework_TestCase
     {
         $storeId = $this->app->getStore()->getId();
         $this->app->getStore()->setId($case['store_id']);
-        $mock = $this->mockBuilder->setMethodsExcept(array('getQuoteIdKey'))->getMock();
+        $mock = $this->mockBuilder->setMethods(null)->getMock();
         $result = Bolt_Boltpay_TestHelper::callNonPublicFunction($mock, 'getQuoteIdKey');
         $this->assertInternalType('string', $result);
         $this->assertEquals($case['expect'], $result);
@@ -89,7 +89,7 @@ class Bolt_Boltpay_Helper_CatalogHelperTest extends PHPUnit_Framework_TestCase
     {
         $session = Mage::getSingleton('catalog/session');
         $session->setData('ppc_quote_id_'.$this->app->getStore()->getId(), null);
-        $mock = $this->mockBuilder->setMethodsExcept(array('getQuote', 'getQuoteIdKey'))->getMock();
+        $mock = $this->mockBuilder->setMethods(array('getSession'))->getMock();
         $mock->expects($this->once())->method('getSession')->will($this->returnValue($session));
         // Start testing
         $result = $mock->getQuote();
@@ -106,7 +106,7 @@ class Bolt_Boltpay_Helper_CatalogHelperTest extends PHPUnit_Framework_TestCase
     {
         $session = Mage::getSingleton('catalog/session');
         $session->setData('ppc_quote_id_'.$this->app->getStore()->getId(), self::$quoteId);
-        $mock = $this->mockBuilder->setMethodsExcept(array('getQuote', 'getQuoteIdKey'))->getMock();
+        $mock = $this->mockBuilder->setMethods(array('getSession'))->getMock();
         $mock->expects($this->once())->method('getSession')->will($this->returnValue($session));
         // Start testing
         $result = $mock->getQuote();
@@ -123,7 +123,7 @@ class Bolt_Boltpay_Helper_CatalogHelperTest extends PHPUnit_Framework_TestCase
     {
         $session = Mage::getSingleton('catalog/session');
         $session->setData('ppc_quote_id_'.$this->app->getStore()->getId(), self::$quoteId);
-        $mock = $this->mockBuilder->setMethodsExcept(array('getQuote', 'getQuoteIdKey'))->getMock();
+        $mock = $this->mockBuilder->setMethods(array('getSession', 'getLastRealOrderId'))->getMock();
         $mock->expects($this->once())->method('getSession')->will($this->returnValue($session));
         $mock->expects($this->once())->method('getLastRealOrderId')->will($this->returnValue(self::$orderId));
         // Start testing
@@ -160,7 +160,7 @@ class Bolt_Boltpay_Helper_CatalogHelperTest extends PHPUnit_Framework_TestCase
         $order = $service->getOrder();
         $session = Mage::getSingleton('catalog/session');
         $session->setData('ppc_quote_id_'.$this->app->getStore()->getId(), self::$quoteId);
-        $mock = $this->mockBuilder->setMethodsExcept(array('getQuote', 'getQuoteIdKey'))->getMock();
+        $mock = $this->mockBuilder->setMethods(array('getSession', 'getLastRealOrderId'))->getMock();
         $mock->expects($this->once())->method('getSession')->will($this->returnValue($session));
         $mock->expects($this->once())->method('getLastRealOrderId')->will($this->returnValue($order->getId()));
         // Start testing
@@ -181,7 +181,7 @@ class Bolt_Boltpay_Helper_CatalogHelperTest extends PHPUnit_Framework_TestCase
      */
     public function getProductRequest(array $case)
     {
-        $mock = $this->mockBuilder->setMethodsExcept(array('getProductRequest'))->getMock();
+        $mock = $this->mockBuilder->setMethods(null)->getMock();
         $result = $mock->getProductRequest($case['request']);
         $this->assertInstanceOf(Varien_Object::class, $result);
         $this->assertEquals($case['expect'], $result);
