@@ -158,4 +158,68 @@ class Bolt_Boltpay_Model_OrderTest extends PHPUnit_Framework_TestCase
         $this->assertEquals('TEST-BOLT-REFE-TWO2', $payment->getAdditionalInformation('bolt_reference'));
         ////////////////////////////////////////////////////////////
     }
+
+    /**
+     * @test
+     * @group ModelOrder
+     * @dataProvider isBoltOrderCases
+     * @param array $case
+     */
+    public function isBoltOrder(array $case)
+    {
+        $mock = $this->getMockBuilder(Bolt_Boltpay_Model_Order::class)->setMethods(null)->getMock();
+        $order = $this->getMockBuilder(Mage_Sales_Model_Order::class)->setMethods(array('getPayment'))->getMock();
+        $payment = $this->getMockBuilder(Mage_Sales_Model_Order_Payment::class)->setMethods(array('getMethod'))->getMock();
+        $payment->expects($this->once())->method('getMethod')->will($this->returnValue($case['method']));
+        $order->expects($this->once())->method('getPayment')->will($this->returnValue($payment));
+        // Start test
+        $result = $mock->isBoltOrder($order);
+        $this->assertInternalType('boolean', $result);
+        $this->assertEquals($case['expect'], $result);
+    }
+
+    /**
+     * Test Cases
+     * @return array
+     */
+    public function isBoltOrderCases()
+    {
+        return array(
+            array(
+                'case' => array(
+                    'expect' => false,
+                    'method' => ''
+                    
+                )
+            ),
+            array(
+                'case' => array(
+                    'expect' => false,
+                    'method' => 'paypal'
+                    
+                )
+            ),
+            array(
+                'case' => array(
+                    'expect' => true,
+                    'method' => 'boltpay'
+                    
+                )
+            ),
+            array(
+                'case' => array(
+                    'expect' => true,
+                    'method' => 'Boltpay'
+                    
+                )
+            ),
+            array(
+                'case' => array(
+                    'expect' => true,
+                    'method' => 'BOLTPAY'
+                    
+                )
+            ),
+        );
+    }
 }
