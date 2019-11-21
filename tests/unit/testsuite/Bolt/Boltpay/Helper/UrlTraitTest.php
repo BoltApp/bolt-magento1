@@ -589,7 +589,6 @@ class Bolt_Boltpay_Helper_UrlTraitTest extends PHPUnit_Framework_TestCase
     /**
      * @test
      * @group UrlTrait
-     * @group iks
      * @dataProvider getMagentoUrlCases
      * @param array $case
      */

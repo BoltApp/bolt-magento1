@@ -97,10 +97,11 @@ class Bolt_Boltpay_Model_OrderTest extends PHPUnit_Framework_TestCase
 
     /**
      * Test if activateOrder successfully adds reference to the payment
+     * @group ModelOrder
      */
     public function testActivateOrder()
     {
-        $this->markTestIncomplete('broken test');
+        //$this->markTestIncomplete('broken test');
 
         $quote = new Mage_Sales_Model_Quote();
         $quote->setIsActive(true);
@@ -121,7 +122,7 @@ class Bolt_Boltpay_Model_OrderTest extends PHPUnit_Framework_TestCase
             ->setMethods(['save','getPayment'])
             ->getMock();
 
-        $order->expects($this->exactly(2))
+        $order->expects($this->exactly(4))
             ->method('getPayment')
             ->willReturn($payment);
 

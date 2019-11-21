@@ -279,9 +279,11 @@ class Bolt_Boltpay_Model_BoltOrderTest extends PHPUnit_Framework_TestCase
     /**
      * Test that if an imperative piece of data is missing, like the street
      * the address is replaced by shipping.
+     * @group ModelBoltOrder
      */
-    public function testCorrectBillingAddressWithNoBillingAddress() {
-        $this->markTestIncomplete('broken test');
+    public function testCorrectBillingAddressWithNoBillingAddress()
+    {
+        //$this->markTestIncomplete('broken test');
 
         $mockQuote = $this->testHelper->getCheckoutQuote();
         $mockQuote->removeAllAddresses();
@@ -313,12 +315,14 @@ class Bolt_Boltpay_Model_BoltOrderTest extends PHPUnit_Framework_TestCase
             'address_type' => 'billing',
             'prefix' => null,
             'middlename' => null,
-            'suffix' => null
+            'suffix' => null,
+            'same_as_billing' => 0,
+            'email' => 'reporter@general_mills.com'
         );
 
         $billingAddress = $mockQuote->getBillingAddress();
         $expected['quote_id'] = $mockQuote->getId();
-        $expected['address_id'] = $billingAddress->getId();
+        //$expected['address_id'] = $billingAddress->getId();
 
         $shippingAddress = $mockQuote->getShippingAddress()
             ->addData($shippingAddressData);

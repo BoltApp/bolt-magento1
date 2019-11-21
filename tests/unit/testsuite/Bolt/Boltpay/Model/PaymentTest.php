@@ -51,15 +51,19 @@ class Bolt_Boltpay_Model_PaymentTest extends PHPUnit_Framework_TestCase
         $this->assertEquals('boltpay', $payment->getCode());
     }
 
+    /**
+     * @group ModelPayment
+     */
     public function testPaymentConfiguration()
     {
-        $this->markTestIncomplete('broken test');
+        //$this->markTestIncomplete('broken test');
 
         // All the features that are enabled
         $this->assertTrue($this->_currentMock->canAuthorize());
         $this->assertTrue($this->_currentMock->canCapture());
         $this->assertTrue($this->_currentMock->canRefund());
-        $this->assertTrue($this->_currentMock->canVoid(new Varien_Object()));
+        // Mage_Payment_Model_Method_Abstract default value is false
+        $this->assertFalse($this->_currentMock->canVoid(new Varien_Object()));
         $this->assertTrue($this->_currentMock->canUseCheckout());
         $this->assertTrue($this->_currentMock->canFetchTransactionInfo());
         $this->assertTrue($this->_currentMock->canEdit());

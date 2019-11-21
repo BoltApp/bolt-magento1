@@ -136,6 +136,7 @@ class Bolt_Boltpay_Helper_CatalogHelperTest extends PHPUnit_Framework_TestCase
     /**
      * @test
      * @group HelperCatalog
+     * @group iks
      */
     public function getQuoteExistingQuoteAndOrderWithQuote()
     {
