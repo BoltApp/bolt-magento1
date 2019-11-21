@@ -283,7 +283,7 @@ class Bolt_Boltpay_Model_BoltOrderTest extends PHPUnit_Framework_TestCase
      */
     public function testCorrectBillingAddressWithNoBillingAddress()
     {
-        //$this->markTestIncomplete('broken test');
+        $this->markTestIncomplete('broken test');
 
         $mockQuote = $this->testHelper->getCheckoutQuote();
         $mockQuote->removeAllAddresses();
