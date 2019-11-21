@@ -266,14 +266,14 @@ class Bolt_Boltpay_Model_PaymentTest extends PHPUnit_Framework_TestCase
     /**
      * Test if product inventory is restored after order cancellation.
      * Order will be canceled once Bolt notify the store that transaction is voided
-     *
+     * @group ModelPayment
      * @throws Mage_Core_Exception
      */
     public function testCancelOrderOnVoidTransactionUpdate()
     {
-        $this->markTestIncomplete('broken test');
+        //$this->markTestIncomplete('broken test');
 
-        $expectedProductStock = 10;
+        $expectedProductStock = 20;
         $orderProductQty = 2;
 
         // Assert initial product store stock
@@ -723,7 +723,7 @@ class Bolt_Boltpay_Model_PaymentTest extends PHPUnit_Framework_TestCase
     /**
      *
      * Verifies that when the order state is "holded" and a pending hook is received:
-     *
+     * @group ModelPayment
      * 1.) The order state is unchanged - "holded"
      * 2.) The order status is unchanged - "holded"
      * 3.) There is no new history messages
