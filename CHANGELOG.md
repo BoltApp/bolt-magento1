@@ -1,4 +1,11 @@
 # Changelog
+## [V2.1.0](https://s3-us-west-1.amazonaws.com/bolt-public/magento-integration-release/bolt-magento1_v2.1.0.zip) 2019-11-22
+ - Restrict Bolt by customer group feature
+ - Create memo popup on offline refund attempt
+ - Automatic invoice creation after shipment
+ - Replace curl usages with guzzle
+ - Squelch emails on irreversibly rejected hooks
+ - Various small bugfixes 
 ## [V2.0.2](https://s3-us-west-1.amazonaws.com/bolt-public/magento-integration-release/bolt-magento1_v2.0.2.zip) 2019-09-26
  - Internal testing fixes
  - Order note support
