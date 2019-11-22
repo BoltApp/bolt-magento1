@@ -222,4 +222,72 @@ class Bolt_Boltpay_Model_OrderTest extends PHPUnit_Framework_TestCase
             ),
         );
     }
+
+    /**
+     * @test
+     * @group ModelOrder
+     * @dataProvider validateCartSessionDataCases
+     * @expectedException Bolt_Boltpay_OrderCreationException
+     * @param array $case
+     */
+    public function validateCartSessionData(array $case)
+    {
+        // Mocks
+        $mock = $this->getMockBuilder(Bolt_Boltpay_Model_Order::class)->setMethods(null)->getMock();
+        $immutableQuote = $this->getMockBuilder(Mage_Sales_Model_Quote::class)->setMethods(array('isObjectNew', 'getAllItems'))->getMock();
+        $parentQuote = $this->getMockBuilder(Mage_Sales_Model_Quote::class)->setMethods(array('isObjectNew', 'getItemsCount'))->getMock();
+        $item = $this->getMockBuilder(Mage_Sales_Model_Quote_Item::class)->setMethods(array('getProduct'))->getMock();
+        $product = $this->getMockBuilder(Mage_Catalog_Model_Product::class)->getMock();
+        // Behaviour
+        $immutableQuote->expects($this->once())->method('isObjectNew')->will($this->returnValue($case['immutable_is_new']));
+        $immutableQuote->method('getAllItems')->will($this->returnValue(array($item)));
+        $item->method('getProduct')->will($this->returnValue($product));
+        $parentQuote->expects($this->any())->method('getItemsCount')->will($this->returnValue($case['parent_items_count']));
+        $parentQuote->method('isObjectNew')->will($this->returnValue($case['parent_is_new']));
+        $transaction = new stdClass();
+        // Start test
+        Bolt_Boltpay_TestHelper::callNonPublicFunction($mock, 'validateCartSessionData', array($immutableQuote, $parentQuote, $transaction, $case['is_preauth']));
+    }
+
+    /**
+     * Test cases
+     * @return array
+     */
+    public function validateCartSessionDataCases()
+    {
+        return array(
+            // First case
+            array(
+                'case' => array(
+                    'expect' => '',
+                    'immutable_is_new' => true,
+                    'parent_is_new' => false,
+                    'parent_items_count' => 0,
+                    'is_preauth' => true
+                )
+            ),
+            // Second case
+            array(
+                'case' => array(
+                    'expect' => '',
+                    'immutable_is_new' => false,
+                    'parent_is_new' => false,
+                    'parent_items_count' => 0,
+                    'is_preauth' => true
+                )
+            ),
+            // Third case
+            array(
+                'case' => array(
+                    'expect' => '',
+                    'immutable_is_new' => false,
+                    'parent_is_new' => true,
+                    'parent_items_count' => 0,
+                    'is_preauth' => true
+                )
+            ),
+            
+        );
+    }
+    
 }
