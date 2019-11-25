@@ -34,7 +34,7 @@ class Bolt_Boltpay_Helper_CatalogHelper extends Mage_Core_Helper_Abstract
         $orderQuoteId = false;
         $ppcQuoteId = $this->getSession()->getData($this->getQuoteIdKey());
         if ($ppcQuoteId) {
-            $order = Mage::getModel('sales/order')->getCollection()->addAttributeToFilter('entity_id', $this->getLastRealOrderId())->getFirstItem()->setPageSize(1);
+            $order = Mage::getModel('sales/order')->getCollection()->addAttributeToFilter('entity_id', $this->getLastRealOrderId())->setPageSize(1)->getFirstItem();
             if ($order instanceof Mage_Sales_Model_Order) {
                 $orderQuoteId = $order->getQuoteId();
             }
@@ -65,6 +65,7 @@ class Bolt_Boltpay_Helper_CatalogHelper extends Mage_Core_Helper_Abstract
         $ppcQuote->removeAllItems();
         $ppcQuote->addProduct($product, $request);
         $ppcQuote->setParentQuoteId($ppcQuote->getId());
+        $ppcQuote->getBillingAddress();
         $ppcQuote->getShippingAddress()->setCollectShippingRates(true);
         $ppcQuote->setParentQuoteId($ppcQuote->getId());
         $ppcQuote->collectTotals()->save();

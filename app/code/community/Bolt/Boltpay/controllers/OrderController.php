@@ -210,6 +210,7 @@ class Bolt_Boltpay_OrderController
 
     /**
      * Create ppcQuote and return token for the BoltProductCheckout
+     * @return Mage_Core_Controller_Response_Http
      */
     public function ppcAction()
     {
@@ -231,7 +232,6 @@ class Bolt_Boltpay_OrderController
         }
         $this->getResponse()->setHeader('Content-type', 'application/json', true);
         return $this->getResponse()->setBody(Mage::helper('core')->jsonEncode($token));
-        
     }
 
     /**

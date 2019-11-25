@@ -30,7 +30,7 @@
             }
             Object.assign(stateNew, spConfig.state);
             jQuery('#ppcBuyNow').show();
-            jQuery('div.bolt-product-checkout-button').html('');
+            jQuery('div.bolt-product-checkout-button').empty();
         }
         if (typeof spConfig != 'undefined' && typeof spConfig.configureObservers != 'undefined') {
             spConfig.configureObservers.push(startBolt);
@@ -39,7 +39,7 @@
         var productPageCheckout = new VarienForm('product_addtocart_form');
         productPageCheckout.form.observe('change', function(){
             jQuery('#ppcBuyNow').show();
-            jQuery('div.bolt-product-checkout-button').html('');
+            jQuery('div.bolt-product-checkout-button').empty();
         });
 
         productPageCheckout.click = function() {

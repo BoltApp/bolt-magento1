@@ -61,7 +61,6 @@ class Bolt_Boltpay_ApiController extends Mage_Core_Controller_Front_Action imple
             $transaction = $this->boltHelper()->fetchTransaction($reference);
             /* If it hasn't been confirmed, or could not be found, we use the quoteId as fallback */
             if ($order->isObjectNew()) {
-                //$transaction = $this->boltHelper()->fetchTransaction($reference);
                 $quoteId = $this->boltHelper()->getImmutableQuoteIdFromTransaction($transaction);
                 $order =  $orderModel->getOrderByQuoteId($quoteId);
             }
@@ -71,10 +70,6 @@ class Bolt_Boltpay_ApiController extends Mage_Core_Controller_Front_Action imple
                 // Order was found.  We will update it
                 ///////////////////////////////////////
                 Mage::app()->setCurrentStore($order->getStore());
-
-//                 if (empty($transaction) && $hookType !== 'pending') {
-//                     $transaction = $this->boltHelper()->fetchTransaction($reference);
-//                 }
 
                 $orderPayment = $order->getPayment();
                 if (
