@@ -258,9 +258,9 @@ class Bolt_Boltpay_OrderController
                 if ($response) {
                     return $response;
                 }
-                return json_encode(array("token" => "", "error" => ""));
+                return json_encode(array("token" => "", "error" => $this->boltHelper()->__("Bolt_Boltpay_OrderController::ppcAction form key is invalid")));
             }
         }
-        return json_encode(array("token" => "", "error" => ""));
+        return json_encode(array("token" => "", "error" => $this->boltHelper()->__("Bolt_Boltpay_OrderController::ppcAction product is empty")));
     }
 }
