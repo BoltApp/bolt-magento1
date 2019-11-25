@@ -10,6 +10,10 @@ class Bolt_Boltpay_Helper_CatalogHelper extends Mage_Core_Helper_Abstract
         return Mage::getSingleton('catalog/session');
     }
 
+    /**
+     * Get Last real order ID from the catalog session
+     * @return integer
+     */
     public function getLastRealOrderId()
     {
         return Mage::getSingleton('catalog/session')->getLastRealOrderId();
