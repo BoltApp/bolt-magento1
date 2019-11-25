@@ -222,7 +222,7 @@ class Bolt_Boltpay_OrderController
             Mage::throwException($this->boltHelper()->__("Bolt_Boltpay_OrderController::ppcAction form key is invalid"));
             return;
         }
-        $response = $this->_initProduct();
+        $response = $this->_initPpcToken();
         $token = $response->token;
         /**
          * Check product availability
@@ -237,9 +237,9 @@ class Bolt_Boltpay_OrderController
 
     /**
      * 
-     * @return Mage_Catalog_Model_Product|boolean
+     * @return string |boolean
      */
-    protected function _initProduct()
+    protected function _initPpcToken()
     {
         $productId = (int) $this->getRequest()->getParam('product');
         if ($productId) {
@@ -258,9 +258,9 @@ class Bolt_Boltpay_OrderController
                 if ($response) {
                     return $response;
                 }
-                return false;
+                return json_encode(array("token" => "", "error" => ""));
             }
         }
-        return false;
+        return json_encode(array("token" => "", "error" => ""));
     }
 }
