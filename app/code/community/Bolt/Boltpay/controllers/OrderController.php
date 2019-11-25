@@ -236,7 +236,7 @@ class Bolt_Boltpay_OrderController
     }
 
     /**
-     * 
+     * Get token for Produt Page Checkout
      * @return string |boolean
      */
     protected function _initPpcToken()
