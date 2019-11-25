@@ -44,6 +44,8 @@
 
         productPageCheckout.click = function() {
             if (this.validator.validate()) {
+                jQuery('div#ppcBuyNow').addClass("disabledbutton");
+                jQuery('div#ppcBuyNow span span').html('Processing...');
                 var data = this.form.serialize();
                 data += '&isAjax=1';
                 jQuery('#ajax_loader').show();
@@ -58,6 +60,8 @@
                             jQuery('#ppcBuyNow').hide();
                             BoltCheckout.configureProductCheckout({"orderToken": token}, {}, {});
                             jQuery('#ajax_loader').hide();
+                            jQuery('div#ppcBuyNow').removeClass("disabledbutton");
+                            jQuery('div#ppcBuyNow span span').html('Buy Now');
                         }
                     });
                 } catch (e) {

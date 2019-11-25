@@ -20,6 +20,14 @@
 ?>
 <?php if ($this->isEnabledProductPageCheckout()): ?>
     <!-- Bolt need this for all cases of PPC -->
+    <style>
+<!--
+.disabledbutton {
+    pointer-events: none;
+    opacity: 0.4;
+}
+-->
+</style>
     <div class="bolt-product-checkout-button"></div>
     <?php if ($this->isSupportedProductType()):?>
     <?php $token = $this->getBoltToken(new Bolt_Boltpay_Model_BoltOrder(), new Bolt_Boltpay_Helper_CatalogHelper());?>
@@ -38,7 +46,7 @@
     <?php else:?>
     <div id="ppcBuyNow" title="PPC" class="button btn-cart validation-passed" onclick="productPageCheckout.click(this)">
         <span>
-            <span>Buy Now</span>
+            <span><?php echo $this->__('Buy Now') ?></span>
         </span>
     </div>
     <?php endif;?>
