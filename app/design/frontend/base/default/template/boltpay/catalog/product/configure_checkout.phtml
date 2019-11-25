@@ -53,10 +53,11 @@
                         dataType : 'json',
                         type : 'post',
                         data : data,
-                        success : function(data) {
-                            jQuery('#ajax_loader').hide();
+                        success : function(response) {
+                            var token = response.token || "";
                             jQuery('#ppcBuyNow').hide();
-                            BoltCheckout.configureProductCheckout({"orderToken": data}, {}, {});
+                            BoltCheckout.configureProductCheckout({"orderToken": token}, {}, {});
+                            jQuery('#ajax_loader').hide();
                         }
                     });
                 } catch (e) {

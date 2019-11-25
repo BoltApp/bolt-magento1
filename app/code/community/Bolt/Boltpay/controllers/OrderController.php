@@ -222,7 +222,8 @@ class Bolt_Boltpay_OrderController
             Mage::throwException($this->boltHelper()->__("Bolt_Boltpay_OrderController::ppcAction form key is invalid"));
             return;
         }
-        $token = $this->_initProduct();
+        $response = $this->_initProduct();
+        $token = $response->token;
         /**
          * Check product availability
          */
@@ -231,7 +232,7 @@ class Bolt_Boltpay_OrderController
             return;
         }
         $this->getResponse()->setHeader('Content-type', 'application/json', true);
-        return $this->getResponse()->setBody(Mage::helper('core')->jsonEncode($token));
+        return $this->getResponse()->setBody(Mage::helper('core')->jsonEncode($response));
     }
 
     /**
@@ -254,8 +255,8 @@ class Bolt_Boltpay_OrderController
                     $boltOrder = new Bolt_Boltpay_Model_BoltOrder();
                     $response = $boltOrder->getBoltOrderToken($ppcQuote, Bolt_Boltpay_Block_Checkout_Boltpay::CHECKOUT_TYPE_MULTI_PAGE);
                 }
-                if ($response && $response->token) {
-                    return $response->token;
+                if ($response) {
+                    return $response;
                 }
                 return false;
             }

@@ -85,7 +85,6 @@ class Bolt_Boltpay_Block_Catalog_Product_Boltpay extends Mage_Core_Block_Templat
             if ($response && $response->token) {
                 return $response->token;
             }
-            return '';
         }
         return '';
     }
