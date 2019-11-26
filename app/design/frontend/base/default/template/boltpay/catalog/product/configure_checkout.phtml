@@ -69,5 +69,29 @@
             }
         }.bind(productPageCheckout);
     </script>
+    <?php else:?>
+    <script type="text/javascript">
+        jQuery('#qty').on('change', function() {
+            jQuery('div.bolt-product-checkout-button').empty();
+            jQuery('#ppcBuyNow').show();
+            var productPageCheckout = new VarienForm('product_addtocart_form');
+            var data = productPageCheckout.form.serialize();
+            data += '&isAjax=1';
+            try {
+                jQuery.ajax( {
+                    url : "/boltpay/order/ppc",
+                    dataType : 'json',
+                    type : 'post',
+                    data : data,
+                    success : function(response) {
+                        var token = response.token || "";
+                        BoltCheckout.configureProductCheckout({"orderToken": token}, {}, {});
+                        jQuery('#ppcBuyNow').hide();
+                    }
+                });
+            } catch (e) {
+            }
+        });
+    </script>
     <?php endif;?>
 <?php endif; ?>
