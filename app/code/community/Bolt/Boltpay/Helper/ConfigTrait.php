@@ -199,8 +199,8 @@ trait Bolt_Boltpay_Helper_ConfigTrait {
     {
         $active = $this->isBoltPayActive();
         $isEverywhere = $this->shouldAddButtonEverywhere();
-        $isPPc = $this->isEnabledProductPageCheckout();
-        return ($active && ($isEverywhere || $isPPc));
+        $ppcEnabled = $this->isEnabledProductPageCheckout();
+        return ($active && ($isEverywhere || $ppcEnabled));
     }
 
     /**

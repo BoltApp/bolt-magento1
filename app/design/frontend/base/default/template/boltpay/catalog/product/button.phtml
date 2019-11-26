@@ -19,7 +19,6 @@
 /* @var $this Bolt_Boltpay_Block_Catalog_Product_Boltpay */
 ?>
 <?php if ($this->isEnabledProductPageCheckout()): ?>
-    <!-- Bolt need this for all cases of PPC -->
     <style>
 <!--
 .disabledbutton {
@@ -28,10 +27,10 @@
 }
 -->
 </style>
-    <div class="bolt-product-checkout-button"></div>
     <?php if ($this->isSupportedProductType()):?>
     <?php $token = $this->getBoltToken(new Bolt_Boltpay_Model_BoltOrder(), new Bolt_Boltpay_Helper_CatalogHelper());?>
     <?php if ($token):?>
+    <div class="bolt-product-checkout-button" data-btn-txt="Buy now"></div>
         <script type="text/javascript">
         jQuery(document).ready(function() {
                 var cart = {
@@ -44,6 +43,7 @@
         </script>
     <?php endif;?>
     <?php else:?>
+    <div class="bolt-product-checkout-button"></div>
     <div id="ppcBuyNow" title="PPC" class="button btn-cart validation-passed" onclick="productPageCheckout.click(this)">
         <span>
             <span><?php echo $this->__('Buy Now') ?></span>
