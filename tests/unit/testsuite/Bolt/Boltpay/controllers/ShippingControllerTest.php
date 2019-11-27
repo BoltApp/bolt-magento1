@@ -130,6 +130,7 @@ class Bolt_Boltpay_ShippingControllerTest extends PHPUnit_Framework_TestCase
     }
 
     /**
+     * @group ShippingController
      * Test to see if cache is in a valid state after prefetch data is sent.  Prior to
      * the prefetch, there should be no cache data.  After the prefetch, there should be
      * cached data.
@@ -139,6 +140,10 @@ class Bolt_Boltpay_ShippingControllerTest extends PHPUnit_Framework_TestCase
      */
     public function testIfEstimateIsCachedAfterPrefetch() {
 
+        $this->markTestIncomplete(
+            'Some tested method has exit'
+            );
+        
         Mage::app()->getCache()->clean('matchingAnyTag', array('BOLT_QUOTE_PREFETCH'));
 
         /** @var Mage_Sales_Model_Quote $quote */
@@ -207,6 +212,7 @@ class Bolt_Boltpay_ShippingControllerTest extends PHPUnit_Framework_TestCase
 
 
     /**
+     * @group ShippingController
      * Test to see if cache is in a valid state call to get estimate.  Prior to
      * the call, there should be no cache data (i.e. MISS).  After the call, with the same
      * data, the response should come from the cache (i.e. HIT).  After the third call,
@@ -216,8 +222,13 @@ class Bolt_Boltpay_ShippingControllerTest extends PHPUnit_Framework_TestCase
      * @throws ReflectionException      on unexpected problems with reflection
      * @throws Zend_Cache_Exception     on unexpected problems reading or writing to Magento cache
      */
-    public function testIfEstimateIsCachedDirectCall() {
+    public function testIfEstimateIsCachedDirectCall()
+    {
 
+        $this->markTestIncomplete(
+            'Some tested method has exit'
+        );
+        
         Mage::app()->getCache()->clean('matchingAnyTag', array('BOLT_QUOTE_PREFETCH'));
 
         /** @var Mage_Sales_Model_Quote $quote */

@@ -87,7 +87,7 @@ class Bolt_Boltpay_OrderHelper
      * @return Mage_Sales_Model_Order
      * @throws Mage_Core_Exception
      */
-    public static function createDummyOrder($productId, $qty = 2, $paymentMethod = 'checkmo')
+    public static function createDummyOrder($productId, $qty = 2, $paymentMethod = 'boltpay')
     {
         $testHelper = new Bolt_Boltpay_TestHelper();
         $testHelper->addTestBillingAddress();
@@ -145,7 +145,25 @@ class Bolt_Boltpay_OrderHelper
      */
     public static function deleteDummyOrder(Mage_Sales_Model_Order $order)
     {
-        self::deleteDummyOrderByIncrementId($order->getIncrementId());
+        Mage::register('isSecureArea', true);
+        $order->delete();
+        Mage::unregister('isSecureArea');
+    }
 
+    public static function createDummyQuote()
+    {
+        $quote = Mage::getModel('sales/quote');
+        $quote->getShippingAddress()->setCollectShippingRates(true);
+        $quote->collectTotals()->save();
+        return $quote->getId();
+    }
+
+    public static function deleteDummyQuote($id)
+    {
+        if ($id) {
+            $quote = Mage::getModel('sales/quote')->loadByIdWithoutStore($id);
+            $quote->setIsActive(false);
+            $quote->delete();
+        }
     }
 }
