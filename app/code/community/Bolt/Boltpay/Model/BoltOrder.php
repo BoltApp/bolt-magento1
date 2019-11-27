@@ -762,6 +762,14 @@ class Bolt_Boltpay_Model_BoltOrder extends Bolt_Boltpay_Model_Abstract
             }
         }
 
+        if ($checkoutType === Bolt_Boltpay_Block_Checkout_Boltpay::CHECKOUT_TYPE_ADMIN) {
+           $this->initRuleData(
+               $quote->getStore()->getId(),
+               $quote->getStore()->getWebsiteId(),
+               $quote->getCustomerGroupId()
+           );
+        }
+
         // Generates order data for sending to Bolt create order API.
         $orderRequest = $this->buildOrder($quote, $isMultiPage);
 
@@ -1054,5 +1062,25 @@ PROMISE;
             )
         );
         $cartSubmissionData = $cartDataWrapper->getCartData();
+    }
+
+    /**
+     * It is Magento part of code which allow to work
+     * with applied Catalog Price Rule in the
+     * back-office due order create process.
+     * The original path is \Mage_Adminhtml_Sales_Order_CreateController::_processActionData()
+     * and \Mage_Adminhtml_Model_Sales_Order_Create::initRuleData()
+     *
+     * @param $storeId
+     * @param $websiteId
+     * @param $customerGroupId
+     */
+    protected function initRuleData($storeId, $websiteId, $customerGroupId)
+    {
+        Mage::register('rule_data', new Varien_Object(array(
+            'store_id' => $storeId,
+            'website_id' => $websiteId,
+            'customer_group_id' => $customerGroupId,
+        )));
     }
 }
