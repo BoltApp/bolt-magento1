@@ -125,12 +125,6 @@ class Bolt_Boltpay_ApiControllerTest extends PHPUnit_Framework_TestCase
         $this->markTestIncomplete(
             'method handleFailedPaymentHook has exit'
             );
-        
-//         $apiControllerMock
-//             ->expects($this->once())
-//             ->method('sendResponse')
-//             ->with($this->equalTo(200));
-
         $this->assertFalse(self::$_mockOrder->isCanceled());
 
         ######################################
@@ -153,11 +147,6 @@ class Bolt_Boltpay_ApiControllerTest extends PHPUnit_Framework_TestCase
      */
     public function testHookAction_thatStandardDisplayIdIsSupportedForFailedPayment()
     {
-//         /** @var Bolt_Boltpay_ApiController|PHPUnit_Framework_MockObject_MockObject $apiControllerMock */
-//         $apiControllerMock = $this->_apiControllerBuilder
-//             ->setMethods(['getRequestData', 'handleFailedPaymentHook'])
-//             ->getMock();
-
         ///////////////////////////////////////////////////////////////////////
         /// Create a pseudo transaction data and map to request and responses
         ///////////////////////////////////////////////////////////////////////
