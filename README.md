@@ -1,4 +1,6 @@
-# Bolt Magento1 Plugin [![CircleCI](https://circleci.com/gh/BoltApp/bolt-magento1.svg?style=shield)](https://circleci.com/gh/BoltApp/bolt-magento1)
+# Bolt Magento1 Plugin 
+[![CircleCI](https://circleci.com/gh/BoltApp/bolt-magento1.svg?style=shield)](https://circleci.com/gh/BoltApp/bolt-magento1)
+[![codecov](https://codecov.io/gh/BoltApp/bolt-magento1/branch/master/graph/badge.svg)](https://codecov.io/gh/BoltApp/bolt-magento1)
 
 Plugin to integrate Bolt with Magento
 
