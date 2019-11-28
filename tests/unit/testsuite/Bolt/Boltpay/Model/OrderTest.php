@@ -253,10 +253,8 @@ class Bolt_Boltpay_Model_OrderTest extends PHPUnit_Framework_TestCase
         $mockImmutableQuote = $mocks['mockImmutableQuote'];
         $mockTransaction = $mocks['mockTransaction'];
 
+        $mockImmutableQuote->setCouponCode('BOLT10POFF');
         $mockBoltHelper->expects($this->never())->method('logWarning');
-
-        $mockImmutableQuote->method('getCouponCode')->willReturn('BOLT10POFF');
-        $mockImmutableQuote->expects($this->once())->method('getCouponCode');
 
         try {
             TestHelper::callNonPublicFunction(
