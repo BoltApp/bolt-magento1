@@ -12,7 +12,7 @@ class Bolt_Boltpay_Block_Catalog_Product_BoltpayTest extends PHPUnit_Framework_T
     const STORE_ID = 1;
     const WEBSITE_ID = 1;
     const CURRENCY_CODE = 'USD';
-    const PRODUCT_PRICE = 10;
+    const PRODUCT_PRICE = 12.75;
 
     /**
      * @var int|null Dummy product ID
@@ -45,12 +45,14 @@ class Bolt_Boltpay_Block_Catalog_Product_BoltpayTest extends PHPUnit_Framework_T
     private $helperMock;
 
     /**
-     * Generate dummy product and maintains a reference to the original store
+     * Generate dummy product, maintains a reference to the original store and unset registry values set by previous tests
      */
     public static function setUpBeforeClass()
     {
         self::$productId = Bolt_Boltpay_ProductProvider::createDummyProduct('PHPUNIT_TEST_1', array(), 20);
         self::$originalStore = Mage::app()->getStore();
+        Mage::unregister('current_product');
+        Mage::unregister('_helper/boltpay');
     }
 
     /**
@@ -84,7 +86,7 @@ class Bolt_Boltpay_Block_Catalog_Product_BoltpayTest extends PHPUnit_Framework_T
             ->getMock();
 
         $this->productMock = $this->getMockBuilder('Mage_Catalog_Model_Product')
-            ->setMethods(array('getData', 'isInStock'))
+            ->setMethods(array('getData', 'isInStock', 'getFinalPrice', 'getImageUrl', 'getName'))
             ->getMock();
 
         $this->storeMock = $this->getMockBuilder('Mage_Core_Model_Store')
@@ -98,7 +100,7 @@ class Bolt_Boltpay_Block_Catalog_Product_BoltpayTest extends PHPUnit_Framework_T
             )
             ->getMock();
 
-        Mage::register('_helper/boltpay', $this->helperMock, true);
+        Mage::register('_helper/boltpay', $this->helperMock);
     }
 
 
@@ -110,7 +112,7 @@ class Bolt_Boltpay_Block_Catalog_Product_BoltpayTest extends PHPUnit_Framework_T
      */
     public function getProductTierPrice()
     {
-        Mage::register('current_product', $this->productMock, true);
+        Mage::register('current_product', $this->productMock);
         $this->productMock->expects($this->once())->method('getData')->with('tier_price')
             ->willReturn(self::PRODUCT_PRICE);
         $this->assertEquals(self::PRODUCT_PRICE, $this->currentMock->getProductTierPrice());
@@ -128,11 +130,11 @@ class Bolt_Boltpay_Block_Catalog_Product_BoltpayTest extends PHPUnit_Framework_T
 
         $this->productMock->method('isInStock')->willReturn(true);
         $this->productMock->method('getId')->willReturn(9876543210);
-        $this->productMock->method('getFinalPrice')->willReturn(12.75);
+        $this->productMock->method('getFinalPrice')->willReturn(self::PRODUCT_PRICE);
         $this->productMock->method('getImageUrl')->willReturn("https://bolt.com/image.png");
         $this->productMock->method('getName')->willReturn("Metal Bolts");
 
-        Mage::register('current_product', $this->productMock, true);
+        Mage::register('current_product', $this->productMock);
 
         $resultJson = $this->currentMock->getCartDataJsForProductPage();
         $result = json_decode($resultJson);
@@ -309,7 +311,7 @@ class Bolt_Boltpay_Block_Catalog_Product_BoltpayTest extends PHPUnit_Framework_T
     {
         $product = Mage::getModel('catalog/product')->load(self::$productId);
         $product->setData('type_id', $productType);
-        Mage::register('current_product', $product, true);
+        Mage::register('current_product', $product);
         $this->assertEquals($expectedStatus, $this->currentMock->isSupportedProductType());
     }
 
