@@ -341,6 +341,7 @@ class Bolt_Boltpay_ApiController extends Mage_Core_Controller_Front_Action imple
         /** @var Bolt_Boltpay_Model_Order $orderModel */
         $orderModel = Mage::getModel('boltpay/order');
 
+        /** @var Mage_Sales_Model_Order $order */
         $order = Mage::getModel('sales/order')->load($displayId, 'increment_id');
 
         if (!$order->isObjectNew()) {
@@ -379,7 +380,7 @@ class Bolt_Boltpay_ApiController extends Mage_Core_Controller_Front_Action imple
             200,
             array(
                 'status' => 'success',
-                'message' => $this->boltHelper()->__('Pre-auth order was canceled')
+                'message' => $this->boltHelper()->__('Order %s has been canceled prior to authorization', $displayId)
             )
         );
     }
