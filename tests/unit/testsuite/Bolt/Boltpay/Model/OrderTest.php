@@ -6,7 +6,7 @@ require_once('MockingTrait.php');
 use Bolt_Boltpay_TestHelper as TestHelper;
 
 /**
- * Class Bolt_Boltpay_Model_OrderTest
+ * @coversDefaultClass Bolt_Boltpay_Model_Order
  */
 class Bolt_Boltpay_Model_OrderTest extends PHPUnit_Framework_TestCase
 {
@@ -18,7 +18,7 @@ class Bolt_Boltpay_Model_OrderTest extends PHPUnit_Framework_TestCase
     protected $testClassName = 'Bolt_Boltpay_Model_Order';
 
     /**
-     * @var Bolt_Boltpay_Model_Order  The mocked instance the test class
+     * @var Bolt_Boltpay_Model_Order|PHPUnit_Framework_MockObject_MockObject  The mocked instance the test class
      */
     private $testClassMock;
 
@@ -156,5 +156,198 @@ class Bolt_Boltpay_Model_OrderTest extends PHPUnit_Framework_TestCase
         $this->assertEquals( $currentCreatedAt, $order->getCreatedAt() );
         $this->assertEquals('TEST-BOLT-REFE-TWO2', $payment->getAdditionalInformation('bolt_reference'));
         ////////////////////////////////////////////////////////////
+    }
+
+    /**
+     * @test
+     * That when the discount price is the same at Bolt and Magento, no exception is thrown
+     *
+     * @covers ::validateTotals
+     */
+    public function validateTotals_discountAccurate() {
+
+        $mocks = $this->validateTotalsSetup(25, .75, .50, 1);
+
+        $mockBoltHelper = $mocks['mockBoltHelper'];
+        $mockImmutableQuote = $mocks['mockImmutableQuote'];
+        $mockTransaction = $mocks['mockTransaction'];
+
+        $mockBoltHelper->expects($this->never())->method('logWarning');
+
+        TestHelper::callNonPublicFunction(
+            $this->testClassMock,
+            'validateTotals',
+            [$mockImmutableQuote, $mockTransaction]
+        );
+    }
+
+    /**
+     * @test
+     * That when the discount price is different at Bolt than Magento but within the price fault tolerance,
+     * no exception is thrown
+     *
+     * @covers ::validateTotals
+     */
+    public function validateTotals_discountDiffersWithinTolerance() {
+
+        $mocks = $this->validateTotalsSetup(24, .75, .50, 1);
+
+        $mockBoltHelper = $mocks['mockBoltHelper'];
+        $mockImmutableQuote = $mocks['mockImmutableQuote'];
+        $mockTransaction = $mocks['mockTransaction'];
+
+        $mockBoltHelper->expects($this->once())->method('logWarning');
+
+        TestHelper::callNonPublicFunction(
+            $this->testClassMock,
+            'validateTotals',
+            [$mockImmutableQuote, $mockTransaction]
+        );
+    }
+
+    /**
+     * @test
+     * That when the discount price is different at Bolt than Magento beyond the price fault tolerance,
+     * a general discount mismatch exception is thrown
+     *
+     * @covers ::validateTotals
+     */
+    public function validateTotals_discountDiffersBeyondTolerance() {
+
+        $mocks = $this->validateTotalsSetup(20, .75, .50, 1);
+
+        $mockBoltHelper = $mocks['mockBoltHelper'];
+        $mockImmutableQuote = $mocks['mockImmutableQuote'];
+        $mockTransaction = $mocks['mockTransaction'];
+
+        $mockBoltHelper->expects($this->never())->method('logWarning');
+
+        try {
+            TestHelper::callNonPublicFunction(
+                $this->testClassMock,
+                'validateTotals',
+                [$mockImmutableQuote, $mockTransaction]
+            );
+        } catch (Bolt_Boltpay_OrderCreationException $oce ) {
+            $this->assertContains(
+                'Discount total has changed',
+                $oce->getMessage()
+            );
+            return;
+        }
+        $this->fail("Expected a Bolt_Boltpay_OrderCreationException to be thrown but it was not.");
+    }
+
+    /**
+     * @test
+     * That when the discount price is different at Bolt than Magento beyond the price fault tolerance with a coupon
+     * being used, a mismatch exception is thrown that includes the coupon code
+     *
+     * @covers ::validateTotals
+     */
+    public function validateTotals_couponDiscountDiffersBeyondTolerance() {
+
+        $mocks = $this->validateTotalsSetup(20, .75, .50, 1);
+
+        $mockBoltHelper = $mocks['mockBoltHelper'];
+        $mockImmutableQuote = $mocks['mockImmutableQuote'];
+        $mockTransaction = $mocks['mockTransaction'];
+
+        $mockBoltHelper->expects($this->never())->method('logWarning');
+
+        $mockImmutableQuote->method('getCouponCode')->willReturn('BOLT10POFF');
+        $mockImmutableQuote->expects($this->once())->method('getCouponCode');
+
+        try {
+            TestHelper::callNonPublicFunction(
+                $this->testClassMock,
+                'validateTotals',
+                [$mockImmutableQuote, $mockTransaction]
+            );
+        } catch (Bolt_Boltpay_OrderCreationException $oce ) {
+            $this->assertContains(
+                'Discount amount has changed',
+                $oce->getMessage()
+            );
+            $this->assertContains(
+                'BOLT10POFF',
+                $oce->getMessage()
+            );
+            return;
+        }
+        $this->fail("Expected a Bolt_Boltpay_OrderCreationException to be thrown but it was not.");
+    }
+
+
+    /**
+     * Prepares fixtures for validateTotals tests
+     *
+     * @param int $discountAmount                   the Bolt total discount amount in cents
+     * @param float $magentoSubtotal                the Magento cart total amount in dollars without the discount included
+     * @param float $magentoSubtotalWithDiscount    the Magento cart total amount in dollars with the discount included
+     * @param int $priceFaultTolerance              the allowed difference between Bolt and Magento totals in cents
+     *
+     * @return PHPUnit_Framework_MockObject_MockObject[]|stdClass[] An array of mocks used in the consuming test. Namely:
+     *                                                              "mockBoltHelper","mockImmutableQuote","mockTransaction"
+     */
+    private function validateTotalsSetup( $discountAmount, $magentoSubtotal, $magentoSubtotalWithDiscount, $priceFaultTolerance = 1 ) {
+
+        $this->testClassMock = $this->getMockBuilder($this->testClassName)
+            ->setMethods(['boltHelper'])->getMock();
+        /**
+         * @var Bolt_Boltpay_Helper_Data|PHPUnit_Framework_MockObject_MockObject
+         */
+        $mockBoltHelper = $this->getMockBuilder('Bolt_Boltpay_Helper_Data')
+            ->setMethods(['getExtraConfig', 'logWarning', 'notifyException'])->getMock();
+
+        $this->testClassMock->method('boltHelper')->willReturn($mockBoltHelper);
+
+        $transactionJson =
+            "{
+              \"order\": {
+                \"cart\": {
+                  \"items\": [],
+                  \"discount_amount\": {
+                    \"amount\": $discountAmount
+                  }
+                }
+              }
+            }";
+
+
+        $mockTransaction = json_decode($transactionJson);
+
+        $mockBoltHelper->method('getExtraConfig')
+            ->willReturnCallback(
+                function ($configName) use ($mockTransaction, $priceFaultTolerance) {
+                    $mockTransaction->shouldDoTaxTotalValidation = false;
+                    $mockTransaction->shouldDoShippingTotalValidation = false;
+                    return $priceFaultTolerance;
+                }
+            );
+        $mockBoltHelper->expects($this->once())->method('getExtraConfig')
+            ->with($this->equalTo('priceFaultTolerance'));
+
+        /**
+         * @var Mage_Sales_Model_Quote|PHPUnit_Framework_MockObject_MockObject
+         */
+        $mockImmutableQuote = $this->getMockBuilder('Mage_Sales_Model_Quote')
+            ->setMethods(['getTotals', 'getBaseSubtotal', 'getBaseSubtotalWithDiscount'])->getMock();
+
+        $magentoTotalsMock = [];
+        $mockImmutableQuote->method('getTotals')->willReturn($magentoTotalsMock);
+        $mockImmutableQuote->expects($this->once())->method('getTotals');
+
+        $mockImmutableQuote->method('getBaseSubtotal')->willReturn($magentoSubtotal);
+        $mockImmutableQuote->expects($this->once())->method('getBaseSubtotal');
+
+        $mockImmutableQuote->method('getBaseSubtotalWithDiscount')->willReturn($magentoSubtotalWithDiscount);
+        $mockImmutableQuote->expects($this->once())->method('getBaseSubtotalWithDiscount');
+
+        return [
+            "mockBoltHelper" => $mockBoltHelper,
+            "mockImmutableQuote" => $mockImmutableQuote,
+            "mockTransaction" => $mockTransaction
+        ];
     }
 }
