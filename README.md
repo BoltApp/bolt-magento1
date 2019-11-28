@@ -1,4 +1,5 @@
 # Bolt Magento1 Plugin 
+[![Release](https://img.shields.io/github/v/release/BoltApp/bolt-magento1?label=stable)](https://github.com/BoltApp/bolt-magento1/releases)
 [![CircleCI](https://circleci.com/gh/BoltApp/bolt-magento1.svg?style=shield)](https://circleci.com/gh/BoltApp/bolt-magento1)
 [![codecov](https://codecov.io/gh/BoltApp/bolt-magento1/branch/master/graph/badge.svg)](https://codecov.io/gh/BoltApp/bolt-magento1)
 
