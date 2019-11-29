@@ -108,7 +108,7 @@ class Bolt_Boltpay_Helper_ApiTraitTest extends PHPUnit_Framework_TestCase
         $mock->method('getContextInfo')->will($this->returnValue($case['context']));
         $mock->method('addMetaData');
         // Start test
-        $result = $mock->transmit($case['command'], $case['data'], $case['object'], $case['type'], $case['storeId']);
+        $mock->transmit($case['command'], $case['data'], $case['object'], $case['type'], $case['storeId']);
     }
     
     /**
