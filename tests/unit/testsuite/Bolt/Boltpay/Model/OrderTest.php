@@ -222,20 +222,13 @@ class Bolt_Boltpay_Model_OrderTest extends PHPUnit_Framework_TestCase
 
         $mockBoltHelper->expects($this->never())->method('logWarning');
 
-        try {
-            TestHelper::callNonPublicFunction(
-                $this->testClassMock,
-                'validateTotals',
-                [$mockImmutableQuote, $mockTransaction]
-            );
-        } catch (Bolt_Boltpay_OrderCreationException $oce ) {
-            $this->assertContains(
-                'Discount total has changed',
-                $oce->getMessage()
-            );
-            return;
-        }
-        $this->fail("Expected a Bolt_Boltpay_OrderCreationException to be thrown but it was not.");
+        $this->setExpectedException(Bolt_Boltpay_OrderCreationException::class, 'Discount total has changed');
+
+        TestHelper::callNonPublicFunction(
+            $this->testClassMock,
+            'validateTotals',
+            [$mockImmutableQuote, $mockTransaction]
+        );
     }
 
     /**
@@ -256,24 +249,16 @@ class Bolt_Boltpay_Model_OrderTest extends PHPUnit_Framework_TestCase
         $mockImmutableQuote->setCouponCode('BOLT10POFF');
         $mockBoltHelper->expects($this->never())->method('logWarning');
 
-        try {
-            TestHelper::callNonPublicFunction(
-                $this->testClassMock,
-                'validateTotals',
-                [$mockImmutableQuote, $mockTransaction]
-            );
-        } catch (Bolt_Boltpay_OrderCreationException $oce ) {
-            $this->assertContains(
-                'Discount amount has changed',
-                $oce->getMessage()
-            );
-            $this->assertContains(
-                'BOLT10POFF',
-                $oce->getMessage()
-            );
-            return;
-        }
-        $this->fail("Expected a Bolt_Boltpay_OrderCreationException to be thrown but it was not.");
+        $this->setExpectedExceptionRegExp(
+            Bolt_Boltpay_OrderCreationException::class,
+            "/.*Discount amount has changed.*BOLT10POFF.*/"
+        );
+
+        TestHelper::callNonPublicFunction(
+            $this->testClassMock,
+            'validateTotals',
+            [$mockImmutableQuote, $mockTransaction]
+        );
     }
 
 
