@@ -738,7 +738,6 @@ class Bolt_Boltpay_Model_BoltOrder extends Bolt_Boltpay_Model_Abstract
             && !$quote->getShippingAddress()->getShippingMethod()
             && !$hasAdminShipping
         ) {
-
             if (!$quote->isVirtual()){
                 return json_decode('{"token" : "", "error": "'.$this->boltHelper()->__('A valid shipping method must be selected.  Please check your address data and that you have selected a shipping method, then, refresh to try again.').'"}');
             }

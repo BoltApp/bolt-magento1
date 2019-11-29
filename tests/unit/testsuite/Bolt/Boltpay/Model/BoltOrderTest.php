@@ -342,14 +342,25 @@ class Bolt_Boltpay_Model_BoltOrderTest extends PHPUnit_Framework_TestCase
      */
     public function getBoltOrderToken(array $case)
     {
-        $quoteMock = $this->createQuoteMock($case['items'], $case['shipping_method']);
-        $helper = $this->getMockBuilder(Bolt_Boltpay_Helper_Data::class)->setMethods(array('transmit'))->getMock();
+        $quoteMock = $this->createQuoteMock($case['items'], $case['shipping_method'], $case['quote_is_virtual']);
+        $helper = $this->getMockBuilder(Bolt_Boltpay_Helper_Data::class)
+            ->setMethods(array('transmit'))
+            ->getMock();
+        $blockMock = $this->getMockBuilder(Bolt_Boltpay_Model_BoltOrder::class)
+            ->setMethods(array('getActiveMethodRate'))
+            ->getMock();
+        $blockMock->method('getActiveMethodRate')
+            ->will($this->returnValue($case['admin_active_method_rate']));
+
         $mock = $this->getMockBuilder(Bolt_Boltpay_Model_BoltOrder::class)
-            ->setMethods(array('validateVirtualQuote', 'initRuleData', 'buildOrder', 'boltHelper'))
+            ->setMethods(array('validateVirtualQuote', 'buildOrder', 'boltHelper', 'isAdmin', 'getLayoutBlock'))
             ->getMock();
         $mock->method('validateVirtualQuote')
             ->willReturn(false);
-        $mock->method('initRuleData');
+        $mock->method('isAdmin')
+            ->will($this->returnValue($case['is_admin']));
+        $mock->method('getLayoutBlock')
+            ->will($this->returnValue($blockMock));
         $mock->method('buildOrder')
             ->withAnyParameters()
             ->will($this->returnValue($case['buildOrderData']));
@@ -384,26 +395,37 @@ class Bolt_Boltpay_Model_BoltOrderTest extends PHPUnit_Framework_TestCase
                     'items' => $orderRequestData['cart']['items'],
                     'buildOrderData' => $orderRequestData,
                     'result' => $resultJson,
+                    'is_admin' => false,
+                    'admin_active_method_rate' => false,
+                    'quote_is_virtual' => false,
                 ),
             ),
             array(
                 'case' => array(
                     'expect' => $resultJson,
                     'checkoutType' => Bolt_Boltpay_Block_Checkout_Boltpay::CHECKOUT_TYPE_ADMIN,
-                    'shipping_method' => '',
+                    'shipping_method' => 'flatrate_flatrate',
                     'items' => $orderRequestData['cart']['items'],
                     'buildOrderData' => $orderRequestData,
                     'result' => $resultJson,
+                    'is_admin' => true,
+                    'admin_active_method_rate' => array('test'),
+                    'quote_is_virtual' => false,
+                    'validate_virtual_quote' => true,
                 ),
             ),
             array(
                 'case' => array(
                     'expect' => $resultJson,
-                    'checkoutType' => Bolt_Boltpay_Block_Checkout_Boltpay::CHECKOUT_TYPE_ONE_PAGE,
-                    'shipping_method' => '',
+                    'checkoutType' => Bolt_Boltpay_Block_Checkout_Boltpay::CHECKOUT_TYPE_ADMIN,
+                    'shipping_method' => 'flatrate_flatrate',
                     'items' => $orderRequestData['cart']['items'],
                     'buildOrderData' => $orderRequestData,
                     'result' => $resultJson,
+                    'is_admin' => true,
+                    'admin_active_method_rate' => array(),
+                    'quote_is_virtual' => true,
+                    'validate_virtual_quote' => true,
                 ),
             ),
         );
@@ -419,22 +441,23 @@ class Bolt_Boltpay_Model_BoltOrderTest extends PHPUnit_Framework_TestCase
     public function getBoltOrderTokenExpectErrors(array $case)
     {
         $quoteMock = $this->createQuoteMock($case['items'], $case['shipping_method'], $case['quote_is_virtual']);
-        $helper = $this->getMockBuilder(Bolt_Boltpay_Helper_Data::class)->setMethods(array('transmit'))->getMock();
+        $helper = $this->getMockBuilder(Bolt_Boltpay_Helper_Data::class)
+            ->setMethods(array('transmit'))
+            ->getMock();
+        $blockMock = $this->getMockBuilder(Bolt_Boltpay_Model_BoltOrder::class)
+            ->setMethods(array('getActiveMethodRate'))
+            ->getMock();
+        $blockMock->method('getActiveMethodRate')
+            ->will($this->returnValue($case['admin_active_method_rate']));
 
-        $mockMethods = array('validateVirtualQuote', 'initRuleData', 'buildOrder', 'boltHelper', 'getLayoutBlock',
+        $mockMethods = array('validateVirtualQuote', 'buildOrder', 'boltHelper', 'getLayoutBlock',
             'isAdmin');
         $mock = $this->getMockBuilder(Bolt_Boltpay_Model_BoltOrder::class)
             ->setMethods($mockMethods)
             ->getMock();
         $mock->method('validateVirtualQuote')
             ->will($this->returnValue($case['validate_virtual_quote']));
-        $mock->method('initRuleData');
         $mock->method('buildOrder');
-        $blockMock = $this->getMockBuilder(Bolt_Boltpay_Model_BoltOrder::class)
-            ->setMethods(array('getActiveMethodRate'))
-            ->getMock();
-        $blockMock->method('getActiveMethodRate')
-            ->will($this->returnValue($case['admin_active_method_rate']));
         $mock->method('getLayoutBlock')
             ->with('adminhtml/sales_order_create_shipping_method_form')
             ->will($this->returnValue($blockMock));
