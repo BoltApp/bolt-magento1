@@ -775,7 +775,6 @@ class Bolt_Boltpay_Model_BoltOrder extends Bolt_Boltpay_Model_Abstract
         return $this->boltHelper()->transmit('orders', $orderRequest);
     }
 
-
     /**
      * Get Promise to create an order token
      *
