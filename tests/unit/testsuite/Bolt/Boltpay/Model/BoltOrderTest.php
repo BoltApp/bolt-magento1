@@ -335,18 +335,21 @@ class Bolt_Boltpay_Model_BoltOrderTest extends PHPUnit_Framework_TestCase
 
     /**
      * @test
-     *
+     * @group inProgress
      * @dataProvider getBoltOrderTokenErrorCases
      * @param array $case
      */
     public function getBoltOrderToken(array $case)
     {
         $quoteMock = $this->createQuoteMock(array(1, 2));
-
-        $mockMethods = array('validateVirtualQuote', 'initRuleData', 'buildOrder',
-            'boltHelper');
+        $helper = $this->getMockBuilder(Bolt_Boltpay_Helper_Data::class)->setMethods(array('transmit'))->getMock();
         $mock = $this->getMockBuilder(Bolt_Boltpay_Model_BoltOrder::class)
-            ->setMethods($mockMethods)
+            ->setMethods(array(
+                'validateVirtualQuote',
+                'initRuleData',
+                'buildOrder',
+                'boltHelper')
+            )
             ->getMock();
         $mock->expects($this->once())
             ->method('validateVirtualQuote')
@@ -357,8 +360,15 @@ class Bolt_Boltpay_Model_BoltOrderTest extends PHPUnit_Framework_TestCase
         $mock->expects($this->once())
             ->method('buildOrder')
             ->withAnyParameters()
-            ->willReturnSelf();
+            ->will($this->returnValue(array('cart' => array())));
 
+        $helper
+            ->expects($this->once())
+            ->method('transmit')
+            ->with('orders', array('cart' => array()), 'merchant', 'transactions', null)
+            ->will($this->returnValue(json_encode(array('jksdshvjsdhgsjkhj'))));
+        $mock->expects($this->any())->method('boltHelper')->will($this->returnValue($helper));
+        
         $result = $mock->getBoltOrderToken($quoteMock, $case['checkoutType']);
 
         var_dump($result);
