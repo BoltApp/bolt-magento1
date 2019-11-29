@@ -314,7 +314,6 @@ class Bolt_Boltpay_Model_BoltOrder extends Bolt_Boltpay_Model_Abstract
         return $this->getCorrectedTotal($calculatedTotal, $cartSubmissionData);
     }
 
-
     /**
      * Adds the calculated discounts to the Bolt order
      *
@@ -385,7 +384,6 @@ class Bolt_Boltpay_Model_BoltOrder extends Bolt_Boltpay_Model_Abstract
         return $totalDiscount;
     }
 
-
     /**
      * Gets the calculated tax for the order
      *
@@ -396,7 +394,6 @@ class Bolt_Boltpay_Model_BoltOrder extends Bolt_Boltpay_Model_Abstract
     protected function getTax($totals) {
         return (@$totals['tax']) ? (int) round($totals['tax']->getValue() * 100) : 0;
     }
-
 
     /**
      * Adds the calculated shipping to the Bolt order
@@ -423,7 +420,6 @@ class Bolt_Boltpay_Model_BoltOrder extends Bolt_Boltpay_Model_Abstract
         return $totalShipping;
     }
 
-
     /**
      * Adds the calculated shipping to the Bolt order from the admin context
      *
@@ -447,7 +443,6 @@ class Bolt_Boltpay_Model_BoltOrder extends Bolt_Boltpay_Model_Abstract
         return $totalShipping;
     }
 
-
     /**
      * Gets the calculated tax for the Bolt order in the admin context
      *
@@ -458,7 +453,6 @@ class Bolt_Boltpay_Model_BoltOrder extends Bolt_Boltpay_Model_Abstract
     protected function getTaxForAdmin( $taxTotal ) {
         return ($taxTotal ? (int) round($taxTotal->getValue() * 100) : 0);
     }
-
 
     /**
      * Utility method that attempts to correct totals if the projected total that was calculated from
@@ -496,7 +490,6 @@ class Bolt_Boltpay_Model_BoltOrder extends Bolt_Boltpay_Model_Abstract
         // otherwise, we have no better thing to do than let the Bolt server do the checking
         return $magentoDerivedCartData;
     }
-
 
     /**
      * Checks if billing address of a quote has all the expected fields.
@@ -606,7 +599,6 @@ class Bolt_Boltpay_Model_BoltOrder extends Bolt_Boltpay_Model_Abstract
         return $wasCorrected;
     }
 
-
     /**
      * Accessor to discount types supported by Bolt
      *
@@ -652,7 +644,6 @@ class Bolt_Boltpay_Model_BoltOrder extends Bolt_Boltpay_Model_Abstract
         return $customerEmail;
     }
 
-
     /**
      * Calculates and returns the key for storing a Bolt order token
      *
@@ -674,7 +665,6 @@ class Bolt_Boltpay_Model_BoltOrder extends Bolt_Boltpay_Model_Abstract
         }
         return $quote->getId() . '_' . md5(json_encode($boltCartArray));
     }
-
 
     /**
      * Get cached copy of the Bolt order token if it exist and has not expired
@@ -701,7 +691,6 @@ class Bolt_Boltpay_Model_BoltOrder extends Bolt_Boltpay_Model_Abstract
         return null;
     }
 
-
     /**
      * Caches cart data that is sent to the front end to be used for duplicate request
      *
@@ -719,7 +708,6 @@ class Bolt_Boltpay_Model_BoltOrder extends Bolt_Boltpay_Model_Abstract
             )
         );
     }
-
 
     /**
      * Get an order token for a Bolt order either by creating it or making a Promise to create it
@@ -758,14 +746,6 @@ class Bolt_Boltpay_Model_BoltOrder extends Bolt_Boltpay_Model_Abstract
             if (!$this->validateVirtualQuote($quote)){
                 return json_decode('{"token" : "", "error": "'.$this->boltHelper()->__('Billing address is required.').'"}');
             }
-        }
-
-        if ($checkoutType === Bolt_Boltpay_Block_Checkout_Boltpay::CHECKOUT_TYPE_ADMIN) {
-           $this->initRuleData(
-               $quote->getStore()->getId(),
-               $quote->getStore()->getWebsiteId(),
-               $quote->getCustomerGroupId()
-           );
         }
 
         // Generates order data for sending to Bolt create order API.
@@ -961,7 +941,6 @@ PROMISE;
         return $properties;
     }
 
-
     /**
      * @param Mage_Sales_Model_Quote_Item $item
      * @return array
@@ -983,7 +962,6 @@ PROMISE;
         }
         return $productOptions;
     }
-
 
     /**
      * @param $option
@@ -1062,38 +1040,18 @@ PROMISE;
     }
 
     /**
-     * It is Magento part of code which allow to work
-     * with applied Catalog Price Rule in the
-     * back-office due order create process.
-     * The original path is \Mage_Adminhtml_Sales_Order_CreateController::_processActionData()
-     * and \Mage_Adminhtml_Model_Sales_Order_Create::initRuleData()
-     *
-     * @param $storeId
-     * @param $websiteId
-     * @param $customerGroupId
-     */
-    protected function initRuleData($storeId, $websiteId, $customerGroupId)
-    {
-        Mage::register('rule_data', new Varien_Object(array(
-            'store_id' => $storeId,
-            'website_id' => $websiteId,
-            'customer_group_id' => $customerGroupId,
-        )));
-    }
-
-    /**
      * @return bool
      */
-    private function isAdmin()
+    protected function isAdmin()
     {
-        return (bool) Mage::app()->getStore()->isAdmin();
+        return (bool)Mage::app()->getStore()->isAdmin();
     }
 
     /**
      * @param string $blockType
      * @return Mage_Core_Block_Abstract
      */
-    public function getLayoutBlock($blockType)
+    protected function getLayoutBlock($blockType)
     {
         return Mage::app()->getLayout()->createBlock($blockType);
     }
