@@ -335,35 +335,116 @@ class Bolt_Boltpay_Model_BoltOrderTest extends PHPUnit_Framework_TestCase
 
     /**
      * @test
-     * @dataProvider getBoltOrderTokenErrorCases
+     * @group        Model
+     * @group        ModelBoltOrder
+     * @dataProvider getBoltOrderTokenCases
      * @param array $case
      */
     public function getBoltOrderToken(array $case)
     {
-        $quoteMock = $this->createQuoteMock(array(1, 2));
+        $quoteMock = $this->createQuoteMock($case['items'], $case['shipping_method']);
         $helper = $this->getMockBuilder(Bolt_Boltpay_Helper_Data::class)->setMethods(array('transmit'))->getMock();
         $mock = $this->getMockBuilder(Bolt_Boltpay_Model_BoltOrder::class)
-            ->setMethods(array(
-                'validateVirtualQuote',
-                'initRuleData',
-                'buildOrder',
-                'boltHelper')
-            )
+            ->setMethods(array('validateVirtualQuote', 'initRuleData', 'buildOrder', 'boltHelper'))
             ->getMock();
         $mock->method('validateVirtualQuote')
             ->willReturn(false);
-        $mock->method('initRuleData')
-            ->willReturnSelf();
+        $mock->method('initRuleData');
         $mock->method('buildOrder')
             ->withAnyParameters()
-            ->will($this->returnValue(array('cart' => array())));
+            ->will($this->returnValue($case['buildOrderData']));
 
         $helper->method('transmit')
-            ->with('orders', array('cart' => array()), 'merchant', 'transactions', null)
-            ->will($this->returnValue(json_encode($case['result'])));
+            ->with('orders', $case['buildOrderData'])
+            ->will($this->returnValue($case['result']));
         $mock->method('boltHelper')
             ->will($this->returnValue($helper));
-        
+
+        $result = $mock->getBoltOrderToken($quoteMock, $case['checkoutType']);
+
+        $this->assertEquals($case['expect'], $result);
+    }
+
+    /**
+     * Test cases
+     *
+     * @return array
+     */
+    public function getBoltOrderTokenCases()
+    {
+        $resultJson = $this->getResultJSON();
+        $orderRequestData = $this->getOrderRequest();
+
+        return array(
+            array(
+                'case' => array(
+                    'expect' => $resultJson,
+                    'checkoutType' => Bolt_Boltpay_Block_Checkout_Boltpay::CHECKOUT_TYPE_MULTI_PAGE,
+                    'shipping_method' => '',
+                    'items' => $orderRequestData['cart']['items'],
+                    'buildOrderData' => $orderRequestData,
+                    'result' => $resultJson,
+                ),
+            ),
+            array(
+                'case' => array(
+                    'expect' => $resultJson,
+                    'checkoutType' => Bolt_Boltpay_Block_Checkout_Boltpay::CHECKOUT_TYPE_ADMIN,
+                    'shipping_method' => '',
+                    'items' => $orderRequestData['cart']['items'],
+                    'buildOrderData' => $orderRequestData,
+                    'result' => $resultJson,
+                ),
+            ),
+            array(
+                'case' => array(
+                    'expect' => $resultJson,
+                    'checkoutType' => Bolt_Boltpay_Block_Checkout_Boltpay::CHECKOUT_TYPE_ONE_PAGE,
+                    'shipping_method' => '',
+                    'items' => $orderRequestData['cart']['items'],
+                    'buildOrderData' => $orderRequestData,
+                    'result' => $resultJson,
+                ),
+            ),
+        );
+    }
+
+    /**
+     * @test
+     * @group        Model
+     * @group        ModelBoltOrder
+     * @dataProvider getBoltOrderTokenErrorCases
+     * @param array $case
+     */
+    public function getBoltOrderTokenExpectErrors(array $case)
+    {
+        $quoteMock = $this->createQuoteMock($case['items'], $case['shipping_method'], $case['quote_is_virtual']);
+        $helper = $this->getMockBuilder(Bolt_Boltpay_Helper_Data::class)->setMethods(array('transmit'))->getMock();
+
+        $mockMethods = array('validateVirtualQuote', 'initRuleData', 'buildOrder', 'boltHelper', 'getLayoutBlock',
+            'isAdmin');
+        $mock = $this->getMockBuilder(Bolt_Boltpay_Model_BoltOrder::class)
+            ->setMethods($mockMethods)
+            ->getMock();
+        $mock->method('validateVirtualQuote')
+            ->will($this->returnValue($case['validate_virtual_quote']));
+        $mock->method('initRuleData');
+        $mock->method('buildOrder');
+        $blockMock = $this->getMockBuilder(Bolt_Boltpay_Model_BoltOrder::class)
+            ->setMethods(array('getActiveMethodRate'))
+            ->getMock();
+        $blockMock->method('getActiveMethodRate')
+            ->will($this->returnValue($case['admin_active_method_rate']));
+        $mock->method('getLayoutBlock')
+            ->with('adminhtml/sales_order_create_shipping_method_form')
+            ->will($this->returnValue($blockMock));
+        $mock->method('isAdmin')
+            ->will($this->returnValue($case['is_admin']));
+
+        $helper->method('transmit');
+        $mock->method('boltHelper')
+            ->will($this->returnValue($helper));
+
         $result = $mock->getBoltOrderToken($quoteMock, $case['checkoutType']);
 
         $this->assertEquals($case['expect'], $result);
@@ -375,22 +456,48 @@ class Bolt_Boltpay_Model_BoltOrderTest extends PHPUnit_Framework_TestCase
      */
     public function getBoltOrderTokenErrorCases()
     {
-        $response = array(
-            'success' => true
-        );
-
+        $orderRequestData = $this->getOrderRequest();
         return array(
             array(
                 'case' => array(
-                    'expect'    => json_encode($response),
-                    'checkoutType' => 'multi-page',
-                    'result'    => $response,
-                )
+                    'expect' => json_decode('{"token" : "", "error": "Your shopping cart is empty. Please add products to the cart."}'),
+                    'checkoutType' => Bolt_Boltpay_Block_Checkout_Boltpay::CHECKOUT_TYPE_MULTI_PAGE,
+                    'items' => array(),
+                    'shipping_method' => '',
+                    'admin_active_method_rate' => array(),
+                    'validate_virtual_quote' => false,
+                    'quote_is_virtual' => false,
+                    'is_admin' => false
+                ),
+            ),
+            array(
+                'case' => array(
+                    'expect' => json_decode('{"token" : "", "error": "A valid shipping method must be selected.  Please check your address data and that you have selected a shipping method, then, refresh to try again."}'),
+                    'checkoutType' => Bolt_Boltpay_Block_Checkout_Boltpay::CHECKOUT_TYPE_ADMIN,
+                    'items' => $orderRequestData['cart']['items'],
+                    'shipping_method' => '',
+                    'admin_active_method_rate' => array(),
+                    'quote_is_virtual' => false,
+                    'validate_virtual_quote' => true,
+                    'is_admin' => true,
+                ),
+            ),
+            array(
+                'case' => array(
+                    'expect' => json_decode('{"token" : "", "error": "Billing address is required."}'),
+                    'checkoutType' => Bolt_Boltpay_Block_Checkout_Boltpay::CHECKOUT_TYPE_ADMIN,
+                    'items' => $orderRequestData['cart']['items'],
+                    'shipping_method' => '',
+                    'admin_active_method_rate' => array(),
+                    'quote_is_virtual' => true,
+                    'validate_virtual_quote' => false,
+                    'is_admin' => true,
+                ),
             ),
         );
     }
 
-    public function createQuoteMock($itemsCount = array())
+    public function createQuoteMock($items = array(), $shippingMethod = '', $isVirtual = false)
     {
         $shipAddressMock = $this->getMockBuilder(Mage_Sales_Model_Quote_Address::class)
             ->setMethods(array('getShippingMethod'))
@@ -399,7 +506,7 @@ class Bolt_Boltpay_Model_BoltOrderTest extends PHPUnit_Framework_TestCase
             ->disableArgumentCloning()
             ->getMock();
         $shipAddressMock->method('getShippingMethod')
-            ->willReturn('');
+            ->will($this->returnValue($shippingMethod));
 
         $storeMock = $this->getMockBuilder(Mage_Core_Model_Store::class)
             ->setMethods(array('getId', 'getWebsiteId'))
@@ -422,13 +529,13 @@ class Bolt_Boltpay_Model_BoltOrderTest extends PHPUnit_Framework_TestCase
             ->getMock();
         $quoteMock->expects($this->any())
             ->method('getAllVisibleItems')
-            ->willReturn($itemsCount);
+            ->willReturn($items);
         $quoteMock->expects($this->any())
             ->method('getShippingAddress')
             ->willReturn($shipAddressMock);
         $quoteMock->expects($this->any())
             ->method('isVirtual')
-            ->willReturn($this->returnValue(true));
+            ->will($this->returnValue($isVirtual));
         $quoteMock->expects($this->any())
             ->method('getCustomerGroupId')
             ->willReturn(1);
@@ -437,5 +544,43 @@ class Bolt_Boltpay_Model_BoltOrderTest extends PHPUnit_Framework_TestCase
             ->willReturn($storeMock);
 
         return $quoteMock;
+    }
+
+    public function getOrderRequest()
+    {
+        return array(
+            'cart' => array(
+                'order_reference' => '772',
+                'display_id' => '145000015|773',
+                'items' => array(0 => array('reference' => '2539')),
+                'currency' => 'USD',
+                'discounts' => array(),
+                'billing_address' => array(),
+                'total_amount' => 33700,
+                'tax_amount' => 2700,
+                'shipments' => array(),
+            ),
+        );
+    }
+
+    public function getResultJSON()
+    {
+        return array(
+            'token' => 'addc7c36e014f6216599f631dd021dbba283efc2c5fe9468f4a66be5bf1ae495',
+            'cart' => array(
+                'order_reference' => '772',
+                'display_id' => '145000015|773',
+                'currency' => array(),
+                'subtotal_amount' => array(),
+                'total_amount' => array(),
+                'tax_amount' => array(),
+                'shipping_amount' => array(),
+                'discount_amount' => array(),
+                'billing_address' => array(),
+                'items' => array(0 => array('reference' => '2539')),
+                'shipments' => array(),
+            ),
+            'external_data' => array(),
+        );
     }
 }
