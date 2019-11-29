@@ -211,6 +211,8 @@ class Bolt_Boltpay_Model_OrderTest extends PHPUnit_Framework_TestCase
      * a general discount mismatch exception is thrown
      *
      * @covers ::validateTotals
+     * @expectedException Bolt_Boltpay_OrderCreationException
+     * @expectedExceptionMessage Discount total has changed
      */
     public function validateTotals_discountDiffersBeyondTolerance() {
 
@@ -222,20 +224,11 @@ class Bolt_Boltpay_Model_OrderTest extends PHPUnit_Framework_TestCase
 
         $mockBoltHelper->expects($this->never())->method('logWarning');
 
-        try {
-            TestHelper::callNonPublicFunction(
-                $this->testClassMock,
-                'validateTotals',
-                [$mockImmutableQuote, $mockTransaction]
-            );
-        } catch (Bolt_Boltpay_OrderCreationException $oce ) {
-            $this->assertContains(
-                'Discount total has changed',
-                $oce->getMessage()
-            );
-            return;
-        }
-        $this->fail("Expected a Bolt_Boltpay_OrderCreationException to be thrown but it was not.");
+        TestHelper::callNonPublicFunction(
+            $this->testClassMock,
+            'validateTotals',
+            [$mockImmutableQuote, $mockTransaction]
+        );
     }
 
     /**
@@ -244,6 +237,8 @@ class Bolt_Boltpay_Model_OrderTest extends PHPUnit_Framework_TestCase
      * being used, a mismatch exception is thrown that includes the coupon code
      *
      * @covers ::validateTotals
+     * @expectedException Bolt_Boltpay_OrderCreationException
+     * @expectedExceptionMessageRegExp  /.*Discount amount has changed.*BOLT10POFF.*?/
      */
     public function validateTotals_couponDiscountDiffersBeyondTolerance() {
 
@@ -256,24 +251,11 @@ class Bolt_Boltpay_Model_OrderTest extends PHPUnit_Framework_TestCase
         $mockImmutableQuote->setCouponCode('BOLT10POFF');
         $mockBoltHelper->expects($this->never())->method('logWarning');
 
-        try {
-            TestHelper::callNonPublicFunction(
-                $this->testClassMock,
-                'validateTotals',
-                [$mockImmutableQuote, $mockTransaction]
-            );
-        } catch (Bolt_Boltpay_OrderCreationException $oce ) {
-            $this->assertContains(
-                'Discount amount has changed',
-                $oce->getMessage()
-            );
-            $this->assertContains(
-                'BOLT10POFF',
-                $oce->getMessage()
-            );
-            return;
-        }
-        $this->fail("Expected a Bolt_Boltpay_OrderCreationException to be thrown but it was not.");
+        TestHelper::callNonPublicFunction(
+            $this->testClassMock,
+            'validateTotals',
+            [$mockImmutableQuote, $mockTransaction]
+        );
     }
 
 
