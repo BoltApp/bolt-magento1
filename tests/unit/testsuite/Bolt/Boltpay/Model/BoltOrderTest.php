@@ -332,4 +332,103 @@ class Bolt_Boltpay_Model_BoltOrderTest extends PHPUnit_Framework_TestCase
 
         $this->assertEquals($expected, $result);
     }
+
+    /**
+     * @test
+     *
+     * @dataProvider getBoltOrderTokenErrorCases
+     * @param array $case
+     */
+    public function getBoltOrderToken(array $case)
+    {
+        $quoteMock = $this->createQuoteMock(array(1, 2));
+
+        $mockMethods = array('validateVirtualQuote', 'initRuleData', 'buildOrder',
+            'boltHelper');
+        $mock = $this->getMockBuilder(Bolt_Boltpay_Model_BoltOrder::class)
+            ->setMethods($mockMethods)
+            ->getMock();
+        $mock->expects($this->once())
+            ->method('validateVirtualQuote')
+            ->willReturn(false);
+        $mock->expects($this->once())
+            ->method('initRuleData')
+            ->willReturnSelf();
+        $mock->expects($this->once())
+            ->method('buildOrder')
+            ->withAnyParameters()
+            ->willReturnSelf();
+
+        $result = $mock->getBoltOrderToken($quoteMock, $case['checkoutType']);
+
+        var_dump($result);
+        die;
+    }
+
+    /**
+     * Test cases
+     * @return array
+     */
+    public function getBoltOrderTokenErrorCases()
+    {
+        return array(
+            array(
+                'case' => array(
+                    'checkoutType' => 'multi-page',
+                )
+            ),
+        );
+    }
+
+    public function createQuoteMock($itemsCount = array())
+    {
+        $shipAddressMock = $this->getMockBuilder(Mage_Sales_Model_Quote_Address::class)
+            ->setMethods(array('getShippingMethod'))
+            ->disableOriginalConstructor()
+            ->disableOriginalClone()
+            ->disableArgumentCloning()
+            ->getMock();
+        $shipAddressMock->expects($this->once())
+            ->method('getShippingMethod')
+            ->willReturn('');
+
+        $storeMock = $this->getMockBuilder(Mage_Core_Model_Store::class)
+            ->setMethods(array('getId', 'getWebsiteId'))
+            ->disableOriginalConstructor()
+            ->disableOriginalClone()
+            ->disableArgumentCloning()
+            ->getMock();
+        $storeMock->expects($this->once())
+            ->method('getId')
+            ->willReturn(1);
+        $storeMock->expects($this->once())
+            ->method('getWebsiteId')
+            ->willReturn(1);
+
+        $quoteMethods = array('getAllVisibleItems', 'getShippingAddress', 'isVirtual', 'getStore',
+            'getCustomerGroupId');
+        $quoteMock = $this->getMockBuilder(Mage_Sales_Model_Quote::class)
+            ->setMethods($quoteMethods)
+            ->disableOriginalConstructor()
+            ->disableOriginalClone()
+            ->disableArgumentCloning()
+            ->getMock();
+        $quoteMock->expects($this->once())
+            ->method('getAllVisibleItems')
+            ->willReturn($itemsCount);
+        $quoteMock->expects($this->once())
+            ->method('getShippingAddress')
+            ->willReturn($shipAddressMock);
+        $quoteMock->expects($this->once())
+            ->method('isVirtual')
+            ->willReturn($this->returnValue(true));
+        $quoteMock->expects($this->once())
+            ->method('getCustomerGroupId')
+            ->willReturn(1);
+        $quoteMock->expects($this->once())
+            ->method('getStore')
+            ->willReturn($storeMock);
+
+        return $quoteMock;
+    }
 }
