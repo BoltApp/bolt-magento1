@@ -220,9 +220,9 @@ class Bolt_Boltpay_Model_BoltOrder extends Bolt_Boltpay_Model_Abstract
             ////////////////////////////////////////////////////////////////////////////////////
             // For one page checkout/admin type include tax and shipment / address data in submission.
             ////////////////////////////////////////////////////////////////////////////////////
-            if (Mage::app()->getStore()->isAdmin()) {
+            if ($this->isAdmin()) {
                 /* @var Mage_Adminhtml_Block_Sales_Order_Create_Totals $totalsBlock */
-                $totalsBlock =  Mage::app()->getLayout()->createBlock("adminhtml/sales_order_create_totals_shipping");
+                $totalsBlock =  $this->getLayoutBlock("adminhtml/sales_order_create_totals_shipping");
 
                 /* @var Mage_Sales_Model_Quote_Address_Total $grandTotal */
                 $grandTotal = $totalsBlock->getTotals()['grand_total'];
@@ -267,7 +267,7 @@ class Bolt_Boltpay_Model_BoltOrder extends Bolt_Boltpay_Model_Abstract
 
                     $this->addShipping($totals, $cartSubmissionData, $shippingAddress, $cartShippingAddress);
 
-                } else if (Mage::app()->getStore()->isAdmin()) {
+                } else if ($this->isAdmin()) {
                     $cartShippingAddress = Mage::getSingleton('admin/session')->getOrderShippingAddress();
 
                     if (empty($cartShippingAddress['email'])) {
@@ -276,7 +276,7 @@ class Bolt_Boltpay_Model_BoltOrder extends Bolt_Boltpay_Model_Abstract
                     $this->dispatchCartDataEvent('bolt_boltpay_correct_shipping_address_for_bolt_order', $quote, $cartShippingAddress);
 
                     /* @var Mage_Adminhtml_Block_Sales_Order_Create_Shipping_Method_Form $shippingMethodBlock */
-                    $shippingMethodBlock =  Mage::app()->getLayout()->createBlock("adminhtml/sales_order_create_shipping_method_form");
+                    $shippingMethodBlock =  $this->getLayoutBlock("adminhtml/sales_order_create_shipping_method_form");
                     $shippingRate = $shippingMethodBlock->getActiveMethodRate();
 
                     if ($shippingRate) {
@@ -626,7 +626,7 @@ class Bolt_Boltpay_Model_BoltOrder extends Bolt_Boltpay_Model_Abstract
      */
     protected function getCustomerEmail($quote = null) {
         $customerEmail = $quote ? $quote->getCustomerEmail() : "";
-        if (!$customerEmail && Mage::app()->getStore()->isAdmin()) {
+        if (!$customerEmail && $this->isAdmin()) {
             //////////////////////////////////////////////////
             // In the admin, we first check form session data.
             // For order edits or reorders, the guest customer's email
@@ -737,16 +737,14 @@ class Bolt_Boltpay_Model_BoltOrder extends Bolt_Boltpay_Model_Abstract
         $items = $quote->getAllVisibleItems();
 
         $hasAdminShipping = false;
-        if (Mage::app()->getStore()->isAdmin()) {
+        if ($this->isAdmin()) {
             /* @var Mage_Adminhtml_Block_Sales_Order_Create_Shipping_Method_Form $shippingMethodBlock */
-            $shippingMethodBlock = Mage::app()->getLayout()->createBlock("adminhtml/sales_order_create_shipping_method_form");
+            $shippingMethodBlock = $this->getLayoutBlock('adminhtml/sales_order_create_shipping_method_form');
             $hasAdminShipping = $shippingMethodBlock->getActiveMethodRate();
         }
 
         if (empty($items)) {
-
             return json_decode('{"token" : "", "error": "'.$this->boltHelper()->__('Your shopping cart is empty. Please add products to the cart.').'"}');
-
         } else if (
             !$isMultiPage
             && !$quote->getShippingAddress()->getShippingMethod()
@@ -1082,5 +1080,22 @@ PROMISE;
             'website_id' => $websiteId,
             'customer_group_id' => $customerGroupId,
         )));
+    }
+
+    /**
+     * @return bool
+     */
+    private function isAdmin()
+    {
+        return (bool) Mage::app()->getStore()->isAdmin();
+    }
+
+    /**
+     * @param string $blockType
+     * @return Mage_Core_Block_Abstract
+     */
+    public function getLayoutBlock($blockType)
+    {
+        return Mage::app()->getLayout()->createBlock($blockType);
     }
 }
