@@ -350,28 +350,23 @@ class Bolt_Boltpay_Model_BoltOrderTest extends PHPUnit_Framework_TestCase
                 'boltHelper')
             )
             ->getMock();
-        $mock->expects($this->once())
-            ->method('validateVirtualQuote')
+        $mock->method('validateVirtualQuote')
             ->willReturn(false);
-        $mock->expects($this->once())
-            ->method('initRuleData')
+        $mock->method('initRuleData')
             ->willReturnSelf();
-        $mock->expects($this->once())
-            ->method('buildOrder')
+        $mock->method('buildOrder')
             ->withAnyParameters()
             ->will($this->returnValue(array('cart' => array())));
 
-        $helper
-            ->expects($this->once())
-            ->method('transmit')
+        $helper->method('transmit')
             ->with('orders', array('cart' => array()), 'merchant', 'transactions', null)
-            ->will($this->returnValue(json_encode(array('jksdshvjsdhgsjkhj'))));
-        $mock->expects($this->any())->method('boltHelper')->will($this->returnValue($helper));
+            ->will($this->returnValue(json_encode($case['result'])));
+        $mock->method('boltHelper')
+            ->will($this->returnValue($helper));
         
         $result = $mock->getBoltOrderToken($quoteMock, $case['checkoutType']);
 
-        var_dump($result);
-        die;
+        $this->assertEquals($case['expect'], $result);
     }
 
     /**
@@ -380,10 +375,16 @@ class Bolt_Boltpay_Model_BoltOrderTest extends PHPUnit_Framework_TestCase
      */
     public function getBoltOrderTokenErrorCases()
     {
+        $response = array(
+            'success' => true
+        );
+
         return array(
             array(
                 'case' => array(
+                    'expect'    => json_encode($response),
                     'checkoutType' => 'multi-page',
+                    'result'    => $response,
                 )
             ),
         );
@@ -397,8 +398,7 @@ class Bolt_Boltpay_Model_BoltOrderTest extends PHPUnit_Framework_TestCase
             ->disableOriginalClone()
             ->disableArgumentCloning()
             ->getMock();
-        $shipAddressMock->expects($this->once())
-            ->method('getShippingMethod')
+        $shipAddressMock->method('getShippingMethod')
             ->willReturn('');
 
         $storeMock = $this->getMockBuilder(Mage_Core_Model_Store::class)
@@ -407,11 +407,9 @@ class Bolt_Boltpay_Model_BoltOrderTest extends PHPUnit_Framework_TestCase
             ->disableOriginalClone()
             ->disableArgumentCloning()
             ->getMock();
-        $storeMock->expects($this->once())
-            ->method('getId')
+        $storeMock->method('getId')
             ->willReturn(1);
-        $storeMock->expects($this->once())
-            ->method('getWebsiteId')
+        $storeMock->method('getWebsiteId')
             ->willReturn(1);
 
         $quoteMethods = array('getAllVisibleItems', 'getShippingAddress', 'isVirtual', 'getStore',
@@ -422,19 +420,19 @@ class Bolt_Boltpay_Model_BoltOrderTest extends PHPUnit_Framework_TestCase
             ->disableOriginalClone()
             ->disableArgumentCloning()
             ->getMock();
-        $quoteMock->expects($this->once())
+        $quoteMock->expects($this->any())
             ->method('getAllVisibleItems')
             ->willReturn($itemsCount);
-        $quoteMock->expects($this->once())
+        $quoteMock->expects($this->any())
             ->method('getShippingAddress')
             ->willReturn($shipAddressMock);
-        $quoteMock->expects($this->once())
+        $quoteMock->expects($this->any())
             ->method('isVirtual')
             ->willReturn($this->returnValue(true));
-        $quoteMock->expects($this->once())
+        $quoteMock->expects($this->any())
             ->method('getCustomerGroupId')
             ->willReturn(1);
-        $quoteMock->expects($this->once())
+        $quoteMock->expects($this->any())
             ->method('getStore')
             ->willReturn($storeMock);
 
