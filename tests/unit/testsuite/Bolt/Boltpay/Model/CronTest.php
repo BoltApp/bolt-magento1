@@ -4,10 +4,6 @@ require_once('OrderHelper.php');
 
 class Bolt_Boltpay_Model_CronTest extends PHPUnit_Framework_TestCase
 {
-    /**
-     * A time in minutes padded to test entry timestamps to make them eligible for cleanup
-     */
-    const MINUTES_PADDING_FOR_TEST_ENTRY_TIMESTAMPS = 3;
 
     /**
      * @var Bolt_Boltpay_Model_Cron The subject object which is actually a true unstubbed instance of the class
@@ -32,7 +28,7 @@ class Bolt_Boltpay_Model_CronTest extends PHPUnit_Framework_TestCase
      */
     public static function setUpBeforeClass()
     {
-        self::$productId = Bolt_Boltpay_ProductProvider::createDummyProduct(uniqid('PHPUNIT_TEST_'), array(), 20);
+        self::$productId = Bolt_Boltpay_ProductProvider::createDummyProduct('PHPUNIT_TEST_1', array(), 20);
     }
 
     /**
@@ -58,14 +54,9 @@ class Bolt_Boltpay_Model_CronTest extends PHPUnit_Framework_TestCase
         $ordersPastExpiration = [];
         $activeOrders = [];
 
-        $cleanupDate = gmdate(
-            'Y-m-d H:i:s',
-            time()-(60*(Bolt_Boltpay_Model_Cron::PRE_AUTH_STATE_TIME_LIMIT_MINUTES+self::MINUTES_PADDING_FOR_TEST_ENTRY_TIMESTAMPS))
-        );
-
         // Create dummy orders
         for ($i = 0; $i < 5; $i++) {
-            for ($j = rand(2,3); $j > 0; $j--) {
+            for ($j = rand(1,3); $j > 0; $j--) {
                 $order = Bolt_Boltpay_OrderHelper::createDummyOrder(self::$productId, 1, 'boltpay');
                 if ($i%2) {
                     $order
@@ -80,8 +71,8 @@ class Bolt_Boltpay_Model_CronTest extends PHPUnit_Framework_TestCase
                 }
                 $order->save();
 
-                if ($i < 2) {
-                    $order->setCreatedAt($cleanupDate);
+                if ($i >= 2) {
+                    $order->setCreatedAt(Mage::getSingleton('core/date')->gmtDate('Y-m-d H:i:s', time()-(60*20)));
                     $order->save();
                     $ordersPastExpiration[$order->getId()] = $order;
                 } else {
@@ -120,7 +111,6 @@ class Bolt_Boltpay_Model_CronTest extends PHPUnit_Framework_TestCase
 
         // Check that expired pending_payment orders were deleted while others preserved
         foreach ( $ordersPastExpiration as $id => $expiredOrder ) {
-            $this->markTestIncomplete('Need to FIX');
             /** @var Mage_Sales_Model_Order $foundOrder */
             $foundOrder = Mage::getModel('sales/order')->load( $id );
             if ( array_key_exists($id, $paidOrders) ) {
@@ -134,7 +124,7 @@ class Bolt_Boltpay_Model_CronTest extends PHPUnit_Framework_TestCase
                 $this->assertArrayHasKey($id, $pendingPaymentOrders);
                 $this->assertTrue($foundOrder->isObjectNew());
                 $this->assertEquals(Mage_Sales_Model_Order::STATE_PENDING_PAYMENT, $expiredOrder->getState());
-                $this->assertEquals(Bolt_Boltpay_Model_Payment::TRANSACTION_PRE_AUTH_PENDING, $expiredOrder->getStatus());
+                $this->assertEquals(Bolt_Boltpay_Model_Payment::TRANSACTION_PRE_AUTH_PENDING, $expiredOrder->getState());
                 $this->assertEmpty($foundOrder->getState());
                 $this->assertEmpty($foundOrder->getStatus());
                 $casesCovered['expired|deleted|pending_payment'] = true;
@@ -142,8 +132,8 @@ class Bolt_Boltpay_Model_CronTest extends PHPUnit_Framework_TestCase
             Bolt_Boltpay_OrderHelper::deleteDummyOrder($expiredOrder);
         }
 
-        // make sure that we have create found and handled at least one order for each case
         $this->assertEquals(4, count($casesCovered));
     }
 
 }
+
