@@ -128,8 +128,8 @@ class Bolt_Boltpay_Block_Catalog_Product_BoltpayTest extends PHPUnit_Framework_T
     {
         Mage::app()->getStore()->setCurrentCurrencyCode(self::CURRENCY_CODE);
 
+        $this->productMock->setId(9876543210);
         $this->productMock->method('isInStock')->willReturn(true);
-        $this->productMock->method('getId')->willReturn(9876543210);
         $this->productMock->method('getFinalPrice')->willReturn(self::PRODUCT_PRICE);
         $this->productMock->method('getImageUrl')->willReturn("https://bolt.com/image.png");
         $this->productMock->method('getName')->willReturn("Metal Bolts");
