@@ -2,10 +2,21 @@
 
 require_once('TestHelper.php');
 
+/**
+ * @coversDefaultClass Bolt_Boltpay_Block_Checkout_Boltpay
+ */
 class Bolt_Boltpay_Block_Checkout_BoltpayTest extends PHPUnit_Framework_TestCase
 {
     private $app = null;
 
+    /**
+     * @var PHPUnit_Framework_MockObject_MockObject|Bolt_Boltpay_Helper_Data The mocked Bolt Helper class which is used by the current mock
+     */
+    private $helperMock;
+
+    /**
+     * @var PHPUnit_Framework_MockObject_MockObject|Bolt_Boltpay_Block_Checkout_Boltpay The mocked instance of the block being tested
+     */
     private $currentMock;
 
     /**
@@ -13,6 +24,9 @@ class Bolt_Boltpay_Block_Checkout_BoltpayTest extends PHPUnit_Framework_TestCase
      */
     private $testHelper = null;
 
+    /**
+     * Setup test dependencies, called before each test
+     */
     public function setUp()
     {
         $this->app = Mage::app('default');
@@ -25,7 +39,24 @@ class Bolt_Boltpay_Block_Checkout_BoltpayTest extends PHPUnit_Framework_TestCase
             ->getMock()
         ;
 
+        Mage::unregister('_helper/boltpay');
+        $this->helperMock = $this->getMockBuilder('Bolt_Boltpay_Helper_Data')
+            ->setMethods(
+                ['notifyException', 'logException']
+            )
+            ->getMock();
+
+        Mage::register('_helper/boltpay', $this->helperMock);
+
         $this->testHelper = new Bolt_Boltpay_TestHelper();
+    }
+
+    /**
+     * Resets Magento registry values after all test have run
+     */
+    public static function tearDownAfterClass()
+    {
+        Mage::unregister('_helper/boltpay');
     }
 
     /**
@@ -253,6 +284,89 @@ class Bolt_Boltpay_Block_Checkout_BoltpayTest extends PHPUnit_Framework_TestCase
         $result = $this->currentMock->getSaveOrderUrl();
 
         $this->assertEquals($expected, $result);
+    }
+
+    /**
+     * @test
+     * that a proper product key is returned for every config or an exception is thrown
+     *
+     * @covers ::getPublishableKeyForThisPage
+     * @dataProvider getPublishableKeyForThisPageProvider
+     *
+     * @param string|null $multiStepKey             the multi-step publishable key, empty string or null indicates not set
+     * @param string|null $paymentOnlyKey           the payment-only publishable key, empty string or null indicates not set
+     * @param string      $routeName                The magento path route name
+     * @param string      $controllerName           The magento path controller name
+     * @param string|null $predictedReturnValue     The key that is expected to be returned by the mock or null if not returned
+     */
+    public function getPublishableKeyForThisPage($multiStepKey, $paymentOnlyKey, $routeName, $controllerName, $predictedReturnValue )
+    {
+        $this->currentMock = $this->getMockBuilder('Bolt_Boltpay_Block_Checkout_Boltpay')
+            ->setMethods(array('getPublishableKey'))
+            ->disableOriginalConstructor()
+            ->disableOriginalClone()
+            ->disableArgumentCloning()
+            ->getMock()
+        ;
+        $this->currentMock->getRequest()
+            ->setRouteName($routeName)
+            ->setControllerName($controllerName);
+
+        $mockProxy = new Bolt_Boltpay_Block_Checkout_Boltpay();
+
+        $this->app->getStore()->setConfig('payment/boltpay/publishable_key_multipage', $multiStepKey);
+        $this->app->getStore()->setConfig('payment/boltpay/publishable_key_onepage', $paymentOnlyKey);
+
+        switch ($controllerName) {
+            case 'cart':
+                $routeName = 'catalog';
+                #intentionally falling through because this his handled the same way as catalog/product
+            case 'product':
+                if ($routeName === 'catalog') {
+                    $expectedReturnedValue = $multiStepKey ?: $paymentOnlyKey;
+                    break;
+                }
+                # intentionally falling through because the correct route was not found
+            default:
+                $expectedReturnedValue = $paymentOnlyKey ?: $multiStepKey;
+
+        }
+
+        $this->currentMock->expects($this->exactly(2))->method('getPublishableKey')
+            ->withConsecutive(
+                [$this->equalTo('multi-page')],
+                [$this->equalTo('one-page')]
+            )
+            ->willReturnOnConsecutiveCalls(
+                $mockProxy->getPublishableKey('multi-page'),
+                $mockProxy->getPublishableKey('one-page')
+            )
+        ;
+
+        if ($predictedReturnValue) {
+            $this->assertEquals($expectedReturnedValue, $predictedReturnValue);
+        } else {
+            $this->assertEmpty($expectedReturnedValue, $predictedReturnValue);
+        }
+
+        if (!$multiStepKey && !$paymentOnlyKey) {
+            $this->helperMock->expects($this->once())->method('logException');
+            $this->helperMock->expects($this->once())->method('notifyException');
+        } else {
+            $this->helperMock->expects($this->never())->method('logException');
+            $this->helperMock->expects($this->never())->method('notifyException');
+        }
+
+        try {
+            $actualReturnedValue = $this->currentMock->getPublishableKeyForThisPage();
+            $this->assertNotFalse($multiStepKey || $paymentOnlyKey);
+            $this->assertNotEmpty($expectedReturnedValue);
+            $this->assertEquals($expectedReturnedValue, $actualReturnedValue);
+        } catch (Bolt_Boltpay_BoltException $bbbe) {
+            $this->assertFalse($multiStepKey || $paymentOnlyKey);
+            $this->assertEmpty($expectedReturnedValue);
+            $this->assertEquals("No publishable key has been configured.", $bbbe->getMessage());
+        }
     }
 
     /**
@@ -617,5 +731,37 @@ class Bolt_Boltpay_Block_Checkout_BoltpayTest extends PHPUnit_Framework_TestCase
                 )
             ),
         );
+    }
+
+    /**
+     * Creates diverse scenarios of data for {@see Bolt_Boltpay_Block_Checkout_BoltpayTest::getPublishableKeyForThisPage()}
+     *
+     * @return array[] in the format of [$multiStepKey, $paymentOnlyKey, $routeName, $controllerName, $predictedReturnValue]
+     */
+    public function getPublishableKeyForThisPageProvider() {
+        return [
+            ['multi+payOnly-key-on-cart', 'payOnly+multi-key-on-cart', 'checkout', 'cart', 'multi+payOnly-key-on-cart'],
+            ['multi-key-on-cart', '', 'checkout', 'cart', 'multi-key-on-cart'],
+            ['multi-key-on-cart', null, 'checkout', 'cart', 'multi-key-on-cart'],
+            ['', 'payOnly-key-on-cart', 'checkout', 'cart', 'payOnly-key-on-cart'],
+            [null, '', 'checkout', 'cart', null],
+            ['', '', 'checkout', 'cart', null],
+            ['multi+payOnly-key-on-cart', 'payOnly+multi-key-on-cart', 'custom', 'cart', 'multi+payOnly-key-on-cart'],
+            ['multi-key-on-cart', null, 'custom', 'cart', 'multi-key-on-cart'],
+            [null, 'payOnly-key-on-cart', 'custom', 'cart', 'payOnly-key-on-cart'],
+            [null, null, 'custom', 'cart', null],
+            ['multi+payOnly-key-on-onepage', 'payOnly+multi-key-on-onepage', 'checkout', 'onepage', 'payOnly+multi-key-on-onepage'],
+            [null, 'payOnly-key-on-onepage', 'checkout', 'onepage', 'payOnly-key-on-onepage'],
+            ['multi-key-on-onepage', '', 'checkout', 'onepage', 'multi-key-on-onepage'],
+            ['', '', 'checkout', 'onepage', null],
+            ['multi+payOnly-key-on-homepage', 'payOnly+multi-key-on-homepage', 'cms', 'index', 'payOnly+multi-key-on-homepage'],
+            ['', 'payOnly-key-on-homepage', 'cms', 'index', 'payOnly-key-on-homepage'],
+            ['multi+payOnly-key-on-homepage', '', 'cms', 'index', 'multi+payOnly-key-on-homepage'],
+            ['', '', 'cms', 'index', null],
+            ['multi+payOnly-key-on-product', 'payOnly+multi-key-on-product', 'catalog', 'product', 'multi+payOnly-key-on-product'],
+            ['multi-key-on-product', null, 'catalog', 'product', 'multi-key-on-product'],
+            [null, 'payOnly-key-on-product', 'catalog', 'product', 'payOnly-key-on-product'],
+            [null, null, 'catalog', 'product', null]
+        ];
     }
 }
