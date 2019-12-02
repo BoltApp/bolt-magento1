@@ -1037,21 +1037,4 @@ PROMISE;
         );
         $cartSubmissionData = $cartDataWrapper->getCartData();
     }
-
-    /**
-     * @return bool
-     */
-    protected function isAdmin()
-    {
-        return (bool)Mage::app()->getStore()->isAdmin();
-    }
-
-    /**
-     * @param string $blockType
-     * @return Mage_Core_Block_Abstract
-     */
-    protected function getLayoutBlock($blockType)
-    {
-        return Mage::app()->getLayout()->createBlock($blockType);
-    }
 }

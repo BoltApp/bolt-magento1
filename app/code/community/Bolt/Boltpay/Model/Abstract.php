@@ -24,4 +24,24 @@
 class Bolt_Boltpay_Model_Abstract extends Mage_Core_Model_Abstract
 {
     use Bolt_Boltpay_BoltGlobalTrait;
+
+    /**
+     * @return bool
+     * @throws Mage_Core_Model_Store_Exception
+     */
+    protected function isAdmin()
+    {
+        return (bool)Mage::app()->getStore()->isAdmin();
+    }
+
+    /**
+     * Create Block by type in the current layout.
+     *
+     * @param string $blockType
+     * @return Mage_Core_Block_Abstract
+     */
+    protected function getLayoutBlock($blockType)
+    {
+        return Mage::app()->getLayout()->createBlock($blockType);
+    }
 }
