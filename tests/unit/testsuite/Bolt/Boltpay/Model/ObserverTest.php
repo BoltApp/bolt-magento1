@@ -32,7 +32,7 @@ class Bolt_Boltpay_Model_ObserverTest extends PHPUnit_Framework_TestCase
     public static function setUpBeforeClass()
     {
         // Create some dummy product:
-        self::$productId = Bolt_Boltpay_ProductProvider::createDummyProduct('PHPUNIT_TEST_' . 1);
+        self::$productId = Bolt_Boltpay_ProductProvider::createDummyProduct(uniqid('PHPUNIT_TEST_'));
     }
 
     /**

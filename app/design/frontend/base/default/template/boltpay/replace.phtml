@@ -195,13 +195,15 @@ $additionalClasses = $this->boltHelper()->getAdditionalButtonClasses();
         }
     };
 
-    if (document.addEventListener) {
-        document.addEventListener("DOMContentLoaded", initBoltButtons);
-    } else if (window.attachEvent) {
-        window.attachEvent("onload", initBoltButtons);
-    } else {
-        window.onload = initBoltButtons;
-    }
+    <?php if(count($this->getQuote()->getAllVisibleItems()) > 0):?>
+        if (document.addEventListener) {
+            document.addEventListener("DOMContentLoaded", initBoltButtons);
+        } else if (window.attachEvent) {
+            window.attachEvent("onload", initBoltButtons);
+        } else {
+            window.onload = initBoltButtons;
+        }
+    <?php endif; ?>
 
     <?=$this->getAdditionalJs();?>
 </script>

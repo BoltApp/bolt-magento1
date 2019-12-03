@@ -104,6 +104,7 @@ class Bolt_Boltpay_OrderHelper
         $testHelper->addTestFlatRateShippingAddress($addressData, $paymentMethod);
         $cart = $testHelper->addProduct($productId, $qty);
         $quote = $cart->getQuote();
+        $quote->reserveOrderId();
 
         // Set payment method for the quote
         $quote->getPayment()->importData(array('method' => $paymentMethod));
@@ -128,9 +129,10 @@ class Bolt_Boltpay_OrderHelper
         $resource = Mage::getSingleton('core/resource');
         /** @var Magento_Db_Adapter_Pdo_Mysql $writeConnection */
         $writeConnection = $resource->getConnection('core_write');
-        $table = $resource->getTableName('sales/order');
+        $orderTable = $resource->getTableName('sales/order');
+        $orderGridTable = $resource->getTableName('sales/order_grid');
 
-        $query = "DELETE FROM $table WHERE increment_id = :increment_id";
+        $query = "DELETE ot, ogt FROM $orderTable ot LEFT JOIN $orderGridTable ogt ON ot.increment_id = ogt.increment_id WHERE ot.increment_id = :increment_id";
         $bind = array(
             'increment_id' => (int)$incrementId
         );

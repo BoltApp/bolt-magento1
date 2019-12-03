@@ -701,15 +701,23 @@ class Bolt_Boltpay_Model_Order extends Bolt_Boltpay_Model_Abstract
         if ($transaction->shouldSkipDiscountAndShippingTotalValidation) return;
 
         if ($transaction->shouldDoDiscountTotalValidation) {
-            $magentoDiscountTotal = (int)(($immutableQuote->getBaseSubtotal() - $immutableQuote->getBaseSubtotalWithDiscount()) * 100);
+            $magentoDiscountTotal = (int)round(($immutableQuote->getBaseSubtotal() - $immutableQuote->getBaseSubtotalWithDiscount()) * 100);
             $boltDiscountTotal = (int)$transaction->order->cart->discount_amount->amount;
             $difference = abs($magentoDiscountTotal - $boltDiscountTotal);
             if ( $difference > $priceFaultTolerance ) {
-                throw new Bolt_Boltpay_OrderCreationException(
-                    OCE::E_BOLT_CART_HAS_EXPIRED,
-                    OCE::E_BOLT_CART_HAS_EXPIRED_TMPL_DISCOUNT,
-                    array($boltDiscountTotal, $magentoDiscountTotal)
-                );
+                if ($immutableQuote->getCouponCode()) {
+                    throw new Bolt_Boltpay_OrderCreationException(
+                        OCE::E_BOLT_DISCOUNT_CANNOT_APPLY,
+                        OCE::E_BOLT_DISCOUNT_CANNOT_APPLY_TMPL_COUPON_TOTAL_CHANGED,
+                        array($immutableQuote->getCouponCode(), $boltDiscountTotal, $magentoDiscountTotal)
+                    );
+                } else {
+                    throw new Bolt_Boltpay_OrderCreationException(
+                        OCE::E_BOLT_DISCOUNT_CANNOT_APPLY,
+                        OCE::E_BOLT_DISCOUNT_CANNOT_APPLY_TMPL_TOTAL_CHANGED,
+                        array($boltDiscountTotal, $magentoDiscountTotal)
+                    );
+                }
             } else if ($difference) {
                 $message = "Discount differed by $difference cents.  Bolt: $boltDiscountTotal | Magento: $magentoDiscountTotal";
                 $this->boltHelper()->logWarning($message);

@@ -12,6 +12,8 @@ require_once 'ProductProvider.php';
  */
 class Bolt_Boltpay_ApiControllerTest extends PHPUnit_Framework_TestCase
 {
+    use Bolt_Boltpay_BoltGlobalTrait;
+
     /**
      * @var PHPUnit_Framework_MockObject_MockBuilder The builder for a generically mocked API controller
      *      that is the subject of these test
@@ -88,7 +90,7 @@ class Bolt_Boltpay_ApiControllerTest extends PHPUnit_Framework_TestCase
 
         /** @var Bolt_Boltpay_ApiController|PHPUnit_Framework_MockObject_MockObject $apiControllerMock */
         $apiControllerMock = $this->_apiControllerBuilder
-            ->setMethods(['getRequestData', 'boltHelper'])
+            ->setMethods(['getRequestData', 'boltHelper', 'sendResponse'])
             ->getMock();
 
         ///////////////////////////////////////////////////////////////////////
@@ -116,6 +118,7 @@ class Bolt_Boltpay_ApiControllerTest extends PHPUnit_Framework_TestCase
 
         $payment = self::$_mockOrder->getPayment();
 
+        // Pre-auth orders will not yet have an authorization nor Bolt transaction reference
         $this->assertFalse(
             $payment->getAdditionalInformation('bolt_reference')
             || $payment->getAuthorizationTransaction()
@@ -127,20 +130,21 @@ class Bolt_Boltpay_ApiControllerTest extends PHPUnit_Framework_TestCase
             ->method('sendResponse')
             ->with($this->equalTo(200));
 
-        $this->assertFalse(self::$_mockOrder->isCanceled());
-
         ######################################
         # Calling the subject method
         ######################################
         $apiControllerMock->hookAction();
         ######################################
 
+        # demonstrate that no attempt was made to mark the order as authorized
         $this->assertFalse(
             $payment->getAdditionalInformation('bolt_reference')
             || $payment->getAuthorizationTransaction()
             || $payment->getLastTransId()
         );
-        $this->assertTrue(self::$_mockOrder->isCanceled());
+
+        # demonstrate that no attempt was made to cancel the order.
+        $this->assertFalse(self::$_mockOrder->isCanceled());
     }
 
     /**
@@ -148,9 +152,9 @@ class Bolt_Boltpay_ApiControllerTest extends PHPUnit_Framework_TestCase
      */
     public function testHookAction_thatStandardDisplayIdIsSupportedForFailedPayment() {
 
-        /** @var Bolt_Boltpay_ApiController|PHPUnit_Framework_MockObject_MockObject $apiControllerMock */
+        /** @var MockApiController|PHPUnit_Framework_MockObject_MockObject $apiControllerMock */
         $apiControllerMock = $this->_apiControllerBuilder
-            ->setMethods(['getRequestData', 'handleFailedPaymentHook'])
+            ->setMethods(['getRequestData', 'sendResponse'])
             ->getMock();
 
         ///////////////////////////////////////////////////////////////////////
@@ -162,16 +166,17 @@ class Bolt_Boltpay_ApiControllerTest extends PHPUnit_Framework_TestCase
         $stubbedRequestData->type = 'failed_payment';
         $stubbedRequestData->display_id = '9876543210';
 
-        /** @var Bolt_Boltpay_ApiController|PHPUnit_Framework_MockObject_MockObject $apiControllerMock */
-        $apiControllerMock = $this->_apiControllerBuilder
-            ->setMethods(['getRequestData', 'handleFailedPaymentHook'])
-            ->getMock();
-
         $apiControllerMock->method('getRequestData')->willReturn($stubbedRequestData);
         $apiControllerMock
             ->expects($this->once())
-            ->method('handleFailedPaymentHook')
-            ->with($this->equalTo('9876543210'));
+            ->method('sendResponse')
+            ->with(
+                200,
+                array(
+                    'status' => 'success',
+                    'message' => $this->boltHelper()->__('Order %s has been canceled prior to authorization', "9876543210")
+                )
+            );
 
         ######################################
         # Calling the subject method
@@ -185,9 +190,9 @@ class Bolt_Boltpay_ApiControllerTest extends PHPUnit_Framework_TestCase
      */
     public function testHookAction_thatPipedDisplayIdIsSupportedForFailedPayment() {
 
-        /** @var Bolt_Boltpay_ApiController|PHPUnit_Framework_MockObject_MockObject $apiControllerMock */
+        /** @var MockApiController|PHPUnit_Framework_MockObject_MockObject $apiControllerMock */
         $apiControllerMock = $this->_apiControllerBuilder
-            ->setMethods(['getRequestData', 'handleFailedPaymentHook'])
+            ->setMethods(['getRequestData', 'handleFailedPaymentHook', 'sendResponse'])
             ->getMock();
 
         ///////////////////////////////////////////////////////////////////////
@@ -202,8 +207,14 @@ class Bolt_Boltpay_ApiControllerTest extends PHPUnit_Framework_TestCase
         $apiControllerMock->method('getRequestData')->willReturn($stubbedRequestData);
         $apiControllerMock
             ->expects($this->once())
-            ->method('handleFailedPaymentHook')
-            ->with($this->equalTo('1234567890'));
+            ->method('sendResponse')
+            ->with(
+                200,
+                array(
+                    'status' => 'success',
+                    'message' => $this->boltHelper()->__('Order %s has been canceled prior to authorization', "1234567890")
+                )
+            );
 
         ######################################
         # Calling the subject method

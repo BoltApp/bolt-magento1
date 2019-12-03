@@ -47,7 +47,6 @@ class Bolt_Boltpay_OrderCreationException extends Bolt_Boltpay_BoltException
     const E_BOLT_CART_HAS_EXPIRED_TMPL_NOT_FOUND          = '{"reason": "Cart does not exist with reference", "reference": "%s"}';
     const E_BOLT_CART_HAS_EXPIRED_TMPL_NOT_PURCHASABLE    = '{"reason": "The product is not purchasable", "product_id": "%d"}';
     const E_BOLT_CART_HAS_EXPIRED_TMPL_GRAND_TOTAL        = '{"reason": "Grand total has changed", "old_value": "%d", "new_value": "%d"}';
-    const E_BOLT_CART_HAS_EXPIRED_TMPL_DISCOUNT           = '{"reason": "Discount total has changed", "old_value": "%d", "new_value": "%d"}';
     const E_BOLT_CART_HAS_EXPIRED_TMPL_TAX                = '{"reason": "Tax amount has changed", "old_value": "%d", "new_value": "%d"}';
 
     /**
@@ -72,8 +71,10 @@ class Bolt_Boltpay_OrderCreationException extends Bolt_Boltpay_BoltException
      * Error applying discount to the cart
      */
     const E_BOLT_DISCOUNT_CANNOT_APPLY                 = 2001006;
-    const E_BOLT_DISCOUNT_CANNOT_APPLY_TMPL_EXPIRED    = '{"reason": "This coupon has expired", "discount_code": "%s"}';
-    const E_BOLT_DISCOUNT_CANNOT_APPLY_TMPL_GENERIC    = '{"reason": "%s", "discount_code": "%s"}';
+    const E_BOLT_DISCOUNT_CANNOT_APPLY_TMPL_COUPON_TOTAL_CHANGED    = '{"reason": "Discount amount has changed", "discount_code": "%s", "old_value": "%d", "new_value": "%d"}';
+    const E_BOLT_DISCOUNT_CANNOT_APPLY_TMPL_TOTAL_CHANGED           = '{"reason": "Discount total has changed", "old_value": "%d", "new_value": "%d"}';
+    const E_BOLT_DISCOUNT_CANNOT_APPLY_TMPL_EXPIRED                 = '{"reason": "This coupon has expired", "discount_code": "%s"}';
+    const E_BOLT_DISCOUNT_CANNOT_APPLY_TMPL_GENERIC                 = '{"reason": "%s", "discount_code": "%s"}';
 
     /**
      * Invalid discount code used
