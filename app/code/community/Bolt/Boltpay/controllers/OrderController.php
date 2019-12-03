@@ -32,7 +32,6 @@ class Bolt_Boltpay_OrderController
     public function saveAction()
     {
         try {
-
             if (!$this->getRequest()->isAjax()) {
                 Mage::throwException($this->boltHelper()->__("Bolt_Boltpay_OrderController::saveAction called with a non AJAX call"));
             }
@@ -64,9 +63,8 @@ class Bolt_Boltpay_OrderController
 
             if ($order->isObjectNew()) {
                 $sessionQuoteId = ($this->getRequest()->getParam('checkoutType') == Bolt_Boltpay_Block_Checkout_Boltpay::CHECKOUT_TYPE_PRODUCT_PAGE) ? null : $checkoutSession->getQuoteId();
-                $orderModel->createOrder($reference,$sessionQuoteId, false, $transaction);
+                $orderModel->createOrder($reference, $sessionQuoteId, false, $transaction);
             }
-
         } catch (Exception $e) {
             $this->boltHelper()->notifyException($e);
             $this->boltHelper()->logException($e);
@@ -193,8 +191,7 @@ class Bolt_Boltpay_OrderController
             $this->getResponse()->setHeader('Content-type', 'application/json');
             $this->getResponse()->setBody($response);
         } catch (Exception $e) {
-            if (
-                strpos($e->getMessage(), $this->boltHelper()->__('No order found')) !== 0 ||
+            if (strpos($e->getMessage(), $this->boltHelper()->__('No order found')) !== 0 &&
                 strpos($e->getMessage(), $this->boltHelper()->__('No payment found')) !== 0
             ) {
                 $this->getResponse()->setHttpResponseCode(404)
