@@ -346,7 +346,7 @@ class Bolt_Boltpay_Block_Checkout_BoltpayTest extends PHPUnit_Framework_TestCase
         if ($predictedReturnValue) {
             $this->assertEquals($expectedReturnedValue, $predictedReturnValue);
         } else {
-            $this->assertEmpty($expectedReturnedValue, $predictedReturnValue);
+            $this->assertEmpty($expectedReturnedValue);
         }
 
         if (!$multiStepKey && !$paymentOnlyKey) {
