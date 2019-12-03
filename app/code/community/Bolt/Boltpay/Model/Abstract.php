@@ -40,7 +40,7 @@ class Bolt_Boltpay_Model_Abstract extends Mage_Core_Model_Abstract
      * @param string $blockType
      * @return Mage_Core_Block_Abstract
      */
-    protected function getLayoutBlock($blockType)
+    protected function createLayoutBlock($blockType)
     {
         return Mage::app()->getLayout()->createBlock($blockType);
     }
