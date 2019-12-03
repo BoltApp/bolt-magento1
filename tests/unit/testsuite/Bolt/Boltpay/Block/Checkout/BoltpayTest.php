@@ -359,7 +359,7 @@ class Bolt_Boltpay_Block_Checkout_BoltpayTest extends PHPUnit_Framework_TestCase
 
         try {
             $actualReturnedValue = $this->currentMock->getPublishableKeyForThisPage();
-            $this->assertNotFalse($multiStepKey || $paymentOnlyKey);
+            $this->assertTrue($multiStepKey || $paymentOnlyKey);
             $this->assertNotEmpty($expectedReturnedValue);
             $this->assertEquals($expectedReturnedValue, $actualReturnedValue);
         } catch (Bolt_Boltpay_BoltException $bbbe) {
