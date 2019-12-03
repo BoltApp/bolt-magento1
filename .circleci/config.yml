@@ -2,7 +2,7 @@ version: 2
 jobs:
   unit-php54-mage18:
     docker:
-      - image: corbinu/php54-apache
+      - image: php:5.4-apache
       - image: circleci/mysql:5.7
     steps:
       - checkout
@@ -17,7 +17,7 @@ jobs:
 
   unit-php54-mage19:
     docker:
-      - image: corbinu/php54-apache
+      - image: php:5.4-apache
       - image: circleci/mysql:5.7
     steps:
     - checkout
