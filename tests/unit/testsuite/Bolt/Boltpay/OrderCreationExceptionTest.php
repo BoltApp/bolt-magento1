@@ -1,4 +1,5 @@
 <?php
+require_once('TestHelper.php');
 
 use Bolt_Boltpay_Controller_Interface as RESPONSE_CODE;
 
@@ -36,7 +37,7 @@ class Bolt_Boltpay_OrderCreationExceptionTest extends PHPUnit_Framework_TestCase
         $exception = json_decode($exceptionJson);
 
         $this->assertNotEmpty($exception->status);
-        $this->assertExceptionProperties($exception);
+        $this->assertExceptionProperties($exception, Bolt_Boltpay_OrderCreationException::E_BOLT_GENERAL_ERROR);
         $this->assertNotEmpty($exception->error[0]->data[0]->reason);
 
         $this->assertEquals(Bolt_Boltpay_OrderCreationException::E_BOLT_GENERAL_ERROR, $exception->error[0]->code);
@@ -59,7 +60,7 @@ class Bolt_Boltpay_OrderCreationExceptionTest extends PHPUnit_Framework_TestCase
         $exceptionJson = $boltOrderCreationException->getJson();
         $exception = json_decode($exceptionJson);
 
-        $this->assertExceptionProperties($exception);
+        $this->assertExceptionProperties($exception, Bolt_Boltpay_OrderCreationException::E_BOLT_ORDER_ALREADY_EXISTS);
         $this->assertEquals($dataValues[0], $exception->error[0]->data[0]->display_id);
         $this->assertEquals($dataValues[1], $exception->error[0]->data[0]->order_status);
 
@@ -80,7 +81,7 @@ class Bolt_Boltpay_OrderCreationExceptionTest extends PHPUnit_Framework_TestCase
         $exceptionJson = $boltOrderCreationException->getJson();
         $exception = json_decode($exceptionJson);
 
-        $this->assertExceptionProperties($exception);
+        $this->assertExceptionProperties($exception, Bolt_Boltpay_OrderCreationException::E_BOLT_CART_HAS_EXPIRED);
         $this->assertEquals('Cart is empty', $exception->error[0]->data[0]->reason);
         $this->assertEquals(RESPONSE_CODE::HTTP_GONE, $boltOrderCreationException->getHttpCode());
 
@@ -92,7 +93,7 @@ class Bolt_Boltpay_OrderCreationExceptionTest extends PHPUnit_Framework_TestCase
         $exceptionJson = $boltOrderCreationException->getJson();
         $exception = json_decode($exceptionJson);
 
-        $this->assertExceptionProperties($exception);
+        $this->assertExceptionProperties($exception, Bolt_Boltpay_OrderCreationException::E_BOLT_CART_HAS_EXPIRED);
         $this->assertEquals('Cart has expired', $exception->error[0]->data[0]->reason);
         $this->assertEquals(RESPONSE_CODE::HTTP_GONE, $boltOrderCreationException->getHttpCode());
 
@@ -106,7 +107,7 @@ class Bolt_Boltpay_OrderCreationExceptionTest extends PHPUnit_Framework_TestCase
         $exceptionJson = $boltOrderCreationException->getJson();
         $exception = json_decode($exceptionJson);
 
-        $this->assertExceptionProperties($exception);
+        $this->assertExceptionProperties($exception, Bolt_Boltpay_OrderCreationException::E_BOLT_CART_HAS_EXPIRED);
         $this->assertEquals('Cart does not exist with reference', $exception->error[0]->data[0]->reason);
         $this->assertEquals($dataValues[0], $exception->error[0]->data[0]->reference);
         $this->assertEquals(RESPONSE_CODE::HTTP_NOT_FOUND, $boltOrderCreationException->getHttpCode());
@@ -121,7 +122,7 @@ class Bolt_Boltpay_OrderCreationExceptionTest extends PHPUnit_Framework_TestCase
         $exceptionJson = $boltOrderCreationException->getJson();
         $exception = json_decode($exceptionJson);
 
-        $this->assertExceptionProperties($exception);
+        $this->assertExceptionProperties($exception, Bolt_Boltpay_OrderCreationException::E_BOLT_CART_HAS_EXPIRED);
         $this->assertEquals('The product is not purchasable', $exception->error[0]->data[0]->reason);
         $this->assertEquals($dataValues[0], $exception->error[0]->data[0]->product_id);
         $this->assertEquals(RESPONSE_CODE::HTTP_UNPROCESSABLE_ENTITY, $boltOrderCreationException->getHttpCode());
@@ -136,23 +137,40 @@ class Bolt_Boltpay_OrderCreationExceptionTest extends PHPUnit_Framework_TestCase
         $exceptionJson = $boltOrderCreationException->getJson();
         $exception = json_decode($exceptionJson);
 
-        $this->assertExceptionProperties($exception);
+        $this->assertExceptionProperties($exception, Bolt_Boltpay_OrderCreationException::E_BOLT_CART_HAS_EXPIRED);
         $this->assertEquals('Grand total has changed', $exception->error[0]->data[0]->reason);
         $this->assertEquals($dataValues[0], $exception->error[0]->data[0]->old_value);
         $this->assertEquals($dataValues[1], $exception->error[0]->data[0]->new_value);
         $this->assertEquals(RESPONSE_CODE::HTTP_UNPROCESSABLE_ENTITY, $boltOrderCreationException->getHttpCode());
 
-        // Cart discount total has changed
-        $dataValues = [100, 150];
+        // Cart discount coupon total has changed
+        $dataValues = ['BOLT10OFF', 100, 150];
         $boltOrderCreationException = new Bolt_Boltpay_OrderCreationException(
-            Bolt_Boltpay_OrderCreationException::E_BOLT_CART_HAS_EXPIRED,
-            Bolt_Boltpay_OrderCreationException::E_BOLT_CART_HAS_EXPIRED_TMPL_DISCOUNT,
+            Bolt_Boltpay_OrderCreationException::E_BOLT_DISCOUNT_CANNOT_APPLY,
+            Bolt_Boltpay_OrderCreationException::E_BOLT_DISCOUNT_CANNOT_APPLY_TMPL_COUPON_TOTAL_CHANGED,
             $dataValues
         );
         $exceptionJson = $boltOrderCreationException->getJson();
         $exception = json_decode($exceptionJson);
 
-        $this->assertExceptionProperties($exception);
+        $this->assertExceptionProperties($exception, Bolt_Boltpay_OrderCreationException::E_BOLT_DISCOUNT_CANNOT_APPLY);
+        $this->assertEquals('Discount amount has changed', $exception->error[0]->data[0]->reason);
+        $this->assertEquals($dataValues[0], $exception->error[0]->data[0]->discount_code);
+        $this->assertEquals($dataValues[1], $exception->error[0]->data[0]->old_value);
+        $this->assertEquals($dataValues[2], $exception->error[0]->data[0]->new_value);
+        $this->assertEquals(RESPONSE_CODE::HTTP_UNPROCESSABLE_ENTITY, $boltOrderCreationException->getHttpCode());
+
+        // Cart discount total has changed
+        $dataValues = [100, 150];
+        $boltOrderCreationException = new Bolt_Boltpay_OrderCreationException(
+            Bolt_Boltpay_OrderCreationException::E_BOLT_DISCOUNT_CANNOT_APPLY,
+            Bolt_Boltpay_OrderCreationException::E_BOLT_DISCOUNT_CANNOT_APPLY_TMPL_TOTAL_CHANGED,
+            $dataValues
+        );
+        $exceptionJson = $boltOrderCreationException->getJson();
+        $exception = json_decode($exceptionJson);
+
+        $this->assertExceptionProperties($exception, Bolt_Boltpay_OrderCreationException::E_BOLT_DISCOUNT_CANNOT_APPLY);
         $this->assertEquals('Discount total has changed', $exception->error[0]->data[0]->reason);
         $this->assertEquals($dataValues[0], $exception->error[0]->data[0]->old_value);
         $this->assertEquals($dataValues[1], $exception->error[0]->data[0]->new_value);
@@ -168,7 +186,7 @@ class Bolt_Boltpay_OrderCreationExceptionTest extends PHPUnit_Framework_TestCase
         $exceptionJson = $boltOrderCreationException->getJson();
         $exception = json_decode($exceptionJson);
 
-        $this->assertExceptionProperties($exception);
+        $this->assertExceptionProperties($exception, Bolt_Boltpay_OrderCreationException::E_BOLT_CART_HAS_EXPIRED);
         $this->assertEquals('Tax amount has changed', $exception->error[0]->data[0]->reason);
         $this->assertEquals($dataValues[0], $exception->error[0]->data[0]->old_value);
         $this->assertEquals($dataValues[1], $exception->error[0]->data[0]->new_value);
@@ -190,7 +208,7 @@ class Bolt_Boltpay_OrderCreationExceptionTest extends PHPUnit_Framework_TestCase
         $exceptionJson = $boltOrderCreationException->getJson();
         $exception = json_decode($exceptionJson);
 
-        $this->assertExceptionProperties($exception);
+        $this->assertExceptionProperties($exception, Bolt_Boltpay_OrderCreationException::E_BOLT_ITEM_PRICE_HAS_BEEN_UPDATED);
         $this->assertEquals($dataValues[0], $exception->error[0]->data[0]->product_id);
         $this->assertEquals($dataValues[1], $exception->error[0]->data[0]->old_price);
         $this->assertEquals($dataValues[2], $exception->error[0]->data[0]->new_price);
@@ -212,7 +230,7 @@ class Bolt_Boltpay_OrderCreationExceptionTest extends PHPUnit_Framework_TestCase
         $exceptionJson = $boltOrderCreationException->getJson();
         $exception = json_decode($exceptionJson);
 
-        $this->assertExceptionProperties($exception);
+        $this->assertExceptionProperties($exception, Bolt_Boltpay_OrderCreationException::E_BOLT_OUT_OF_INVENTORY);
         $this->assertEquals($dataValues[0], $exception->error[0]->data[0]->product_id);
         $this->assertEquals($dataValues[1], $exception->error[0]->data[0]->available_quantity);
         $this->assertEquals($dataValues[2], $exception->error[0]->data[0]->needed_quantity);
@@ -235,7 +253,7 @@ class Bolt_Boltpay_OrderCreationExceptionTest extends PHPUnit_Framework_TestCase
         $exceptionJson = $boltOrderCreationException->getJson();
         $exception = json_decode($exceptionJson);
 
-        $this->assertExceptionProperties($exception);
+        $this->assertExceptionProperties($exception, Bolt_Boltpay_OrderCreationException::E_BOLT_DISCOUNT_CANNOT_APPLY);
         $this->assertEquals($dataValues[0], $exception->error[0]->data[0]->reason);
         $this->assertEquals($dataValues[1], $exception->error[0]->data[0]->discount_code);
 
@@ -249,7 +267,7 @@ class Bolt_Boltpay_OrderCreationExceptionTest extends PHPUnit_Framework_TestCase
         $exceptionJson = $boltOrderCreationException->getJson();
         $exception = json_decode($exceptionJson);
 
-        $this->assertExceptionProperties($exception);
+        $this->assertExceptionProperties($exception, Bolt_Boltpay_OrderCreationException::E_BOLT_DISCOUNT_CANNOT_APPLY);
         $this->assertEquals('This coupon has expired', $exception->error[0]->data[0]->reason);
         $this->assertEquals($dataValues[0], $exception->error[0]->data[0]->discount_code);
         $this->assertEquals(RESPONSE_CODE::HTTP_UNPROCESSABLE_ENTITY, $boltOrderCreationException->getHttpCode());
@@ -270,7 +288,7 @@ class Bolt_Boltpay_OrderCreationExceptionTest extends PHPUnit_Framework_TestCase
         $exceptionJson = $boltOrderCreationException->getJson();
         $exception = json_decode($exceptionJson);
 
-        $this->assertExceptionProperties($exception);
+        $this->assertExceptionProperties($exception, Bolt_Boltpay_OrderCreationException::E_BOLT_DISCOUNT_DOES_NOT_EXIST);
         $this->assertEquals($dataValues[0], $exception->error[0]->data[0]->discount_code);
         $this->assertEquals(RESPONSE_CODE::HTTP_UNPROCESSABLE_ENTITY, $boltOrderCreationException->getHttpCode());
     }
@@ -290,7 +308,7 @@ class Bolt_Boltpay_OrderCreationExceptionTest extends PHPUnit_Framework_TestCase
         $exceptionJson = $boltOrderCreationException->getJson();
         $exception = json_decode($exceptionJson);
 
-        $this->assertExceptionProperties($exception);
+        $this->assertExceptionProperties($exception, Bolt_Boltpay_OrderCreationException::E_BOLT_SHIPPING_PRICE_HAS_BEEN_UPDATED);
         $this->assertEquals('Shipping total has changed', $exception->error[0]->data[0]->reason);
         $this->assertEquals($dataValues[0], $exception->error[0]->data[0]->old_value);
         $this->assertEquals($dataValues[1], $exception->error[0]->data[0]->new_value);
@@ -312,7 +330,7 @@ class Bolt_Boltpay_OrderCreationExceptionTest extends PHPUnit_Framework_TestCase
         $exceptionJson = $boltOrderCreationException->getJson();
         $exception = json_decode($exceptionJson);
 
-        $this->assertExceptionProperties($exception);
+        $this->assertExceptionProperties($exception, Bolt_Boltpay_OrderCreationException::E_BOLT_SHIPPING_PRICE_HAS_BEEN_UPDATED);
         $this->assertEquals('Shipping total has changed', $exception->error[0]->data[0]->reason);
         $this->assertNotEquals($dataValues[0], $exception->error[0]->data[0]->old_value);
         $this->assertNotEquals($dataValues[1], $exception->error[0]->data[0]->new_value);
@@ -341,7 +359,7 @@ class Bolt_Boltpay_OrderCreationExceptionTest extends PHPUnit_Framework_TestCase
         $exception = json_decode($exceptionJson);
 
         $this->assertNotEmpty($exception->status);
-        $this->assertExceptionProperties($exception);
+        $this->assertExceptionProperties($exception, Bolt_Boltpay_OrderCreationException::E_BOLT_GENERAL_ERROR);
         $this->assertNotEmpty($exception->error[0]->data[0]->reason);
 
         $this->assertEquals(Bolt_Boltpay_OrderCreationException::E_BOLT_GENERAL_ERROR, $exception->error[0]->code);
@@ -366,7 +384,7 @@ class Bolt_Boltpay_OrderCreationExceptionTest extends PHPUnit_Framework_TestCase
         $exceptionJson = $boltOrderCreationException->getJson();
         $exception = json_decode($exceptionJson);
 
-        $this->assertExceptionProperties($exception);
+        $this->assertExceptionProperties($exception, Bolt_Boltpay_OrderCreationException::E_BOLT_GENERAL_ERROR);
         $this->assertEquals($reason, $exception->error[0]->data[0]->reason);
 
         $this->assertEquals(RESPONSE_CODE::HTTP_UNPROCESSABLE_ENTITY, $boltOrderCreationException->getHttpCode());
@@ -382,42 +400,29 @@ class Bolt_Boltpay_OrderCreationExceptionTest extends PHPUnit_Framework_TestCase
 
         $errorMessage = 'test non-existing code';
         $templateData = ['this error is from the template'];
-        $mock = $this->mockBuilder->setConstructorArgs(array(
+        $boltOrderCreationException = new Bolt_Boltpay_OrderCreationException(
             12345,
             Bolt_Boltpay_OrderCreationException::E_BOLT_GENERAL_ERROR_TMPL_GENERIC,
             $templateData,
             $errorMessage
-        ))->setMethods(null)->getMock();
-        $result = Bolt_Boltpay_TestHelper::callNonPublicFunction($mock, 'createJson', array(
-            12345,
-            Bolt_Boltpay_OrderCreationException::E_BOLT_GENERAL_ERROR_TMPL_GENERIC,
-            $templateData
-        ));
-        $this->assertInternalType('string', $result);
-        $json = $mock->getJson();
-        $this->assertInternalType('string', $json);
-        $this->markTestIncomplete(
-            'method getJson has error.'
         );
-        /*
-        '{
-            "status": "failure",
-            "error": [{
-                "code": 2001001,
-                "data": [
-                    {
-                        "reason": "test non-existing code Supplied error:
-                    {
-                        "status": "failure",
-                        "error": [{
-                            "code": 12345,
-                            "data": [{"reason": "this error is from the template"}]
-                        }]
-                    }"
-                }]
-            }]
-        }'
-        */
+
+        $createJsonResult = Bolt_Boltpay_TestHelper::callNonPublicFunction(
+            $boltOrderCreationException,
+            'createJson',
+            [
+                12345,
+                Bolt_Boltpay_OrderCreationException::E_BOLT_GENERAL_ERROR_TMPL_GENERIC,
+                $templateData
+            ]
+        );
+
+        $this->assertContains(
+            "Supplied error:",
+            $boltOrderCreationException->getJson()
+        );
+
+        $this->assertEquals(RESPONSE_CODE::HTTP_UNPROCESSABLE_ENTITY, $boltOrderCreationException->getHttpCode());
     }
 
     /**
@@ -448,11 +453,12 @@ class Bolt_Boltpay_OrderCreationExceptionTest extends PHPUnit_Framework_TestCase
      * Helper function for asserting that all required params exist in the exception instance
      *
      * @param Throwable $exception The exception instance we are testing
+     * @param int       $code      The Bolt int code that classifies the exception
      */
-    private function assertExceptionProperties($exception)
+    private function assertExceptionProperties($exception, $code)
     {
         $this->assertNotEmpty($exception->error);
-        $this->assertNotEmpty($exception->error[0]->code);
+        $this->assertEquals($code, $exception->error[0]->code);
         $this->assertNotEmpty($exception->error[0]->data);
         $this->assertEquals('failure', $exception->status);
     }

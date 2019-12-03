@@ -72,28 +72,37 @@ class Bolt_Boltpay_Model_CouponTest extends PHPUnit_Framework_TestCase
     public static function setUpBeforeClass()
     {
         try {
-            self::$ruleId = Bolt_Boltpay_CouponHelper::createDummyRule(self::$couponExistCode);
-            self::$invalidRuleId = Bolt_Boltpay_CouponHelper::createDummyRule(
-                self::$invalidCouponCode,
-                array(
-                    'from_date'         => (new \DateTime('now +1 day'))->format('Y-m-d'),
-                    'to_date'           => '2000-01-01',
-                    'uses_per_customer' => 1
-                ),
-                array(
-                    'usage_limit'        => 100,
-                    'times_used'         => 100,
-                    'usage_per_customer' => 1
-                )
-            );
+            self::$ruleId = Bolt_Boltpay_CouponHelper::getCouponIdByCode(self::$couponExistCode)
+                ?: Bolt_Boltpay_CouponHelper::createDummyRule(self::$couponExistCode);
+
+            self::$couponCodeId = Bolt_Boltpay_CouponHelper::getCouponIdByCode(self::$invalidCouponCode);
+
+            if (!self::$couponCodeId) {
+                self::$invalidRuleId = Bolt_Boltpay_CouponHelper::createDummyRule(
+                    self::$invalidCouponCode,
+                    array(
+                        'from_date'         => (new \DateTime('now +1 day'))->format('Y-m-d'),
+                        'to_date'           => '2000-01-01',
+                        'uses_per_customer' => 1
+                    ),
+                    array(
+                        'usage_limit'        => 100,
+                        'times_used'         => 100,
+                        'usage_per_customer' => 1
+                    )
+                );
+                self::$couponCodeId = Bolt_Boltpay_CouponHelper::getCouponIdByCode(self::$invalidCouponCode);
+            }
+
             self::$customerId = Bolt_Boltpay_CouponHelper::createDummyCustomer();
             self::$quoteId = Bolt_Boltpay_CouponHelper::createDummyQuote(
                 array('customer_id' => self::$customerId, 'coupon_code', self::$invalidCouponCode)
             );
-            self::$couponCodeId = Bolt_Boltpay_CouponHelper::getCouponIdByCode(self::$invalidCouponCode);
-            self::$productId = Bolt_Boltpay_ProductProvider::createDummyProduct('PHPUNIT_TEST_'.time());
+
+            self::$productId = Bolt_Boltpay_ProductProvider::createDummyProduct(uniqid('PHPUNIT_TEST_'));
         } catch (\Exception $e) {
             self::tearDownAfterClass();
+            throw $e;
         }
     }
 
@@ -191,15 +200,22 @@ class Bolt_Boltpay_Model_CouponTest extends PHPUnit_Framework_TestCase
      */
     public function testPassValidateRuleExists()
     {
-        $passed = true;
+        $couponWasFound = true;
         try {
             $this->setupEnvironment(array('discount_code' => self::$couponExistCode));
+            $mockCoupon = new Varien_Object();
+            $mockCoupon->setRuleId(self::$ruleId);
+            Bolt_Boltpay_TestHelper::setNonPublicProperty(
+                $this->currentMock,
+                'coupon',
+                $mockCoupon
+            );
             $this->currentMock->validateRuleExists();
         } catch (\Bolt_Boltpay_BadInputException $e) {
-            $passed = false;
+            $couponWasFound = false;
         }
 
-        $this->assertTrue($passed);
+        $this->assertTrue($couponWasFound);
     }
 
     /**
@@ -207,15 +223,15 @@ class Bolt_Boltpay_Model_CouponTest extends PHPUnit_Framework_TestCase
      */
     public function testFailValidateRuleExists()
     {
-        $passed = true;
+        $couponWasFound = true;
         try {
             $this->setupEnvironment(array('discount_code' => 'BOLT_NOT_EXISTS_CODE'));
             $this->currentMock->validateRuleExists();
         } catch (\Bolt_Boltpay_BadInputException $e) {
-            $passed = false;
+            $couponWasFound = false;
         }
 
-        $this->assertFalse($passed);
+        $this->assertFalse($couponWasFound);
     }
 
     /**
@@ -363,9 +379,9 @@ class Bolt_Boltpay_Model_CouponTest extends PHPUnit_Framework_TestCase
         try {
             $testHelper = new Bolt_Boltpay_TestHelper();
             $cart = $testHelper->addProduct(self::$productId, 2);
-            $quote = $cart->getQuote();
-
-            $this->setupEnvironment(array('cart' => array('display_id' => '100010289|' . $quote->getId())));
+            $mockQuote = $cart->getQuote();
+            $mockQuote->setItemsCount(2)->save();
+            $this->setupEnvironment(array('cart' => array('display_id' => '100010289|' . $mockQuote->getId())));
             $this->currentMock->validateEmptyCart();
         } catch (\Bolt_Boltpay_BadInputException $e) {
             $passed = false;

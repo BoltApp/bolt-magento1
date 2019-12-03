@@ -32,7 +32,7 @@ class Bolt_Boltpay_Helper_DataTest extends PHPUnit_Framework_TestCase
     public static function setUpBeforeClass()
     {
         // Create some dummy product:
-        self::$productId = Bolt_Boltpay_ProductProvider::createDummyProduct('PHPUNIT_TEST_' . time());
+        self::$productId = Bolt_Boltpay_ProductProvider::createDummyProduct(uniqid('PHPUNIT_TEST_'));
     }
 
     /**
@@ -132,6 +132,16 @@ class Bolt_Boltpay_Helper_DataTest extends PHPUnit_Framework_TestCase
         $this->testHelper->addTestBillingAddress();
         $cart = $this->testHelper->addProduct(self::$productId, 2);
         $quote = $cart->getQuote();
+
+        $this->assertTrue($this->dataHelper->canUseBolt($quote));
+    }
+
+    public function testCanUseBoltReturnsTrueIfCartIsEmpty()
+    {
+        $this->app->getStore()->setConfig('payment/boltpay/active', 1);
+        $this->app->getStore()->setConfig('payment/boltpay/allowspecific', 0);
+        $this->testHelper->createCheckout('guest');
+        $quote = Mage::getModel('sales/quote');
 
         $this->assertTrue($this->dataHelper->canUseBolt($quote));
     }

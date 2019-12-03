@@ -66,17 +66,17 @@ class Bolt_Boltpay_Model_Cron
      */
     public function cleanupOrders() {
         try {
-            $expiration_time = Mage::getSingleton('core/date')
-                ->gmtDate('Y-m-d H:i:s', time()-(60*PRE_AUTH_STATE_TIME_LIMIT_MINUTES));  // Magento uses GMT to save in DB
+            $expiration_time = gmdate('Y-m-d H:i:s', time()-(60*self::PRE_AUTH_STATE_TIME_LIMIT_MINUTES));  // Magento uses GMT to save in DB
 
             /* @var Mage_Sales_Model_Resource_Order_Collection $orderCollection */
             $orderCollection = Mage::getModel('sales/order')->getCollection();
 
+             $orderCollection
+                ->addFieldToFilter('created_at', array( 'gteq' => $expiration_time))
+                ->setOrder('created_at', 'ASC');
+
             /** @var Mage_Sales_Model_Order $deletePendingPaymentOrdersBeforeThis */
-            $deletePendingPaymentOrdersBeforeThis = $orderCollection
-                ->addFieldToFilter('created_at', array( 'gte' => $expiration_time))
-                ->setOrder('created_at', 'ASC')
-                ->getFirstItem();
+            $deletePendingPaymentOrdersBeforeThis = $orderCollection->getFirstItem();
 
             /* @var Mage_Sales_Model_Resource_Order_Collection $expiredPendindOrderCollection */
             $expiredPendingPaymentOrderCollection = Mage::getModel('sales/order')->getCollection();

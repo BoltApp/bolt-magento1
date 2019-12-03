@@ -54,8 +54,7 @@ trait Bolt_Boltpay_Helper_GeneralTrait {
         $canQuoteUseBolt = $this->isBoltPayActive()
             && (!$checkCountry || ($checkCountry && $this->canUseForCountry($quote->getBillingAddress()->getCountry())))
             && (Mage::app()->getStore()->getCurrentCurrencyCode() == 'USD')
-            && (Mage::app()->getStore()->getBaseCurrencyCode() == 'USD')
-            && count($quote->getAllVisibleItems()) > 0;
+            && (Mage::app()->getStore()->getBaseCurrencyCode() == 'USD');
 
         Mage::app()->setCurrentStore($applicationContextStore);
         return $canQuoteUseBolt;

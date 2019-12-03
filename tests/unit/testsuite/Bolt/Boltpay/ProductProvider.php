@@ -103,9 +103,10 @@ class Bolt_Boltpay_ProductProvider
         $resource = Mage::getSingleton('core/resource');
         /** @var Magento_Db_Adapter_Pdo_Mysql $writeConnection */
         $writeConnection = $resource->getConnection('core_write');
-        $table = $resource->getTableName('catalog/product');
+        $productTable = $resource->getTableName('catalog/product');
+        $inventoryTable = $resource->getTableName('cataloginventory/stock_item');
 
-        $query = "DELETE FROM ".$table." WHERE entity_id = :productId";
+        $query = "DELETE pt, it FROM ".$productTable." pt LEFT JOIN $inventoryTable it ON it.product_id = pt.entity_id WHERE pt.entity_id = :productId";
         $bind = array(
             'productId' => (int) $productId
         );
