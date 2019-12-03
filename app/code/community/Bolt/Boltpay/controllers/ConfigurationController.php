@@ -172,28 +172,33 @@ class Bolt_Boltpay_ConfigurationController
         $connection = $setup->getConnection();
 
         if (!$connection->tableColumnExists($quoteTable, 'user_session_id')) {
-            return false;
+echo 'A';
+            //return false;
         }
         if (!$connection->tableColumnExists($quoteTable, 'parent_quote_id')) {
-            return false;
+echo 'B';
+            //return false;
         }
 
         $boltUserIdAttr = $setup->getAttribute('customer', 'bolt_user_id');
         if (!$boltUserIdAttr) {
-            return false;
+echo 'C';
+            //return false;
         }
 
         $statusTable = $setup->getTable('sales_order_status');
         $query = $connection->query("SELECT * FROM $statusTable WHERE status = 'deferred'");
         $resultData = $query->fetchAll();
         if (!count($resultData)) {
-            return false;
+echo 'D';
+            //return false;
         }
 
         $statusTable = $setup->getTable('sales_order_status_state');
         $query = $connection->query("SELECT * FROM $statusTable WHERE status = 'deferred'");
         $resultData = $query->fetchAll();
         if (!count($resultData)) {
+echo 'E';
             return false;
         }
 
