@@ -25,6 +25,24 @@ class Bolt_Boltpay_ConfigurationController
 {
     use Bolt_Boltpay_BoltGlobalTrait;
 
+    /** @var string Message that is returned when any part of the configuration is invalid */
+    const INVALID_CONFIGURATION_MESSAGE = 'Invalid configuration';
+
+    /** @var string Message that is returned when API key is invalid */
+    const INVALID_API_KEY_MESSAGE = 'Api Key is invalid';
+
+    /** @var string Message that is returned when signing secret is invalid */
+    const INVALID_SIGNING_SECRET_MESSAGE = 'Signing Secret is invalid';
+
+    /** @var string Message that is returned when multi page checkout publishable key is invalid */
+    const INVALID_MULTI_PAGE_PUBLISHABLE_KEY_MESSAGE = 'Publishable Key - Multi-Page Checkout is invalid';
+
+    /** @var string Message that is returned when multi page checkout publishable key is invalid */
+    const INVALID_ONE_PAGE_PUBLISHABLE_KEY_MESSAGE = 'Publishable Key - One Page Checkout is invalid';
+
+    /** @var string Message that is returned when database schema is invalid */
+    const INVALID_SCHEMA_MESSAGE = 'Schema is invalid';
+
     protected $_storeId = null;
 
     /**
@@ -43,29 +61,29 @@ class Bolt_Boltpay_ConfigurationController
 
         // Validate for API key
         if (!($this->checkApiKey())) {
-            $this->setErrorResponseData($responseData, $this->boltHelper()->__('Api Key is invalid'));
+            $this->setErrorResponseData($responseData, $this->boltHelper()->__(self::INVALID_API_KEY_MESSAGE));
         }
 
         // Validate for Signing Secret
         if (!($this->checkSigningSecret())) {
-            $this->setErrorResponseData($responseData, $this->boltHelper()->__('Signing Secret is invalid'));
+            $this->setErrorResponseData($responseData, $this->boltHelper()->__(self::INVALID_SIGNING_SECRET_MESSAGE));
         }
 
         // Validate Publishable Key - Multi-Page Checkout / Publishable Key - One Page Checkout
         if (!($this->checkPublishableKeyMultiPage())) {
-            $this->setErrorResponseData($responseData, $this->boltHelper()->__('Publishable Key - Multi-Page Checkout is invalid'));
+            $this->setErrorResponseData($responseData, $this->boltHelper()->__(self::INVALID_MULTI_PAGE_PUBLISHABLE_KEY_MESSAGE));
         }
         if (!($this->checkPublishableKeyOnePage())) {
-            $this->setErrorResponseData($responseData, $this->boltHelper()->__('Publishable Key - One Page Checkout is invalid'));
+            $this->setErrorResponseData($responseData, $this->boltHelper()->__(self::INVALID_ONE_PAGE_PUBLISHABLE_KEY_MESSAGE));
         }
 
         // Validate database schema
         if (!($this->checkSchema())) {
-            $this->setErrorResponseData($responseData, $this->boltHelper()->__('Schema is invalid'));
+            $this->setErrorResponseData($responseData, $this->boltHelper()->__(self::INVALID_SCHEMA_MESSAGE));
         }
 
         if (!$responseData['result']){
-            $msg = $this->boltHelper()->__('Invalid configuration');
+            $msg = $this->boltHelper()->__(self::INVALID_CONFIGURATION_MESSAGE);
             $this->boltHelper()->notifyException(new Exception($msg), $responseData);
             $this->boltHelper()->logWarning($msg);
         }
