@@ -65,7 +65,7 @@ class Bolt_Boltpay_ProductpageControllerTest extends PHPUnit_Framework_TestCase
             ->getMock();
 
         $this->helperMock = $this->getMockBuilder('Bolt_Boltpay_Helper_Data')
-            ->setMethods(array('verify_hook', 'setResponseContextHeaders'))
+            ->setMethods(array('verify_hook', 'setResponseContextHeaders', 'notifyException', 'logException'))
             ->getMock();
 
         Mage::register('_helper/boltpay', $this->helperMock);
@@ -148,9 +148,14 @@ class Bolt_Boltpay_ProductpageControllerTest extends PHPUnit_Framework_TestCase
 
         Bolt_Boltpay_StreamHelper::setData($jsonPayload);
         Bolt_Boltpay_StreamHelper::register();
-        $this->currentMock->createCartAction();
-        Bolt_Boltpay_StreamHelper::restore();
+        try {
+            $this->currentMock->createCartAction();
+        } catch (Exception $e) {
+            Bolt_Boltpay_StreamHelper::restore();
+            throw $e;
+        }
 
+        Bolt_Boltpay_StreamHelper::restore();
     }
 
     /**
@@ -171,7 +176,13 @@ class Bolt_Boltpay_ProductpageControllerTest extends PHPUnit_Framework_TestCase
         $this->expectErrorResponse('Failed HMAC Authentication');
         Bolt_Boltpay_StreamHelper::setData($jsonPayload);
         Bolt_Boltpay_StreamHelper::register();
-        $this->currentMock->createCartAction();
+        try {
+            $this->currentMock->createCartAction();
+        } catch (Exception $e) {
+            Bolt_Boltpay_StreamHelper::restore();
+            throw $e;
+        }
+
         Bolt_Boltpay_StreamHelper::restore();
     }
 
@@ -198,7 +209,7 @@ class Bolt_Boltpay_ProductpageControllerTest extends PHPUnit_Framework_TestCase
     /**
      * Configures response and helper mock to expect response with provided HTTP code and body
      *
-     * @param int $httpCode HTTP code to expect in response
+     * @param int            $httpCode HTTP code to expect in response
      * @param array|callable $body array to expect as body in JSON format or callback used to validate body content
      */
     private function expectResponse($httpCode, $body)
