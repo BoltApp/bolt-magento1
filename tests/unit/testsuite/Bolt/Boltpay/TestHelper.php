@@ -160,6 +160,7 @@ class Bolt_Boltpay_TestHelper
 
     /**
      * Gets the object reports that reports information about a class.
+     * When using Reflection on mocked classes, properties with original names can only be found on parent class
      *
      * @param mixed $class Either a string containing the name of the class to reflect, or an object.
      *
@@ -167,6 +168,9 @@ class Bolt_Boltpay_TestHelper
      * @throws ReflectionException if the class does not exist.
      */
     public static function getReflectedClass( $class ) {
+        if (is_subclass_of($class, 'PHPUnit_Framework_MockObject_MockObject')) {
+            return new ReflectionClass(get_parent_class($class));
+        }
         return new ReflectionClass( $class );
     }
 
