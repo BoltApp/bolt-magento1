@@ -516,6 +516,9 @@ class Bolt_Boltpay_Block_Checkout_Boltpay extends Mage_Checkout_Block_Onepage_Re
      * page and which key has been set in the admin.  Cart and Product pages prioritize the multi-step key
      * and falls back to the payment only key.  All other pages prioritize the payment only key and falls back
      * to the multi-step key.
+     *
+     * @return string   The publishable key to be used on this page
+     * @throws Bolt_Boltpay_BoltException when neither a multi-step nor a payment-only publishable key is configured
      */
     public function getPublishableKeyForThisPage() {
         $routeName = $this->getRequest()->getRouteName();
@@ -534,7 +537,7 @@ class Bolt_Boltpay_Block_Checkout_Boltpay extends Mage_Checkout_Block_Onepage_Re
         if (!$multiStepPublishableKey && !$paymentOnlyPublishableKey) {
             $noPublishableKeyException = new Bolt_Boltpay_BoltException("No publishable key has been configured.");
             $this->boltHelper()->logException($noPublishableKeyException);
-            $this->boltHelper()->notifyException($noPublishableKeyException,[],'error');
+            $this->boltHelper()->notifyException($noPublishableKeyException, [], 'error');
             throw $noPublishableKeyException;
         }
 

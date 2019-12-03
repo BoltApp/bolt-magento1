@@ -7,6 +7,9 @@ require_once('TestHelper.php');
  */
 class Bolt_Boltpay_Block_Checkout_BoltpayTest extends PHPUnit_Framework_TestCase
 {
+    /**
+     * @var Mage_Core_Model_App Used to manipulate the Magento application environment
+     */
     private $app = null;
 
     /**
@@ -287,20 +290,16 @@ class Bolt_Boltpay_Block_Checkout_BoltpayTest extends PHPUnit_Framework_TestCase
     }
 
     /**
-     * @test
-     * that a proper product key is returned for every config or an exception is thrown
-     *
-     * @covers ::getPublishableKeyForThisPage
-     * @dataProvider getPublishableKeyForThisPageProvider
+     * Sets dependencies used by test for {@see Bolt_Boltpay_Block_Checkout_Boltpay::getPublishableKeyForThisPage()}
      *
      * @param string|null $multiStepKey             the multi-step publishable key, empty string or null indicates not set
      * @param string|null $paymentOnlyKey           the payment-only publishable key, empty string or null indicates not set
      * @param string      $routeName                The magento path route name
      * @param string      $controllerName           The magento path controller name
-     * @param string|null $predictedReturnValue     The key that is expected to be returned by the mock or null if not returned
+     *
+     * @throws Exception if there is a failure retrieving the focus mock's Request object
      */
-    public function getPublishableKeyForThisPage($multiStepKey, $paymentOnlyKey, $routeName, $controllerName, $predictedReturnValue )
-    {
+    private function setUp_getPublishableKeyForThisPage($multiStepKey, $paymentOnlyKey, $routeName, $controllerName) {
         $this->currentMock = $this->getMockBuilder('Bolt_Boltpay_Block_Checkout_Boltpay')
             ->setMethods(array('getPublishableKey'))
             ->disableOriginalConstructor()
@@ -317,21 +316,6 @@ class Bolt_Boltpay_Block_Checkout_BoltpayTest extends PHPUnit_Framework_TestCase
         $this->app->getStore()->setConfig('payment/boltpay/publishable_key_multipage', $multiStepKey);
         $this->app->getStore()->setConfig('payment/boltpay/publishable_key_onepage', $paymentOnlyKey);
 
-        switch ($controllerName) {
-            case 'cart':
-                $routeName = 'catalog';
-                #intentionally falling through because this his handled the same way as catalog/product
-            case 'product':
-                if ($routeName === 'catalog') {
-                    $expectedReturnedValue = $multiStepKey ?: $paymentOnlyKey;
-                    break;
-                }
-                # intentionally falling through because the correct route was not found
-            default:
-                $expectedReturnedValue = $paymentOnlyKey ?: $multiStepKey;
-
-        }
-
         $this->currentMock->expects($this->exactly(2))->method('getPublishableKey')
             ->withConsecutive(
                 [$this->equalTo('multi-page')],
@@ -342,31 +326,362 @@ class Bolt_Boltpay_Block_Checkout_BoltpayTest extends PHPUnit_Framework_TestCase
                 $mockProxy->getPublishableKey('one-page')
             )
         ;
+    }
 
-        if ($predictedReturnValue) {
-            $this->assertEquals($expectedReturnedValue, $predictedReturnValue);
-        } else {
-            $this->assertEmpty($expectedReturnedValue);
-        }
+    /**
+     * @test
+     * that the appropriate product key is returned for a particular page when at least a multi-step key or payment only
+     * key has been configured
+     *
+     * @covers ::getPublishableKeyForThisPage
+     * @dataProvider getPublishableKeyForThisPage_withAtLeastOneKeyConfiguredProvider
+     *
+     * @param string|null $multiStepKey             the multi-step publishable key, empty string or null indicates not set
+     * @param string|null $paymentOnlyKey           the payment-only publishable key, empty string or null indicates not set
+     * @param string      $routeName                The magento path route name
+     * @param string      $controllerName           The magento path controller name
+     * @param string      $expectedReturnValue      The key that is expected to be returned by the mock
+     *
+     * @throws Exception if there is a problem in setting up test dependencies
+     */
+    public function getPublishableKeyForThisPage_withAtLeastOneKeyConfigured($multiStepKey, $paymentOnlyKey, $routeName, $controllerName, $expectedReturnValue)
+    {
+        $this->setUp_getPublishableKeyForThisPage($multiStepKey, $paymentOnlyKey, $routeName, $controllerName);
 
-        if (!$multiStepKey && !$paymentOnlyKey) {
-            $this->helperMock->expects($this->once())->method('logException');
-            $this->helperMock->expects($this->once())->method('notifyException');
-        } else {
-            $this->helperMock->expects($this->never())->method('logException');
-            $this->helperMock->expects($this->never())->method('notifyException');
-        }
+        $this->helperMock->expects($this->never())->method('logException');
+        $this->helperMock->expects($this->never())->method('notifyException');
 
-        try {
-            $actualReturnedValue = $this->currentMock->getPublishableKeyForThisPage();
-            $this->assertTrue($multiStepKey || $paymentOnlyKey);
-            $this->assertNotEmpty($expectedReturnedValue);
-            $this->assertEquals($expectedReturnedValue, $actualReturnedValue);
-        } catch (Bolt_Boltpay_BoltException $bbbe) {
-            $this->assertFalse($multiStepKey || $paymentOnlyKey);
-            $this->assertEmpty($expectedReturnedValue);
-            $this->assertEquals("No publishable key has been configured.", $bbbe->getMessage());
-        }
+        $actualMultiStepKey =  $this->app->getStore()->getConfig('payment/boltpay/publishable_key_multipage');
+        $actualPaymentOnlyKey = $this->app->getStore()->getConfig('payment/boltpay/publishable_key_onepage');
+
+        $actualReturnedValue = $this->currentMock->getPublishableKeyForThisPage();
+        $this->assertTrue($actualMultiStepKey || $actualPaymentOnlyKey);
+        $this->assertEquals($multiStepKey, $actualMultiStepKey);
+        $this->assertEquals($paymentOnlyKey, $actualPaymentOnlyKey);
+        $this->assertEquals($expectedReturnValue, $actualReturnedValue);
+    }
+
+    /**
+     * Provides data for a multi-step key, or a payment-only key, or for both publishable keys in the context of
+     * the standard cart page, a custom cart page, the standard checkout page, a standard product page, and any
+     * unexpected page identified by route and controller name for
+     * {@see Bolt_Boltpay_Block_Checkout_BoltpayTest::getPublishableKeyForThisPage_withAtLeastOneKeyConfigured()}
+     *
+     * @return array[] in the format of [$multiStepKey, $paymentOnlyKey, $routeName, $controllerName, $predictedReturnValue]
+     */
+    public function getPublishableKeyForThisPage_withAtLeastOneKeyConfiguredProvider()
+    {
+        return [
+            [
+                # When both keys exist on standard cart page, multi-step is used
+                "multiStepKey" => "multi+payOnly-key-on-standard-cart",
+                "paymentOnlyKey" => "payOnly+multi-key-on-standard-cart",
+                "routeName" => "checkout",
+                "controllerName" => "cart",
+                "predictedReturnValue" => "multi+payOnly-key-on-standard-cart"
+            ],
+            [
+                # When only multi-step key exists on standard cart page, empty string payment-only, multi-step is used
+                "multiStepKey" => "multi-key-on-standard-cart",
+                "paymentOnlyKey" => "",
+                "routeName" => "checkout",
+                "controllerName" => "cart",
+                "predictedReturnValue" => "multi-key-on-standard-cart"
+            ],
+            [
+                # When only multi-step key exists on standard cart page, null payment-only, multi-step is used
+                "multiStepKey" => "multi-key-on-standard-cart",
+                "paymentOnlyKey" => null,
+                "routeName" => "checkout",
+                "controllerName" => "cart",
+                "predictedReturnValue" => "multi-key-on-standard-cart"
+            ],
+            [
+                # When only payment-only key exists on standard cart page, null multi-step, payment-only is used
+                "multiStepKey" => "",
+                "paymentOnlyKey" => "payOnly-key-on-standard-cart",
+                "routeName" => "checkout",
+                "controllerName" => "cart",
+                "predictedReturnValue" => "payOnly-key-on-standard-cart"
+            ],
+            [
+                # When both keys exist on custom cart page, multi-step is used
+                "multiStepKey" => "multi+payOnly-key-on-custom-cart",
+                "paymentOnlyKey" => "payOnly+multi-key-on-custom-cart",
+                "routeName" => "custom",
+                "controllerName" => "cart",
+                "predictedReturnValue" => "multi+payOnly-key-on-custom-cart"
+            ],
+            [
+                # When only multi-step key exists on custom cart page, null payment-only, multi-step is used
+                "multiStepKey" => "multi-key-on-custom-cart",
+                "paymentOnlyKey" => null,
+                "routeName" => "custom",
+                "controllerName" => "cart",
+                "predictedReturnValue" => "multi-key-on-custom-cart"
+            ],
+            [
+                # When only payment-only key exists on custom cart page, null multi-step, payment-only is used
+                "multiStepKey" => null,
+                "paymentOnlyKey" => "payOnly-key-on-custom-cart",
+                "routeName" => "custom",
+                "controllerName" => "cart",
+                "predictedReturnValue" => "payOnly-key-on-custom-cart"
+            ],
+            [
+                # When both keys exist on standard onepage, payment-only is used
+                "multiStepKey" => "multi+payOnly-key-on-onepage",
+                "paymentOnlyKey" => "payOnly+multi-key-on-onepage",
+                "routeName" => "checkout",
+                "controllerName" => "onepage",
+                "predictedReturnValue" => "payOnly+multi-key-on-onepage"
+            ],
+            [
+                # When only payment-only key exists on standard onepage, null multi-step, payment-only is used
+                "multiStepKey" => null,
+                "paymentOnlyKey" => "payOnly-key-on-onepage",
+                "routeName" => "checkout",
+                "controllerName" => "onepage",
+                "predictedReturnValue" => "payOnly-key-on-onepage"
+            ],
+            [
+                # When only multi-step key exists on standard onepage, empty string payment-only, multi-step is used
+                "multiStepKey" => "multi-key-on-onepage",
+                "paymentOnlyKey" => "",
+                "routeName" => "checkout",
+                "controllerName" => "onepage",
+                "predictedReturnValue" => "multi-key-on-onepage"
+            ],
+            [
+                # When both keys exist on unexpected page, payment-only is used
+                "multiStepKey" => "multi+payOnly-key-on-homepage",
+                "paymentOnlyKey" => "payOnly+multi-key-on-homepage",
+                "routeName" => "cms",
+                "controllerName" => "index",
+                "predictedReturnValue" => "payOnly+multi-key-on-homepage"
+            ],
+            [
+                # When only payment-only key exists on unexpected page, empty string multi-step, payment-only is used
+                "multiStepKey" => "",
+                "paymentOnlyKey" => "payOnly-key-on-homepage",
+                "routeName" => "cms",
+                "controllerName" => "index",
+                "predictedReturnValue" => "payOnly-key-on-homepage"
+            ],
+            [
+                # When only multi-step key exists on unexpected page, empty string payment-only, multi-step is used
+                "multiStepKey" => "multi+payOnly-key-on-homepage",
+                "paymentOnlyKey" => "",
+                "routeName" => "cms",
+                "controllerName" => "index",
+                "predictedReturnValue" => "multi+payOnly-key-on-homepage"
+            ],
+            [
+                # When both keys exist on product page, multi-step is used
+                "multiStepKey" => "multi+payOnly-key-on-product",
+                "paymentOnlyKey" => "payOnly+multi-key-on-product",
+                "routeName" => "catalog",
+                "controllerName" => "product",
+                "predictedReturnValue" => "multi+payOnly-key-on-product"
+            ],
+            [
+                # When only multi-step key exists on product page, null payment-only, multi-step is used
+                "multiStepKey" => "multi-key-on-product",
+                "paymentOnlyKey" => null,
+                "routeName" => "catalog",
+                "controllerName" => "product",
+                "predictedReturnValue" => "multi-key-on-product"
+            ],
+            [
+                # When only payment-only key exists on product page, null multi-step, payment-only is used
+                "multiStepKey" => null,
+                "paymentOnlyKey" => "payOnly-key-on-product",
+                "routeName" => "catalog",
+                "controllerName" => "product",
+                "predictedReturnValue" => "payOnly-key-on-product"
+            ]
+        ];
+    }
+
+    /**
+     * @test
+     * that an exception is thrown for all variants if neither a multi-step nor a payment-only key has been configured
+     *
+     * @covers ::getPublishableKeyForThisPage
+     * @dataProvider getPublishableKeyForThisPage_whenNoKeyIsConfiguredProvider
+     * @expectedException Bolt_Boltpay_BoltException
+     * @expectedExceptionMessage No publishable key has been configured.
+     *
+     * @param string|null $multiStepKey             the multi-step publishable key, empty string or null indicates not set
+     * @param string|null $paymentOnlyKey           the payment-only publishable key, empty string or null indicates not set
+     * @param string      $routeName                The magento path route name
+     * @param string      $controllerName           The magento path controller name
+     *
+     * @throws Exception if there is a problem in setting up test dependencies
+     */
+    public function getPublishableKeyForThisPage_whenNoKeyIsConfigured($multiStepKey, $paymentOnlyKey, $routeName, $controllerName)
+    {
+        $this->setUp_getPublishableKeyForThisPage($multiStepKey, $paymentOnlyKey, $routeName, $controllerName);
+
+        $this->helperMock->expects($this->once())->method('logException');
+        $this->helperMock->expects($this->once())->method('notifyException');
+
+        $actualMultiStepKey =  $this->app->getStore()->getConfig('payment/boltpay/publishable_key_multipage');
+        $actualPaymentOnlyKey = $this->app->getStore()->getConfig('payment/boltpay/publishable_key_onepage');
+
+        $this->currentMock->getPublishableKeyForThisPage();
+        $this->assertFalse($actualMultiStepKey || $actualPaymentOnlyKey);
+        $this->assertEquals($multiStepKey, $actualMultiStepKey);
+        $this->assertEquals($paymentOnlyKey, $actualPaymentOnlyKey);
+    }
+
+    /**
+     * Provides data with no publishable keys in the context of the standard cart page, a custom cart page,
+     * the standard checkout page, a standard product page, and any unexpected page identified by route and controller
+     * name for {@see Bolt_Boltpay_Block_Checkout_BoltpayTest::getPublishableKeyForThisPage_whenNoKeyIsConfigured()}
+     *
+     * @return array[] in the format of [$multiStepKey, $paymentOnlyKey, $routeName, $controllerName, $predictedReturnValue]
+     */
+    public function getPublishableKeyForThisPage_whenNoKeyIsConfiguredProvider()
+    {
+        return [
+            [
+                # When no keys are configure, null multi-step and empty string payment-only, on standard cart page
+                "multiStepKey" => null,
+                "paymentOnlyKey" => "",
+                "routeName" => "checkout",
+                "controllerName" => "cart"
+            ],           [
+                # When no keys are configure, empty string multi-step and null payment-only, on standard cart page
+                "multiStepKey" => "",
+                "paymentOnlyKey" => null,
+                "routeName" => "checkout",
+                "controllerName" => "cart"
+            ],
+
+            [
+                # When no keys are configure, empty strings, on standard cart page
+                "multiStepKey" => "",
+                "paymentOnlyKey" => "",
+                "routeName" => "checkout",
+                "controllerName" => "cart"
+            ],
+            [
+                # When no keys are configure, nulls, on standard cart page
+                "multiStepKey" => null,
+                "paymentOnlyKey" => null,
+                "routeName" => "checkout",
+                "controllerName" => "cart"
+            ],
+            [
+                # When no keys are configure, null multi-step and empty string payment-only, on custom cart page
+                "multiStepKey" => null,
+                "paymentOnlyKey" => "",
+                "routeName" => "custom",
+                "controllerName" => "cart"
+            ],           [
+                # When no keys are configure, empty string multi-step and null payment-only, on custom cart page
+                "multiStepKey" => "",
+                "paymentOnlyKey" => null,
+                "routeName" => "custom",
+                "controllerName" => "cart"
+            ],
+            [
+                # When no keys are configure, empty strings, on custom cart page
+                "multiStepKey" => "",
+                "paymentOnlyKey" => "",
+                "routeName" => "custom",
+                "controllerName" => "cart"
+            ],
+            [
+                # When no keys are configure, nulls, on custom cart page
+                "multiStepKey" => null,
+                "paymentOnlyKey" => null,
+                "routeName" => "custom",
+                "controllerName" => "cart"
+            ],
+            [
+                # When no keys are configure, null multi-step and empty string payment-only, on standard onepage
+                "multiStepKey" => null,
+                "paymentOnlyKey" => "",
+                "routeName" => "checkout",
+                "controllerName" => "onepage"
+            ],           [
+                # When no keys are configure, empty string multi-step and null payment-only, on standard onepage
+                "multiStepKey" => "",
+                "paymentOnlyKey" => null,
+                "routeName" => "checkout",
+                "controllerName" => "onepage"
+            ],
+            [
+                # When no keys are configure, empty strings, on standard onepage
+                "multiStepKey" => "",
+                "paymentOnlyKey" => "",
+                "routeName" => "checkout",
+                "controllerName" => "onepage"
+            ],
+            [
+                # When no keys are configure, nulls, on standard onepage
+                "multiStepKey" => null,
+                "paymentOnlyKey" => null,
+                "routeName" => "checkout",
+                "controllerName" => "onepage"
+            ],
+            [
+                # When no keys are configure, null multi-step and empty string payment-only, on unexpected page
+                "multiStepKey" => null,
+                "paymentOnlyKey" => "",
+                "routeName" => "cms",
+                "controllerName" => "index"
+            ],           [
+                # When no keys are configure, empty string multi-step and null payment-only, on unexpected page
+                "multiStepKey" => "",
+                "paymentOnlyKey" => null,
+                "routeName" => "cms",
+                "controllerName" => "index"
+            ],
+            [
+                # When no keys are configure, empty strings, on unexpected page
+                "multiStepKey" => "",
+                "paymentOnlyKey" => "",
+                "routeName" => "cms",
+                "controllerName" => "index"
+            ],
+            [
+                # When no keys are configure, nulls, on unexpected page
+                "multiStepKey" => null,
+                "paymentOnlyKey" => null,
+                "routeName" => "cms",
+                "controllerName" => "index"
+            ],
+            [
+                # When no keys are configure, null multi-step and empty string payment-only, on product page
+                "multiStepKey" => null,
+                "paymentOnlyKey" => "",
+                "routeName" => "catalog",
+                "controllerName" => "product"
+            ],           [
+                # When no keys are configure, empty string multi-step and null payment-only, on product page
+                "multiStepKey" => "",
+                "paymentOnlyKey" => null,
+                "routeName" => "catalog",
+                "controllerName" => "product"
+            ],
+            [
+                # When no keys are configure, empty strings, on product page
+                "multiStepKey" => "",
+                "paymentOnlyKey" => "",
+                "routeName" => "catalog",
+                "controllerName" => "product"
+            ],
+            [
+                # When no keys are configure, nulls, on product page
+                "multiStepKey" => null,
+                "paymentOnlyKey" => null,
+                "routeName" => "catalog",
+                "controllerName" => "product"
+            ]
+        ];
     }
 
     /**
@@ -733,35 +1048,4 @@ class Bolt_Boltpay_Block_Checkout_BoltpayTest extends PHPUnit_Framework_TestCase
         );
     }
 
-    /**
-     * Creates diverse scenarios of data for {@see Bolt_Boltpay_Block_Checkout_BoltpayTest::getPublishableKeyForThisPage()}
-     *
-     * @return array[] in the format of [$multiStepKey, $paymentOnlyKey, $routeName, $controllerName, $predictedReturnValue]
-     */
-    public function getPublishableKeyForThisPageProvider() {
-        return [
-            ['multi+payOnly-key-on-cart', 'payOnly+multi-key-on-cart', 'checkout', 'cart', 'multi+payOnly-key-on-cart'],
-            ['multi-key-on-cart', '', 'checkout', 'cart', 'multi-key-on-cart'],
-            ['multi-key-on-cart', null, 'checkout', 'cart', 'multi-key-on-cart'],
-            ['', 'payOnly-key-on-cart', 'checkout', 'cart', 'payOnly-key-on-cart'],
-            [null, '', 'checkout', 'cart', null],
-            ['', '', 'checkout', 'cart', null],
-            ['multi+payOnly-key-on-cart', 'payOnly+multi-key-on-cart', 'custom', 'cart', 'multi+payOnly-key-on-cart'],
-            ['multi-key-on-cart', null, 'custom', 'cart', 'multi-key-on-cart'],
-            [null, 'payOnly-key-on-cart', 'custom', 'cart', 'payOnly-key-on-cart'],
-            [null, null, 'custom', 'cart', null],
-            ['multi+payOnly-key-on-onepage', 'payOnly+multi-key-on-onepage', 'checkout', 'onepage', 'payOnly+multi-key-on-onepage'],
-            [null, 'payOnly-key-on-onepage', 'checkout', 'onepage', 'payOnly-key-on-onepage'],
-            ['multi-key-on-onepage', '', 'checkout', 'onepage', 'multi-key-on-onepage'],
-            ['', '', 'checkout', 'onepage', null],
-            ['multi+payOnly-key-on-homepage', 'payOnly+multi-key-on-homepage', 'cms', 'index', 'payOnly+multi-key-on-homepage'],
-            ['', 'payOnly-key-on-homepage', 'cms', 'index', 'payOnly-key-on-homepage'],
-            ['multi+payOnly-key-on-homepage', '', 'cms', 'index', 'multi+payOnly-key-on-homepage'],
-            ['', '', 'cms', 'index', null],
-            ['multi+payOnly-key-on-product', 'payOnly+multi-key-on-product', 'catalog', 'product', 'multi+payOnly-key-on-product'],
-            ['multi-key-on-product', null, 'catalog', 'product', 'multi-key-on-product'],
-            [null, 'payOnly-key-on-product', 'catalog', 'product', 'payOnly-key-on-product'],
-            [null, null, 'catalog', 'product', null]
-        ];
-    }
 }
