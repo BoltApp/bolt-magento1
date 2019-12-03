@@ -185,7 +185,7 @@ class Bolt_Boltpay_CouponHelper
         $ruleTable = $resource->getTableName('salesrule/rule');
         $couponTable = $resource->getTableName('salesrule/coupon');
 
-        $query = "DELETE $ruleTable, $couponTable FROM $ruleTable INNER JOIN $couponTable ON $ruleTable.rule_id = $couponTable.rule_id WHERE $ruleTable.rule_id = :ruleId";
+        $query = "DELETE $ruleTable, $couponTable FROM $ruleTable LEFT JOIN $couponTable ON $ruleTable.rule_id = $couponTable.rule_id WHERE $ruleTable.rule_id = :ruleId";
 
         $bind = array(
             'ruleId' => (int)$ruleId
@@ -270,7 +270,11 @@ class Bolt_Boltpay_CouponHelper
         $resource = Mage::getSingleton('core/resource');
         $writeAdapter = $resource->getConnection('core_write');
         $table = $resource->getTableName('salesrule/coupon_usage');
+
+        $deleteQuery = "DELETE FROM {$table} WHERE customer_id = $customerId AND coupon_id = $couponId;";
         $query = "INSERT INTO {$table} (`customer_id`,`coupon_id`,`times_used`) VALUES ({$customerId},{$couponId},{$timesUsed});";
+
+        $writeAdapter->query($deleteQuery); # removes any lingering entries from previous runs of unit tests
         $writeAdapter->query($query);
     }
 
