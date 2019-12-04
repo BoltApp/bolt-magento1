@@ -152,4 +152,21 @@ class Bolt_Boltpay_OrderHelper
         Mage::unregister('isSecureArea');
 
     }
+
+    public static function createDummyQuote()
+    {
+        $quote = Mage::getModel('sales/quote');
+        $quote->getShippingAddress()->setCollectShippingRates(true);
+        $quote->collectTotals()->save();
+        return $quote->getId();
+    }
+
+    public static function deleteDummyQuote($id)
+    {
+        if ($id) {
+            $quote = Mage::getModel('sales/quote')->loadByIdWithoutStore($id);
+            $quote->setIsActive(false);
+            $quote->delete();
+        }
+    }
 }
