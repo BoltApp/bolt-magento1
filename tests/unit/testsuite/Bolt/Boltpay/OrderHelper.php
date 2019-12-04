@@ -104,6 +104,7 @@ class Bolt_Boltpay_OrderHelper
         $testHelper->addTestFlatRateShippingAddress($addressData, $paymentMethod);
         $cart = $testHelper->addProduct($productId, $qty);
         $quote = $cart->getQuote();
+        $quote->reserveOrderId();
 
         // Set payment method for the quote
         $quote->getPayment()->importData(array('method' => $paymentMethod));
