@@ -104,6 +104,7 @@ class Bolt_Boltpay_OrderHelper
         $testHelper->addTestFlatRateShippingAddress($addressData, $paymentMethod);
         $cart = $testHelper->addProduct($productId, $qty);
         $quote = $cart->getQuote();
+        $quote->reserveOrderId();
 
         // Set payment method for the quote
         $quote->getPayment()->importData(array('method' => $paymentMethod));
@@ -146,14 +147,11 @@ class Bolt_Boltpay_OrderHelper
      */
     public static function deleteDummyOrder(Mage_Sales_Model_Order $order)
     {
-        if (!empty($order)) {
-            $id = $order->getIncrementId();
-            if (!empty($id)) {
-                self::deleteDummyOrderByIncrementId($id);
-            }
-        }
+        Mage::register('isSecureArea', true);
+        $order->delete();
+        Mage::unregister('isSecureArea');
     }
-
+    
     public static function createDummyQuote()
     {
         $quote = Mage::getModel('sales/quote');

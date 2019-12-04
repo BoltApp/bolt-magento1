@@ -72,10 +72,13 @@ class Bolt_Boltpay_ApiController extends Mage_Core_Controller_Front_Action imple
                 Mage::app()->setCurrentStore($order->getStore());
 
                 $orderPayment = $order->getPayment();
-                if (
-                    !$orderPayment->getAdditionalInformation('bolt_reference')
-                    && $hookType !== Bolt_Boltpay_Model_Payment::HOOK_TYPE_REJECTED_IRREVERSIBLE
-                ) {
+                if (!$orderPayment->getAdditionalInformation('bolt_reference')) {
+                    if ($hookType === Bolt_Boltpay_Model_Payment::HOOK_TYPE_REJECTED_IRREVERSIBLE) {
+                        // This is a special case of failed payment hook where Bolt immediately
+                        // rejects the payment irreversibly prior to creating a transaction
+                        $this->handleFailedPaymentHook($incrementId);
+                        return;
+                    }
                     /////////////////////////////////////////////////////////////////////////////
                     /// We've reached a case where authorization was not finalized via the browser
                     /// session.  We'll complete the post authorization steps prior to processing
