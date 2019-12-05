@@ -3,7 +3,7 @@
 class Bolt_Boltpay_Helper_CatalogHelper extends Mage_Core_Helper_Abstract
 {
     /**
-     * @return Mage_Core_Model_Abstract
+     * @return Mage_Catalog_Model_Session
      */
     public function getSession()
     {
