@@ -554,7 +554,7 @@ class Bolt_Boltpay_Model_BoltOrderTest extends PHPUnit_Framework_TestCase
         );
     }
 
-    public function createQuoteMock($items = array(), $shippingMethod = '', $isVirtual = false)
+    private function createQuoteMock($items = array(), $shippingMethod = '', $isVirtual = false)
     {
         $shipAddressMock = $this->getMockBuilder(Mage_Sales_Model_Quote_Address::class)
             ->setMethods(array('getShippingMethod'))
