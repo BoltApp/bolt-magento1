@@ -513,7 +513,7 @@ class Bolt_Boltpay_Model_BoltOrderTest extends PHPUnit_Framework_TestCase
      */
     public function getBoltOrderTokenErrorCases()
     {
-        $orderRequestData = $this->getOrderRequest();
+        $orderRequestData = self::$orderRequest;
         return array(
             array(
                 'case' => array(
