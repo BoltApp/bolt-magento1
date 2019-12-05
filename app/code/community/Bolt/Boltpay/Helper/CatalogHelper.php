@@ -32,7 +32,7 @@ class Bolt_Boltpay_Helper_CatalogHelper extends Mage_Core_Helper_Abstract
      * Get Quote for Product page
      * @return Mage_Sales_Model_Quote
      */
-    public  function getQuote()
+    public function getQuote()
     {
         $hasOrder = false;
         $orderQuoteId = false;
