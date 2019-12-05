@@ -1,7 +1,5 @@
 <?php
 
-require_once('TestHelper.php');
-
 /**
  * Class Bolt_Boltpay_Model_BoltOrderTest
  */
@@ -23,6 +21,42 @@ class Bolt_Boltpay_Model_BoltOrderTest extends PHPUnit_Framework_TestCase
     private $currentMock;
 
     private $app;
+
+    public static $orderRequest = array(
+        'token' => 'addc7c36e014f6216599f631dd021dbba283efc2c5fe9468f4a66be5bf1ae495',
+        'cart' => array(
+            'order_reference' => '772',
+            'display_id' => '145000015|773',
+            'currency' => array(),
+            'subtotal_amount' => array(),
+            'total_amount' => array(),
+            'tax_amount' => array(),
+            'shipping_amount' => array(),
+            'discount_amount' => array(),
+            'billing_address' => array(),
+            'items' => array(0 => array('reference' => '2539')),
+            'shipments' => array(),
+        ),
+        'external_data' => array(),
+    );
+
+    public static $orderResponseJson = array(
+        'token' => 'addc7c36e014f6216599f631dd021dbba283efc2c5fe9468f4a66be5bf1ae495',
+        'cart' => array(
+            'order_reference' => '772',
+            'display_id' => '145000015|773',
+            'currency' => array(),
+            'subtotal_amount' => array(),
+            'total_amount' => array(),
+            'tax_amount' => array(),
+            'shipping_amount' => array(),
+            'discount_amount' => array(),
+            'billing_address' => array(),
+            'items' => array(0 => array('reference' => '2539')),
+            'shipments' => array(),
+        ),
+        'external_data' => array(),
+    );
 
     public function setUp()
     {
@@ -383,8 +417,8 @@ class Bolt_Boltpay_Model_BoltOrderTest extends PHPUnit_Framework_TestCase
      */
     public function getBoltOrderTokenCases()
     {
-        $resultJson = $this->getResultJSON();
-        $orderRequestData = $this->getOrderRequest();
+        $resultJson = self::$orderResponseJson;
+        $orderRequestData = self::$orderRequest;
 
         return array(
             array(
@@ -567,43 +601,5 @@ class Bolt_Boltpay_Model_BoltOrderTest extends PHPUnit_Framework_TestCase
             ->willReturn($storeMock);
 
         return $quoteMock;
-    }
-
-    public function getOrderRequest()
-    {
-        return array(
-            'cart' => array(
-                'order_reference' => '772',
-                'display_id' => '145000015|773',
-                'items' => array(0 => array('reference' => '2539')),
-                'currency' => 'USD',
-                'discounts' => array(),
-                'billing_address' => array(),
-                'total_amount' => 33700,
-                'tax_amount' => 2700,
-                'shipments' => array(),
-            ),
-        );
-    }
-
-    public function getResultJSON()
-    {
-        return array(
-            'token' => 'addc7c36e014f6216599f631dd021dbba283efc2c5fe9468f4a66be5bf1ae495',
-            'cart' => array(
-                'order_reference' => '772',
-                'display_id' => '145000015|773',
-                'currency' => array(),
-                'subtotal_amount' => array(),
-                'total_amount' => array(),
-                'tax_amount' => array(),
-                'shipping_amount' => array(),
-                'discount_amount' => array(),
-                'billing_address' => array(),
-                'items' => array(0 => array('reference' => '2539')),
-                'shipments' => array(),
-            ),
-            'external_data' => array(),
-        );
     }
 }

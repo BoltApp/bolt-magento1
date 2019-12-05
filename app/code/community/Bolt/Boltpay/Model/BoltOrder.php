@@ -210,7 +210,7 @@ class Bolt_Boltpay_Model_BoltOrder extends Bolt_Boltpay_Model_Abstract
                     'postal_code'     => $billingAddress->getPostcode() ?: '-',
                     'country_code'    => $billingAddress->getCountry(),
                     'phone'           => $billingAddress->getTelephone(),
-                    'email'           => $billingAddress->getEmail() ?: ($customerEmail ?: $shippingAddress->getEmail()),
+                    'email' => $billingAddress->getEmail() ?: ($customerEmail ?: $shippingAddress->getEmail()),
                 );
             }
             $this->dispatchCartDataEvent('bolt_boltpay_correct_billing_address_for_bolt_order', $quote, $cartSubmissionData['billing_address']);
@@ -220,13 +220,14 @@ class Bolt_Boltpay_Model_BoltOrder extends Bolt_Boltpay_Model_Abstract
             ////////////////////////////////////////////////////////////////////////////////////
             // For one page checkout/admin type include tax and shipment / address data in submission.
             ////////////////////////////////////////////////////////////////////////////////////
-            if ($this->isAdmin()) {
+            $isAdmin = $this->isAdmin();
+            if ($isAdmin) {
                 /* @var Mage_Adminhtml_Block_Sales_Order_Create_Totals $totalsBlock */
                 $totalsBlock = $this->createLayoutBlock("adminhtml/sales_order_create_totals_shipping");
 
                 /* @var Mage_Sales_Model_Quote_Address_Total $grandTotal */
                 $grandTotal = $totalsBlock->getTotals()['grand_total'];
-                $cartSubmissionData['total_amount'] = (int) round($grandTotal->getValue() * 100);
+                $cartSubmissionData['total_amount'] = (int)round($grandTotal->getValue() * 100);
 
                 /* @var Mage_Sales_Model_Quote_Address_Total $taxTotal */
                 $taxTotal = isset($totalsBlock->getTotals()['tax']) ? $totalsBlock->getTotals()['tax'] : 0;
@@ -267,7 +268,7 @@ class Bolt_Boltpay_Model_BoltOrder extends Bolt_Boltpay_Model_Abstract
 
                     $this->addShipping($totals, $cartSubmissionData, $shippingAddress, $cartShippingAddress);
 
-                } else if ($this->isAdmin()) {
+                } else if ($isAdmin) {
                     $cartShippingAddress = Mage::getSingleton('admin/session')->getOrderShippingAddress();
 
                     if (empty($cartShippingAddress['email'])) {
@@ -616,15 +617,17 @@ class Bolt_Boltpay_Model_BoltOrder extends Bolt_Boltpay_Model_Abstract
      *
      * @return string    The customer's email address, if found
      */
-    protected function getCustomerEmail($quote = null) {
+    protected function getCustomerEmail($quote = null)
+    {
         $customerEmail = $quote ? $quote->getCustomerEmail() : "";
-        if (!$customerEmail && $this->isAdmin()) {
+        $isAdmin = $this->isAdmin();
+        if (!$customerEmail && $isAdmin) {
             //////////////////////////////////////////////////
             // In the admin, we first check form session data.
             // For order edits or reorders, the guest customer's email
             // will be stored in the order
             //////////////////////////////////////////////////
-            $shippingAddressData = Mage::getSingleton('admin/session')->getOrderShippingAddress() ?: array( 'email_address' => '', 'email' => '' );
+            $shippingAddressData = Mage::getSingleton('admin/session')->getOrderShippingAddress() ?: array('email_address' => '', 'email' => '');
             $customerEmail = $shippingAddressData['email_address'] ?: $shippingAddressData['email'];
 
             if (empty($customerEmail)) {
@@ -725,14 +728,15 @@ class Bolt_Boltpay_Model_BoltOrder extends Bolt_Boltpay_Model_Abstract
         $items = $quote->getAllVisibleItems();
 
         $hasAdminShipping = false;
-        if ($this->isAdmin()) {
+        $isAdmin = $this->isAdmin();
+        if ($isAdmin) {
             /* @var Mage_Adminhtml_Block_Sales_Order_Create_Shipping_Method_Form $shippingMethodBlock */
             $shippingMethodBlock = $this->createLayoutBlock('adminhtml/sales_order_create_shipping_method_form');
             $hasAdminShipping = $shippingMethodBlock->getActiveMethodRate();
         }
 
         if (empty($items)) {
-            return json_decode('{"token" : "", "error": "'.$this->boltHelper()->__('Your shopping cart is empty. Please add products to the cart.').'"}');
+            return json_decode('{"token" : "", "error": "' . $this->boltHelper()->__('Your shopping cart is empty. Please add products to the cart.') . '"}');
         } else if (
             !$isMultiPage
             && !$quote->getShippingAddress()->getShippingMethod()
