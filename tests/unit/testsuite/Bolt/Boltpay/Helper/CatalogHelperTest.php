@@ -2,12 +2,27 @@
 class Bolt_Boltpay_Helper_CatalogHelperTest extends PHPUnit_Framework_TestCase
 {
     private $app;
-    
+
     private $mockBuilder;
-    
+
+    /**
+     * @var integer
+     */
     public static $productId;
+
+    /**
+     * @var integer
+     */
     public static $orderId;
+
+    /**
+     * @var integer
+     */
     public static $quoteId;
+
+    /**
+     * @var array
+     */
     public static $addressData = array(
         'firstname' => 'Luke',
         'lastname' => 'Skywalker',
@@ -18,8 +33,7 @@ class Bolt_Boltpay_Helper_CatalogHelperTest extends PHPUnit_Framework_TestCase
         'country_id' => 'US',
         'region_id' => 12
     );
-    
-    
+
     public static function setUpBeforeClass()
     {
         // Create some dummy product:
@@ -68,15 +82,15 @@ class Bolt_Boltpay_Helper_CatalogHelperTest extends PHPUnit_Framework_TestCase
         return array(
             array(
                 'case' => array(
-                        'expect' => 'ppc_quote_id_1',
-                        'store_id' => 1
-                    )
+                    'expect' => 'ppc_quote_id_1',
+                    'store_id' => 1
+                )
             ),
             array(
-                    'case' => array(
-                            'expect' => 'ppc_quote_id_5',
-                            'store_id' => 5
-                        )
+                'case' => array(
+                    'expect' => 'ppc_quote_id_5',
+                    'store_id' => 5
+                )
             ),
         );
     }
