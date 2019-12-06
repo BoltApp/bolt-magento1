@@ -36,14 +36,15 @@ class Bolt_Boltpay_Helper_CatalogHelper extends Mage_Core_Helper_Abstract
     {
         $hasOrder = false;
         $orderQuoteId = false;
+        $ppcQuote = null;
         $ppcQuoteId = $this->getSession()->getData($this->getQuoteIdKey());
         if ($ppcQuoteId) {
-            $order = Mage::getModel('sales/order')->getCollection()->addAttributeToFilter('entity_id', $this->getLastRealOrderId())->setPageSize(1)->getFirstItem();
+            /** @var Mage_Sales_Model_Quote $ppcQuote */
+            $ppcQuote = Mage::getModel('sales/quote')->loadByIdWithoutStore($ppcQuoteId);
+            $order = Mage::getModel('sales/order')->getCollection()->addAttributeToFilter('increment_id', $ppcQuote->getReservedOrderId())->setPageSize(1)->getFirstItem();
             if ($order instanceof Mage_Sales_Model_Order) {
                 $orderQuoteId = $order->getQuoteId();
             }
-            /** @var Mage_Sales_Model_Quote $ppcQuote */
-            $ppcQuote = Mage::getModel('sales/quote')->loadByIdWithoutStore($ppcQuoteId);
             if ($orderQuoteId && $ppcQuoteId == $orderQuoteId) {
                 $ppcQuote->setIsActive(false);
                 $ppcQuote->delete();
@@ -55,6 +56,8 @@ class Bolt_Boltpay_Helper_CatalogHelper extends Mage_Core_Helper_Abstract
             $ppcQuote = Mage::getModel('sales/quote');
             $ppcQuote->setStore(Mage::app()->getStore());
             $ppcQuote->reserveOrderId();
+            $ppcQuote->getShippingAddress()->setCollectShippingRates(true);
+            $ppcQuote->collectTotals()->save();
         }
         return $ppcQuote;
     }
@@ -68,9 +71,9 @@ class Bolt_Boltpay_Helper_CatalogHelper extends Mage_Core_Helper_Abstract
         $ppcQuote = $this->getQuote();
         $ppcQuote->removeAllItems();
         $ppcQuote->addProduct($product, $request);
-        $ppcQuote->setParentQuoteId($ppcQuote->getId());
-        $ppcQuote->getBillingAddress();
-        $ppcQuote->getShippingAddress()->setCollectShippingRates(true);
+        //$ppcQuote->setParentQuoteId($ppcQuote->getId());
+        //$ppcQuote->getBillingAddress();
+        //$ppcQuote->getShippingAddress()->setCollectShippingRates(true);
         $ppcQuote->setParentQuoteId($ppcQuote->getId());
         $ppcQuote->collectTotals()->save();
         $this->getSession()->setData($this->getQuoteIdKey(), $ppcQuote->getId());
