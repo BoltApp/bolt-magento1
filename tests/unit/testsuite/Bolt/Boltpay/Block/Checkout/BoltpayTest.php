@@ -117,6 +117,7 @@ class Bolt_Boltpay_Block_Checkout_BoltpayTest extends PHPUnit_Framework_TestCase
         );
 
         $this->assertEquals($cartData, $result, 'Something wrong with testBuildCartDataWithApiError()');
+        Mage::unregister('bolt_api_error');
     }
 
     /**
