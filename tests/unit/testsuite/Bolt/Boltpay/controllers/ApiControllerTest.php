@@ -125,14 +125,10 @@ class Bolt_Boltpay_ApiControllerTest extends PHPUnit_Framework_TestCase
             || $payment->getLastTransId()
         );
 
-        # The commented out code will be uncommented as part of bugfix PR #542
-        # Currently a 422 is erroneously returned -- after PR #542, a 200 will be returned
-        /*
         $apiControllerMock
             ->expects($this->once())
             ->method('sendResponse')
             ->with($this->equalTo(200));
-        */
 
         ######################################
         # Calling the subject method
