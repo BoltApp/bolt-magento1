@@ -117,14 +117,15 @@ class Bolt_Boltpay_ConfigurationController
         return true;
     }
 
-
     /**
-     * @return bool
+     * Checks that a signing secret has at least been set
+     * Currently there isn't a way to validate the signing secret since this must come from Bolt.
+     *
+     * @return bool true if a signing secret was set in the admin, otherwise false
      */
     protected function checkSigningSecret()
     {
-        // Currently there isn't a way to validate the signing secret since this must come from Bolt.
-        return true;
+        return (bool)(Mage::getStoreConfig('payment/boltpay/signing_key', $this->_storeId));
     }
 
     /**

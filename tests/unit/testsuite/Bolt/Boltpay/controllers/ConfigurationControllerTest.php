@@ -71,9 +71,9 @@ class Bolt_Boltpay_ConfigurationControllerTest extends PHPUnit_Framework_TestCas
     }
 
     /**
-     * Sets the php://input value to the expected JSON defining the store ID
+     * Populates input stream with JSON containing store id
      */
-    private function checkActionSetup()
+    private function checkActionSetUp()
     {
         Bolt_Boltpay_StreamHelper::register();
         Bolt_Boltpay_StreamHelper::setData(json_encode(array('store_id' => self::STORE_ID)));
@@ -87,7 +87,7 @@ class Bolt_Boltpay_ConfigurationControllerTest extends PHPUnit_Framework_TestCas
      * @param $checkSchema
      * @return Bolt_Boltpay_ConfigurationController|PHPUnit_Framework_MockObject_MockObject
      */
-    private function checkAction_withStubbedCheckMethodResults_returnsSuccessOrErrorResponseSetup($checkApiKey, $checkSigningSecret, $checkPublishableKeyMultiPage, $checkPublishableKeyOnePage, $checkSchema)
+    private function checkAction_withStubbedCheckMethodResults_returnsSuccessOrErrorResponseSetUp($checkApiKey, $checkSigningSecret, $checkPublishableKeyMultiPage, $checkPublishableKeyOnePage, $checkSchema)
     {
         $this->currentMock = $this->getCurrentMock(
             array(
@@ -124,8 +124,8 @@ class Bolt_Boltpay_ConfigurationControllerTest extends PHPUnit_Framework_TestCas
      */
     public function checkAction_withStubbedCheckMethodResults_returnsSuccessOrErrorResponse($checkApiKey, $checkSigningSecret, $checkPublishableKeyMultiPage, $checkPublishableKeyOnePage, $checkSchema)
     {
-        $this->checkActionSetup();
-        $this->checkAction_withStubbedCheckMethodResults_returnsSuccessOrErrorResponseSetup(
+        $this->checkActionSetUp();
+        $this->checkAction_withStubbedCheckMethodResults_returnsSuccessOrErrorResponseSetUp(
             $checkApiKey,
             $checkSigningSecret,
             $checkPublishableKeyMultiPage,
@@ -206,7 +206,7 @@ class Bolt_Boltpay_ConfigurationControllerTest extends PHPUnit_Framework_TestCas
      */
     public function checkAction_whenAPIKeyIsInvalid_returnsErrorResponse()
     {
-        $this->checkActionSetup();
+        $this->checkActionSetUp();
         $currentMock = $this->getCurrentMock(
             array(
                 'checkSigningSecret',
@@ -240,7 +240,7 @@ class Bolt_Boltpay_ConfigurationControllerTest extends PHPUnit_Framework_TestCas
      */
     public function checkAction_whenMultiPagePublishableKeyIsInvalid_returnsErrorResponse()
     {
-        $this->checkActionSetup();
+        $this->checkActionSetUp();
         $currentMock = $this->getCurrentMock(array('checkPublishableKey', 'checkPublishableKeyOnePage'));
 
         $this->expectsHelperTransmit(true);
@@ -269,7 +269,7 @@ class Bolt_Boltpay_ConfigurationControllerTest extends PHPUnit_Framework_TestCas
      */
     public function checkAction_whenOnePagePublishableKeyIsInvalid_returnsErrorResponse()
     {
-        $this->checkActionSetup();
+        $this->checkActionSetUp();
         $currentMock = $this->getCurrentMock(array('checkPublishableKey', 'checkPublishableKeyMultiPage'));
         $currentMock->method('checkPublishableKeyMultiPage')->willReturn(true);
 
@@ -363,19 +363,42 @@ class Bolt_Boltpay_ConfigurationControllerTest extends PHPUnit_Framework_TestCas
 
     /**
      * @test
-     * Signing secret check - should always return true
+     * that checkSigningSecret validates that signing key is set
      *
+     * @dataProvider checkSigningSecret_withVariousSigningKey_returnsTrueIfSetInConfigProvider
      * @covers ::checkSigningSecret
+     *
+     * @param string $signingKey set in Magento configuration
+     * @param bool $expectedResult of the check method call
+     * @throws Mage_Core_Model_Store_Exception if the store doesn't exist
+     * @throws ReflectionException if the controller doesn't have checkSigningSecret method
      */
-    public function checkSigningSecret_withAnySigningKey_returnsTrue()
+    public function checkSigningSecret_withVariousSigningKeys_returnsTrueIfSetInConfig($signingKey, $expectedResult)
     {
         $currentMock = $this->getCurrentMock();
-        $this->assertNotNull(Mage::getStoreConfig('payment/boltpay/signing_key'));
-        $this->assertTrue(
+        $store = Mage::app()->getStore(self::STORE_ID);
+        $previousSigningKey = $store->getConfig('payment/boltpay/signing_key');
+        $store->setConfig('payment/boltpay/signing_key', $signingKey);
+        $this->assertEquals(
+            $expectedResult,
             TestHelper::callNonPublicFunction(
                 $currentMock,
                 'checkSigningSecret'
             )
+        );
+        $store->setConfig('payment/boltpay/signing_key', $previousSigningKey);
+    }
+
+    /**
+     * Data provider for {@see checkSigningSecret_withVariousSigningKeys_returnsTrueIfSetInConfig}
+     *
+     * @return array containing signing key and expected result of the check
+     */
+    public function checkSigningSecret_withVariousSigningKey_returnsTrueIfSetInConfigProvider()
+    {
+        return array(
+            'Valid key' => array('signingKey' => md5('bolt'), 'expectedResult' => true),
+            'Empty key' => array('signingKey' => '', 'expectedResult' => false),
         );
     }
 
@@ -823,7 +846,7 @@ class Bolt_Boltpay_ConfigurationControllerTest extends PHPUnit_Framework_TestCas
      * Creates a mock instance of database connection and registers it in Magento as default
      *
      * @return PHPUnit_Framework_MockObject_MockObject mocked instance of database connection
-     * @throws Mage_Core_Exception if there is an error registering the resource mock object
+     * @throws Mage_Core_Exception from registry if key is already set
      */
     private function registerConnectionMock()
     {
