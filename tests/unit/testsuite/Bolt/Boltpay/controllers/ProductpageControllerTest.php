@@ -42,6 +42,16 @@ class Bolt_Boltpay_ProductpageControllerTest extends PHPUnit_Framework_TestCase
      */
     public static function setUpBeforeClass()
     {
+        $checkoutQuote = Mage::getSingleton('checkout/cart')->getQuote();
+        //delete immutable quote
+        Mage::getModel('sales/quote')->load($checkoutQuote->getId(), 'parent_quote_id')->delete();
+        $checkoutQuote->delete();
+        Bolt_Boltpay_TestHelper::setNonPublicProperty(
+            Mage::getSingleton('checkout/session'),
+            '_quote',
+            null
+        );
+        unset($_SERVER['HTTP_X_BOLT_HMAC_SHA256']);
         Mage::unregister('_helper/boltpay');
         Mage::unregister('_singleton/checkout/cart');
         Mage::unregister('_singleton/sales/quote');
@@ -81,12 +91,12 @@ class Bolt_Boltpay_ProductpageControllerTest extends PHPUnit_Framework_TestCase
         Bolt_Boltpay_ProductProvider::deleteDummyProduct(self::$productId);
     }
 
-
     /**
      * Reset Magento registry values and session quote to prevent conflicts with other tests
      */
     protected function tearDown()
     {
+        Bolt_Boltpay_StreamHelper::restore();
         $checkoutQuote = Mage::getSingleton('checkout/cart')->getQuote();
         //delete immutable quote
         Mage::getModel('sales/quote')->load($checkoutQuote->getId(), 'parent_quote_id')->delete();
@@ -104,12 +114,12 @@ class Bolt_Boltpay_ProductpageControllerTest extends PHPUnit_Framework_TestCase
 
     /**
      * @test
-     * Creating quote with sufficient data provided
+     * that createCartAction when called with sufficient data will create quote and return its data in JSON format
      *
      * @covers ::createCartAction
      * @covers ::sendResponse
      */
-    public function createCartAction()
+    public function createCartAction_withSufficientData_returnsSuccessResponseWithCartDataInJSON()
     {
         $payload = array('items' => array(array('reference' => self::$productId, 'quantity' => 1)));
         $jsonPayload = json_encode($payload);
@@ -121,7 +131,7 @@ class Bolt_Boltpay_ProductpageControllerTest extends PHPUnit_Framework_TestCase
         $this->helperMock->expects($this->once())->method('verify_hook')->with($jsonPayload, self::TEST_HMAC)
             ->willReturn(true);
 
-        $this->expectResponse(
+        $this->expectsResponse(
             200,
             function ($body) use ($product) {
                 $result = json_decode($body, true);
@@ -148,24 +158,18 @@ class Bolt_Boltpay_ProductpageControllerTest extends PHPUnit_Framework_TestCase
 
         Bolt_Boltpay_StreamHelper::setData($jsonPayload);
         Bolt_Boltpay_StreamHelper::register();
-        try {
-            $this->currentMock->createCartAction();
-        } catch (Exception $e) {
-            Bolt_Boltpay_StreamHelper::restore();
-            throw $e;
-        }
 
-        Bolt_Boltpay_StreamHelper::restore();
+        $this->currentMock->createCartAction();
     }
 
     /**
      * @test
-     * Create cart action when requested with invalid HMAC
+     * that createCartAction when requested with invalid HMAC will return error response with appropriate message
      *
      * @covers ::createCartAction
      * @covers ::sendResponse
      */
-    public function createCartAction_invalidHMAC()
+    public function createCartAction_withInvalidHMACParameter_returnsErrorResponseWithErrorMessage()
     {
         $jsonPayload = json_encode(array());
         $_SERVER['HTTP_X_BOLT_HMAC_SHA256'] = self::TEST_HMAC;
@@ -173,17 +177,11 @@ class Bolt_Boltpay_ProductpageControllerTest extends PHPUnit_Framework_TestCase
         $this->helperMock->expects($this->once())->method('verify_hook')->with($jsonPayload, self::TEST_HMAC)
             ->willReturn(false);
 
-        $this->expectErrorResponse('Failed HMAC Authentication');
+        $this->expectsErrorResponse('Failed HMAC Authentication');
         Bolt_Boltpay_StreamHelper::setData($jsonPayload);
         Bolt_Boltpay_StreamHelper::register();
-        try {
-            $this->currentMock->createCartAction();
-        } catch (Exception $e) {
-            Bolt_Boltpay_StreamHelper::restore();
-            throw $e;
-        }
 
-        Bolt_Boltpay_StreamHelper::restore();
+        $this->currentMock->createCartAction();
     }
 
     /**
@@ -191,9 +189,9 @@ class Bolt_Boltpay_ProductpageControllerTest extends PHPUnit_Framework_TestCase
      *
      * @param string $message Error message to expect in body
      */
-    private function expectErrorResponse($message)
+    private function expectsErrorResponse($message)
     {
-        $this->expectResponse(
+        $this->expectsResponse(
             422,
             array(
                 'status' => 'failure',
@@ -212,7 +210,7 @@ class Bolt_Boltpay_ProductpageControllerTest extends PHPUnit_Framework_TestCase
      * @param int            $httpCode HTTP code to expect in response
      * @param array|callable $body array to expect as body in JSON format or callback used to validate body content
      */
-    private function expectResponse($httpCode, $body)
+    private function expectsResponse($httpCode, $body)
     {
         $this->helperMock->expects($this->once())->method('setResponseContextHeaders');
         $this->response->expects($this->once())->method('setHeader')->with('Content-type', 'application/json');
