@@ -319,9 +319,9 @@ class Bolt_Boltpay_Controller_Traits_OrderControllerTraitTest extends PHPUnit_Fr
      */
     public function createAction_underAdminContext_willCreateCartWithAdminType()
     {
-        $this->currentMock = $this->getTestClassPrototype( true )
+        $this->currentMock = $this->getClassPrototype( 'Bolt_Boltpay_Adminhtml_Sales_Order_CreateController', true )
             ->setMethods(array('getRequest', 'getLayout', 'getResponse', 'prepareAddressData', 'getCartData'))
-            ->getMockForTrait();
+            ->getMock();
 
         $this->currentMock->method('getLayout')->willReturn($this->layout);
         $this->currentMock->method('getRequest')->willReturn($this->request);
