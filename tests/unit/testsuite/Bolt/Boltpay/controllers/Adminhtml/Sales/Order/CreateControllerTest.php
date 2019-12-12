@@ -7,13 +7,56 @@ require_once 'Bolt/Boltpay/controllers/Adminhtml/Sales/Order/CreateController.ph
  */
 class Bolt_Boltpay_Adminhtml_Sales_Order_CreateControllerTest extends PHPUnit_Framework_TestCase
 {
+    use Bolt_Boltpay_MockingTrait;
+
     /**
      * @var
      */
     private $currentMock;
 
+    /**
+     * @var PHPUnit_Framework_MockObject_MockObject|Mage_Adminhtml_Model_Sales_Order_Create Admin Create order mock used in protected methods
+     */
+    private $adminSalesOrderCreateModelMock;
+
+    /**
+     * Ensures that the singleton for Mage_Adminhtml_Model_Sales_Order_Create is unset before running our test
+     */
+    public static function setUpBeforeClass()
+    {
+        Mage::unregister('_singleton/adminhtml/sales_order_create');
+    }
+
+    /**
+     * Registers singleton for Mage_Adminhtml_Model_Sales_Order_Create so that when Mage::getSingleton is called
+     * for this class, or mock is provided.
+     *
+     * @throws Mage_Core_Exception if there is a problem registering a singleton for Mage_Adminhtml_Model_Sales_Order_Create
+     */
     public function setUp()
     {
+        if ($this->adminSalesOrderCreateModelMock) {
+
+            $shippingAddressMock = new Mage_Sales_Model_Quote_Address();
+
+            $this->adminSalesOrderCreateModelMock =
+                $this->getClassPrototype('Mage_Adminhtml_Model_Sales_Order_Create',true)
+                    ->setMethods('getShipping')
+                    ->getMock()
+            ;
+            $this->adminSalesOrderCreateModelMock->method('getShipping')
+                ->willReturn($shippingAddressMock);
+            
+            Mage::register('_singleton/adminhtml/sales_order_create', $this->adminSalesOrderCreateModelMock);
+        }
+    }
+
+    /**
+     * Removes the singleton Mage_Adminhtml_Model_Sales_Order_Create after all test have run.
+     */
+    public static function tearDownAfterClass()
+    {
+        Mage::unregister('_singleton/adminhtml/sales_order_create');
     }
 
     /**
