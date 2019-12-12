@@ -32,7 +32,7 @@ trait Bolt_Boltpay_Controller_Traits_OrderControllerTrait {
 
         try {
             if (!$this->getRequest()->isAjax()) {
-                Mage::throwException($this->boltHelper()->__(get_class()."::createAction called with a non AJAX call"));
+                Mage::throwException($this->boltHelper()->__(get_class() . "::createAction called with a non AJAX call"));
             }
 
             /** @var Bolt_Boltpay_Block_Checkout_Boltpay $block */
@@ -42,12 +42,19 @@ trait Bolt_Boltpay_Controller_Traits_OrderControllerTrait {
             /** @var Mage_Sales_Model_Quote $quote */
             $quote = $block->getSessionQuote($checkoutType);
 
+            if ($checkoutType === Bolt_Boltpay_Block_Checkout_Boltpay::CHECKOUT_TYPE_ADMIN) {
+                /**
+                 * Initialize catalog rule data
+                 */
+                $this->_getOrderCreateModel()->initRuleData();
+            }
+
             $result = array();
             $result['cart_data'] = $this->getCartData($quote, $checkoutType);
 
             if (@$result['cart_data']['error']) {
                 $result['success'] = false;
-                $result['error']   = true;
+                $result['error'] = true;
                 $result['error_messages'] = $result['cart_data']['error'];
             }
 
