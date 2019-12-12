@@ -2,6 +2,7 @@
 
 require_once('TestHelper.php');
 require_once('CouponHelper.php');
+require_once('MockingTrait.php');
 
 use Bolt_Boltpay_TestHelper as TestHelper;
 
@@ -10,6 +11,13 @@ use Bolt_Boltpay_TestHelper as TestHelper;
  */
 class Bolt_Boltpay_Controller_Traits_OrderControllerTraitTest extends PHPUnit_Framework_TestCase
 {
+    use Bolt_Boltpay_MockingTrait;
+
+    /**
+     * @var string The name of the PHP entity being tested
+     */
+    private $testClassName = 'Bolt_Boltpay_Controller_Traits_OrderControllerTrait';
+
     /** @var string Dummy bolt order token, same as md5('bolt') */
     const BOLT_ORDER_TOKEN = 'a6fe881cecd3fb7660083aea35cce430';
 
@@ -118,33 +126,30 @@ class Bolt_Boltpay_Controller_Traits_OrderControllerTraitTest extends PHPUnit_Fr
         Mage::getSingleton('core/session')->unsetData('cached_cart_data');
     }
 
-
     /**
      * @test
-     * Create action when not requested via AJAX
+     * that createAction when not requested via AJAX will throw an exception indicating this
      *
-     * @covers ::createAction
+     * @covers Bolt_Boltpay_Controller_Traits_OrderControllerTrait::createAction
+     * @expectedException Mage_Core_Exception
+     * @expectedExceptionMessageRegExp /\:\:createAction called with a non AJAX call/
      */
-    public function createAction_noAjax()
+    public function createAction_nonAjax_throwsException()
     {
         $this->request->expects($this->once())->method('isAjax')->willReturn(false);
-
-        $this->setExpectedExceptionRegExp(
-            Mage_Core_Exception::class,
-            '/\:\:createAction called with a non AJAX call/'
-        );
-
         $this->currentMock->createAction();
     }
 
     /**
      * @test
-     * Create action when session quote is empty
+     * that if method is called when the shopping cart is empty, a JSON error will be sent
+     * as a response via {@see Bolt_Boltpay_Controller_Traits_OrderControllerTrait::getCartData}
+     * indicating that the cart is empty and that products should be added to the cart
      *
-     * @covers ::createAction
-     * @covers ::getCartData
+     * @covers Bolt_Boltpay_Controller_Traits_OrderControllerTrait::createAction
+     * @covers Bolt_Boltpay_Controller_Traits_OrderControllerTrait::getCartData
      */
-    public function createAction_emptyQuote()
+    public function createAction_withEmptySessionQuote_respondsWithEmptyCartJsonError()
     {
         $quote = $this->getMockBuilder('Mage_Sales_Model_Quote')
             ->setMethods(array('getAllVisibleItems'))
@@ -160,19 +165,21 @@ class Bolt_Boltpay_Controller_Traits_OrderControllerTraitTest extends PHPUnit_Fr
         $this->request->expects($this->once())->method('isAjax')->willReturn(true);
         $this->layout->expects($this->atLeastOnce())->method('createBlock')->with('boltpay/checkout_boltpay');
 
-        $this->expectErrorResponse('Your shopping cart is empty. Please add products to the cart.');
+        $this->expectsErrorResponse('Your shopping cart is empty. Please add products to the cart.');
         $this->currentMock->createAction();
     }
 
 
     /**
      * @test
-     * Create action when shipping method is not selected
+     * that if called when no shipping option has been selected, a JSON error will be sent
+     * as a response via {@see Bolt_Boltpay_Controller_Traits_OrderControllerTrait::getCartData}
+     * instructing the user to check their address and check select a shipping option
      *
-     * @covers ::createAction
-     * @covers ::getCartData
+     * @covers Bolt_Boltpay_Controller_Traits_OrderControllerTrait::createAction
+     * @covers Bolt_Boltpay_Controller_Traits_OrderControllerTrait::getCartData
      */
-    public function createAction_noShipping()
+    public function createAction_whenShippingNotSelected_respondsWithSelectShippingJsonError()
     {
         /** @var Mage_Sales_Model_Quote|PHPUnit_Framework_MockObject_MockObject $quote */
         $quote = $this->getMockBuilder('Mage_Sales_Model_Quote')
@@ -200,7 +207,7 @@ class Bolt_Boltpay_Controller_Traits_OrderControllerTraitTest extends PHPUnit_Fr
 
         $this->request->expects($this->once())->method('isAjax')->willReturn(true);
         $this->layout->expects($this->atLeastOnce())->method('createBlock')->with('boltpay/checkout_boltpay');
-        $this->expectErrorResponse(
+        $this->expectsErrorResponse(
             'A valid shipping method must be selected.  Please check your address data and that you have selected a shipping method, then, refresh to try again.'
         );
         $this->currentMock->createAction();
@@ -208,12 +215,14 @@ class Bolt_Boltpay_Controller_Traits_OrderControllerTraitTest extends PHPUnit_Fr
 
     /**
      * @test
-     * Create action when shipping method is not selected and billing address is empty
+     * that if called when no billing address and with no shipping option selected, a JSON error will
+     * be sent via {@see Bolt_Boltpay_Controller_Traits_OrderControllerTrait::getCartData} as a response
+     * instructing the user to check their address and check select a shipping option
      *
-     * @covers ::createAction
-     * @covers ::getCartData
+     * @covers Bolt_Boltpay_Controller_Traits_OrderControllerTrait::createAction
+     * @covers Bolt_Boltpay_Controller_Traits_OrderControllerTrait::getCartData
      */
-    public function createAction_noShippingnoBillingAddress()
+    public function createAction_withNoBillingAddressAndShippingNotSelected_respondsWithShippingJsonError()
     {
         /** @var Mage_Sales_Model_Quote|PHPUnit_Framework_MockObject_MockObject $quote */
         $quote = $this->getMockBuilder('Mage_Sales_Model_Quote')
@@ -244,7 +253,7 @@ class Bolt_Boltpay_Controller_Traits_OrderControllerTraitTest extends PHPUnit_Fr
 
         $this->request->expects($this->once())->method('isAjax')->willReturn(true);
         $this->layout->expects($this->atLeastOnce())->method('createBlock')->with('boltpay/checkout_boltpay');
-        $this->expectErrorResponse(
+        $this->expectsErrorResponse(
             'A valid shipping method must be selected.  Please check your address data and that you have selected a shipping method, then, refresh to try again.'
         );
         $this->currentMock->createAction();
@@ -252,12 +261,15 @@ class Bolt_Boltpay_Controller_Traits_OrderControllerTraitTest extends PHPUnit_Fr
 
     /**
      * @test
-     * Create action will all data set
+     * that if called in a valid state, (e.g. a non-empty cart with all virtual items),
+     * then a request will be sent to Bolt.  Bolt, in return, will send an order token
+     * which the method via {@see Bolt_Boltpay_Controller_Traits_OrderControllerTrait::getCartData}
+     * is expected to respond with JSON that includes the order token.
      *
-     * @covers ::createAction
-     * @covers ::getCartData
+     * @covers Bolt_Boltpay_Controller_Traits_OrderControllerTrait::createAction
+     * @covers Bolt_Boltpay_Controller_Traits_OrderControllerTrait::getCartData
      */
-    public function createAction_success()
+    public function createAction_whenAllDataCorrectlySet_respondsWithBoltOrderJsonWithOrderToken()
     {
         /** @var Mage_Sales_Model_Quote|PHPUnit_Framework_MockObject_MockObject $quote */
         $quote = $this->getMockBuilder('Mage_Sales_Model_Quote')
@@ -293,32 +305,30 @@ class Bolt_Boltpay_Controller_Traits_OrderControllerTraitTest extends PHPUnit_Fr
             (object)array('token' => self::BOLT_ORDER_TOKEN)
         );
 
-        $this->expectResponse(array('cart_data' => array('orderToken' => self::BOLT_ORDER_TOKEN)));
+        $this->expectsResponse(array('cart_data' => array('orderToken' => self::BOLT_ORDER_TOKEN)));
 
         $this->currentMock->createAction();
     }
 
     /**
      * @test
-     * Create action with admin checkout type
+     * that when called under the context of an admin session, it will attempt
+     * to create the cart data for the admin checkout type
      *
-     * @covers ::createAction
-     * @covers ::getCartData
-     * @covers ::cloneQuote
+     * @covers Bolt_Boltpay_Controller_Traits_OrderControllerTrait::createAction
      */
-    public function createAction_admin()
+    public function createAction_underAdminContext_willCreateCartWithAdminType()
     {
+        $this->currentMock = $this->getTestClassPrototype( true )
+            ->setMethods(array('getRequest', 'getLayout', 'getResponse', 'prepareAddressData', 'getCartData'))
+            ->getMockForTrait();
+
+        $this->currentMock->method('getLayout')->willReturn($this->layout);
+        $this->currentMock->method('getRequest')->willReturn($this->request);
+        $this->currentMock->method('getResponse')->willReturn($this->response);
+
         $quote = $this->getMockBuilder('Mage_Sales_Model_Quote')
-            ->setMethods(array('getAllVisibleItems'))
             ->getMock();
-        $quoteItem = Mage::getModel('sales/quote_item')
-            ->setQuote($quote)
-            ->setData(
-                array(
-                    'product' => Mage::getModel('catalog/product')
-                )
-            );
-        $quote->expects($this->atLeastOnce())->method('getAllVisibleItems')->willReturn(array($quoteItem));
 
         TestHelper::setNonPublicProperty(
             Mage::getSingleton('adminhtml/session_quote'),
@@ -334,6 +344,9 @@ class Bolt_Boltpay_Controller_Traits_OrderControllerTraitTest extends PHPUnit_Fr
             ->willReturn(Bolt_Boltpay_Block_Checkout_Boltpay::CHECKOUT_TYPE_ADMIN);
         $this->layout->expects($this->atLeastOnce())->method('createBlock')->with('boltpay/checkout_boltpay');
 
+        $this->currentMock->expects($this->once())->method('getCartData')
+            ->with($quote, Bolt_Boltpay_Block_Checkout_Boltpay::CHECKOUT_TYPE_ADMIN);
+
         $this->response->expects($this->once())->method('setHeader');
         $this->response->expects($this->once())->method('setBody');
         $this->currentMock->createAction();
@@ -341,16 +354,17 @@ class Bolt_Boltpay_Controller_Traits_OrderControllerTraitTest extends PHPUnit_Fr
 
     /**
      * @test
-     * Retrieving cart data from cache regardless of checkout type
+     * that retrieving cart data from cache always occurs if the quote has been cached,
+     * regardless of the checkout type
      *
-     * @covers       ::getCartData
+     * @covers       Bolt_Boltpay_Controller_Traits_OrderControllerTrait::getCartData
      * @dataProvider checkoutTypesProvider
      *
      * @param string $checkoutType Bolt checkout type code
-     * @throws ReflectionException from TestHelper if method called doesen't exist
+     * @throws ReflectionException from TestHelper if method called doesn't exist
      * @throws Zend_Db_Adapter_Exception from CouponHelper if quote deletion fails
      */
-    public function getCartData_cache($checkoutType)
+    public function getCartData_whenQuoteHasBeenCached_willGetCartDataFromTheCache($checkoutType)
     {
         $layout = $this->getMockBuilder('Mage_Core_Model_Layout')
             ->setMethods(array('getBlock'))
@@ -391,14 +405,15 @@ class Bolt_Boltpay_Controller_Traits_OrderControllerTraitTest extends PHPUnit_Fr
 
     /**
      * @test
-     * Cloning quote when checkout type is multipage
+     * that cloning a quote for all checkout types returns a valid quote clone object
      *
-     * @covers ::cloneQuote
+     * @covers Bolt_Boltpay_Controller_Traits_OrderControllerTrait::cloneQuote
+     * @dataProvider checkoutTypesProvider
      */
-    public function cloneQuote_multipage()
+    public function cloneQuote_withAllTypes_producesClone()
     {
         $quoteId = Bolt_Boltpay_CouponHelper::createDummyQuote();
-        TestHelper::callNonPublicFunction(
+        $clonedQuote = TestHelper::callNonPublicFunction(
             $this->currentMock,
             'cloneQuote',
             array(
@@ -406,6 +421,8 @@ class Bolt_Boltpay_Controller_Traits_OrderControllerTraitTest extends PHPUnit_Fr
                 Bolt_Boltpay_Block_Checkout_Boltpay::CHECKOUT_TYPE_MULTI_PAGE
             )
         );
+        $this->assertInstanceOf('Mage_Sales_Model_Quote', $clonedQuote);
+        $this->assertEquals($quoteId, $clonedQuote->getParentQuoteId());
         Bolt_Boltpay_CouponHelper::deleteDummyQuote($quoteId);
     }
 
@@ -417,11 +434,11 @@ class Bolt_Boltpay_Controller_Traits_OrderControllerTraitTest extends PHPUnit_Fr
     public function checkoutTypesProvider()
     {
         return array(
-            array(Bolt_Boltpay_Block_Checkout_Boltpay::CHECKOUT_TYPE_ADMIN),
-            array(Bolt_Boltpay_Block_Checkout_Boltpay::CHECKOUT_TYPE_FIRECHECKOUT),
-            array(Bolt_Boltpay_Block_Checkout_Boltpay::CHECKOUT_TYPE_MULTI_PAGE),
-            array(Bolt_Boltpay_Block_Checkout_Boltpay::CHECKOUT_TYPE_ONE_PAGE),
-            array(Bolt_Boltpay_Block_Checkout_Boltpay::CHECKOUT_TYPE_PRODUCT_PAGE)
+            "Admin Checkout" => array(Bolt_Boltpay_Block_Checkout_Boltpay::CHECKOUT_TYPE_ADMIN),
+            "FireCheckout" => array(Bolt_Boltpay_Block_Checkout_Boltpay::CHECKOUT_TYPE_FIRECHECKOUT),
+            "MultiPage Checkout" => array(Bolt_Boltpay_Block_Checkout_Boltpay::CHECKOUT_TYPE_MULTI_PAGE),
+            "OnePage Checkout" => array(Bolt_Boltpay_Block_Checkout_Boltpay::CHECKOUT_TYPE_ONE_PAGE),
+            "Product Page Checkout" => array(Bolt_Boltpay_Block_Checkout_Boltpay::CHECKOUT_TYPE_PRODUCT_PAGE)
         );
     }
 
@@ -430,7 +447,7 @@ class Bolt_Boltpay_Controller_Traits_OrderControllerTraitTest extends PHPUnit_Fr
      *
      * @param string $errorMessage to expect inside JSON body
      */
-    private function expectErrorResponse($errorMessage)
+    private function expectsErrorResponse($errorMessage)
     {
         $this->response->expects($this->once())->method('setHeader')->with('Content-type', 'application/json', true);
         $this->response->expects($this->once())->method('setBody')->willReturnCallback(
@@ -455,7 +472,7 @@ class Bolt_Boltpay_Controller_Traits_OrderControllerTraitTest extends PHPUnit_Fr
      *
      * @param array $responseData to be expected in response body in JSON format
      */
-    private function expectResponse($responseData)
+    private function expectsResponse($responseData)
     {
         $this->response->expects($this->once())->method('setHeader')->with('Content-type', 'application/json', true);
         $this->response->expects($this->once())->method('setBody')->with(json_encode($responseData));
