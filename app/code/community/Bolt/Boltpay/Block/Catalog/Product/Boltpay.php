@@ -69,7 +69,10 @@ class Bolt_Boltpay_Block_Catalog_Product_Boltpay extends Mage_Core_Block_Templat
     {
         /** @var Mage_Catalog_Model_Product $product */
         $product = $this->getCurrentProduct();
-
+        $options = $product->getOptions();
+        if (count($options) > 0) {
+            return false;
+        }
         return ($product && in_array($product->getTypeId(), $this->getProductSupportedTypes()));
     }
 

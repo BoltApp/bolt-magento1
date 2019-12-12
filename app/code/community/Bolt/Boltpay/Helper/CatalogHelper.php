@@ -56,8 +56,8 @@ class Bolt_Boltpay_Helper_CatalogHelper extends Mage_Core_Helper_Abstract
             $ppcQuote = Mage::getModel('sales/quote');
             $ppcQuote->setStore(Mage::app()->getStore());
             $ppcQuote->reserveOrderId();
-            $ppcQuote->getShippingAddress()->setCollectShippingRates(true);
-            $ppcQuote->collectTotals()->save();
+//            $ppcQuote->getShippingAddress()->setCollectShippingRates(true);
+//            $ppcQuote->collectTotals()->save();
         }
         return $ppcQuote;
     }
@@ -73,7 +73,7 @@ class Bolt_Boltpay_Helper_CatalogHelper extends Mage_Core_Helper_Abstract
         $ppcQuote->addProduct($product, $request);
         //$ppcQuote->setParentQuoteId($ppcQuote->getId());
         //$ppcQuote->getBillingAddress();
-        //$ppcQuote->getShippingAddress()->setCollectShippingRates(true);
+        $ppcQuote->getShippingAddress()->setCollectShippingRates(true);
         $ppcQuote->setParentQuoteId($ppcQuote->getId());
         $ppcQuote->collectTotals()->save();
         $this->getSession()->setData($this->getQuoteIdKey(), $ppcQuote->getId());

@@ -47,13 +47,20 @@
                 jQuery('div#ppcBuyNow').addClass("disabledbutton");
                 jQuery('div#ppcBuyNow span span').html('Processing...');
                 var data = this.form.serialize();
+
+                var formData = new FormData(this.form);
+
+
+                
                 data += '&isAjax=1';
                 jQuery('#ajax_loader').show();
                 try {
                     jQuery.ajax( {
                         url : "/boltpay/order/ppc",
-                        dataType : 'json',
+                        dataType : false,
                         type : 'post',
+                        cache: false,
+                        processData: false,
                         data : data,
                         success : function(response) {
                             var token = response.token || "";
