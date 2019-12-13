@@ -3,12 +3,15 @@
 require_once 'Bolt/Boltpay/controllers/OrderController.php';
 require_once 'TestHelper.php';
 require_once 'OrderHelper.php';
+require_once 'MockingTrait.php';
 
 /**
  * @coversDefaultClass Bolt_Boltpay_OrderController
  */
 class Bolt_Boltpay_OrderControllerTest extends PHPUnit_Framework_TestCase
 {
+    use Bolt_Boltpay_MockingTrait;
+
     /**
      * @var string Dummy HMAC
      */
@@ -57,6 +60,7 @@ class Bolt_Boltpay_OrderControllerTest extends PHPUnit_Framework_TestCase
     {
         Mage::unregister('_helper/boltpay');
         Mage::unregister('_singleton/firecheckout/type_standard');
+        Bolt_Boltpay_TestHelper::
         self::$productId = Bolt_Boltpay_ProductProvider::createDummyProduct('PHPUNIT_TEST_1', array(), 20);
     }
 
@@ -152,13 +156,13 @@ class Bolt_Boltpay_OrderControllerTest extends PHPUnit_Framework_TestCase
 
     /**
      * @test
-     * Save action when requested without AJAX
+     * Save action when requested without AJAX should fail by exception
      *
      * @covers ::saveAction
      * @expectedException Mage_Core_Exception
-     * @expectedExceptionMessage Bolt_Boltpay_OrderController::saveAction called with a non AJAX call
+     * @expectedExceptionMessage This action is not supported
      */
-    public function saveAction_notRequestedViaAJAX_throwsException()
+    public function saveAction_notRequestedViaAjax_throwsException()
     {
         $this->request->expects($this->once())->method('isAjax')->willReturn(false);
 
@@ -167,8 +171,23 @@ class Bolt_Boltpay_OrderControllerTest extends PHPUnit_Framework_TestCase
 
     /**
      * @test
-     * Save action with order already created
-     * Only 200 status code should be returned, which happens by default
+     * Save action when requested from a non-product page context should fail by exception
+     *
+     * @covers ::saveAction
+     * @expectedException Mage_Core_Exception
+     * @expectedExceptionMessage This action is not supported
+     */
+    public function saveAction_inNonProductPageContext_throwsException()
+    {
+        $this->request->expects($this->once())->method('isAjax')->willReturn(true);
+
+        $this->currentMock->saveAction();
+    }
+
+    /**
+     * @test
+     * Save action with order already created should result in
+     * only 200 status code being returned, which happens by default
      *
      * @covers ::saveAction
      */
@@ -199,20 +218,18 @@ class Bolt_Boltpay_OrderControllerTest extends PHPUnit_Framework_TestCase
 
     /**
      * @test
-     * Save action with new order
-     * Intentionally don't provide reference to prevent internal calls
+     * Save action with new order should result in an empty success response body returned with a 200 OK
      *
      * @covers ::saveAction
-     * @expectedException Bolt_Boltpay_OrderCreationException
-     * @expectedExceptionMessage Bolt transaction reference is missing in the Magento order creation process.
      */
     public function saveAction_withNewOrder_returnsEmptySuccessResponse()
     {
         $this->request->expects($this->once())->method('isAjax')->willReturn(true);
-        $reference = null;
+
+        $reference = null; # Intentionally don't provide reference to raise exception and break out early
         $this->request->setPost(array('reference' => $reference));
 
-        $transaction = (object)array();
+        $transaction = (object)array('order' => 'Stubbed transaction data');
 
         $this->helperMock->expects($this->atLeastOnce())->method('fetchTransaction')->with($reference)
             ->willReturn($transaction);
@@ -224,9 +241,14 @@ class Bolt_Boltpay_OrderControllerTest extends PHPUnit_Framework_TestCase
             }
         );
         $this->helperMock->expects($this->atLeastOnce())->method('getImmutableQuoteIdFromTransaction')
-            ->with($transaction)->willReturn($reference);
+            ->with($transaction)->willReturn(null);  # Force order to not be found
 
-        $this->currentMock->saveAction();
+        $expectedResult = "createOrder was successfully called.";
+        try {
+            $this->currentMock->saveAction();
+        } catch( Bolt_Boltpay_OrderCreationException $oce ) {
+            $this->assertContains("reference is missing ", $oce->getMessage());
+        }
     }
 
     /**
@@ -296,7 +318,7 @@ class Bolt_Boltpay_OrderControllerTest extends PHPUnit_Framework_TestCase
      * @expectedException Mage_Core_Exception
      * @expectedExceptionMessage OrderController::firecheckoutcreateAction called with a non AJAX call
      */
-    public function firecheckoutcreateAction_notRequestedViaAJAX_throwsException()
+    public function firecheckoutcreateAction_notRequestedViaAjax_throwsException()
     {
         $this->request->expects($this->once())->method('isAjax')->willReturn(false);
 

@@ -242,7 +242,7 @@ class Bolt_Boltpay_Adminhtml_Sales_Order_CreateController
          */
         if (!$this->_getOrderCreateModel()->getQuote()->isVirtual()) {
             $syncFlag = $this->getRequest()->getPost('shipping_as_billing');
-            $shippingMethod = $this->   _getOrderCreateModel()->getShippingAddress()->getShippingMethod();
+            $shippingMethod = $this->_getOrderCreateModel()->getShippingAddress()->getShippingMethod();
             if (is_null($syncFlag)
                 && $this->_getOrderCreateModel()->getShippingAddress()->getSameAsBilling()
                 && empty($shippingMethod)
