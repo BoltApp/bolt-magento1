@@ -7,13 +7,29 @@ require_once 'Bolt/Boltpay/controllers/Adminhtml/Sales/Order/CreateController.ph
  */
 class Bolt_Boltpay_Adminhtml_Sales_Order_CreateControllerTest extends PHPUnit_Framework_TestCase
 {
+    use Bolt_Boltpay_MockingTrait;
+
     /**
      * @var
      */
     private $currentMock;
-
-    public function setUp()
+    
+    /**
+     * Ensures that the singleton for Mage_Adminhtml_Model_Sales_Order_Create is unset before running our test to
+     * remove manipulation done by other previous test
+     */
+    public static function setUpBeforeClass()
     {
+        Mage::unregister('_singleton/adminhtml/sales_order_create');
+    }
+
+    /**
+     * Removes the singleton Mage_Adminhtml_Model_Sales_Order_Create after all test have run as to not affect subsequent
+     * test
+     */
+    public static function tearDownAfterClass()
+    {
+        Mage::unregister('_singleton/adminhtml/sales_order_create');
     }
 
     /**
@@ -58,7 +74,6 @@ class Bolt_Boltpay_Adminhtml_Sales_Order_CreateControllerTest extends PHPUnit_Fr
 
         $this->currentMock->method('prepareAddressData')
             ->willReturn($expected);
-
 
         $this->currentMock->loadBlockAction();
         $result = Mage::getSingleton('admin/session')->getOrderShippingAddress();
