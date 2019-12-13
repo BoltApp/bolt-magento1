@@ -57,11 +57,12 @@
                 try {
                     jQuery.ajax( {
                         url : "/boltpay/order/ppc",
-                        dataType : false,
+                        dataType : 'json',
                         type : 'post',
                         cache: false,
                         processData: false,
-                        data : data,
+                        contentType: false,
+                        data : formData,
                         success : function(response) {
                             var token = response.token || "";
                             jQuery('#ppcBuyNow').hide();

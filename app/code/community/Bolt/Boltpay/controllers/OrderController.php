@@ -214,14 +214,15 @@ class Bolt_Boltpay_OrderController
      */
     public function ppcAction()
     {
+//         var_dump($_FILES);
         if (!$this->getRequest()->isAjax()) {
             Mage::throwException($this->boltHelper()->__("Bolt_Boltpay_OrderController::ppcAction called with a non AJAX call"));
             return;
         }
-        if (!$this->_validateFormKey()) {
-            Mage::throwException($this->boltHelper()->__("Bolt_Boltpay_OrderController::ppcAction form key is invalid"));
-            return;
-        }
+//         if (!$this->_validateFormKey()) {
+//             Mage::throwException($this->boltHelper()->__("Bolt_Boltpay_OrderController::ppcAction form key is invalid"));
+//             return;
+//         }
         $response = $this->_initPpcToken();
         $token = $response->token;
         /**
@@ -241,16 +242,19 @@ class Bolt_Boltpay_OrderController
      */
     protected function _initPpcToken()
     {
-        $productId = (int) $this->getRequest()->getParam('product');
-        if ($productId) {
-            $product = Mage::getModel('catalog/product')
-                ->setStoreId(Mage::app()->getStore()->getId())
-                ->load($productId);
-            if ($product instanceof Mage_Catalog_Model_Product && $product->getId()) {
-                // See Mage_Checkout_CartController::addAction
+        $product = $this->_initProduct();
+        //var_dump($product);
+//         $productId = (int) $this->getRequest()->getParam('product');
+//         if ($productId) {
+//             $product = Mage::getModel('catalog/product')
+//                 ->setStoreId(Mage::app()->getStore()->getId())
+//                 ->load($productId);
+//             if ($product instanceof Mage_Catalog_Model_Product && $product->getId()) {
+//                 // See Mage_Checkout_CartController::addAction
                 $helper = new Bolt_Boltpay_Helper_CatalogHelper();
                 $request = $helper->getProductRequest($this->getRequest()->getParams());
                 $ppcQuote = $helper->getQuoteWithCurrentProduct($product, $request);
+//                 var_dump($ppcQuote);
                 if ($ppcQuote instanceof Mage_Sales_Model_Quote) {
                     $boltOrder = new Bolt_Boltpay_Model_BoltOrder();
                     $response = $boltOrder->getBoltOrderToken($ppcQuote, Bolt_Boltpay_Block_Checkout_Boltpay::CHECKOUT_TYPE_MULTI_PAGE);
@@ -259,8 +263,28 @@ class Bolt_Boltpay_OrderController
                     return $response;
                 }
                 return json_encode(array("token" => "", "error" => $this->boltHelper()->__("Bolt_Boltpay_OrderController::ppcAction form key is invalid")));
+//             }
+//         }
+//         return json_encode(array("token" => "", "error" => $this->boltHelper()->__("Bolt_Boltpay_OrderController::ppcAction product is empty")));
+    }
+
+    /**
+     * Initialize product instance from request data
+     *
+     * @return Mage_Catalog_Model_Product || false
+     */
+    protected function _initProduct()
+    {
+        $productId = (int) $this->getRequest()->getPost('product');
+        if ($productId) {
+            $product = Mage::getModel('catalog/product')
+            ->setStoreId(Mage::app()->getStore()->getId())
+            ->load($productId);
+            if ($product->getId()) {
+                return $product;
             }
         }
-        return json_encode(array("token" => "", "error" => $this->boltHelper()->__("Bolt_Boltpay_OrderController::ppcAction product is empty")));
+        return false;
     }
+    
 }
