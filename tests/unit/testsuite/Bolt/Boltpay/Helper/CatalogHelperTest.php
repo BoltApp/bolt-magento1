@@ -117,15 +117,15 @@ class Bolt_Boltpay_Helper_CatalogHelperTest extends PHPUnit_Framework_TestCase
 
     /**
      * @test
+     * @group Fix
      * @group HelperCatalog
      */
     public function getQuoteExistingQuoteAndOrder()
     {
         $session = Mage::getSingleton('catalog/session');
         $session->setData('ppc_quote_id_'.$this->app->getStore()->getId(), self::$quoteId);
-        $mock = $this->mockBuilder->setMethods(array('getSession', 'getLastRealOrderId'))->getMock();
+        $mock = $this->mockBuilder->setMethods(array('getSession'))->getMock();
         $mock->expects($this->once())->method('getSession')->will($this->returnValue($session));
-        $mock->expects($this->once())->method('getLastRealOrderId')->will($this->returnValue(self::$orderId));
         // Start testing
         $result = $mock->getQuote();
         $this->assertInstanceOf(Mage_Sales_Model_Quote::class, $result);
@@ -160,9 +160,8 @@ class Bolt_Boltpay_Helper_CatalogHelperTest extends PHPUnit_Framework_TestCase
         $order = $service->getOrder();
         $session = Mage::getSingleton('catalog/session');
         $session->setData('ppc_quote_id_'.$this->app->getStore()->getId(), self::$quoteId);
-        $mock = $this->mockBuilder->setMethods(array('getSession', 'getLastRealOrderId'))->getMock();
+        $mock = $this->mockBuilder->setMethods(array('getSession'))->getMock();
         $mock->expects($this->once())->method('getSession')->will($this->returnValue($session));
-        $mock->expects($this->once())->method('getLastRealOrderId')->will($this->returnValue($order->getId()));
         // Start testing
         $result = $mock->getQuote();
         $this->assertInstanceOf(Mage_Sales_Model_Quote::class, $result);

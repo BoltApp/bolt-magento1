@@ -260,7 +260,7 @@ class Bolt_Boltpay_Controller_Traits_OrderControllerTraitTest extends PHPUnit_Fr
     }
 
     /**
-     * @test
+     *
      * that if called in a valid state, (e.g. a non-empty cart with all virtual items),
      * then a request will be sent to Bolt.  Bolt, in return, will send an order token
      * which the method via {@see Bolt_Boltpay_Controller_Traits_OrderControllerTrait::getCartData}
