@@ -28,32 +28,32 @@
 -->
 </style>
     <?php if ($this->isSupportedProductType()):?>
-    <?php $token = $this->getBoltToken(new Bolt_Boltpay_Model_BoltOrder(), new Bolt_Boltpay_Helper_CatalogHelper());?>
-    <?php if ($token):?>
-    <div class="bolt-product-checkout-button" data-btn-txt="Buy now"></div>
-        <div id="ppcBuyNow" title="PPC" class="button btn-cart validation-passed disabledbutton" style="display: none;">
-        <span>
-            <span><?php echo $this->__('Processing ...') ?></span>
-        </span>
-    </div>
-    
-        <script type="text/javascript">
-        jQuery(document).ready(function() {
-                var cart = {
-                    "orderToken": "<?php echo $token;?>"
-                };
-                var hints = {};
-                var callbacks = {};
-                BoltCheckout.configureProductCheckout(cart, hints, callbacks);
-        });
-        </script>
-    <?php endif;?>
-    <?php else:?>
-    <div class="bolt-product-checkout-button"></div>
-    <div id="ppcBuyNow" title="PPC" class="button btn-cart validation-passed" onclick="productPageCheckout.click(this)">
-        <span>
-            <span><?php echo $this->__('Buy Now') ?></span>
-        </span>
-    </div>
-    <?php endif;?>
-<?php endif; ?>
+        <?php $token = $this->getBoltToken(new Bolt_Boltpay_Model_BoltOrder(), new Bolt_Boltpay_Helper_CatalogHelper());?>
+            <?php if ($token):?>
+            <div class="bolt-product-checkout-button" data-btn-txt="Buy now"></div>
+                <div id="ppcBuyNow" title="PPC" class="button btn-cart validation-passed disabledbutton" style="display: none;">
+                <span>
+                    <span><?php echo $this->__('Processing ...') ?></span>
+                </span>
+            </div>
+            
+                <script type="text/javascript">
+                jQuery(document).ready(function() {
+                        var cart = {
+                            "orderToken": "<?php echo $token;?>"
+                        };
+                        var hints = {};
+                        var callbacks = {};
+                        BoltCheckout.configureProductCheckout(cart, hints, callbacks);
+                });
+                </script>
+            <?php endif;?>
+        <?php else:?>
+        <div class="bolt-product-checkout-button"></div>
+        <div id="ppcBuyNow" title="PPC" class="button btn-cart validation-passed" onclick="productPageCheckout.click(this)">
+            <span>
+                <span><?php echo $this->__('Buy Now') ?></span>
+            </span>
+        </div>
+        <?php endif;?>
+    <?php endif; ?>
