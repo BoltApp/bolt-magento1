@@ -120,6 +120,7 @@ trait Bolt_Boltpay_Controller_Traits_WebHookTrait {
 
         if ($exitImmediately) {
             echo $content;
+            Mage::dispatchEvent('controller_front_send_response_after');
             exit;
         }
 

@@ -40,11 +40,14 @@ class Bolt_Boltpay_ShippingController
      */
     protected function _construct()
     {
+        benchmark('Initializing Shipping and Tax');
         $this->_cache = Mage::app()->getCache();
+        benchmark('Initializing Shipping and Tax: Finished retrieving cache');
         $this->_shippingAndTaxModel = Mage::getModel("boltpay/shippingAndTax");
         if (strpos($this->getRequest()->getPathInfo(), 'prefetchEstimate')) {
             $this->requestMustBeSigned = false;
         }
+        benchmark('Finished Initializing Shipping and Tax');
     }
 
     /**
@@ -56,7 +59,9 @@ class Bolt_Boltpay_ShippingController
     public function indexAction()
     {
         try {
+            benchmark('Beginning retrieval of shipping and tax quote');
             $timeout = $this->boltHelper()->getExtraConfig('shippingTimeout');
+            benchmark('Retrieved shipping timeout settings');
             set_time_limit($timeout);
             ignore_user_abort(true);
 
@@ -67,6 +72,7 @@ class Bolt_Boltpay_ShippingController
 
             /* @var Mage_Sales_Model_Quote $quote */
             $quote = Mage::getModel('sales/quote')->loadByIdWithoutStore($quoteId);
+            benchmark('Looked up quote from transaction data');
 
             $this->boltHelper()->setCustomerSessionById($quote->getCustomerId());
 
@@ -77,6 +83,7 @@ class Bolt_Boltpay_ShippingController
             $session = Mage::getSingleton('checkout/session');
             $session->setQuoteId($quoteId);
             ///////////////////////////////////////////////////
+            benchmark('Set customer session context');
 
             ////////////////////////////////////////////////////////////////////////////////
             /// Apply shipping address with validation checks
@@ -88,6 +95,7 @@ class Bolt_Boltpay_ShippingController
                     'transaction' => $mockTransaction
                 )
             );
+            benchmark('Dispatched bolt_boltpay_shipping_estimate_before estimate');
 
             $shippingAddress = $requestData->shipping_address;
             $addressErrorDetails = array();
@@ -101,9 +109,11 @@ class Bolt_Boltpay_ShippingController
                 $this->boltHelper()->logWarning($msg);
             } else {
                 $addressData = $this->_shippingAndTaxModel->applyBoltAddressData($quote, $shippingAddress);
+                benchmark('Applied shipping address data');
 
                 if ($this->shouldDoAddressValidation()) {
                     $magentoAddressErrors = $quote->getShippingAddress()->validate();
+                    benchmark('Validated shipping address');
 
                     if (is_array($magentoAddressErrors)) {
                         $addressErrorDetails = array('code' => 6103, 'message' => $magentoAddressErrors[0]);
@@ -113,10 +123,12 @@ class Bolt_Boltpay_ShippingController
 
             if ($addressErrorDetails) {
                 $this->boltHelper()->notifyException(new Exception(json_encode($addressErrorDetails)));
+                benchmark('Notified bugsnag of address error');
                 $this->sendResponse(
                     422,
                     array('status' => 'failure','error' => $addressErrorDetails)
                 );
+                benchmark('Sent shipping address failure to Bolt');
             }
             ////////////////////////////////////////////////////////////////////////////////
 
@@ -125,18 +137,25 @@ class Bolt_Boltpay_ShippingController
             // then use the cached version.  Otherwise, we have to do another calculation
             ////////////////////////////////////////////////////////////////////////////////////////
             $cachedIdentifier = $this->getEstimateCacheIdentifier($quote, $addressData);
+            benchmark('Calculated Cache identifier');
 
             $estimate = unserialize($this->_cache->load($cachedIdentifier));
+            benchmark('Queried cache for save shipping and tax quote');
 
             if ($estimate) {
                 $cacheBoltHeader = 'HIT';
             } else {
                 //Mage::log('Generating address from quote', null, 'shipping_and_tax.log');
                 //Mage::log('Live address: '.var_export($address_data, true), null, 'shipping_and_tax.log');
+                benchmark('Creating New Estimate');
                 $estimate = $this->_shippingAndTaxModel->getShippingAndTaxEstimate($quote, $requestData);
+                benchmark('Finished Creating New Estimate');
 
                 // Only cache if there are shipping options
-                if ($estimate['shipping_options']) { $this->cacheShippingAndTaxEstimate($estimate, $cachedIdentifier); }
+                if ($estimate['shipping_options']) {
+                    $this->cacheShippingAndTaxEstimate($estimate, $cachedIdentifier);
+                    benchmark('Cached shipping and tax estimate for address');
+                }
                 $cacheBoltHeader = 'MISS';
             }
             ////////////////////////////////////////////////////////////////////////////////////////
@@ -152,6 +171,7 @@ class Bolt_Boltpay_ShippingController
                 200,
                 $responseJSON
             );
+            benchmark('Sent retrieved shipping and tax quote to Bolt');
 
         } catch (Exception $e) {
             $metaData = array();
@@ -160,7 +180,9 @@ class Bolt_Boltpay_ShippingController
             }
 
             $this->boltHelper()->notifyException($e, $metaData);
+            benchmark('Notified Bugsnag of unexpected shipping and tax error');
             $this->boltHelper()->logException($e, $metaData);
+            benchmark('Notified Datadog of unexpected shipping and tax error');
             throw $e;
         }
     }
