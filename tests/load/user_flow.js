@@ -7,8 +7,8 @@ import { create_header } from "./config.js";
 
 const errorRate = new Rate( "errors" );
 
-// Need this variable when simulating less than 1 user per second 
-const SLEEP = __ENV.SLEEP ? parseInt(__ENV.SLEEP) : 0;
+// Num of seconds to sleep for. Need this when testing load of less than 1 user per second 
+const SLEEP = parseFloat(__ENV.SLEEP) || 0.0;
 
 export default function test() {
     // cart page
