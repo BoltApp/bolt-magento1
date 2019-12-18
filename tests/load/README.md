@@ -34,6 +34,9 @@ Debugging http:
 Follow these steps to setup [Blackfire](https://www.notion.so/boltteam/Blackfire-17f549490e084c7a98097d7b37d2d0fd)
 
 Create profiles by running: 
+
     blackfire --samples 3 run sh -c \
-      'k6 run user_flow.js -e SLEEP=0 -e BLACKFIRE_HEADER=$BLACKFIRE_QUERY'
+      'k6 run user_flow.js \
+      -e SLEEP=0 \
+      -e BLACKFIRE_HEADER=$BLACKFIRE_QUERY'
 
