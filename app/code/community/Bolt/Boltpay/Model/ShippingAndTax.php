@@ -360,6 +360,8 @@ class Bolt_Boltpay_Model_ShippingAndTax extends Bolt_Boltpay_Model_Abstract
         $newDiscountTotal = $quote->getSubtotal() - $quote->getSubtotalWithDiscount();
         $adjustedShippingAmount = $quote->getShippingAddress()->getShippingAmount() + $originalDiscountTotal - $newDiscountTotal;
 
+        $adjustedShippingAmount = $this->makeSureAmountIsPositiveOrZero($adjustedShippingAmount, $quote, $boltOrder);
+
         return $this->boltHelper()->doFilterEvent(
             'bolt_boltpay_filter_adjusted_shipping_amount',
             $adjustedShippingAmount,
@@ -438,5 +440,35 @@ class Bolt_Boltpay_Model_ShippingAndTax extends Bolt_Boltpay_Model_Abstract
      */
     public function applyShippingAddressToQuote($quote, $shippingAddress) {
         return $this->applyBoltAddressData($quote, $shippingAddress);
+    }
+
+    /**
+     * Check if given shipping cost is not negative. If negative amount is passed, record it with bugsnag and returns 0.
+     *
+     * @param float                     $amount   Shipping cost amount
+     * @param Mage_Sales_Model_Quote    $quote    Quote
+     * @param object                    $boltOrder  The order data sent as reported by Bolt
+     *
+     * @return float    Shipping amount that is greater than or equals to zero.
+     */
+    private function makeSureAmountIsPositiveOrZero($amount, $quote, $boltOrder) {
+        if ($amount >= 0) {
+            return $amount;
+        }
+
+        $this->boltHelper()->notifyException(
+            new Exception("negative shipping amount"),
+            array(
+                'amount' => $amount,
+                'subtotal' => $quote->getSubtotal(),
+                'subtotal_with_discount' => $quote->getSubtotalWithDiscount(),
+                'shipping' => $quote->getShippingAddress()->getShippingAmount() ,
+                'quote'=>$quote,
+                'boltOrder' => $boltOrder
+            ),
+            'warning'
+        );
+
+        return 0;
     }
 }

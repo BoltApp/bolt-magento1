@@ -348,6 +348,26 @@ class Bolt_Boltpay_Model_ShippingAndTaxTest extends PHPUnit_Framework_TestCase
         $this->assertEquals($expected, $result);
     }
 
+    /**
+     * @test make sure we don't return negative amount in following case
+     * - subtotal : $100
+     * - shipping amount: $0
+     * - discount amount: $10
+     */
+    public function getAdjustedShippingAmount_noNegativeAmount()
+    {
+        $cart = $this->testHelper->addProduct(self::$productId, 2);
+        $quote = $cart->getQuote();
+
+        $quote->getShippingAddress()->setShippingAmount(0);
+        $quote->setSubtotal(100);
+        $quote->setSubtotalWithDiscount(90);
+
+        $result = $this->currentMock->getAdjustedShippingAmount(0, $quote);
+
+        $this->assertEquals(0, $result);
+    }
+
     public function testShippingLabel()
     {
         $rate = $this->getMockBuilder('Mage_Sales_Model_Quote_Address_Rate')
