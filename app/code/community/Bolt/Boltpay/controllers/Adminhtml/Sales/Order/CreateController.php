@@ -210,8 +210,9 @@ class Bolt_Boltpay_Adminhtml_Sales_Order_CreateController
         $request = $this->getRequest();
 
         if ($request->getPost('shipping_method')) {
-            // The Magento setPost/getPost methods do not support nested arrays, so we use standard PHP $_POST access
-            $_POST['order']['shipping_method'] = $request->getPost('shipping_method');
+            $orderPostData = $request->getPost('order');
+            $orderPostData['shipping_method'] = $request->getPost('shipping_method');
+            $request->setPost('order', $orderPostData);
         }
 
         $request->setPost('shipping_as_billing',

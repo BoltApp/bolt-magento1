@@ -1,9 +1,12 @@
 <?php
 
 require_once 'Bolt/Boltpay/controllers/Adminhtml/Sales/Order/CreateController.php';
+require_once 'TestHelper.php';
 
 /**
  * Class Bolt_Boltpay_Adminhtml_Sales_Order_CreateControllerTest
+ *
+ * @coversDefaultClass Bolt_Boltpay_Adminhtml_Sales_Order_CreateController
  */
 class Bolt_Boltpay_Adminhtml_Sales_Order_CreateControllerTest extends PHPUnit_Framework_TestCase
 {
@@ -216,5 +219,34 @@ class Bolt_Boltpay_Adminhtml_Sales_Order_CreateControllerTest extends PHPUnit_Fr
         $result = $this->currentMock->saveAction();
 
         $this->assertTrue($result);
+    }
+
+    /**
+     * @test
+     * Verifies that if a shipping method is provide in the POST data, the shipping method is added
+     * to the other order data, preserving all other order data fields intact.
+     */
+    public function _normalizeOrderData_whenShippingMethodPosted_addsMethodToOrderData() {
+
+        $this->currentMock = $this->getMockBuilder('Bolt_Boltpay_Adminhtml_Sales_Order_CreateController')
+            ->setMethods(['getRequest', 'getLayout', 'getResponse', 'prepareAddressData'])
+            ->enableOriginalConstructor()
+            ->getMock();
+
+        $orderCreateMock = $this->getMockBuilder('Mage_Adminhtml_Model_Sales_Order_Create')
+            ->setMethods(['importPostData', 'setIsValidate', 'createOrder'])
+            ->getMock();
+
+        $this->currentMock->method('_getOrderCreateModel')
+            ->willReturn($orderCreateMock);
+
+        $request = new Mage_Core_Controller_Request_Http();
+        $request->setPost('bolt_reference', 'AAAA-BBBB-1234');
+        $request->setPost('payment', false);
+
+        $this->currentMock->method('getRequest')
+            ->willReturn($request);
+
+        Bolt_Boltpay_TestHelper::callNonPublicFunction($this->currentMock, '_normalizeOrderData');
     }
 }
