@@ -271,7 +271,7 @@ class Bolt_Boltpay_Adminhtml_Sales_Order_CreateController
             'bolt_boltpay_admin_normalize_order_data_after',
             array(
                 'request' => $this->getRequest(),
-                'orderCreateModel' => $this->_getOrderCreateModel()
+                'order_create_model' => $this->_getOrderCreateModel()
             )
         );
     }
