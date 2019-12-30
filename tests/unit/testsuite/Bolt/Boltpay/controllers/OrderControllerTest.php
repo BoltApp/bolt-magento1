@@ -60,7 +60,7 @@ class Bolt_Boltpay_OrderControllerTest extends PHPUnit_Framework_TestCase
     {
         Mage::unregister('_helper/boltpay');
         Mage::unregister('_singleton/firecheckout/type_standard');
-        Bolt_Boltpay_TestHelper::
+        //Bolt_Boltpay_TestHelper::
         self::$productId = Bolt_Boltpay_ProductProvider::createDummyProduct('PHPUNIT_TEST_1', array(), 20);
     }
 
@@ -102,7 +102,6 @@ class Bolt_Boltpay_OrderControllerTest extends PHPUnit_Framework_TestCase
                     'logException',
                     'fetchTransaction',
                     'addBreadcrumb',
-                    'getImmutableQuoteIdFromTransaction',
                     'collectTotals',
                     'save',
                     'verify_hook'
@@ -174,14 +173,39 @@ class Bolt_Boltpay_OrderControllerTest extends PHPUnit_Framework_TestCase
      * Save action when requested from a non-product page context should fail by exception
      *
      * @covers ::saveAction
+     * @dataProvider saveAction_inNonProductPageContext_throwsExceptionProvider
+     *
      * @expectedException Mage_Core_Exception
      * @expectedExceptionMessage This action is not supported
      */
-    public function saveAction_inNonProductPageContext_throwsException()
+    public function saveAction_inNonProductPageContext_throwsException($checkoutType)
     {
+        $this->request->setPost(
+            array(
+                'reference' => self::REFERENCE,
+                'checkoutType' => $checkoutType
+            )
+        );
+
         $this->request->expects($this->once())->method('isAjax')->willReturn(true);
 
         $this->currentMock->saveAction();
+    }
+
+    /**
+     * Provide the various different checkout types
+     *
+     * @return array all checkout types excluding {@see Bolt_Boltpay_Block_Checkout_Boltpay::CHECKOUT_TYPE_PRODUCT_PAGE}
+     */
+    public function saveAction_inNonProductPageContext_throwsExceptionProvider() {
+        return array(
+            array(
+                Bolt_Boltpay_Block_Checkout_Boltpay::CHECKOUT_TYPE_ADMIN,
+                Bolt_Boltpay_Block_Checkout_Boltpay::CHECKOUT_TYPE_FIRECHECKOUT,
+                Bolt_Boltpay_Block_Checkout_Boltpay::CHECKOUT_TYPE_ONE_PAGE,
+                Bolt_Boltpay_Block_Checkout_Boltpay::CHECKOUT_TYPE_MULTI_PAGE
+            )
+        );
     }
 
     /**
@@ -191,17 +215,29 @@ class Bolt_Boltpay_OrderControllerTest extends PHPUnit_Framework_TestCase
      *
      * @covers ::saveAction
      */
-    public function saveAction_withOrderAlreadyCreated_returnsEmptySuccessResponse()
+    public function saveAction_withOrderAlreadyCreated_willNotCreateANewOrder()
     {
         $this->request->expects($this->once())->method('isAjax')->willReturn(true);
-        $this->request->setPost(array('reference' => self::REFERENCE));
+        $this->request->setPost(
+            array(
+                'reference' => self::REFERENCE,
+                'checkoutType' => Bolt_Boltpay_Block_Checkout_Boltpay::CHECKOUT_TYPE_PRODUCT_PAGE
+            )
+        );
 
         $order = Bolt_Boltpay_OrderHelper::createDummyOrder(self::$productId);
-
-        $transaction = (object)array();
+        $transaction ='
+            {
+                "order" : {
+                    "cart" : {
+                        "display_id": "-99999|'.$order->getQuoteId().'"
+                    }
+                }      
+            }
+        ';
 
         $this->helperMock->expects($this->once())->method('fetchTransaction')->with(self::REFERENCE)
-            ->willReturn($transaction);
+            ->willReturn(json_decode($transaction));
         $this->helperMock->expects($this->once())->method('addBreadcrumb')->willReturnCallback(
             function ($metaData) {
                 $this->assertArrayHasKey('Save Action reference', $metaData);
@@ -209,30 +245,57 @@ class Bolt_Boltpay_OrderControllerTest extends PHPUnit_Framework_TestCase
                 $this->assertEquals(self::REFERENCE, $metaData['Save Action reference']['reference']);
             }
         );
-        $this->helperMock->expects($this->once())->method('getImmutableQuoteIdFromTransaction')->with($transaction)
-            ->willReturn($order->getQuoteId());
 
+        /** @var $orderModelMock PHPUnit_Framework_MockObject_MockObject|Bolt_Boltpay_Model_Order Mocked  */
+        $orderModelMock = $this->getMockBuilder('Bolt_Boltpay_Model_Order')
+            ->setMethods(
+                array(
+                    'createOrder',
+                )
+            )
+            ->getMock()
+        ;
+
+        $orderMock = new stdClass();
+        $orderModelMock->expects($this->never())->method('createOrder');
+
+        Bolt_Boltpay_TestHelper::stubModel('boltpay/order', $orderModelMock);
         $this->currentMock->saveAction();
+        Bolt_Boltpay_TestHelper::restoreModel( 'boltpay/order' );
+
         Bolt_Boltpay_OrderHelper::deleteDummyOrder($order);
     }
 
     /**
      * @test
-     * Save action with new order should result in an empty success response body returned with a 200 OK
+     * that save action with a new unsaved order should result in a call to create order
      *
      * @covers ::saveAction
      */
-    public function saveAction_withNewOrder_returnsEmptySuccessResponse()
+    public function saveAction_withNewOrder_willCallCreateOrder()
     {
         $this->request->expects($this->once())->method('isAjax')->willReturn(true);
 
-        $reference = null; # Intentionally don't provide reference to raise exception and break out early
-        $this->request->setPost(array('reference' => $reference));
+        $reference = self::REFERENCE;
+        $this->request->setPost(
+            array(
+                'reference' => $reference,
+                'checkoutType' => Bolt_Boltpay_Block_Checkout_Boltpay::CHECKOUT_TYPE_PRODUCT_PAGE
+            )
+        );
 
-        $transaction = (object)array('order' => 'Stubbed transaction data');
+        $transaction ='
+            {
+                "order" : {
+                    "cart" : {
+                        "display_id": "-99999|-999999"
+                    }
+                }      
+            }
+        ';
 
         $this->helperMock->expects($this->atLeastOnce())->method('fetchTransaction')->with($reference)
-            ->willReturn($transaction);
+            ->willReturn(json_decode($transaction));
         $this->helperMock->expects($this->once())->method('addBreadcrumb')->willReturnCallback(
             function ($metaData) use ($reference) {
                 $this->assertArrayHasKey('Save Action reference', $metaData);
@@ -240,15 +303,25 @@ class Bolt_Boltpay_OrderControllerTest extends PHPUnit_Framework_TestCase
                 $this->assertEquals($reference, $metaData['Save Action reference']['reference']);
             }
         );
-        $this->helperMock->expects($this->atLeastOnce())->method('getImmutableQuoteIdFromTransaction')
-            ->with($transaction)->willReturn(null);  # Force order to not be found
 
-        $expectedResult = "createOrder was successfully called.";
-        try {
-            $this->currentMock->saveAction();
-        } catch( Bolt_Boltpay_OrderCreationException $oce ) {
-            $this->assertContains("reference is missing ", $oce->getMessage());
-        }
+        /** @var $orderModelMock PHPUnit_Framework_MockObject_MockObject|Bolt_Boltpay_Model_Order Mocked  */
+        $orderModelMock = $this->getMockBuilder('Bolt_Boltpay_Model_Order')
+            ->setMethods(
+                array(
+                    'createOrder',
+                )
+            )
+            ->getMock()
+        ;
+
+        $orderMock = new stdClass();
+        $orderModelMock->expects($this->once())->method('createOrder')
+            ->with($reference, null, false, json_decode($transaction))
+            ->willReturn($orderMock);
+
+        Bolt_Boltpay_TestHelper::stubModel('boltpay/order', $orderModelMock);
+        $this->currentMock->saveAction();
+        Bolt_Boltpay_TestHelper::restoreModel( 'boltpay/order' );
     }
 
     /**
@@ -610,17 +683,32 @@ class Bolt_Boltpay_OrderControllerTest extends PHPUnit_Framework_TestCase
 
     /**
      * @test
-     * Retrieving order details from action with reference parameter not related to any order
+     * that retrieving order details from with bad references will yield an error result
      *
      * @covers ::viewAction
      */
     public function viewAction_withNoOrderRelatedToProvidedReference_returnsErrorResponseWithErrorMessage()
     {
         $_SERVER['HTTP_X_BOLT_HMAC_SHA256'] = self::TEST_HMAC;
-        $this->request->setParam('reference', md5('bolt-non-existent-order'));
+        $reference = md5('bolt-non-existent-order');
+
+        $this->request->setParam('reference', $reference);
 
         $this->helperMock->expects($this->once())->method('verify_hook')->with('{}', self::TEST_HMAC)
             ->willReturn(true);
+
+        $transaction ='
+            {
+                "order" : {
+                    "cart" : {
+                        "display_id": "-99999|-999999"
+                    }
+                }      
+            }
+        ';
+
+        $this->helperMock->expects($this->once())->method('fetchTransaction')->with($reference)
+            ->willReturn(json_decode($transaction));
 
         $this->response->expects($this->once())->method('setHttpResponseCode')->with(409)->willReturnSelf();
         $this->response->expects($this->once())->method('setBody')->willReturnCallback(
