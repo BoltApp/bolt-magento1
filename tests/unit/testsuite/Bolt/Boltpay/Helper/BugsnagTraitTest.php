@@ -4,11 +4,9 @@ require_once('StreamHelper.php');
 
 /**
  * @coversDefaultClass Bolt_Boltpay_Helper_BugsnagTrait
- * @backupGlobals enabled
  */
 class Bolt_Boltpay_Helper_BugsnagTraitTest extends PHPUnit_Framework_TestCase
 {
-
     /**
      * @var PHPUnit_Framework_MockObject_MockObject|Bolt_Boltpay_Helper_BugsnagTrait Mocked instance of trait tested
      */
@@ -44,14 +42,25 @@ class Bolt_Boltpay_Helper_BugsnagTraitTest extends PHPUnit_Framework_TestCase
     }
 
     /**
-     * @test
-     * Adding breadcrumb by checking internal metaData property
-     *
-     * @covers ::addBreadcrumb
+     * Restore default stream wrapper
      */
-    public function addBreadcrumb()
+    protected function tearDown()
     {
-        $breadCrumbs = array('test breadcrumb');
+        Bolt_Boltpay_StreamHelper::restore();
+    }
+
+    /**
+     * @test
+     * that addBreadcrumb adds breadcrumbs to internal metaData property
+     *
+     * @covers       Bolt_Boltpay_Helper_BugsnagTrait::addBreadcrumb
+     * @dataProvider addBreadcrumb_withEmptyMetadata_addsBreadcrumbToInternalPropertyProvider
+     *
+     * @param array $breadCrumbs to be added to metadata
+     * @throws ReflectionException if trait doesn't have metaData property
+     */
+    public function addBreadcrumb_withEmptyMetadata_addsBreadcrumbToInternalProperty($breadCrumbs)
+    {
         $this->currentMock->addBreadcrumb($breadCrumbs);
         $value = Bolt_Boltpay_TestHelper::getNonPublicProperty($this->currentMock, 'metaData');
         $this->assertEquals(
@@ -61,12 +70,25 @@ class Bolt_Boltpay_Helper_BugsnagTraitTest extends PHPUnit_Framework_TestCase
     }
 
     /**
-     * @test
-     * Verify that test method invokes internal methods notifyError and notifyException
+     * Data provider for {@see addBreadcrumb_withEmptyMetadata_addsBreadcrumbToInternalProperty}
      *
-     * @covers ::test
+     * @return array of breadcrumbs
      */
-    public function test()
+    public function addBreadcrumb_withEmptyMetadata_addsBreadcrumbToInternalPropertyProvider()
+    {
+        return array(
+            array(array('test breadcrumb'))
+        );
+    }
+
+    /**
+     * @test
+     * that test method invokes internal methods {@see Bolt_Boltpay_Helper_BugsnagTrait::notifyError}}
+     * and {@see Bolt_Boltpay_Helper_BugsnagTrait::notifyException}
+     *
+     * @covers Bolt_Boltpay_Helper_BugsnagTrait::test
+     */
+    public function test_always_willInvokeInternalMethods()
     {
         /** @var PHPUnit_Framework_MockObject_MockObject|Bolt_Boltpay_Helper_BugsnagTrait $currentMock */
         $currentMock = $this->getMockBuilder('Bolt_Boltpay_Helper_BugsnagTrait')
@@ -79,11 +101,13 @@ class Bolt_Boltpay_Helper_BugsnagTraitTest extends PHPUnit_Framework_TestCase
 
     /**
      * @test
-     * Method returns mocked instance of bugsnag client configured in setup
+     * that getBugsnag method returns mocked instance of bugsnag client configured in setup
      *
-     * @covers ::getBugsnag
+     * @covers Bolt_Boltpay_Helper_BugsnagTrait::getBugsnag
+     *
+     * @throws ReflectionException if trait doesn't have getBugsnag method
      */
-    public function getBugsnag()
+    public function getBugsnag_alreadyConfiguredInSetup_willReturnFromInternalProperty()
     {
         $bugsnag = Bolt_Boltpay_TestHelper::callNonPublicFunction(
             $this->currentMock,
@@ -98,11 +122,13 @@ class Bolt_Boltpay_Helper_BugsnagTraitTest extends PHPUnit_Framework_TestCase
 
     /**
      * @test
-     * Creating Bugsnag client in PHPUNIT environment
+     * that getBugsnag in PHPUNIT environment will create bugsnag client with test as release stage
      *
-     * @covers ::getBugsnag
+     * @covers Bolt_Boltpay_Helper_BugsnagTrait::getBugsnag
+     *
+     * @throws ReflectionException if trait doesn't have getBugsnag method or bugsnag property
      */
-    public function getBugsnag_phpunitEnv()
+    public function getBugsnag_inPHPUnitEnvironment_willUseTestAsReleaseStage()
     {
         Bolt_Boltpay_TestHelper::setNonPublicProperty(
             $this->currentMock,
@@ -110,6 +136,7 @@ class Bolt_Boltpay_Helper_BugsnagTraitTest extends PHPUnit_Framework_TestCase
             null
         );
 
+        $previousPhpUnitEnvironment = $_SERVER['PHPUNIT_ENVIRONMENT'];
         $_SERVER['PHPUNIT_ENVIRONMENT'] = true;
 
         /** @var Boltpay_Bugsnag_Client $bugsnag */
@@ -125,17 +152,24 @@ class Bolt_Boltpay_Helper_BugsnagTraitTest extends PHPUnit_Framework_TestCase
             $bugsnagConfig->releaseStage,
             'test'
         );
+
+        $_SERVER['PHPUNIT_ENVIRONMENT'] = $previousPhpUnitEnvironment;
     }
 
     /**
      * @test
      * Creating Bugsnag client object with releaseStage property dependant on Bolt test configuration
      *
-     * @dataProvider boltTestConfigDataProvider
+     * @covers Bolt_Boltpay_Helper_BugsnagTrait::getBugsnag
+     *
+     * @dataProvider getBugsnag_withTestConfiguration_willUseReleaseStageDependingOnTestConfigurationProvider
+     *
      * @param bool   $isTest configured in Bolt settings
      * @param string $releaseStage expected release stage of Bugsnag client
+     * @throws Mage_Core_Model_Store_Exception if store doesn't exist
+     * @throws ReflectionException if trait doesn't have bugsnag property
      */
-    public function getBugsnag_releaseStageConfig($isTest, $releaseStage)
+    public function getBugsnag_withTestConfiguration_willUseReleaseStageDependingOnTestConfiguration($isTest, $releaseStage)
     {
         Bolt_Boltpay_TestHelper::setNonPublicProperty(
             $this->currentMock,
@@ -143,7 +177,13 @@ class Bolt_Boltpay_Helper_BugsnagTraitTest extends PHPUnit_Framework_TestCase
             null
         );
 
-        Mage::app()->getStore()->setConfig('payment/boltpay/test', $isTest);
+        $previousPhpUnitEnvironment = $_SERVER['PHPUNIT_ENVIRONMENT'];
+        $_SERVER['PHPUNIT_ENVIRONMENT'] = false;
+
+        $wasTest = Mage::getStoreConfig('payment/boltpay/test');
+
+        $store = Mage::app()->getStore();
+        $store->setConfig('payment/boltpay/test', $isTest);
 
         /** @var Boltpay_Bugsnag_Client $bugsnag */
         $bugsnag = Bolt_Boltpay_TestHelper::callNonPublicFunction(
@@ -158,14 +198,17 @@ class Bolt_Boltpay_Helper_BugsnagTraitTest extends PHPUnit_Framework_TestCase
             $bugsnagConfig->releaseStage,
             $releaseStage
         );
+
+        $_SERVER['PHPUNIT_ENVIRONMENT'] = $previousPhpUnitEnvironment;
+        $store->setConfig('payment/boltpay/test', $wasTest);
     }
 
     /**
-     * Data provider for @see getBugsnag_releaseStageConfig
+     * Data provider for {@see getBugsnag_withTestConfiguration_willUseReleaseStageDependingOnTestConfiguration}
      *
      * @return array of test config value and expected release stage code
      */
-    public function boltTestConfigDataProvider()
+    public function getBugsnag_withTestConfiguration_willUseReleaseStageDependingOnTestConfigurationProvider()
     {
         return array(
             array(true, 'development'),
@@ -177,13 +220,13 @@ class Bolt_Boltpay_Helper_BugsnagTraitTest extends PHPUnit_Framework_TestCase
      * @test
      * Callback function that is invoked by Bugsnag client before adding an error to the queue
      *
-     * @covers ::beforeNotifyFunction
-     * @covers ::addDefaultMetaData
-     * @covers ::addTraceIdMetaData
-     * @covers ::addStoreUrlMetaData
-     * @covers ::getBoltTraceId
+     * @covers Bolt_Boltpay_Helper_BugsnagTrait::beforeNotifyFunction
+     * @covers Bolt_Boltpay_Helper_BugsnagTrait::addDefaultMetaData
+     * @covers Bolt_Boltpay_Helper_BugsnagTrait::addTraceIdMetaData
+     * @covers Bolt_Boltpay_Helper_BugsnagTrait::addStoreUrlMetaData
+     * @covers Bolt_Boltpay_Helper_BugsnagTrait::getBoltTraceId
      */
-    public function beforeNotifyFunction()
+    public function beforeNotifyFunction_withEmptyMetadata_willCollectDefaultMetadataAndSetItOnProvidedError()
     {
         $error = $this->getMockBuilder('Boltpay_Bugsnag_Error')
             ->setMethods(array('setMetadata'))
@@ -210,11 +253,12 @@ class Bolt_Boltpay_Helper_BugsnagTraitTest extends PHPUnit_Framework_TestCase
 
     /**
      * @test
-     * Notify exception method of Bugsnag client is invoked correctly
+     * that notify exception method of Bugsnag client is invoked correctly
      *
-     * @dataProvider exceptionDataProvider
-     * @covers ::notifyException
-     * @covers ::getContextInfo
+     * @covers       Bolt_Boltpay_Helper_BugsnagTrait::notifyException
+     * @covers       Bolt_Boltpay_Helper_BugsnagTrait::getContextInfo
+     *
+     * @dataProvider notifyException_withVariousExceptions_shouldDelegateToBugsnagClientProvider
      *
      * @param string $expectedMessage contained in exception provided to Bugsnag client
      * @param array  $expectedMetadata provided as argument to Bugsnag client
@@ -224,9 +268,8 @@ class Bolt_Boltpay_Helper_BugsnagTraitTest extends PHPUnit_Framework_TestCase
      * @param string $expectedRequestBody set as request body
      * @param string $expectedRequestMethod set as request method
      */
-    public function notifyException($expectedMessage, $expectedMetadata, $expectedSeverity, $expectedHost, $expectedUri, $expectedRequestBody, $expectedRequestMethod)
+    public function notifyException_withVariousExceptions_shouldDelegateToBugsnagClient($expectedMessage, $expectedMetadata, $expectedSeverity, $expectedHost, $expectedUri, $expectedRequestBody, $expectedRequestMethod)
     {
-
         $throwable = new Exception($expectedMessage);
 
         $this->bugsnagClientMock->expects($this->once())->method('notifyException')->willReturnCallback(
@@ -244,38 +287,48 @@ class Bolt_Boltpay_Helper_BugsnagTraitTest extends PHPUnit_Framework_TestCase
             }
         );
 
-        Bolt_Boltpay_StreamHelper::register();
-        $this->prepareContextInfo($expectedHost, $expectedUri, $expectedRequestBody);
-        try {
-            $this->currentMock->notifyException($throwable, $expectedMetadata, $expectedSeverity);
-        } catch (Exception $e) {
-            Bolt_Boltpay_StreamHelper::restore();
-            throw $e;
-        }
+        $this->prepareContextInfo($expectedHost, $expectedUri, $expectedRequestBody, $expectedRequestMethod);
 
-        Bolt_Boltpay_StreamHelper::restore();
+        $this->currentMock->notifyException($throwable, $expectedMetadata, $expectedSeverity);
     }
 
     /**
-     * Data provider for @see notifyException
+     * Exceptions provider for {@see notifyException_withVariousExceptions_shouldDelegateToBugsnagClient}
      *
      * @return array of exception message, metadata, severity, host, uri, request body and method
      */
-    public function exceptionDataProvider()
+    public function notifyException_withVariousExceptions_shouldDelegateToBugsnagClientProvider()
     {
         return array(
-            array('Test message', array(), 10, 'www.example.com', 'test', 'body', 'POST')
+            'Simple exception message'               => array(
+                'message'  => 'Test message',
+                'metadata' => array(),
+                'severity' => 10,
+                'host'     => 'www.example.com',
+                'uri'      => 'test',
+                'body'     => '{}',
+                'method'   => 'GET'
+            ),
+            'Simple exception message with metadata' => array(
+                'message'  => 'Test message',
+                'metadata' => array('test' => 'test'),
+                'severity' => 1,
+                'host'     => 'www.example.com',
+                'uri'      => 'test',
+                'body'     => '{}',
+                'method'   => 'POST'
+            )
         );
     }
-
 
     /**
      * @test
      * Notify error method of Bugsnag client is invoked correctly
      *
-     * @dataProvider errorDataProvider
-     * @covers ::notifyError
-     * @covers ::getContextInfo
+     * @covers       Bolt_Boltpay_Helper_BugsnagTrait::notifyError
+     * @covers       Bolt_Boltpay_Helper_BugsnagTrait::getContextInfo
+     *
+     * @dataProvider notifyError_withVariousErrors_willDelegateToBugsnagClientProvider
      *
      * @param string $expectedName provided as argument to Bugsnag client
      * @param string $expectedMessage provided as argument to Bugsnag client
@@ -286,7 +339,7 @@ class Bolt_Boltpay_Helper_BugsnagTraitTest extends PHPUnit_Framework_TestCase
      * @param string $expectedRequestBody set as request body
      * @param string $expectedRequestMethod set as request method
      */
-    public function notifyError($expectedName, $expectedMessage, $expectedMetadata, $expectedSeverity, $expectedHost, $expectedUri, $expectedRequestBody, $expectedRequestMethod)
+    public function notifyError_withVariousErrors_willDelegateToBugsnagClient($expectedName, $expectedMessage, $expectedMetadata, $expectedSeverity, $expectedHost, $expectedUri, $expectedRequestBody, $expectedRequestMethod)
     {
 
         $this->bugsnagClientMock->expects($this->once())->method('notifyError')->willReturnCallback(
@@ -304,28 +357,39 @@ class Bolt_Boltpay_Helper_BugsnagTraitTest extends PHPUnit_Framework_TestCase
             }
         );
 
-        Bolt_Boltpay_StreamHelper::register();
-        $this->prepareContextInfo($expectedHost, $expectedUri, $expectedRequestBody);
-        try {
-            $this->currentMock->notifyError($expectedName, $expectedMessage, $expectedMetadata, $expectedSeverity);
-        } catch (Exception $e) {
-            Bolt_Boltpay_StreamHelper::restore();
-            throw $e;
-        }
+        $this->prepareContextInfo($expectedHost, $expectedUri, $expectedRequestBody, $expectedRequestMethod);
 
-        Bolt_Boltpay_StreamHelper::restore();
+        $this->currentMock->notifyError($expectedName, $expectedMessage, $expectedMetadata, $expectedSeverity);
     }
 
-
     /**
-     * Data provider for @see notifyError
+     * Data provider for {@see notifyError_withVariousErrors_willDelegateToBugsnagClient}
      *
      * @return array of error name, message, metadata, severity, host, uri, request body and method
      */
-    public function errorDataProvider()
+    public function notifyError_withVariousErrors_willDelegateToBugsnagClientProvider()
     {
         return array(
-            array('Error', 'Test message', array(), 10, 'www.example.com', 'test', 'body', 'POST')
+            'Simple error message'               => array(
+                'name'     => 'Error',
+                'message'  => 'Test message',
+                'metadata' => array(),
+                'severity' => 10,
+                'host'     => 'www.example.com',
+                'uri'      => 'test',
+                'body'     => '{}',
+                'method'   => 'GET'
+            ),
+            'Simple error message with metadata' => array(
+                'name'     => 'Error',
+                'message'  => 'Test message',
+                'metadata' => array('test' => 'test'),
+                'severity' => 1,
+                'host'     => 'www.example.com',
+                'uri'      => 'test',
+                'body'     => '{}',
+                'method'   => 'POST'
+            )
         );
     }
 
@@ -333,9 +397,11 @@ class Bolt_Boltpay_Helper_BugsnagTraitTest extends PHPUnit_Framework_TestCase
      * @test
      * Retrieving Bolt version when it is unavailable in Magento config
      *
-     * @covers ::getBoltPluginVersion
+     * @covers Bolt_Boltpay_Helper_BugsnagTrait::getBoltPluginVersion
+     *
+     * @throws ReflectionException if Mage::_config doesn't have _xml property
      */
-    public function getBoltPluginVersion_null()
+    public function getBoltPluginVersion_withoutConfigValueSet_returnsNull()
     {
         $config = Mage::getConfig();
 
@@ -353,15 +419,37 @@ class Bolt_Boltpay_Helper_BugsnagTraitTest extends PHPUnit_Framework_TestCase
 
     /**
      * @test
-     * Retrieving request headers from $_SERVER
+     * Retrieving Bolt version when it is set in Magento config
      *
-     * @dataProvider requestHeadersDataProvider
-     * @covers ::getRequestHeaders
+     * @covers Bolt_Boltpay_Helper_BugsnagTrait::getBoltPluginVersion
+     *
+     * @throws ReflectionException if Mage::_config doesn't have _xml property
+     */
+    public function getBoltPluginVersion_withConfigValueSet_returnsSetValue()
+    {
+        $config = Mage::getConfig();
+        $configXml = Bolt_Boltpay_TestHelper::getNonPublicProperty($config, '_xml');
+        $version = (string)$configXml->modules->Bolt_Boltpay->version;
+
+        $this->assertNotEmpty($version);
+        $this->assertEquals(
+            $version, Bolt_Boltpay_TestHelper::callNonPublicFunction($this->currentMock, 'getBoltPluginVersion')
+        );
+    }
+
+    /**
+     * @test
+     * that getRequestHeaders returns headers from $_SERVER (they begin with HTTP_) formatted properly
+     *
+     * @covers       Bolt_Boltpay_Helper_BugsnagTrait::getRequestHeaders
+     *
+     * @dataProvider getRequestHeaders_withVariousHeaders_willFilterAndReturnProvider
      *
      * @param array $headers to replace $_SERVER
      * @param array $expectedResult of headers that should be returned
+     * @throws ReflectionException if current trait doesn't have getRequestHeaders method
      */
-    public function getRequestHeaders($headers, $expectedResult)
+    public function getRequestHeaders_withVariousHeaders_willFilterAndReturn($headers, $expectedResult)
     {
         $_SERVER = $headers;
 
@@ -374,11 +462,11 @@ class Bolt_Boltpay_Helper_BugsnagTraitTest extends PHPUnit_Framework_TestCase
     }
 
     /**
-     * Data provider for @see getRequestHeaders
+     * Data provider for {@see getRequestHeaders_withVariousHeaders_willFilterAndReturn}
      *
-     * @return array of headers and expected result
+     * @return array of $_SERVER items and expected headers result
      */
-    public function requestHeadersDataProvider()
+    public function getRequestHeaders_withVariousHeaders_willFilterAndReturnProvider()
     {
         return array(
             array(array('PATH' => '/usr/local/bin', 'SHELL' => '/bin/bash'), array()),
@@ -389,11 +477,13 @@ class Bolt_Boltpay_Helper_BugsnagTraitTest extends PHPUnit_Framework_TestCase
 
     /**
      * @test
-     * Setting Bolt Trace Id
+     * that setBoltTraceId updates internal boltTraceId property
      *
-     * @covers ::setBoltTraceId
+     * @covers Bolt_Boltpay_Helper_BugsnagTrait::setBoltTraceId
+     *
+     * @throws ReflectionException if trait doesn't have boltTraceId property
      */
-    public function setBoltTraceId()
+    public function setBoltTraceId_always_setsInternalProperty()
     {
         $boltTraceId = sha1('bolt');
         $this->currentMock->setBoltTraceId($boltTraceId);
@@ -405,15 +495,16 @@ class Bolt_Boltpay_Helper_BugsnagTraitTest extends PHPUnit_Framework_TestCase
 
     /**
      * @test
-     * Adding metadata to bugsnag client
+     * that addMetaData delegates call to bugsnag client
      *
-     * @dataProvider addMetadataProvider
-     * @covers ::addMetaData
+     * @covers       Bolt_Boltpay_Helper_BugsnagTrait::addMetaData
+     *
+     * @dataProvider addMetaData_withBugsnagClientConfiguredInSetup_willDelegateToBugsnagClientProvider
      *
      * @param array $metaData provided to bugsnag client
-     * @param bool $merge flag provided to bugsnag client
+     * @param bool  $merge flag provided to bugsnag client
      */
-    public function addMetaData($metaData, $merge)
+    public function addMetaData_withBugsnagClientConfiguredInSetup_willDelegateToBugsnagClient($metaData, $merge)
     {
         $this->bugsnagClientMock->expects($this->once())->method('setMetaData')->with($metaData, $merge);
 
@@ -421,20 +512,27 @@ class Bolt_Boltpay_Helper_BugsnagTraitTest extends PHPUnit_Framework_TestCase
     }
 
     /**
-     * Data provider for @see addMetadata
+     * Data provider for {@see addMetadata}
      *
      * @return array of metadata and merge flag
      */
-    public function addMetadataProvider()
+    public function addMetaData_withBugsnagClientConfiguredInSetup_willDelegateToBugsnagClientProvider()
     {
         return array(
-            array(array('test'), false),
-            array(array('test'), true)
+            'Metadata without merge' => array(
+                'metaData' => array('test' => 'test'),
+                'merge'    => false
+            ),
+            'Metadata with merge'    => array(
+                'metaData' => array('test' => 'test'),
+                'merge'    => true
+            )
         );
     }
 
     /**
-     * Set $_SERVER and php://input stream data to be collected by @see Bolt_Boltpay_Helper_BugsnagTrait::getContextInfo
+     * Populate $_SERVER and php://input stream with data to be collected by
+     * @see Bolt_Boltpay_Helper_BugsnagTrait::getContextInfo
      *
      * @param string $host name of host server
      * @param string $uri of the current page
@@ -444,6 +542,7 @@ class Bolt_Boltpay_Helper_BugsnagTraitTest extends PHPUnit_Framework_TestCase
      */
     private function prepareContextInfo($host, $uri, $requestBody = '', $requestMethod = 'POST', $requestHeaders = array())
     {
+        Bolt_Boltpay_StreamHelper::register();
         $_SERVER["HTTP_HOST"] = $host;
         $_SERVER['REQUEST_URI'] = $uri;
         $_SERVER['REQUEST_METHOD'] = $requestMethod;
