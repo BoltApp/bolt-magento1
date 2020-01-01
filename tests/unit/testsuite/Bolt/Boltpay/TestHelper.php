@@ -471,6 +471,23 @@ class Bolt_Boltpay_TestHelper
     }
 
     /**
+     * Set value of current store property
+     *
+     * @param string $name of the store property
+     * @param mixed  $value to set
+     * @throws Mage_Core_Model_Store_Exception if store doesn't exist
+     * @throws ReflectionException if property we're trying to set doesn't exist in store object
+     */
+    public static function setStoreProperty($name, $value)
+    {
+        Bolt_Boltpay_TestHelper::setNonPublicProperty(
+            Mage::app()->getStore(),
+            $name,
+            $value
+        );
+    }
+
+    /**
      * Registers an instance of this class in order to utilize garbage collection to restore original values
      */
     private static function _init()
