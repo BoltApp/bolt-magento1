@@ -81,9 +81,14 @@ class Bolt_Boltpay_ConfigProxy
      *
      * @param string $name unique Magento identification used as parameter for Mage::getModel
      * @param mixed  $instance to return on call to Mage::getModel
+     *
+     * @throws ReflectionException  if the Mage class does not exist.
      */
     public function stubModel($name, $instance)
     {
+        if (Bolt_Boltpay_TestHelper::getNonPublicProperty('Mage', '_config') !== $this) {
+            $this->__construct();
+        }
         $this->_stubbedModels[$name] = $instance;
     }
 
