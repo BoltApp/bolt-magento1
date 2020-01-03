@@ -308,6 +308,21 @@ class Bolt_Boltpay_TestHelper
     }
 
     /**
+     * Clears Mage::registry while preserving initializedBenchmark value
+     *
+     * @throws Mage_Core_Exception if initializedBenchmark registry value is already set
+     * @throws ReflectionException if Mage doesn't have _registry property
+     */
+    public static function clearRegistry()
+    {
+        $initializedBenchmark = Mage::registry('initializedBenchmark');
+        self::setNonPublicProperty('Mage', '_registry', array());
+        if ($initializedBenchmark) {
+            Mage::register('initializedBenchmark', $initializedBenchmark);
+        }
+    }
+
+    /**
      * Substitutes return values of Mage::getModel
      * All following calls to Mage::getModel($name) will return $instance
      *
