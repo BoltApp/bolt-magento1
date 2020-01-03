@@ -182,6 +182,11 @@ class Bolt_Boltpay_TestHelper
      * @throws ReflectionException if the class does not exist.
      */
     public static function getReflectedClass( $class ) {
+        // When using Reflection on mocked classes, properties with original names can only be found on parent class
+        if (is_subclass_of($class, 'PHPUnit_Framework_MockObject_MockObject')) {
+            return new ReflectionClass(get_parent_class($class));
+        }
+        
         return new ReflectionClass( $class );
     }
 
