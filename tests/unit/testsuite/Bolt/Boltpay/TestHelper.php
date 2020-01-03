@@ -159,7 +159,7 @@ class Bolt_Boltpay_TestHelper
 
         return ("
             var \$hints_transform = $hintsTransformFunction;
-            
+
             var get_json_cart = function() { return $jsonCart };
             var json_hints = \$hints_transform($jsonHints);
             var quote_id = '{$quote->getId()}';
@@ -468,6 +468,23 @@ class Bolt_Boltpay_TestHelper
             $store->setConfig($path, static::$_substitutedConfigurationValues[$path]);
             unset(static::$_substitutedConfigurationValues[$path]);
         }
+    }
+
+    /**
+     * Set value of current store property
+     *
+     * @param string $name of the store property
+     * @param mixed  $value to set
+     * @throws Mage_Core_Model_Store_Exception if store doesn't exist
+     * @throws ReflectionException if property we're trying to set doesn't exist in store object
+     */
+    public static function setStoreProperty($name, $value)
+    {
+        Bolt_Boltpay_TestHelper::setNonPublicProperty(
+            Mage::app()->getStore(),
+            $name,
+            $value
+        );
     }
 
     /**
