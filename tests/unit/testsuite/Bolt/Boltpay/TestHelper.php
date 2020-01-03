@@ -1,7 +1,22 @@
 <?php
 
+require_once('ConfigProxy.php');
+
 class Bolt_Boltpay_TestHelper
 {
+
+    /** @var Bolt_Boltpay_TestHelper singular instance of */
+    private static $_instance = null;
+
+    /** @var Bolt_Boltpay_ConfigProxy instance of ConfigProxy used to stup Mage::getModel */
+    private static $_configProxy = null;
+
+    /** @var array of original values for substituted registry values */
+    private static $_substitutedRegistryValues = array();
+
+    /** @var array of original values for substituted configuration values */
+    private static $_substitutedConfigurationValues = array();
+
     /**
      * @param $productId
      * @param $quantity
@@ -144,7 +159,7 @@ class Bolt_Boltpay_TestHelper
 
         return ("
             var \$hints_transform = $hintsTransformFunction;
-            
+
             var get_json_cart = function() { return $jsonCart };
             var json_hints = \$hints_transform($jsonHints);
             var quote_id = '{$quote->getId()}';
@@ -245,6 +260,255 @@ class Bolt_Boltpay_TestHelper
             if ( $reflectedProperty && ($reflectedProperty->isProtected() || $reflectedProperty->isPrivate()) ) {
                 $reflectedProperty->setAccessible(false);
             }
+        }
+    }
+
+    /**
+     * Utilize garbage collection to restore original values
+     *
+     * @throws ReflectionException if unable to restore _config property of Mage class
+     * @throws Mage_Core_Model_Store_Exception if unable to restore original config values due to missing store
+     * @throws Mage_Core_Exception if unable to restore original registry value due to key already been defined
+     */
+    public function __destruct()
+    {
+        static::restoreOriginals();
+    }
+
+    /**
+     * Restore original values that were substituted
+     *
+     * @throws ReflectionException via _configProxy if Mage doesn't have _config property
+     * @throws Mage_Core_Model_Store_Exception if store doesn't  exist
+     * @throws Mage_Core_Exception from registry if key already exists
+     */
+    public static function restoreOriginals()
+    {
+        if (static::$_configProxy) {
+            static::$_configProxy->restoreOriginal();
+        }
+
+        foreach (static::$_substitutedRegistryValues as $key => $value) {
+            Mage::unregister($key);
+            if ($value) {
+                Mage::register($key, $value);
+            }
+        }
+
+        static::$_substitutedRegistryValues = array();
+
+        if (!empty(static::$_substitutedConfigurationValues)) {
+            $store = Mage::app()->getStore();
+            foreach (static::$_substitutedConfigurationValues as $path => $value) {
+                $store->setConfig($path, $value);
+            }
+
+            static::$_substitutedConfigurationValues = array();
+        }
+    }
+
+    /**
+     * Clears Mage::registry while preserving initializedBenchmark value
+     *
+     * @throws Mage_Core_Exception if initializedBenchmark registry value is already set
+     * @throws ReflectionException if Mage doesn't have _registry property
+     */
+    public static function clearRegistry()
+    {
+        $initializedBenchmark = Mage::registry('initializedBenchmark');
+        self::setNonPublicProperty('Mage', '_registry', array());
+        if ($initializedBenchmark) {
+            Mage::register('initializedBenchmark', $initializedBenchmark);
+        }
+    }
+
+    /**
+     * Substitutes return values of Mage::getModel
+     * All following calls to Mage::getModel($name) will return $instance
+     *
+     * @param string $name unique Magento identification string of the registered model class
+     * @param mixed  $instance to return
+     *
+     * @throws ReflectionException from Config Proxy constructor if Mage class doesn't have _config property
+     */
+    public static function stubModel($name, $instance)
+    {
+        static::_init();
+        if (!static::$_configProxy) {
+            static::$_configProxy = new Bolt_Boltpay_ConfigProxy();
+        }
+
+        static::$_configProxy->stubModel($name, $instance);
+    }
+
+    /**
+     * Restores the original value returned by Mage::getModel($name)
+     *
+     * @param string $name unique Magento identification string of the registered model class
+     */
+    public static function restoreModel($name)
+    {
+        if (!static::$_configProxy) {
+            return;
+        }
+
+        static::$_configProxy->restoreModel($name);
+    }
+
+    /**
+     * Substitutes return values of Mage::helper
+     * All following calls to Mage::helper($name) will return $instance
+     *
+     * @param string $name unique Magento identification string of the registered helper model class
+     * @param mixed  $instance to return
+     *
+     * @throws Mage_Core_Exception from registry if key already exists
+     */
+    public static function stubHelper($name, $instance)
+    {
+        static::stubRegistryValue('_helper/' . $name, $instance);
+    }
+
+    /**
+     * Restores the original value returned by Mage::helper($name)
+     *
+     * @param string $name unique Magento identification string of the registered helper model class
+     *
+     * @throws Mage_Core_Exception from registry if key already exists
+     */
+    public static function restoreHelper($name)
+    {
+        static::restoreRegistryValue('_helper/' . $name);
+    }
+
+    /**
+     * Substitutes return values of Mage::getSingleton
+     * All following calls to Mage::getSingleton($name) will return $instance
+     *
+     * @param string $name unique Magento identification string of the registered model class
+     * @param mixed  $instance to return
+     *
+     * @throws Mage_Core_Exception from registry if key already exists
+     */
+    public static function stubSingleton($name, $instance)
+    {
+        static::stubRegistryValue('_singleton/' . $name, $instance);
+    }
+
+    /**
+     * Restores the original value returned by Mage::getSingleton($name)
+     *
+     * @param string $name unique Magento identification string of the registered model class
+     *
+     * @throws Mage_Core_Exception from registry if key already exists
+     */
+    public static function restoreSingleton($name)
+    {
+        static::restoreRegistryValue('_singleton/' . $name);
+    }
+
+    /**
+     * Substitutes return values of Mage::registry
+     * All following calls to Mage::registry($key) will return $value
+     *
+     * @param string $key of the registry entry
+     * @param mixed  $value to set to registry
+     *
+     * @throws Mage_Core_Exception from registry if key already exists
+     */
+    public static function stubRegistryValue($key, $value)
+    {
+        static::_init();
+        if (Mage::registry($key)) {
+            if (!isset(static::$_substitutedRegistryValues[$key])) { # ensure original value is preserved on subsequent calls
+                static::$_substitutedRegistryValues[$key] = Mage::registry($key);
+            }
+
+            Mage::unregister($key);
+        } else {
+            if (!isset(static::$_substitutedRegistryValues[$key])) { # ensure original value is preserved on subsequent calls
+                static::$_substitutedRegistryValues[$key] = null;
+            }
+        }
+
+        Mage::register($key, $value);
+    }
+
+    /**
+     * Restores a given registry value to what is was before stubbing
+     *
+     * @param string $key of the registry entry
+     *
+     * @throws Mage_Core_Exception from registry if key already exists
+     */
+    public static function restoreRegistryValue($key)
+    {
+        if (isset(static::$_substitutedRegistryValues[$key])) {
+            Mage::register($key, static::$_substitutedRegistryValues[$key]);
+            unset(static::$_substitutedRegistryValues[$key]);
+        }
+    }
+
+    /**
+     * Substitutes return values of Mage::registry
+     * All following calls to Mage::registry($key) will return $value
+     *
+     * @param string $path Magento unique key for the config value
+     * @param mixed  $value New value to be stubbed
+     *
+     * @throws Mage_Core_Model_Store_Exception if store doesn't exist
+     */
+    public static function stubConfigValue($path, $value)
+    {
+        static::_init();
+        $store = Mage::app()->getStore();
+        if (!isset(static::$_substitutedConfigurationValues[$path])) { # ensure original value is preserved on subsequent calls
+            static::$_substitutedConfigurationValues[$path] = $store->getConfig($path);
+        }
+
+        $store->setConfig($path, $value);
+    }
+
+    /**
+     * Restores a given configuration value to what is was before stubbing
+     *
+     * @param string $path Magento unique key for the config value
+     *
+     * @throws Mage_Core_Model_Store_Exception if store doesn't exist
+     */
+    public static function restoreConfigValue($path)
+    {
+        if (isset(static::$_substitutedConfigurationValues[$path])) {
+            $store = Mage::app()->getStore();
+            $store->setConfig($path, static::$_substitutedConfigurationValues[$path]);
+            unset(static::$_substitutedConfigurationValues[$path]);
+        }
+    }
+
+    /**
+     * Set value of current store property
+     *
+     * @param string $name of the store property
+     * @param mixed  $value to set
+     * @throws Mage_Core_Model_Store_Exception if store doesn't exist
+     * @throws ReflectionException if property we're trying to set doesn't exist in store object
+     */
+    public static function setStoreProperty($name, $value)
+    {
+        Bolt_Boltpay_TestHelper::setNonPublicProperty(
+            Mage::app()->getStore(),
+            $name,
+            $value
+        );
+    }
+
+    /**
+     * Registers an instance of this class in order to utilize garbage collection to restore original values
+     */
+    private static function _init()
+    {
+        if (!static::$_instance) {
+            static::$_instance = new Bolt_Boltpay_TestHelper();
         }
     }
 }
