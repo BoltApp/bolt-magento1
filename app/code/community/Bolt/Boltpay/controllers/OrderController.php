@@ -26,18 +26,24 @@ class Bolt_Boltpay_OrderController
     use Bolt_Boltpay_Controller_Traits_OrderControllerTrait;
 
     /**
-     * Frontend save order action. Called from BoltCheckout.configure success callback.
-     * The actual order creation is done in the helper class, for both frontend and backend (API) requests.
+     * Frontend save order action. Called from BoltCheckout.configure success callback of product page orders
+     *
+     * @deprecated frontend initiated order creation is obsolete.  All future order creation should be webhook initiated.
+     *             Currently, only product page orders continues to use this method of order creation and it will
+     *             will be changed to use the standardized pathway in the near future
      */
     public function saveAction()
     {
         try {
-
             if (!$this->getRequest()->isAjax()) {
-                Mage::throwException($this->boltHelper()->__("Bolt_Boltpay_OrderController::saveAction called with a non AJAX call"));
+                Mage::throwException($this->boltHelper()->__("This action is not supported"));
             }
 
-            $checkoutSession = Mage::getSingleton('checkout/session');
+            $checkoutType = $this->getRequest()->getParam('checkoutType');
+
+            if ($checkoutType !== Bolt_Boltpay_Block_Checkout_Boltpay::CHECKOUT_TYPE_PRODUCT_PAGE) {
+                Mage::throwException($this->boltHelper()->__("This action is not supported"));
+            }
 
             $reference = $this->getRequest()->getPost('reference');
             $transaction = $this->boltHelper()->fetchTransaction($reference);
@@ -63,10 +69,8 @@ class Bolt_Boltpay_OrderController
             $order = $orderModel->getOrderByQuoteId($this->boltHelper()->getImmutableQuoteIdFromTransaction($transaction));
 
             if ($order->isObjectNew()) {
-                $sessionQuoteId = ($this->getRequest()->getParam('checkoutType') == Bolt_Boltpay_Block_Checkout_Boltpay::CHECKOUT_TYPE_PRODUCT_PAGE) ? null : $checkoutSession->getQuoteId();
-                $orderModel->createOrder($reference,$sessionQuoteId, false, $transaction);
+                $orderModel->createOrder($reference, null, false, $transaction);
             }
-
         } catch (Exception $e) {
             $this->boltHelper()->notifyException($e);
             $this->boltHelper()->logException($e);
@@ -193,8 +197,7 @@ class Bolt_Boltpay_OrderController
             $this->getResponse()->setHeader('Content-type', 'application/json');
             $this->getResponse()->setBody($response);
         } catch (Exception $e) {
-            if (
-                strpos($e->getMessage(), $this->boltHelper()->__('No order found')) !== 0 ||
+            if (strpos($e->getMessage(), $this->boltHelper()->__('No order found')) !== 0 &&
                 strpos($e->getMessage(), $this->boltHelper()->__('No payment found')) !== 0
             ) {
                 $this->getResponse()->setHttpResponseCode(404)
