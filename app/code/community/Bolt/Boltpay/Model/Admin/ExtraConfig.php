@@ -85,7 +85,7 @@ JS;
         $filterMethod = 'filter'.$methodPostfix;
 
         $allExtraConfigs = (array) json_decode($this->normalizeJSON(Mage::getStoreConfig('payment/boltpay/extra_options')), true);
-        $rawValue = @$allExtraConfigs[$configName] ?: '';
+        $rawValue = isset($allExtraConfigs[$configName]) ? $allExtraConfigs[$configName] : '';
 
         return method_exists($this, $filterMethod)
             ? $this->$filterMethod($rawValue, $filterParameters)

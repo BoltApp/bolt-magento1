@@ -264,12 +264,28 @@ class Bolt_Boltpay_Model_Admin_ExtraConfigTest extends PHPUnit_Framework_TestCas
                     'expectedResult'   => Bolt_Boltpay_Model_Admin_ExtraConfig::DEFAULT_PRICE_FAULT_TOLERANCE
                 )
             ,
-            'Price fault tolerance, if configured with a valid integer, will return the absolute value of that integer' =>
+            'Price fault tolerance, if configured with a negative integer, will return the absolute value of that integer' =>
                 array(
                     'configName'       => 'priceFaultTolerance',
-                    'jsonFromDb'       => '{"priceFaultTolerance": '.($priceFaultTolerance = mt_rand(-10,10)).'}',
+                    'jsonFromDb'       => '{"priceFaultTolerance": '.($priceFaultTolerance = mt_rand(-10,-1)).'}',
                     'filterParameters' => array(),
                     'expectedResult'   => abs($priceFaultTolerance)
+                )
+            ,
+            'Price fault tolerance, if configured with a positive integer, will return that integer' =>
+                array(
+                    'configName'       => 'priceFaultTolerance',
+                    'jsonFromDb'       => '{"priceFaultTolerance": '.($priceFaultTolerance = mt_rand(1,10)).'}',
+                    'filterParameters' => array(),
+                    'expectedResult'   => $priceFaultTolerance
+                )
+            ,
+            'Price fault tolerance, if configured with 0, then 0 is returned' =>
+                array(
+                    'configName'       => 'priceFaultTolerance',
+                    'jsonFromDb'       => '{"priceFaultTolerance": 0}',
+                    'filterParameters' => array(),
+                    'expectedResult'   => 0
                 )
             ,
             'Display pre-auth orders, if not configured, will return false' =>
