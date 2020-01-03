@@ -23,13 +23,12 @@
 trait Bolt_Boltpay_BoltGlobalTrait {
 
     /**
-     * Returns the main helper class used by Bolt or if from a class that natively supports this function
-     * with a parameter, that helper
+     * Returns the main helper class used by Bolt
      *
      * @return Bolt_Boltpay_Helper_Data|Mage_Core_Helper_Abstract
      */
     public function boltHelper() {
         return Mage::helper('boltpay');
     }
-
+    
 }
