@@ -52,6 +52,19 @@ class Bolt_Boltpay_Model_Admin_ExtraConfig extends Mage_Core_Model_Config_Data
 {
     use Bolt_Boltpay_BoltGlobalTrait;
 
+    /** @var string the default transform function that passes hints through as-is, with no transformation */
+    const DEFAULT_HINTS_TRANSFORM_FUNCTION = /** @lang JavaScript */ <<<JS
+            function(hints) {
+                return hints;
+            }
+JS;
+
+    /** @var int the default amount of time in seconds that the plugin attempts to process shipping and tax */
+    const DEFAULT_SHIPPING_TIMEOUT = 30;
+
+   /** @var int the default price fault tolerance allowed for order total mismatches in cents */
+    const DEFAULT_PRICE_FAULT_TOLERANCE = 1;
+
     /**
      * Gets the value of a Bolt non-publicized or non-emphasized
      * configuration value after passing it through an optionally
@@ -203,19 +216,15 @@ class Bolt_Boltpay_Model_Admin_ExtraConfig extends Mage_Core_Model_Config_Data
      *                  original hints untransformed is returned.
      */
     public function filterHintsTransform($rawConfigValue, $additionalParams = array() ) {
-        $defaultFunction = <<<JS
-            function(hints) {
-                return hints;
-            }
-JS;
-
         return (trim($rawConfigValue))
             ?
-            : $defaultFunction;
+            : self::DEFAULT_HINTS_TRANSFORM_FUNCTION;
     }
 
 
     /**
+     * Filters Datadog severity key preserving empty string as possible value used to disable Datadog logging entirely
+     *
      * @todo revise method for enabling and disabling datadog
      *
      * @param $rawConfigValue
@@ -282,7 +291,7 @@ JS;
      * @return int  the number defined in the extra config admin.  If not defined, the default of 1
      */
     public function filterPriceFaultTolerance($rawConfigValue, $additionalParams = array() ) {
-        return is_int($rawConfigValue) ? $rawConfigValue : 1;
+        return is_int($rawConfigValue) ? abs($rawConfigValue) : self::DEFAULT_PRICE_FAULT_TOLERANCE;
     }
 
     /**
@@ -358,7 +367,7 @@ JS;
     private function normalizeBoolean($rawConfigValue) {
         if (is_string($rawConfigValue)) {
             $rawConfigValue = strtolower(trim($rawConfigValue));
-            if (in_array($rawConfigValue,  ['false', 'no', 'n', 'off'], true)) {
+            if (in_array($rawConfigValue,  ['false', 'no', 'n', 'off', '0'], true)) {
                 $rawConfigValue = false;
             }
         }
