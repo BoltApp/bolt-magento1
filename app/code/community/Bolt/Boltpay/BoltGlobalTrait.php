@@ -30,5 +30,5 @@ trait Bolt_Boltpay_BoltGlobalTrait {
     public function boltHelper() {
         return Mage::helper('boltpay');
     }
-    
+
 }
