@@ -16,7 +16,7 @@
  */
 
 /**
- * Effects how Bolt is displayed when listed as a choice amongst other payment options
+ * Affects how Bolt is displayed when listed as a choice amongst other payment options
  * (e.g. one page checkout, admin checkout)
  */
 class Bolt_Boltpay_Block_Form extends Mage_Payment_Block_Form_Cc
