@@ -43,7 +43,6 @@ class Bolt_Boltpay_Model_Order extends Bolt_Boltpay_Model_Abstract
      * @throws Bolt_Boltpay_OrderCreationException    thrown on order creation failure
      *
      * @todo Change this to accept a quote object to keep all setting current store context to the APIController
-     * @todo Remove $reference, $sessionQuoteId, and $isPreAuth as this is only called from the preauth context
      */
     public function createOrder($reference, $sessionQuoteId = null, $isPreAuthCreation = false, $transaction = null)
     {
@@ -430,6 +429,14 @@ class Bolt_Boltpay_Model_Order extends Bolt_Boltpay_Model_Abstract
     public function validateBeforeOrderCommit($observer) {
         /** @var Mage_Sales_Model_Order $order */
         $order = $observer->getEvent()->getOrder();
+
+        Mage::dispatchEvent(
+            'bolt_boltpay_validation_pre_order_commit_before',
+            array(
+                'order'=> $order,
+            )
+        );
+
         $payment = $order->getPayment();
 
         /** @var Mage_Sales_Model_Quote $quote */
@@ -474,6 +481,13 @@ class Bolt_Boltpay_Model_Order extends Bolt_Boltpay_Model_Abstract
                 ->setBaseGrandTotal($order->getBaseGrandTotal() + ($totalMismatch/100));
         }
         /////////////////////////////////////////////////////////////////////////
+
+        Mage::dispatchEvent(
+            'bolt_boltpay_validation_pre_order_commit_after',
+            array(
+                'order'=> $order,
+            )
+        );
     }
 
     /**

@@ -16,15 +16,18 @@
  */
 
 /**
- * This sets the hidden Bolt payment form
- * that is used in callback to save the order
- *
- * @deprecated Getting order data is done through the Bolt Fetch API call
+ * Affects how Bolt is displayed when listed as a choice amongst other payment options
+ * (e.g. one page checkout, admin checkout)
  */
 class Bolt_Boltpay_Block_Form extends Mage_Payment_Block_Form_Cc
 {
     use Bolt_Boltpay_BoltGlobalTrait;
 
+    /**
+     * Customizes the template used to display the Bolt payment option
+     *
+     * @throws Mage_Core_Model_Store_Exception  If the store can not be found by lookup
+     */
     protected function _construct()
     {
         parent::_construct();
