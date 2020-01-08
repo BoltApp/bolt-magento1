@@ -62,6 +62,18 @@ class Bolt_Boltpay_Helper_CatalogHelper extends Mage_Core_Helper_Abstract
         $ppcQuote = $this->getQuote();
         $ppcQuote->removeAllItems();
         $ppcQuote->addProduct($product, $request);
+        
+        $rules = Mage::getModel('salesrule/rule')->getCollection()->addFieldToFilter('is_active', true)->setOrder('sort_order', 'DESC');
+        foreach ($rules as $rule) {
+            $stop = $rule->getStopRulesProcessing();
+            $ruleIds[] = $rule->getId();
+            if ($stop) {
+                break;
+            }
+        }
+        if (!empty($ruleIds)) {
+            $ppcQuote->setAppliedRuleIds(implode(',', $ruleIds));
+        }
         //$ppcQuote->setParentQuoteId($ppcQuote->getId());
         //$ppcQuote->getBillingAddress();
         $ppcQuote->getShippingAddress()->setCollectShippingRates(true);
