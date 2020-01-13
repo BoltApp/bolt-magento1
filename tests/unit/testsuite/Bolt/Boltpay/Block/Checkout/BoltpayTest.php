@@ -530,7 +530,7 @@ class Bolt_Boltpay_Block_Checkout_BoltpayTest extends PHPUnit_Framework_TestCase
         $actualPaymentOnlyKey = $this->app->getStore()->getConfig('payment/boltpay/publishable_key_onepage');
 
         $this->currentMock->getPublishableKeyForThisPage();
-        $this->assertFalse($actualMultiStepKey || $actualPaymentOnlyKey);
+        $this->assertFalse($actualMultiStepKey || $actualPaymentOnlyKey, "No key should be configured: multi [$actualMultiStepKey], paymentOnly [$actualPaymentOnlyKey]");
         $this->assertEquals($multiStepKey, $actualMultiStepKey);
         $this->assertEquals($paymentOnlyKey, $actualPaymentOnlyKey);
     }
