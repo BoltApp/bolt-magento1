@@ -45,7 +45,7 @@ class Bolt_Boltpay_Block_Checkout_BoltpayTest extends PHPUnit_Framework_TestCase
         Mage::unregister('_helper/boltpay');
         $this->helperMock = $this->getMockBuilder('Bolt_Boltpay_Helper_Data')
             ->setMethods(
-                ['notifyException', 'logException']
+                array('notifyException', 'logException')
             )
             ->getMock();
 
