@@ -67,7 +67,7 @@ class Bolt_Boltpay_ShippingController
 
             $requestData = $this->getRequestData();
 
-            $mockTransaction = (object) array("order" => $requestData );
+            $mockTransaction = (object) array( "order" => $requestData );
             $quoteId = $this->boltHelper()->getImmutableQuoteIdFromTransaction($mockTransaction);
 
             /* @var Mage_Sales_Model_Quote $quote */
