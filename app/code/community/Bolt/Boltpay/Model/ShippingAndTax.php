@@ -181,14 +181,14 @@ class Bolt_Boltpay_Model_ShippingAndTax extends Bolt_Boltpay_Model_Abstract
             $originalCouponCode = $quote->getCouponCode();
             if ($parentQuote) $quote->setCouponCode($parentQuote->getCouponCode());
             
-            /////////////////////////////////////////////////////////////////////////////////////////////
-            // Fixed issue where Taxjar wasn't getting loaded because we called $address->collectTotals 
-            // before we called $quote->collectTotals because collect totals gets cached would never load
-            // Taxjar.
-            /////////////////////////////////////////////////////////////////////////////////////////////
+            ///////////////////////////////////////////////////////////////////////////
+            // Fixed issue where Taxjar wasn't getting loaded because we called 
+            // $address->collectTotals before we called $quote->collectTotals because 
+            // collect totals gets cached would never load Taxjar.
+            ///////////////////////////////////////////////////////////////////////////
             $this->boltHelper()->collectTotals(Mage::getModel('sales/quote')->load($quote->getId()), true);
             benchmark('Creating New Estimate: Initial loading and collecting totals');
-            /////////////////////////////////////////////////////////////////////////////////////////////
+            ///////////////////////////////////////////////////////////////////////////
 
             //we should first determine if the cart is virtual
             if($quote->isVirtual()){
