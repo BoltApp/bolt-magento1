@@ -59,6 +59,8 @@ class Bolt_Boltpay_ApiController extends Mage_Core_Controller_Front_Action imple
             /* If display_id has been confirmed and updated on Bolt, then we should look up the order by display_id */
             $order = Mage::getModel('sales/order')->loadByIncrementId($incrementId);
 
+            $transaction = null; # Required initialization, but we only do Bolt API transaction lookups when required
+
             /* If it hasn't been confirmed, or could not be found, we use the quoteId as fallback */
             if ($order->isObjectNew()) {
                 $transaction = $this->boltHelper()->fetchTransaction($reference);
@@ -73,6 +75,7 @@ class Bolt_Boltpay_ApiController extends Mage_Core_Controller_Front_Action imple
                 Mage::app()->setCurrentStore($order->getStore());
 
                 if (empty($transaction) && $hookType !== 'pending') {
+                    // further transaction details are required from the Bolt API to process hook
                     $transaction = $this->boltHelper()->fetchTransaction($reference);
                 }
 
@@ -98,7 +101,7 @@ class Bolt_Boltpay_ApiController extends Mage_Core_Controller_Front_Action imple
 
                 // Update the transaction id as it may change, ignore the credit hook type,
                 // cause the partial refund need original transaction id to process.
-                if($hookType !== 'credit'){
+                if($hookType !== 'credit' && !empty($transaction)){
                     $orderPayment
                         ->setAdditionalInformation('bolt_merchant_transaction_id', $transaction->id)
                         ->setTransactionId($transaction->id);
@@ -144,6 +147,9 @@ class Bolt_Boltpay_ApiController extends Mage_Core_Controller_Front_Action imple
 
         } catch (Bolt_Boltpay_InvalidTransitionException $boltPayInvalidTransitionException) {
             $this->boltHelper()->logException($boltPayInvalidTransitionException);
+            $newTransactionStatus = $boltPayInvalidTransitionException->getNewStatus();
+            $prevTransactionStatus = $boltPayInvalidTransitionException->getOldStatus();
+
             if ($boltPayInvalidTransitionException->getOldStatus() == Bolt_Boltpay_Model_Payment::TRANSACTION_ON_HOLD) {
                 $message = $this->boltHelper()->__('The order is on-hold and requires manual merchant update before this hook can be processed');
                 $this->boltHelper()->logWarning($message);
