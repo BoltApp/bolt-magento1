@@ -182,7 +182,6 @@ trait Bolt_Boltpay_Helper_ApiTrait {
         }
     }
 
-
     /**
      * Sets Plugin information in the response headers to callers of the API
      */
