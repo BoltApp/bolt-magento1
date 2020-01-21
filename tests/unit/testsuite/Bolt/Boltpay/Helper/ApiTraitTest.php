@@ -92,7 +92,7 @@ class Bolt_Boltpay_Helper_ApiTraitTest extends PHPUnit_Framework_TestCase
      * @group        inProgress
      * @dataProvider transmitExceptionCases
      * @covers       Bolt_Boltpay_Helper_ApiTrait::transmit
-     * @expectedException
+     * @expectedException Exception
      * @param array $case
      */
     public function transmit_Exceptions(array $case)
@@ -111,7 +111,11 @@ class Bolt_Boltpay_Helper_ApiTraitTest extends PHPUnit_Framework_TestCase
         $mock->method('notifyException')->willReturnSelf();
         $mock->method('logException')->willReturnSelf();
 
-        $this->expectExceptionMessage($case['exception']);
+        if (method_exists($this, 'setExpectedException')) {
+            $this->setExpectedException('Exception', $case['exception']);
+        } else {
+            $this->expectExceptionMessage($case['exception']);
+        }
         // Start test
         $mock->transmit($case['command'], $case['data'], $case['object'], $case['type'], $case['storeId']);
     }
