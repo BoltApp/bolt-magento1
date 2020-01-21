@@ -145,4 +145,21 @@ class Bolt_Boltpay_Model_CronTest extends PHPUnit_Framework_TestCase
         $this->assertEquals(4, count($casesCovered));
     }
 
+    /**
+     * @test
+     */
+    public function deactivateQuote()
+    {
+        $order = Bolt_Boltpay_OrderHelper::createDummyOrder(self::$productId, 1, 'boltpay');
+        $quoteId = $order->getQuoteId();
+        $quoteModel = Mage::getModel('sales/quote');
+        $quoteModel->loadByIdWithoutStore($quoteId)->setIsActive(1)->save();
+        $this->_currentMock->deactivateQuote();
+
+        $this->assertEquals(0, $quoteModel->loadByIdWithoutStore($quoteId)->getIsActive());
+
+        Bolt_Boltpay_OrderHelper::deleteDummyOrder($order);
+    }
+
+
 }
