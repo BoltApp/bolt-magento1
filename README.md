@@ -15,7 +15,7 @@ See [CHANGELOG.md](./CHANGELOG.md) for change history.
 5.4+
 
 ## Installation guide
-[Magento 1 plugin installation guide](https://docs.bolt.com/docs/magento-integration-guide)
+[Magento 1 plugin installation guide](https://docs.bolt.com/docs/magento-1-integration)
 
 ## Run tests
 
