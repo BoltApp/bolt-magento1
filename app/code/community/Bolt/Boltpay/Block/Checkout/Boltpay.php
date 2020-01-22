@@ -512,6 +512,39 @@ class Bolt_Boltpay_Block_Checkout_Boltpay extends Mage_Checkout_Block_Onepage_Re
     }
 
     /**
+     * Returns the One Page or Multi-Page checkout Publishable key depending on the requested
+     * page and which key has been set in the admin.  Cart and Product pages prioritize the multi-step key
+     * and falls back to the payment only key.  All other pages prioritize the payment only key and falls back
+     * to the multi-step key.
+     *
+     * @return string   The publishable key to be used on this page
+     * @throws Bolt_Boltpay_BoltException when neither a multi-step nor a payment-only publishable key is configured
+     */
+    public function getPublishableKeyForThisPage() {
+        $routeName = $this->getRequest()->getRouteName();
+        $controllerName = $this->getRequest()->getControllerName();
+
+        $multiStepPublishableKey = $this->getPublishableKey('multi-page');
+        $paymentOnlyPublishableKey = $this->getPublishableKey('one-page');
+
+        $thisPagesPublishableKey =
+            $controllerName === 'cart'
+            || ($routeName === 'catalog' && $controllerName === 'product')
+                ? $multiStepPublishableKey
+                : $paymentOnlyPublishableKey
+        ;
+
+        if (!$multiStepPublishableKey && !$paymentOnlyPublishableKey) {
+            $noPublishableKeyException = new Bolt_Boltpay_BoltException("No publishable key has been configured.");
+            $this->boltHelper()->logException($noPublishableKeyException);
+            $this->boltHelper()->notifyException($noPublishableKeyException, [], 'error');
+            throw $noPublishableKeyException;
+        }
+
+        return $thisPagesPublishableKey ?: max($multiStepPublishableKey, $paymentOnlyPublishableKey);
+    }
+
+    /**
      * Returns the One Page / Multi-Page checkout Publishable key.
      *
      * @param  string $checkoutType  'multi-page' | 'one-page' | 'admin'
