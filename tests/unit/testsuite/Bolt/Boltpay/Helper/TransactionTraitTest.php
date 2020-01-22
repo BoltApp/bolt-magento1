@@ -13,8 +13,8 @@ class Bolt_Boltpay_Helper_TransactionTraitTest extends PHPUnit_Framework_TestCas
     /** @var int Dummy order increment id */
     const INCREMENT_ID = 11000;
 
-    /** @var string Dummy Bolt transaction display id */
-    const DISPLAY_ID = '11000|1000';
+    /** @var string Dummy Bolt transaction display id in the format of '<increment id>|<immutable quote id>' */
+    const DISPLAY_ID_IN_PIPED_FORMAT = '11000|1000';
 
     /**
      * @var PHPUnit_Framework_MockObject_MockObject|Bolt_Boltpay_Helper_TransactionTrait Mock of the current trait
@@ -32,14 +32,14 @@ class Bolt_Boltpay_Helper_TransactionTraitTest extends PHPUnit_Framework_TestCas
 
     /**
      * @test
-     * that getImmutableQuoteIdFromTransaction on transaction object containing increment and quote id
-     * divided by | delimiter will return quote id
+     * that getImmutableQuoteIdFromTransaction on transaction object containing increment and
+     * immutable quote id divided by | delimiter will return the immutable quote id
      *
      * @covers Bolt_Boltpay_Helper_TransactionTrait::getImmutableQuoteIdFromTransaction
      */
-    public function getImmutableQuoteIdFromTransaction_withTransactionContainingDisplayId_returnsImmutableQuoteId()
+    public function getImmutableQuoteIdFromTransaction_inPipedFormat_returnsImmutableQuoteId()
     {
-        $transaction = $this->createTransactionObject(self::DISPLAY_ID);
+        $transaction = $this->createTransactionObject(self::DISPLAY_ID_IN_PIPED_FORMAT, self::IMMUTABLE_QUOTE_ID - 1);
         $this->assertEquals(
             self::IMMUTABLE_QUOTE_ID,
             $this->currentMock->getImmutableQuoteIdFromTransaction($transaction)
@@ -48,51 +48,58 @@ class Bolt_Boltpay_Helper_TransactionTraitTest extends PHPUnit_Framework_TestCas
 
     /**
      * @test
-     * Retrieving immutable quote id from transaction object in legacy format
-     * We provide parent quote id higher than quote id to simulate newer version stores
-     * where the parent ID is in transaction, and immutable quote ID is in getParentQuoteId()
+     * Retrieving immutable quote id from transaction object in the old legacy format
+     * where only the immutable quote id is in transaction's order reference
      *
      * @covers Bolt_Boltpay_Helper_TransactionTrait::getImmutableQuoteIdFromTransaction
      * @throws Exception if unable to create/delete dummy quote
      */
-    public function getImmutableQuoteIdFromTransaction_withLegacyTransactionContainingParentQuoteId_returnsParentQuoteId()
+    public function getImmutableQuoteIdFromTransaction_inOldLegacyFormat_returnsImmutableQuoteId()
     {
-        $quoteId = Bolt_Boltpay_CouponHelper::createDummyQuote();
-        $parentQuoteId = $quoteId + 1;
+        $orderReference = $immutableQuoteId = Bolt_Boltpay_CouponHelper::createDummyQuote();
+        $parentQuoteId = $immutableQuoteId - 1;
         Mage::getModel('sales/quote')
-            ->loadByIdWithoutStore($quoteId)
+            ->loadByIdWithoutStore($immutableQuoteId)
             ->setData('parent_quote_id', $parentQuoteId)
             ->save();
-        $transaction = $this->createTransactionObject(null, $quoteId);
-        $this->assertEquals($parentQuoteId, $this->currentMock->getImmutableQuoteIdFromTransaction($transaction));
-        Bolt_Boltpay_CouponHelper::deleteDummyQuote($quoteId);
+        $transaction = $this->createTransactionObject('9999999999', $orderReference);
+
+        $this->assertEquals($immutableQuoteId, $this->currentMock->getImmutableQuoteIdFromTransaction($transaction));
+        Bolt_Boltpay_CouponHelper::deleteDummyQuote($immutableQuoteId);
     }
 
     /**
      * @test
-     * Retrieving immutable quote id from transaction object in legacy format
-     * We set parent quote id to null to simulate older version stores where the immutable quote ID is in transaction
+     * Retrieving immutable quote id from transaction object in the old legacy format
+     * where only the parent quote id is in transaction's order reference
      *
      * @covers Bolt_Boltpay_Helper_TransactionTrait::getImmutableQuoteIdFromTransaction
      */
-    public function getImmutableQuoteIdFromTransaction_withLegacyTransactionContainingImmutableQuoteId_returnsImmutableQuoteId()
+    public function getImmutableQuoteIdFromTransaction_newLegacyFormat_returnsImmutableQuoteId()
     {
-        $quoteId = Bolt_Boltpay_CouponHelper::createDummyQuote(array('parent_quote_id'=> null));
-        $transaction = $this->createTransactionObject(null, $quoteId);
-        $this->assertEquals($quoteId, $this->currentMock->getImmutableQuoteIdFromTransaction($transaction));
-        Bolt_Boltpay_CouponHelper::deleteDummyQuote($quoteId);
+        $orderReference = $parentQuoteId = Bolt_Boltpay_CouponHelper::createDummyQuote();
+        $immutableQuoteId = $parentQuoteId + 1;
+        Mage::getModel('sales/quote')
+            ->loadByIdWithoutStore($parentQuoteId)
+            ->setData('parent_quote_id', $immutableQuoteId)
+            ->save();
+        $transaction = $this->createTransactionObject('9999999999', $orderReference);
+
+        $this->assertEquals($immutableQuoteId, $this->currentMock->getImmutableQuoteIdFromTransaction($transaction));
+        Bolt_Boltpay_CouponHelper::deleteDummyQuote($parentQuoteId);
     }
 
     /**
      * @test
      * Getting increment id from of transaction display_id
-     * It should contain increment and quote id divided by | delimiter
+     * that contains increment and immutable quote id divided by | delimiter
      *
      * @covers Bolt_Boltpay_Helper_TransactionTrait::getIncrementIdFromTransaction
      */
-    public function getIncrementIdFromTransaction_whenDisplayIdContainingBothIncrementAndQuoteId_returnsFirstPartDividedByDelimiter()
+    public function getIncrementIdFromTransaction_inPipedFormat_returnsIncrementId()
     {
-        $transaction = $this->createTransactionObject(self::DISPLAY_ID);
+        $orderReference = $parentQuoteId = self::IMMUTABLE_QUOTE_ID - 1;
+        $transaction = $this->createTransactionObject(self::DISPLAY_ID_IN_PIPED_FORMAT, $orderReference);
         $this->assertEquals(
             self::INCREMENT_ID,
             $this->currentMock->getIncrementIdFromTransaction($transaction)
@@ -101,14 +108,15 @@ class Bolt_Boltpay_Helper_TransactionTraitTest extends PHPUnit_Framework_TestCas
 
     /**
      * @test
-     * Getting increment id from transaction display_id that is in legacy format
-     * It should contains only increment id without delimiter
+     * Getting increment id from transaction where the display id is in any legacy format, (i.e. non-piped),
+     * will simply return the transaction's display id value
      *
      * @covers Bolt_Boltpay_Helper_TransactionTrait::getIncrementIdFromTransaction
      */
-    public function getIncrementIdFromTransaction_withLegacyDisplayIdContainingOnlyIncrementId_returnsCompleteDisplayId()
+    public function getIncrementIdFromTransaction_inAnyLegacyFormat_returnsTransactionDisplayId()
     {
-        $transaction = $this->createTransactionObject(self::INCREMENT_ID);
+        $orderReference = 1234567890; # could be the parent quote or immutable quote ID. old or new legacy is irrelevant
+        $transaction = $this->createTransactionObject(self::INCREMENT_ID, $orderReference);
         $this->assertEquals(
             self::INCREMENT_ID,
             $this->currentMock->getIncrementIdFromTransaction($transaction)
