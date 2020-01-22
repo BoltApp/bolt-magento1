@@ -299,7 +299,7 @@ class Bolt_Boltpay_Block_Checkout_BoltpayTest extends PHPUnit_Framework_TestCase
      *
      * @covers ::isAdminAndUseJsInAdmin
      *
-     * @dataProvider isAdminAndUseJsInAdmin_withVariousCheckoutTypesAndConfigs_returnsExpectedBooleanProvider
+     * @dataProvider isAdminAndUseJsInAdmin_withVariousConfigs_returnsExpectedBooleanProvider
      *
      * @param string $checkoutType currently used
      * @param bool   $useJavascriptInAdmin configuration value
@@ -308,7 +308,7 @@ class Bolt_Boltpay_Block_Checkout_BoltpayTest extends PHPUnit_Framework_TestCase
      * @throws Mage_Core_Model_Store_Exception
      * @throws ReflectionException
      */
-    public function isAdminAndUseJsInAdmin_withVariousCheckoutTypesAndConfigs_returnsExpectedBoolean($checkoutType, $useJavascriptInAdmin, $expectedResult)
+    public function isAdminAndUseJsInAdmin_withVariousConfigs_returnsExpectedBoolean($checkoutType, $useJavascriptInAdmin, $expectedResult)
     {
         TestHelper::stubConfigValue('payment/boltpay/use_javascript_in_admin', $useJavascriptInAdmin);
         $this->assertEquals(
@@ -318,11 +318,11 @@ class Bolt_Boltpay_Block_Checkout_BoltpayTest extends PHPUnit_Framework_TestCase
     }
 
     /**
-     * Data provider for {@see isAdminAndUseJsInAdmin_withVariousCheckoutTypesAndConfigs_returnsExpectedBoolean}
+     * Data provider for {@see isAdminAndUseJsInAdmin_withVariousConfigs_returnsExpectedBoolean}
      *
      * @return array containing checkout type, config value for using js in admin and expected result of method call
      */
-    public function isAdminAndUseJsInAdmin_withVariousCheckoutTypesAndConfigs_returnsExpectedBooleanProvider()
+    public function isAdminAndUseJsInAdmin_withVariousConfigs_returnsExpectedBooleanProvider()
     {
         return array(
             'Admin and use disabled'      => array(
@@ -1538,7 +1538,7 @@ SCSS;
     }
 
     /**
-     * Setup method for {@see Bolt_Boltpay_Block_Checkout_BoltpayTest::buildBoltCheckoutJavascript_withVariousCheckoutTypesAndConfigs_returnsBoltJs}
+     * Setup method for {@see Bolt_Boltpay_Block_Checkout_BoltpayTest::buildBoltCheckoutJavascript_withVariousConfigs_returnsBoltJs}
      *
      * @param string $checkoutType currently in use
      * @param bool   $cloneOnClick extra-config flag for cloneOnClick
@@ -1548,7 +1548,7 @@ SCSS;
      * @throws Mage_Core_Exception if unable to stub helper
      * @throws Exception if test class name is not set
      */
-    private function buildBoltCheckoutJavascript_withVariousCheckoutTypesAndConfigsSetUp($checkoutType, $cloneOnClick = false, $isShoppingCartPage = false)
+    private function buildBoltCheckoutJavascript_withVariousConfigsSetUp($checkoutType, $cloneOnClick = false, $isShoppingCartPage = false)
     {
         $hintData = array(
             'signed_merchant_user_id' => array(
@@ -1594,7 +1594,7 @@ SCSS;
      *
      * @covers ::buildBoltCheckoutJavascript
      *
-     * @dataProvider buildBoltCheckoutJavascript_withVariousCheckoutTypesAndConfigsProvider
+     * @dataProvider buildBoltCheckoutJavascript_withVariousConfigsProvider
      *
      * @param string $checkoutType currently in use
      * @param bool   $isShoppingCartPage whether current page is checkout/cart
@@ -1603,9 +1603,9 @@ SCSS;
      *
      * @throws Mage_Core_Exception from test setup if unable to stub helper
      */
-    public function buildBoltCheckoutJavascript_withVariousCheckoutTypesAndConfigs_returnsBoltJs($checkoutType, $isShoppingCartPage, $shouldCloneImmediately, $expectPostponedConfiguration)
+    public function buildBoltCheckoutJavascript_withVariousConfigs_returnsBoltJs($checkoutType, $isShoppingCartPage, $shouldCloneImmediately, $expectPostponedConfiguration)
     {
-        list($hintData, $cartData, $currentMock, $quoteMock) = $this->buildBoltCheckoutJavascript_withVariousCheckoutTypesAndConfigurations_willReturnBoltCheckoutJsSetUp(
+        list($hintData, $cartData, $currentMock, $quoteMock) = $this->buildBoltCheckoutJavascript_withVariousConfigsSetUp(
             $checkoutType,
             !$shouldCloneImmediately,
             $isShoppingCartPage
@@ -1672,11 +1672,11 @@ SCSS;
     }
 
     /**
-     * Data provider for {@see buildBoltCheckoutJavascript_withVariousCheckoutTypesAndConfigs_returnsBoltJs}
+     * Data provider for {@see buildBoltCheckoutJavascript_withVariousConfigs_returnsBoltJs}
      *
      * @return array containing checkout type, is current page cart flag, should clone immediately config and flag whether to expect postponed configuration
      */
-    public function buildBoltCheckoutJavascript_withVariousCheckoutTypesAndConfigsProvider()
+    public function buildBoltCheckoutJavascript_withVariousConfigsProvider()
     {
         return array(
             array(
