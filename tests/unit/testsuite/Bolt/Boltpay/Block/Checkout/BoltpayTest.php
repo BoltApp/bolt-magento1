@@ -1747,14 +1747,14 @@ SCSS;
      *
      * @covers ::isTestMode
      *
-     * @dataProvider isTestMode_always_termsIfTestModeIsSetInConfigurationProvider
+     * @dataProvider isTestMode_always_pinsIfTestModeIsSetInConfigurationProvider
      *
      * @param mixed $isTestModeConfig config value for_test_mode
      * @param bool  $expectedResult of the method call
      *
      * @throws Mage_Core_Model_Store_Exception if unable to stub config value
      */
-    public function isTestMode_always_termsIfTestModeIsSetInConfiguration($isTestModeConfig, $expectedResult)
+    public function isTestMode_always_pinsIfTestModeIsSetInConfiguration($isTestModeConfig, $expectedResult)
     {
         TestHelper::stubConfigValue('payment/boltpay/test', $isTestModeConfig);
         $result = $this->currentMock->isTestMode();
@@ -1763,11 +1763,11 @@ SCSS;
     }
 
     /**
-     * Data provider for {@see isTestMode_always_termsIfTestModeIsSetInConfiguration}
+     * Data provider for {@see isTestMode_always_pinsIfTestModeIsSetInConfiguration}
      *
      * @return array[] containing configuration value for test and expected result of the method call
      */
-    public function isTestMode_always_termsIfTestModeIsSetInConfigurationProvider()
+    public function isTestMode_always_pinsIfTestModeIsSetInConfigurationProvider()
     {
         return array(
             'Empty value should return false'   => array('isTestModeConfig' => '', 'expectedResult' => false),
@@ -1835,14 +1835,14 @@ SCSS;
      *
      * @throws Mage_Core_Model_Store_Exception if unable to stub config value
      */
-    public function isBoltOnlyPayment_withVariousConfigs_termsIsBoltOnlyPayment($skipPayment)
+    public function isBoltOnlyPayment_withVariousConfigs_pinsIsBoltOnlyPayment($skipPayment)
     {
         TestHelper::stubConfigValue('payment/boltpay/skip_payment', $skipPayment);
         $this->assertSame($skipPayment, $this->currentMock->isBoltOnlyPayment());
     }
 
     /**
-     * Data provider for {@see isBoltOnlyPayment_withVariousConfigs_termsIsBoltOnlyPayment}
+     * Data provider for {@see isBoltOnlyPayment_withVariousConfigs_pinsIsBoltOnlyPayment}
      *
      * @return array[] containing various configuration values for skip_payment
      */
@@ -1871,7 +1871,7 @@ SCSS;
      * @throws Mage_Core_Model_Store_Exception if unable to stub config value
      * @throws ReflectionException if class tested doesn't have isCustomerGroupDisabled method
      */
-    public function isCustomerGroupDisabled_withVariousConfigs_termsIsCustomerGroupIsDisabled($customerGroupId, $disabledCustomerGroupIds, $expectedResult)
+    public function isCustomerGroupDisabled_withVariousConfigs_pinsIsCustomerGroupIsDisabled($customerGroupId, $disabledCustomerGroupIds, $expectedResult)
     {
         TestHelper::stubConfigValue('payment/boltpay/bolt_disabled_customer_groups', $disabledCustomerGroupIds);
         $result = TestHelper::callNonPublicFunction(
@@ -1884,7 +1884,7 @@ SCSS;
     }
 
     /**
-     * Data provider for (@see isCustomerGroupDisabled_withVariousConfigs_termsIsCustomerGroupIsDisabled}
+     * Data provider for (@see isCustomerGroupDisabled_withVariousConfigs_pinsIsCustomerGroupIsDisabled}
      *
      * @return array[] containing dummy customer group, disabled customer group ids and expected result of method call
      */
@@ -1932,7 +1932,7 @@ SCSS;
      *
      * @throws Mage_Core_Model_Store_Exception if unable to stub configuration
      */
-    public function isBoltActive_withVariousConfigs_termsIfBoltModuleShouldBeActive($activeConfig, $expectedResult)
+    public function isBoltActive_withVariousConfigs_pinsIfBoltModuleShouldBeActive($activeConfig, $expectedResult)
     {
         TestHelper::stubConfigValue('payment/boltpay/active', $activeConfig);
         $result = $this->currentMock->isBoltActive();
@@ -1941,7 +1941,7 @@ SCSS;
     }
 
     /**
-     * Data provider for {@see isBoltActive_withVariousConfigs_termsIfBoltModuleShouldBeActive}
+     * Data provider for {@see isBoltActive_withVariousConfigs_pinsIfBoltModuleShouldBeActive}
      *
      * @return mixed[][] containing configuration value for Bolt module and expected result
      */
@@ -1971,7 +1971,7 @@ SCSS;
      *
      * @throws Mage_Core_Model_Store_Exception if unable to stub config value
      */
-    public function isEnableMerchantScopedAccount_withVariousConfigs_termsIfMerchantScopedAccountIsEnabled($merchantEnabledConfig)
+    public function isEnableMerchantScopedAccount_withVariousConfigs_pinsIfMerchantScopedAccountIsEnabled($merchantEnabledConfig)
     {
         TestHelper::stubConfigValue('payment/boltpay/enable_merchant_scoped_account', $merchantEnabledConfig);
         $result = $this->currentMock->isEnableMerchantScopedAccount();
@@ -1979,7 +1979,7 @@ SCSS;
     }
 
     /**
-     * Data provider for {@see isEnableMerchantScopedAccount_withVariousConfigs_termsIfMerchantScopedAccountIsEnabled}
+     * Data provider for {@see isEnableMerchantScopedAccount_withVariousConfigs_pinsIfMerchantScopedAccountIsEnabled}
      *
      * @return mixed[][] containing configuration values for isEnableMerchantScopedAccount
      */
@@ -2015,14 +2015,14 @@ SCSS;
      *
      * @covers ::canUseBolt
      *
-     * @dataProvider canUseBolt_always_termsIfBoltCanBeUsedProvider
+     * @dataProvider canUseBolt_always_pinsIfBoltCanBeUsedProvider
      *
      * @param bool $canUseBolt stubbed result of Bolt helper method call
      *
      * @throws Mage_Core_Exception if unable to stub Bolt helper
      * @throws Mage_Core_Model_Store_Exception from method tested if store is undefined
      */
-    public function canUseBolt_always_termsIfBoltCanBeUsed($canUseBolt)
+    public function canUseBolt_always_pinsIfBoltCanBeUsed($canUseBolt)
     {
         TestHelper::stubHelper('boltpay', $this->boltHelperMock);
         $this->boltHelperMock->expects($this->once())->method('canUseBolt')
@@ -2031,11 +2031,11 @@ SCSS;
     }
 
     /**
-     * Data provider for {@see canUseBolt_always_termsIfBoltCanBeUsed}
+     * Data provider for {@see canUseBolt_always_pinsIfBoltCanBeUsed}
      *
      * @return array containing possible results of helper method call
      */
-    public function canUseBolt_always_termsIfBoltCanBeUsedProvider()
+    public function canUseBolt_always_pinsIfBoltCanBeUsedProvider()
     {
         return array(
             'Bolt enabled'  => array('canUseBolt' => true),
@@ -2172,7 +2172,7 @@ SCSS;
      *
      * @throws Mage_Core_Model_Store_Exception if unable to stub config value
      */
-    public function isAllowedConnectJsOnCurrentPage_withVariousConfigs_termsIfConnectJsIsAllowedOnCurrentPage($expected, $active, $customerGroupId, $groups, $route, $controller, $everywhere)
+    public function isAllowedConnectJsOnCurrentPage_withVariousConfigs_pinsIfConnectJsIsAllowedOnCurrentPage($expected, $active, $customerGroupId, $groups, $route, $controller, $everywhere)
     {
         $quote = $this->currentMock->getQuote();
         $quote->setCustomerGroupId($customerGroupId);
@@ -2189,7 +2189,7 @@ SCSS;
     }
 
     /**
-     * Data provider for {@see isAllowedConnectJsOnCurrentPage_withVariousConfigs_termsIfConnectJsIsAllowedOnCurrentPage}
+     * Data provider for {@see isAllowedConnectJsOnCurrentPage_withVariousConfigs_pinsIfConnectJsIsAllowedOnCurrentPage}
      * Provides data sets to verify that {@see BoltpayCheckoutBlock::isAllowedConnectJsOnCurrentPage}} returns false
      * when current customer group id is in disabled customer groups configuration
      *
