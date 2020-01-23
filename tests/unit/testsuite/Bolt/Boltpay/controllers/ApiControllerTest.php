@@ -6,9 +6,7 @@ require_once 'OrderHelper.php';
 require_once 'ProductProvider.php';
 
 /**
- * Class Bolt_Boltpay_ApiControllerTest
- *
- * Unit and Integration test for the Bolt_Boltpay_ApiController
+ * @coversDefaultClass Bolt_Boltpay_ApiController
  */
 class Bolt_Boltpay_ApiControllerTest extends PHPUnit_Framework_TestCase
 {
@@ -80,11 +78,72 @@ class Bolt_Boltpay_ApiControllerTest extends PHPUnit_Framework_TestCase
     }
 
     /**
+     * @test
+     * that a pending hook does not attempt to fetch a transaction via the Bolt API
+     * and that it successfully processes without throwing and exception
+     *
+     * @covers ::hookAction
+     */
+    public function hookAction_pendingHook_returns200() {
+
+        /** @var Bolt_Boltpay_ApiController|PHPUnit_Framework_MockObject_MockObject $apiControllerMock */
+        $apiControllerMock = $this->_apiControllerBuilder
+            ->setMethods(['getRequestData', 'boltHelper', 'sendResponse'])
+            ->getMock();
+
+        ///////////////////////////////////////////////////////////////////////
+        /// Create a pseudo transaction data and map to request and responses
+        ///////////////////////////////////////////////////////////////////////
+        $stubbedRequestData = new stdClass();
+        $stubbedRequestData->reference = 'TEST-BOLT-TRNX';
+        $stubbedRequestData->id = 'TRboltx0test1';
+        $stubbedRequestData->type = 'pending';
+        $stubbedRequestData->display_id = self::$_mockOrder->getIncrementId();
+
+        $payment = self::$_mockOrder->getPayment();
+        $payment->setAdditionalInformation('bolt_reference', $stubbedRequestData->reference)->save();
+
+        $apiControllerMock->method('getRequestData')->willReturn($stubbedRequestData);
+
+        /** @var Bolt_Boltpay_Helper_Data|PHPUnit_Framework_MockObject_MockObject $stubbedBoltHelper */
+        $stubbedBoltHelper = $this->getMockBuilder('Bolt_Boltpay_Helper_Data')
+            ->setMethods(array('fetchTransaction', 'logInfo'))
+            ->getMock();
+
+        $stubbedBoltHelper
+            ->expects($this->never())
+            ->method('fetchTransaction');
+
+        $apiControllerMock->method('boltHelper')->willReturn($stubbedBoltHelper);
+        ///////////////////////////////////////////////////////////////////////
+
+        $apiControllerMock
+            ->expects($this->exactly(2))
+            ->method('sendResponse')
+            ->with($this->equalTo(200))
+            ->willThrowException(
+                new Bolt_Boltpay_InvalidTransitionException(
+                    "pending",
+                    "pending",
+                    "Simulated exit"
+                )
+            );
+
+        ######################################
+        # Calling the subject method
+        ######################################
+        try {
+            $apiControllerMock->hookAction();
+        } catch (Bolt_Boltpay_InvalidTransitionException $bite) {
+            if ( $bite->getMessage() !== "Simulated exit" ) { throw $bite; }
+        }
+        ######################################
+    }
+
+    /**
      * Verifies that irreversibly rejected hooks do not trigger the "receiving order" behavior which means order
      * finalization including sending out order notification emails, associating the order with a transaction and
      * triggering post order creation events.
-     *
-     * @throws ReflectionException      on unexpected problems with reflection
      */
     public function testHookAction_thatOrderNotProcessedForIrreversiblyRejectedHooks() {
 
