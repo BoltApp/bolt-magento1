@@ -815,7 +815,6 @@ class Bolt_Boltpay_Model_Order extends Bolt_Boltpay_Model_Abstract
     private function activateOrder(Mage_Sales_Model_Order $order, $payloadObject)
     {
         if (empty($order->getCreatedAt())) { $order->setCreatedAt(Mage::getModel('core/date')->gmtDate())->save(); }
-        $this->getParentQuoteFromOrder($order)->setIsActive(false)->save();
         $reference = @$payloadObject->transaction_reference ?: $payloadObject->reference;
         $hookType = @$payloadObject->notification_type ?: $payloadObject->type;
 
@@ -832,6 +831,17 @@ class Bolt_Boltpay_Model_Order extends Bolt_Boltpay_Model_Abstract
                 array('order' => $order, 'quote' => $immutableQuote, 'recurring_profiles' => $recurringPaymentProfiles)
             );
             benchmark( "Finished running independent merchant third-party code via checkout_submit_all_after" );
+
+            /////////////////////////////////////////////////////////////////
+            // Remove the parent/session quote to prevent any further reuse
+            // of its ID as a Bolt order_reference which would be blocked by
+            // Bolt to prevent duplicate orders. Before this, we will
+            // deactivate it in the case a 3rd-party is expecting that flow
+            /////////////////////////////////////////////////////////////////
+            $this->getParentQuoteFromOrder($order)->setIsActive(0)->save()->delete();
+            benchmark( "Disabled and removed session quote" );
+            /////////////////////////////////////////////////////////////////
+
         } catch ( Exception $e ) {
             $this->boltHelper()->notifyException($e);
             $this->boltHelper()->logException($e);
