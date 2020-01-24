@@ -106,4 +106,38 @@ class Bolt_Boltpay_Model_Cron
             $this->boltHelper()->logWarning($e->getMessage());
         }
     }
+
+    /**
+     * Deactivate quotes which belong to created orders
+     */
+    public function deactivateQuote()
+    {
+        try {
+            $sales_flat_quote_table = Mage::getSingleton('core/resource')->getTableName('sales/quote');
+            $sales_flat_order_table = Mage::getSingleton('core/resource')->getTableName('sales/order');
+            $sales_flat_order_payment_table = Mage::getSingleton('core/resource')->getTableName('sales/order_payment');
+
+            $connection = Mage::getSingleton('core/resource')->getConnection('core_write');
+
+            $sql = sprintf(
+                'UPDATE %s SET is_active = 0 ' .
+                                'WHERE is_active = 1 ' .
+                                'AND entity_id IN ' .
+                                    '(SELECT sfo.quote_id ' .
+                                    'FROM %s AS sfo ' .
+                                    'INNER JOIN %s AS sfop ' .
+                                    'ON sfo.entity_id = sfop.parent_id ' .
+                                    'WHERE sfop.method = "%s")',
+                $sales_flat_quote_table,
+                $sales_flat_order_table,
+                $sales_flat_order_payment_table,
+                Bolt_Boltpay_Model_Payment::METHOD_CODE
+            );
+
+            $connection->query($sql);
+        } catch (\Exception $exception) {
+            $this->boltHelper()->notifyException($exception);
+        }
+    }
+
 }
