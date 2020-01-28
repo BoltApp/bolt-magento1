@@ -448,8 +448,8 @@ class Bolt_Boltpay_Model_Order extends Bolt_Boltpay_Model_Abstract
         }
 
         /////////////////////////////////////////////////////////////
-        /// When the order is empty, it will not be able to save
-        /// in Magento for an unknown reason.  Here we report the problem
+        /// When the order is empty, we were unable to save it in
+        /// Magento for an unknown reason.  Here we report the problem
         /////////////////////////////////////////////////////////////
         if(empty($order)) {
             throw new Exception("Order was not able to be saved");
@@ -459,7 +459,7 @@ class Bolt_Boltpay_Model_Order extends Bolt_Boltpay_Model_Abstract
         /////////////////////////////////////////////////////////////
         /// Final sanity check on bottom line price on order.
         /// If we are failing here, then we've reach an unexpected
-        /// snag that will we
+        /// snag that we currently can not recover from
         /////////////////////////////////////////////////////////////
         $priceFaultTolerance = $this->boltHelper()->getExtraConfig('priceFaultTolerance');
 
@@ -477,8 +477,8 @@ class Bolt_Boltpay_Model_Order extends Bolt_Boltpay_Model_Abstract
             // Do order total correction if necessary so that the bottom line matches up
             $order->setTaxAmount($order->getTaxAmount() + ($totalMismatch/100))
                 ->setBaseTaxAmount($order->getBaseTaxAmount() + ($totalMismatch/100))
-                ->setGrandTotal($order->getGrandTotal() + ($totalMismatch/100))
-                ->setBaseGrandTotal($order->getBaseGrandTotal() + ($totalMismatch/100));
+                ->setGrandTotal($boltGrandTotal/100)
+                ->setBaseGrandTotal($boltGrandTotal/100);
         }
         /////////////////////////////////////////////////////////////////////////
 
