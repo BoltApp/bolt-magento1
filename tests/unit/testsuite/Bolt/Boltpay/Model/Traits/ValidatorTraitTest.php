@@ -39,4 +39,17 @@ class Bolt_Boltpay_Model_Traits_ValidatorTraitTest extends PHPUnit_Framework_Tes
         $this->currentMock->resetRoundingDeltas();
         $this->assertEquals(array(), $this->currentMock->_roundingDeltas);
     }
+
+    /**
+     * @test
+     * that resetRoundingDeltas method resets _baseRoundingDeltas property to empty array
+     *
+     * @covers Bolt_Boltpay_Model_Traits_ValidatorTrait::resetRoundingDeltas
+     */
+    public function resetRoundingDeltas_always_resetsBaseRoundingDeltasProperty()
+    {
+        $this->currentMock->_baseRoundingDeltas = array('10' => 0.01, '20' => 0.02);
+        $this->currentMock->resetRoundingDeltas();
+        $this->assertEquals(array(), $this->currentMock->_baseRoundingDeltas);
+    }
 }
