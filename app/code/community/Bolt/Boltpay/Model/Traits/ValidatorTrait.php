@@ -25,7 +25,7 @@ trait Bolt_Boltpay_Model_Traits_ValidatorTrait {
     use Bolt_Boltpay_BoltGlobalTrait;
 
     /**
-     * Method for resetting rounding delta. Rounding deltas cause percentage discounts applied to an order to often get
+     * Method for resetting rounding delta and base rounding delta. Rounding deltas cause percentage discounts applied to an order to often get
      * off by $0.01 rounding errors because the validator used is a singleton. So every time collectTotals is called
      * it reuses the previous rounding deltas and causes rounding problems. Since Mage_SalesRule_Model_Validator doesn't
      * provide a method for resetting these before calling collectTotals, we created one.
@@ -33,5 +33,6 @@ trait Bolt_Boltpay_Model_Traits_ValidatorTrait {
     public function resetRoundingDeltas()
     {
         $this->_roundingDeltas = array();
+        $this->_baseRoundingDeltas = array();
     }
 }
