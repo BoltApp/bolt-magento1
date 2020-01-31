@@ -158,7 +158,7 @@ class Bolt_Boltpay_OrderCreationException extends Bolt_Boltpay_BoltException
             $dataValues = array($message."\nSupplied error:\n$originalJson");
         }
 
-        foreach($dataValues as $index => $value ) {
+        foreach($dataValues as $index => $value) {
             $dataValues[$index] = addcslashes($dataValues[$index], '"\\');
         }
 
@@ -182,7 +182,7 @@ class Bolt_Boltpay_OrderCreationException extends Bolt_Boltpay_BoltException
      *
      * @return int The HTTP code that was found which matches the provided error info
      */
-    public function selectHttpCode( $code, $dataTemplate )
+    public function selectHttpCode($code, $dataTemplate)
     {
         // Select the http code
         switch ($code) {
