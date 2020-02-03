@@ -55,7 +55,6 @@ class Bolt_Boltpay_Helper_ApiTraitTest extends PHPUnit_Framework_TestCase
         $result = $mock->transmit($case['command'], $case['data'], $case['object'], $case['type'], $case['storeId']);
         $this->assertInternalType('array', $result);
         $this->assertEquals($case['expect'], $result);
-
     }
 
     /**
@@ -80,7 +79,6 @@ class Bolt_Boltpay_Helper_ApiTraitTest extends PHPUnit_Framework_TestCase
                     'response' => array()
                 )
             ),
-
         );
     }
 
@@ -145,5 +143,4 @@ class Bolt_Boltpay_Helper_ApiTraitTest extends PHPUnit_Framework_TestCase
             ),
         );
     }
-
 }

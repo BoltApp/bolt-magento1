@@ -26,17 +26,19 @@
  * 4. Generates Bolt order submission data.
  *
  */
-trait Bolt_Boltpay_Helper_ApiTrait {
-
+trait Bolt_Boltpay_Helper_ApiTrait
+{
     use Bolt_Boltpay_Helper_UrlTrait;
 
     protected $apiClient;
 
     /**
      * Function get Api Client
+     *
      * @return Boltpay_Guzzle_ApiClient
      */
-    public function getApiClient(){
+    public function getApiClient()
+    {
         if (!$this->apiClient) {
             $this->apiClient = new Boltpay_Guzzle_ApiClient();
         }
@@ -204,5 +206,4 @@ trait Bolt_Boltpay_Helper_ApiTrait {
     {
         return property_exists($response, 'errors') || property_exists($response, 'error_code');
     }
-
 }
