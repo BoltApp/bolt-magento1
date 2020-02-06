@@ -1106,6 +1106,257 @@ class Bolt_Boltpay_Model_OrderTest extends PHPUnit_Framework_TestCase
     }
 
     /**
+     * Setup method for tests covering {@see Bolt_Boltpay_Model_Order::validateCartSessionData}
+     *
+     * @return MockObject|Bolt_Boltpay_Model_Order mocked instance of the class tested
+     *
+     * @throws Exception if test class name is not defined
+     */
+    private function validateCartSessionDataSetUp()
+    {
+        $currentMock = $this->getTestClassPrototype()->setMethods(array('boltHelper'))->getMock();
+        $currentMock->method('boltHelper')->willReturn($this->boltHelperMock);
+        return $currentMock;
+    }
+
+    /**
+     * @test
+     * that validateCartSessionData throws OrderCreationException if immutable quote id provided was
+     * not located
+     *
+     * @covers ::validateCartSessionData
+     *
+     * @expectedException Bolt_Boltpay_OrderCreationException
+     * @expectedExceptionMessage Cart does not exist with reference
+     *
+     * @throws ReflectionException if validateCartSessionData doesn't exist
+     * @throws Exception
+     */
+    public function validateCartSessionData_whenImmutableQuoteIsNotFound_throwsException()
+    {
+        $isImmutableQuoteNew = true;
+        $immutableQuoteId = 123;
+        $currentMock = $this->validateCartSessionDataSetUp();
+        $this->boltHelperMock->expects($this->once())->method('getImmutableQuoteIdFromTransaction')->willReturn(
+            $immutableQuoteId
+        );
+        $this->immutableQuoteMock->expects($this->once())->method('isObjectNew')->willReturn($isImmutableQuoteNew);
+        $transaction = new stdClass();
+        $transaction->order->cart->display_id = $immutableQuoteId;
+        TestHelper::callNonPublicFunction(
+            $currentMock,
+            'validateCartSessionData',
+            array(
+                $this->immutableQuoteMock,
+                $this->parentQuoteMock,
+                $transaction,
+                false
+            )
+        );
+    }
+
+    /**
+     * @test
+     * that validateCartSessionData throws OrderCreationException if
+     * parent quote is empty and in the pre-auth context
+     *
+     * @covers ::validateCartSessionData
+     *
+     * @expectedException Bolt_Boltpay_OrderCreationException
+     * @expectedExceptionMessage Cart is empty
+     *
+     * @throws ReflectionException if validateCartSessionData doesn't exist
+     * @throws Exception from test setup if tested class name is not set
+     */
+    public function validateCartSessionData_inPreAuthWithEmptyParentQuote_throwsException()
+    {
+        $isImmutableQuoteNew = false;
+        $currentMock = $this->validateCartSessionDataSetUp();
+        $this->immutableQuoteMock->expects($this->once())->method('isObjectNew')->willReturn($isImmutableQuoteNew);
+        $this->parentQuoteMock->expects($this->once())->method('getItemsCount')->willReturn(0);
+        TestHelper::callNonPublicFunction(
+            $currentMock,
+            'validateCartSessionData',
+            array(
+                $this->immutableQuoteMock,
+                $this->parentQuoteMock,
+                new stdClass(),
+                true
+            )
+        );
+    }
+
+    /**
+     * @test
+     * that validateCartSessionData throws OrderCreationException if immutable quote provided is not saved
+     *
+     * @covers ::validateCartSessionData
+     *
+     * @expectedException Bolt_Boltpay_OrderCreationException
+     * @expectedExceptionMessage Cart has expired
+     *
+     * @throws ReflectionException if validateCartSessionData doesn't exist
+     * @throws Exception from test setup if tested class name is not set
+     */
+    public function validateCartSessionData_whenParentQuoteIsNotFound_throwsOrderCreationException()
+    {
+        $isImmutableQuoteNew = false;
+        $currentMock = $this->validateCartSessionDataSetUp();
+        $this->immutableQuoteMock->expects($this->once())->method('isObjectNew')->willReturn($isImmutableQuoteNew);
+        $this->parentQuoteMock->expects($this->once())->method('isObjectNew')->willReturn(true);
+        TestHelper::callNonPublicFunction(
+            $currentMock,
+            'validateCartSessionData',
+            array(
+                $this->immutableQuoteMock,
+                $this->parentQuoteMock,
+                new stdClass(),
+                false
+            )
+        );
+    }
+
+    /**
+     * @test
+     * that validateCartSessionData throws OrderCreationException if any product in cart is not salable
+     *
+     * @covers ::validateCartSessionData
+     *
+     * @expectedException Bolt_Boltpay_OrderCreationException
+     * @expectedExceptionMessage The product is not purchasable
+     *
+     * @throws ReflectionException if validateCartSessionData doesn't exist
+     * @throws Exception from test setup if tested class name is not set
+     */
+    public function validateCartSessionData_whenAnyProductIsNotSalable_throwsException()
+    {
+        $unsalableProductMock = $this->getClassPrototype('Mage_Catalog_Model_Product')->getMock();
+        $salableProductMock1 = $this->getClassPrototype('Mage_Catalog_Model_Product')->getMock();
+        $salableProductMock2 = $this->getClassPrototype('Mage_Catalog_Model_Product')->getMock();
+
+        $isImmutableQuoteNew = false;
+        $currentMock = $this->validateCartSessionDataSetUp();
+        $this->immutableQuoteMock->expects($this->once())->method('isObjectNew')->willReturn($isImmutableQuoteNew);
+        $this->parentQuoteMock->expects($this->once())->method('isObjectNew')->willReturn(false);
+        $this->parentQuoteMock->expects($this->once())->method('getIsActive')->willReturn(true);
+        $this->immutableQuoteMock->expects($this->once())->method('getAllItems')
+            ->willReturn(
+                array(
+                    Mage::getModel('sales/quote_item', array('product' => $salableProductMock1)),
+                    Mage::getModel('sales/quote_item', array('product' => $unsalableProductMock)),
+                    Mage::getModel('sales/quote_item', array('product' => $salableProductMock2))
+                )
+            );
+        $unsalableProductMock->expects($this->once())->method('isSaleable')->willReturn(false);
+        $salableProductMock1->expects($this->once())->method('isSaleable')->willReturn(true);
+
+        TestHelper::callNonPublicFunction(
+            $currentMock,
+            'validateCartSessionData',
+            array(
+                $this->immutableQuoteMock,
+                $this->parentQuoteMock,
+                new stdClass(),
+                false
+            )
+        );
+    }
+
+    /**
+     * @test
+     * that validateCartSessionData throws OrderCreationException if one of the products in quote is out of stock
+     *
+     * @covers ::validateCartSessionData
+     *
+     * @expectedException Bolt_Boltpay_OrderCreationException
+     * @expectedExceptionCode 2001005
+     * @expectedExceptionMessage {"product_id": "1", "available_quantity": 0, "needed_quantity": 2}
+     *
+     * @throws ReflectionException if validateCartSessionData doesn't exist
+     * @throws Exception from test setup if tested class name is not set
+     */
+    public function validateCartSessionData_whenProductIsOutOfStock_throwsException()
+    {
+        $productMock = $this->getClassPrototype('Mage_Catalog_Model_Product')->getMock();
+        $isImmutableQuoteNew = false;
+        $currentMock = $this->validateCartSessionDataSetUp();
+        $this->immutableQuoteMock->expects($this->once())->method('isObjectNew')->willReturn($isImmutableQuoteNew);
+        $this->parentQuoteMock->expects($this->once())->method('isObjectNew')->willReturn(false);
+        $this->parentQuoteMock->expects($this->once())->method('getIsActive')->willReturn(true);
+        $this->immutableQuoteMock->expects($this->once())->method('getAllItems')
+            ->willReturn(array(Mage::getModel('sales/quote_item', array('product' => $productMock, 'qty' => 2))));
+        $productMock->expects($this->once())->method('isSaleable')->willReturn(true);
+        $productMock->expects($this->atLeastOnce())->method('getId')->willReturn(1);
+        $stockItemMock = $this->getClassPrototype('cataloginventory/stock_item')
+            ->setMethods(array('loadByProduct', 'getQty', 'getMinQty', 'checkQty'))->getMock();
+        $stockItemMock->expects($this->once())->method('loadByProduct')->willReturnSelf();
+        $stockItemMock->expects($this->once())->method('getQty')->willReturn(0);
+        $stockItemMock->expects($this->once())->method('getMinQty')->willReturn(0);
+        $stockItemMock->expects($this->once())->method('checkQty')->willReturn(false);
+        TestHelper::stubModel('cataloginventory/stock_item', $stockItemMock);
+        TestHelper::callNonPublicFunction(
+            $currentMock,
+            'validateCartSessionData',
+            array(
+                $this->immutableQuoteMock,
+                $this->parentQuoteMock,
+                new stdClass(),
+                false
+            )
+        );
+    }
+
+    /**
+     * @test
+     * that validateCartSessionData returns valid for cart with only
+     * salable, in stock products
+     *
+     * @covers ::validateCartSessionData
+     *
+     * @throws ReflectionException if validateCartSessionData doesn't exist
+     * @throws Zend_Db_Adapter_Exception if unable to delete dummy product
+     * @throws Exception if unable to create dummy product
+     */
+    public function validateCartSessionData_withValidProduct_completesWithoutException()
+    {
+        $dummyProductId = Bolt_Boltpay_ProductProvider::createDummyProduct(
+            uniqid('validateCartSessionData'),
+            array(),
+            1
+        );
+        $isImmutableQuoteNew = false;
+        $currentMock = $this->validateCartSessionDataSetUp();
+        $this->immutableQuoteMock->expects($this->once())->method('isObjectNew')->willReturn($isImmutableQuoteNew);
+        $this->parentQuoteMock->expects($this->once())->method('isObjectNew')->willReturn(false);
+        $this->parentQuoteMock->expects($this->once())->method('getIsActive')->willReturn(true);
+        $this->immutableQuoteMock->expects($this->once())->method('getAllItems')
+            ->willReturn(
+                array(
+                    Mage::getModel(
+                        'sales/quote_item',
+                        array(
+                            'product' => Mage::getModel('catalog/product')
+                                ->load($dummyProductId)
+                                ->setData('is_salable', 1),
+                            'qty'     => 1
+                        )
+                    )
+                )
+            );
+        TestHelper::callNonPublicFunction(
+            $currentMock,
+            'validateCartSessionData',
+            array(
+                $this->immutableQuoteMock,
+                $this->parentQuoteMock,
+                new stdClass(),
+                false
+            )
+        );
+        Bolt_Boltpay_ProductProvider::deleteDummyProduct($dummyProductId);
+    }
+
+    /**
      * @test
      * that associateOrderToCustomerWhenPlacingOnPDP sets order customer details from current customer session
      *
@@ -1597,7 +1848,250 @@ class Bolt_Boltpay_Model_OrderTest extends PHPUnit_Framework_TestCase
         $this->assertInstanceOf('Mage_Sales_Model_Order', $actualOrder);
         $this->assertTrue($actualOrder->isObjectNew());
     }
-    
+
+    /**
+     * Setup method for test covering {@see Bolt_Boltpay_Model_Order::validateCoupons}
+     * Stubs return values for Rule and Coupon model loading with provided maps
+     *
+     * @param array $ruleConfig determines the returned value of {@see Mage_SalesRule_Model_Rule::load}
+     * @param array $couponConfig determines the returned value of {@see Mage_SalesRule_Model_Coupon::load}
+     *
+     * @return MockObject[]|Mage_SalesRule_Model_Rule[]|Mage_SalesRule_Model_Coupon[] mocked instance of Coupon and Rule models
+     *
+     * @throws ReflectionException if unable to stub models
+     */
+    private function validateCouponsSetUp($ruleConfig = array(), $couponConfig = array())
+    {
+        $ruleModelMock = $this->getClassPrototype('salesrule/rule')->getMock();
+        $couponModelMock = $this->getClassPrototype('salesrule/coupon')->getMock();
+        $ruleModelMock->method('load')->with($ruleConfig['ruleId'])->willReturn($ruleConfig['rule']);
+        $couponModelMock->method('load')->with($couponConfig['reference'], 'code')->willReturn($couponConfig['coupon']);
+        TestHelper::stubModel('salesrule/rule', $ruleModelMock);
+        TestHelper::stubModel('salesrule/coupon', $couponModelMock);
+        return array($ruleModelMock, $couponModelMock);
+    }
+
+    /**
+     * @test
+     * that validateCoupons sets flag for skipping discount and shipping validation totals
+     * when one of the applied rules affects shipping
+     *
+     * @covers ::validateCoupons
+     *
+     * @throws ReflectionException if validateCoupons method doesn't exist
+     */
+    public function validateCoupons_whenRuleAppliesToShipping_setsSkipValidationFlag()
+    {
+        $ruleConfig = array(
+            'ruleId' => '1',
+            'rule' => Mage::getModel(
+                'salesrule/rule',
+                array('apply_to_shipping' => true)
+            )
+        );
+        $this->validateCouponsSetUp($ruleConfig);
+        $this->immutableQuoteMock->method('getAppliedRuleIds')->willReturn(1);
+        $transaction = new stdClass();
+        TestHelper::callNonPublicFunction(
+            $this->currentMock,
+            'validateCoupons',
+            array($this->immutableQuoteMock, $transaction)
+        );
+        $this->assertTrue($transaction->shouldSkipDiscountAndShippingTotalValidation);
+    }
+
+    /**
+     * @test
+     * that validateCoupons sets flag for skipping discount and shipping validation totals
+     * when one of the applied rules is by percent and tax discount is enabled
+     *
+     * @covers ::validateCoupons
+     *
+     * @throws ReflectionException if validateCoupons method doesn't exist
+     * @throws Mage_Core_Model_Store_Exception
+     */
+    public function validateCoupons_ifDiscountAppliesToTaxAndRuleIsByPercent_setsSkipValidationFlag()
+    {
+        $ruleConfig = array(
+            'ruleId' => '1',
+            'rule' => Mage::getModel(
+                'salesrule/rule',
+                array('apply_to_shipping' => false, 'simple_action' => Mage_SalesRule_Model_Rule::BY_PERCENT_ACTION)
+            )
+        );
+        $this->validateCouponsSetUp($ruleConfig);
+        TestHelper::stubConfigValue('tax/calculation/discount_tax', true);
+        $this->immutableQuoteMock->method('getAppliedRuleIds')->willReturn(1);
+        $transaction = new stdClass();
+        TestHelper::callNonPublicFunction(
+            $this->currentMock,
+            'validateCoupons',
+            array($this->immutableQuoteMock, $transaction)
+        );
+        $this->assertTrue($transaction->shouldSkipDiscountAndShippingTotalValidation);
+    }
+
+    /**
+     * @test
+     * that validateCoupons throws OrderCreationException if one of the provided coupons does not exist
+     *
+     * @covers ::validateCoupons
+     *
+     * @expectedException Bolt_Boltpay_OrderCreationException
+     * @expectedExceptionCode 2001007
+     * @expectedExceptionMessage {"discount_code": "11235813"}
+     *
+     * @throws ReflectionException if validateCoupons method doesn't exist
+     */
+    public function validateCoupons_whenCodeDoesNotExist_throwsException()
+    {
+        $this->validateCouponsSetUp(
+            $ruleConfig =
+                array( 'ruleId' => '25', 'rule' => Mage::getModel('salesrule/rule')),
+            $couponConfig =
+                array( 'reference' => self::COUPON_CODE, 'coupon' => Mage::getModel('salesrule/coupon'))
+        );
+        $this->immutableQuoteMock->method('getAppliedRuleIds')->willReturn(25);
+        $transaction = new stdClass();
+        $transaction->order->cart->discounts = array(
+            (object)array('reference' => self::COUPON_CODE)
+        );
+        TestHelper::callNonPublicFunction(
+            $this->currentMock,
+            'validateCoupons',
+            array($this->immutableQuoteMock, $transaction)
+        );
+        $this->assertTrue($transaction->shouldSkipDiscountAndShippingTotalValidation);
+    }
+
+    /**
+     * @test
+     * that validateCoupons throws OrderCreationException if one of the provided coupons has expired
+     *
+     * @covers ::validateCoupons
+     *
+     * @expectedException Bolt_Boltpay_OrderCreationException
+     * @expectedExceptionCode 2001006
+     * @expectedExceptionMessage {"reason": "This coupon has expired", "discount_code": "11235813"}
+     *
+     * @throws ReflectionException if validateCoupons method doesn't exist
+     */
+    public function validateCoupons_withExpiredCoupon_throwsException()
+    {
+        $this->validateCouponsSetUp(
+            $ruleConfig =
+                array(
+                    'ruleId' => '17',
+                    'rule' => Mage::getModel(
+                        'salesrule/rule',
+                        array('to_date' => Mage::getSingleton('core/date')->date(null, '-10 days'))
+                    )
+                )
+            ,
+            $couponConfig =
+                array(
+                    "reference" => self::COUPON_CODE,
+                    "coupon" => Mage::getModel('salesrule/coupon', array('coupon_id' => 1, 'rule_id' => 17))
+                )
+        );
+        $this->immutableQuoteMock->method('getAppliedRuleIds')->willReturn(17);
+        $transaction = new stdClass();
+        $transaction->order->cart->discounts = array(
+            (object)array('reference' => self::COUPON_CODE)
+        );
+        TestHelper::callNonPublicFunction(
+            $this->currentMock,
+            'validateCoupons',
+            array($this->immutableQuoteMock, $transaction)
+        );
+        $this->assertTrue($transaction->shouldSkipDiscountAndShippingTotalValidation);
+    }
+
+    /**
+     * @test
+     * that validateCoupons throws OrderCreationException if one of the provided coupons to not
+     * meet the designated pre-conditions
+     *
+     * @covers ::validateCoupons
+     *
+     * @expectedException Bolt_Boltpay_OrderCreationException
+     * @expectedExceptionCode 2001006
+     * @expectedExceptionMessage {"reason": "Coupon criteria was not met.", "discount_code": "11235813"}
+     *
+     * @throws ReflectionException if validateCoupons method doesn't exist
+     */
+    public function validateCoupons_withUnmetRule_throwsException()
+    {
+
+        $this->validateCouponsSetUp(
+            $ruleConfig =
+                array(
+                    'ruleId' => '24',
+                    'rule' => Mage::getModel(
+                        'salesrule/rule',
+                        array('is_active' => 0)
+                    )
+                )
+            ,
+            $couponConfig =
+                array(
+                    "reference" => self::COUPON_CODE,
+                    "coupon" => Mage::getModel('salesrule/coupon', array('coupon_id' => 1, 'rule_id' => 24))
+                )
+        );
+        $this->immutableQuoteMock->method('getAppliedRuleIds')->willReturn(24);
+        $transaction = new stdClass();
+        $transaction->order->cart->discounts = array(
+            (object)array('reference' => self::COUPON_CODE)
+        );
+        TestHelper::callNonPublicFunction(
+            $this->currentMock,
+            'validateCoupons',
+            array($this->immutableQuoteMock, $transaction)
+        );
+        $this->assertTrue($transaction->shouldSkipDiscountAndShippingTotalValidation);
+    }
+
+    /**
+     * @test
+     * that if all coupons are valid - validation passes successfully
+     *
+     * @covers ::validateCoupons
+     *
+     * @throws ReflectionException if validateCoupons method doesn't exist
+     */
+    public function validateCoupons_couponsValid_validationSucceeds()
+    {
+        $this->validateCouponsSetUp(
+            $ruleConfig =
+                array(
+                    'ruleId' => '1',
+                    'rule' => Mage::getModel(
+                        'salesrule/rule',
+                        array('to_date' => Mage::getSingleton('core/date')->date(null, '+1 days'))
+                    )
+                )
+            ,
+            $couponConfig =
+                array(
+                    "reference" => self::COUPON_CODE,
+                    "coupon" => Mage::getModel('salesrule/coupon', array('coupon_id' => 1, 'rule_id' => 1))
+                )
+        );
+        $this->immutableQuoteMock->method('getAppliedRuleIds')->willReturn(1);
+        $transaction = new stdClass();
+        $transaction->order->cart->discounts = array(
+            (object)array('reference' => self::COUPON_CODE),
+        );
+        $this->immutableQuoteMock->expects($this->exactly(2))->method('getCouponCode')->willReturn(self::COUPON_CODE);
+        TestHelper::callNonPublicFunction(
+            $this->currentMock,
+            'validateCoupons',
+            array($this->immutableQuoteMock, $transaction)
+        );
+        $this->assertFalse($transaction->shouldSkipDiscountAndShippingTotalValidation);
+    }
+
     /**
      * @test
      * that removeOrderTimeStamps sets updated_at and created_at fields in the database to null for provided order
@@ -1652,6 +2146,111 @@ class Bolt_Boltpay_Model_OrderTest extends PHPUnit_Framework_TestCase
             'removeOrderTimeStamps',
             array(Mage::getModel('sales/order', array('entity_id' => '1')))
         );
+    }
+
+    /**
+     * Setup method for tests covering {@see Bolt_Boltpay_Model_Order::validateBeforeOrderCommit}
+     *
+     * @param Mage_Sales_Model_Order $order to be packed into event
+     * @param object                 $transaction to be returned from immutable quote
+     * @return Varien_Event_Observer parameter containing order to be passed to event observer
+     */
+    private function validateBeforeOrderCommitSetUp($order, $transaction)
+    {
+        $event = new Varien_Event(array('order' => $order));
+        $observer = new Varien_Event_Observer();
+        $observer->setName('Bolt_Failed_Payment_Observer')->setEvent($event);
+        $event->addObserver($observer);
+        $this->immutableQuoteMock->method('getTransaction')->willReturn($transaction);
+        $this->orderMock->method('getQuote')->willReturn($this->immutableQuoteMock);
+        $this->boltHelperMock->method('getExtraConfig')->with('priceFaultTolerance')->willReturn(1);
+        return $observer;
+    }
+
+    /**
+     * @test
+     * that validateBeforeOrderCommit method throws {@see Bolt_Boltpay_OrderCreationException} if totals are not matched
+     * between Bolt and Magento higher than tolerance amount
+     *
+     * @covers ::validateBeforeOrderCommit
+     *
+     * @expectedException Bolt_Boltpay_OrderCreationException
+     * @expectedExceptionCode 2001003
+     * @expectedExceptionMessage {"reason": "Grand total has changed", "old_value": "500", "new_value": "2500"}
+     */
+    public function validateBeforeOrderCommit_totalsMismatchBeyondTolerance_throwsOrderCreationException()
+    {
+        $transaction = new stdClass();
+        $transaction->order->cart->total_amount->amount = 500;
+        $this->orderMock->expects($this->once())->method('getGrandTotal')->willReturn(25);
+        $this->paymentMock->expects($this->once())->method('getMethod')
+            ->willReturn(Bolt_Boltpay_Model_Payment::METHOD_CODE);
+        $observer = $this->validateBeforeOrderCommitSetUp($this->orderMock, $transaction);
+        $this->currentMock->validateBeforeOrderCommit($observer);
+    }
+
+    /**
+     * @test
+     * that if totals mismatch is inside tolerance totals are adjusted by the mismatch difference
+     *
+     * @covers ::validateBeforeOrderCommit
+     *
+     * @throws Bolt_Boltpay_OrderCreationException from method tested if the bottom line price total differs by allowed tolerance
+     */
+    public function validateBeforeOrderCommit_totalsMismatchInsideTolerance_correctsTotals()
+    {
+        $transaction = new stdClass();
+        $transaction->order->cart->total_amount->amount = 500;
+        $this->paymentMock->expects($this->once())->method('getMethod')
+            ->willReturn(Bolt_Boltpay_Model_Payment::METHOD_CODE);
+        $this->orderMock->expects($this->once())->method('getGrandTotal')->willReturn(4.99);
+        $this->orderMock->expects($this->once())->method('getTaxAmount')->willReturn(0.99);
+        $this->orderMock->expects($this->once())->method('getBaseTaxAmount')->willReturn(0.99);
+        $this->orderMock->expects($this->once())->method('setTaxAmount')->with(1)->willReturnSelf();
+        $this->orderMock->expects($this->once())->method('setBaseTaxAmount')->with(1)->willReturnSelf();
+        $this->orderMock->expects($this->once())->method('setGrandTotal')->with(5)->willReturnSelf();
+        $this->orderMock->expects($this->once())->method('setBaseGrandTotal')->with(5)->willReturnSelf();
+        $observer = $this->validateBeforeOrderCommitSetUp($this->orderMock, $transaction);
+        $this->currentMock->validateBeforeOrderCommit($observer);
+    }
+
+    /**
+     * @test
+     * that if payment method is not Bolt - validation is skipped
+     *
+     * @covers ::validateBeforeOrderCommit
+     *
+     * @throws Bolt_Boltpay_OrderCreationException from method tested if the bottom line price total differs by allowed tolerance
+     */
+    public function validateBeforeOrderCommit_paymentMethodNotBolt_skipValidation()
+    {
+        $transaction = new stdClass();
+        $transaction->order->cart->total_amount->amount = 500;
+        $this->orderMock->expects($this->once())->method('getPayment')
+            ->willReturn(
+                Mage::getModel('sales/order_payment', array('method' => 'checkmo'))
+            );
+        $this->orderMock->expects($this->never())->method('getGrandTotal')->willReturn(25);
+        $observer = $this->validateBeforeOrderCommitSetUp($this->orderMock, $transaction);
+        $this->currentMock->validateBeforeOrderCommit($observer);
+    }
+
+    /**
+     * @test
+     * that if order object provided to validateBeforeOrderCommit is considered empty an exception is thrown
+     *
+     * @covers ::validateBeforeOrderCommit
+     *
+     * @expectedException Exception
+     * @expectedExceptionMessage Order was not able to be saved
+     *
+     * @throws Bolt_Boltpay_OrderCreationException from method tested if the bottom line price total differs by allowed tolerance
+     */
+    public function validateBeforeOrderCommit_orderIsEmpty_throwsException()
+    {
+        $transaction = new stdClass();
+        $observer = $this->validateBeforeOrderCommitSetUp(null, $transaction);
+        $this->currentMock->validateBeforeOrderCommit($observer);
     }
 
     /**
