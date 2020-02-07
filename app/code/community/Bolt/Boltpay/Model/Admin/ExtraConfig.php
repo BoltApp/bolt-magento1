@@ -353,7 +353,7 @@ JS;
      */
     public function filterAllowedReceptionStatuses($rawConfigValue, $additionalParams = array() ) {
         return !empty($rawConfigValue)
-            ? array_map('trim', explode($rawConfigValue))
+            ? array_map('trim', explode(',', $rawConfigValue))
             : array(Bolt_Boltpay_Model_Payment::TRANSACTION_PRE_AUTH_PENDING)
         ;
     }

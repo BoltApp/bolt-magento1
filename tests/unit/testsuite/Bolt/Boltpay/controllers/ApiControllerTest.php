@@ -281,4 +281,53 @@ class Bolt_Boltpay_ApiControllerTest extends PHPUnit_Framework_TestCase
         $apiControllerMock->hookAction();
         ######################################
     }
+
+    /**
+     * @test
+     * that for non-Bolt orders, processing is stopped immediately with an exception and a 422 response to Bolt
+     *
+     * @covers ::hookAction
+     */
+    public function hookAction_forNonBoltOrder_exitsImmediatelyWithException() {
+        /** @var Bolt_Boltpay_ApiController|PHPUnit_Framework_MockObject_MockObject $apiControllerMock */
+        $apiControllerMock = $this->_apiControllerBuilder
+            ->setMethods(['getRequestData', 'boltHelper', 'sendResponse'])
+            ->getMock();
+
+        ///////////////////////////////////////////////////////////////////////
+        /// Create a pseudo transaction data and map to request and responses
+        ///////////////////////////////////////////////////////////////////////
+        $stubbedRequestData = new stdClass();
+        $stubbedRequestData->reference = 'TEST-BOLT-TRNX';
+        $stubbedRequestData->id = 'TRboltx0test1';
+        $stubbedRequestData->type = 'pending';
+        $stubbedRequestData->display_id = self::$_mockOrder->getIncrementId();
+
+        /** @var Bolt_Boltpay_Helper_Data|PHPUnit_Framework_MockObject_MockObject $stubbedBoltHelper */
+        $stubbedBoltHelper = $this->getMockBuilder('Bolt_Boltpay_Helper_Data')
+            ->setMethods(array('notifyException', 'logException'))
+            ->getMock();
+
+        $stubbedBoltHelper
+            ->expects($this->once())
+            ->method('logException')->willReturnCallback(
+                function($exception, $metaData) {
+                    $this->assertEquals(
+                        "Order #".self::$_mockOrder->getIncrementId()." is not a Bolt order.  Order type: paypal_express",
+                        $exception->getMessage()
+                    );
+                }
+            )
+        ;
+
+        $apiControllerMock->method('getRequestData')->willReturn($stubbedRequestData);
+        $apiControllerMock->method('boltHelper')->willReturn($stubbedBoltHelper);
+
+        $apiControllerMock->expects($this->once())->method('sendResponse')->with(422);
+        ///////////////////////////////////////////////////////////////////////
+
+       self::$_mockOrder->getPayment()->setMethod('paypal_express')->save();
+
+        $apiControllerMock->hookAction();
+    }
 }

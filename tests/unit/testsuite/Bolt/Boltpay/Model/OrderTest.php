@@ -214,7 +214,7 @@ class Bolt_Boltpay_Model_OrderTest extends PHPUnit_Framework_TestCase
      *
      * @covers ::sendOrderEmail
      */
-    public function sendOrderEmail_emailNotSentAlready_queuesNewOrderEmail()
+    public function sendOrderEmail_ifEmailNotSentAlready_queuesNewOrderEmail()
     {
         /** @var Bolt_Boltpay_Model_Order $orderModel */
         $orderModel = Mage::getModel('boltpay/order');
@@ -249,7 +249,7 @@ class Bolt_Boltpay_Model_OrderTest extends PHPUnit_Framework_TestCase
      *
      * @covers ::sendOrderEmail
      */
-    public function sendOrderEmail_emailQueueThrowsException_logsException()
+    public function sendOrderEmail_ifEmailQueueThrowsException_logsException()
     {
         /** @var MockObject|Mage_Sales_Model_Order $orderMock */
         $orderMock = $this->getClassPrototype('Mage_Sales_Model_Order')
@@ -302,7 +302,7 @@ class Bolt_Boltpay_Model_OrderTest extends PHPUnit_Framework_TestCase
      *
      * @throws ReflectionException if setBoltUserId method doesn't exist
      */
-    public function setBoltUserId_customerBoltIdIsNull_setsCustomerBoltUserIdFromSession()
+    public function setBoltUserId_whenCustomerBoltIdIsNull_setsCustomerBoltUserIdFromSession()
     {
         list($customerMock, $quoteMock, $session) = $this->setBoltUserIdSetUp();
         $customerMock->expects($this->once())->method('save');
@@ -324,7 +324,7 @@ class Bolt_Boltpay_Model_OrderTest extends PHPUnit_Framework_TestCase
      *
      * @throws ReflectionException if setBoltUserId method doesn't exist
      */
-    public function setBoltUserId_customerCannotBeSaved_logsException()
+    public function setBoltUserId_ifCustomerCannotBeSaved_logsException()
     {
         list($customerMock, $quoteMock, $session) = $this->setBoltUserIdSetUp();
 
@@ -425,7 +425,7 @@ class Bolt_Boltpay_Model_OrderTest extends PHPUnit_Framework_TestCase
      *
      * @throws ReflectionException if validateTotals method doesn't exist
      */
-    public function validateTotals_discountDiffersWithinTolerance_logsWarning()
+    public function validateTotals_whenDiscountDiffersWithinTolerance_logsWarning()
     {
         $mocks = $this->validateTotalsSetUp(24, .75, .50, 1);
 
@@ -454,7 +454,7 @@ class Bolt_Boltpay_Model_OrderTest extends PHPUnit_Framework_TestCase
      *
      * @throws ReflectionException if validateTotals method doesn't exist
      */
-    public function validateTotals_discountDiffersBeyondTolerance_throwsOrderCreationException()
+    public function validateTotals_wheDiscountDiffersBeyondTolerance_throwsException()
     {
 
         $mocks = $this->validateTotalsSetUp(20, .75, .50, 1);
@@ -484,7 +484,7 @@ class Bolt_Boltpay_Model_OrderTest extends PHPUnit_Framework_TestCase
      *
      * @throws ReflectionException if validateTotals method doesn't exist
      */
-    public function validateTotals_couponDiscountDiffersBeyondTolerance_throwsOrderCreationException()
+    public function validateTotals_ifCouponDiscountDiffersBeyondTolerance_throwsException()
     {
 
         $mocks = $this->validateTotalsSetUp(20, .75, .50, 1);
@@ -516,7 +516,7 @@ class Bolt_Boltpay_Model_OrderTest extends PHPUnit_Framework_TestCase
      *
      * @throws ReflectionException if validateTotals method doesn't exist
      */
-    public function validateTotals_itemProductPriceUpdated_throwsOrderCreationException()
+    public function validateTotals_ifItemProductPriceChanges_throwsException()
     {
         $transaction = new stdClass();
         $transaction->order->cart->items = array(
@@ -551,7 +551,7 @@ class Bolt_Boltpay_Model_OrderTest extends PHPUnit_Framework_TestCase
      *
      * @throws ReflectionException if validateTotals method doesn't exist
      */
-    public function validateTotals_taxTotalMismatchBeyondTolerance_throwsOrderCreationException()
+    public function validateTotals_withTaxTotalMismatchBeyondTolerance_throwsException()
     {
         $transaction = new stdClass();
         $transaction->order->cart->tax_amount->amount = 2000;
@@ -577,7 +577,7 @@ class Bolt_Boltpay_Model_OrderTest extends PHPUnit_Framework_TestCase
      *
      * @throws ReflectionException if validateTotals method doesn't exist
      */
-    public function validateTotals_taxTotalMismatchUnderTolerance_logsAndNotifiesWarning()
+    public function validateTotals_withTaxTotalMismatchUnderTolerance_logsAndNotifiesWarning()
     {
         $transaction = new stdClass();
         $transaction->order->cart->tax_amount->amount = 45601;
@@ -616,7 +616,7 @@ class Bolt_Boltpay_Model_OrderTest extends PHPUnit_Framework_TestCase
      *
      * @throws ReflectionException if validateTotals method doesn't exist
      */
-    public function validateTotals_shippingTotalsMismatchBeyondTolerance_throwsOrderCreationException()
+    public function validateTotals_whenShippingTotalsMismatchBeyondTolerance_throwsException()
     {
         $transaction = new stdClass();
         $transaction->order->cart->shipping_amount->amount = 40000;
@@ -660,7 +660,7 @@ class Bolt_Boltpay_Model_OrderTest extends PHPUnit_Framework_TestCase
      *
      * @throws ReflectionException if validateTotals method doesn't exist
      */
-    public function validateTotals_shippingTotalsMismatchUnderTolerance_logsAndNotifiesWarning()
+    public function validateTotals_whenShippingTotalsMismatchUnderTolerance_logsAndNotifiesWarning()
     {
         $transaction = new stdClass();
         $transaction->order->cart->shipping_amount->amount = 45001;
@@ -1198,7 +1198,7 @@ class Bolt_Boltpay_Model_OrderTest extends PHPUnit_Framework_TestCase
      * @throws ReflectionException if validateCartSessionData doesn't exist
      * @throws Exception from test setup if tested class name is not set
      */
-    public function validateCartSessionData_whenParentQuoteIsNotFound_throwsOrderCreationException()
+    public function validateCartSessionData_whenParentQuoteIsNotFound_throwsException()
     {
         $isImmutableQuoteNew = false;
         $currentMock = $this->validateCartSessionDataSetUp();
@@ -2178,7 +2178,7 @@ class Bolt_Boltpay_Model_OrderTest extends PHPUnit_Framework_TestCase
      * @expectedExceptionCode 2001003
      * @expectedExceptionMessage {"reason": "Grand total has changed", "old_value": "500", "new_value": "2500"}
      */
-    public function validateBeforeOrderCommit_totalsMismatchBeyondTolerance_throwsOrderCreationException()
+    public function validateBeforeOrderCommit_totalsMismatchBeyondTolerance_throwsException()
     {
         $transaction = new stdClass();
         $transaction->order->cart->total_amount->amount = 500;
@@ -2255,7 +2255,8 @@ class Bolt_Boltpay_Model_OrderTest extends PHPUnit_Framework_TestCase
 
     /**
      * @test
-     * that receiveOrder activates received order and sets Bolt user id
+     * that receiveOrder activates received order and sets Bolt user id by default for order
+     * with the {@see Bolt_Boltpay_Model_Payment::TRANSACTION_PRE_AUTH_PENDING} status
      *
      * @covers ::receiveOrder
      * @covers ::activateOrder
@@ -2263,18 +2264,26 @@ class Bolt_Boltpay_Model_OrderTest extends PHPUnit_Framework_TestCase
      * @throws Mage_Core_Exception from method tested if there is a problem retrieving the bolt transaction reference from the payload
      * @throws Exception if test class name is not defined
      */
-    public function receiveOrder_always_activatesOrderAndSetsBoltUserId()
+    public function receiveOrder_forBoltPendingPaymentOrders_activatesOrderAndSetsBoltUserId()
     {
         $payload = new stdClass();
         $payload->notification_type = Bolt_Boltpay_Model_Payment::HOOK_TYPE_PENDING;
 
         /** @var MockObject|Bolt_Boltpay_Model_Order $currentMock */
         $currentMock = $this->getTestClassPrototype()
-            ->setMethods(array('getQuoteFromOrder', 'getParentQuoteFromOrder', 'sendOrderEmail'))
+            ->setMethods(array('getQuoteFromOrder', 'getParentQuoteFromOrder', 'sendOrderEmail', 'boltHelper'))
             ->getMock();
         $currentMock->method('getQuoteFromOrder')->with($this->orderMock)->willReturn($this->immutableQuoteMock);
         $currentMock->method('getParentQuoteFromOrder')->with($this->orderMock)->willReturn($this->parentQuoteMock);
+        $currentMock->method('boltHelper')->willReturn($this->boltHelperMock);
 
+        $this->boltHelperMock
+            ->expects($this->once())->method('getExtraConfig')
+            ->with('allowedReceptionStatuses')
+            ->willReturn(array(Bolt_Boltpay_Model_Payment::TRANSACTION_PRE_AUTH_PENDING));
+
+        $this->orderMock->expects($this->once())->method('getStatus')
+            ->willReturn(Bolt_Boltpay_Model_Payment::TRANSACTION_PRE_AUTH_PENDING);
         $this->orderMock->expects($this->once())->method('getCreatedAt')->willReturn(null);
         $this->orderMock->expects($this->once())->method('setCreatedAt')->with($this->anything())->willReturnSelf();
         $this->orderMock->expects($this->once())->method('save')->willReturnSelf();
@@ -2289,6 +2298,91 @@ class Bolt_Boltpay_Model_OrderTest extends PHPUnit_Framework_TestCase
 
         $this->paymentMock->expects($this->once())->method('setAdditionalInformation')->willReturnSelf();
         $this->paymentMock->expects($this->once())->method('save')->willReturnSelf();
+        $currentMock->receiveOrder($this->orderMock, $payload);
+    }
+
+    /**
+     * @test
+     * that receiveOrder activates received order and sets Bolt user id with irregular statuses if
+     * that status is configured to be accepted
+     *
+     * @covers ::receiveOrder
+     * @covers ::activateOrder
+     *
+     * @throws Mage_Core_Exception from method tested if there is a problem retrieving the bolt transaction reference from the payload
+     * @throws Exception if test class name is not defined
+     */
+    public function receiveOrder_withAcceptedStatus_activatesOrderAndSetsBoltUserId()
+    {
+        $payload = new stdClass();
+        $payload->notification_type = Bolt_Boltpay_Model_Payment::HOOK_TYPE_PENDING;
+
+        /** @var MockObject|Bolt_Boltpay_Model_Order $currentMock */
+        $currentMock = $this->getTestClassPrototype()
+            ->setMethods(array('getQuoteFromOrder', 'getParentQuoteFromOrder', 'sendOrderEmail','boltHelper'))
+            ->getMock();
+        $currentMock->method('getQuoteFromOrder')->with($this->orderMock)->willReturn($this->immutableQuoteMock);
+        $currentMock->method('getParentQuoteFromOrder')->with($this->orderMock)->willReturn($this->parentQuoteMock);
+        $currentMock->method('boltHelper')->willReturn($this->boltHelperMock);
+
+        $this->boltHelperMock
+            ->expects($this->once())->method('getExtraConfig')
+            ->with('allowedReceptionStatuses')
+            ->willReturn(array(Bolt_Boltpay_Model_Payment::TRANSACTION_PRE_AUTH_PENDING,'status_configured_as_ok'));
+
+        $this->orderMock->expects($this->once())->method('getStatus')
+            ->willReturn('status_configured_as_ok');
+        $this->orderMock->expects($this->once())->method('getCreatedAt')->willReturn(null);
+        $this->orderMock->expects($this->once())->method('setCreatedAt')->with($this->anything())->willReturnSelf();
+        $this->orderMock->expects($this->once())->method('save')->willReturnSelf();
+
+        $this->parentQuoteMock->expects($this->once())->method('setIsActive')->with(false)->willReturnSelf();
+        $this->parentQuoteMock->expects($this->once())->method('save')->willReturnSelf();
+
+        $this->immutableQuoteMock->expects($this->once())->method('setTotalsCollectedFlag')->with(true)
+            ->willReturnSelf();
+        $this->immutableQuoteMock->expects($this->once())->method('prepareRecurringPaymentProfiles');
+        $this->immutableQuoteMock->expects($this->atLeastOnce())->method('setInventoryProcessed')->with(true);
+
+        $this->paymentMock->expects($this->once())->method('setAdditionalInformation')->willReturnSelf();
+        $this->paymentMock->expects($this->once())->method('save')->willReturnSelf();
+        $currentMock->receiveOrder($this->orderMock, $payload);
+    }
+
+    /**
+     * @test
+     * that receiveOrder throws an exception and does not activate an order for an irregular order status that
+     * is not configured to be accepted
+     *
+     * @covers ::receiveOrder
+     *
+     * @expectedException Bolt_Boltpay_InvalidTransitionException
+     * @expectedExceptionMessage Order has an unexpected status at order reception.  An order status of [unexpected_status] was found
+     *
+     * @throws Mage_Core_Exception from method tested if there is a problem retrieving the bolt transaction reference from the payload
+     * @throws Exception if test class name is not defined
+     */
+    public function receiveOrder_withUnexpectedStatus_throwExceptionWithoutActivatingOrder()
+    {
+        $payload = new stdClass();
+        $payload->notification_type = Bolt_Boltpay_Model_Payment::HOOK_TYPE_PENDING;
+
+        /** @var MockObject|Bolt_Boltpay_Model_Order $currentMock */
+        $currentMock = $this->getTestClassPrototype()
+            ->setMethods(array('boltHelper', 'activateOrder'))
+            ->getMock();
+        $currentMock->method('boltHelper')->willReturn($this->boltHelperMock);
+
+        $this->boltHelperMock
+            ->expects($this->once())->method('getExtraConfig')
+            ->with('allowedReceptionStatuses')
+            ->willReturn(array(Bolt_Boltpay_Model_Payment::TRANSACTION_PRE_AUTH_PENDING,'status_configured_as_ok'));
+
+        $this->orderMock->expects($this->once())->method('getStatus')
+            ->willReturn('unexpected_status');
+
+        $currentMock->expects($this->never())->method('activateOrder');
+
         $currentMock->receiveOrder($this->orderMock, $payload);
     }
 
