@@ -28,6 +28,7 @@ trait Bolt_Boltpay_MockingTrait {
      * Returns the prototype of the specified class type which is then used to generally call
      * @see PHPUnit_Framework_MockObject_MockBuilder::setMethods and
      * @see PHPUnit_Framework_MockObject_MockBuilder::getMock
+     * Supports Magento class aliases used by {@see Mage::getModel}
      *
      * @param string $className                 The name of the class to be prototyped
      * @param bool   $preInitializeDefaults     Sets whether common settings like disabling constructor calling and
@@ -36,6 +37,13 @@ trait Bolt_Boltpay_MockingTrait {
      * @return PHPUnit_Framework_MockObject_MockBuilder
      */
     public function getClassPrototype( $className, $preInitializeDefaults = true ) {
+        if (class_exists('Mage')) {
+            //////////////////////////////////////////////////////////////////////////////////
+            // Adds Magento class alias support.  If the class name does not contain the
+            // forward-slash character, '/', then the passed original value will be preserved
+            //////////////////////////////////////////////////////////////////////////////////
+            $className = Mage::app()->getConfig()->getModelClassName($className);
+        }
 
         /** @var  PHPUnit_Framework_MockObject_MockBuilder $mockBuilder */
         $mockBuilder = $this->getMockBuilder($className);
