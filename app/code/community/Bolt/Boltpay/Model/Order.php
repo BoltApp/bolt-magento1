@@ -116,58 +116,8 @@ class Bolt_Boltpay_Model_Order extends Bolt_Boltpay_Model_Abstract
             ///  Apply shipping address and shipping method data to quote directly from
             ///  the Bolt transaction.
             //////////////////////////////////////////////////////////////////////////////////
-            $packagesToShip = $transaction->order->cart->shipments;
+            $this->applyShipmentToQuoteFromTransaction($immutableQuote, $transaction, $isPreAuthCreation);
 
-            if ($packagesToShip) {
-                benchmark( "Applying shipping" );
-                $shippingAddress = $immutableQuote->getShippingAddress();
-                $shippingMethodCode = null;
-
-                /** @var Bolt_Boltpay_Model_ShippingAndTax $shippingAndTaxModel */
-                $shippingAndTaxModel = Mage::getModel("boltpay/shippingAndTax");
-                $shouldRecalculateShipping = ((bool) $this->boltHelper()->getExtraConfig("recalculateShipping")) || !$isPreAuthCreation; # false by default
-
-                benchmark( "Applying shipping - Applying shipping address data" );
-                $shippingAndTaxModel->applyBoltAddressData($immutableQuote, $packagesToShip[0]->shipping_address, $shouldRecalculateShipping);
-                benchmark( "Finished applying shipping - Applying shipping address data" );
-
-                $shippingMethodCode = $packagesToShip[0]->reference;
-
-                if (!$shippingMethodCode) {
-                    benchmark( "Applying shipping - Collecting shipping rates, legacy" );
-                    // Legacy transaction does not have shipments reference - fallback to $service field
-                    $shippingMethod = $packagesToShip[0]->service;
-
-                    $this->boltHelper()->collectTotals($immutableQuote, $shouldRecalculateShipping);
-
-                    $rates = $shippingAddress->getAllShippingRates();
-
-                    foreach ($rates as $rate) {
-                        if ($rate->getCarrierTitle() . ' - ' . $rate->getMethodTitle() === $shippingMethod
-                            || (!$rate->getMethodTitle() && $rate->getCarrierTitle() === $shippingMethod)) {
-                            $shippingMethodCode = $rate->getCarrier() . '_' . $rate->getMethod();
-                            break;
-                        }
-                    }
-                    benchmark( "Finished applying shipping - Collecting shipping rates, legacy" );
-                }
-
-                if ($shippingMethodCode) {
-                    $shippingAndTaxModel->applyShippingRate($immutableQuote, $shippingMethodCode, $shouldRecalculateShipping);
-                } else {
-                    $errorMessage = $this->boltHelper()->__('Shipping method not found');
-                    $metaData = array(
-                        'transaction'   => $transaction,
-                        'rates' => $this->getRatesDebuggingData($rates),
-                        'service' => $shippingMethod,
-                        'shipping_address' => var_export($shippingAddress->debug(), true),
-                        'quote' => var_export($immutableQuote->debug(), true)
-                    );
-                    $this->boltHelper()->logWarning($errorMessage);
-                    $this->boltHelper()->notifyException(new Exception($errorMessage), $metaData);
-                }
-                benchmark( "Finished applying shipping" );
-            }
             //////////////////////////////////////////////////////////////////////////////////
 
             //////////////////////////////////////////////////////////////////////////////////
@@ -329,6 +279,71 @@ class Bolt_Boltpay_Model_Order extends Bolt_Boltpay_Model_Abstract
         return $order;
     }
 
+    /**
+     * Apply shipping address and shipping method data to quote directly from the Bolt transaction
+     *
+     * @param Mage_Sales_Model_Quote $immutableQuote    Copy of the Magento session quote used by Bolt
+     * @param object                 $transaction       The Bolt transaction object sent from the Bolt server
+     * @param bool                   $isPreAuthCreation true if this validation is happening via pre-auth, otherwise false
+     *
+     * @throws Exception if an unknown error occurs
+     */
+    private function applyShipmentToQuoteFromTransaction($immutableQuote, $transaction, $isPreAuthCreation){
+        $packagesToShip = @$transaction->order->cart->shipments;
+
+        if (!$packagesToShip) {
+            return;
+        }
+
+        benchmark( "Applying shipping" );
+        $shippingAddress = $immutableQuote->getShippingAddress();
+        $shippingMethodCode = null;
+
+        /** @var Bolt_Boltpay_Model_ShippingAndTax $shippingAndTaxModel */
+        $shippingAndTaxModel = Mage::getModel("boltpay/shippingAndTax");
+        $shouldRecalculateShipping = ((bool) $this->boltHelper()->getExtraConfig("recalculateShipping")) || !$isPreAuthCreation; # false by default
+
+        benchmark( "Applying shipping - Applying shipping address data" );
+        $shippingAndTaxModel->applyBoltAddressData($immutableQuote, $packagesToShip[0]->shipping_address, $shouldRecalculateShipping);
+        benchmark( "Finished applying shipping - Applying shipping address data" );
+
+        $shippingMethodCode = $packagesToShip[0]->reference;
+
+        if (!$shippingMethodCode) {
+            benchmark( "Applying shipping - Collecting shipping rates, legacy" );
+            // Legacy transaction does not have shipments reference - fallback to $service field
+            $shippingMethod = $packagesToShip[0]->service;
+
+            $this->boltHelper()->collectTotals($immutableQuote, $shouldRecalculateShipping);
+
+            $rates = $shippingAddress->getAllShippingRates();
+
+            foreach ($rates as $rate) {
+                if ($rate->getCarrierTitle() . ' - ' . $rate->getMethodTitle() === $shippingMethod
+                    || (!$rate->getMethodTitle() && $rate->getCarrierTitle() === $shippingMethod)) {
+                    $shippingMethodCode = $rate->getCarrier() . '_' . $rate->getMethod();
+                    break;
+                }
+            }
+            benchmark( "Finished applying shipping - Collecting shipping rates, legacy" );
+        }
+
+        if ($shippingMethodCode) {
+            $shippingAndTaxModel->applyShippingRate($immutableQuote, $shippingMethodCode, $shouldRecalculateShipping);
+        } else {
+            $errorMessage = $this->boltHelper()->__('Shipping method not found');
+            $metaData = array(
+                'transaction'   => $transaction,
+                'rates' => $this->getRatesDebuggingData($rates),
+                'service' => $shippingMethod,
+                'shipping_address' => var_export($shippingAddress->debug(), true),
+                'quote' => var_export($immutableQuote->debug(), true)
+            );
+            $this->boltHelper()->logWarning($errorMessage);
+            $this->boltHelper()->notifyException(new Exception($errorMessage), $metaData);
+        }
+        benchmark( "Finished applying shipping" );
+    }
 
     /**
      * Checks several indicators to see if the Magento session or cart has expired
