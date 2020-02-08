@@ -80,6 +80,13 @@ class Bolt_Boltpay_ApiController extends Mage_Core_Controller_Front_Action imple
                 }
 
                 $orderPayment = $order->getPayment();
+                $paymentMethod = strtolower($orderPayment->getMethod());
+                if ($paymentMethod !== Bolt_Boltpay_Model_Payment::METHOD_CODE) {
+                    // immediately end processing if a non-Bolt order is detected
+                    throw new Exception(
+                        "Order #{$order->getIncrementId()} is not a Bolt order.  Order type: $paymentMethod"
+                    );
+                }
                 if (!$orderPayment->getAdditionalInformation('bolt_reference')) {
                     if ($hookType === Bolt_Boltpay_Model_Payment::HOOK_TYPE_REJECTED_IRREVERSIBLE) {
                         // This is a special case of failed payment hook where Bolt immediately
