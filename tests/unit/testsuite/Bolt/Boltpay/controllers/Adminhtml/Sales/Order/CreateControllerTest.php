@@ -229,7 +229,7 @@ class Bolt_Boltpay_Adminhtml_Sales_Order_CreateControllerTest extends PHPUnit_Fr
     public function _normalizeOrderData_whenShippingMethodPosted_addsMethodToOrderData() {
 
         $this->currentMock = $this->getMockBuilder('Bolt_Boltpay_Adminhtml_Sales_Order_CreateController')
-            ->setMethods(['getRequest', 'getLayout', 'getResponse', 'prepareAddressData'])
+            ->setMethods(['getRequest', 'getLayout', 'getResponse', 'prepareAddressData', '_getOrderCreateModel'])
             ->enableOriginalConstructor()
             ->getMock();
 
