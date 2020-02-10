@@ -119,7 +119,7 @@ class Bolt_Boltpay_OrderCreationException extends Bolt_Boltpay_BoltException
      * @param string $dataTemplate  specific Bolt error sub-category
      * @param array  $dataValues    An array of values to be added to the data template
      * @param string $message       The exception message to throw.
-     * @param Throwable|null $previous  [optional] The previously throwable used for exception chaining.
+     * @param Exception $previous  [optional] The previous exception/error used for exception chaining.
      *
      * @see Bolt_Boltpay_OrderCreationException::$validCodes for the supported Bolt-defined error codes
      */
@@ -128,9 +128,13 @@ class Bolt_Boltpay_OrderCreationException extends Bolt_Boltpay_BoltException
         $dataTemplate = self::E_BOLT_GENERAL_ERROR_TMPL_GENERIC,
         array $dataValues = array(),
         $message = null,
-        Throwable $previous = null
-    )
-    {
+        $previous = null
+    ) {
+        // Throwable is PHP7 specific, so we need to check Exception explicitly here.
+        if (!($previous instanceof Exception)) {
+            $previous = null;
+        }
+
         // If code is invalid, we will use the generic message
         if (!in_array($code, self::$validCodes)) {
             $originalCode = $code;
@@ -139,7 +143,8 @@ class Bolt_Boltpay_OrderCreationException extends Bolt_Boltpay_BoltException
             $originalJson = $this->createJson($originalCode, $originalDataTemplate, $originalDataValues);
 
             $this->boltHelper()->notifyException(
-                new Exception("Invalid response code specified [$code]. Default "
+                new Exception(
+                    "Invalid response code specified [$code]. Default "
                     .self::E_BOLT_GENERAL_ERROR." will be used instead."
                     ."\nSupported codes: ".json_encode(self::$validCodes)
                     ."\nSupplied error:\n$originalJson"
@@ -153,7 +158,7 @@ class Bolt_Boltpay_OrderCreationException extends Bolt_Boltpay_BoltException
             $dataValues = array($message."\nSupplied error:\n$originalJson");
         }
 
-        foreach( $dataValues as $index => $value ) {
+        foreach($dataValues as $index => $value) {
             $dataValues[$index] = addcslashes($dataValues[$index], '"\\');
         }
 
@@ -177,7 +182,8 @@ class Bolt_Boltpay_OrderCreationException extends Bolt_Boltpay_BoltException
      *
      * @return int The HTTP code that was found which matches the provided error info
      */
-    public function selectHttpCode( $code, $dataTemplate ) {
+    public function selectHttpCode($code, $dataTemplate)
+    {
         // Select the http code
         switch ($code) {
             case self::E_BOLT_ORDER_ALREADY_EXISTS:
@@ -190,10 +196,12 @@ class Bolt_Boltpay_OrderCreationException extends Bolt_Boltpay_BoltException
                     case self::E_BOLT_CART_HAS_EXPIRED_TMPL_EXPIRED:
                         return RESPONSE_CODE::HTTP_GONE;  // 410
                 }
+
             case self::E_BOLT_GENERAL_ERROR:
                 if ($dataTemplate === self::E_BOLT_GENERAL_ERROR_TMPL_HMAC) {
                     return RESPONSE_CODE::HTTP_UNAUTHORIZED; // 401
                 }
+
             default:
                 return RESPONSE_CODE::HTTP_UNPROCESSABLE_ENTITY; // 422
         }
@@ -228,7 +236,8 @@ JSON;
      *
      * @return string   well-formatted JSON that conforms to the Bolt error code standard
      */
-    public function getJson() {
+    public function getJson()
+    {
         return $this->json;
     }
 
@@ -237,7 +246,8 @@ JSON;
      *
      * @return int HTTP response code defined by error type
      */
-    public function getHttpCode() {
+    public function getHttpCode()
+    {
         return $this->httpCode;
     }
 }

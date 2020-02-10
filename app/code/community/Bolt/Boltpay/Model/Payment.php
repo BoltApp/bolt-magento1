@@ -529,7 +529,16 @@ class Bolt_Boltpay_Model_Payment extends Mage_Payment_Model_Method_Abstract
                 } elseif ($newTransactionStatus == self::TRANSACTION_REJECTED_IRREVERSIBLE) {
                     /** @var Mage_Sales_Model_Order $order */
                     $order = $payment->getOrder();
-                    $order->cancel();  # returns inventory
+
+                    ////////////////////////////////////////////////////////////////////////
+                    // Return inventory via cancel.  It is not possible to cancel directly
+                    // from a payment review state, so we temporarily set the state to
+                    // pending payment
+                    ////////////////////////////////////////////////////////////////////////
+                    $order->setState(Mage_Sales_Model_Order::STATE_PENDING_PAYMENT);
+                    $order->cancel();
+                    ////////////////////////////////////////////////////////////////////////
+
                     $message = $this->boltHelper()->__('BOLT notification: Transaction reference "%s" has been permanently rejected by Bolt', $reference);
                     $order->setState(Mage_Sales_Model_Order::STATE_CANCELED, true, $message); # adds message and ensures state changed
                     $order->save();
@@ -1101,7 +1110,16 @@ class Bolt_Boltpay_Model_Payment extends Mage_Payment_Model_Method_Abstract
 
         if (!$authTransaction || $authTransaction->canVoidAuthorizationCompletely()) {
             // True void
+
+            ////////////////////////////////////////////////////////////////////////
+            // Return inventory via cancel.  It is not possible to cancel directly
+            // from a payment review state, like reversibly rejected orders
+            //so we temporarily set the state to pending payment
+            ////////////////////////////////////////////////////////////////////////
+            $order->setState(Mage_Sales_Model_Order::STATE_PENDING_PAYMENT);
             $order->cancel();
+            ////////////////////////////////////////////////////////////////////////
+
             $message = $this->boltHelper()->__('BOLT notification: The order has been canceled by Bolt');
             $order->setState(Mage_Sales_Model_Order::STATE_CANCELED, true, $message); # adds message and ensures state changed
         } else if (!$authTransaction->getIsClosed()) {

@@ -75,29 +75,27 @@ class Bolt_Boltpay_Block_Checkout_Boltpay extends Mage_Checkout_Block_Onepage_Re
 
                 $cartData = Mage::getModel('boltpay/boltOrder')->getBoltOrderTokenPromise($checkoutType);
 
-                if (@!$cartData->error) {
-                    ///////////////////////////////////////////////////////////////////////////////////////
-                    // Merchant scope: get "bolt_user_id" if the user is logged in or should be registered,
-                    // sign it and add to hints.
-                    ///////////////////////////////////////////////////////////////////////////////////////
-                    $reservedUserId = $this->getReservedUserId($sessionQuote);
-                    if ($reservedUserId && $this->isEnableMerchantScopedAccount()) {
-                        $signRequest = array(
-                            'merchant_user_id' => $reservedUserId,
+                ///////////////////////////////////////////////////////////////////////////////////////
+                // Merchant scope: get "bolt_user_id" if the user is logged in or should be registered,
+                // sign it and add to hints.
+                ///////////////////////////////////////////////////////////////////////////////////////
+                $reservedUserId = $this->getReservedUserId($sessionQuote);
+                if ($reservedUserId && $this->isEnableMerchantScopedAccount()) {
+                    $signRequest = array(
+                        'merchant_user_id' => $reservedUserId,
+                    );
+
+                    $signResponse = $this->boltHelper()->transmit('sign', $signRequest);
+
+                    if ($signResponse != null) {
+                        $hintData['signed_merchant_user_id'] = array(
+                            "merchant_user_id" => $signResponse->merchant_user_id,
+                            "signature" => $signResponse->signature,
+                            "nonce" => $signResponse->nonce,
                         );
-
-                        $signResponse = $this->boltHelper()->transmit('sign', $signRequest);
-
-                        if ($signResponse != null) {
-                            $hintData['signed_merchant_user_id'] = array(
-                                "merchant_user_id" => $signResponse->merchant_user_id,
-                                "signature" => $signResponse->signature,
-                                "nonce" => $signResponse->nonce,
-                            );
-                        }
                     }
-                    ///////////////////////////////////////////////////////////////////////////////////////
                 }
+                ///////////////////////////////////////////////////////////////////////////////////////
 
             } catch (Exception $e) {
                 $metaData = array('quote' => var_export($sessionQuote->debug(), true));
@@ -509,6 +507,39 @@ class Bolt_Boltpay_Block_Checkout_Boltpay extends Mage_Checkout_Block_Onepage_Re
     public function getCartURL()
     {
         return $this->boltHelper()->getMagentoUrl('checkout/cart');
+    }
+
+    /**
+     * Returns the One Page or Multi-Page checkout Publishable key depending on the requested
+     * page and which key has been set in the admin.  Cart and Product pages prioritize the multi-step key
+     * and falls back to the payment only key.  All other pages prioritize the payment only key and falls back
+     * to the multi-step key.
+     *
+     * @return string   The publishable key to be used on this page
+     * @throws Bolt_Boltpay_BoltException when neither a multi-step nor a payment-only publishable key is configured
+     */
+    public function getPublishableKeyForThisPage() {
+        $routeName = $this->getRequest()->getRouteName();
+        $controllerName = $this->getRequest()->getControllerName();
+
+        $multiStepPublishableKey = $this->getPublishableKey('multi-page');
+        $paymentOnlyPublishableKey = $this->getPublishableKey('one-page');
+
+        $thisPagesPublishableKey =
+            $controllerName === 'cart'
+            || ($routeName === 'catalog' && $controllerName === 'product')
+                ? $multiStepPublishableKey
+                : $paymentOnlyPublishableKey
+        ;
+
+        if (!$multiStepPublishableKey && !$paymentOnlyPublishableKey) {
+            $noPublishableKeyException = new Bolt_Boltpay_BoltException("No publishable key has been configured.");
+            $this->boltHelper()->logException($noPublishableKeyException);
+            $this->boltHelper()->notifyException($noPublishableKeyException, [], 'error');
+            throw $noPublishableKeyException;
+        }
+
+        return $thisPagesPublishableKey ?: max($multiStepPublishableKey, $paymentOnlyPublishableKey);
     }
 
     /**

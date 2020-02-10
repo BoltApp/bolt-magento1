@@ -110,7 +110,7 @@ trait Bolt_Boltpay_Helper_BugsnagTrait {
 
     public function notifyError($name, $message, array $metaData = array(), $severity = null)
     {
-        $this->getBugsnag()->notifyError($name, $message."\n".json_encode(static::getContextInfo()), $this->$metaData, $severity);
+        $this->getBugsnag()->notifyError($name, $message."\n".json_encode(static::getContextInfo()), $metaData, $severity);
     }
 
     public static function getContextInfo()

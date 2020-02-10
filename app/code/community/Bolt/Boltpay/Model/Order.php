@@ -43,7 +43,6 @@ class Bolt_Boltpay_Model_Order extends Bolt_Boltpay_Model_Abstract
      * @throws Bolt_Boltpay_OrderCreationException    thrown on order creation failure
      *
      * @todo Change this to accept a quote object to keep all setting current store context to the APIController
-     * @todo Remove $reference, $sessionQuoteId, and $isPreAuth as this is only called from the preauth context
      */
     public function createOrder($reference, $sessionQuoteId = null, $isPreAuthCreation = false, $transaction = null)
     {
@@ -204,8 +203,8 @@ class Bolt_Boltpay_Model_Order extends Bolt_Boltpay_Model_Abstract
                 # If so, we can return it as a the created order after notifying bugsnag
                 ############################
                 if ( $preExistingOrder->getQuoteId() === $immutableQuoteId ) {
-                    Mage::helper('boltpay/bugsnag')->notifyException(
-                        new Exception( Mage::helper('boltpay')->__("The order #%s has already been processed for this quote.", $preExistingOrder->getIncrementId() ) ),
+                    $this->boltHelper()->notifyException(
+                        new Exception( $this->boltHelper()->__("The order #%s has already been processed for this quote.", $preExistingOrder->getIncrementId() ) ),
                         array(),
                         'warning'
                     );
@@ -438,6 +437,15 @@ class Bolt_Boltpay_Model_Order extends Bolt_Boltpay_Model_Abstract
             )
         );
 
+        /////////////////////////////////////////////////////////////
+        /// When the order is empty, we were unable to save it in
+        /// Magento for an unknown reason.  Here we report the problem
+        /////////////////////////////////////////////////////////////
+        if(empty($order)) {
+            throw new Exception("Order was not able to be saved");
+        }
+        /////////////////////////////////////////////////////////////
+
         $payment = $order->getPayment();
 
         /** @var Mage_Sales_Model_Quote $quote */
@@ -449,18 +457,9 @@ class Bolt_Boltpay_Model_Order extends Bolt_Boltpay_Model_Abstract
         }
 
         /////////////////////////////////////////////////////////////
-        /// When the order is empty, it will not be able to save
-        /// in Magento for an unknown reason.  Here we report the problem
-        /////////////////////////////////////////////////////////////
-        if(empty($order)) {
-            throw new Exception("Order was not able to be saved");
-        }
-        /////////////////////////////////////////////////////////////
-
-        /////////////////////////////////////////////////////////////
         /// Final sanity check on bottom line price on order.
         /// If we are failing here, then we've reach an unexpected
-        /// snag that will we
+        /// snag that we currently can not recover from
         /////////////////////////////////////////////////////////////
         $priceFaultTolerance = $this->boltHelper()->getExtraConfig('priceFaultTolerance');
 
@@ -478,8 +477,8 @@ class Bolt_Boltpay_Model_Order extends Bolt_Boltpay_Model_Abstract
             // Do order total correction if necessary so that the bottom line matches up
             $order->setTaxAmount($order->getTaxAmount() + ($totalMismatch/100))
                 ->setBaseTaxAmount($order->getBaseTaxAmount() + ($totalMismatch/100))
-                ->setGrandTotal($order->getGrandTotal() + ($totalMismatch/100))
-                ->setBaseGrandTotal($order->getBaseGrandTotal() + ($totalMismatch/100));
+                ->setGrandTotal($boltGrandTotal/100)
+                ->setBaseGrandTotal($boltGrandTotal/100);
         }
         /////////////////////////////////////////////////////////////////////////
 
@@ -493,11 +492,13 @@ class Bolt_Boltpay_Model_Order extends Bolt_Boltpay_Model_Abstract
 
     /**
      * Associate order to customer when placing on product detail page
-     * @param $orderIncrementId
+     * @param string $orderIncrementId
      */
     protected function associateOrderToCustomerWhenPlacingOnPDP($orderIncrementId){
+        /** @var Mage_Customer_Model_Customer $customer */
         $customer = Mage::getSingleton('customer/session')->getCustomer();
 
+        /** @var Mage_Sales_Model_Order $order */
         $order = Mage::getModel('sales/order')->loadByIncrementId($orderIncrementId);
         $order->setCustomerId($customer->getId())
             ->setCustomerEmail($customer->getEmail())
@@ -793,6 +794,18 @@ class Bolt_Boltpay_Model_Order extends Bolt_Boltpay_Model_Abstract
     public function receiveOrder( $order, $payload ) {
         /** @var Mage_Sales_Model_Order $order */
         $order = is_object($order) ? $order : Mage::getModel('sales/order')->loadByIncrementId($order);
+        $orderStatus = $order->getStatus();
+        $allowedReceptionStatuses = $this->boltHelper()->getExtraConfig('allowedReceptionStatuses');
+        if (!in_array($orderStatus, $allowedReceptionStatuses)) {
+            throw new Bolt_Boltpay_InvalidTransitionException(
+                $orderStatus,
+                Bolt_Boltpay_Model_Payment::TRANSACTION_PRE_AUTH_PENDING,
+                'Order has an unexpected status at order reception.  An order status of [' .
+                $orderStatus . '] was found, while Bolt orders are expected to have a status in [' .
+                implode(', ', $allowedReceptionStatuses) . '].  Has some 3rd party software created ' .
+                'or altered this order?'
+            );
+        }
         $payloadObject = is_object($payload) ? $payload : json_decode($payload);
         $immutableQuote = $this->getQuoteFromOrder($order);
 
@@ -816,7 +829,6 @@ class Bolt_Boltpay_Model_Order extends Bolt_Boltpay_Model_Abstract
     private function activateOrder(Mage_Sales_Model_Order $order, $payloadObject)
     {
         if (empty($order->getCreatedAt())) { $order->setCreatedAt(Mage::getModel('core/date')->gmtDate())->save(); }
-        $this->getParentQuoteFromOrder($order)->setIsActive(false)->save();
         $reference = @$payloadObject->transaction_reference ?: $payloadObject->reference;
         $hookType = @$payloadObject->notification_type ?: $payloadObject->type;
 
@@ -833,6 +845,22 @@ class Bolt_Boltpay_Model_Order extends Bolt_Boltpay_Model_Abstract
                 array('order' => $order, 'quote' => $immutableQuote, 'recurring_profiles' => $recurringPaymentProfiles)
             );
             benchmark( "Finished running independent merchant third-party code via checkout_submit_all_after" );
+
+        } catch ( Exception $e ) {
+            $this->boltHelper()->notifyException($e);
+            $this->boltHelper()->logException($e);
+        }
+
+        try {
+            /////////////////////////////////////////////////////////////////
+            // Remove the parent/session quote to prevent any further reuse
+            // of its ID as a Bolt order_reference which would be blocked by
+            // Bolt to prevent duplicate orders. Before this, we will
+            // deactivate it in the case a 3rd-party is expecting that flow
+            /////////////////////////////////////////////////////////////////
+            $this->getParentQuoteFromOrder($order)->setIsActive(0)->save()->delete();
+            benchmark( "Disabled and removed session quote" );
+            /////////////////////////////////////////////////////////////////
         } catch ( Exception $e ) {
             $this->boltHelper()->notifyException($e);
             $this->boltHelper()->logException($e);
@@ -851,7 +879,7 @@ class Bolt_Boltpay_Model_Order extends Bolt_Boltpay_Model_Abstract
     /**
      *  Adds the Bolt User Id to a newly registered customer.
      *
-     * @param $quote    The quote copy used to create the Bolt order
+     * @param Mage_Sales_Model_Quote $quote The quote copy used to create the Bolt order
      */
     private function setBoltUserId($quote)
     {
@@ -863,7 +891,6 @@ class Bolt_Boltpay_Model_Order extends Bolt_Boltpay_Model_Abstract
 
             if ($customer != null && $boltUserId != null) {
                 if ($customer->getBoltUserId() == null || $customer->getBoltUserId() == 0) {
-                    //Mage::log("Bolt_Boltpay_Model_Observer.saveOrderAfter: Adding bolt_user_id to the customer from the quote", null, 'bolt.log');
                     $customer->setBoltUserId($boltUserId);
                     $customer->save();
                 }
@@ -879,7 +906,7 @@ class Bolt_Boltpay_Model_Order extends Bolt_Boltpay_Model_Abstract
     /**
      * Sends an email if an order email has not already been sent.
      *
-     * @param $order Mage_Sales_Model_Order     The order which has just been authorized
+     * @param Mage_Sales_Model_Order $order The order which has just been authorized
      */
     public function sendOrderEmail($order)
     {

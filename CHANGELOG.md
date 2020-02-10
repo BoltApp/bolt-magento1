@@ -1,4 +1,10 @@
 # Changelog
+## [V2.2.0](https://s3-us-west-1.amazonaws.com/bolt-public/magento-integration-release/bolt-magento1_v2.2.0.zip) 2020-01-30
+ - Better Bolt-side metrics and logging
+ - Cleanup abandoned failed pre-auth orders preemptively
+ - Fix inventory issue around rejected orders
+ - Massively increased unit test coverage
+ - Various small bugfixes
 ## [V2.1.0](https://s3-us-west-1.amazonaws.com/bolt-public/magento-integration-release/bolt-magento1_v2.1.0.zip) 2019-11-22
  - Restrict Bolt by customer group feature
  - Create memo popup on offline refund attempt
