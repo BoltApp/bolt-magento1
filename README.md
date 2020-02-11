@@ -64,6 +64,7 @@ If you would like to pull the latest Bolt code from the Git repo and update Mage
 | bolt_boltpay_validate_totals_after | global | Entry for adding additional subtotal validation behavior performed after standard subtotal validation | **quote**<br>_Mage_Sales_Model_Quote_<br>the Magento cart copy of the Bolt order<br><br>**transaction**<br>_object_<br>Bolt payload |
 | bolt_boltpay_admin_normalize_order_data_after | global | Entry for additional normalization of admin order data performed after standard order data normalization | **request**<br>_Zend_Controller_Request_Abstract_<br>request object containing the post data to the order creation controller call<br><br>**orderCreateModel**<br>_Mage_Adminhtml_Model_Sales_Order_Create_<br>order create model |
 | bolt_boltpay_failed_order_removed_after | global | Execute after deleting the failed order | **order**<br>_Mage_Sales_Model_Order_<br>removed order object |
+| bolt_boltpay_capture_before | global | Execute before capturing payment | **payment**<br>Varien_Object<br>payment object<br> <br>**amount**<br>float</br> |
 
 ## Custom Bolt Filter Event Reference
 
