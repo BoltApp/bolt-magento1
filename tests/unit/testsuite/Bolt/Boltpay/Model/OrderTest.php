@@ -2485,4 +2485,26 @@ class Bolt_Boltpay_Model_OrderTest extends PHPUnit_Framework_TestCase
             )
         );
     }
+
+    /**
+     * @test
+     * @throws ReflectionException
+     */
+    public function applyShipmentToQuoteFromTransaction_withVirtualCart_doesNotApplyShipment()
+    {
+        $this->boltShippingAndTax->expects(self::never())->method('applyBoltAddressData');
+        TestHelper::stubModel('boltpay/shippingAndTax', $this->boltShippingAndTax);
+
+        TestHelper::callNonPublicFunction(
+            $this->currentMock,
+            'applyShipmentToQuoteFromTransaction',
+            array(
+                $this->immutableQuoteMock,
+                new stdClass(),
+                1
+            )
+        );
+
+        TestHelper::restoreModel('boltpay/shippingAndTax');
+    }
 }
