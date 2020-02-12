@@ -70,6 +70,8 @@ class Bolt_Boltpay_Model_Productpage_Cart extends Bolt_Boltpay_Model_Abstract
      *
      * @return bool
      * @throws \Exception
+     *
+     * @todo re-enable stock validation when Bolt server-side code supports the error type
      */
     protected function validateCartRequest()
     {
@@ -77,7 +79,8 @@ class Bolt_Boltpay_Model_Productpage_Cart extends Bolt_Boltpay_Model_Abstract
         $this->validateEmptyCart();
         $this->validateProductsExist();
         $this->validateProductsQty();
-        $this->validateProductsStock();
+        // $this->validateProductsStock();  # we will temporarily disable stock checks as sending this error
+                                            # is currently not supported on Bolt server-side
 
         return true;
     }
@@ -202,6 +205,13 @@ class Bolt_Boltpay_Model_Productpage_Cart extends Bolt_Boltpay_Model_Abstract
             $productId = @$cartItem->reference;
 
             $product = $this->getProductById($productId);
+
+            /** @var Mage_CatalogInventory_Model_Stock_Item $stockItem */
+            $stockItem = $product->getStockItem();
+
+            //defer stock validation to order creation
+            $stockItem->setManageStock(0);
+            $stockItem->setUseConfigManageStock(0);
 
             $param = array(
                 'product' => $productId,
