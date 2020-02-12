@@ -375,4 +375,65 @@ class Bolt_Boltpay_Block_Catalog_Product_BoltpayTest extends PHPUnit_Framework_T
         $this->assertContains(Mage_Catalog_Model_Product_Type::TYPE_SIMPLE, $result);
         $this->assertCount(1, $result);
     }
+
+    /**
+     * @test
+     * that getProductMaxQty returns -1 when stock is not managed for current product
+     *
+     * @covers ::getProductMaxQty
+     *
+     * @throws Mage_Core_Exception if unable to register current product
+     */
+    public function getProductMaxQty_ifStockIsNotManaged_returnsNegativeOne()
+    {
+        $stockItem = $this->getMockBuilder('Mage_CatalogInventory_Model_Stock_Item')
+            ->setMethods(array('getManageStock', 'getIsInStock', 'getQty'))
+            ->getMock();
+        $stockItem->expects($this->once())->method('getManageStock')->willReturn(false);
+        $product = Mage::getModel('catalog/product', array('stock_item' => $stockItem));
+        Mage::register('current_product', $product);
+        $this->assertEquals(-1, $this->currentMock->getProductMaxQty());
+    }
+
+    /**
+     * @test
+     * that getProductMaxQty returns 0 if current product is out of stock
+     *
+     * @covers ::getProductMaxQty
+     *
+     * @throws Mage_Core_Exception if unable to register current product
+     */
+    public function getProductMaxQty_ifProductIsOutOfStock_returnsNegativeOne()
+    {
+        $stockItem = $this->getMockBuilder('Mage_CatalogInventory_Model_Stock_Item')
+            ->setMethods(array('getManageStock', 'getIsInStock', 'getQty'))
+            ->getMock();
+        $stockItem->expects($this->once())->method('getManageStock')->willReturn(true);
+        $stockItem->expects($this->once())->method('getIsInStock')->willReturn(false);
+        $product = Mage::getModel('catalog/product', array('stock_item' => $stockItem));
+        Mage::register('current_product', $product);
+        $this->assertEquals(0, $this->currentMock->getProductMaxQty());
+    }
+
+    /**
+     * @test
+     * that getProductMaxQty returns stock quantity if stock is managed and current product is in stock
+     *
+     * @covers ::getProductMaxQty
+     *
+     * @throws Mage_Core_Exception if unable to register current product
+     */
+    public function getProductMaxQty_ifQtyIsManagedAndProductIsInStock_returnsStockQuantity()
+    {
+        $qty = mt_rand(1, 10000);
+        $stockItem = $this->getMockBuilder('Mage_CatalogInventory_Model_Stock_Item')
+            ->setMethods(array('getManageStock', 'getIsInStock', 'getQty'))
+            ->getMock();
+        $stockItem->expects($this->once())->method('getManageStock')->willReturn(true);
+        $stockItem->expects($this->once())->method('getIsInStock')->willReturn(true);
+        $stockItem->expects($this->once())->method('getQty')->willReturn($qty);
+        $product = Mage::getModel('catalog/product', array('stock_item' => $stockItem));
+        Mage::register('current_product', $product);
+        $this->assertEquals($qty, $this->currentMock->getProductMaxQty());
+    }
 }

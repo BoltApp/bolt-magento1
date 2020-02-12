@@ -186,4 +186,25 @@ class Bolt_Boltpay_Block_Catalog_Product_Boltpay extends Mage_Core_Block_Templat
             Mage_Catalog_Model_Product_Type::TYPE_SIMPLE
         ];
     }
+
+    /**
+     * Get maximum available quantity of product
+     * It is used to show a warning if user tries to buy more then product quantity
+     * @return int -1 Ignore product quantity levels
+     *              0 if product is out of stock
+     *              positive value otherwise
+     */
+    public function getProductMaxQty()
+    {
+        /** @var Mage_Catalog_Model_Product $product */
+        $product = Mage::registry('current_product');
+        $stockItem = $product->getStockItem();
+        if (!$stockItem->getManageStock()) {
+            return -1;
+        } else if (!$stockItem->getIsInStock()) {
+            return 0;
+        } else {
+            return $stockItem->getQty();
+        }
+    }
 }
