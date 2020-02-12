@@ -272,6 +272,11 @@ class Bolt_Boltpay_Model_Payment extends Mage_Payment_Model_Method_Abstract
 
     public function capture(Varien_Object $payment, $amount)
     {
+        Mage::dispatchEvent(
+            'bolt_boltpay_capture_before',
+            array('payment' => $payment, 'amount' => $amount)
+        );
+
         try {
             // Get the merchant transaction id
             $merchantTransId = $payment->getAdditionalInformation('bolt_merchant_transaction_id');
