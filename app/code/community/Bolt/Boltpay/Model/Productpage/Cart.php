@@ -55,6 +55,8 @@ class Bolt_Boltpay_Model_Productpage_Cart extends Bolt_Boltpay_Model_Abstract
             $immutableQuote = $this->createImmutableQuote();
             $this->setCartResponse($immutableQuote);
         } catch (\Bolt_Boltpay_BadInputException $e) {
+            $this->boltHelper()->notifyException($e);
+            $this->boltHelper()->logException($e);
             return false;
         } catch (\Exception $e) {
             $this->boltHelper()->notifyException($e);
@@ -77,7 +79,9 @@ class Bolt_Boltpay_Model_Productpage_Cart extends Bolt_Boltpay_Model_Abstract
         $this->validateEmptyCart();
         $this->validateProductsExist();
         $this->validateProductsQty();
-        $this->validateProductsStock();
+        //$this->validateProductsStock();  # For now, Bolt does not handle out of stock errors well
+                                           # at this end point.  Instead, we will defer to pre-auth validation
+                                           # and the future update order interface
 
         return true;
     }
@@ -197,20 +201,44 @@ class Bolt_Boltpay_Model_Productpage_Cart extends Bolt_Boltpay_Model_Abstract
     {
         $cartItems = $this->getCartRequestItems();
         $cart = $this->getSessionCart();
+        $parentQuote = $cart->getQuote();
 
         foreach ($cartItems as $cartItem) {
             $productId = @$cartItem->reference;
 
             $product = $this->getProductById($productId);
+            /** @var Mage_CatalogInventory_Model_Stock_Item $stockItem */
+            $stockItem = Mage::getModel('cataloginventory/stock_item')->loadByProduct($product);
+
+            ////////////////////////////////////////////////////////////////////////////////////
+            // We've already passed front-end stock validation
+            // Defer further validation to pre-auth by disabling manage
+            // stock
+            ////////////////////////////////////////////////////////////////////////////////////
+            $originalUseConfigBackorders = $stockItem->getUseConfigBackorders();
+            $originalBackorders = $stockItem->getBackorders();
+            $originalIsInStock = $stockItem->getIsInStock();
+            $stockItem->setUseConfigBackorders(0);
+            $stockItem->setBackorders(1);
+            $stockItem->setIsInStock(1);
+            $stockItem->save();
 
             $param = array(
                 'product' => $productId,
                 'qty'     => @$cartItem->quantity
             );
-            $cart->addProduct($product, $param);
+
+            $parentQuote->addProduct($product, new Varien_Object($param));
+
+            $stockItem->setUseConfigBackorders($originalUseConfigBackorders);
+            $stockItem->setBackorders($originalBackorders);
+            $stockItem->setIsInStock($originalIsInStock);
+            $stockItem->save();
+            ////////////////////////////////////////////////////////////////////////////////////
+
         }
-        $cart->getQuote()->setIsBoltPdp(true);
-        $cart->save();
+        $parentQuote->setIsBoltPdp(true);
+        $parentQuote->save();
 
         return $cart;
     }
@@ -242,7 +270,7 @@ class Bolt_Boltpay_Model_Productpage_Cart extends Bolt_Boltpay_Model_Abstract
             'total_amount'    => $this->getGeneratedTotal()
         );
         $this->httpCode = 200;
-
+$this->boltHelper()->notifyException(new Exception(json_encode($this->cartResponse, JSON_PRETTY_PRINT)));
         return $this->cartResponse;
     }
 
