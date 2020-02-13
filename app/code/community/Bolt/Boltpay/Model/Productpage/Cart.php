@@ -68,8 +68,9 @@ class Bolt_Boltpay_Model_Productpage_Cart extends Bolt_Boltpay_Model_Abstract
     /**
      * Validate cart request data
      *
-     * @return bool
-     * @throws \Exception
+     * @throws \Exception upon any error in validation
+     *
+     * @todo re-enable stock validation when Bolt server-side code supports the error type
      */
     protected function validateCartRequest()
     {
@@ -77,9 +78,8 @@ class Bolt_Boltpay_Model_Productpage_Cart extends Bolt_Boltpay_Model_Abstract
         $this->validateEmptyCart();
         $this->validateProductsExist();
         $this->validateProductsQty();
-        $this->validateProductsStock();
-
-        return true;
+        // $this->validateProductsStock();  # we will temporarily disable stock checks as sending this error
+                                            # is currently not supported on Bolt server-side
     }
 
     /**
@@ -190,8 +190,15 @@ class Bolt_Boltpay_Model_Productpage_Cart extends Bolt_Boltpay_Model_Abstract
     }
 
     /**
+     * Creates a cart that contains the exact contents of the request sent from Bolt
+     * This operates in a context outside of the true client session, so it is never reflected
+     * in the Magento frontend.
      *
-     * @return Mage_Checkout_Model_Cart
+     * @return Mage_Checkout_Model_Cart  Magento cart containing the quote which is used for Bolt
+     *                                   order JSON
+     *
+     * @todo remove disabling of stock management once Bolt server-side adds support
+     *       for out of stock error codes
      */
     protected function createCart()
     {
@@ -202,6 +209,20 @@ class Bolt_Boltpay_Model_Productpage_Cart extends Bolt_Boltpay_Model_Abstract
             $productId = @$cartItem->reference;
 
             $product = $this->getProductById($productId);
+
+            /** @var Mage_CatalogInventory_Model_Stock_Item $stockItem */
+            $stockItem = $product->getStockItem();
+
+            ///////////////////////////////////////////////
+            // Remove stock validation as a temporary 
+            // solution for the Bolt backend unable to 
+            // handle stock error codes
+            // TODO: remove this once Bolt adds PPC
+            //       out-of-stock error code support
+            ///////////////////////////////////////////////
+            $stockItem->setManageStock(0);
+            $stockItem->setUseConfigManageStock(0);
+            ///////////////////////////////////////////////
 
             $param = array(
                 'product' => $productId,

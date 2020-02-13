@@ -252,6 +252,30 @@ class Bolt_Boltpay_Model_Productpage_CartTest extends PHPUnit_Framework_TestCase
 
     /**
      * @test
+     * that validateCartRequest does not throw exception when provided with product qty greater than stock
+     *
+     * @covers ::validateCartRequest
+     *
+     * @throws ReflectionException from test setup if unable to cart request
+     * @throws Exception
+     */
+    public function validateCartRequest_withProductQtyGreaterThanStock_doesNotThrowException()
+    {
+        $currentMock = $this->validationMethodSetUp(
+            array(
+                'items' => array(
+                    array(
+                        'reference' => self::$productId,
+                        'quantity'  => self::DUMMY_PRODUCT_STOCK_QUANTITY + 1
+                    )
+                )
+            )
+        );
+        $this->assertTrue(Bolt_Boltpay_TestHelper::callNonPublicFunction($currentMock, 'validateEmptyCart'));
+    }
+
+    /**
+     * @test
      * that validateCartInfo sets appropriate error when cartRequest is not set
      *
      * @covers ::validateCartInfo
@@ -334,6 +358,8 @@ class Bolt_Boltpay_Model_Productpage_CartTest extends PHPUnit_Framework_TestCase
      */
     public function validateProductsStock_productInsufficientStock_willTriggerErrorResponse()
     {
+        $this->markTestSkipped('Out of stock error codes currently not supported by Bolt Backend');
+
         $product = Mage::getModel('catalog/product')->load(self::$productId);
         $currentMock = $this->validationMethodSetUp(
             array(
@@ -352,6 +378,39 @@ class Bolt_Boltpay_Model_Productpage_CartTest extends PHPUnit_Framework_TestCase
                 422
             );
         Bolt_Boltpay_TestHelper::callNonPublicFunction($currentMock, 'validateProductsStock');
+    }
+
+    /**
+     * @test
+     * that createCart successfully creates cart with product that has larger quantity than stock
+     *
+     * @covers ::createCart
+     *
+     * @throws Exception if test class name is not defined
+     */
+    public function createCart_withProductQtyBeyondStock_createsCartSuccessfully()
+    {
+        $qty = self::DUMMY_PRODUCT_STOCK_QUANTITY + 1;
+        /** @var MockObject|Bolt_Boltpay_Model_Productpage_Cart $currentMock */
+        $currentMock = $this->getTestClassPrototype()->setMethods(
+            array('getCartRequestItems', 'getSessionCart')
+        )->getMock();
+
+        $sessionCart = Mage::getModel('checkout/cart', array('quote' => Mage::getModel('sales/quote')));
+
+        $currentMock->expects($this->once())->method('getSessionCart')->willReturn($sessionCart);
+        $currentMock->expects($this->once())->method('getCartRequestItems')->willReturn(
+            array(
+                (object)array('reference' => self::$productId, 'quantity' => $qty)
+            )
+        );
+        /** @var Mage_Checkout_Model_Cart $resultCart */
+        $resultCart = Bolt_Boltpay_TestHelper::callNonPublicFunction($currentMock, 'createCart');
+        $quote = $resultCart->getQuote();
+        /** @var Mage_Sales_Model_Quote_Item $productItem */
+        $productItem = $quote->getItemsCollection()->getFirstItem();
+        $this->assertEquals(self::$productId, $productItem->getProductId());
+        $this->assertEquals($qty, $productItem->getQty());
     }
 
     /**
