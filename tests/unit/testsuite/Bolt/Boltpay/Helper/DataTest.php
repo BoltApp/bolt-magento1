@@ -2,6 +2,9 @@
 
 require_once('TestHelper.php');
 
+/**
+ * @coversDefaultClass Bolt_Boltpay_Helper_Data
+ */
 class Bolt_Boltpay_Helper_DataTest extends PHPUnit_Framework_TestCase
 {
     /**
@@ -277,4 +280,44 @@ class Bolt_Boltpay_Helper_DataTest extends PHPUnit_Framework_TestCase
         $this->assertEquals(preg_replace('/\s/', '', $expected), preg_replace('/\s/', '', $result));
     }
 
+    /**
+     * @test
+     * that buildOnCheckCallback returns quantity check for product page checkout regardless if quote is virtual or not
+     *
+     * @covers ::buildOnCheckCallback
+     *
+     * @dataProvider buildOnCheckCallback_whenCheckoutTypeIsProductPageProvider
+     *
+     * @param bool $isVirtualQuote flag designating whether quote is virtual or not
+     */
+    public function buildOnCheckCallback_whenCheckoutTypeIsProductPage_returnsQuantityCheck($isVirtualQuote)
+    {
+        $expected = <<<JS
+if(max_qty !== -1 && boltConfigPDP._jsonProductCart.items[0].quantity > max_qty) {
+    if ((typeof BoltPopup !== 'undefined')) {
+        BoltPopup.setMessage('The requested quantity is not available.');
+        BoltPopup.show();
+    }
+    return false;
+}
+JS;
+        $result = $this->currentMock->buildOnCheckCallback(
+            Bolt_Boltpay_Block_Checkout_Boltpay::CHECKOUT_TYPE_PRODUCT_PAGE,
+            $isVirtualQuote
+        );
+        $this->assertEquals(preg_replace('/\s+/', '', $expected), preg_replace('/\s+/', '', $result));
+    }
+
+    /**
+     * Data provider for {@see buildOnCheckCallback_whenCheckoutTypeIsProductPage_returnsQuantityCheck}
+     *
+     * @return array containing if quote is virtual
+     */
+    public function buildOnCheckCallback_whenCheckoutTypeIsProductPageProvider()
+    {
+        return array(
+            array('isVirtualQuote' => true),
+            array('isVirtualQuote' => false),
+        );
+    }
 }

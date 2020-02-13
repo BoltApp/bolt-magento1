@@ -15,13 +15,14 @@
  * @license    http://opensource.org/licenses/osl-3.0.php  Open Software License (OSL 3.0)
  */
 
-/* @var $this Bolt_Boltpay_Block_Catalog_Product_Boltpay */
+/* @var Bolt_Boltpay_Block_Catalog_Product_Boltpay $this */
 ?>
 <?php if ($this->isEnabledProductPageCheckout() && $this->isSupportedProductType()): ?>
 <script type="text/javascript">
 var productPageCheckoutSelector = '<?php $this->escapeHtml($this->getProductPageCheckoutSelector()) ?>';
 var order_completed = false;
 var do_checks = 1;
+var max_qty = <?php echo $this->getProductMaxQty(); ?>;
 <?php $productTierPrice = $this->getProductTierPrice(); ?>
 var boltConfigPDP = {
     _jsonProductCart: <?php echo $this->getCartDataJsForProductPage(); ?>,

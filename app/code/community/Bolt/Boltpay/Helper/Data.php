@@ -133,6 +133,17 @@ class Bolt_Boltpay_Helper_Data extends Mage_Core_Helper_Abstract
                     "
                     if (!checkout.validate()) return false;
                     ";
+            case Bolt_Boltpay_Block_Checkout_Boltpay::CHECKOUT_TYPE_PRODUCT_PAGE:
+                return <<<JS
+if(max_qty !== -1 && boltConfigPDP._jsonProductCart.items[0].quantity > max_qty) {
+    if ((typeof BoltPopup !== 'undefined')) {
+        BoltPopup.setMessage('{$this->__("The requested quantity is not available.")}');
+        BoltPopup.show();
+    }
+    return false;
+}
+JS;
+
             default:
                 return '';
         }
