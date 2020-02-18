@@ -196,6 +196,8 @@ class Bolt_Boltpay_Model_OrderTest extends PHPUnit_Framework_TestCase
     {
         TestHelper::restoreOriginals();
         Mage::getSingleton('checkout/cart')->truncate();
+        Mage::app()->setCurrentStore('default');
+        Bolt_Boltpay_Helper_Data::$fromHooks = false;
     }
 
     /**
@@ -2164,6 +2166,7 @@ class Bolt_Boltpay_Model_OrderTest extends PHPUnit_Framework_TestCase
         $this->immutableQuoteMock->method('getTransaction')->willReturn($transaction);
         $this->orderMock->method('getQuote')->willReturn($this->immutableQuoteMock);
         $this->boltHelperMock->method('getExtraConfig')->with('priceFaultTolerance')->willReturn(1);
+        Bolt_Boltpay_Helper_Data::$fromHooks = true;
         return $observer;
     }
 
@@ -2178,12 +2181,12 @@ class Bolt_Boltpay_Model_OrderTest extends PHPUnit_Framework_TestCase
      * @expectedExceptionCode 2001003
      * @expectedExceptionMessage {"reason": "Grand total has changed", "old_value": "500", "new_value": "2500"}
      */
-    public function validateBeforeOrderCommit_totalsMismatchBeyondTolerance_throwsException()
+    public function validateBeforeOrderCommit_whenTotalsMismatchBeyondTolerance_throwsException()
     {
         $transaction = new stdClass();
         $transaction->order->cart->total_amount->amount = 500;
         $this->orderMock->expects($this->once())->method('getGrandTotal')->willReturn(25);
-        $this->paymentMock->expects($this->once())->method('getMethod')
+        $this->paymentMock->expects($this->atLeastOnce())->method('getMethod')
             ->willReturn(Bolt_Boltpay_Model_Payment::METHOD_CODE);
         $observer = $this->validateBeforeOrderCommitSetUp($this->orderMock, $transaction);
         $this->currentMock->validateBeforeOrderCommit($observer);
@@ -2197,11 +2200,11 @@ class Bolt_Boltpay_Model_OrderTest extends PHPUnit_Framework_TestCase
      *
      * @throws Bolt_Boltpay_OrderCreationException from method tested if the bottom line price total differs by allowed tolerance
      */
-    public function validateBeforeOrderCommit_totalsMismatchInsideTolerance_correctsTotals()
+    public function validateBeforeOrderCommit_whenTotalsMismatchBelowTolerance_correctsTotals()
     {
         $transaction = new stdClass();
         $transaction->order->cart->total_amount->amount = 500;
-        $this->paymentMock->expects($this->once())->method('getMethod')
+        $this->paymentMock->expects($this->atLeastOnce())->method('getMethod')
             ->willReturn(Bolt_Boltpay_Model_Payment::METHOD_CODE);
         $this->orderMock->expects($this->once())->method('getGrandTotal')->willReturn(4.99);
         $this->orderMock->expects($this->once())->method('getTaxAmount')->willReturn(0.99);
@@ -2222,11 +2225,11 @@ class Bolt_Boltpay_Model_OrderTest extends PHPUnit_Framework_TestCase
      *
      * @throws Bolt_Boltpay_OrderCreationException from method tested if the bottom line price total differs by allowed tolerance
      */
-    public function validateBeforeOrderCommit_paymentMethodNotBolt_skipValidation()
+    public function validateBeforeOrderCommit_ifPaymentMethodIsNotBolt_skipValidation()
     {
         $transaction = new stdClass();
         $transaction->order->cart->total_amount->amount = 500;
-        $this->orderMock->expects($this->once())->method('getPayment')
+        $this->orderMock->expects($this->atLeastOnce())->method('getPayment')
             ->willReturn(
                 Mage::getModel('sales/order_payment', array('method' => 'checkmo'))
             );
@@ -2250,6 +2253,47 @@ class Bolt_Boltpay_Model_OrderTest extends PHPUnit_Framework_TestCase
     {
         $transaction = new stdClass();
         $observer = $this->validateBeforeOrderCommitSetUp(null, $transaction);
+        $this->currentMock->validateBeforeOrderCommit($observer);
+    }
+
+    /**
+     * @test
+     * that validateBeforeOrderCommit throws an exception if a Bolt order
+     * is attempted from route that is not a hook nor in admin scope
+     *
+     * @covers ::validateBeforeOrderCommit
+     *
+     * @expectedException Exception
+     * @expectedExceptionMessage Order creation with Boltpay not allowed for this path
+     */
+    public function validateBeforeOrderCommit_whenBoltOrderNotFromHookNorFromAdmin_throwsException()
+    {
+        $transaction = new stdClass();
+        $this->paymentMock->expects($this->atLeastOnce())->method('getMethod')
+            ->willReturn(Bolt_Boltpay_Model_Payment::METHOD_CODE);
+        $observer = $this->validateBeforeOrderCommitSetUp($this->orderMock, $transaction);
+        Bolt_Boltpay_Helper_Data::$fromHooks = false;
+        Mage::app()->setCurrentStore('default');
+        $this->currentMock->validateBeforeOrderCommit($observer);
+    }
+
+    /**
+     * @test
+     * that validateBeforeOrderCommit does not throw exception if a Bolt order
+     * is attempted from route that is in admin scope
+     *
+     * @covers ::validateBeforeOrderCommit
+     *
+     * @throws Bolt_Boltpay_OrderCreationException if there is a total mismatch beyond tolerance
+     */
+    public function validateBeforeOrderCommit_whenBoltOrderFromAdmin_continuesValidation()
+    {
+        $transaction = new stdClass();
+        $this->paymentMock->expects($this->atLeastOnce())->method('getMethod')
+            ->willReturn(Bolt_Boltpay_Model_Payment::METHOD_CODE);
+        $observer = $this->validateBeforeOrderCommitSetUp($this->orderMock, $transaction);
+        Bolt_Boltpay_Helper_Data::$fromHooks = false;
+        Mage::app()->setCurrentStore('admin');
         $this->currentMock->validateBeforeOrderCommit($observer);
     }
 

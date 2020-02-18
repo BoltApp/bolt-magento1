@@ -80,12 +80,13 @@ class Bolt_Boltpay_OrderHelper
     /**
      * Creates dummy order
      *
-     * @param $productId
+     * @param int $productId to be used for order creation
+     * @param int $qty of the product provided
+     * @param string $paymentMethod code used for order creation
      *
-     * @param int $qty
-     * @param string $paymentMethod
-     * @return Mage_Sales_Model_Order
-     * @throws Mage_Core_Exception
+     * @return Mage_Sales_Model_Order dummy order
+     *
+     * @throws Mage_Core_Exception if provided payment method is not available
      */
     public static function createDummyOrder($productId, $qty = 2, $paymentMethod = 'boltpay')
     {
@@ -109,7 +110,18 @@ class Bolt_Boltpay_OrderHelper
         // Set payment method for the quote
         $quote->getPayment()->importData(array('method' => $paymentMethod));
         $service = Mage::getModel('sales/service_quote', $quote);
+
+        if ($paymentMethod == Bolt_Boltpay_Model_Payment::METHOD_CODE) {
+            $previousHookValue = Bolt_Boltpay_Helper_Data::$fromHooks;
+            //temporarily set flag to true in order to pass order validation
+            Bolt_Boltpay_Helper_Data::$fromHooks = true;
+        }
+
         $service->submitAll();
+        if ($paymentMethod == Bolt_Boltpay_Model_Payment::METHOD_CODE) {
+            Bolt_Boltpay_Helper_Data::$fromHooks = $previousHookValue;
+        }
+
         /** @var Mage_Sales_Model_Order $order */
         $order = $service->getOrder();
 
