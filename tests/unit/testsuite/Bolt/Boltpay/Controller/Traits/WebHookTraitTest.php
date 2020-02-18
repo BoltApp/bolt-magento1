@@ -120,6 +120,7 @@ class Bolt_Boltpay_Controller_Traits_WebHookTraitTest extends PHPUnit_Framework_
         self::$_fastcgiFinishRequestCalled = false;
         unset($_SERVER['HTTP_X_BOLT_HMAC_SHA256']);
         Bolt_Boltpay_StreamHelper::restore();
+        Bolt_Boltpay_Helper_Data::$fromHooks = false;
     }
 
     /**
@@ -152,6 +153,7 @@ class Bolt_Boltpay_Controller_Traits_WebHookTraitTest extends PHPUnit_Framework_
         }
 
         $this->currentMock->preDispatch();
+        $this->assertTrue(Bolt_Boltpay_Helper_Data::$fromHooks);
     }
 
     /**
@@ -194,6 +196,7 @@ class Bolt_Boltpay_Controller_Traits_WebHookTraitTest extends PHPUnit_Framework_
 
         Bolt_Boltpay_StreamHelper::register();
         $this->currentMock->preDispatch();
+        $this->assertTrue(Bolt_Boltpay_Helper_Data::$fromHooks);
     }
 
     /**
