@@ -1285,12 +1285,58 @@ class Bolt_Boltpay_Model_OrderTest extends PHPUnit_Framework_TestCase
         $this->parentQuoteMock->expects($this->once())->method('getIsActive')->willReturn(true);
         $this->immutableQuoteMock->expects($this->once())->method('getAllItems')
             ->willReturn(array(Mage::getModel('sales/quote_item', array('product' => $productMock, 'qty' => 2))));
-        $productMock->expects($this->once())->method('isSaleable')->willReturn(true);
+        $productMock->method('isSaleable')->willReturn(false);
         $productMock->expects($this->atLeastOnce())->method('getId')->willReturn(1);
         $stockItemMock = $this->getClassPrototype('cataloginventory/stock_item')
-            ->setMethods(array('loadByProduct', 'getQty', 'getMinQty', 'checkQty'))->getMock();
+            ->setMethods(array('loadByProduct', 'getQty', 'getMinQty', 'checkQty', 'getIsInStock'))->getMock();
         $stockItemMock->expects($this->once())->method('loadByProduct')->willReturnSelf();
-        $stockItemMock->expects($this->once())->method('getQty')->willReturn(0);
+        $stockItemMock->expects($this->once())->method('getIsInStock')->willReturn(false);
+        $stockItemMock->expects($this->never())->method('getQty');
+        $stockItemMock->expects($this->never())->method('getMinQty');
+        $stockItemMock->expects($this->never())->method('checkQty');
+        TestHelper::stubModel('cataloginventory/stock_item', $stockItemMock);
+        TestHelper::callNonPublicFunction(
+            $currentMock,
+            'validateCartSessionData',
+            array(
+                $this->immutableQuoteMock,
+                $this->parentQuoteMock,
+                new stdClass(),
+                false
+            )
+        );
+    }
+
+    /**
+     * @test
+     * that validateCartSessionData throws OrderCreationException if one of the products in quote is out of stock
+     *
+     * @covers ::validateCartSessionData
+     *
+     * @expectedException Bolt_Boltpay_OrderCreationException
+     * @expectedExceptionCode 2001005
+     * @expectedExceptionMessage {"product_id": "1", "available_quantity": 1, "needed_quantity": 2}
+     *
+     * @throws ReflectionException if validateCartSessionData doesn't exist
+     * @throws Exception from test setup if tested class name is not set
+     */
+    public function validateCartSessionData_whenProductHasInsufficientQty_throwsException()
+    {
+        $productMock = $this->getClassPrototype('Mage_Catalog_Model_Product')->getMock();
+        $isImmutableQuoteNew = false;
+        $currentMock = $this->validateCartSessionDataSetUp();
+        $this->immutableQuoteMock->expects($this->once())->method('isObjectNew')->willReturn($isImmutableQuoteNew);
+        $this->parentQuoteMock->expects($this->once())->method('isObjectNew')->willReturn(false);
+        $this->parentQuoteMock->expects($this->once())->method('getIsActive')->willReturn(true);
+        $this->immutableQuoteMock->expects($this->once())->method('getAllItems')
+            ->willReturn(array(Mage::getModel('sales/quote_item', array('product' => $productMock, 'qty' => 2))));
+        $productMock->method('isSaleable')->willReturn(false);
+        $productMock->expects($this->atLeastOnce())->method('getId')->willReturn(1);
+        $stockItemMock = $this->getClassPrototype('cataloginventory/stock_item')
+            ->setMethods(array('loadByProduct', 'getQty', 'getMinQty', 'checkQty', 'getIsInStock'))->getMock();
+        $stockItemMock->expects($this->once())->method('loadByProduct')->willReturnSelf();
+        $stockItemMock->expects($this->once())->method('getIsInStock')->willReturn(true);
+        $stockItemMock->expects($this->once())->method('getQty')->willReturn(1);
         $stockItemMock->expects($this->once())->method('getMinQty')->willReturn(0);
         $stockItemMock->expects($this->once())->method('checkQty')->willReturn(false);
         TestHelper::stubModel('cataloginventory/stock_item', $stockItemMock);

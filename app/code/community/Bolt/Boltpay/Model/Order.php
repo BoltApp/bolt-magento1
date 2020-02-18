@@ -394,23 +394,25 @@ class Bolt_Boltpay_Model_Order extends Bolt_Boltpay_Model_Abstract
             if ( $cartItem->shouldNotBeValidated ){ continue; }
 
             $product = $cartItem->getProduct();
+
+            /** @var Mage_CatalogInventory_Model_Stock_Item $stockItem */
+            $stockItem = Mage::getModel('cataloginventory/stock_item')->loadByProduct($product->getId());
+            $quantityNeeded = $cartItem->getTotalQty();
+            $isOutOfStock = !$stockItem->getIsInStock();
+            $quantityAvailable = $isOutOfStock ? 0 : $stockItem->getQty()-$stockItem->getMinQty();
+            if (!$cartItem->getHasChildren() && ($isOutOfStock || !$stockItem->checkQty($quantityNeeded))) {
+                throw new Bolt_Boltpay_OrderCreationException(
+                    OCE::E_BOLT_OUT_OF_INVENTORY,
+                    OCE::E_BOLT_OUT_OF_INVENTORY_TMPL,
+                    array($product->getId(), $quantityAvailable , $quantityNeeded)
+                );
+            }
+
             if (!$product->isSaleable()) {
                 throw new Bolt_Boltpay_OrderCreationException(
                     OCE::E_BOLT_CART_HAS_EXPIRED,
                     OCE::E_BOLT_CART_HAS_EXPIRED_TMPL_NOT_PURCHASABLE,
                     array($product->getId())
-                );
-            }
-
-            /** @var Mage_CatalogInventory_Model_Stock_Item $stockItem */
-            $stockItem = Mage::getModel('cataloginventory/stock_item')->loadByProduct($product->getId());
-            $quantityNeeded = $cartItem->getTotalQty();
-            $quantityAvailable = $stockItem->getQty()-$stockItem->getMinQty();
-            if (!$cartItem->getHasChildren() && !$stockItem->checkQty($quantityNeeded)) {
-                throw new Bolt_Boltpay_OrderCreationException(
-                    OCE::E_BOLT_OUT_OF_INVENTORY,
-                    OCE::E_BOLT_OUT_OF_INVENTORY_TMPL,
-                    array($product->getId(), $quantityAvailable , $quantityNeeded)
                 );
             }
         }
