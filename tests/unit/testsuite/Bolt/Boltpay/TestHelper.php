@@ -23,7 +23,7 @@ class Bolt_Boltpay_TestHelper
      * @return Mage_Checkout_Model_Cart
      * @throws Exception
      */
-    public function addProduct($productId, $quantity)
+    public static function addProduct($productId, $quantity)
     {
         /** @var Mage_Catalog_Model_Product $product */
         $product = Mage::getModel('catalog/product')->load($productId);
@@ -112,7 +112,7 @@ class Bolt_Boltpay_TestHelper
     /**
      * @return Mage_Sales_Model_Quote
      */
-    public function getCheckoutQuote()
+    public static function getCheckoutQuote()
     {
         /** @var Mage_Checkout_Model_Type_Onepage $checkout */
         $checkout = Mage::getSingleton('checkout/type_onepage');

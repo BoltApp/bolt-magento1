@@ -458,10 +458,10 @@ class Bolt_Boltpay_Model_BoltOrder extends Bolt_Boltpay_Model_Abstract
     /**
      * Utility method that attempts to correct totals if the projected total that was calculated from
      * all items and the given discount, does not match the $magento calculated total.  The totals may vary
-     * do to an error in the internal Magento code
+     * due to an error in the internal Magento code
      *
      * @param int $projectedTotal            total calculated from items, discounts, taxes and shipping
-     * @param int $magentoDerivedCartData    totals returned by magento and formatted for Bolt
+     * @param array $magentoDerivedCartData    totals returned by magento and formatted for Bolt
      *
      * @return array  the corrected Bolt formatted cart data.
      */
