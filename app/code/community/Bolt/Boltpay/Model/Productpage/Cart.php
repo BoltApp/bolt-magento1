@@ -45,15 +45,16 @@ class Bolt_Boltpay_Model_Productpage_Cart extends Bolt_Boltpay_Model_Abstract
     }
 
     /**
-     * Generate Data
+     * Creates cart based on initialized cart request
+     *
+     * @return bool false if an exception occurs, otherwise true
      */
     public function generateData()
     {
         try {
             $this->validateCartRequest();
-            $this->createCart();
-            $immutableQuote = $this->createImmutableQuote();
-            $this->setCartResponse($immutableQuote);
+            $cart = $this->createCart();
+            $this->setCartResponse($cart->getQuote());
         } catch (\Bolt_Boltpay_BadInputException $e) {
             return false;
         } catch (\Exception $e) {
@@ -214,8 +215,8 @@ class Bolt_Boltpay_Model_Productpage_Cart extends Bolt_Boltpay_Model_Abstract
             $stockItem = $product->getStockItem();
 
             ///////////////////////////////////////////////
-            // Remove stock validation as a temporary 
-            // solution for the Bolt backend unable to 
+            // Remove stock validation as a temporary
+            // solution for the Bolt backend unable to
             // handle stock error codes
             // TODO: remove this once Bolt adds PPC
             //       out-of-stock error code support
@@ -230,34 +231,29 @@ class Bolt_Boltpay_Model_Productpage_Cart extends Bolt_Boltpay_Model_Abstract
             );
             $cart->addProduct($product, $param);
         }
-        $cart->getQuote()->setIsBoltPdp(true);
+        $quote = $cart->getQuote();
+        $quote->setIsBoltPdp(true);
         $cart->save();
+
+        //add circular dependency to quote itself as we don't have immutable quote
+        $quote->setParentQuoteId($quote->getId());
+        $quote->reserveOrderId();
+        $quote->save();
 
         return $cart;
     }
 
     /**
-     * The cloned copy of the source quote
+     * Configures response properties based on provided quote data
      *
-     * @return Mage_Sales_Model_Quote
-     * @throws Exception
-     */
-    protected function createImmutableQuote()
-    {
-        $cart = $this->getSessionCart();
-        $sessionQuote = $cart->getQuote();
-
-        return Mage::getModel('boltpay/boltOrder')->cloneQuote($sessionQuote);
-    }
-
-    /**
      * @param Mage_Sales_Model_Quote $quote
-     * @return array
+     *
+     * @return array configured cart response
      */
     protected function setCartResponse($quote)
     {
         $this->cartResponse = array(
-            'order_reference' => $quote->getParentQuoteId(),
+            'order_reference' => $quote->getId(),
             'currency'        => $quote->getQuoteCurrencyCode(),
             'items'           => $this->getGeneratedItems($quote),
             'total_amount'    => $this->getGeneratedTotal()

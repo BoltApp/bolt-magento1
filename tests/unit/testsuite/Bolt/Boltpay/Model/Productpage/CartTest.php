@@ -96,7 +96,6 @@ class Bolt_Boltpay_Model_Productpage_CartTest extends PHPUnit_Framework_TestCase
      * @covers ::init
      * @covers ::validateCartRequest
      * @covers ::createCart
-     * @covers ::createImmutableQuote
      * @covers ::setCartResponse
      *
      * @throws ReflectionException if class tested doesn't have cartRequest property
@@ -135,7 +134,6 @@ class Bolt_Boltpay_Model_Productpage_CartTest extends PHPUnit_Framework_TestCase
      * @covers ::validateProductsQty
      * @covers ::validateProductsStock
      * @covers ::createCart
-     * @covers ::createImmutableQuote
      * @covers ::setCartResponse
      * @depends init_withValidCartRequest_setsInternalCartRequestProperty
      *
@@ -210,24 +208,17 @@ class Bolt_Boltpay_Model_Productpage_CartTest extends PHPUnit_Framework_TestCase
 
     /**
      * @test
-     * that generate data returns false and logs exception thrown from {@see Bolt_Boltpay_Model_BoltOrder::cloneQuote}
+     * that generate data returns false and logs exception if thrown from {@see Bolt_Boltpay_Model_Productpage_Cart::createCart}
      *
      * @covers ::generateData
-     * @covers ::createImmutableQuote
      * @covers ::getProductById
-     * @depends init_withValidCartRequest_setsInternalCartRequestProperty
-     *
-     * @param MockObject|Bolt_Boltpay_Model_Productpage_Cart $currentMock tested class instance from previous test
-     * @throws ReflectionException if unable to stub boltOrder model
      */
-    public function generateData_whenQuoteCloningThrowsException_returnsFalseAndLogsException($currentMock)
+    public function generateData_whenQuoteCloningThrowsException_returnsFalseAndLogsException()
     {
-        $boltOrderMock = $this->getClassPrototype('Bolt_Boltpay_Model_BoltOrder')
-            ->setMethods(array('cloneQuote'))
-            ->getMock();
-        Bolt_Boltpay_TestHelper::stubModel('boltpay/boltOrder', $boltOrderMock);
-        $exception = new Exception('Unable to clone quote');
-        $boltOrderMock->expects($this->once())->method('cloneQuote')->willThrowException($exception);
+        $currentMock = $this->getTestClassPrototype()->setMethods(array('validateCartRequest', 'createCart'))->getMock();
+        $exception = new Exception('Unable to create cart');
+        $currentMock->expects($this->once())->method('validateCartRequest');
+        $currentMock->expects($this->once())->method('createCart')->willThrowException($exception);
 
         $this->boltHelperMock->expects($this->once())->method('notifyException')->with($exception);
         $this->boltHelperMock->expects($this->once())->method('logException')->with($exception);
