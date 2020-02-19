@@ -23,7 +23,7 @@ class Bolt_Boltpay_TestHelper
      * @return Mage_Checkout_Model_Cart
      * @throws Exception
      */
-    public function addProduct($productId, $quantity)
+    public static function addProduct($productId, $quantity)
     {
         /** @var Mage_Catalog_Model_Product $product */
         $product = Mage::getModel('catalog/product')->load($productId);

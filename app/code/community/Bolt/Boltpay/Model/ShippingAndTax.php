@@ -27,7 +27,7 @@ class Bolt_Boltpay_Model_ShippingAndTax extends Bolt_Boltpay_Model_Abstract
      * Applies the address data provide by Bolt to the Magento quote and customer
      *
      * @param Mage_Sales_Model_Quote    $quote             The quote to which the address will be applied
-     * @param array                     $boltAddressData   The Bolt formatted address data
+     * @param object                    $boltAddressData   The Bolt formatted address data
      * @param bool                      $clearCurrentData  If true, the current address data in the quote will be
      *                                                     removed prior to adding the Bolt provided address data
      *
@@ -157,10 +157,12 @@ class Bolt_Boltpay_Model_ShippingAndTax extends Bolt_Boltpay_Model_Abstract
     /**
      * Gets the shipping and the tax estimate for a quote
      *
-     * @param Mage_Sales_Model_Quote  $quote      A quote object with pre-populated addresses
-     * @param object                  $boltOrder  The order information sent by Bolt to the shipping and tax endpoint
+     * @param Mage_Sales_Model_Quote $quote A quote object with pre-populated addresses
+     * @param object                 $boltOrder The order information sent by Bolt to the shipping and tax endpoint
      *
      * @return array    Bolt shipping and tax response array to be converted to JSON
+     *
+     * @throws Exception if unable to save  shipping address
      */
     public function getShippingAndTaxEstimate( Mage_Sales_Model_Quote $quote, $boltOrder = null )
     {
@@ -180,10 +182,10 @@ class Bolt_Boltpay_Model_ShippingAndTax extends Bolt_Boltpay_Model_Abstract
         try {
             $originalCouponCode = $quote->getCouponCode();
             if ($parentQuote) $quote->setCouponCode($parentQuote->getCouponCode());
-            
+
             ///////////////////////////////////////////////////////////////////////////
-            // Fixed issue where Taxjar wasn't getting loaded because we called 
-            // $address->collectTotals before we called $quote->collectTotals because 
+            // Fixed issue where Taxjar wasn't getting loaded because we called
+            // $address->collectTotals before we called $quote->collectTotals because
             // collect totals gets cached would never load Taxjar.
             ///////////////////////////////////////////////////////////////////////////
             $this->boltHelper()->collectTotals(Mage::getModel('sales/quote')->load($quote->getId()), true);
@@ -324,6 +326,7 @@ class Bolt_Boltpay_Model_ShippingAndTax extends Bolt_Boltpay_Model_Abstract
             // When multiple shipping methods apply a discount to the sub-total, collect totals doesn't clear the
             // previously set discount, so the previous discount gets added to each subsequent shipping method that
             // includes a discount. Here we reset it to the original amount to resolve this bug.
+            /** @var Mage_Sales_Model_Quote_Item[] $quoteItems */
             $quoteItems = $quote->getAllItems();
             foreach ($quoteItems as $item) {
                 $item->setData('discount_amount', $item->getOrigData('discount_amount'));
@@ -358,6 +361,10 @@ class Bolt_Boltpay_Model_ShippingAndTax extends Bolt_Boltpay_Model_Abstract
         }
     }
 
+    /**
+     * @param Mage_Sales_Model_Quote_Address $address
+     * @return array
+     */
     protected function getSortedShippingRates($address) {
         $rates = array();
 
@@ -432,15 +439,15 @@ class Bolt_Boltpay_Model_ShippingAndTax extends Bolt_Boltpay_Model_Abstract
     /**
      * Checks whether a P.O. Box exist in the addresses given
      *
-     * @param $address1      The address to be checked for a P.O. Box matching string
-     * @param $address2      If set, second address to be checked.  Useful for checking both shipping and billing in one call.
+     * @param string $address1 The address to be checked for a P.O. Box matching string
+     * @param string $address2 If set, second address to be checked.  Useful for checking both shipping and billing in one call.
      *
      * @return bool     returns true only if any of the provided addresses contain a P.O. Box.  Otherwise, false
      */
     public function doesAddressContainPOBox($address1, $address2 = null)
     {
-        $poBoxRegex = '/^\s*((P(OST)?.?\s*(O(FF(ICE)?)?|B(IN|OX))+.?\s+(B(IN|OX))?)|B(IN|OX))/i';
-        $poBoxRegexStrict = '/(?:P(?:ost(?:al)?)?[\.\-\s]*(?:(?:O(?:ffice)?[\.\-\s]*)?B(?:ox|in|\b|\d)|o(?:ffice|\b)(?:[-\s]*\d)|code)|box[-\s\b]*\d)/i';
+        $poBoxRegex = /** @lang PhpRegExp */ '/^\s*((P(OST)?.?\s*(O(FF(ICE)?)?|B(IN|OX))+.?\s+(B(IN|OX))?)|B(IN|OX))/i';
+        $poBoxRegexStrict = /** @lang PhpRegExp */ '/(?:P(?:ost(?:al)?)?[\.\-\s]*(?:(?:O(?:ffice)?[\.\-\s]*)?B(?:ox|in|\b|\d)|o(?:ffice|\b)(?:[-\s]*\d)|code)|box[-\s\b]*\d)/i';
 
         return preg_match($poBoxRegex, $address1)
             || preg_match($poBoxRegex, $address2)
