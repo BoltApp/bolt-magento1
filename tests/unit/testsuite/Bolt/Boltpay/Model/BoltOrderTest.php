@@ -13,7 +13,6 @@ use PHPUnit_Framework_MockObject_MockObject as MockObject;
 class Bolt_Boltpay_Model_BoltOrderTest extends PHPUnit_Framework_TestCase
 {
 	use Bolt_Boltpay_MockingTrait;
-	use Bolt_Boltpay_BoltGlobalTrait;
 
 	/** @var string Name of tested class */
 	protected $testClassName = 'Bolt_Boltpay_Model_BoltOrder';
@@ -617,24 +616,8 @@ class Bolt_Boltpay_Model_BoltOrderTest extends PHPUnit_Framework_TestCase
 				'tax_amount' => 500,
 				'shipments' => array(
 					array(
-						'shipping_address' =>
-							array(
-								'email' => 'test@bolt.com',
-								'first_name' => 'Luke',
-								'last_name' => 'Skywalker',
-								'street_address1' => 'Sample Street 10',
-								'street_address3' => 'Apt 123',
-								'street_address2' => '4th Floor',
-								'street_address4' => 'Attention: Jedi Knights',
-								'locality' => 'Los Angeles',
-								'postal_code' => '90014',
-								'phone' => '+1 867 345 123 5681',
-								'country_code' => 'US',
-								'company' => 'Bolt',
-								'region' => 'California',
-							),
 						'tax_amount' => 0,
-						'service' => $this->boltHelper()->__('No Shipping Required'),
+						'service' => 'No Shipping Required',
 						'reference' => 'noshipping',
 						'cost' => 0,
 					),
@@ -2706,8 +2689,8 @@ PROMISE;
 			$cartSubmissionData,
 			array('shipments' => array(array(
 				'tax_amount' => 0,
-				'service' => $this->boltHelper()->__('No Shipping Required'),
-				'reference' => "noshipping",
+				'service' => 'No Shipping Required',
+				'reference' => 'noshipping',
 				'cost' => 0
 			)))
 		);
