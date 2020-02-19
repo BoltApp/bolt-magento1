@@ -420,9 +420,9 @@ class Bolt_Boltpay_Model_BoltOrder extends Bolt_Boltpay_Model_Abstract
     protected function addShippingForAdmin($totalsBlock, &$cartSubmissionData, $shippingRate, $boltFormatAddress, $quote ) {
         $totalShipping = 0;
         if ($shippingRate){
-            /* @var Mage_Sales_Model_Quote_Address_Total $shippingTotal */
-            $shippingTotal =  $totalsBlock->getTotals()['shipping'];
-            $totalShipping = $shippingTotal ? (int) round($shippingTotal->getValue() * 100) : 0;
+            /* @var Mage_Sales_Model_Quote_Address_Total $addressShippingTotal */
+            $addressShippingTotal =  $totalsBlock->getTotals()['shipping'];
+            $totalShipping = $addressShippingTotal ? (int) round($addressShippingTotal->getValue() * 100) : 0;
             $cartSubmissionData['shipments'] = array(array(
                 'shipping_address' => $boltFormatAddress,
                 'tax_amount'       => 0,
