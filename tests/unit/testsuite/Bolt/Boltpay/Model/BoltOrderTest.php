@@ -1,7 +1,4 @@
 <?php
-require_once('TestHelper.php');
-
-use Bolt_Boltpay_TestHelper as TestHelper;
 
 require_once('TestHelper.php');
 require_once('CouponHelper.php');
