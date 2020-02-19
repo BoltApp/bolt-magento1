@@ -394,23 +394,25 @@ class Bolt_Boltpay_Model_Order extends Bolt_Boltpay_Model_Abstract
             if ( $cartItem->shouldNotBeValidated ){ continue; }
 
             $product = $cartItem->getProduct();
+
+            /** @var Mage_CatalogInventory_Model_Stock_Item $stockItem */
+            $stockItem = Mage::getModel('cataloginventory/stock_item')->loadByProduct($product->getId());
+            $quantityNeeded = $cartItem->getTotalQty();
+            $isOutOfStock = !$stockItem->getIsInStock();
+            $quantityAvailable = $isOutOfStock ? 0 : $stockItem->getQty()-$stockItem->getMinQty();
+            if (!$cartItem->getHasChildren() && ($isOutOfStock || !$stockItem->checkQty($quantityNeeded))) {
+                throw new Bolt_Boltpay_OrderCreationException(
+                    OCE::E_BOLT_OUT_OF_INVENTORY,
+                    OCE::E_BOLT_OUT_OF_INVENTORY_TMPL,
+                    array($product->getId(), $quantityAvailable , $quantityNeeded)
+                );
+            }
+
             if (!$product->isSaleable()) {
                 throw new Bolt_Boltpay_OrderCreationException(
                     OCE::E_BOLT_CART_HAS_EXPIRED,
                     OCE::E_BOLT_CART_HAS_EXPIRED_TMPL_NOT_PURCHASABLE,
                     array($product->getId())
-                );
-            }
-
-            /** @var Mage_CatalogInventory_Model_Stock_Item $stockItem */
-            $stockItem = Mage::getModel('cataloginventory/stock_item')->loadByProduct($product->getId());
-            $quantityNeeded = $cartItem->getTotalQty();
-            $quantityAvailable = $stockItem->getQty()-$stockItem->getMinQty();
-            if (!$cartItem->getHasChildren() && !$stockItem->checkQty($quantityNeeded)) {
-                throw new Bolt_Boltpay_OrderCreationException(
-                    OCE::E_BOLT_OUT_OF_INVENTORY,
-                    OCE::E_BOLT_OUT_OF_INVENTORY_TMPL,
-                    array($product->getId(), $quantityAvailable , $quantityNeeded)
                 );
             }
         }
@@ -437,7 +439,7 @@ class Bolt_Boltpay_Model_Order extends Bolt_Boltpay_Model_Abstract
      *                                        -  object (bolt) transaction (ONLY pre-auth; will be empty for admin)
      *
      *
-     * @throws Exception    if an unknown error occurs
+     * @throws Exception    if order is empty or order creation is not allowed
      * @throws Bolt_Boltpay_OrderCreationException if the bottom line price total differs by allowed tolerance
      *
      */
@@ -461,13 +463,30 @@ class Bolt_Boltpay_Model_Order extends Bolt_Boltpay_Model_Abstract
         }
         /////////////////////////////////////////////////////////////
 
-        $payment = $order->getPayment();
-
         /** @var Mage_Sales_Model_Quote $quote */
         $immutableQuote = $order->getQuote();
         $boltTransaction = $immutableQuote->getTransaction();
 
-        if ( (strtolower($payment->getMethod()) !== Bolt_Boltpay_Model_Payment::METHOD_CODE) || empty($boltTransaction) ) {
+        // Do not validate non-Bolt orders
+        if ( !$this->isBoltOrder($order) ) {
+            return;
+        }
+
+        /////////////////////////////////////////////////////////////
+        /// Refuse Bolt order creation for orders triggered
+        /// outside of official Bolt Paths
+        /////////////////////////////////////////////////////////////
+        if (
+            !Bolt_Boltpay_Helper_Data::$fromHooks
+            && !Mage::app()->getStore()->isAdmin()
+        ) {
+            throw new Exception('Order creation with Boltpay not allowed for this path');
+        }
+        /////////////////////////////////////////////////////////////
+
+        // Bolt order pre-commit validation can be canceled by removing the Bolt transaction
+        // from the order's quote in the bolt_boltpay_validation_pre_order_commit_before event
+        if( empty($boltTransaction) ) {
             return;
         }
 

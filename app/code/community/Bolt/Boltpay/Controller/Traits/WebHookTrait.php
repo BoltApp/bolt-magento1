@@ -46,6 +46,10 @@ trait Bolt_Boltpay_Controller_Traits_WebHookTrait {
      */
     public function preDispatch()
     {
+        # Allows actions to be used even if the Bolt plugin is disabled.
+        # This accounts for orders that have already been processed by Bolt
+        Bolt_Boltpay_Helper_Data::$fromHooks = true;
+
         # disables web server compression if enabled
         @ini_set("zlib.output_compression", 0);
 

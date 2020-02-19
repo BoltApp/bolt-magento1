@@ -1,4 +1,7 @@
 <?php
+require_once('TestHelper.php');
+
+use Bolt_Boltpay_TestHelper as TestHelper;
 
 require_once('TestHelper.php');
 require_once('CouponHelper.php');
@@ -2652,5 +2655,46 @@ PROMISE;
             array('checkoutType' => Bolt_Boltpay_Block_Checkout_Boltpay::CHECKOUT_TYPE_MULTI_PAGE),
             array('checkoutType' => Bolt_Boltpay_Block_Checkout_Boltpay::CHECKOUT_TYPE_FIRECHECKOUT),
         );
+    }
+
+    /**
+     * @test
+     * @throws ReflectionException
+     */
+    public function addShippingForAdmin_ifQuoteIsVirtual()
+    {
+        $quoteMock = $this->getMockBuilder(Mage_Sales_Model_Quote::class)
+            ->setMethods(array('isVirtual'))
+            ->disableOriginalConstructor()
+            ->disableOriginalClone()
+            ->disableArgumentCloning()
+            ->getMock();
+
+        $quoteMock->method('isVirtual')
+            ->willReturn(1);
+
+        $cartSubmissionData = array();
+        $result = TestHelper::callNonPublicFunction(
+            $this->currentMock,
+            'addShippingForAdmin',
+            array(
+                null,
+                &$cartSubmissionData,
+                null,
+                null,
+                $quoteMock
+            )
+        );
+
+        $this->assertEquals(
+            $cartSubmissionData,
+            array('shipments' => array(array(
+                'tax_amount' => 0,
+                'service' => $this->boltHelper()->__('No Shipping Required'),
+                'reference' => "noshipping",
+                'cost' => 0
+            )))
+        );
+        $this->assertEquals(0, $result);
     }
 }
