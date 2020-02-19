@@ -513,7 +513,7 @@ class Bolt_Boltpay_Model_Payment extends Mage_Payment_Model_Method_Abstract
                 }
 
                 if (Payment::isCaptureRequest($newTransactionStatus, $prevTransactionStatus)) {
-                    $this->createInvoiceForHookRequest($payment, $boltTransaction);
+                    $this->createInvoiceForHookRequest($payment, $boltTransaction, $transactionAmount);
                 }elseif ($newTransactionStatus == self::TRANSACTION_AUTHORIZED) {
                     $order = $payment->getOrder();
                     $payment->setTransactionId($reference);
@@ -893,11 +893,28 @@ class Bolt_Boltpay_Model_Payment extends Mage_Payment_Model_Method_Abstract
      *
      * @param Mage_Payment_Model_Info $payment          The Magento order payment of this payment
      * @param object                  $boltTransaction  The fetched Bolt transaction
+     * @param float                   $amount           The amount requested to be captured
      *
+     * @throws Exception on an invalid capture amount
      */
-    protected function createInvoiceForHookRequest(Mage_Payment_Model_Info $payment, $boltTransaction)
+    protected function createInvoiceForHookRequest(Mage_Payment_Model_Info $payment, $boltTransaction, $amount)
     {
-        $boltCaptures = $this->getNewBoltCaptures($payment, $boltTransaction);
+        /////////////////////////////////////////////////////////////////////
+        /// Before doing our capture "magic" code, we first keep it simple and
+        /// see if it is safe to capture the amount that the hook is
+        /// requesting us to capture.  Only if a capture for the same
+        /// amount has been detected will we attempt to do our capture
+        /// "magic" which ignores the amount requested by the hook and attempts
+        /// to capture anything that appears to be outstanding
+        /////////////////////////////////////////////////////////////////////
+        # simple approach
+        $boltCaptures = $this->removeInvoicedCaptures($payment, array($amount*100));
+
+        # capture "magic"
+        if (empty($boltCaptures)) {
+            $boltCaptures = $this->getNewBoltCaptures($payment, $boltTransaction);
+        }
+        /////////////////////////////////////////////////////////////////////
 
         $order = $payment->getOrder();
         $order->setStatus(Mage_Sales_Model_Order::STATE_PROCESSING);
@@ -906,7 +923,7 @@ class Bolt_Boltpay_Model_Payment extends Mage_Payment_Model_Method_Abstract
         if (count($boltCaptures) == 0 && $order->getGrandTotal() == 0) {
             $boltCaptures = $this->removeInvoicedCaptures($payment, array(0));
         }
-        // Create invoices for items from $boltCaptures that are not exists on Magento
+        // Create invoices for items from $boltCaptures that do not exists on Magento
         $identifier = count($boltCaptures) > 1 ? 0 : null;
         foreach ($boltCaptures as $captureAmount) {
             $invoice = $this->createInvoice($order, $captureAmount / 100, $boltTransaction);
