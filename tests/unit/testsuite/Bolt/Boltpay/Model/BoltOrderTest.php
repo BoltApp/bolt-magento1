@@ -13,6 +13,7 @@ use PHPUnit_Framework_MockObject_MockObject as MockObject;
 class Bolt_Boltpay_Model_BoltOrderTest extends PHPUnit_Framework_TestCase
 {
 	use Bolt_Boltpay_MockingTrait;
+	use Bolt_Boltpay_BoltGlobalTrait;
 
 	/** @var string Name of tested class */
 	protected $testClassName = 'Bolt_Boltpay_Model_BoltOrder';
