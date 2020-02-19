@@ -280,22 +280,7 @@ class Bolt_Boltpay_Model_BoltOrder extends Bolt_Boltpay_Model_Abstract
                     $shippingMethodBlock = $this->createLayoutBlock("adminhtml/sales_order_create_shipping_method_form");
                     $shippingRate = $shippingMethodBlock->getActiveMethodRate();
 
-                    if ($shippingRate) {
-                        /* @var Mage_Sales_Model_Quote_Address_Total $shippingTotal */
-                        $shippingTotal = $totalsBlock->getTotals()['shipping'];
-
-                        $this->addShippingForAdmin( $shippingTotal, $cartSubmissionData, $shippingRate, $cartShippingAddress);
-                    }else{
-                        if($quote->isVirtual()){
-                            $cartSubmissionData['shipments'] = array(array(
-                                'shipping_address' => $cartShippingAddress,
-                                'tax_amount'       => 0,
-                                'service'          => $this->boltHelper()->__('No Shipping Required'),
-                                'reference'        => "noshipping",
-                                'cost'             => 0
-                            ));
-                        }
-                    }
+                    $this->addShippingForAdmin($totalsBlock, $cartSubmissionData, $shippingRate, $cartShippingAddress, $quote);
                 }
 
                 $calculatedTotal += isset($cartSubmissionData['shipments']) ? array_sum(array_column($cartSubmissionData['shipments'], 'cost')) : 0;
@@ -424,7 +409,7 @@ class Bolt_Boltpay_Model_BoltOrder extends Bolt_Boltpay_Model_Abstract
     /**
      * Adds the calculated shipping to the Bolt order from the admin context
      *
-     * @param Mage_Sales_Model_Quote_Address_Total  $shippingTotal      calculated shipping totals
+     * @param Mage_Adminhtml_Block_Sales_Order_Create_Totals  $totalsBlock      totals block
      * @param array                                 $cartSubmissionData data to be sent to Bolt
      * @param Mage_Sales_Model_Quote_Address_Rate   $shippingRate       shipping rate meta data
      * @param array                                 $boltFormatAddress  shipping address in Bolt format
@@ -432,15 +417,30 @@ class Bolt_Boltpay_Model_BoltOrder extends Bolt_Boltpay_Model_Abstract
      *
      * @return int    The total shipping in cents
      */
-    protected function addShippingForAdmin( $shippingTotal, &$cartSubmissionData, $shippingRate, $boltFormatAddress, $quote ) {
-        $totalShipping = $shippingTotal ? (int) round($shippingTotal->getValue() * 100) : 0;
-        $cartSubmissionData['shipments'] = array(array(
-            'shipping_address' => $boltFormatAddress,
-            'tax_amount'       => 0,
-            'service'          => $shippingRate->getMethodTitle(),
-            'carrier'          => $shippingRate->getCarrierTitle(),
-            'cost'             => $totalShipping,
-        ));
+    protected function addShippingForAdmin($totalsBlock, &$cartSubmissionData, $shippingRate, $boltFormatAddress, $quote ) {
+        $totalShipping = 0;
+        if ($shippingRate){
+            /* @var Mage_Sales_Model_Quote_Address_Total $addressShippingTotal */
+            $addressShippingTotal =  $totalsBlock->getTotals()['shipping'];
+            $totalShipping = $addressShippingTotal ? (int) round($addressShippingTotal->getValue() * 100) : 0;
+            $cartSubmissionData['shipments'] = array(array(
+                'shipping_address' => $boltFormatAddress,
+                'tax_amount'       => 0,
+                'service'          => $shippingRate->getMethodTitle(),
+                'carrier'          => $shippingRate->getCarrierTitle(),
+                'cost'             => $totalShipping,
+            ));
+        }else{
+            if ($quote->isVirtual()) {
+                $cartSubmissionData['shipments'] = array(array(
+                    'tax_amount'       => 0,
+                    'service'          => $this->boltHelper()->__('No Shipping Required'),
+                    'reference'        => "noshipping",
+                    'cost'             => $totalShipping
+                ));
+            }
+        }
+
         return $totalShipping;
     }
 
