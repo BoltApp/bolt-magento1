@@ -634,7 +634,7 @@ class Bolt_Boltpay_Model_BoltOrderTest extends PHPUnit_Framework_TestCase
 								'region' => 'California',
 							),
 						'tax_amount' => 0,
-						'service' => 'No Shipping Required',
+						'service' => $this->boltHelper()->__('No Shipping Required'),
 						'reference' => 'noshipping',
 						'cost' => 0,
 					),
