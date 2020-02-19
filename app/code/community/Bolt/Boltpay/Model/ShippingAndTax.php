@@ -157,7 +157,7 @@ class Bolt_Boltpay_Model_ShippingAndTax extends Bolt_Boltpay_Model_Abstract
     /**
      * Gets the shipping and the tax estimate for a quote
      *
-     * @param Mage_Sales_Model_Quote $quote A quote object with pre-populated addresses
+     * @param Mage_Sales_Model_Quote $quote     A quote object with pre-populated addresses
      * @param object                 $boltOrder The order information sent by Bolt to the shipping and tax endpoint
      *
      * @return array    Bolt shipping and tax response array to be converted to JSON
