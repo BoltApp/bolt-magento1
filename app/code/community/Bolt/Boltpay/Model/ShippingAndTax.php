@@ -467,6 +467,8 @@ class Bolt_Boltpay_Model_ShippingAndTax extends Bolt_Boltpay_Model_Abstract
      * @throws Exception  if there is a failure saving the customer or address data to the database
      *
      * @deprecated Use {@see Bolt_Boltpay_Model_ShippingAndTax::applyBoltAddressData()} instead
+     * 
+     * @codeCoverageIgnore
      */
     public function applyShippingAddressToQuote($quote, $shippingAddress) {
         return $this->applyBoltAddressData($quote, $shippingAddress);
