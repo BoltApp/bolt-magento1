@@ -344,7 +344,7 @@ JS;
 
     /**
      * Formats the result as an array statuses while defining the default value as a single element array
-     * containing {@see Bolt_Boltpay_Model_Payment::TRANSACTION_PRE_AUTH_PENDING}
+     * containing {@see Bolt_Boltpay_Model_Payment::TRANSACTION_PRE_AUTH_PENDING, Bolt_Boltpay_Model_Payment::TRANSACTION_PENDING}
      *
      * @param int|string $rawConfigValue    The config value pre-filter. Will be comma delimited string
      * @param array      $additionalParams  unused for this filter
@@ -354,7 +354,7 @@ JS;
     public function filterAllowedReceptionStatuses($rawConfigValue, $additionalParams = array() ) {
         return !empty($rawConfigValue)
             ? array_map('trim', explode(',', $rawConfigValue))
-            : array(Bolt_Boltpay_Model_Payment::TRANSACTION_PRE_AUTH_PENDING)
+            : array(Bolt_Boltpay_Model_Payment::TRANSACTION_PRE_AUTH_PENDING, Bolt_Boltpay_Model_Payment::TRANSACTION_PENDING)
         ;
     }
 
