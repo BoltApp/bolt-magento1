@@ -363,12 +363,13 @@ class Bolt_Boltpay_Helper_GeneralTraitTest extends PHPUnit_Framework_TestCase
      * @covers       Bolt_Boltpay_Helper_GeneralTrait::getCartDataJs
      *
      * @param string $checkoutType Bolt parameter
+     * @param string $configureCall expected Bolt configure call
      */
-    public function getCartDataJs_withVariousCheckoutTypes_returnsCartData($checkoutType)
+    public function getCartDataJs_withVariousCheckoutTypes_returnsCartData($checkoutType, $configureCall)
     {
         $cartDataJs = $this->currentMock->getCartDataJs($checkoutType);
         $this->assertContains('window.BoltModal', $cartDataJs);
-        $this->assertContains('BoltCheckout.configure(', $cartDataJs);
+        $this->assertContains($configureCall, $cartDataJs);
     }
 
     /**
@@ -379,11 +380,26 @@ class Bolt_Boltpay_Helper_GeneralTraitTest extends PHPUnit_Framework_TestCase
     public function getCartDataJs_withVariousCheckoutTypes_returnsCartDataProvider()
     {
         return array(
-            'Admin checkout type'        => array('checkoutType' => 'admin'),
-            'Multi-page checkout type'   => array('checkoutType' => 'multi-page'),
-            'One-page checkout type'     => array('checkoutType' => 'one-page'),
-            'Firecheckout type'          => array('checkoutType' => 'firecheckout'),
-            'Product page checkout type' => array('checkoutType' => 'product-page'),
+            'Admin checkout type'        => array(
+                'checkoutType'  => 'admin',
+                'configureCall' => 'BoltCheckout.configure'
+            ),
+            'Multi-page checkout type'   => array(
+                'checkoutType'  => 'multi-page',
+                'configureCall' => 'BoltCheckout.configure'
+            ),
+            'One-page checkout type'     => array(
+                'checkoutType'  => 'one-page',
+                'configureCall' => 'BoltCheckout.configure'
+            ),
+            'Firecheckout type'          => array(
+                'checkoutType'  => 'firecheckout',
+                'configureCall' => 'BoltCheckout.configure'
+            ),
+            'Product page checkout type' => array(
+                'checkoutType'  => 'product-page',
+                'configureCall' => 'BoltCheckout.configureProductCheckout'
+            ),
         );
     }
 

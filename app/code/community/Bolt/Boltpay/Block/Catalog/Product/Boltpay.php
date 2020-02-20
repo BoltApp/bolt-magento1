@@ -26,13 +26,14 @@
  * create the order on Bolt side through the javascript BoltCheckout.configureProductCheckout process.
  *
  */
-class Bolt_Boltpay_Block_Catalog_Product_Boltpay extends Mage_Core_Block_Template
+class Bolt_Boltpay_Block_Catalog_Product_Boltpay extends Bolt_Boltpay_Block_Checkout_Boltpay
 {
     use Bolt_Boltpay_BoltGlobalTrait;
 
     /**
      * Get Product Tier Price
      * @return mixed
+     * @deprecated
      */
     public function getProductTierPrice()
     {
@@ -40,9 +41,10 @@ class Bolt_Boltpay_Block_Catalog_Product_Boltpay extends Mage_Core_Block_Templat
     }
 
     /**
-     * Initiates sets up BoltCheckout config.
+     * Generates BoltCheckout cart configuration for product page checkout
      *
-     * @return string
+     * @return string JSON encoded Bolt cart data containing current product
+     * @deprecated
      */
     public function getCartDataJsForProductPage()
     {
@@ -50,7 +52,6 @@ class Bolt_Boltpay_Block_Catalog_Product_Boltpay extends Mage_Core_Block_Templat
             $currency = Mage::app()->getStore()->getCurrentCurrencyCode();
 
             $productCheckoutCartItem = [];
-            $totalAmount = (float) 0;
 
             /** @var Mage_Catalog_Model_Product $_product */
             $_product = Mage::registry('current_product');
@@ -94,6 +95,7 @@ class Bolt_Boltpay_Block_Catalog_Product_Boltpay extends Mage_Core_Block_Templat
      * @param bool   $isVirtualQuote
      *
      * @return string
+     * @deprecated
      */
     public function getBoltCallbacks($checkoutType = Bolt_Boltpay_Block_Checkout_Boltpay::CHECKOUT_TYPE_PRODUCT_PAGE, $isVirtualQuote = false )
     {
@@ -101,8 +103,15 @@ class Bolt_Boltpay_Block_Catalog_Product_Boltpay extends Mage_Core_Block_Templat
     }
 
     /**
-     * @param string $successCustom
-     * @return string
+     * Generates on success callback for product page checkout
+     *
+     * @param string $successCustom javascript callback to be included in AJAX success callback
+     *
+     * @return string on success javascript callback
+     *
+     * @throws Mage_Core_Model_Store_Exception if unable to get save order URL
+     *
+     * @deprecated
      */
     public function buildOnSuccessCallback($successCustom = '')
     {
@@ -126,8 +135,15 @@ class Bolt_Boltpay_Block_Catalog_Product_Boltpay extends Mage_Core_Block_Templat
     }
 
     /**
-     * @param $closeCustom
-     * @return string
+     * Generates on close callback for product page checkout
+     *
+     * @param string $closeCustom callback to be included in returned javascript
+     *
+     * @return string on close javascript callback
+     *
+     * @throws Mage_Core_Model_Store_Exception if unable to get success URL
+     *
+     * @deprecated
      */
     public function buildOnCloseCallback($closeCustom = '')
     {
@@ -139,15 +155,6 @@ class Bolt_Boltpay_Block_Catalog_Product_Boltpay extends Mage_Core_Block_Templat
                 location.href = '$successUrl';
             }
             ";
-    }
-
-    /**
-     * Returns the Enabled Bolt configuration option value.
-     * @return bool
-     */
-    public function isBoltActive()
-    {
-        return $this->boltHelper()->isBoltPayActive();
     }
 
     /**
@@ -193,6 +200,8 @@ class Bolt_Boltpay_Block_Catalog_Product_Boltpay extends Mage_Core_Block_Templat
      * @return int -1 Ignore product quantity levels
      *              0 if product is out of stock
      *              positive value otherwise
+     *
+     * @deprecated
      */
     public function getProductMaxQty()
     {
@@ -206,5 +215,24 @@ class Bolt_Boltpay_Block_Catalog_Product_Boltpay extends Mage_Core_Block_Templat
         } else {
             return $stockItem->getQty();
         }
+    }
+
+    /**
+     * Returns product data needed for price calculation in JSON format
+     *
+     * @return string
+     */
+    public function getProductJSON()
+    {
+        /** @var Mage_Catalog_Model_Product $product */
+        $product = Mage::registry('current_product');
+        return Mage::helper('core')->jsonEncode(
+            array(
+                'id'         => $product->getId(),
+                'name'       => $product->getName(),
+                'price'      => $product->getFinalPrice(),
+                'tier_prices' => $product->getTierPrice()
+            )
+        );
     }
 }

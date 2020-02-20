@@ -283,24 +283,65 @@ class Bolt_Boltpay_Helper_DataTest extends PHPUnit_Framework_TestCase
     /**
      * @test
      * that buildOnCheckCallback returns quantity check for product page checkout regardless if quote is virtual or not
+     * if product is in stock
      *
      * @covers ::buildOnCheckCallback
      *
      * @dataProvider buildOnCheckCallback_whenCheckoutTypeIsProductPageProvider
      *
      * @param bool $isVirtualQuote flag designating whether quote is virtual or not
+     *
+     * @throws Mage_Core_Exception if unable to stub current product
      */
-    public function buildOnCheckCallback_whenCheckoutTypeIsProductPage_returnsQuantityCheck($isVirtualQuote)
+    public function buildOnCheckCallback_whenCheckoutTypeIsProductPageAndProductInStock_returnsQuantityCheck($isVirtualQuote)
     {
+        $stockItem = Mage::getModel('cataloginventory/stock_item', array('qty' => mt_rand(), 'is_in_stock' => true));
+        $product = Mage::getModel('catalog/product', array('stock_item' => $stockItem));
+
+        Bolt_Boltpay_TestHelper::stubRegistryValue('current_product', $product);
         $expected = <<<JS
-if(max_qty !== -1 && boltConfigPDP._jsonProductCart.items[0].quantity > max_qty) {
+if(boltConfigPDP.getQty() > Number({$stockItem->getQty()})) {
     if ((typeof BoltPopup !== 'undefined')) {
-        BoltPopup.setMessage('The requested quantity is not available.');
+        BoltPopup.setMessage('{$this->currentMock->__("The requested quantity is not available.")}');
         BoltPopup.show();
     }
     return false;
 }
 JS;
+        $result = $this->currentMock->buildOnCheckCallback(
+            Bolt_Boltpay_Block_Checkout_Boltpay::CHECKOUT_TYPE_PRODUCT_PAGE,
+            $isVirtualQuote
+        );
+        $this->assertEquals(preg_replace('/\s+/', '', $expected), preg_replace('/\s+/', '', $result));
+    }
+
+    /**
+     * @test
+     * that buildOnCheckCallback returns quantity check for product page checkout regardless if quote is virtual or not
+     * if product is not in stock that always fails
+     *
+     * @covers ::buildOnCheckCallback
+     *
+     * @dataProvider buildOnCheckCallback_whenCheckoutTypeIsProductPageProvider
+     *
+     * @param bool $isVirtualQuote flag designating whether quote is virtual or not
+     *
+     * @throws Mage_Core_Exception if unable to stub current product
+     */
+    public function buildOnCheckCallback_whenCheckoutTypeIsProductPageAndProductIsOutOfStock_returnsCheckThatFails($isVirtualQuote)
+    {
+        $stockItem = Mage::getModel(
+            'cataloginventory/stock_item',
+            array('qty'                     => mt_rand(),
+                  'is_in_stock'             => false,
+                  'manage_stock'            => true,
+                  'use_config_manage_stock' => false
+            )
+        );
+        $product = Mage::getModel('catalog/product', array('stock_item' => $stockItem));
+
+        Bolt_Boltpay_TestHelper::stubRegistryValue('current_product', $product);
+        $expected = 'return false;';
         $result = $this->currentMock->buildOnCheckCallback(
             Bolt_Boltpay_Block_Checkout_Boltpay::CHECKOUT_TYPE_PRODUCT_PAGE,
             $isVirtualQuote

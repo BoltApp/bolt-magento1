@@ -1543,12 +1543,13 @@ SCSS;
      * @param string $checkoutType currently in use
      * @param bool   $cloneOnClick extra-config flag for cloneOnClick
      * @param bool   $isShoppingCartPage whether current page is checkout/cart
+     * @param bool   $isVirtual quote flag
      *
      * @return array containing hint data, cart data, mock instance and quote mock
      * @throws Mage_Core_Exception if unable to stub helper
      * @throws Exception if test class name is not set
      */
-    private function buildBoltCheckoutJavascript_withVariousConfigsSetUp($checkoutType, $cloneOnClick = false, $isShoppingCartPage = false)
+    private function buildBoltCheckoutJavascript_withVariousConfigsSetUp($checkoutType, $cloneOnClick = false, $isShoppingCartPage = false, $isVirtual = false)
     {
         $hintData = array(
             'signed_merchant_user_id' => array(
@@ -1570,13 +1571,14 @@ SCSS;
         /** @var MockObject|Mage_Sales_Model_Quote $quoteMock */
         $quoteMock = $this->getClassPrototype('Mage_Sales_Model_Quote')->getMock();
         $quoteMock->method('getId')->willReturn(self::QUOTE_ID);
+        $quoteMock->method('getIsVirtual')->willReturn($isVirtual);
 
         $boltCallbacksDummyValue = '/*BOLT-CALLBACKS*/';
-        $this->boltHelperMock->expects($this->once())->method('getBoltCallbacks')->with($checkoutType, $quoteMock)
+        $this->boltHelperMock->expects($this->once())->method('getBoltCallbacks')->with($checkoutType, $isVirtual)
             ->willReturn($boltCallbacksDummyValue);
         $this->boltHelperMock->expects($this->once())->method('getPaymentBoltpayConfig')->with('check', $checkoutType)
             ->willReturn(self::CHECK_FUNCTION);
-        $this->boltHelperMock->expects($this->once())->method('buildOnCheckCallback')->with($checkoutType, $quoteMock)
+        $this->boltHelperMock->expects($this->once())->method('buildOnCheckCallback')->with($checkoutType, $isVirtual)
             ->willReturn(self::ON_CHECK_CALLBACK);
         $this->boltHelperMock->method('getExtraConfig')->willReturnMap(
             array(
@@ -1722,6 +1724,66 @@ SCSS;
                 'expectPostponedConfiguration' => true
             ),
         );
+    }
+
+    /**
+     * @test
+     * that buildBoltCheckoutJavascript returns expected javascript for product page checkout
+     *
+     * @covers ::buildBoltCheckoutJavascript
+     *
+     * @throws Mage_Core_Exception if unable to stub current product
+     */
+    public function buildBoltCheckoutJavascript_forProductPageCheckout_returnsBoltJs()
+    {
+        $checkoutType = BoltpayCheckoutBlock::CHECKOUT_TYPE_PRODUCT_PAGE;
+        list($hintData, $cartData, $currentMock, $quoteMock) = $this->buildBoltCheckoutJavascript_withVariousConfigsSetUp(
+            $checkoutType,
+            false,
+            false
+        );
+        $this->boltHelperMock->expects($this->once())->method('doFilterEvent')
+            ->with(
+                'bolt_boltpay_filter_bolt_checkout_javascript',
+                $this->callback(
+                    function ($js) use ($cartData, $hintData) {
+                        $this->assertContains(
+                            sprintf('var $hints_transform = %s;', self::HINTS_TRANSFORM_FUNCTION),
+                            $js
+                        );
+                        $jsonCart = 'boltConfigPDP.getCartData();';
+                        $this->assertContains(
+                            preg_replace('/\s*/', '', "var get_json_cart = function() { return {$jsonCart} };"),
+                            preg_replace('/\s*/', '', $js)
+                        );
+                        $this->assertContains(
+                            sprintf(
+                                'var json_hints = $hints_transform(%s);',
+                                json_encode($hintData, JSON_FORCE_OBJECT)
+                            ),
+                            $js
+                        );
+                        $this->assertContains(sprintf("var quote_id = '%s';", self::QUOTE_ID), $js);
+                        $this->assertContains('var order_completed = false;', $js);
+                        $this->assertContains('var do_checks = 1;', $js);
+                        $windowBoltModal = explode('window.BoltModal = ', $js)[1];
+                        $this->assertContains(
+                            "BoltCheckout.configureProductCheckout(get_json_cart(),json_hints,/*BOLT-CALLBACKS*/,{checkoutButtonClassName:'bolt-product-checkout-button'});",
+                            preg_replace('/\s*/', '', $windowBoltModal)
+                        );
+
+                        return true;
+                    }
+                ),
+                array(
+                    'checkoutType' => $checkoutType,
+                    'quote'        => $quoteMock,
+                    'hintData'     => $hintData,
+                    'cartData'     => $cartData
+                )
+            );
+
+        $currentMock->buildBoltCheckoutJavascript($checkoutType, $quoteMock, $hintData, $cartData);
     }
 
     /**

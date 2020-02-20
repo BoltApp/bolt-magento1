@@ -96,7 +96,6 @@ class Bolt_Boltpay_Model_Productpage_CartTest extends PHPUnit_Framework_TestCase
      * @covers ::init
      * @covers ::validateCartRequest
      * @covers ::createCart
-     * @covers ::setCartResponse
      *
      * @throws ReflectionException if class tested doesn't have cartRequest property
      * @throws Exception if the variable $testClassName is not specified in the class
