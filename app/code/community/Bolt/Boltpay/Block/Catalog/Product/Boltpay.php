@@ -67,18 +67,18 @@ class Bolt_Boltpay_Block_Catalog_Product_Boltpay extends Bolt_Boltpay_Block_Chec
 
             $productCheckoutCartItem[] = [
                 'reference' => $_product->getId(),
-                'price' => $_product->getFinalPrice(),
-                'quantity' => 1,
-                'image' => $_product->getImageUrl(),
-                'name' => $_product->getName(),
+                'price'     => $_product->getFinalPrice(),
+                'quantity'  => 1,
+                'image'     => $_product->getImageUrl(),
+                'name'      => $_product->getName(),
             ];
             $totalAmount = $_product->getFinalPrice();
 
 
             $productCheckoutCart = [
                 'currency' => $currency,
-                'items' => $productCheckoutCartItem,
-                'total' => $totalAmount,
+                'items'    => $productCheckoutCartItem,
+                'total'    => $totalAmount,
             ];
 
              return json_encode($productCheckoutCart);
@@ -228,9 +228,9 @@ class Bolt_Boltpay_Block_Catalog_Product_Boltpay extends Bolt_Boltpay_Block_Chec
         $product = Mage::registry('current_product');
         return Mage::helper('core')->jsonEncode(
             array(
-                'id'         => $product->getId(),
-                'name'       => $product->getName(),
-                'price'      => $product->getFinalPrice(),
+                'id'          => $product->getId(),
+                'name'        => $product->getName(),
+                'price'       => $product->getFinalPrice(),
                 'tier_prices' => $product->getTierPrice()
             )
         );
