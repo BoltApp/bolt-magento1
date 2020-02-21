@@ -378,62 +378,66 @@ class Bolt_Boltpay_Block_Catalog_Product_BoltpayTest extends PHPUnit_Framework_T
 
     /**
      * @test
-     * that getProductMaxQty returns -1 when stock is not managed for current product
+     * that getProductJSON returns required product data in JSON format
      *
-     * @covers ::getProductMaxQty
+     * @covers ::getProductJSON
      *
-     * @throws Mage_Core_Exception if unable to register current product
+     * @throws Mage_Core_Exception if unable to stub current product
      */
-    public function getProductMaxQty_ifStockIsNotManaged_returnsNegativeOne()
+    public function getProductJSON_always_returnsProductDataInJSON()
     {
-        $stockItem = $this->getMockBuilder('Mage_CatalogInventory_Model_Stock_Item')
-            ->setMethods(array('getManageStock', 'getIsInStock', 'getQty'))
-            ->getMock();
-        $stockItem->expects($this->once())->method('getManageStock')->willReturn(false);
-        $product = Mage::getModel('catalog/product', array('stock_item' => $stockItem));
-        Mage::register('current_product', $product);
-        $this->assertEquals(-1, $this->currentMock->getProductMaxQty());
-    }
-
-    /**
-     * @test
-     * that getProductMaxQty returns 0 if current product is out of stock
-     *
-     * @covers ::getProductMaxQty
-     *
-     * @throws Mage_Core_Exception if unable to register current product
-     */
-    public function getProductMaxQty_ifProductIsOutOfStock_returnsNegativeOne()
-    {
-        $stockItem = $this->getMockBuilder('Mage_CatalogInventory_Model_Stock_Item')
-            ->setMethods(array('getManageStock', 'getIsInStock', 'getQty'))
-            ->getMock();
-        $stockItem->expects($this->once())->method('getManageStock')->willReturn(true);
-        $stockItem->expects($this->once())->method('getIsInStock')->willReturn(false);
-        $product = Mage::getModel('catalog/product', array('stock_item' => $stockItem));
-        Mage::register('current_product', $product);
-        $this->assertEquals(0, $this->currentMock->getProductMaxQty());
-    }
-
-    /**
-     * @test
-     * that getProductMaxQty returns stock quantity if stock is managed and current product is in stock
-     *
-     * @covers ::getProductMaxQty
-     *
-     * @throws Mage_Core_Exception if unable to register current product
-     */
-    public function getProductMaxQty_ifQtyIsManagedAndProductIsInStock_returnsStockQuantity()
-    {
-        $qty = mt_rand(1, 10000);
-        $stockItem = $this->getMockBuilder('Mage_CatalogInventory_Model_Stock_Item')
-            ->setMethods(array('getManageStock', 'getIsInStock', 'getQty'))
-            ->getMock();
-        $stockItem->expects($this->once())->method('getManageStock')->willReturn(true);
-        $stockItem->expects($this->once())->method('getIsInStock')->willReturn(true);
-        $stockItem->expects($this->once())->method('getQty')->willReturn($qty);
-        $product = Mage::getModel('catalog/product', array('stock_item' => $stockItem));
-        Mage::register('current_product', $product);
-        $this->assertEquals($qty, $this->currentMock->getProductMaxQty());
+        $productMock = $this->getMockBuilder('Mage_Catalog_Model_Product')
+            ->setMethods(
+                array(
+                    'getId',
+                    'getName',
+                    'getFinalPrice',
+                    'getTierPrice',
+                )
+            )->getMock();
+        $dummyTierPrices = array(
+            array(
+                'price_id'      => '45',
+                'website_id'    => '0',
+                'all_groups'    => '1',
+                'cust_group'    => 32000,
+                'price'         => '70.0000',
+                'price_qty'     => '2.0000',
+                'website_price' => '70.0000',
+                'is_percent'    => 0,
+            ),
+            array(
+                'price_id'      => '46',
+                'website_id'    => '0',
+                'all_groups'    => '1',
+                'cust_group'    => 32000,
+                'price'         => '65.0000',
+                'price_qty'     => '3.0000',
+                'website_price' => '65.0000',
+                'is_percent'    => 0,
+            ),
+            array(
+                'price_id'      => '49',
+                'website_id'    => '0',
+                'all_groups'    => '1',
+                'cust_group'    => 32000,
+                'price'         => '55.0000',
+                'price_qty'     => '4.0000',
+                'website_price' => '55.0000',
+                'is_percent'    => 0,
+            ),
+        );
+        $productMock->expects($this->once())->method('getId')->willReturn(123);
+        $productMock->expects($this->once())->method('getName')->willReturn('Test Product Name');
+        $productMock->expects($this->once())->method('getFinalPrice')->willReturn(456.78);
+        $productMock->expects($this->once())->method('getTierPrice')->willReturn($dummyTierPrices);
+        TestHelper::stubRegistryValue('current_product', $productMock);
+        $productJson = $this->currentMock->getProductJSON();
+        $this->assertJson($productJson);
+        $productData = json_decode($productJson, true);
+        $this->assertEquals(123, $productData['id']);
+        $this->assertEquals('Test Product Name', $productData['name']);
+        $this->assertEquals(456.78, $productData['price']);
+        $this->assertEquals($dummyTierPrices, $productData['tier_prices']);
     }
 }

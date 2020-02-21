@@ -249,14 +249,17 @@ class Bolt_Boltpay_Model_Productpage_Cart extends Bolt_Boltpay_Model_Abstract
      * @param Mage_Sales_Model_Quote $quote
      *
      * @return array configured cart response
+     *
+     * @throws Mage_Core_Model_Store_Exception if unable to build Bolt order data
      */
     protected function setCartResponse($quote)
     {
+        $boltOrderData = Mage::getModel('boltpay/boltOrder')->buildOrder($quote, true);
         $this->cartResponse = array(
-            'order_reference' => $quote->getId(),
-            'currency'        => $quote->getQuoteCurrencyCode(),
-            'items'           => $this->getGeneratedItems($quote),
-            'total_amount'    => $this->getGeneratedTotal()
+            'order_reference' => $boltOrderData['cart']['order_reference'],
+            'currency'        => $boltOrderData['cart']['currency'],
+            'items'           => $boltOrderData['cart']['items'],
+            'total_amount'    => $boltOrderData['cart']['total_amount']
         );
         $this->httpCode = 200;
 
@@ -279,6 +282,8 @@ class Bolt_Boltpay_Model_Productpage_Cart extends Bolt_Boltpay_Model_Abstract
     /**
      *
      * @return array
+     *
+     * @deprecated
      */
     protected function getGeneratedItems($quote)
     {
@@ -313,6 +318,8 @@ class Bolt_Boltpay_Model_Productpage_Cart extends Bolt_Boltpay_Model_Abstract
     /**
      *
      * @return string
+     *
+     * @deprecated
      */
     protected function getGeneratedTotal()
     {

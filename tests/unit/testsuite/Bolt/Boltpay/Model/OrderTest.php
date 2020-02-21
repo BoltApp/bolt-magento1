@@ -80,9 +80,13 @@ class Bolt_Boltpay_Model_OrderTest extends PHPUnit_Framework_TestCase
 
     /**
      * Initialize benchmarking and remove events
+     *
+     * @throws ReflectionException if unable to remove events
+     * @throws Mage_Core_Exception if unable to clean registry
      */
     public static function setUpBeforeClass()
     {
+        TestHelper::clearRegistry();
         Mage::getModel('boltpay/observer')->initializeBenchmarkProfiler();
 
         $events = TestHelper::getNonPublicProperty(Mage::app(), '_events');

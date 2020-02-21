@@ -170,9 +170,9 @@ class Bolt_Boltpay_Block_Checkout_Boltpay extends Mage_Checkout_Block_Onepage_Re
         $jsonCart = (is_string($cartData)) ? $cartData : json_encode($cartData);
         $jsonHints = json_encode($hintData, JSON_FORCE_OBJECT);
 
-        $callbacks = $this->boltHelper()->getBoltCallbacks($checkoutType, $quote);
+        $callbacks = $this->boltHelper()->getBoltCallbacks($checkoutType, $quote->isVirtual());
         $checkCustom = $this->boltHelper()->getPaymentBoltpayConfig('check', $checkoutType);
-        $onCheckCallback = $this->boltHelper()->buildOnCheckCallback($checkoutType, $quote);
+        $onCheckCallback = $this->boltHelper()->buildOnCheckCallback($checkoutType, $quote->isVirtual());
 
         $hintsTransformFunction = $this->boltHelper()->getExtraConfig('hintsTransform');
         $shouldCloneImmediately = !$this->boltHelper()->getExtraConfig( 'cloneOnClick' );
@@ -216,6 +216,19 @@ class Bolt_Boltpay_Block_Checkout_Boltpay extends Mage_Checkout_Block_Onepage_Re
                         }
                     ); 
                 ";
+                break;
+            case self::CHECKOUT_TYPE_PRODUCT_PAGE:
+                $jsonCart = /** @lang JavaScript */ 'boltConfigPDP.getCartData();';
+
+                $boltConfigureCall = <<<JS
+BoltCheckout.configureProductCheckout(
+    get_json_cart(),
+    json_hints,
+    {$callbacks},
+    { checkoutButtonClassName: 'bolt-product-checkout-button' }
+);
+JS;
+                break;
         }
 
         if (!isset($doChecks)) $doChecks = 'var do_checks = 1;';
