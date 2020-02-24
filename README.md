@@ -21,11 +21,11 @@ See [CHANGELOG.md](./CHANGELOG.md) for change history.
 
 Run the following from root magento folder:
 
-> php tests/unit/phpunit-5.7.9.phar -c tests/unit/phpunit.xml
+> php tests/unit/phpunit-5.7.9.phar --stderr --report-useless-tests -c tests/unit/phpunit.xml
 
 Run phpunit test with coverage html report:
 
-> php tests/unit/phpunit-5.7.9.phar -c tests/unit/phpunit.xml --coverage-html tests/unit/coverage
+> php tests/unit/phpunit-5.7.9.phar --stderr --report-useless-tests -c tests/unit/phpunit.xml --coverage-html tests/unit/coverage
 
 If you prefer to run test through PHPStorm, please read:
 
