@@ -15,16 +15,15 @@
  * @copyright  Copyright (c) 2020 Bolt Financial, Inc (https://www.bolt.com)
  * @license    http://opensource.org/licenses/osl-3.0.php  Open Software License (OSL 3.0)
  */
-use Bolt_Boltpay_Helper_GraphQL_Constants as GraphQLConstants;
 
 
 /**
- * Trait Bolt_Boltpay_Helper_GraphQL_ClientTrait
+ * Trait Bolt_Boltpay_Helper_GraphQLTrait
  *
  * Provides utility methods related to the Bolt GraphQL API:
  *
  */
-trait Bolt_Boltpay_Helper_GraphQL_ClientTrait
+trait Bolt_Boltpay_Helper_GraphQLTrait
 {
 
     use Bolt_Boltpay_Helper_ApiTrait;
@@ -38,7 +37,7 @@ trait Bolt_Boltpay_Helper_GraphQL_ClientTrait
      * @return mixed
      * @throws \GuzzleHttp\Exception\GuzzleException
      */
-    private function makeGQLCall($query, $operation, $variables)
+    private function makeGqlCall($query, $operation, $variables)
     {
         try {
 
@@ -50,7 +49,7 @@ trait Bolt_Boltpay_Helper_GraphQL_ClientTrait
 
             $requestData = json_encode($gqlRequest, JSON_UNESCAPED_SLASHES);
 
-            $apiURL = $url = $this->getApiUrl() . GraphQLConstants::MERCHANT_API_GQL_ENDPOINT;
+            $apiURL = $url = $this->getApiUrl() . Boltpay_GraphQL_Constants::MERCHANT_API_GQL_ENDPOINT;
 
             $apiKey = Mage::getStoreConfig('payment/boltpay/api_key');
 
@@ -60,12 +59,8 @@ trait Bolt_Boltpay_Helper_GraphQL_ClientTrait
             $this->addMetaData(array('BOLT API REQUEST' => array('data' => $requestData)), true);
 
             $response = (string)$this->getApiClient()->post($apiURL, $requestData, $headerInfo)->getBody();
-            $resultJSON = json_decode($response);
 
-            $this->addMetaData(array('BOLT API RESPONSE' => array('api-response' => $resultJSON)), true);
-            Mage::getModel('boltpay/payment')->debugData($resultJSON);
-
-            return $resultJSON;
+            return json_decode($response);
         } catch (\Exception $e) {
             $this->notifyException($e);
             $this->logException($e);
@@ -81,10 +76,14 @@ trait Bolt_Boltpay_Helper_GraphQL_ClientTrait
      */
     public function getFeatureSwitches()
     {
-        $res = $this->makeGQLCall(GraphQLConstants::GET_FEATURE_SWITCHES_QUERY, GraphQLConstants::GET_FEATURE_SWITCHES_OPERATION, array(
-            "type" => GraphQLConstants::PLUGIN_TYPE,
-            "version" => static::getBoltPluginVersion(),
-        ));
+        $res = $this->makeGqlCall(
+            Boltpay_GraphQL_Constants::GET_FEATURE_SWITCHES_QUERY,
+            Boltpay_GraphQL_Constants::GET_FEATURE_SWITCHES_OPERATION,
+            array(
+                "type" => Boltpay_GraphQL_Constants::PLUGIN_TYPE,
+                "version" => $this->getBoltPluginVersion(),
+                )
+        );
 
         return $res;
     }

@@ -1,5 +1,5 @@
 <?php
-class Bolt_Boltpay_Helper_GraphQL_Constants {
+interface Boltpay_GraphQL_Constants {
 
     const MERCHANT_API_GQL_ENDPOINT = 'v2/merchant/api';
 
