@@ -451,8 +451,6 @@ class Bolt_Boltpay_Controller_Traits_WebHookTraitTest extends PHPUnit_Framework_
 
         $this->setExpectedException('Exception', 'Avoid exit');
 
-        $previousApp = Mage::app();
-
         TestHelper::setNonPublicProperty('Mage', '_app', $appMock);
 
         TestHelper::callNonPublicFunction(
@@ -465,7 +463,7 @@ class Bolt_Boltpay_Controller_Traits_WebHookTraitTest extends PHPUnit_Framework_
             )
         );
 
-        TestHelper::setNonPublicProperty('Mage', '_app', $previousApp);
+        TestHelper::setNonPublicProperty('Mage', '_app', null);
 
         $actualResponse = ob_get_clean(); # get the calls response and remove our buffer
         $expectedResponse = json_encode(array()); # we expect the default empty body
