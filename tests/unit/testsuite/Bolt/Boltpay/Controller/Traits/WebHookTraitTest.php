@@ -66,6 +66,7 @@ class Bolt_Boltpay_Controller_Traits_WebHookTraitTest extends PHPUnit_Framework_
     public function setUp()
     {
         Mage::app('default');
+
         $this->currentMock = $this->getMockBuilder('Bolt_Boltpay_Controller_Traits_WebHookTrait')
             ->setMethods(array('getRequest', 'getLayout', 'getResponse'))
             ->disableOriginalConstructor()
@@ -160,8 +161,8 @@ class Bolt_Boltpay_Controller_Traits_WebHookTraitTest extends PHPUnit_Framework_
      * @test
      * Pre-dispatch method with validating signature
      *
-     * @covers Bolt_Boltpay_Controller_Traits_WebHookTrait::verifyBoltSignature
-     * @covers Bolt_Boltpay_Controller_Traits_WebHookTrait::preDispatch
+     * @covers       Bolt_Boltpay_Controller_Traits_WebHookTrait::verifyBoltSignature
+     * @covers       Bolt_Boltpay_Controller_Traits_WebHookTrait::preDispatch
      * @dataProvider payloadProvider
      * @expectedException Exception
      * @expectedExceptionMessage Avoid calling parent::preDispatch
@@ -203,7 +204,7 @@ class Bolt_Boltpay_Controller_Traits_WebHookTraitTest extends PHPUnit_Framework_
      * @test
      * Getting request data from payload property
      *
-     * @covers Bolt_Boltpay_Controller_Traits_WebHookTrait::getRequestData
+     * @covers       Bolt_Boltpay_Controller_Traits_WebHookTrait::getRequestData
      * @dataProvider payloadProvider
      *
      * @param string $payload in JSON format
@@ -283,8 +284,8 @@ class Bolt_Boltpay_Controller_Traits_WebHookTraitTest extends PHPUnit_Framework_
      * @param $responseCode     The response code that we wish to return in the test
      * @return array    Data used by the corresponding Teardown for the sendResponse test
      */
-    private function sendResponseSetUp($responseCode) {
-
+    private function sendResponseSetUp($responseCode)
+    {
         $initialImplicitFlushValue = ini_get("implicit_flush");
         $bufferingLevelBeforeTest = ob_get_level();
 
@@ -292,12 +293,11 @@ class Bolt_Boltpay_Controller_Traits_WebHookTraitTest extends PHPUnit_Framework_
             ->willReturnSelf();
         $this->response->expects($this->once())->method('sendHeaders')
             ->willReturnCallback(
-                function() {
+                function () {
                     // create buffer to capture our test's output
                     ob_start();
                 }
-            )
-        ;
+            );
 
         return array(
             'initialImplicitFlushValue' => $initialImplicitFlushValue,
@@ -319,7 +319,6 @@ class Bolt_Boltpay_Controller_Traits_WebHookTraitTest extends PHPUnit_Framework_
      */
     public function sendResponse_withVariousResponseCodesAndData_shouldOutputItDirectly($responseCode, $responseData)
     {
-
         $tearDownData = $this->sendResponseSetup($responseCode);
 
         TestHelper::callNonPublicFunction(
@@ -428,11 +427,57 @@ class Bolt_Boltpay_Controller_Traits_WebHookTraitTest extends PHPUnit_Framework_
     }
 
     /**
+     * @test
+     * sendResponse when $exitImmediately is true
+     *
+     * @covers Bolt_Boltpay_Controller_Traits_WebHookTrait::sendResponse
+     */
+    public function sendResponse_whenExitImmediatelyIsTrue_callsDispatchEvent()
+    {
+        $httpResponseCode = 200;
+        $tearDownData = $this->sendResponseSetUp($httpResponseCode);
+
+        $appMock = $this->getMockBuilder('Mage_Core_Model_App')
+            ->setMethods(array('dispatchEvent'))
+            ->getMock();
+
+        $appMock->expects($this->once())->method('dispatchEvent')
+            ->with('controller_front_send_response_after')
+            ->willThrowException(new Exception('Expected exception before exit call'));
+
+        TestHelper::setNonPublicProperty('Mage', '_app', $appMock);
+
+        try {
+            TestHelper::callNonPublicFunction(
+                $this->currentMock,
+                'sendResponse',
+                array(
+                    $httpResponseCode,
+                    array(),
+                    true
+                )
+            );
+        } catch (Exception $exception) {
+            $this->assertInstanceOf(Exception::class, $exception, 'Expected exception before exit call');
+
+            $actualResponse = ob_get_clean(); # get the calls response and remove our buffer
+            $expectedResponse = json_encode(array()); # we expect the default empty body
+
+            $this->assertEquals($expectedResponse, $actualResponse);
+
+            $this->sendResponseTearDown($tearDownData);
+        } finally {
+            TestHelper::setNonPublicProperty('Mage', '_app', null);
+        }
+    }
+
+    /**
      * Restores the output buffer setting to that which existed before the test
      *
-     * @param array $outputBufferDataSettings  Contains the initial output buffer settings before the test
+     * @param array $outputBufferDataSettings Contains the initial output buffer settings before the test
      */
-    private function sendResponseTearDown($outputBufferDataSettings) {
+    private function sendResponseTearDown($outputBufferDataSettings)
+    {
         //reset implicit_flush value to default, changed inside sendResponse
         ini_set("implicit_flush", $outputBufferDataSettings['initialImplicitFlushValue']);
 
