@@ -422,18 +422,18 @@ class Bolt_Boltpay_OrderCreationExceptionTest extends PHPUnit_Framework_TestCase
         $this->assertEquals(RESPONSE_CODE::HTTP_UNPROCESSABLE_ENTITY, $boltOrderCreationException->getHttpCode());
     }
 
-	/**
-	 * @test
-	 * HTTP response code for general exception with invalid HMAC header
-	 */
-	public function initializeWithInvalidHMACHeader_shouldSetResponseCodeTo401()
-	{
-		$boltOrderCreationException = new Bolt_Boltpay_OrderCreationException(
-			Bolt_Boltpay_OrderCreationException::E_BOLT_GENERAL_ERROR,
-			Bolt_Boltpay_OrderCreationException::E_BOLT_GENERAL_ERROR_TMPL_HMAC
-		);
-		$this->assertEquals(RESPONSE_CODE::HTTP_UNAUTHORIZED, $boltOrderCreationException->getHttpCode());
-	}
+    /**
+     * @test
+     * HTTP response code for general exception with invalid HMAC header
+     */
+    public function initializeWithInvalidHMACHeader_shouldSetResponseCodeTo401()
+    {
+        $boltOrderCreationException = new Bolt_Boltpay_OrderCreationException(
+            Bolt_Boltpay_OrderCreationException::E_BOLT_GENERAL_ERROR,
+            Bolt_Boltpay_OrderCreationException::E_BOLT_GENERAL_ERROR_TMPL_HMAC
+        );
+        $this->assertEquals(RESPONSE_CODE::HTTP_UNAUTHORIZED, $boltOrderCreationException->getHttpCode());
+    }
 
     /**
      * Helper function for asserting that all required params exist in the exception instance

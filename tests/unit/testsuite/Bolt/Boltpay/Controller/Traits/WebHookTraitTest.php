@@ -11,7 +11,7 @@ use Bolt_Boltpay_TestHelper as TestHelper;
  */
 class Bolt_Boltpay_Controller_Traits_WebHookTraitTest extends PHPUnit_Framework_TestCase
 {
-	use Bolt_Boltpay_MockingTrait;
+    use Bolt_Boltpay_MockingTrait;
 
     /**
      * @var string Dummy HMAC of test payload
@@ -430,48 +430,49 @@ class Bolt_Boltpay_Controller_Traits_WebHookTraitTest extends PHPUnit_Framework_
         $this->sendResponseTearDown($tearDownData);
     }
 
-	/**
-	 * @test
-	 * sendResponse when $exitImmediately is true
-	 *
-	 * @covers Bolt_Boltpay_Controller_Traits_WebHookTrait::sendResponse
-	 */
-    public function sendResponse_whenExitImmediatelyIsTrue_callsDispatchEvent() {
-	    $httpResponseCode = 200;
-	    $tearDownData = $this->sendResponseSetUp($httpResponseCode);
+    /**
+     * @test
+     * sendResponse when $exitImmediately is true
+     *
+     * @covers Bolt_Boltpay_Controller_Traits_WebHookTrait::sendResponse
+     */
+    public function sendResponse_whenExitImmediatelyIsTrue_callsDispatchEvent()
+    {
+        $httpResponseCode = 200;
+        $tearDownData = $this->sendResponseSetUp($httpResponseCode);
 
-	    $appMock = $this->getClassPrototype('Mage_Core_Model_App')
-		    ->setMethods(array('dispatchEvent'))
-		    ->getMock();
+        $appMock = $this->getClassPrototype('Mage_Core_Model_App')
+            ->setMethods(array('dispatchEvent'))
+            ->getMock();
 
-	    $appMock->expects($this->once())->method('dispatchEvent')
-		    ->with('controller_front_send_response_after')
-	        ->willThrowException(new Exception('Avoid exit'));
+        $appMock->expects($this->once())->method('dispatchEvent')
+            ->with('controller_front_send_response_after')
+            ->willThrowException(new Exception('Avoid exit'));
 
-	    $this->setExpectedException('Exception', 'Avoid exit');
+        $this->setExpectedException('Exception', 'Avoid exit');
 
-	    $previousApp = Mage::app();
+        $previousApp = Mage::app();
 
-	    TestHelper::setNonPublicProperty('Mage', '_app', $appMock);
+        TestHelper::setNonPublicProperty('Mage', '_app', $appMock);
 
-	    TestHelper::callNonPublicFunction(
-		    $this->currentMock,
-		    'sendResponse',
-		    array(
-			    $httpResponseCode,
-			    array(),
-			    true
-		    )
-	    );
+        TestHelper::callNonPublicFunction(
+            $this->currentMock,
+            'sendResponse',
+            array(
+                $httpResponseCode,
+                array(),
+                true
+            )
+        );
 
-	    TestHelper::setNonPublicProperty('Mage', '_app', $previousApp);
+        TestHelper::setNonPublicProperty('Mage', '_app', $previousApp);
 
-	    $actualResponse = ob_get_clean(); # get the calls response and remove our buffer
-	    $expectedResponse = json_encode(array()); # we expect the default empty body
+        $actualResponse = ob_get_clean(); # get the calls response and remove our buffer
+        $expectedResponse = json_encode(array()); # we expect the default empty body
 
-	    $this->assertEquals($expectedResponse, $actualResponse);
+        $this->assertEquals($expectedResponse, $actualResponse);
 
-	    $this->sendResponseTearDown($tearDownData);
+        $this->sendResponseTearDown($tearDownData);
     }
 
     /**
