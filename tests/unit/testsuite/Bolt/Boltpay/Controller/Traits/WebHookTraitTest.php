@@ -445,6 +445,8 @@ class Bolt_Boltpay_Controller_Traits_WebHookTraitTest extends PHPUnit_Framework_
             ->with('controller_front_send_response_after')
             ->willThrowException(new Exception('Expected exception before exit call'));
 
+        $previousApp = Mage::app('default');
+
         TestHelper::setNonPublicProperty('Mage', '_app', $appMock);
 
         try {
@@ -467,7 +469,7 @@ class Bolt_Boltpay_Controller_Traits_WebHookTraitTest extends PHPUnit_Framework_
 
             $this->sendResponseTearDown($tearDownData);
         } finally {
-            TestHelper::setNonPublicProperty('Mage', '_app', null);
+            TestHelper::setNonPublicProperty('Mage', '_app', $previousApp);
         }
     }
 
