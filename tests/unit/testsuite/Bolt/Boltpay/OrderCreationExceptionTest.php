@@ -12,7 +12,7 @@ class Bolt_Boltpay_OrderCreationExceptionTest extends PHPUnit_Framework_TestCase
      * @test
      * JSON response for general error with default parameters
      */
-    public function initializeGeneralException_setsCorrectJsonAndHttpCode()
+    public function initialize_withGeneralException_setsCorrectJsonAndHttpCode()
     {
         $reason = 'test error';
         $boltOrderCreationException = new Bolt_Boltpay_OrderCreationException(
@@ -38,7 +38,7 @@ class Bolt_Boltpay_OrderCreationExceptionTest extends PHPUnit_Framework_TestCase
      * @test
      * for correct data for existing order exception
      */
-    public function initializeExistingCartException_setsCorrectJsonAndHttpCode()
+    public function initialize_withExistingCartException_setsCorrectJsonAndHttpCode()
     {
         $dataValues = ['id_123', 'pending'];
         $boltOrderCreationException = new Bolt_Boltpay_OrderCreationException(
@@ -59,7 +59,7 @@ class Bolt_Boltpay_OrderCreationExceptionTest extends PHPUnit_Framework_TestCase
      * @test
      * for correct data for various cart exceptions
      */
-    public function initializeCartException_setsCorrectJsonAndHttpCode()
+    public function initialize_withCartException_setsCorrectJsonAndHttpCode()
     {
         // Empty cart
         $boltOrderCreationException = new Bolt_Boltpay_OrderCreationException(
@@ -185,7 +185,7 @@ class Bolt_Boltpay_OrderCreationExceptionTest extends PHPUnit_Framework_TestCase
      * @test
      * for correct data for item price has been updated exception
      */
-    public function initializeItemPriceException_setsCorrectJsonAndHttpCode()
+    public function initialize_withItemPriceException_setsCorrectJsonAndHttpCode()
     {
         $dataValues = [905, 100, 150];
         $boltOrderCreationException = new Bolt_Boltpay_OrderCreationException(
@@ -207,7 +207,7 @@ class Bolt_Boltpay_OrderCreationExceptionTest extends PHPUnit_Framework_TestCase
      * @test
      * for correct data for out of inventory exception
      */
-    public function initializeCartInventoryException_setsCorrectJsonAndHttpCode()
+    public function initialize_withCartInventoryException_setsCorrectJsonAndHttpCode()
     {
         $dataValues = [905, 100, 150];
         $boltOrderCreationException = new Bolt_Boltpay_OrderCreationException(
@@ -229,7 +229,7 @@ class Bolt_Boltpay_OrderCreationExceptionTest extends PHPUnit_Framework_TestCase
      * @test
      * for correct exception data when discount can not be applied
      */
-    public function initializeDiscountCanNotBeAppliedException_setsCorrectJsonAndHttpCode()
+    public function initialize_withDiscountCanNotBeAppliedException_setsCorrectJsonAndHttpCode()
     {
         // Generic exception
         $dataValues = ['Discount code too cool to be used', 'FREE_BEER_FOR_LIFE'];
@@ -265,7 +265,7 @@ class Bolt_Boltpay_OrderCreationExceptionTest extends PHPUnit_Framework_TestCase
      * @test
      * for correct exception data when discount code is invalid
      */
-    public function initializeInvalidDiscountCodeException_setsCorrectJsonAndHttpCode()
+    public function initialize_withInvalidDiscountCodeException_setsCorrectJsonAndHttpCode()
     {
         $dataValues = ['GIVE_ME_FREE'];
         $boltOrderCreationException = new Bolt_Boltpay_OrderCreationException(
@@ -285,7 +285,7 @@ class Bolt_Boltpay_OrderCreationExceptionTest extends PHPUnit_Framework_TestCase
      * @test
      * for correct exception when shipping price or tax are changed
      */
-    public function initializeShippingPriceOrTaxChangedException_setsCorrectJsonAndHttpCode()
+    public function initialize_withShippingPriceOrTaxChangedException_setsCorrectJsonAndHttpCode()
     {
         $dataValues = [100, 150];
         $boltOrderCreationException = new Bolt_Boltpay_OrderCreationException(
@@ -307,7 +307,7 @@ class Bolt_Boltpay_OrderCreationExceptionTest extends PHPUnit_Framework_TestCase
      * @test
      * In case when we pass string data instead of expected numbers, values in the response will be set to zero.
      */
-    public function initializeWithIncorrectData_setsValuesInResponseToZero()
+    public function initialize_withIncorrectData_setsValuesInResponseToZero()
     {
         $dataValues = ['hundred', 'hundred and fifty'];
         $boltOrderCreationException = new Bolt_Boltpay_OrderCreationException(
@@ -331,7 +331,7 @@ class Bolt_Boltpay_OrderCreationExceptionTest extends PHPUnit_Framework_TestCase
      * @test
      * if OrderCreationException is keeping a reference to previous error
      */
-    public function initializeExceptionWithPreviousException_setsPreviousExceptionInResponse()
+    public function initialize_withExceptionWithPreviousException_setsPreviousExceptionInResponse()
     {
         $reason = 'test with previous error';
         $previousException = new Exception('This is previous error');
@@ -361,7 +361,7 @@ class Bolt_Boltpay_OrderCreationExceptionTest extends PHPUnit_Framework_TestCase
      * @test
      * if special characters are escaped in JSON response
      */
-    public function initializeWithEscapedSpecialCharacters_setsCorrectJsonAndHttpCode()
+    public function initialize_withEscapedSpecialCharacters_setsCorrectJsonAndHttpCode()
     {
         $reason = 'test "error" \path\example';
         $boltOrderCreationException = new Bolt_Boltpay_OrderCreationException(
@@ -382,7 +382,7 @@ class Bolt_Boltpay_OrderCreationExceptionTest extends PHPUnit_Framework_TestCase
      * @test
      * If non-registered code is passed to a constructor it should generate generic exception.
      */
-    public function initializeWithNonRegisteredErrorCode_shouldGenerateGenericException()
+    public function initialize_withNonRegisteredErrorCode_shouldGenerateGenericException()
     {
 
         $errorMessage = 'test non-existing code';
@@ -416,7 +416,7 @@ class Bolt_Boltpay_OrderCreationExceptionTest extends PHPUnit_Framework_TestCase
      * @test
      * HTTP response code for general exception with default parameters
      */
-    public function initializeWithDefaultParameters_shouldSetResponseCodeTo422()
+    public function initialize_withDefaultParameters_shouldSetResponseCodeTo422()
     {
         $boltOrderCreationException = new Bolt_Boltpay_OrderCreationException();
         $this->assertEquals(RESPONSE_CODE::HTTP_UNPROCESSABLE_ENTITY, $boltOrderCreationException->getHttpCode());
@@ -426,7 +426,7 @@ class Bolt_Boltpay_OrderCreationExceptionTest extends PHPUnit_Framework_TestCase
      * @test
      * HTTP response code for general exception with invalid HMAC header
      */
-    public function initializeWithInvalidHMACHeader_shouldSetResponseCodeTo401()
+    public function initialize_withInvalidHMACHeader_shouldSetResponseCodeTo401()
     {
         $boltOrderCreationException = new Bolt_Boltpay_OrderCreationException(
             Bolt_Boltpay_OrderCreationException::E_BOLT_GENERAL_ERROR,
