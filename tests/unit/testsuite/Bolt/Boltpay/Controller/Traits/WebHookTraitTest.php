@@ -2,7 +2,6 @@
 
 require_once('TestHelper.php');
 require_once('StreamHelper.php');
-require_once('MockingTrait.php');
 
 use Bolt_Boltpay_TestHelper as TestHelper;
 
@@ -11,8 +10,6 @@ use Bolt_Boltpay_TestHelper as TestHelper;
  */
 class Bolt_Boltpay_Controller_Traits_WebHookTraitTest extends PHPUnit_Framework_TestCase
 {
-    use Bolt_Boltpay_MockingTrait;
-
     /**
      * @var string Dummy HMAC of test payload
      * calculated as trim(base64_encode(hash_hmac('sha256', TEST_PAYLOAD, TEST_SIGNING_SECRET, true)))
@@ -425,49 +422,6 @@ class Bolt_Boltpay_Controller_Traits_WebHookTraitTest extends PHPUnit_Framework_
         $expectedResponse = json_encode(array()); # we expect the default empty body
 
         $this->assertTrue(self::$_fastcgiFinishRequestCalled);
-        $this->assertEquals($expectedResponse, $actualResponse);
-
-        $this->sendResponseTearDown($tearDownData);
-    }
-
-    /**
-     * @test
-     * sendResponse when $exitImmediately is true
-     *
-     * @covers Bolt_Boltpay_Controller_Traits_WebHookTrait::sendResponse
-     */
-    public function sendResponse_whenExitImmediatelyIsTrue_callsDispatchEvent()
-    {
-        $httpResponseCode = 200;
-        $tearDownData = $this->sendResponseSetUp($httpResponseCode);
-
-        $appMock = $this->getClassPrototype('Mage_Core_Model_App')
-            ->setMethods(array('dispatchEvent'))
-            ->getMock();
-
-        $appMock->expects($this->once())->method('dispatchEvent')
-            ->with('controller_front_send_response_after')
-            ->willThrowException(new Exception('Avoid exit'));
-
-        $this->setExpectedException('Exception', 'Avoid exit');
-
-        TestHelper::setNonPublicProperty('Mage', '_app', $appMock);
-
-        TestHelper::callNonPublicFunction(
-            $this->currentMock,
-            'sendResponse',
-            array(
-                $httpResponseCode,
-                array(),
-                true
-            )
-        );
-
-        TestHelper::setNonPublicProperty('Mage', '_app', null);
-
-        $actualResponse = ob_get_clean(); # get the calls response and remove our buffer
-        $expectedResponse = json_encode(array()); # we expect the default empty body
-
         $this->assertEquals($expectedResponse, $actualResponse);
 
         $this->sendResponseTearDown($tearDownData);
