@@ -5,19 +5,12 @@ use Bolt_Boltpay_Controller_Interface as RESPONSE_CODE;
 
 /**
  * Class Bolt_Boltpay_OrderCreationExceptionTest
- *
- * @coversDefaultClass Bolt_Boltpay_OrderCreationException
  */
 class Bolt_Boltpay_OrderCreationExceptionTest extends PHPUnit_Framework_TestCase
 {
     /**
      * @test
      * JSON response for general error with default parameters
-     *
-     * @covers ::__construct
-     * @covers ::selectHttpCode
-     * @covers ::getJson
-     * @covers ::getHttpCode
      */
     public function initializeGeneralException_setsCorrectJsonAndHttpCode()
     {
@@ -44,11 +37,6 @@ class Bolt_Boltpay_OrderCreationExceptionTest extends PHPUnit_Framework_TestCase
     /**
      * @test
      * for correct data for existing order exception
-     *
-     * @covers ::__construct
-     * @covers ::selectHttpCode
-     * @covers ::getJson
-     * @covers ::getHttpCode
      */
     public function initializeExistingCartException_setsCorrectJsonAndHttpCode()
     {
@@ -70,11 +58,6 @@ class Bolt_Boltpay_OrderCreationExceptionTest extends PHPUnit_Framework_TestCase
     /**
      * @test
      * for correct data for various cart exceptions
-     *
-     * @covers ::__construct
-     * @covers ::selectHttpCode
-     * @covers ::getJson
-     * @covers ::getHttpCode
      */
     public function initializeCartException_setsCorrectJsonAndHttpCode()
     {
@@ -201,11 +184,6 @@ class Bolt_Boltpay_OrderCreationExceptionTest extends PHPUnit_Framework_TestCase
     /**
      * @test
      * for correct data for item price has been updated exception
-     *
-     * @covers ::__construct
-     * @covers ::selectHttpCode
-     * @covers ::getJson
-     * @covers ::getHttpCode
      */
     public function initializeItemPriceException_setsCorrectJsonAndHttpCode()
     {
@@ -228,11 +206,6 @@ class Bolt_Boltpay_OrderCreationExceptionTest extends PHPUnit_Framework_TestCase
     /**
      * @test
      * for correct data for out of inventory exception
-     *
-     * @covers ::__construct
-     * @covers ::selectHttpCode
-     * @covers ::getJson
-     * @covers ::getHttpCode
      */
     public function initializeCartInventoryException_setsCorrectJsonAndHttpCode()
     {
@@ -255,11 +228,6 @@ class Bolt_Boltpay_OrderCreationExceptionTest extends PHPUnit_Framework_TestCase
     /**
      * @test
      * for correct exception data when discount can not be applied
-     *
-     * @covers ::__construct
-     * @covers ::selectHttpCode
-     * @covers ::getJson
-     * @covers ::getHttpCode
      */
     public function initializeDiscountCanNotBeAppliedException_setsCorrectJsonAndHttpCode()
     {
@@ -296,11 +264,6 @@ class Bolt_Boltpay_OrderCreationExceptionTest extends PHPUnit_Framework_TestCase
     /**
      * @test
      * for correct exception data when discount code is invalid
-     *
-     * @covers ::__construct
-     * @covers ::selectHttpCode
-     * @covers ::getJson
-     * @covers ::getHttpCode
      */
     public function initializeInvalidDiscountCodeException_setsCorrectJsonAndHttpCode()
     {
@@ -321,11 +284,6 @@ class Bolt_Boltpay_OrderCreationExceptionTest extends PHPUnit_Framework_TestCase
     /**
      * @test
      * for correct exception when shipping price or tax are changed
-     *
-     * @covers ::__construct
-     * @covers ::selectHttpCode
-     * @covers ::getJson
-     * @covers ::getHttpCode
      */
     public function initializeShippingPriceOrTaxChangedException_setsCorrectJsonAndHttpCode()
     {
@@ -348,11 +306,6 @@ class Bolt_Boltpay_OrderCreationExceptionTest extends PHPUnit_Framework_TestCase
     /**
      * @test
      * In case when we pass string data instead of expected numbers, values in the response will be set to zero.
-     *
-     * @covers ::__construct
-     * @covers ::selectHttpCode
-     * @covers ::getJson
-     * @covers ::getHttpCode
      */
     public function initializeWithIncorrectData_setsValuesInResponseToZero()
     {
@@ -377,11 +330,6 @@ class Bolt_Boltpay_OrderCreationExceptionTest extends PHPUnit_Framework_TestCase
     /**
      * @test
      * if OrderCreationException is keeping a reference to previous error
-     *
-     * @covers ::__construct
-     * @covers ::selectHttpCode
-     * @covers ::getJson
-     * @covers ::getHttpCode
      */
     public function initializeExceptionWithPreviousException_setsPreviousExceptionInResponse()
     {
@@ -412,11 +360,6 @@ class Bolt_Boltpay_OrderCreationExceptionTest extends PHPUnit_Framework_TestCase
     /**
      * @test
      * if special characters are escaped in JSON response
-     *
-     * @covers ::__construct
-     * @covers ::selectHttpCode
-     * @covers ::getJson
-     * @covers ::getHttpCode
      */
     public function initializeWithEscapedSpecialCharacters_setsCorrectJsonAndHttpCode()
     {
@@ -438,12 +381,6 @@ class Bolt_Boltpay_OrderCreationExceptionTest extends PHPUnit_Framework_TestCase
     /**
      * @test
      * If non-registered code is passed to a constructor it should generate generic exception.
-     *
-     * @covers ::__construct
-     * @covers ::createJson
-     * @covers ::selectHttpCode
-     * @covers ::getJson
-     * @covers ::getHttpCode
      */
     public function initializeWithNonRegisteredErrorCode_shouldGenerateGenericException()
     {
@@ -478,10 +415,6 @@ class Bolt_Boltpay_OrderCreationExceptionTest extends PHPUnit_Framework_TestCase
     /**
      * @test
      * HTTP response code for general exception with default parameters
-     *
-     * @covers ::__construct
-     * @covers ::selectHttpCode
-     * @covers ::getHttpCode
      */
     public function initializeWithDefaultParameters_shouldSetResponseCodeTo422()
     {
@@ -492,10 +425,6 @@ class Bolt_Boltpay_OrderCreationExceptionTest extends PHPUnit_Framework_TestCase
 	/**
 	 * @test
 	 * HTTP response code for general exception with invalid HMAC header
-	 *
-	 * @covers ::__construct
-	 * @covers ::selectHttpCode
-	 * @covers ::getHttpCode
 	 */
 	public function initializeWithInvalidHMACHeader_shouldSetResponseCodeTo401()
 	{
