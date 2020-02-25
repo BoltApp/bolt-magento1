@@ -15,6 +15,7 @@ class Bolt_Boltpay_OrderCreationExceptionTest extends PHPUnit_Framework_TestCase
      * JSON response for general error with default parameters
      *
      * @covers ::__construct
+     * @covers ::selectHttpCode
      * @covers ::getJson
      * @covers ::getHttpCode
      */
@@ -45,6 +46,7 @@ class Bolt_Boltpay_OrderCreationExceptionTest extends PHPUnit_Framework_TestCase
      * for correct data for existing order exception
      *
      * @covers ::__construct
+     * @covers ::selectHttpCode
      * @covers ::getJson
      * @covers ::getHttpCode
      */
@@ -70,6 +72,7 @@ class Bolt_Boltpay_OrderCreationExceptionTest extends PHPUnit_Framework_TestCase
      * for correct data for various cart exceptions
      *
      * @covers ::__construct
+     * @covers ::selectHttpCode
      * @covers ::getJson
      * @covers ::getHttpCode
      */
@@ -200,6 +203,7 @@ class Bolt_Boltpay_OrderCreationExceptionTest extends PHPUnit_Framework_TestCase
      * for correct data for item price has been updated exception
      *
      * @covers ::__construct
+     * @covers ::selectHttpCode
      * @covers ::getJson
      * @covers ::getHttpCode
      */
@@ -226,6 +230,7 @@ class Bolt_Boltpay_OrderCreationExceptionTest extends PHPUnit_Framework_TestCase
      * for correct data for out of inventory exception
      *
      * @covers ::__construct
+     * @covers ::selectHttpCode
      * @covers ::getJson
      * @covers ::getHttpCode
      */
@@ -252,6 +257,7 @@ class Bolt_Boltpay_OrderCreationExceptionTest extends PHPUnit_Framework_TestCase
      * for correct exception data when discount can not be applied
      *
      * @covers ::__construct
+     * @covers ::selectHttpCode
      * @covers ::getJson
      * @covers ::getHttpCode
      */
@@ -292,6 +298,7 @@ class Bolt_Boltpay_OrderCreationExceptionTest extends PHPUnit_Framework_TestCase
      * for correct exception data when discount code is invalid
      *
      * @covers ::__construct
+     * @covers ::selectHttpCode
      * @covers ::getJson
      * @covers ::getHttpCode
      */
@@ -316,6 +323,7 @@ class Bolt_Boltpay_OrderCreationExceptionTest extends PHPUnit_Framework_TestCase
      * for correct exception when shipping price or tax are changed
      *
      * @covers ::__construct
+     * @covers ::selectHttpCode
      * @covers ::getJson
      * @covers ::getHttpCode
      */
@@ -342,6 +350,7 @@ class Bolt_Boltpay_OrderCreationExceptionTest extends PHPUnit_Framework_TestCase
      * In case when we pass string data instead of expected numbers, values in the response will be set to zero.
      *
      * @covers ::__construct
+     * @covers ::selectHttpCode
      * @covers ::getJson
      * @covers ::getHttpCode
      */
@@ -370,6 +379,7 @@ class Bolt_Boltpay_OrderCreationExceptionTest extends PHPUnit_Framework_TestCase
      * if OrderCreationException is keeping a reference to previous error
      *
      * @covers ::__construct
+     * @covers ::selectHttpCode
      * @covers ::getJson
      * @covers ::getHttpCode
      */
@@ -404,6 +414,7 @@ class Bolt_Boltpay_OrderCreationExceptionTest extends PHPUnit_Framework_TestCase
      * if special characters are escaped in JSON response
      *
      * @covers ::__construct
+     * @covers ::selectHttpCode
      * @covers ::getJson
      * @covers ::getHttpCode
      */
@@ -430,6 +441,7 @@ class Bolt_Boltpay_OrderCreationExceptionTest extends PHPUnit_Framework_TestCase
      *
      * @covers ::__construct
      * @covers ::createJson
+     * @covers ::selectHttpCode
      * @covers ::getJson
      * @covers ::getHttpCode
      */
@@ -468,6 +480,7 @@ class Bolt_Boltpay_OrderCreationExceptionTest extends PHPUnit_Framework_TestCase
      * HTTP response code for general exception with default parameters
      *
      * @covers ::__construct
+     * @covers ::selectHttpCode
      * @covers ::getHttpCode
      */
     public function initializeWithDefaultParameters_shouldSetResponseCodeTo422()
@@ -481,6 +494,7 @@ class Bolt_Boltpay_OrderCreationExceptionTest extends PHPUnit_Framework_TestCase
 	 * HTTP response code for general exception with invalid HMAC header
 	 *
 	 * @covers ::__construct
+	 * @covers ::selectHttpCode
 	 * @covers ::getHttpCode
 	 */
 	public function initializeWithInvalidHMACHeader_shouldSetResponseCodeTo401()
