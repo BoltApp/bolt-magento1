@@ -2,6 +2,7 @@
 ## [V2.3.0](https://s3-us-west-1.amazonaws.com/bolt-public/magento-integration-release/bolt-magento1_v2.3.0.zip) 2020-02-13
  - Fixed an intermittent issue related to virtual product
  - Prevent processing on non-Bolt orders or orders in unexpected states
+ - Various other bug fixes
  - Another massive increase in unit test coverage
 ## [V2.2.0](https://s3-us-west-1.amazonaws.com/bolt-public/magento-integration-release/bolt-magento1_v2.2.0.zip) 2020-01-30
  - Better Bolt-side metrics and logging
