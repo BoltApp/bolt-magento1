@@ -198,13 +198,8 @@ class Bolt_Boltpay_ApiController extends Mage_Core_Controller_Front_Action imple
                 }
             }
         } catch (Exception $e) {
-            $metaData = array();
-            if (isset($quote)){
-                $metaData['quote'] = var_export($quote->debug(), true);
-            }
-
-            $this->boltHelper()->notifyException($e, $metaData);
-            $this->boltHelper()->logException($e, $metaData);
+            $this->boltHelper()->notifyException($e);
+            $this->boltHelper()->logException($e);
 
             $this->sendResponse(
                 422,

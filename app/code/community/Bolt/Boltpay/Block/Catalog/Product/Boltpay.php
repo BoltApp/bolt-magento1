@@ -195,29 +195,6 @@ class Bolt_Boltpay_Block_Catalog_Product_Boltpay extends Bolt_Boltpay_Block_Chec
     }
 
     /**
-     * Get maximum available quantity of product
-     * It is used to show a warning if user tries to buy more then product quantity
-     * @return int -1 Ignore product quantity levels
-     *              0 if product is out of stock
-     *              positive value otherwise
-     *
-     * @deprecated
-     */
-    public function getProductMaxQty()
-    {
-        /** @var Mage_Catalog_Model_Product $product */
-        $product = Mage::registry('current_product');
-        $stockItem = $product->getStockItem();
-        if (!$stockItem->getManageStock()) {
-            return -1;
-        } else if (!$stockItem->getIsInStock()) {
-            return 0;
-        } else {
-            return $stockItem->getQty();
-        }
-    }
-
-    /**
      * Returns product data needed for price calculation in JSON format
      *
      * @return string
