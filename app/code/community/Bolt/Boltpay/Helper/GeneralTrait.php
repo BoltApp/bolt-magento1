@@ -86,7 +86,7 @@ trait Bolt_Boltpay_Helper_GeneralTrait {
     }
 
     /**
-     * @param $item
+     * @param $item Mage_Sales_Model_Quote_Item
      *
      * @return string
      */
@@ -95,8 +95,11 @@ trait Bolt_Boltpay_Helper_GeneralTrait {
         /** @var Mage_Catalog_Helper_Image $imageHelper */
         $imageHelper = Mage::helper('catalog/image');
 
+        /** @var Mage_Catalog_Model_Product $product */
+        $product = Mage::getModel('catalog/product');
+
         /** @var Mage_Catalog_Model_Product $_product */
-        $_product = $item->getProduct();
+        $_product = $product->load($product->getIdBySku($item->getSku()));
 
         $image = '';
         try {
@@ -104,9 +107,10 @@ trait Bolt_Boltpay_Helper_GeneralTrait {
                 /** @var Mage_Catalog_Helper_Image $image */
                 $image = $imageHelper->init($_product, 'thumbnail', $_product->getThumbnail());
             }
-        } catch (Exception $e) {  }
+        } catch (Exception $e) {
+        }
 
-        return (string) $image;
+        return (string)$image;
     }
 
     /**
