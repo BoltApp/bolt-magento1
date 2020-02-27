@@ -28,7 +28,7 @@ class Bolt_Boltpay_Helper_GraphQLTest extends PHPUnit_Framework_TestCase
             ->disableOriginalConstructor()
             ->disableOriginalClone()
             ->disableArgumentCloning()
-            ->setMethods(array('getContextInfo', 'addMetaData', 'getBoltPluginVersion', 'getApiUrl', 'notifyException', 'logException'))
+            ->setMethods(array('getApiClient', 'getContextInfo', 'addMetaData', 'getBoltPluginVersion', 'getApiUrl', 'notifyException', 'logException'))
             ->getMockForTrait();
         $this->currentMock->method('getBoltPluginVersion')->willReturn('2.3.0');
         $this->currentMock->method('getApiUrl')->willReturn('https://api.bolt.com/');
@@ -49,17 +49,13 @@ class Bolt_Boltpay_Helper_GraphQLTest extends PHPUnit_Framework_TestCase
             ['getBody']
         );
 
-        Bolt_Boltpay_TestHelper::setNonPublicProperty(
-            $this->currentMock,
-            'apiClient',
-            $this->guzzleClientMock
-        );
+        $this->currentMock->method('getApiClient')->willReturn($this->guzzleClientMock);
     }
 
     /**
      * @test
      */
-    public function getFeatureSwitches_success()
+    public function getFeatureSwitches_withoutException_returnsResponseWithValues()
     {
         $this->guzzleClientMock->expects($this->once())->method('post')->with(
             'https://api.bolt.com/v2/merchant/api',
@@ -85,7 +81,7 @@ class Bolt_Boltpay_Helper_GraphQLTest extends PHPUnit_Framework_TestCase
      * @expectedException Exception
      * @expectedExceptionMessage Test exception
      */
-    public function getFeatureSwitches_fail()
+    public function getFeatureSwitches_withException_logsException()
     {
         $exception = new Exception('Test exception');
         $this->guzzleClientMock->expects($this->once())->method('post')->will($this->throwException($exception));
@@ -94,7 +90,6 @@ class Bolt_Boltpay_Helper_GraphQLTest extends PHPUnit_Framework_TestCase
         $this->currentMock->expects($this->once())->method('logException')->with($exception);
 
         $response = $this->currentMock->getFeatureSwitches();
-        $this->assertEquals("OK", $response->data->features->name);
     }
 }
 

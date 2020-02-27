@@ -73,6 +73,7 @@ trait Bolt_Boltpay_Helper_GraphQLTrait
      * its current version and the current merchant in question.
      *
      * @return mixed
+     * @throws \GuzzleHttp\Exception\GuzzleException
      */
     public function getFeatureSwitches()
     {
