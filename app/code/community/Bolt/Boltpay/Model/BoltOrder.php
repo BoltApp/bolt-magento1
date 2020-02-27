@@ -413,11 +413,11 @@ class Bolt_Boltpay_Model_BoltOrder extends Bolt_Boltpay_Model_Abstract
      * @param array                                 $cartSubmissionData data to be sent to Bolt
      * @param Mage_Sales_Model_Quote_Address_Rate   $shippingRate       shipping rate meta data
      * @param array                                 $boltFormatAddress  shipping address in Bolt format
-     * @param Mage_Sales_Model_Quote                $quote              the quote associated with the order
+     * @param Mage_Sales_Model_Quote|null           $quote              the quote associated with the order
      *
      * @return int    The total shipping in cents
      */
-    protected function addShippingForAdmin($totalsBlock, &$cartSubmissionData, $shippingRate, $boltFormatAddress, $quote ) {
+    protected function addShippingForAdmin($totalsBlock, &$cartSubmissionData, $shippingRate, $boltFormatAddress, $quote = null) {
         $totalShipping = 0;
         if ($shippingRate){
             /* @var Mage_Sales_Model_Quote_Address_Total $addressShippingTotal */
