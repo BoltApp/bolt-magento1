@@ -134,24 +134,7 @@ class Bolt_Boltpay_Helper_Data extends Mage_Core_Helper_Abstract
                     if (!checkout.validate()) return false;
                     ";
             case Bolt_Boltpay_Block_Checkout_Boltpay::CHECKOUT_TYPE_PRODUCT_PAGE:
-                /** @var Mage_Catalog_Model_Product $product */
-                $product = Mage::registry('current_product');
-                if (!$product || !$product->getStockItem() || !$product->getStockItem()->getIsInStock()) {
-                    return 'return false;';
-                }
-
-                /** @var Mage_CatalogInventory_Model_Stock_Item $stockItem */
-                $stockItem = $product->getStockItem();
-                return /** @lang JavaScript */ <<<JS
-if(boltConfigPDP.getQty() > Number({$stockItem->getQty()})) {
-    if ((typeof BoltPopup !== 'undefined')) {
-        BoltPopup.setMessage('{$this->__("The requested quantity is not available.")}');
-        BoltPopup.show();
-    }
-    return false;
-}
-JS;
-
+                return /** @lang JavaScript */ 'if (!boltConfigPDP.validate()) return false;';
             default:
                 return '';
         }

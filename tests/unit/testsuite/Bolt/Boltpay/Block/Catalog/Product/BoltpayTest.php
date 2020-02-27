@@ -325,7 +325,7 @@ class Bolt_Boltpay_Block_Catalog_Product_BoltpayTest extends PHPUnit_Framework_T
     {
         return array(
             array(Mage_Catalog_Model_Product_Type::TYPE_SIMPLE, true),
-            array(Mage_Catalog_Model_Product_Type::TYPE_CONFIGURABLE, false),
+            array(Mage_Catalog_Model_Product_Type::TYPE_CONFIGURABLE, true),
             array(Mage_Catalog_Model_Product_Type::TYPE_BUNDLE, false),
             array(Mage_Catalog_Model_Product_Type::TYPE_VIRTUAL, false),
             array(Mage_Catalog_Model_Product_Type::TYPE_GROUPED, false)
@@ -373,7 +373,8 @@ class Bolt_Boltpay_Block_Catalog_Product_BoltpayTest extends PHPUnit_Framework_T
             'getProductSupportedTypes'
         );
         $this->assertContains(Mage_Catalog_Model_Product_Type::TYPE_SIMPLE, $result);
-        $this->assertCount(1, $result);
+        $this->assertContains(Mage_Catalog_Model_Product_Type::TYPE_CONFIGURABLE, $result);
+        $this->assertCount(2, $result);
     }
 
     /**
@@ -393,8 +394,14 @@ class Bolt_Boltpay_Block_Catalog_Product_BoltpayTest extends PHPUnit_Framework_T
                     'getName',
                     'getFinalPrice',
                     'getTierPrice',
+                    'getStockItem',
+                    'getTypeId',
                 )
             )->getMock();
+        $stockItemMock = $this->getMockBuilder('Mage_CatalogInventory_Model_Stock_Item')
+            ->setMethods(array('getManageStock', 'getIsInStock', 'getQty'))
+            ->getMock();
+        $productMock->expects($this->once())->method('getStockItem')->willReturn($stockItemMock);
         $dummyTierPrices = array(
             array(
                 'price_id'      => '45',
@@ -431,6 +438,12 @@ class Bolt_Boltpay_Block_Catalog_Product_BoltpayTest extends PHPUnit_Framework_T
         $productMock->expects($this->once())->method('getName')->willReturn('Test Product Name');
         $productMock->expects($this->once())->method('getFinalPrice')->willReturn(456.78);
         $productMock->expects($this->once())->method('getTierPrice')->willReturn($dummyTierPrices);
+        $productMock->expects($this->once())->method('getStockItem')->willReturn($dummyTierPrices);
+        $productMock->expects($this->exactly(2))->method('getTypeId')
+            ->willReturn(Mage_Catalog_Model_Product_Type::TYPE_SIMPLE);
+        $stockItemMock->expects($this->once())->method('getManageStock')->willReturn(1);
+        $stockItemMock->expects($this->once())->method('getIsInStock')->willReturn(1);
+        $stockItemMock->expects($this->once())->method('getQty')->willReturn(1);
         TestHelper::stubRegistryValue('current_product', $productMock);
         $productJson = $this->currentMock->getProductJSON();
         $this->assertJson($productJson);
@@ -439,5 +452,6 @@ class Bolt_Boltpay_Block_Catalog_Product_BoltpayTest extends PHPUnit_Framework_T
         $this->assertEquals('Test Product Name', $productData['name']);
         $this->assertEquals(456.78, $productData['price']);
         $this->assertEquals($dummyTierPrices, $productData['tier_prices']);
+        $this->assertEquals(array('manage' => 1, 'status' => 1, 'qty' => 1), $productData['stock']);
     }
 }

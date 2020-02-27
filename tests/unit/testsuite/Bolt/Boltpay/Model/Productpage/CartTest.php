@@ -236,7 +236,11 @@ class Bolt_Boltpay_Model_Productpage_CartTest extends PHPUnit_Framework_TestCase
     {
         $currentMock = $this->getTestClassPrototype()->setMethods(array('setErrorResponseAndThrowException'))
             ->getMock();
-        Bolt_Boltpay_TestHelper::setNonPublicProperty($currentMock, 'cartRequest', json_decode(json_encode($cartRequest)));
+        Bolt_Boltpay_TestHelper::setNonPublicProperty(
+            $currentMock,
+            'cartRequest',
+            json_decode(json_encode($cartRequest))
+        );
         return $currentMock;
     }
 
@@ -401,6 +405,52 @@ class Bolt_Boltpay_Model_Productpage_CartTest extends PHPUnit_Framework_TestCase
         $productItem = $quote->getItemsCollection()->getFirstItem();
         $this->assertEquals(self::$productId, $productItem->getProductId());
         $this->assertEquals($qty, $productItem->getQty());
+    }
+
+
+    /**
+     * @test
+     * that createCart provides product options when adding to cart if they exist in request
+     *
+     * @covers ::createCart
+     *
+     * @throws Exception if test class name is not defined
+     */
+    public function createCart_cartRequestItemWithOptions_addsProductToCartWithOptions()
+    {
+        /** @var MockObject|Bolt_Boltpay_Model_Productpage_Cart $currentMock */
+        $currentMock = $this->getTestClassPrototype()->setMethods(
+            array('getCartRequestItems', 'getSessionCart')
+        )->getMock();
+
+        $sessionCart = $this->getClassPrototype('Mage_Checkout_Model_Cart')
+            ->setMethods(array('addProduct'))->getMock();
+
+        $currentMock->expects($this->once())->method('getSessionCart')->willReturn($sessionCart);
+        $currentMock->expects($this->once())->method('getCartRequestItems')->willReturn(
+            array(
+                (object)array(
+                    'reference' => self::$productId,
+                    'quantity'  => 1,
+                    'options'   => 'product=436&related_product=&super_attribute%5B92%5D=20&super_attribute%5B190%5D=147&qty=1'
+                )
+            )
+        );
+
+        $sessionCart->expects($this->once())->method('addProduct')->with(
+            Mage::getModel('catalog/product')->load(self::$productId),
+            array(
+                'product'         => self::$productId,
+                'related_product' => '',
+                'super_attribute' => array(
+                    92  => '20',
+                    190 => '147'
+                ),
+                'qty'             => 1
+            )
+        );
+
+        Bolt_Boltpay_TestHelper::callNonPublicFunction($currentMock, 'createCart');
     }
 
     /**
@@ -641,7 +691,7 @@ class Bolt_Boltpay_Model_Productpage_CartTest extends PHPUnit_Framework_TestCase
      * @covers ::getResponseHttpCode
      * @depends generateData_withValidData_populatesInternalProperties
      *
-     * @param MockObject|Bolt_Boltpay_Model_Productpage_Cart $currentMock  tested class instance from previous test
+     * @param MockObject|Bolt_Boltpay_Model_Productpage_Cart $currentMock tested class instance from previous test
      */
     public function getResponseHttpCode_withValidRequest_returnsOKStatusCode($currentMock)
     {

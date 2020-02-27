@@ -21,30 +21,72 @@
 <script type="text/javascript">
 var boltConfigPDP = {
     product: <?php echo $this->getProductJSON(); ?>,
+    /**
+     * Initializes BoltCheckout
+     */
     init: function () {
         <?php echo $this->getCartDataJs(Bolt_Boltpay_Block_Checkout_Boltpay::CHECKOUT_TYPE_PRODUCT_PAGE); ?>
     },
+    /**
+     * Returns current quantity value
+     * @returns {number}
+     */
     getQty: function () {
         return Number(document.getElementById('qty').value);
     },
-    getCartData: function () {
-        var qty = this.getQty();
-        var price = this.product.price;
+    /**
+     * Returns price of the currently configured product
+     * @returns {number}
+     */
+    getPrice: function () {
+        var price = Number(this.product.price);
+        //use tier price instead, if qty matches
         for (var i = 0; i < this.product.tier_prices.length; i++) {
-            if (qty >= Number(this.product.tier_prices[i]['price_qty'])) {
-                price = this.product.tier_prices[i]['price'];
+            if (this.getQty() >= Number(this.product.tier_prices[i]['price_qty'])) {
+                price = Number(this.product.tier_prices[i]['price']);
             }
         }
+        switch (this.product.type_id) {
+            case 'configurable':
+                if (typeof optionsPrice.optionPrices.config !== 'undefined') {
+                    //add configurable options prices
+                    price += Number(optionsPrice.optionPrices.config.price);
+                }
+                break;
+        }
+        return price;
+    },
+    /**
+     * Called by BoltCheckout check callback and will prevent Bolt popup from opening if false is returned
+     * @returns {boolean}
+     */
+    validate: function () {
+        if (this.product.stock.manage && (!this.product.stock.status || this.product.stock.qty < this.getQty())) {
+            if ((typeof BoltPopup !== 'undefined')) {
+                BoltPopup.setMessage('<?php echo $this->__("The requested quantity is not available."); ?>');
+                BoltPopup.show();
+            }
+            return false;
+        }
+        return new Validation('product_addtocart_form').validate();
+    },
+    /**
+     * Returns cart data provided to BoltConnect.configureProductCheckout
+     * @returns {{total: number, items: ([{reference: number, quantity: number, price: number, name: string, options: string}]|[])}}
+     */
+    getCartData: function () {
+        var price = this.getPrice();
         return {
-            items: qty > 0 ? [
+            items: this.getQty() > 0 ? [
                 {
                     reference: this.product.id,
                     name: this.product.name,
                     price: price,
-                    quantity: qty,
+                    quantity: this.getQty(),
+                    options: $('product_addtocart_form').serialize(),
                 },
             ] : [],
-            total: qty * price,
+            total: this.getQty() * price,
         };
     },
 };
@@ -70,6 +112,15 @@ document.addEventListener("DOMContentLoaded", function() {
     );
 
     document.getElementById('qty').addEventListener('input', boltConfigPDP.init.bind(boltConfigPDP));
+    if (typeof spConfig !== 'undefined') {
+        spConfig.configureSubscribe(boltConfigPDP.init.bind(boltConfigPDP));
+    }
+    if (typeof opConfig !== 'undefined') {
+        opConfig.reloadPrice = function () {
+            Product.Options.prototype.reloadPrice.apply(opConfig);
+            boltConfigPDP.init();
+        };
+    }
 });
 
 </script>

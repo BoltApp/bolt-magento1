@@ -190,7 +190,8 @@ class Bolt_Boltpay_Block_Catalog_Product_Boltpay extends Bolt_Boltpay_Block_Chec
     protected function getProductSupportedTypes()
     {
         return [
-            Mage_Catalog_Model_Product_Type::TYPE_SIMPLE
+            Mage_Catalog_Model_Product_Type::TYPE_SIMPLE,
+            Mage_Catalog_Model_Product_Type::TYPE_CONFIGURABLE,
         ];
     }
 
@@ -203,12 +204,23 @@ class Bolt_Boltpay_Block_Catalog_Product_Boltpay extends Bolt_Boltpay_Block_Chec
     {
         /** @var Mage_Catalog_Model_Product $product */
         $product = Mage::registry('current_product');
+
+        /** @var Mage_CatalogInventory_Model_Stock_Item $stockItem */
+        $stockItem = $product->getStockItem();
         return Mage::helper('core')->jsonEncode(
             array(
                 'id'          => $product->getId(),
                 'name'        => $product->getName(),
                 'price'       => $product->getFinalPrice(),
-                'tier_prices' => $product->getTierPrice()
+                'tier_prices' => $product->getTierPrice(),
+                'type_id'     => $product->getTypeId(),
+                'stock'       => array(
+                    'manage' => $product->getTypeId() == Mage_Catalog_Model_Product_Type::TYPE_SIMPLE
+                        ? $stockItem->getManageStock()
+                        : false,
+                    'status' => $stockItem->getIsInStock(),
+                    'qty'    => (float) $stockItem->getQty(),
+                ),
             )
         );
     }
