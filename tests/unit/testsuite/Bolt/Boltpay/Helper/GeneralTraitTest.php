@@ -1,12 +1,16 @@
 <?php
 require_once('TestHelper.php');
 require_once('CouponHelper.php');
+require_once('MockingTrait.php');
+
+use Bolt_Boltpay_TestHelper as TestHelper;
 
 /**
  * @coversDefaultClass Bolt_Boltpay_Helper_GeneralTrait
  */
 class Bolt_Boltpay_Helper_GeneralTraitTest extends PHPUnit_Framework_TestCase
 {
+    use Bolt_Boltpay_MockingTrait;
 
     /**
      * @var int|null Dummy product id
@@ -294,10 +298,16 @@ class Bolt_Boltpay_Helper_GeneralTraitTest extends PHPUnit_Framework_TestCase
     public function getItemImageUrl_onQuoteItem_returnsThumbnailUrl()
     {
         $quoteItem = Mage::getModel('sales/quote_item');
-        $product = Mage::getModel('catalog/product');
-        $product->setData('thumbnail', '/t/e/test.jpg');
-        $quoteItem->setProduct($product);
+        $quoteItem->setData('sku', 'test');
+        $productMock = $this->getClassPrototype('Mage_Catalog_Model_Product')
+            ->setMethods(array('load', 'getIdBySku', 'getThumbnail'))
+            ->getMock();
+        $productMock->method('load')->willReturnSelf();
+        $productMock->method('getIdBySku')->willReturn(1);
+        $productMock->method('getThumbnail')->willReturn('/t/e/test.jpg');
+        TestHelper::stubModel('catalog/product', $productMock);
         $this->assertStringStartsWith('http', $this->currentMock->getItemImageUrl($quoteItem));
+        TestHelper::restoreModel('catalog/product');
     }
 
     /**
@@ -307,6 +317,7 @@ class Bolt_Boltpay_Helper_GeneralTraitTest extends PHPUnit_Framework_TestCase
      * @covers Bolt_Boltpay_Helper_GeneralTrait::getItemImageUrl
      *
      * @throws Mage_Core_Exception if registry key already exists
+     * @throws ReflectionException if Mage class doesn't have _config property
      */
     public function getItemImageUrl_whenImageHelperThrowsException_returnsEmptyString()
     {
@@ -318,10 +329,15 @@ class Bolt_Boltpay_Helper_GeneralTraitTest extends PHPUnit_Framework_TestCase
         Mage::register('_helper/catalog/image', $imageHelperMock);
 
         $quoteItem = Mage::getModel('sales/quote_item');
-        $product = Mage::getModel('catalog/product');
-        $product->setData('thumbnail', '/t/e/test.jpg');
-        $quoteItem->setProduct($product);
+        $productMock = $this->getClassPrototype('Mage_Catalog_Model_Product')
+            ->setMethods(array('load', 'getIdBySku', 'getThumbnail'))
+            ->getMock();
+        $productMock->method('load')->willReturnSelf();
+        $productMock->method('getIdBySku')->willReturn(1);
+        $productMock->method('getThumbnail')->willReturn('/t/e/test.jpg');
+        TestHelper::stubModel('catalog/product', $productMock);
         $this->assertEquals('', $this->currentMock->getItemImageUrl($quoteItem));
+        TestHelper::restoreModel('catalog/product');
         Mage::unregister('_helper/catalog/image');
     }
 
