@@ -136,7 +136,7 @@ class Bolt_Boltpay_Model_BoltOrder extends Bolt_Boltpay_Model_Abstract
                 function ($item) use ($quote, &$calculatedTotal) {
                     /** @var Mage_Sales_Model_Quote_Item $item */
                     $imageUrl = $this->boltHelper()->getItemImageUrl($item);
-                    $product   = Mage::getModel('catalog/product')->load($item->getProductId());
+                    $product = Mage::getModel('catalog/product')->load($item->getProductId());
                     $type = $product->getTypeId() == 'virtual' ? self::ITEM_TYPE_DIGITAL : self::ITEM_TYPE_PHYSICAL;
                     $calculatedTotal += round($item->getPrice() * 100 * $item->getQty());
                     return array(
