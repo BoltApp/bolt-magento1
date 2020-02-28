@@ -1,7 +1,9 @@
 <?php
+
 require_once('TestHelper.php');
 
 use Bolt_Boltpay_Controller_Interface as RESPONSE_CODE;
+use Bolt_Boltpay_TestHelper as TestHelper;
 
 /**
  * Class Bolt_Boltpay_OrderCreationExceptionTest
@@ -394,7 +396,7 @@ class Bolt_Boltpay_OrderCreationExceptionTest extends PHPUnit_Framework_TestCase
             $errorMessage
         );
 
-        Bolt_Boltpay_TestHelper::callNonPublicFunction(
+        TestHelper::callNonPublicFunction(
             $boltOrderCreationException,
             'createJson',
             [
