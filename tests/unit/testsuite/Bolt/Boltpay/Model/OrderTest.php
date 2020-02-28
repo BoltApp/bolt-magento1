@@ -546,6 +546,44 @@ class Bolt_Boltpay_Model_OrderTest extends PHPUnit_Framework_TestCase
 
     /**
      * @test
+     *
+     * @covers ::validateTotals
+     *
+     * @throws ReflectionException if validateTotals method doesn't exist
+     */
+    public function validateTotals_ifItemProductPriceDoesNotChange_notThrowsException()
+    {
+        $transaction = new stdClass();
+        $transaction->order->cart->items = array(
+            (object)array('reference' => 1, 'unit_price' => 460, 'total_amount' => (object)array('amount' => 2300))
+        );
+
+        $this->immutableQuoteMock->expects($this->once())->method('getTotals')
+            ->willReturnCallback(
+                function () use ($transaction) {
+                    //disable validations we are not interested in this test
+                    $transaction->shouldDoTaxTotalValidation = false;
+                    $transaction->shouldSkipDiscountAndShippingTotalValidation = true;
+                }
+            );
+
+        $this->immutableQuoteMock->expects($this->once())->method('getItemById')->with(1)
+            ->willReturn(
+                Mage::getModel(
+                    'sales/quote_item',
+                    array('row_total_with_discount' => 0, 'calculation_price' => 4.6035, 'qty' => 5, 'product_id' => 1001)
+                )
+            );
+
+        TestHelper::callNonPublicFunction(
+            $this->currentMock,
+            'validateTotals',
+            array($this->immutableQuoteMock, $transaction)
+        );
+    }
+
+    /**
+     * @test
      * that when the tax total amount is different at Bolt than Magento BEYOND the price fault tolerance
      * a mismatch exception is thrown that includes the mismatch reason, Bolt tax amount and Magento tax amount
      *

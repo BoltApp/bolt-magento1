@@ -711,7 +711,7 @@ class Bolt_Boltpay_Model_Order extends Bolt_Boltpay_Model_Abstract
 
             $boltPrice = (int)$boltCartItem->total_amount->amount;
             $magentoRowPrice = (int) ( $cartItem->getRowTotalWithDiscount() * 100 );
-            $magentoCalculatedPrice = (int) round($cartItem->getCalculationPrice() * 100 * $cartItem->getQty());
+            $magentoCalculatedPrice = (int) round($cartItem->getCalculationPrice() * 100) * $cartItem->getQty();
 
             if ( !in_array($boltPrice, [$magentoRowPrice, $magentoCalculatedPrice]) ) {
                 throw new Bolt_Boltpay_OrderCreationException(
