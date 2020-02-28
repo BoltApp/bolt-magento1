@@ -69,10 +69,10 @@ class Bolt_Boltpay_Helper_GraphQLTest extends PHPUnit_Framework_TestCase
         $this->currentMock->method('getContextInfo')->willReturn(array());
 
         $this->responseMock->expects($this->once())->method('getBody')
-            ->willReturn('{"data": {"features": {"name": "OK", "value": true, "default_value": false, "rollout_percentage": 100}}}');
+            ->willReturn('{"plugin": {"features": [{"name": "M1_BOLT_ENABLED", "value": true, "default_value": false, "rollout_percentage": 100}]}}');
 
         $response = $this->currentMock->getFeatureSwitches();
-        $this->assertEquals("OK", $response->data->features->name);
+        $this->assertEquals("M1_BOLT_ENABLED", $response->plugin->features[0]->name);
     }
 
     /**

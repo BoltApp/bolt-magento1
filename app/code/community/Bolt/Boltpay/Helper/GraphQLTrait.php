@@ -72,7 +72,14 @@ trait Bolt_Boltpay_Helper_GraphQLTrait
      * This Method makes a call to Bolt and returns the feature switches and their values for this server with
      * its current version and the current merchant in question.
      *
-     * @return mixed
+     * @return object
+     * $result->plugin->features is array of features
+     * Each feature is object with 4 fields:
+     * string name
+     * boolean value
+     * boolean defaultValue
+     * 0..100 rolloutPercentage
+     *
      * @throws \GuzzleHttp\Exception\GuzzleException
      */
     public function getFeatureSwitches()
