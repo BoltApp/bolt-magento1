@@ -195,15 +195,4 @@ trait Bolt_Boltpay_Helper_ApiTrait
             ->setHeader('User-Agent', 'BoltPay/Magento-' . $contextInfo["Magento-Version"] . '/' . $contextInfo["Bolt-Plugin-Version"], true)
             ->setHeader('X-Bolt-Plugin-Version', $contextInfo["Bolt-Plugin-Version"], true);
     }
-
-    /**
-     * Checks if the Bolt API response indicates an error.
-     *
-     * @param $response     Bolt API response
-     * @return bool         true if there is an error, false otherwise
-     */
-    private function isResponseError($response)
-    {
-        return property_exists($response, 'errors') || property_exists($response, 'error_code');
-    }
 }
