@@ -205,33 +205,35 @@ class Bolt_Boltpay_Model_Productpage_Cart extends Bolt_Boltpay_Model_Abstract
     {
         $cartItems = $this->getCartRequestItems();
         $cart = $this->getSessionCart();
+        $quote = $cart->getQuote();
+
+
+        ///////////////////////////////////////////////
+        // Remove stock validation as a temporary
+        // solution for the Bolt backend unable to
+        // handle stock error codes
+        // TODO: remove this once Bolt adds PPC
+        //       out-of-stock error code support
+        ///////////////////////////////////////////////
+        $quote->setIsSuperMode(true);
+        ///////////////////////////////////////////////
 
         foreach ($cartItems as $cartItem) {
             $productId = @$cartItem->reference;
 
             $product = $this->getProductById($productId);
 
-            /** @var Mage_CatalogInventory_Model_Stock_Item $stockItem */
-            $stockItem = $product->getStockItem();
+            parse_str($cartItem->options, $params);
 
-            ///////////////////////////////////////////////
-            // Remove stock validation as a temporary
-            // solution for the Bolt backend unable to
-            // handle stock error codes
-            // TODO: remove this once Bolt adds PPC
-            //       out-of-stock error code support
-            ///////////////////////////////////////////////
-            $stockItem->setManageStock(0);
-            $stockItem->setUseConfigManageStock(0);
-            ///////////////////////////////////////////////
-
-            $param = array(
-                'product' => $productId,
-                'qty'     => @$cartItem->quantity
+            $params = array_merge(
+                $params,
+                array(
+                    'product' => $productId,
+                    'qty'     => @$cartItem->quantity
+                )
             );
-            $cart->addProduct($product, $param);
+            $cart->addProduct($product, $params);
         }
-        $quote = $cart->getQuote();
         $quote->setIsBoltPdp(true);
         $cart->save();
 
