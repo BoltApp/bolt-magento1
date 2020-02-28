@@ -424,7 +424,7 @@ class Bolt_Boltpay_Model_Productpage_Cart extends Bolt_Boltpay_Model_Abstract
      *
      * @return Mage_Catalog_Model_Product
      *
-     * @codeCoverageIgnore
+     * @codeCoverageIgnore No logic to test
      */
     protected function getProductById($id)
     {
