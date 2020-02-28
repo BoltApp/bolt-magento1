@@ -97,15 +97,13 @@ trait Bolt_Boltpay_Helper_GeneralTrait {
 
         /** @var Mage_Catalog_Model_Product $product */
         $product = Mage::getModel('catalog/product');
-
-        /** @var Mage_Catalog_Model_Product $_product */
-        $_product = $product->load($product->getIdBySku($item->getSku()));
+        $product->load($product->getIdBySku($item->getSku()));
 
         $image = '';
         try {
-            if ($_product->getThumbnail()) {
+            if ($product->getThumbnail()) {
                 /** @var Mage_Catalog_Helper_Image $image */
-                $image = $imageHelper->init($_product, 'thumbnail', $_product->getThumbnail());
+                $image = $imageHelper->init($product, 'thumbnail', $product->getThumbnail());
             }
         } catch (Exception $e) {
         }
