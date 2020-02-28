@@ -24,6 +24,7 @@ use Bolt_Boltpay_Controller_Interface as RESPONSE_CODE;
  */
 class Bolt_Boltpay_OrderCreationException extends Bolt_Boltpay_BoltException
 {
+
     /**
      * Database error or error in incoming request
      */
