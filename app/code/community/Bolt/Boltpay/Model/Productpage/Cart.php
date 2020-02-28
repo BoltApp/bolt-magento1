@@ -57,7 +57,7 @@ class Bolt_Boltpay_Model_Productpage_Cart extends Bolt_Boltpay_Model_Abstract
             $this->setCartResponse($cart->getQuote());
         } catch (\Bolt_Boltpay_BadInputException $e) {
             return false;
-        } catch (\Exception $e) {
+        } catch (Exception $e) {
             $this->boltHelper()->notifyException($e);
             $this->boltHelper()->logException($e);
             return false;
@@ -69,7 +69,7 @@ class Bolt_Boltpay_Model_Productpage_Cart extends Bolt_Boltpay_Model_Abstract
     /**
      * Validate cart request data
      *
-     * @throws \Exception upon any error in validation
+     * @throws Exception upon any error in validation
      *
      * @todo re-enable stock validation when Bolt server-side code supports the error type
      */
@@ -85,7 +85,7 @@ class Bolt_Boltpay_Model_Productpage_Cart extends Bolt_Boltpay_Model_Abstract
 
     /**
      * @return bool
-     * @throws \Exception
+     * @throws Exception
      */
     protected function validateCartInfo()
     {
@@ -102,7 +102,7 @@ class Bolt_Boltpay_Model_Productpage_Cart extends Bolt_Boltpay_Model_Abstract
 
     /**
      * @return bool
-     * @throws \Exception
+     * @throws Exception
      */
     protected function validateEmptyCart()
     {
@@ -119,7 +119,7 @@ class Bolt_Boltpay_Model_Productpage_Cart extends Bolt_Boltpay_Model_Abstract
 
     /**
      * @return bool
-     * @throws \Exception
+     * @throws Exception
      */
     protected function validateProductsExist()
     {
@@ -146,7 +146,7 @@ class Bolt_Boltpay_Model_Productpage_Cart extends Bolt_Boltpay_Model_Abstract
 
     /**
      * @return bool
-     * @throws \Exception
+     * @throws Exception
      */
     protected function validateProductsQty()
     {
@@ -167,7 +167,9 @@ class Bolt_Boltpay_Model_Productpage_Cart extends Bolt_Boltpay_Model_Abstract
 
     /**
      * @return bool
-     * @throws \Exception
+     * @throws Exception
+     *
+     * @codeCoverageIgnore Out of stock error codes currently not supported by Bolt Backend
      */
     protected function validateProductsStock()
     {
@@ -359,7 +361,7 @@ class Bolt_Boltpay_Model_Productpage_Cart extends Bolt_Boltpay_Model_Abstract
      *
      * @throws Exception
      */
-    protected function setErrorResponseAndThrowException($errCode, $message, $httpStatusCode, \Exception $exception = null)
+    protected function setErrorResponseAndThrowException($errCode, $message, $httpStatusCode, Exception $exception = null)
     {
         $this->responseError = array(
             'code'    => $errCode,
@@ -421,6 +423,8 @@ class Bolt_Boltpay_Model_Productpage_Cart extends Bolt_Boltpay_Model_Abstract
      * @param $id
      *
      * @return Mage_Catalog_Model_Product
+     *
+     * @codeCoverageIgnore No logic to test
      */
     protected function getProductById($id)
     {
