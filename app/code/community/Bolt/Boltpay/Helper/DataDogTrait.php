@@ -95,8 +95,8 @@ trait Bolt_Boltpay_Helper_DataDogTrait
             $this->_data['env'] = Boltpay_DataDog_Environment::TEST_ENVIRONMENT;
         } else {
             $this->_data['env'] = Mage::getStoreConfig('payment/boltpay/test') ?
-                          Boltpay_DataDog_Environment::DEVELOPMENT_ENVIRONMENT :
-                          Boltpay_DataDog_Environment::PRODUCTION_ENVIRONMENT;
+                Boltpay_DataDog_Environment::DEVELOPMENT_ENVIRONMENT :
+                Boltpay_DataDog_Environment::PRODUCTION_ENVIRONMENT;
         }
     }
 
@@ -105,7 +105,7 @@ trait Bolt_Boltpay_Helper_DataDogTrait
      * @return string|null
      */
     protected static function getPluginVersion() {
-        $versionElm =  Mage::getConfig()->getModuleConfig("Bolt_Boltpay")->xpath("version");
+        $versionElm = Mage::getConfig()->getModuleConfig("Bolt_Boltpay")->xpath("version");
 
         if(isset($versionElm[0])) {
             return (string)$versionElm[0];
