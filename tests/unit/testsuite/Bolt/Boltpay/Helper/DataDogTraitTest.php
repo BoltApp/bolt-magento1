@@ -108,4 +108,20 @@ class Bolt_Boltpay_Helper_DataDogTraitTest extends PHPUnit_Framework_TestCase
         $this->assertEquals($expectedEnv, $actualEnv);
         TestHelper::restoreOriginals();
     }
+
+    /**
+     * @test
+     * getPluginVersion returns null if version is not set in config
+     *
+     * @throws ReflectionException
+     */
+    public function getPluginVersion_ifVersionIsNotSet_returnsNull()
+    {
+        /** @var Mage_Core_Model_Config_Element $config */
+        $config = Mage::getConfig()->getModuleConfig('Bolt_Boltpay');
+        $originalVersion = $config->xpath('version');
+        $config->setNode('version', '');
+        $this->assertEquals(null, TestHelper::callNonPublicFunction($this->currentMock, 'getPluginVersion'));
+        $config->setNode('version', $originalVersion);
+    }
 }
