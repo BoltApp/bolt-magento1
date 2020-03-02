@@ -225,4 +225,20 @@ trait Bolt_Boltpay_Helper_ConfigTrait {
 
         return $severities;
     }
+
+    /**
+     * Get Bolt plugin version
+     *
+     * @return string|null
+     */
+    public static function getBoltPluginVersion()
+    {
+        $versionElm = Mage::getConfig()->getModuleConfig("Bolt_Boltpay")->xpath("version");
+
+        if (isset($versionElm[0])) {
+            return (string)$versionElm[0];
+        }
+
+        return null;
+    }
 }

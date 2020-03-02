@@ -1,5 +1,8 @@
 <?php
+
 require_once('TestHelper.php');
+
+use Bolt_Boltpay_TestHelper as TestHelper;
 
 class Bolt_Boltpay_Helper_ConfigTraitTest extends PHPUnit_Framework_TestCase
 {
@@ -62,5 +65,45 @@ class Bolt_Boltpay_Helper_ConfigTraitTest extends PHPUnit_Framework_TestCase
         $result = ['testroute test-route'];
 
         $this->assertEquals($result, $this->currentMock->getAllowedButtonByCustomRoutes());
+    }
+
+    /**
+     * @test
+     * Retrieving Bolt version when it is unavailable in Magento config
+     *
+     * @covers Bolt_Boltpay_Helper_BugsnagTrait::getBoltPluginVersion
+     *
+     * @throws ReflectionException if Mage::_config doesn't have _xml property
+     */
+    public function getBoltPluginVersion_withoutConfigValueSet_returnsNull()
+    {
+        $config = Mage::getConfig();
+
+        $oldXml = TestHelper::getNonPublicProperty($config, '_xml');
+        $newXml = new Varien_Simplexml_Element(/** @lang XML */ '<modules/>');
+        $newXml->setNode('modules/Bolt_Boltpay', null);
+        TestHelper::setNonPublicProperty($config, '_xml', $newXml);
+
+        $this->assertNull(Bolt_Boltpay_Helper_ConfigTrait::getBoltPluginVersion());
+
+        TestHelper::setNonPublicProperty($config, '_xml', $oldXml);
+    }
+
+    /**
+     * @test
+     * Retrieving Bolt version when it is set in Magento config
+     *
+     * @covers Bolt_Boltpay_Helper_BugsnagTrait::getBoltPluginVersion
+     *
+     * @throws ReflectionException if Mage::_config doesn't have _xml property
+     */
+    public function getBoltPluginVersion_withConfigValueSet_returnsSetValue()
+    {
+        $config = Mage::getConfig();
+        $configXml = TestHelper::getNonPublicProperty($config, '_xml');
+        $version = (string)$configXml->modules->Bolt_Boltpay->version;
+
+        $this->assertNotEmpty($version);
+        $this->assertEquals($version, Bolt_Boltpay_Helper_ConfigTrait::getBoltPluginVersion());
     }
 }
