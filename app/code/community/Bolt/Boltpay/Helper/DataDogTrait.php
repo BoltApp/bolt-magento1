@@ -17,6 +17,8 @@
 
 trait Bolt_Boltpay_Helper_DataDogTrait
 {
+    use Bolt_Boltpay_Helper_ConfigTrait;
+
     public static $defaultDataDogKey = '66d80ae8d0278e3ee2d23e65649b7256';
     public static $defaultSeverityConfig = 'error';
     private $_apiKey;
@@ -104,10 +106,11 @@ trait Bolt_Boltpay_Helper_DataDogTrait
     /**
      * @return string|null
      */
-    protected static function getPluginVersion() {
+    protected static function getPluginVersion()
+    {
         $versionElm = Mage::getConfig()->getModuleConfig("Bolt_Boltpay")->xpath("version");
 
-        if(isset($versionElm[0])) {
+        if (isset($versionElm[0])) {
             return (string)$versionElm[0];
         }
 

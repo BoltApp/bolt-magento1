@@ -149,7 +149,6 @@ trait Bolt_Boltpay_Helper_ConfigTrait {
      */
     public function canUseForCountry($country)
     {
-
         if(!$this->isBoltPayActive()) {
             return false;
         }
