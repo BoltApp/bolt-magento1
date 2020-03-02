@@ -87,7 +87,7 @@ class Bolt_Boltpay_Helper_ConfigTraitTest extends PHPUnit_Framework_TestCase
 
     /**
      * @test
-     * Retrieving Bolt version when it is unavailable in Magento config
+     * getBoltPluginVersion when version is not set in config
      *
      * @covers Bolt_Boltpay_Helper_ConfigTrait::getBoltPluginVersion
      *
@@ -109,7 +109,7 @@ class Bolt_Boltpay_Helper_ConfigTraitTest extends PHPUnit_Framework_TestCase
 
     /**
      * @test
-     * Retrieving Bolt version when it is set in Magento config
+     * getBoltPluginVersion when version is set in config
      *
      * @covers Bolt_Boltpay_Helper_ConfigTrait::getBoltPluginVersion
      *
@@ -123,5 +123,138 @@ class Bolt_Boltpay_Helper_ConfigTraitTest extends PHPUnit_Framework_TestCase
 
         $this->assertNotEmpty($version);
         $this->assertEquals($version, Bolt_Boltpay_Helper_ConfigTrait::getBoltPluginVersion());
+    }
+
+    /**
+     * @test
+     * getSeverityConfig returns config with spaces removed and split by comma
+     *
+     * @covers Bolt_Boltpay_Helper_ConfigTrait::getSeverityConfig
+     *
+     * @throws Mage_Core_Exception
+     * @throws Mage_Core_Model_Store_Exception
+     * @throws ReflectionException
+     */
+    public function getSeverityConfig_returnsCorrectResult()
+    {
+        $datadogConfig = json_encode(array('datadogKeySeverity' => '  error , info  , warning   '));
+        TestHelper::stubConfigValue('payment/boltpay/extra_options', $datadogConfig);
+        $this->assertEquals(['error', 'info', 'warning'], $this->currentMock->getSeverityConfig());
+        TestHelper::restoreOriginals();
+    }
+
+    /**
+     * @test
+     * canUseEverywhere returns the correct result for various configs
+     *
+     * @covers       Bolt_Boltpay_Helper_ConfigTrait::canUseEverywhere
+     *
+     * @dataProvider canUseEverywhere_withVariousConfigs_returnsCorrectResultProvider
+     *
+     * @param $active isBoltPayActive
+     * @param $isEverywhere shouldAddButtonEverywhere
+     * @param $expected expected result
+     *
+     * @throws Mage_Core_Exception
+     * @throws Mage_Core_Model_Store_Exception
+     * @throws ReflectionException
+     */
+    public function canUseEverywhere_withVariousConfigs_returnsCorrectResult($active, $isEverywhere, $expected)
+    {
+        TestHelper::stubConfigValue('payment/boltpay/active', $active);
+        TestHelper::stubConfigValue('payment/boltpay/add_button_everywhere', $isEverywhere);
+        $this->assertEquals($expected, $this->currentMock->canUseEverywhere());
+        TestHelper::restoreOriginals();
+    }
+
+    /**
+     * Data provider for {@see canUseEverywhere_withVariousConfigs_returnsCorrectResult}
+     *
+     * @return array[]
+     */
+    public function canUseEverywhere_withVariousConfigs_returnsCorrectResultProvider()
+    {
+        return array(
+            array('true', 'true', true),
+            array('true', 'false', false),
+            array('false', 'true', false),
+            array('false', 'false', false),
+        );
+    }
+
+    /**
+     * @test
+     * canUseForCountry returns false if Bolt is not active
+     *
+     * @covers Bolt_Boltpay_Helper_ConfigTrait::canUseForCountry
+     *
+     * @throws Mage_Core_Exception
+     * @throws Mage_Core_Model_Store_Exception
+     * @throws ReflectionException
+     */
+    public function canUseForCountry_ifBoltIsNotActive_returnsFalse()
+    {
+        TestHelper::stubConfigValue('payment/boltpay/active', 'false');
+        $this->assertFalse($this->currentMock->canUseForCountry('country'));
+        TestHelper::restoreOriginals();
+    }
+
+    /**
+     * @test
+     * canUseForCountry returns true if skip payment is true
+     *
+     * @covers Bolt_Boltpay_Helper_ConfigTrait::canUseForCountry
+     *
+     * @throws Mage_Core_Exception
+     * @throws Mage_Core_Model_Store_Exception
+     * @throws ReflectionException
+     */
+    public function canUseForCountry_ifSkipPaymentIsTrue_returnsTrue()
+    {
+        TestHelper::stubConfigValue('payment/boltpay/active', 'true');
+        TestHelper::stubConfigValue('payment/boltpay/skip_payment', 1);
+        $this->assertTrue($this->currentMock->canUseForCountry('country'));
+        TestHelper::restoreOriginals();
+    }
+
+    /**
+     * @test
+     * canUseForCountry returns true if allow specific is false
+     *
+     * @covers Bolt_Boltpay_Helper_ConfigTrait::canUseForCountry
+     *
+     * @throws Mage_Core_Exception
+     * @throws Mage_Core_Model_Store_Exception
+     * @throws ReflectionException
+     */
+    public function canUseForCountry_ifAllowSpecificIsFalse_returnsTrue()
+    {
+        TestHelper::stubConfigValue('payment/boltpay/active', 'true');
+        TestHelper::stubConfigValue('payment/boltpay/skip_payment', 0);
+        TestHelper::stubConfigValue('payment/boltpay/allowspecific', 0);
+        $this->assertTrue($this->currentMock->canUseForCountry('country'));
+        TestHelper::restoreOriginals();
+    }
+
+    /**
+     * @test
+     * canUseForCountry returns whether country is found if allow specific is true
+     *
+     * @covers Bolt_Boltpay_Helper_ConfigTrait::canUseForCountry
+     *
+     * @throws Mage_Core_Exception
+     * @throws Mage_Core_Model_Store_Exception
+     * @throws ReflectionException
+     */
+    public function canUseForCountry_ifAllowSpecificIsTrue_returnsWhetherCountryIsFound()
+    {
+        TestHelper::stubConfigValue('payment/boltpay/active', 'true');
+        TestHelper::stubConfigValue('payment/boltpay/skip_payment', 0);
+        TestHelper::stubConfigValue('payment/boltpay/allowspecific', 1);
+        TestHelper::stubConfigValue('payment/boltpay/specificcountry', 'canada,usa,china');
+        $this->assertTrue($this->currentMock->canUseForCountry('canada'));
+        TestHelper::stubConfigValue('payment/boltpay/specificcountry', 'mexico,australia');
+        $this->assertFalse($this->currentMock->canUseForCountry('canada'));
+        TestHelper::restoreOriginals();
     }
 }

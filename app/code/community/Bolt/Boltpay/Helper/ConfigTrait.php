@@ -216,9 +216,7 @@ trait Bolt_Boltpay_Helper_ConfigTrait
     {
         $severityString = $this->getExtraConfig('datadogKeySeverity');
         $severityString = preg_replace('/\s+/', '', $severityString);
-        $severities = explode(',', $severityString);
-
-        return $severities;
+        return explode(',', $severityString);
     }
 
     /**
