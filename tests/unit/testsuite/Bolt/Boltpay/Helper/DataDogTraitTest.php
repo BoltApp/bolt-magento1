@@ -114,13 +114,29 @@ class Bolt_Boltpay_Helper_DataDogTraitTest extends PHPUnit_Framework_TestCase
      *
      * @throws ReflectionException
      */
-    public function getPluginVersion_ifVersionIsNotSet_returnsNull()
+    public function getPluginVersion_ifVersionIsNotSetInConfig_returnsNull()
     {
-        /** @var Mage_Core_Model_Config_Element $config */
-        $config = Mage::getConfig()->getModuleConfig('Bolt_Boltpay');
-        $originalVersion = $config->xpath('version');
-        $config->setNode('version', '');
-        $this->assertEquals(null, TestHelper::callNonPublicFunction($this->datadogHelper, 'getPluginVersion'));
-        $config->setNode('version', $originalVersion);
+        $config = Mage::getConfig();
+        $oldXml = TestHelper::getNonPublicProperty($config, '_xml');
+        $newXml = new Varien_Simplexml_Element(/** @lang XML */ '<modules/>');
+        $newXml->setNode('modules/Bolt_Boltpay', null);
+        TestHelper::setNonPublicProperty($config, '_xml', $newXml);
+        $this->assertNull(TestHelper::callNonPublicFunction($this->datadogHelper, 'getBoltPluginVersion'));
+        TestHelper::setNonPublicProperty($config, '_xml', $oldXml);
+    }
+
+    /**
+     * @test
+     * getPluginVersion returns correct version if version is set in config
+     *
+     * @throws ReflectionException
+     */
+    public function getPluginVersion_ifVersionIsSetInConfig_returnsCorrectVersion()
+    {
+        $config = Mage::getConfig();
+        $configXml = TestHelper::getNonPublicProperty($config, '_xml');
+        $version = (string)$configXml->modules->Bolt_Boltpay->version;
+        $this->assertNotEmpty($version);
+        $this->assertEquals($version, TestHelper::callNonPublicFunction($this->datadogHelper, 'getPluginVersion'));
     }
 }
