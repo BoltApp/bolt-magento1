@@ -112,6 +112,8 @@ class Bolt_Boltpay_Helper_DataDogTraitTest extends PHPUnit_Framework_TestCase
      * @test
      * getPluginVersion returns null if version is not set in config
      *
+     * @covers Bolt_Boltpay_Helper_DataDogTrait::getPluginVersion
+     *
      * @throws ReflectionException
      */
     public function getPluginVersion_ifVersionIsNotSetInConfig_returnsNull()
@@ -128,6 +130,8 @@ class Bolt_Boltpay_Helper_DataDogTraitTest extends PHPUnit_Framework_TestCase
     /**
      * @test
      * getPluginVersion returns correct version if version is set in config
+     *
+     * @covers Bolt_Boltpay_Helper_DataDogTrait::getPluginVersion
      *
      * @throws ReflectionException
      */
