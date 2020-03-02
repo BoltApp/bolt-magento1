@@ -4,6 +4,9 @@ require_once('TestHelper.php');
 
 use Bolt_Boltpay_TestHelper as TestHelper;
 
+/**
+ * @coversDefaultClass Bolt_Boltpay_Helper_ConfigTrait
+ */
 class Bolt_Boltpay_Helper_ConfigTraitTest extends PHPUnit_Framework_TestCase
 {
     /**
@@ -33,7 +36,13 @@ class Bolt_Boltpay_Helper_ConfigTraitTest extends PHPUnit_Framework_TestCase
         $appStore->setConfig('payment/boltpay/active', 1);
     }
 
-    public function testGetAllowedButtonByCustomRoutes_EmptyConfig()
+    /**
+     * @test
+     * getAllowedButtonByCustomRoutes returns empty string if config is empty
+     *
+     * @covers Bolt_Boltpay_Helper_ConfigTrait::getAllowedButtonByCustomRoutes
+     */
+    public function getAllowedButtonByCustomRoutes_returnsEmptyString_forEmptyConfig()
     {
         $this->currentMock->expects($this->once())
             ->method('getPaymentBoltpayConfig')
@@ -43,7 +52,13 @@ class Bolt_Boltpay_Helper_ConfigTraitTest extends PHPUnit_Framework_TestCase
         $this->assertEmpty($this->currentMock->getAllowedButtonByCustomRoutes());
     }
 
-    public function testGetAllowedButtonByCustomRoutes_WithValuesCommaSeparated()
+    /**
+     * @test
+     * getAllowedButtonByCustomRoutes returns array of values split by comma and trimmed with space only values excluded
+     *
+     * @covers Bolt_Boltpay_Helper_ConfigTrait::getAllowedButtonByCustomRoutes
+     */
+    public function getAllowedButtonByCustomRoutes_returnsCorrectResult_forCommaSeparatedValues()
     {
         $this->currentMock->expects($this->once())
             ->method('getPaymentBoltpayConfig')
@@ -55,7 +70,13 @@ class Bolt_Boltpay_Helper_ConfigTraitTest extends PHPUnit_Framework_TestCase
         $this->assertEquals($result, $this->currentMock->getAllowedButtonByCustomRoutes());
     }
 
-    public function testGetAllowedButtonByCustomRoutes_WithValuesWithoutComma()
+    /**
+     * @test
+     * getAllowedButtonByCustomRoutes does not split by space
+     *
+     * @covers Bolt_Boltpay_Helper_ConfigTrait::getAllowedButtonByCustomRoutes
+     */
+    public function getAllowedButtonByCustomRoutes_doesNotSplitBySpace_forValuesWithoutComma()
     {
         $this->currentMock->expects($this->once())
             ->method('getPaymentBoltpayConfig')
