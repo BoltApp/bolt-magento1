@@ -152,16 +152,7 @@ trait Bolt_Boltpay_Helper_ApiTrait
                 $key = Mage::getStoreConfig('payment/boltpay/api_key', $storeId);
             }
 
-            $contextInfo = $this->getContextInfo();
-
-
-            $headerInfo = array(
-                'User-Agent' => 'BoltPay/Magento-' . $contextInfo["Magento-Version"] . '/' . $contextInfo["Bolt-Plugin-Version"],
-                'Content-Length'=>strlen($params),
-                'X-Nonce'=> rand(100000000, 999999999),
-                'X-Bolt-Plugin-Version'=>$contextInfo["Bolt-Plugin-Version"],
-                'X-Api-Key' => Mage::helper('core')->decrypt($key),
-            );
+            $headerInfo = $this->constructRequestHeaders($params, $key);
 
             $this->addMetaData(array('BOLT API REQUEST' => array('header'=>$headerInfo)));
             $this->addMetaData(array('BOLT API REQUEST' => array('data'=>$data)),true);
@@ -194,5 +185,27 @@ trait Bolt_Boltpay_Helper_ApiTrait
         Mage::app()->getResponse()
             ->setHeader('User-Agent', 'BoltPay/Magento-' . $contextInfo["Magento-Version"] . '/' . $contextInfo["Bolt-Plugin-Version"], true)
             ->setHeader('X-Bolt-Plugin-Version', $contextInfo["Bolt-Plugin-Version"], true);
+    }
+
+    /**
+     * Construct Request Headers
+     *
+     * @param $params Request body
+     * @param $key Merchant key
+     *
+     * @return array
+     */
+    private function constructRequestHeaders($params, $key)
+    {
+        $contextInfo = $this->getContextInfo();
+
+        $headerInfo = array(
+            'User-Agent' => 'BoltPay/Magento-' . $contextInfo["Magento-Version"] . '/' . $contextInfo["Bolt-Plugin-Version"],
+            'Content-Length' => strlen($params),
+            'X-Nonce' => rand(100000000, 999999999),
+            'X-Bolt-Plugin-Version' => $contextInfo["Bolt-Plugin-Version"],
+            'X-Api-Key' => Mage::helper('core')->decrypt($key),
+        );
+        return $headerInfo;
     }
 }
