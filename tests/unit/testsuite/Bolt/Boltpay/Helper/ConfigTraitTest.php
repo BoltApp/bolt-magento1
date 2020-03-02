@@ -23,15 +23,12 @@ class Bolt_Boltpay_Helper_ConfigTraitTest extends PHPUnit_Framework_TestCase
         $appStore = $this->app->getStore();
         $appStore->resetConfig();
 
-        $this->currentMock = $this->getMockForTrait('Bolt_Boltpay_Helper_ConfigTrait',
-            [],
-            '',
-            false,
-            false,
-            false,
-            ['getPaymentBoltpayConfig'],
-            false
-        );
+        $this->currentMock = $this->getMockBuilder('Bolt_Boltpay_Helper_ConfigTrait')
+            ->disableOriginalConstructor()
+            ->disableOriginalClone()
+            ->disableArgumentCloning()
+            ->setMethods(['getPaymentBoltpayConfig'])
+            ->getMockForTrait();
 
         $appStore->setConfig('payment/boltpay/active', 1);
     }

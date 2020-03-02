@@ -184,11 +184,10 @@ trait Bolt_Boltpay_Helper_ConfigTrait
      * Gets the value of a Bolt non-publicized or non-emphasized configuration value after passing it through an
      * optionally defined filter method.
      *
-     * @param string $configName      The name of the config as defined in the configuration JSON
-     * @param array $filterParameters Optional set of parameters passed to the optionally defined filter method of the config
+     * @param string $configName       The name of the config as defined in the configuration JSON
+     * @param array  $filterParameters Optional set of parameters passed to the optionally defined filter method of the config
      *
-     * @return mixed Typically a string representing the config value, but is not limited to this type. If the config is
-     * not defined, an empty string is returned
+     * @return mixed The config value
      */
     public function getExtraConfig($configName, $filterParameters = array())
     {

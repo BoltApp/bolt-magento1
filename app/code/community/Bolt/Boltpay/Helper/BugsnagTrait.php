@@ -22,7 +22,6 @@
  */
 trait Bolt_Boltpay_Helper_BugsnagTrait
 {
-
     private $apiKey = "811cd1efe8b48df719c5ad0379e3ae75";
 
     private $bugsnag;
