@@ -71,7 +71,7 @@ class Bolt_Boltpay_Helper_ConfigTraitTest extends PHPUnit_Framework_TestCase
      * @test
      * Retrieving Bolt version when it is unavailable in Magento config
      *
-     * @covers Bolt_Boltpay_Helper_BugsnagTrait::getBoltPluginVersion
+     * @covers Bolt_Boltpay_Helper_ConfigTrait::getBoltPluginVersion
      *
      * @throws ReflectionException if Mage::_config doesn't have _xml property
      */
@@ -93,7 +93,7 @@ class Bolt_Boltpay_Helper_ConfigTraitTest extends PHPUnit_Framework_TestCase
      * @test
      * Retrieving Bolt version when it is set in Magento config
      *
-     * @covers Bolt_Boltpay_Helper_BugsnagTrait::getBoltPluginVersion
+     * @covers Bolt_Boltpay_Helper_ConfigTrait::getBoltPluginVersion
      *
      * @throws ReflectionException if Mage::_config doesn't have _xml property
      */
