@@ -17,8 +17,6 @@
 
 trait Bolt_Boltpay_Helper_DataDogTrait
 {
-    use Bolt_Boltpay_Helper_ConfigTrait;
-
     public static $defaultDataDogKey = '66d80ae8d0278e3ee2d23e65649b7256';
     public static $defaultSeverityConfig = 'error';
     private $_apiKey;
