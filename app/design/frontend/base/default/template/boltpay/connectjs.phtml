@@ -27,7 +27,7 @@ $isAllowedConnectJs = $this->isAllowedConnectJsOnCurrentPage();
             * Resolve conflict between String.sub methods added by PrototypeJS and Bolt Connect
             * by merging their functionalities based on arguments provided
             * If no arguments - call Bolt(ECMAScript 2015) sub, otherwise call Prototype sub
-            * Magento custom options relies heavily on Protoype and it's sub function so this 
+            * Magento custom options relies heavily on ProtoypeJS and its custom String.sub function so this 
             * resolves the conflict between this and Bolt, otherwise Product Page Checkout will
             * throw exceptions
             */
