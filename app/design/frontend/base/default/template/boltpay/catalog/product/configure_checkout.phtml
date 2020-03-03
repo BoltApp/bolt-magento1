@@ -89,7 +89,7 @@ var boltConfigPDP = {
                 }
             });
         } catch (e) {
-            if ((typeof BoltPopup !== 'undefined' && typeof e === 'string')) {
+            if (typeof BoltPopup !== 'undefined' && typeof e === 'string') {
                 BoltPopup.setMessage(e);
                 BoltPopup.show();
             }
