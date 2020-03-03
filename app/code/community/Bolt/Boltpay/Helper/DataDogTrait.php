@@ -88,29 +88,15 @@ trait Bolt_Boltpay_Helper_DataDogTrait
         $this->_apiKey = $this->getApiKeyConfig();
         $this->_severityConfig = $this->getSeverityConfig();
         $this->_data['platform-version'] = 'Magento ' . Mage::getVersion();
-        $this->_data['bolt-plugin-version'] = static::getPluginVersion();
+        $this->_data['bolt-plugin-version'] = Bolt_Boltpay_Helper_ConfigTrait::getBoltPluginVersion();
         $this->_data['store_url'] = Mage::getBaseUrl();
         $this->_data['service'] = 'plugin-magento1';
         if (isset($_SERVER['PHPUNIT_ENVIRONMENT']) && $_SERVER['PHPUNIT_ENVIRONMENT']) {
             $this->_data['env'] = Boltpay_DataDog_Environment::TEST_ENVIRONMENT;
         } else {
             $this->_data['env'] = Mage::getStoreConfig('payment/boltpay/test') ?
-                          Boltpay_DataDog_Environment::DEVELOPMENT_ENVIRONMENT :
-                          Boltpay_DataDog_Environment::PRODUCTION_ENVIRONMENT;
+                Boltpay_DataDog_Environment::DEVELOPMENT_ENVIRONMENT :
+                Boltpay_DataDog_Environment::PRODUCTION_ENVIRONMENT;
         }
-    }
-
-
-    /**
-     * @return string|null
-     */
-    protected static function getPluginVersion() {
-        $versionElm =  Mage::getConfig()->getModuleConfig("Bolt_Boltpay")->xpath("version");
-
-        if(isset($versionElm[0])) {
-            return (string)$versionElm[0];
-        }
-
-        return null;
     }
 }

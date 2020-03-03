@@ -30,7 +30,7 @@
 ## [V2.0.0](https://s3-us-west-1.amazonaws.com/bolt-public/magento-integration-release/bolt-magento1_v2.0.0.zip) 2019-06-12
  - "Pre-auth release"
    - Elimination of inventory errors
-   - Real-time order processing to better match sales timelinse
+   - Real-time order processing to better match sales timelines
    - Improved customer messaging
    - In-app order note support
    - Native events for seamless 3rd party plugin support
@@ -40,7 +40,7 @@
  - Bug fixes
 
 ## [V1.4.0](https://s3-us-west-1.amazonaws.com/bolt-public/magento-integration-release/bolt-magento1_v1.4.0.zip) 2019-02-21
- - Order creation refactor - now supports more granular calculation overides for easier future upgradability
+ - Order creation refactor - now supports more granular calculation overrides for easier future upgradability
  - Improved caching and DB resource consumption
  - Configurable deferred immutable quote creation
  - Added additional events to better support plugin customization
@@ -172,7 +172,7 @@
 
 ## [v1.0.7](https://s3-us-west-1.amazonaws.com/bolt-public/magento-integration-release/bolt-magento1_v1.0.7.zip) 2018-04-05
  - Updated response format of hook to be JSON
- - Added support for taxjar extention
+ - Added support for taxjar extension
  - Proper sorting of shipping methods
 
 ## [v1.0.6](https://s3-us-west-1.amazonaws.com/bolt-public/magento-integration-release/bolt-magento1_v1.0.6.zip) 2018-03-27

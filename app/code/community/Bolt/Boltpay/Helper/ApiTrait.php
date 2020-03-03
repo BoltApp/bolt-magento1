@@ -188,17 +188,6 @@ trait Bolt_Boltpay_Helper_ApiTrait
     }
 
     /**
-     * Checks if the Bolt API response indicates an error.
-     *
-     * @param $response     Bolt API response
-     * @return bool         true if there is an error, false otherwise
-     */
-    private function isResponseError($response)
-    {
-        return property_exists($response, 'errors') || property_exists($response, 'error_code');
-    }
-
-    /**
      * Construct Request Headers
      *
      * @param $params Request body
@@ -209,7 +198,6 @@ trait Bolt_Boltpay_Helper_ApiTrait
     private function constructRequestHeaders($params, $key)
     {
         $contextInfo = $this->getContextInfo();
-
 
         $headerInfo = array(
             'User-Agent' => 'BoltPay/Magento-' . $contextInfo["Magento-Version"] . '/' . $contextInfo["Bolt-Plugin-Version"],

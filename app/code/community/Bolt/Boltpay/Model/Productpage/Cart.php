@@ -57,7 +57,7 @@ class Bolt_Boltpay_Model_Productpage_Cart extends Bolt_Boltpay_Model_Abstract
             $this->setCartResponse($cart->getQuote());
         } catch (\Bolt_Boltpay_BadInputException $e) {
             return false;
-        } catch (\Exception $e) {
+        } catch (Exception $e) {
             $this->boltHelper()->notifyException($e);
             $this->boltHelper()->logException($e);
             return false;
@@ -69,7 +69,7 @@ class Bolt_Boltpay_Model_Productpage_Cart extends Bolt_Boltpay_Model_Abstract
     /**
      * Validate cart request data
      *
-     * @throws \Exception upon any error in validation
+     * @throws Exception upon any error in validation
      *
      * @todo re-enable stock validation when Bolt server-side code supports the error type
      */
@@ -85,7 +85,7 @@ class Bolt_Boltpay_Model_Productpage_Cart extends Bolt_Boltpay_Model_Abstract
 
     /**
      * @return bool
-     * @throws \Exception
+     * @throws Exception
      */
     protected function validateCartInfo()
     {
@@ -102,7 +102,7 @@ class Bolt_Boltpay_Model_Productpage_Cart extends Bolt_Boltpay_Model_Abstract
 
     /**
      * @return bool
-     * @throws \Exception
+     * @throws Exception
      */
     protected function validateEmptyCart()
     {
@@ -119,7 +119,7 @@ class Bolt_Boltpay_Model_Productpage_Cart extends Bolt_Boltpay_Model_Abstract
 
     /**
      * @return bool
-     * @throws \Exception
+     * @throws Exception
      */
     protected function validateProductsExist()
     {
@@ -146,7 +146,7 @@ class Bolt_Boltpay_Model_Productpage_Cart extends Bolt_Boltpay_Model_Abstract
 
     /**
      * @return bool
-     * @throws \Exception
+     * @throws Exception
      */
     protected function validateProductsQty()
     {
@@ -167,14 +167,16 @@ class Bolt_Boltpay_Model_Productpage_Cart extends Bolt_Boltpay_Model_Abstract
 
     /**
      * @return bool
-     * @throws \Exception
+     * @throws Exception
+     *
+     * @codeCoverageIgnore Out of stock error codes currently not supported by Bolt Backend
      */
     protected function validateProductsStock()
     {
         $cartItems = $this->getCartRequestItems();
 
         foreach ($cartItems as $cartItem) {
-            $product = $this->getProductById($cartItem->reference);
+            $product = Mage::getModel('catalog/product')->load($cartItem->reference);
             $stockInfo = Mage::getModel('cataloginventory/stock_item')->loadByProduct($product);
             if ($stockInfo->getManageStock()) {
                 if (($stockInfo->getQty() < $cartItem->quantity) && !$stockInfo->getBackorders()) {
@@ -221,7 +223,7 @@ class Bolt_Boltpay_Model_Productpage_Cart extends Bolt_Boltpay_Model_Abstract
         foreach ($cartItems as $cartItem) {
             $productId = @$cartItem->reference;
 
-            $product = $this->getProductById($productId);
+            $product = Mage::getModel('catalog/product')->load($productId);
 
             parse_str($cartItem->options, $params);
 
@@ -295,7 +297,7 @@ class Bolt_Boltpay_Model_Productpage_Cart extends Bolt_Boltpay_Model_Abstract
         return array_map(
             function ($item) use ($quoteId) {
                 $imageUrl = $this->boltHelper()->getItemImageUrl($item);
-                $product = $this->getProductById($item->getProductId());
+                $product = Mage::getModel('catalog/product')->load($item->getProductId());
                 $type = $product->getTypeId() == 'virtual' ? self::ITEM_TYPE_DIGITAL : self::ITEM_TYPE_PHYSICAL;
 
                 $unitPrice = (int)round($item->getPrice() * 100);
@@ -359,7 +361,7 @@ class Bolt_Boltpay_Model_Productpage_Cart extends Bolt_Boltpay_Model_Abstract
      *
      * @throws Exception
      */
-    protected function setErrorResponseAndThrowException($errCode, $message, $httpStatusCode, \Exception $exception = null)
+    protected function setErrorResponseAndThrowException($errCode, $message, $httpStatusCode, Exception $exception = null)
     {
         $this->responseError = array(
             'code'    => $errCode,
@@ -415,15 +417,5 @@ class Bolt_Boltpay_Model_Productpage_Cart extends Bolt_Boltpay_Model_Abstract
     protected function getCartRequestItems()
     {
         return @$this->cartRequest->items;
-    }
-
-    /**
-     * @param $id
-     *
-     * @return Mage_Catalog_Model_Product
-     */
-    protected function getProductById($id)
-    {
-        return Mage::getModel('catalog/product')->load($id);
     }
 }

@@ -210,7 +210,6 @@ class Bolt_Boltpay_Model_Productpage_CartTest extends PHPUnit_Framework_TestCase
      * that generate data returns false and logs exception if thrown from {@see Bolt_Boltpay_Model_Productpage_Cart::createCart}
      *
      * @covers ::generateData
-     * @covers ::getProductById
      */
     public function generateData_whenQuoteCloningThrowsException_returnsFalseAndLogsException()
     {
