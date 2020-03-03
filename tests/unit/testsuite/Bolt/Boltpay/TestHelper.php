@@ -85,7 +85,7 @@ class Bolt_Boltpay_TestHelper
      * @param $checkoutType
      * @return Mage_Checkout_Model_Type_Onepage
      */
-    public function createCheckout($checkoutType)
+    public static function createCheckout($checkoutType)
     {
         Mage::unregister('_singleton/checkout/type_onepage');
         Mage::unregister('_singleton/checkout/cart');
