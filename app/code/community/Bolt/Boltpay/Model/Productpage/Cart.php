@@ -256,7 +256,7 @@ class Bolt_Boltpay_Model_Productpage_Cart extends Bolt_Boltpay_Model_Abstract
      */
     protected function setCartResponse($quote)
     {
-        $boltOrderData = Mage::getModel('boltpay/boltOrder')->buildOrder($quote, true);
+        $boltOrderData = Mage::getModel('boltpay/boltOrder')->buildOrder($quote, true, true);
         $this->cartResponse = array(
             'order_reference' => $boltOrderData['cart']['order_reference'],
             'currency'        => $boltOrderData['cart']['currency'],

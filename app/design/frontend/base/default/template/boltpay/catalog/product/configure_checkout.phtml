@@ -46,6 +46,14 @@ var boltConfigPDP = {
                 price = Number(this.product.tier_prices[i]['price']);
             }
         }
+        //add custom options prices
+        if (typeof optionsPrice !== 'undefined') {
+            for (var key in optionsPrice.customPrices){
+                if (optionsPrice.customPrices.hasOwnProperty(key) && typeof optionsPrice.customPrices[key].price !== 'undefined') {
+                    price += Number(optionsPrice.customPrices[key].price);
+                }
+            }
+        }
         switch (this.product.type_id) {
             case 'configurable':
                 if (typeof optionsPrice.optionPrices.config !== 'undefined') {
@@ -61,18 +69,37 @@ var boltConfigPDP = {
      * @returns {boolean}
      */
     validate: function () {
-        if (this.product.stock.manage && (!this.product.stock.status || this.product.stock.qty < this.getQty())) {
-            if ((typeof BoltPopup !== 'undefined')) {
-                BoltPopup.setMessage('<?php echo $this->__("The requested quantity is not available."); ?>');
+        var formValidation = new Validation('product_addtocart_form');
+        try {
+            if (this.product.stock.manage && (!this.product.stock.status || this.product.stock.qty < this.getQty())) {
+                throw '<?php echo $this->__("The requested quantity is not available."); ?>';
+            }
+            //TODO: support file type custom options
+            //currently not supported because it would require custom upload and expiration logic
+            document.querySelectorAll("#product_addtocart_form input[type='file']").forEach(function(fileInput) {
+                if (fileInput.value) {
+                    var name = 'file-upload-not-supported-bolt';
+                    var advice = Validation.getAdvice(name, fileInput);
+                    if (advice == null) {
+                        advice = Validation.createAdvice(name, fileInput, false, '<?php echo $this->__('Files not supported with Product Page BoltCheckout. Please add product to cart and then use Bolt from the cart page to checkout.'); ?>');
+                    }
+                    Validation.showAdvice(fileInput, advice, name);
+                    fileInput.focus();
+                    throw '<?php echo $this->__('Files not supported with Product Page BoltCheckout. Please add product to cart and then use Bolt from the cart page to checkout.'); ?>';
+                }
+            });
+        } catch (e) {
+            if ((typeof BoltPopup !== 'undefined' && typeof e === 'string')) {
+                BoltPopup.setMessage(e);
                 BoltPopup.show();
             }
             return false;
         }
-        return new Validation('product_addtocart_form').validate();
+        return formValidation.validate();
     },
     /**
      * Returns cart data provided to BoltConnect.configureProductCheckout
-     * @returns {{total: number, items: ([{reference: number, quantity: number, price: number, name: string, options: string}]|[])}}
+     * @returns {{currency: string, items: ([{reference: number, quantity: number, price: number, name: string, options: string}]|[])}}
      */
     getCartData: function () {
         var price = this.getPrice();
@@ -86,7 +113,7 @@ var boltConfigPDP = {
                     options: $('product_addtocart_form').serialize(),
                 },
             ] : [],
-            total: this.getQty() * price,
+            currency: '<?php echo Mage::app()->getStore()->getCurrentCurrencyCode(); ?>'
         };
     },
 };

@@ -22,6 +22,35 @@ $isAllowedConnectJs = $this->isAllowedConnectJsOnCurrentPage();
 <?php if ($isAllowedConnectJs): ?>
     <?php $publishableKey = $this->getPublishableKeyForRoute(); ?>
     <?php if ($publishableKey): ?>
+        <script>
+            var prototypeSub = String.prototype.sub;
+            /**
+             * This Interval function prevents error due to BoltCheckout being undefined.
+             * It is similar to the Interval functionality in boltpay/replace.phtml
+             */
+            var processIntervalCounter = 0;
+            var processIntervalProd = setInterval(
+                function() {
+                    processIntervalCounter++;
+                    if (typeof BoltCheckout !== "undefined") {
+                        clearInterval(processIntervalProd);
+                        /**
+                         * Resolve conflict between String.sub methods added by PrototypeJS and Bolt Connect
+                         * by merging their functionalities based on arguments provided
+                         * If no arguments - call Bolt(ES15) sub, otherwise call Prototype sub
+                         */
+                        var boltSub = String.prototype.sub;
+                        String.prototype.sub = function () {
+                            return (arguments.length == 0 ? boltSub : prototypeSub).apply(this, arguments);
+                        };
+                    }
+
+                    if (processIntervalCounter > 50) {
+                        clearInterval(processIntervalProd);
+                    }
+                }, 50
+            );
+        </script>
     <script src="<?=$this->getJsUrl();?>" id="bolt-connect"
             type="text/javascript" data-shopping-cart-id="Magento"
             data-publishable-key="<?=$publishableKey?>"></script>
