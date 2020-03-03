@@ -1,6 +1,7 @@
 <?php
 
 require_once('TestHelper.php');
+require_once('CouponHelper.php');
 require_once('MockingTrait.php');
 
 use PHPUnit_Framework_MockObject_MockObject as MockObject;
@@ -23,6 +24,9 @@ class Bolt_Boltpay_Model_Productpage_CartTest extends PHPUnit_Framework_TestCase
      */
     private static $productId;
 
+    /** @var int Id of the dummy customer */
+    private static $customerId;
+
     /**
      * @var string Name of the class currently tested, required by {@see Bolt_Boltpay_MockingTrait}
      */
@@ -39,7 +43,7 @@ class Bolt_Boltpay_Model_Productpage_CartTest extends PHPUnit_Framework_TestCase
     private $currentMock;
 
     /**
-     * Create dummy product and clear Mage registry before tests are executed
+     * Create dummy customer and product, clear Mage registry before tests are executed
      *
      * @throws Exception if unable to create dummy product
      */
@@ -51,6 +55,7 @@ class Bolt_Boltpay_Model_Productpage_CartTest extends PHPUnit_Framework_TestCase
             array(),
             self::DUMMY_PRODUCT_STOCK_QUANTITY
         );
+        self::$customerId = Bolt_Boltpay_CouponHelper::createDummyCustomer(array(), 'ppcm@bolt.com');
     }
 
     /**
@@ -81,12 +86,18 @@ class Bolt_Boltpay_Model_Productpage_CartTest extends PHPUnit_Framework_TestCase
     }
 
     /**
-     * Clear Mage registry
+     * Clear Mage registry, delete dummy product and customer
+     *
+     * @throws Mage_Core_Exception if unable to clear registry
+     * @throws ReflectionException if unable to clear registry
+     * @throws Varien_Exception if unable to delete dummy customer
+     * @throws Zend_Db_Adapter_Exception if unable to delete dummy product
      */
     public static function tearDownAfterClass()
     {
         Bolt_Boltpay_TestHelper::clearRegistry();
         Bolt_Boltpay_ProductProvider::deleteDummyProduct(self::$productId);
+        Bolt_Boltpay_CouponHelper::deleteDummyCustomer(self::$customerId);
     }
 
     /**
@@ -454,6 +465,34 @@ class Bolt_Boltpay_Model_Productpage_CartTest extends PHPUnit_Framework_TestCase
 
     /**
      * @test
+     * that createCart assigns customer to created quote if customer id is present in the request
+     *
+     * @covers ::createCart
+     *
+     * @throws ReflectionException if createCart method doesn't exist
+     * @throws Exception if test class name is not defined
+     */
+    public function createCart_ifCartRequestContainsEncryptedCustomerId_assignsCustomerToCreatedQuote()
+    {
+        /** @var MockObject|Bolt_Boltpay_Model_Productpage_Cart $currentMock */
+        $currentMock = $this->getTestClassPrototype()
+            ->setMethods(
+                array('getCartRequestCustomerId', 'getSessionCart')
+            )
+            ->getMock();
+
+        $sessionCart = Mage::getModel('checkout/cart', array('quote' => Mage::getModel('sales/quote')));
+
+        $currentMock->expects($this->once())->method('getSessionCart')->willReturn($sessionCart);
+        $currentMock->expects($this->once())->method('getCartRequestCustomerId')->willReturn(self::$customerId);
+        /** @var Mage_Checkout_Model_Cart $resultCart */
+        $resultCart = Bolt_Boltpay_TestHelper::callNonPublicFunction($currentMock, 'createCart');
+        $quote = $resultCart->getQuote();
+        $this->assertEquals(self::$customerId, $quote->getCustomerId());
+    }
+
+    /**
+     * @test
      * that getSessionCart returns checkout cart from Mage::getSingleton('checkout/cart')
      *
      * @covers ::getSessionCart
@@ -485,6 +524,57 @@ class Bolt_Boltpay_Model_Productpage_CartTest extends PHPUnit_Framework_TestCase
         $this->assertEquals(
             $quote,
             Bolt_Boltpay_TestHelper::callNonPublicFunction($this->currentMock, 'getSessionQuote')
+        );
+    }
+
+    /**
+     * @test
+     * that getCartRequestCustomerId returns customer id if present in the request
+     *
+     * @covers ::getCartRequestCustomerId
+     *
+     * @throws ReflectionException if getCartRequestCustomerId is not defined
+     */
+    public function getCartRequestCustomerId_ifCartRequestContainsCustomerId_returnsCustomerId()
+    {
+        $cartRequest = new stdClass();
+        $cartRequest->metadata->encrypted_user_id = Mage::getSingleton('core/encryption')->encrypt(self::$customerId);
+        $this->currentMock->init($cartRequest);
+        $this->assertEquals(
+            self::$customerId,
+            Bolt_Boltpay_TestHelper::callNonPublicFunction(
+                $this->currentMock,
+                'getCartRequestCustomerId'
+            )
+        );
+    }
+
+    /**
+     * @test
+     * that getCartRequestCustomerId returns null and logs exception if customer id cannot be decrypted
+     *
+     * @covers ::getCartRequestCustomerId
+     *
+     * @throws ReflectionException if getCartRequestCustomerId is not defined
+     * @throws Mage_Core_Exception if unable to stub singleton
+     */
+    public function getCartRequestCustomerId_ifCustomerIdCannotBeDecrypted_returnsNullAndNotifiesException()
+    {
+        $cartRequest = new stdClass();
+        $cartRequest->metadata->encrypted_user_id = Mage::getSingleton('core/encryption')->encrypt(self::$customerId);
+        $this->currentMock->init($cartRequest);
+        $encryptionMock = $this->getClassPrototype('Mage_Core_Model_Encryption')->setMethods(array('decrypt'))
+            ->getMock();
+        $exception = new Varien_Exception('Crypt module is not initialized.');
+        $encryptionMock->expects($this->once())->method('decrypt')->willThrowException($exception);
+        Bolt_Boltpay_TestHelper::stubSingleton('core/encryption', $encryptionMock);
+        $this->boltHelperMock->expects($this->once())->method('notifyException')->with($exception);
+        $this->boltHelperMock->expects($this->once())->method('logException')->with($exception);
+        $this->assertNull(
+            Bolt_Boltpay_TestHelper::callNonPublicFunction(
+                $this->currentMock,
+                'getCartRequestCustomerId'
+            )
         );
     }
 

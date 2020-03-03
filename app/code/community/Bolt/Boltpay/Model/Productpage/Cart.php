@@ -236,6 +236,12 @@ class Bolt_Boltpay_Model_Productpage_Cart extends Bolt_Boltpay_Model_Abstract
             );
             $cart->addProduct($product, $params);
         }
+        if ($customerId = $this->getCartRequestCustomerId()) {
+            /** @var Mage_Customer_Model_Customer $customer */
+            $customer = Mage::getModel('customer/customer')->load($customerId);
+            $quote->assignCustomer($customer);
+        }
+        
         $quote->setIsBoltPdp(true);
         $cart->save();
 
@@ -407,6 +413,24 @@ class Bolt_Boltpay_Model_Productpage_Cart extends Bolt_Boltpay_Model_Abstract
     public function getResponseHttpCode()
     {
         return $this->httpCode;
+    }
+
+    /**
+     * Returns decrypted customer id from request
+     *
+     * @return string
+     */
+    protected function getCartRequestCustomerId()
+    {
+        $encryptedUserId = @$this->cartRequest->metadata->encrypted_user_id;
+        try {
+            $userId = Mage::getSingleton('core/encryption')->decrypt($encryptedUserId);
+        } catch (Exception $e) {
+            $this->boltHelper()->notifyException($e);
+            $this->boltHelper()->logException($e);
+            $userId = null;
+        }
+        return $userId;
     }
 
     /**
