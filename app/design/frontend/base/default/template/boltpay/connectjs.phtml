@@ -23,22 +23,21 @@ $isAllowedConnectJs = $this->isAllowedConnectJsOnCurrentPage();
     <?php $publishableKey = $this->getPublishableKeyForRoute(); ?>
     <?php if ($publishableKey): ?>
         <script>
+           /**
+            * Resolve conflict between String.sub methods added by PrototypeJS and Bolt Connect
+            * by merging their functionalities based on arguments provided
+            * If no arguments - call Bolt(ECMAScript 2015) sub, otherwise call Prototype sub
+            * Magento custom options relies heavily on Protoype and it's sub function so this 
+            * resolves the conflict between this and Bolt, otherwise Product Page Checkout will
+            * throw exceptions
+            */
             var prototypeSub = String.prototype.sub;
-            /**
-             * This Interval function prevents error due to BoltCheckout being undefined.
-             * It is similar to the Interval functionality in boltpay/replace.phtml
-             */
             var processIntervalCounter = 0;
             var processIntervalProd = setInterval(
                 function() {
                     processIntervalCounter++;
                     if (typeof BoltCheckout !== "undefined") {
                         clearInterval(processIntervalProd);
-                        /**
-                         * Resolve conflict between String.sub methods added by PrototypeJS and Bolt Connect
-                         * by merging their functionalities based on arguments provided
-                         * If no arguments - call Bolt(ES15) sub, otherwise call Prototype sub
-                         */
                         var boltSub = String.prototype.sub;
                         String.prototype.sub = function () {
                             return (arguments.length == 0 ? boltSub : prototypeSub).apply(this, arguments);
