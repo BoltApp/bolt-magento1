@@ -62,7 +62,7 @@ class Bolt_Boltpay_Helper_FeatureSwitches_ManagerTest extends PHPUnit_Framework_
                 )
             )->getMock();
         $configMock->expects($this->once())->method('saveConfig')
-            ->with('payment/boltpay/feautureSwitches',$expectedConfigValue);
+            ->with('payment/boltpay/featureSwitches',$expectedConfigValue);
         $configMock->expects($this->once())->method('cleanCache');
         Bolt_Boltpay_TestHelper::stubModel('core/config', $configMock);
         $this->currentMock->updateSwitchesFromBolt();
