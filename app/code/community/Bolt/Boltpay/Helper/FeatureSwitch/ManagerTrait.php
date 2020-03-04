@@ -47,7 +47,7 @@ trait Bolt_Boltpay_Helper_FeatureSwitch_ManagerTrait
                 'rolloutPercentage' => $switch->rolloutPercentage
             );
         }
-        Mage::getModel('core/config')->saveConfig('payment/boltpay/feautureSwitches', json_encode($switches));
+        Mage::getModel('core/config')->saveConfig('payment/boltpay/featureSwitches', json_encode($switches));
         Mage::getModel('core/config')->cleanCache();
     }
 }
