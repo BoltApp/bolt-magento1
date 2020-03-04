@@ -73,7 +73,6 @@ class Bolt_Boltpay_Model_Payment extends Mage_Payment_Model_Method_Abstract
 
     protected $_canManageRecurringProfiles  = false;
     protected $_canCapturePartial           = true;
-    // TODO: This can be set to true and we could move the handleOrderUpdate method
     protected $_canOrder                    = false;
     protected $_canUseInternal              = true;
     protected $_canUseForMultishipping      = false;
@@ -193,9 +192,11 @@ class Bolt_Boltpay_Model_Payment extends Mage_Payment_Model_Method_Abstract
     /**
      * Method called upon pressing the "Get Payment Update" button from the Admin
      *
-     * @param Mage_Payment_Model_Info $payment  Holds meta data about this payment
-     * @param string $transactionId  The transaction ID of the payment
+     * @param Mage_Payment_Model_Info $payment Holds meta data about this payment
+     * @param string                  $transactionId The transaction ID of the payment
+     *
      * @throws Exception    thrown upon error in updating the status of an order
+     * @throws GuzzleHttp\Exception\GuzzleException if an error is detected in API call
      */
     public function fetchTransactionInfo(Mage_Payment_Model_Info $payment, $transactionId)
     {
@@ -230,7 +231,6 @@ class Bolt_Boltpay_Model_Payment extends Mage_Payment_Model_Method_Abstract
                 Mage::getSingleton('adminhtml/session')->addNotice($message);
             }
             $this->handleTransactionUpdate($payment, $transactionStatus, $prevTransactionStatus);
-            //Mage::log(sprintf('Fetch transaction info completed for payment id: %d', $payment->getId()), null, 'bolt.log');
         } catch (Exception $e) {
             $this->boltHelper()->logException($e);
             $this->boltHelper()->notifyException($e);
@@ -331,6 +331,16 @@ class Bolt_Boltpay_Model_Payment extends Mage_Payment_Model_Method_Abstract
         }
     }
 
+    /**
+     * Refund specified amount for transaction via Bolt API
+     *
+     * @param Varien_Object $payment
+     * @param float         $amount
+     *
+     * @return Bolt_Boltpay_Model_Payment
+     *
+     * @throws GuzzleHttp\Exception\GuzzleException if an error occurs during Bolt API call
+     */
     public function refund(Varien_Object $payment, $amount)
     {
         try {
@@ -370,8 +380,6 @@ class Bolt_Boltpay_Model_Payment extends Mage_Payment_Model_Method_Abstract
             }
 
             $this->setRefundPaymentInfo($payment,$response);
-
-            //Mage::log(sprintf('Refund completed for payment id: %d', $payment->getId()), null, 'bolt.log');
             return $this;
         } catch (Exception $e) {
             $this->boltHelper()->logException($e);
@@ -396,6 +404,15 @@ class Bolt_Boltpay_Model_Payment extends Mage_Payment_Model_Method_Abstract
         return parent::canVoid($payment);
     }
 
+    /**
+     * Void the transaction through Bolt API
+     *
+     * @param Varien_Object $payment
+     *
+     * @return Bolt_Boltpay_Model_Payment
+     *
+     * @throws GuzzleHttp\Exception\GuzzleException if an error occurs during Bolt API call
+     */
     public function void(Varien_Object $payment)
     {
         try {
@@ -423,7 +440,6 @@ class Bolt_Boltpay_Model_Payment extends Mage_Payment_Model_Method_Abstract
             $payment->setParentTransactionId($reference);
             $payment->setTransactionId(sprintf("%s-void", $reference));
 
-            //Mage::log(sprintf('Void completed for payment id: %d', $payment->getId()), null, 'bolt.log');
             return $this;
         } catch (Exception $e) {
             $this->boltHelper()->logException($e);
@@ -444,40 +460,6 @@ class Bolt_Boltpay_Model_Payment extends Mage_Payment_Model_Method_Abstract
     public function cancel(Varien_Object $payment)
     {
         return $this->canVoid($payment) ? $this->void($payment) : $this;
-    }
-
-    public function handleOrderUpdate(Varien_Object $order)
-    {
-        try {
-            $orderPayment = $order->getPayment();
-            $reference = $orderPayment->getAdditionalInformation('bolt_reference');
-            $transactionStatus = $orderPayment->getAdditionalInformation('bolt_transaction_status');
-            $orderPayment->setTransactionId(sprintf("%s-%d-order", $reference, $order->getId()));
-            $orderPayment->addTransaction(
-                Mage_Sales_Model_Order_Payment_Transaction::TYPE_ORDER, null, false, $this->boltHelper()->__("BOLT notification: Order ")
-            );
-            $order->save();
-
-            $orderPayment->setData('auto_capture', $transactionStatus == self::TRANSACTION_COMPLETED);
-            if($order->getState() !== Mage_Sales_Model_Order::STATE_HOLDED){
-                $this->handleTransactionUpdate($orderPayment, $transactionStatus, null);
-            }
-        } catch (Exception $e) {
-            $error = array('error' => $e->getMessage());
-            //Mage::log($error, null, 'bolt.log');
-
-            $this->boltHelper()->addBreadcrumb(
-                array(
-                    "handle order update" => array (
-                        "message" => $error['error'],
-                        "class" => __CLASS__,
-                        "method" => __METHOD__,
-                    )
-                )
-            );
-
-            throw $e;
-        }
     }
 
     public function handleTransactionUpdate(
@@ -515,6 +497,7 @@ class Bolt_Boltpay_Model_Payment extends Mage_Payment_Model_Method_Abstract
                 if (Payment::isCaptureRequest($newTransactionStatus, $prevTransactionStatus)) {
                     $this->createInvoiceForHookRequest($payment, $boltTransaction);
                 }elseif ($newTransactionStatus == self::TRANSACTION_AUTHORIZED) {
+                    /** @var Mage_Sales_Model_Order $order */
                     $order = $payment->getOrder();
                     $payment->setTransactionId($reference);
                     $transaction = $payment->addTransaction( Mage_Sales_Model_Order_Payment_Transaction::TYPE_AUTH );
@@ -565,7 +548,6 @@ class Bolt_Boltpay_Model_Payment extends Mage_Payment_Model_Method_Abstract
         } catch (Exception $e) {
             $this->boltHelper()->logException($e);
             $error = array('error' => $e->getMessage());
-            //Mage::log($error, null, 'bolt.log');
 
             $this->boltHelper()->addBreadcrumb(
                 array(
@@ -589,6 +571,7 @@ class Bolt_Boltpay_Model_Payment extends Mage_Payment_Model_Method_Abstract
         $transaction
     ) {
         try {
+            /** @var Mage_Sales_Model_Order $order */
             $order             = $payment->getOrder();
             $transactionAmount = Mage::app()->getStore()->roundPrice($transactionAmount);
             $totalRefunded     = $order->getTotalRefunded() ?: 0;
@@ -603,6 +586,7 @@ class Bolt_Boltpay_Model_Payment extends Mage_Payment_Model_Method_Abstract
                 Mage::throwException($message);
             }
 
+            /** @var Mage_Sales_Model_Service_Order $service */
             $service         = Mage::getModel('sales/service_order', $order);
             $invoiceIds      = $order->getInvoiceCollection()->getAllIds();
             $isPartialRefund = false;
@@ -621,6 +605,7 @@ class Bolt_Boltpay_Model_Payment extends Mage_Payment_Model_Method_Abstract
                         ->setOrder($order);
                     if ($order->canCreditmemo() && $invoice->canRefund()) {
                         $data       = array();
+                        /** @var Mage_Sales_Model_Order_Creditmemo $creditmemo */
                         $creditmemo = $service->prepareInvoiceCreditmemo($invoice, $data);
                         $creditmemo->setRefundRequested(true);
                         $creditmemo->setOfflineRequested(false);
@@ -671,7 +656,7 @@ class Bolt_Boltpay_Model_Payment extends Mage_Payment_Model_Method_Abstract
                 );
 
                 if ($availableRefund < 0.01) {
-                    //for partial refund, after all the paid amount is refuned
+                    //for partial refund, after complete paid amount is refunded
                     //we need to restore the items in cart separately
                     if ($isPartialRefund) {
                         $invoice = Mage::getModel('sales/order_invoice')
