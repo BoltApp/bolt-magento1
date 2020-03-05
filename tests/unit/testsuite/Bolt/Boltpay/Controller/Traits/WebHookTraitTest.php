@@ -8,7 +8,7 @@ use Bolt_Boltpay_TestHelper as TestHelper;
 /**
  * @coversDefaultClass Bolt_Boltpay_Controller_Traits_WebHookTrait
  *
- * bla
+ * bl
  */
 class Bolt_Boltpay_Controller_Traits_WebHookTraitTest extends PHPUnit_Framework_TestCase
 {
