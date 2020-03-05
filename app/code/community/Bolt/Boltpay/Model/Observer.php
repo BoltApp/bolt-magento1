@@ -56,6 +56,16 @@ class Bolt_Boltpay_Model_Observer
     }
 
     /**
+     * Update Feature Switches if necessary
+     *
+     * event: controller_front_init_before
+     */
+    public function updateFeatureSwitches()
+    {
+        Mage::getSingleton("boltpay/featureSwitch")->updateSwitchesFromBoltIfNeeded();
+    }
+
+    /**
      * Submits the final benchmark profiler log
      *
      * event: controller_front_send_response_after
