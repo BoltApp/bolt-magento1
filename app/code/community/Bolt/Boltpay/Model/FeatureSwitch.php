@@ -25,12 +25,22 @@
 class Bolt_Boltpay_Model_FeatureSwitch extends Bolt_Boltpay_Model_Abstract
 {
     /**
+     * Set flag to true when bolt plugin is updated and we need to update features
+     */
+    private $needUpdateFeatures = false;
+
+    /**
      * This method gets feature switches from Bolt and updates the local DB with
      * the latest values. To be used in upgrade data and webhooks.
      */
     public function updateFeatureSwitches()
     {
-        $switchesResponse = $this->boltHelper()->getFeatureSwitches();
+        try {
+            $switchesResponse = $this->boltHelper()->getFeatureSwitches();
+        } catch (\Exception $e) {
+            // We already created bugsnag about exception
+            return;
+        }
         $switchesData = @$switchesResponse->data->plugin->features;
 
         if (empty($switchesData)) {
@@ -47,5 +57,16 @@ class Bolt_Boltpay_Model_FeatureSwitch extends Bolt_Boltpay_Model_Abstract
         }
         Mage::getModel('core/config')->saveConfig('payment/boltpay/featureSwitches', json_encode($switches));
         Mage::getModel('core/config')->cleanCache();
+    }
+
+    public function updateSwitchesFromBoltIfNeeded()
+    {
+        if ($this->needUpdateFeatures) {
+            $this->updateSwitchesFromBolt();
+        }
+    }
+
+    public function needUpdateFeatures() {
+        $this->needUpdateFeatures = true;
     }
 }
