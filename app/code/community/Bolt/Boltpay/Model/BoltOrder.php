@@ -62,33 +62,35 @@ class Bolt_Boltpay_Model_BoltOrder extends Bolt_Boltpay_Model_Abstract
      *
      * @param Mage_Sales_Model_Quote        $quote      Magento quote instance
      * @param bool                          $isMultiPage  Is checkout type Multi-Page Checkout, the default is true, set to false for One Page Checkout
+     * @param bool                          $isProductPage Is checkout type Product-Page checkout, the default is false, set to true for PPC
      *
      * @return array            The order payload to be sent as to bolt in API call as a PHP array
      *
      * @throws Mage_Core_Model_Store_Exception if the store cannot be determined
      */
-    public function buildOrder($quote, $isMultiPage)
+    public function buildOrder($quote, $isMultiPage, $isProductPage = false)
     {
-        $cart = $this->buildCart($quote, $isMultiPage);
+        $cart = $this->buildCart($quote, $isMultiPage, $isProductPage);
         $boltOrder = ['cart' => $cart];
         return $this->boltHelper()->dispatchFilterEvent(
             "bolt_boltpay_filter_bolt_order",
             $boltOrder,
-            ['quote' => $quote, 'isMultiPage' => $isMultiPage]
+            ['quote' => $quote, 'isMultiPage' => $isMultiPage, 'isProductPage' => $isProductPage]
         );
     }
 
     /**
      * Generates cart submission data for sending to Bolt order cart field.
      *
-     * @param Mage_Sales_Model_Quote        $quote      Magento quote instance
-     * @param bool                          $isMultipage  Is checkout type Multi-Page Checkout, the default is true, set to false for One Page Checkout
+     * @param Mage_Sales_Model_Quote $quote Magento quote instance
+     * @param bool                   $isMultipage Is checkout type Multi-Page Checkout, the default is true, set to false for One Page Checkout
+     * @param bool                   $isProductPage Is checkout type Product-Page checkout, the default is false, set to true for PPC
      *
      * @return array            The cart data part of the order payload to be sent as to bolt in API call as a PHP array
      *
      * @throws Mage_Core_Model_Store_Exception if the store cannot be determined
      */
-    public function buildCart($quote, $isMultipage)
+    public function buildCart($quote, $isMultipage, $isProductPage = false)
     {
 
         ///////////////////////////////////////////////////////////////////////////////////
@@ -133,14 +135,14 @@ class Bolt_Boltpay_Model_BoltOrder extends Bolt_Boltpay_Model_Abstract
             'order_reference' => $quote->getParentQuoteId(),
             'display_id'      => $quote->getReservedOrderId().'|'.$quote->getId(),
             'items'           => array_map(
-                function ($item) use ($quote, &$calculatedTotal) {
+                function ($item) use ($quote, &$calculatedTotal, $isProductPage) {
                     /** @var Mage_Sales_Model_Quote_Item $item */
                     $imageUrl = $this->boltHelper()->getItemImageUrl($item);
                     $product = Mage::getModel('catalog/product')->load($item->getProductId());
                     $type = $product->getTypeId() == 'virtual' ? self::ITEM_TYPE_DIGITAL : self::ITEM_TYPE_PHYSICAL;
                     $calculatedTotal += round($item->getPrice() * 100 * $item->getQty());
                     return array(
-                        'reference'    => $item->getId(),
+                        'reference'    => $isProductPage ? $item->getProductId() : $item->getId(),
                         'image_url'    => $imageUrl,
                         'name'         => $item->getName(),
                         'sku'          => $item->getSku(),

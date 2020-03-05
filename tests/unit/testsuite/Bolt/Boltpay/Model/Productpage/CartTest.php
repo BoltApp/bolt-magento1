@@ -162,6 +162,7 @@ class Bolt_Boltpay_Model_Productpage_CartTest extends PHPUnit_Framework_TestCase
         $item = reset($cartResponseItems);
         $this->assertArraySubset(
             array(
+                'reference'    => $product->getId(),
                 'name'         => $product->getName(),
                 'sku'          => $product->getSku(),
                 'description'  => $product->getDescription(),
