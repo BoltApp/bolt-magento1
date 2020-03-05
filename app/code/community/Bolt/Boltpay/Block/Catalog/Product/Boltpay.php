@@ -191,6 +191,7 @@ class Bolt_Boltpay_Block_Catalog_Product_Boltpay extends Bolt_Boltpay_Block_Chec
     {
         return [
             Mage_Catalog_Model_Product_Type::TYPE_SIMPLE,
+            Mage_Catalog_Model_Product_Type::TYPE_VIRTUAL,
             Mage_Catalog_Model_Product_Type::TYPE_CONFIGURABLE,
         ];
     }
@@ -215,9 +216,13 @@ class Bolt_Boltpay_Block_Catalog_Product_Boltpay extends Bolt_Boltpay_Block_Chec
                 'tier_prices' => $product->getTierPrice(),
                 'type_id'     => $product->getTypeId(),
                 'stock'       => array(
-                    'manage' => $product->getTypeId() == Mage_Catalog_Model_Product_Type::TYPE_SIMPLE
-                        ? $stockItem->getManageStock()
-                        : false,
+                    'manage' => in_array(
+                        $product->getTypeId(),
+                        array(
+                            Mage_Catalog_Model_Product_Type::TYPE_SIMPLE,
+                            Mage_Catalog_Model_Product_Type::TYPE_VIRTUAL
+                        )
+                    ) ? $stockItem->getManageStock() : false,
                     'status' => $stockItem->getIsInStock(),
                     'qty'    => (float) $stockItem->getQty(),
                 ),
