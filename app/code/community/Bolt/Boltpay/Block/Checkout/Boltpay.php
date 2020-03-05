@@ -330,6 +330,17 @@ JS;
             $hints['prefill'] = $prefill;
         }
 
+        if ($checkoutType == self::CHECKOUT_TYPE_PRODUCT_PAGE && $session->isLoggedIn()) {
+            try {
+                $hints['metadata']['encrypted_user_id'] = Mage::getSingleton('core/encryption')->encrypt(
+                    $session->getCustomerId()
+                );
+            } catch (Exception $e) {
+                $this->boltHelper()->notifyException($e);
+                $this->boltHelper()->logException($e);
+            }
+        }
+
         return $hints;
     }
 
