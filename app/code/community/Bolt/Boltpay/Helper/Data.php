@@ -28,7 +28,7 @@ class Bolt_Boltpay_Helper_Data extends Mage_Core_Helper_Abstract
     use Bolt_Boltpay_Helper_LoggerTrait;
     use Bolt_Boltpay_Helper_TransactionTrait;
     use Bolt_Boltpay_Helper_DataDogTrait;
-    use Bolt_Boltpay_Helper_FeatureSwitch_ManagerTrait;
+    use Bolt_Boltpay_Helper_GraphQLTrait;
 
     /**
      * Collect Bolt callbacks for js config.

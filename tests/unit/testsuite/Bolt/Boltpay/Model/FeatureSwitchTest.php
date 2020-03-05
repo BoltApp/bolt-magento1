@@ -110,4 +110,3 @@ class Bolt_Boltpay_Model_FeatureSwitchTest extends PHPUnit_Framework_TestCase
         Bolt_Boltpay_TestHelper::restoreModel('core/config');
     }
 }
-
