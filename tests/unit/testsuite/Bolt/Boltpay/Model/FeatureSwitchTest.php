@@ -1,25 +1,36 @@
 <?php
 require_once('TestHelper.php');
+require_once('MockingTrait.php');
 
-class Bolt_Boltpay_Helper_FeatureSwitches_ManagerTest extends PHPUnit_Framework_TestCase
+class Bolt_Boltpay_Model_FeatureSwitchesTest extends PHPUnit_Framework_TestCase
 {
+    use Bolt_Boltpay_MockingTrait;
+
     /**
-     * @var PHPUnit_Framework_MockObject_MockObject|Bolt_Boltpay_Helper_FeatureSwitch_ManagerTrait Mocked instance of trait tested
+     * @var PHPUnit_Framework_MockObject_MockObject|Bolt_Boltpay_Model_FeatureSwitches Mocked instance of trait tested
      */
     private $currentMock;
+
+    /**
+     * @var MockObject|Bolt_Boltpay_Helper_Data Mocked instance of Bolt helper
+     */
+    private $boltHelperMock;
+
+    /**
+     * @var string The class name of the subject of these test
+     */
+    protected $testClassName = 'Bolt_Boltpay_Model_FeatureSwitch';
 
     /**
      * Configure test dependencies, called before each test
      */
     public function setUp()
     {
-        Mage::app('default');
-        $this->currentMock = $this->getMockBuilder('Bolt_Boltpay_Helper_FeatureSwitch_ManagerTrait')
-            ->disableOriginalConstructor()
-            ->disableOriginalClone()
-            ->disableArgumentCloning()
-            ->setMethods(array('getFeatureSwitches'))
-            ->getMockForTrait();
+        $this->currentMock = $this->getTestClassPrototype()
+            ->setMethods(array('boltHelper'))->getMock();
+        $this->boltHelperMock = $this->getClassPrototype('Bolt_Boltpay_Helper_Data')
+            ->setMethods(array('getFeatureSwitches'))->getMock();
+        $this->currentMock->method('boltHelper')->willReturn($this->boltHelperMock);
     }
 
     /**
@@ -27,15 +38,6 @@ class Bolt_Boltpay_Helper_FeatureSwitches_ManagerTest extends PHPUnit_Framework_
      */
     public function updateSwitchesFromBolt_saveFeatureSwitchesAsConfig()
     {
-        if ( !function_exists( 'spl_object_hash' ) ) {
-            function spl_object_hash( $object )
-            {
-                ob_start();
-                var_dump( $object );
-                preg_match( '[#(\d+)]', ob_get_clean(), $match );
-                return $match[1];
-            }
-        }
         $boltAnswer = (object)array('data' => (object)array('plugin' => (object)array('features' =>
             array(
                 (object)array(
@@ -52,7 +54,7 @@ class Bolt_Boltpay_Helper_FeatureSwitches_ManagerTest extends PHPUnit_Framework_
             ))));
         $expectedConfigValue = '{"M1_BOLT_ENABLED":{"value":true,"defaultValue":false,"rolloutPercentage":100},"M1_SAMPLE_SWITCH":{"value":true,"defaultValue":false,"rolloutPercentage":0}}';
 
-        $this->currentMock->expects($this->once())->method('getFeatureSwitches')
+        $this->boltHelperMock->expects($this->once())->method('getFeatureSwitches')
             ->willReturn($boltAnswer);
         $configMock = $this->getMockBuilder('Mage_Core_Model_Config')
             ->setMethods(
