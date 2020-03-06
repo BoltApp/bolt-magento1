@@ -62,7 +62,9 @@ class Bolt_Boltpay_Model_Observer
      */
     public function updateFeatureSwitches()
     {
-        Mage::getSingleton("boltpay/featureSwitch")->updateFeatureSwitchesFromBoltIfNeeded();
+        if (Bolt_Boltpay_Model_FeatureSwitch::$shouldUpdateFeatureSwitches) {
+            Mage::getSingleton("boltpay/featureSwitch")->updateFeatureSwitches();
+        }
     }
 
     /**

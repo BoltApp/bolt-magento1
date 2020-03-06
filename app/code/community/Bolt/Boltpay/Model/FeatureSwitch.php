@@ -27,7 +27,7 @@ class Bolt_Boltpay_Model_FeatureSwitch extends Bolt_Boltpay_Model_Abstract
     /**
      * Set flag to true when bolt plugin is updated and we need to update features
      */
-    private $needUpdateFeatureSwitches = false;
+    public static $shouldUpdateFeatureSwitches = false;
 
     /**
      * This method gets feature switches from Bolt and updates the local DB with
@@ -55,7 +55,6 @@ class Bolt_Boltpay_Model_FeatureSwitch extends Bolt_Boltpay_Model_Abstract
                 'rolloutPercentage' => $switch->rolloutPercentage
             );
         }
-        error_log('updated'.json_encode($switches));
         Mage::getModel('core/config')->saveConfig('payment/boltpay/featureSwitches', json_encode($switches));
         Mage::getModel('core/config')->cleanCache();
     }

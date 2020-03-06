@@ -18,31 +18,20 @@
 class Bolt_Boltpay_Model_Setup extends Mage_Eav_Model_Entity_Setup
 {
     /**
-     * Run resource upgrade files from $oldVersion to $newVersion
+     * Run module modification files. Return version of last applied upgrade (false if no upgrades applied)
      *
-     * @param string $oldVersion
-     * @param string $newVersion
-     * @return Mage_Core_Model_Resource_Setup
+     * @param string $actionType self::TYPE_*
+     * @param string $fromVersion
+     * @param string $toVersion
+     * @return string|false
+     * @throws Mage_Core_Exception
      */
-    protected function _upgradeResourceDb($oldVersion, $newVersion)
+    protected function _modifyResourceDb($actionType, $fromVersion, $toVersion)
     {
-        // We can't update feature switches right now, because Magento settings (test flag and merchant key)
-        // isn't available yet, so we set flag to do it later
-        error_log('update');
-        Mage::getSingleton("boltpay/featureSwitch")->needUpdateFeatureSwitches();
-        return parent::_upgradeResourceDb($oldVersion, $newVersion);
-    }
+        // We can't update feature switches right now, because Magento settings
+        // (test flag and merchant key) isn't available yet, so we set flag to do it later
+        Bolt_Boltpay_Model_FeatureSwitch::$shouldUpdateFeatureSwitches = ($actionType === self::TYPE_DATA_UPGRADE);
 
-    /**
-     * Run resource installation file
-     *
-     * @param string $newVersion
-     * @return Mage_Core_Model_Resource_Setup
-     */
-    protected function _installResourceDb($newVersion)
-    {
-        error_log('install');
-        Mage::getSingleton("boltpay/featureSwitch")->needUpdateFeatureSwitches();
-        return parent::_installResourceDb($newVersion);
+        return parent::_modifyResourceDb($actionType, $fromVersion, $toVersion);
     }
 }
