@@ -327,7 +327,7 @@ class Bolt_Boltpay_Block_Catalog_Product_BoltpayTest extends PHPUnit_Framework_T
             array(Mage_Catalog_Model_Product_Type::TYPE_SIMPLE, true),
             array(Mage_Catalog_Model_Product_Type::TYPE_CONFIGURABLE, true),
             array(Mage_Catalog_Model_Product_Type::TYPE_BUNDLE, false),
-            array(Mage_Catalog_Model_Product_Type::TYPE_VIRTUAL, false),
+            array(Mage_Catalog_Model_Product_Type::TYPE_VIRTUAL, true),
             array(Mage_Catalog_Model_Product_Type::TYPE_GROUPED, false)
         );
     }
@@ -373,8 +373,9 @@ class Bolt_Boltpay_Block_Catalog_Product_BoltpayTest extends PHPUnit_Framework_T
             'getProductSupportedTypes'
         );
         $this->assertContains(Mage_Catalog_Model_Product_Type::TYPE_SIMPLE, $result);
+        $this->assertContains(Mage_Catalog_Model_Product_Type::TYPE_VIRTUAL, $result);
         $this->assertContains(Mage_Catalog_Model_Product_Type::TYPE_CONFIGURABLE, $result);
-        $this->assertCount(2, $result);
+        $this->assertCount(3, $result);
     }
 
     /**
