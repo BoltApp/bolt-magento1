@@ -92,7 +92,7 @@ class Bolt_Boltpay_Block_Checkout_BoltpayTest extends PHPUnit_Framework_TestCase
         $this->boltHelperMock->method('getApiClient')->willReturn($this->apiClientMock);
 
         $this->boltOrderMock = $this->getClassPrototype('Bolt_Boltpay_Model_BoltOrder', false )
-            ->setMethods(array('getBoltOrderTokenPromise', 'transmit'))
+            ->setMethods(array('getBoltOrderTokenPromise', 'transmit', 'logException', 'notifyException'))
             ->enableProxyingToOriginalMethods()->getMock();
 
         TestHelper::stubModel('boltpay/boltOrder', $this->boltOrderMock);
@@ -665,7 +665,62 @@ class Bolt_Boltpay_Block_Checkout_BoltpayTest extends PHPUnit_Framework_TestCase
     }
 
     /**
-     * Setup method for tests covering {@see Bolt_Boltpay_Block_Checkout_Boltpay::getAddressHints}
+     * @test
+     * that getAddressHints result contains encrypted customer id if in product-page checkout and customer is logged in
+     *
+     * @covers ::getAddressHints
+     *
+     * @throws ReflectionException if getAddressHints method doesn't exist
+     * @throws Mage_Core_Exception if unable to stub singleton
+     */
+    public function getAddressHints_fromPPCAndCustomerLoggedIn_returnedHintsContainsEncryptedUserId()
+    {
+        $quote = $this->getAddressHintsSetUp(1234, null);
+        $result = TestHelper::callNonPublicFunction(
+            $this->currentMock,
+            'getAddressHints',
+            array($quote, BoltpayCheckoutBlock::CHECKOUT_TYPE_PRODUCT_PAGE)
+        );
+        $this->assertEquals(
+            1234,
+            Mage::getSingleton('core/encryption')->decrypt($result['metadata']['encrypted_user_id'])
+        );
+    }
+
+    /**
+     * @test
+     * that getAddressHints only logs the exception if thrown during the encryption process
+     *
+     * @covers ::getAddressHints
+     *
+     * @throws ReflectionException if getAddressHints method doesn't exist
+     * @throws Mage_Core_Exception if unable to stub singleton
+     */
+    public function getAddressHints_ifUnableToEncryptCustomerId_logsAndNotifiesException()
+    {
+        $exception = new Varien_Exception('Crypt module is not initialized.');
+        $quote = $this->getAddressHintsSetUp(1234, null);
+
+        $encryptionMock = $this->getClassPrototype('Mage_Core_Model_Encryption')
+            ->setMethods(array('encrypt'))->getMock();
+        $encryptionMock->expects($this->once())->method('encrypt')->willThrowException($exception);
+        TestHelper::stubSingleton('core/encryption', $encryptionMock);
+
+        $this->boltHelperMock->expects($this->once())->method('logException')->with($exception);
+        $this->boltHelperMock->expects($this->once())->method('notifyException')->with($exception);
+        TestHelper::stubHelper('boltpay', $this->boltHelperMock);
+
+        $result = TestHelper::callNonPublicFunction(
+            $this->currentMock,
+            'getAddressHints',
+            array($quote, BoltpayCheckoutBlock::CHECKOUT_TYPE_PRODUCT_PAGE)
+        );
+        $this->assertInternalType('array', $result);
+
+    }
+
+    /**
+     * Setup method for tests covering {@see Bolt_Boltpay_Block_Checkout_Boltpay::getReservedUserId}
      *
      * @param null|string $checkoutMethod to be set ase current checkout method to onepage checkout
      * @param null|int    $customerId to be set as current session customer id
