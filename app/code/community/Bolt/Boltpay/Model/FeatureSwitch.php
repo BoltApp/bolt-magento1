@@ -27,7 +27,7 @@ class Bolt_Boltpay_Model_FeatureSwitch extends Bolt_Boltpay_Model_Abstract
     /**
      * Set flag to true when bolt plugin is updated and we need to update features
      */
-    private $needUpdateFeatures = false;
+    private $needUpdateFeatureSwitches = false;
 
     /**
      * This method gets feature switches from Bolt and updates the local DB with
@@ -55,18 +55,19 @@ class Bolt_Boltpay_Model_FeatureSwitch extends Bolt_Boltpay_Model_Abstract
                 'rolloutPercentage' => $switch->rolloutPercentage
             );
         }
+        error_log('updated'.json_encode($switches));
         Mage::getModel('core/config')->saveConfig('payment/boltpay/featureSwitches', json_encode($switches));
         Mage::getModel('core/config')->cleanCache();
     }
 
-    public function updateSwitchesFromBoltIfNeeded()
+    public function updateFeatureSwitchesFromBoltIfNeeded()
     {
-        if ($this->needUpdateFeatures) {
-            $this->updateSwitchesFromBolt();
+        if ($this->needUpdateFeatureSwitches) {
+            $this->updateFeatureSwitchesFromBolt();
         }
     }
 
-    public function needUpdateFeatures() {
-        $this->needUpdateFeatures = true;
+    public function needUpdateFeatureSwitches() {
+        $this->needUpdateFeatureSwitches = true;
     }
 }

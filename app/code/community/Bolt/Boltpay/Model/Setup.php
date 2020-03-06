@@ -29,7 +29,7 @@ class Bolt_Boltpay_Model_Setup extends Mage_Eav_Model_Entity_Setup
         // We can't update feature switches right now, because Magento settings (test flag and merchant key)
         // isn't available yet, so we set flag to do it later
         error_log('update');
-        Mage::getSingleton("boltpay/featureSwitch")->needUpdateFeatures();
+        Mage::getSingleton("boltpay/featureSwitch")->needUpdateFeatureSwitches();
         return parent::_upgradeResourceDb($oldVersion, $newVersion);
     }
 
@@ -42,7 +42,7 @@ class Bolt_Boltpay_Model_Setup extends Mage_Eav_Model_Entity_Setup
     protected function _installResourceDb($newVersion)
     {
         error_log('install');
-        Mage::getSingleton("boltpay/featureSwitch")->needUpdateFeatures();
+        Mage::getSingleton("boltpay/featureSwitch")->needUpdateFeatureSwitches();
         return parent::_installResourceDb($newVersion);
     }
 }
