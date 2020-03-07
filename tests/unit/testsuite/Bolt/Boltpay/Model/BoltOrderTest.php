@@ -194,55 +194,57 @@ class Bolt_Boltpay_Model_BoltOrderTest extends PHPUnit_Framework_TestCase
 		Mage::getConfig()->saveConfig('general/locale/code', self::$originalLocale);
 	}
 
-	/**
-	 * @test
-	 * that buildOrder returns cart created by {@see Bolt_Boltpay_Model_BoltOrder::buildCart} passed through filter event
-	 *
-	 * @covers ::buildOrder
-	 *
-	 * @dataProvider buildOrder_always_buildsOrderDataProvider
-	 *
-	 * @param bool $isMultiPage provided to buildCart and filter event
-	 *
-	 * @throws Mage_Core_Model_Store_Exception from tested method if store cannot be found
-	 * @throws Exception if test class name is not defined
-	 */
-	public function buildOrder_always_buildsOrderData($isMultiPage)
-	{
-		/** @var MockObject|Bolt_Boltpay_Model_BoltOrder $currentMock */
-		$currentMock = $this->getTestClassPrototype()
-			->setMethods(array('buildCart', 'isAdmin', 'boltHelper'))
-			->getMock();
-		$boltHelperMock = $this->getClassPrototype('Bolt_Boltpay_Helper_Data')
-			->setMethods(array('dispatchFilterEvent'))
-			->getMock();
-		$currentMock->method('boltHelper')->willReturn($boltHelperMock);
-		$quote = Mage::getModel('sales/quote');
-		$currentMock->expects($this->once())->method('buildCart')->with($quote, $isMultiPage)
-			->willReturn(self::$orderRequest['cart']);
-		$boltHelperMock->expects($this->once())->method('dispatchFilterEvent')
-			->with(
-				"bolt_boltpay_filter_bolt_order",
-				self::$orderRequest,
-				array('quote' => $quote, 'isMultiPage' => $isMultiPage)
-			)
-			->willReturn(self::$orderRequest);
-		$result = $currentMock->buildOrder($quote, $isMultiPage);
-		$this->assertEquals(self::$orderRequest, $result);
-	}
+    /**
+     * @test
+     * that buildOrder returns cart created by {@see Bolt_Boltpay_Model_BoltOrder::buildCart} passed through filter event
+     *
+     * @covers ::buildOrder
+     *
+     * @dataProvider buildOrder_always_buildsOrderDataProvider
+     *
+     * @param bool $isMultiPage provided to buildCart and filter event
+     * @param bool $isProductPage provided to buildCart and filter event
+     *
+     * @throws Mage_Core_Model_Store_Exception from tested method if store cannot be found
+     */
+    public function buildOrder_always_buildsOrderData($isMultiPage, $isProductPage)
+    {
+        /** @var MockObject|Bolt_Boltpay_Model_BoltOrder $currentMock */
+        $currentMock = $this->getTestClassPrototype()
+            ->setMethods(array('buildCart', 'isAdmin', 'boltHelper'))
+            ->getMock();
+        $boltHelperMock = $this->getClassPrototype('Bolt_Boltpay_Helper_Data')
+            ->setMethods(array('dispatchFilterEvent'))
+            ->getMock();
+        $currentMock->method('boltHelper')->willReturn($boltHelperMock);
+        $quote = Mage::getModel('sales/quote');
+        $currentMock->expects($this->once())->method('buildCart')->with($quote, $isMultiPage, $isProductPage)
+            ->willReturn(self::$orderRequest['cart']);
+        $boltHelperMock->expects($this->once())->method('dispatchFilterEvent')
+            ->with(
+                "bolt_boltpay_filter_bolt_order",
+                self::$orderRequest,
+                array('quote' => $quote, 'isMultiPage' => $isMultiPage, 'isProductPage' => $isProductPage)
+            )
+            ->willReturn(self::$orderRequest);
+        $result = $currentMock->buildOrder($quote, $isMultiPage, $isProductPage);
+        $this->assertEquals(self::$orderRequest, $result);
+    }
 
-	/**
-	 * Data provider for {@see buildOrder_always_buildsOrderData}
-	 *
-	 * @return array containing isMultipage flag
-	 */
-	public function buildOrder_always_buildsOrderDataProvider()
-	{
-		return array(
-			array('isMultipage' => true),
-			array('isMultipage' => false),
-		);
-	}
+    /**
+     * Data provider for {@see buildOrder_always_buildsOrderData}
+     *
+     * @return array containing isMultiPage and isProductPage flags
+     */
+    public function buildOrder_always_buildsOrderDataProvider()
+    {
+        return array(
+            array('isMultiPage' => true, 'isProductPage' => true),
+            array('isMultiPage' => false, 'isProductPage' => true),
+            array('isMultiPage' => true, 'isProductPage' => false),
+            array('isMultiPage' => false, 'isProductPage' => false),
+        );
+    }
 
 	/**
 	 * @test
