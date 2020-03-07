@@ -2,7 +2,10 @@
 require_once('TestHelper.php');
 require_once('MockingTrait.php');
 
-class Bolt_Boltpay_Model_FeatureSwitchesTest extends PHPUnit_Framework_TestCase
+/**
+ * @coversDefaultClass Bolt_Boltpay_Model_FeatureSwitch
+ */
+class Bolt_Boltpay_Model_FeatureSwitchTest extends PHPUnit_Framework_TestCase
 {
     use Bolt_Boltpay_MockingTrait;
 
@@ -15,6 +18,11 @@ class Bolt_Boltpay_Model_FeatureSwitchesTest extends PHPUnit_Framework_TestCase
      * @var MockObject|Bolt_Boltpay_Helper_Data Mocked instance of Bolt helper
      */
     private $boltHelperMock;
+
+    /**
+     * @var MockObject|Mage_Core_Model_Config
+     */
+    private $configMock;
 
     /**
      * @var string The class name of the subject of these test
@@ -33,11 +41,27 @@ class Bolt_Boltpay_Model_FeatureSwitchesTest extends PHPUnit_Framework_TestCase
         $this->currentMock->method('boltHelper')->willReturn($this->boltHelperMock);
     }
 
+    private function updateFeatureSwitches_setup()
+    {
+        $this->configMock = $this->getMockBuilder('Mage_Core_Model_Config')
+            ->setMethods(
+                array(
+                    'saveConfig',
+                    'cleanCache',
+                )
+            )->getMock();
+        Bolt_Boltpay_TestHelper::stubModel('core/config', $this->configMock);
+    }
+
     /**
      * @test
+     * When GraphQL call returns switches they should be store as config
+     *
+     * @covers ::updateFeatureSwitches
      */
-    public function updateSwitchesFromBolt_saveFeatureSwitchesAsConfig()
+    public function updateFeatureSwitches_withSwitches_savesSwitchesAsConfig()
     {
+        $this->updateFeatureSwitches_setup();
         $boltAnswer = (object)array('data' => (object)array('plugin' => (object)array('features' =>
             array(
                 (object)array(
@@ -56,18 +80,32 @@ class Bolt_Boltpay_Model_FeatureSwitchesTest extends PHPUnit_Framework_TestCase
 
         $this->boltHelperMock->expects($this->once())->method('getFeatureSwitches')
             ->willReturn($boltAnswer);
-        $configMock = $this->getMockBuilder('Mage_Core_Model_Config')
-            ->setMethods(
-                array(
-                    'saveConfig',
-                    'cleanCache',
-                )
-            )->getMock();
-        $configMock->expects($this->once())->method('saveConfig')
+        $this->configMock->expects($this->once())->method('saveConfig')
             ->with('payment/boltpay/featureSwitches',$expectedConfigValue);
-        $configMock->expects($this->once())->method('cleanCache');
-        Bolt_Boltpay_TestHelper::stubModel('core/config', $configMock);
-        $this->currentMock->updateSwitchesFromBolt();
+        $this->configMock->expects($this->once())->method('cleanCache');
+
+        $this->currentMock->updateFeatureSwitches();
+
+        Bolt_Boltpay_TestHelper::restoreModel('core/config');
+    }
+
+    /**
+     * @test
+     * When GraphQL call returns empty answer we should not save it
+     *
+     * @covers ::updateFeatureSwitches
+     */
+    public function updateFeatureSwitches_withNoSwitches_returnsWithoutSaving()
+    {
+        $this->updateFeatureSwitches_setup();
+        $boltAnswer = '';
+        $this->boltHelperMock->expects($this->once())->method('getFeatureSwitches')
+            ->willReturn($boltAnswer);
+
+        $this->configMock->expects($this->never())->method('saveConfig');
+        $this->configMock->expects($this->never())->method('cleanCache');
+
+        $this->currentMock->updateFeatureSwitches();
 
         Bolt_Boltpay_TestHelper::restoreModel('core/config');
     }

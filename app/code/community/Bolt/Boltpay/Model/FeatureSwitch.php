@@ -28,12 +28,12 @@ class Bolt_Boltpay_Model_FeatureSwitch extends Bolt_Boltpay_Model_Abstract
      * This method gets feature switches from Bolt and updates the local DB with
      * the latest values. To be used in upgrade data and webhooks.
      */
-    public function updateSwitchesFromBolt()
+    public function updateFeatureSwitches()
     {
         $switchesResponse = $this->boltHelper()->getFeatureSwitches();
         $switchesData = @$switchesResponse->data->plugin->features;
 
-        if (!is_array($switchesData) || count($switchesData) == 0) {
+        if (empty($switchesData)) {
             return;
         }
 
