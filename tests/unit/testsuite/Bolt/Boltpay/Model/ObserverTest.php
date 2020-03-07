@@ -5,6 +5,8 @@ require_once('MockingTrait.php');
 use Bolt_Boltpay_TestHelper as TestHelper;
 /**
  * Class Bolt_Boltpay_Model_ObserverTest
+ *
+ * @coversDefaultClass Bolt_Boltpay_Model_Observer
  */
 class Bolt_Boltpay_Model_ObserverTest extends PHPUnit_Framework_TestCase
 {
@@ -19,6 +21,12 @@ class Bolt_Boltpay_Model_ObserverTest extends PHPUnit_Framework_TestCase
      * @var Bolt_Boltpay_Model_Observer  The mocked instance the test class
      */
     private $testClassMock;
+
+
+    /**
+     * @var MockObject|Bolt_Boltpay_Model_FeatureSwitch
+     */
+    private $featureSwitchMock;
 
     /**
      * @var int|null
@@ -206,5 +214,57 @@ class Bolt_Boltpay_Model_ObserverTest extends PHPUnit_Framework_TestCase
         $checkout->saveShippingMethod('flatrate_flatrate');
 
         return $cart;
+    }
+
+    /**
+     * Update Feature Switches if necessary
+     *
+     * event: controller_front_init_before
+     */
+    public function updateFeatureSwitches()
+    {
+        if (Bolt_Boltpay_Model_FeatureSwitch::$shouldUpdateFeatureSwitches) {
+            Mage::getSingleton("boltpay/featureSwitch")->updateFeatureSwitches();
+        }
+    }
+
+    private function updateFeatureSwitches_setup()
+    {
+        $this->testClassMock = $this->getTestClassPrototype()->setMethods(null)->getMock();
+        $this->featureSwitchMock = $this->getMockBuilder('Bolt_Boltpay_Model_FeatureSwitch')
+            ->setMethods(array('updateFeatureSwitches'))->getMock();
+        Bolt_Boltpay_TestHelper::stubSingleton('boltpay/featureSwitch', $this->featureSwitchMock);
+    }
+
+    /**
+     * @test
+     * When update feature switches flag is true we should call necessary method
+     *
+     * @covers ::updateFeatureSwitches
+     */
+    public function updateFeatureSwitches_whenUpdateFeatureSwitchesFlagIsTrue_callNecessaryMethod()
+    {
+        $this->updateFeatureSwitches_setup();
+        Bolt_Boltpay_Model_FeatureSwitch::$shouldUpdateFeatureSwitches = true;
+        $this->featureSwitchMock->expects($this->once())->method('updateFeatureSwitches');
+        $this->testClassMock->updateFeatureSwitches();
+
+        Bolt_Boltpay_TestHelper::restoreSingleton('boltpay/featureSwitch');
+    }
+
+    /**
+     * @test
+     * When update feature switches flag is false we shouldn't do anything
+     *
+     * @covers ::updateFeatureSwitches
+     */
+    public function updateFeatureSwitches_whenUpdateFeatureSwitchesFlagIsFalse_doNothing()
+    {
+        $this->updateFeatureSwitches_setup();
+        Bolt_Boltpay_Model_FeatureSwitch::$shouldUpdateFeatureSwitches = false;
+        $this->featureSwitchMock->expects($this->never())->method('updateFeatureSwitches');
+        $this->testClassMock->updateFeatureSwitches();
+
+        Bolt_Boltpay_TestHelper::restoreSingleton('boltpay/featureSwitch');
     }
 }

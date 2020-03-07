@@ -122,17 +122,16 @@ class Bolt_Boltpay_Model_FeatureSwitchTest extends PHPUnit_Framework_TestCase
 
     /**
      * @test
-     * When GraphQL call throws and exception, we catch the exception and should
-     * not attempt to save the feature switch updates
+     * When GraphQL call throws exception we should not change feature switches
      *
      * @covers ::updateFeatureSwitches
      */
-    public function updateFeatureSwitches_withException_returnsWithoutSaving()
+    public function updateFeatureSwitches_whenException_returnsWithoutSaving()
     {
         $this->updateFeatureSwitchesSetUp();
 
         $this->boltHelperMock->expects($this->once())->method('getFeatureSwitches')
-            ->willThrowException(new Exception("Problem getting feature switches"));
+            ->willThrowException(new \Exception('Any exception'));
 
         $this->configMock->expects($this->never())->method('saveConfig');
         $this->configMock->expects($this->never())->method('cleanCache');
@@ -151,4 +150,3 @@ class Bolt_Boltpay_Model_FeatureSwitchTest extends PHPUnit_Framework_TestCase
         Bolt_Boltpay_TestHelper::restoreModel('core/config');
     }
 }
-
