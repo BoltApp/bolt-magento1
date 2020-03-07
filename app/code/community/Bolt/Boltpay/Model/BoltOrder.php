@@ -668,7 +668,7 @@ class Bolt_Boltpay_Model_BoltOrder extends Bolt_Boltpay_Model_Abstract
             unset($boltCartArray['cart']['display_id']);
             unset($boltCartArray['cart']['order_reference']);
         }
-        return $quote->getId() . '_' . md5(json_encode($boltCartArray));
+        return $quote->getId() . '_' . hash('md5',json_encode($boltCartArray));
     }
 
     /**
@@ -689,7 +689,7 @@ class Bolt_Boltpay_Model_BoltOrder extends Bolt_Boltpay_Model_Abstract
             && (($cachedCartDataJS['creation_time'] + self::$cached_token_expiration_time) > time())
             && ($cachedCartDataJS['key'] === $this->calculateCartCacheKey($quote, $checkoutType))
         ) {
-            return unserialize($cachedCartDataJS["cart_data"]);
+            return json_decode($cachedCartDataJS["cart_data"]);
         }
 
         Mage::getSingleton('core/session')->unsCachedCartData();
@@ -709,7 +709,7 @@ class Bolt_Boltpay_Model_BoltOrder extends Bolt_Boltpay_Model_Abstract
             array(
                 'creation_time' => time(),
                 'key' => $this->calculateCartCacheKey($quote, $checkoutType),
-                'cart_data' => serialize($cartData)
+                'cart_data' => json_encode($cartData)
             )
         );
     }

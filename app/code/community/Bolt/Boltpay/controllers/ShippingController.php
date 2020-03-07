@@ -363,7 +363,7 @@ class Bolt_Boltpay_ShippingController
         $cacheIdentifier .= '_applied-rules-'.json_encode($rulesReferenceQuote->getAppliedRuleIds());
         ////////////////////////////////////////////////////////////////////////////////////
 
-        return md5($cacheIdentifier);
+        return hash('md5', $cacheIdentifier);
     }
 
     /**
