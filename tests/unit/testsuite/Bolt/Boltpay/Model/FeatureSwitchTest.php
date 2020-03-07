@@ -2,6 +2,8 @@
 require_once('TestHelper.php');
 require_once('MockingTrait.php');
 
+use PHPUnit_Framework_MockObject_MockObject as MockObject;
+
 /**
  * @coversDefaultClass Bolt_Boltpay_Model_FeatureSwitch
  */
@@ -10,7 +12,7 @@ class Bolt_Boltpay_Model_FeatureSwitchTest extends PHPUnit_Framework_TestCase
     use Bolt_Boltpay_MockingTrait;
 
     /**
-     * @var PHPUnit_Framework_MockObject_MockObject|Bolt_Boltpay_Model_FeatureSwitches Mocked instance of trait tested
+     * @var MockObject|Bolt_Boltpay_Model_FeatureSwitch Mocked instance of trait tested
      */
     private $currentMock;
 
@@ -41,7 +43,13 @@ class Bolt_Boltpay_Model_FeatureSwitchTest extends PHPUnit_Framework_TestCase
         $this->currentMock->method('boltHelper')->willReturn($this->boltHelperMock);
     }
 
-    private function updateFeatureSwitches_setup()
+    /**
+     * Stubs core/config model for {@see Bolt_Boltpay_Model_FeatureSwitch::updateFeatureSwitches}
+     * tests
+     *
+     * @throws ReflectionException  if there is a problem in stubbing model
+     */
+    private function updateFeatureSwitchesSetUp()
     {
         $this->configMock = $this->getMockBuilder('Mage_Core_Model_Config')
             ->setMethods(
@@ -61,7 +69,8 @@ class Bolt_Boltpay_Model_FeatureSwitchTest extends PHPUnit_Framework_TestCase
      */
     public function updateFeatureSwitches_withSwitches_savesSwitchesAsConfig()
     {
-        $this->updateFeatureSwitches_setup();
+        $this->updateFeatureSwitchesSetUp();
+
         $boltAnswer = (object)array('data' => (object)array('plugin' => (object)array('features' =>
             array(
                 (object)array(
@@ -86,7 +95,7 @@ class Bolt_Boltpay_Model_FeatureSwitchTest extends PHPUnit_Framework_TestCase
 
         $this->currentMock->updateFeatureSwitches();
 
-        Bolt_Boltpay_TestHelper::restoreModel('core/config');
+        $this->updateFeatureSwitchesTearDown();
     }
 
     /**
@@ -97,7 +106,8 @@ class Bolt_Boltpay_Model_FeatureSwitchTest extends PHPUnit_Framework_TestCase
      */
     public function updateFeatureSwitches_withNoSwitches_returnsWithoutSaving()
     {
-        $this->updateFeatureSwitches_setup();
+        $this->updateFeatureSwitchesSetUp();
+        
         $boltAnswer = '';
         $this->boltHelperMock->expects($this->once())->method('getFeatureSwitches')
             ->willReturn($boltAnswer);
@@ -107,7 +117,7 @@ class Bolt_Boltpay_Model_FeatureSwitchTest extends PHPUnit_Framework_TestCase
 
         $this->currentMock->updateFeatureSwitches();
 
-        Bolt_Boltpay_TestHelper::restoreModel('core/config');
+        $this->updateFeatureSwitchesTearDown();
     }
 
     /**
@@ -118,7 +128,8 @@ class Bolt_Boltpay_Model_FeatureSwitchTest extends PHPUnit_Framework_TestCase
      */
     public function updateFeatureSwitches_whenException_returnsWithoutSaving()
     {
-        $this->updateFeatureSwitches_setup();
+        $this->updateFeatureSwitchesSetUp();
+
         $this->boltHelperMock->expects($this->once())->method('getFeatureSwitches')
             ->willThrowException(new \Exception('Any exception'));
 
@@ -127,6 +138,15 @@ class Bolt_Boltpay_Model_FeatureSwitchTest extends PHPUnit_Framework_TestCase
 
         $this->currentMock->updateFeatureSwitches();
 
+        $this->updateFeatureSwitchesTearDown();
+    }
+
+    /**
+     * Removes model stub of "core/config" after {@see Bolt_Boltpay_Model_FeatureSwitch::updateFeatureSwitches}
+     * tests
+     */
+    private function updateFeatureSwitchesTearDown()
+    {
         Bolt_Boltpay_TestHelper::restoreModel('core/config');
     }
 }
