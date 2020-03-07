@@ -5,6 +5,8 @@ require_once('MockingTrait.php');
 use Bolt_Boltpay_TestHelper as TestHelper;
 /**
  * Class Bolt_Boltpay_Model_ObserverTest
+ *
+ * @coversDefaultClass Bolt_Boltpay_Model_Observer
  */
 class Bolt_Boltpay_Model_ObserverTest extends PHPUnit_Framework_TestCase
 {
