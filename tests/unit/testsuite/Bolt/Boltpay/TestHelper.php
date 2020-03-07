@@ -448,6 +448,7 @@ class Bolt_Boltpay_TestHelper
      */
     public static function restoreRegistryValue($key)
     {
+        Mage::unregister($key);
         if (isset(static::$_substitutedRegistryValues[$key])) {
             Mage::register($key, static::$_substitutedRegistryValues[$key]);
             unset(static::$_substitutedRegistryValues[$key]);
