@@ -12,7 +12,7 @@ class Bolt_Boltpay_Model_FeatureSwitchTest extends PHPUnit_Framework_TestCase
     use Bolt_Boltpay_MockingTrait;
 
     /**
-     * @var MockObject|Bolt_Boltpay_Model_FeatureSwitch Mocked instance of trait tested
+     * @var MockObject|Bolt_Boltpay_Model_FeatureSwitch Mocked instance of tested class
      */
     private $currentMock;
 

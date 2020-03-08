@@ -134,18 +134,12 @@ class Bolt_Boltpay_Model_ObserverTest extends PHPUnit_Framework_TestCase
     }
 
     /**
-     * Update Feature Switches if necessary
+     * Stubs boltpay/featureSwitch model for {@see Bolt_Boltpay_Model_Observer::updateFeatureSwitches}
+     * tests
      *
-     * event: controller_front_init_before
+     * @throws ReflectionException  if there is a problem in stubbing model
      */
-    public function updateFeatureSwitches()
-    {
-        if (Bolt_Boltpay_Model_FeatureSwitch::$shouldUpdateFeatureSwitches) {
-            Mage::getSingleton("boltpay/featureSwitch")->updateFeatureSwitches();
-        }
-    }
-
-    private function updateFeatureSwitches_setup()
+    private function updateFeatureSwitchesSetUp()
     {
         $this->testClassMock = $this->getTestClassPrototype()->setMethods(null)->getMock();
         $this->featureSwitchMock = $this->getMockBuilder('Bolt_Boltpay_Model_FeatureSwitch')
@@ -161,12 +155,12 @@ class Bolt_Boltpay_Model_ObserverTest extends PHPUnit_Framework_TestCase
      */
     public function updateFeatureSwitches_whenUpdateFeatureSwitchesFlagIsTrue_callNecessaryMethod()
     {
-        $this->updateFeatureSwitches_setup();
+        $this->updateFeatureSwitchesSetUp();
         Bolt_Boltpay_Model_FeatureSwitch::$shouldUpdateFeatureSwitches = true;
         $this->featureSwitchMock->expects($this->once())->method('updateFeatureSwitches');
         $this->testClassMock->updateFeatureSwitches();
 
-        Bolt_Boltpay_TestHelper::restoreSingleton('boltpay/featureSwitch');
+        $this->updateFeatureSwitchesTearDown();
     }
 
     /**
@@ -177,11 +171,20 @@ class Bolt_Boltpay_Model_ObserverTest extends PHPUnit_Framework_TestCase
      */
     public function updateFeatureSwitches_whenUpdateFeatureSwitchesFlagIsFalse_doNothing()
     {
-        $this->updateFeatureSwitches_setup();
+        $this->updateFeatureSwitchesSetUp();
         Bolt_Boltpay_Model_FeatureSwitch::$shouldUpdateFeatureSwitches = false;
         $this->featureSwitchMock->expects($this->never())->method('updateFeatureSwitches');
         $this->testClassMock->updateFeatureSwitches();
 
+        $this->updateFeatureSwitchesTearDown();
+    }
+
+    /**
+     * Removes model stub of "boltpay/featureSwitch" after {@see Bolt_Boltpay_Model_Observer::updateFeatureSwitches}
+     * tests
+     */
+    private function updateFeatureSwitchesTearDown()
+    {
         Bolt_Boltpay_TestHelper::restoreSingleton('boltpay/featureSwitch');
     }
 }
