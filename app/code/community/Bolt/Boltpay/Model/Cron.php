@@ -64,24 +64,35 @@ class Bolt_Boltpay_Model_Cron
      * ( e.g. when the Bolt server-side is configured to ignore the pre-auth flow on timeouts or "abnormal responses"
      * and authorization fails. )
      */
-    public function cleanupOrders() {
+    public function cleanupOrders()
+    {
         try {
-            $expiration_time = gmdate('Y-m-d H:i:s', time()-(60*self::PRE_AUTH_STATE_TIME_LIMIT_MINUTES));  // Magento uses GMT to save in DB
+            $expiration_time = gmdate(
+                'Y-m-d H:i:s',
+                time() - (60 * self::PRE_AUTH_STATE_TIME_LIMIT_MINUTES)
+            );  // Magento uses GMT to save in DB
 
             /* @var Mage_Sales_Model_Resource_Order_Collection $orderCollection */
             $orderCollection = Mage::getModel('sales/order')->getCollection();
-
             $orderCollection->addFieldToFilter('created_at', array('gteq' => $expiration_time))
                 ->setOrder('created_at', 'ASC');
 
             /** @var Mage_Sales_Model_Order $deletePendingPaymentOrdersBeforeThis */
             $deletePendingPaymentOrdersBeforeThis = $orderCollection->getFirstItem();
 
-            /* @var Mage_Sales_Model_Resource_Order_Collection $expiredPendindOrderCollection */
+            $firstNonExpiredId = $deletePendingPaymentOrdersBeforeThis->getId();
+            /* @var Mage_Sales_Model_Resource_Order_Collection $expiredPendingPaymentOrderCollection */
             $expiredPendingPaymentOrderCollection = Mage::getModel('sales/order')->getCollection();
-            $expiredPendingPaymentOrderCollection
-                ->addFieldToFilter('entity_id', array('lt' => $deletePendingPaymentOrdersBeforeThis->getId()))
-                ->addFieldToFilter('status', Bolt_Boltpay_Model_Payment::TRANSACTION_PRE_AUTH_PENDING);
+            if ($firstNonExpiredId) {
+                $expiredPendingPaymentOrderCollection->addFieldToFilter(
+                    'entity_id',
+                    array('lt' => $firstNonExpiredId)
+                );
+            }
+            $expiredPendingPaymentOrderCollection->addFieldToFilter(
+                'status',
+                Bolt_Boltpay_Model_Payment::TRANSACTION_PRE_AUTH_PENDING
+            );
 
             $ordersToRemove = $expiredPendingPaymentOrderCollection->getItems();
 
@@ -89,7 +100,7 @@ class Bolt_Boltpay_Model_Cron
             $orderModel = Mage::getModel('boltpay/order');
 
             /** @var Mage_Sales_Model_Order $order */
-            foreach($ordersToRemove as $order) {
+            foreach ($ordersToRemove as $order) {
                 try {
                     $orderModel->removePreAuthOrder($order);
                 } catch (Exception $e) {
@@ -98,7 +109,7 @@ class Bolt_Boltpay_Model_Cron
                     $this->boltHelper()->logWarning($e->getMessage());
                 }
             }
-        } catch ( Exception $e ) {
+        } catch (Exception $e) {
             // Catch-all for unexpected exceptions
             $this->boltHelper()->notifyException($e, array(), 'warning');
             $this->boltHelper()->logWarning($e->getMessage());

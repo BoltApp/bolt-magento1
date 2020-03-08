@@ -26,11 +26,32 @@ class Bolt_Boltpay_Model_CronTest extends PHPUnit_Framework_TestCase
     private $_currentMock;
 
     /**
+     * @var int|null Dummy product ID used in all orders
+     */
+    private static $productId = null;
+
+    /**
      * Initialization before each test.  We currently create a fresh Bolt_Boltpay_Model_Cron model for each test
      */
     public function setUp()
     {
         $this->_currentMock = Mage::getModel('boltpay/cron');
+    }
+
+    /**
+     * Generates a dummy product used for creating test orders once and only once before any test in this class are run
+     */
+    public static function setUpBeforeClass()
+    {
+        self::$productId = Bolt_Boltpay_ProductProvider::createDummyProduct(uniqid('PHPUNIT_TEST_'), array(), 20);
+    }
+
+    /**
+     * Delete dummy products after all test of this class have run
+     */
+    public static function tearDownAfterClass()
+    {
+        Bolt_Boltpay_ProductProvider::deleteDummyProduct(self::$productId);
     }
 
     /**
@@ -70,18 +91,38 @@ class Bolt_Boltpay_Model_CronTest extends PHPUnit_Framework_TestCase
      * @covers ::cleanupOrders
      *
      * @throws Mage_Core_Exception on failure to create or delete a dummy order
-     * @throws Zend_Db_Adapter_Exception
      */
     public function cleanupOrders_deletesOrdersOlderThan15Minutes()
     {
-        $productId = Bolt_Boltpay_ProductProvider::createDummyProduct(uniqid('PHPUNIT_TEST_'), array(), 20);
-
         $pendingPaymentOrders = $paidOrders = $ordersPastExpiration = $activeOrders = [];
         $cleanupDate = gmdate(
             'Y-m-d H:i:s',
             time() - 60 * (Bolt_Boltpay_Model_Cron::PRE_AUTH_STATE_TIME_LIMIT_MINUTES + self::MINUTES_PADDING_FOR_TEST_ENTRY_TIMESTAMPS)
         );
-        $this->createDummyOrders($productId, $pendingPaymentOrders, $paidOrders, $cleanupDate, $ordersPastExpiration, $activeOrders);
+
+        for ($i = 0; $i < 5; $i++) {
+            for ($j = rand(2, 3); $j > 0; $j--) {
+                $order = Bolt_Boltpay_OrderHelper::createDummyOrder(self::$productId, 1, 'boltpay');
+                if ($i % 2) {
+                    $order->setState(Mage_Sales_Model_Order::STATE_PENDING_PAYMENT)
+                        ->setStatus(Bolt_Boltpay_Model_Payment::TRANSACTION_PRE_AUTH_PENDING);
+                    $pendingPaymentOrders[$order->getId()] = $order;
+                } else {
+                    $order->setState(Mage_Sales_Model_Order::STATE_PROCESSING)
+                        ->setStatus(Mage_Sales_Model_Order::STATE_PROCESSING);
+                    $paidOrders[$order->getId()] = $order;
+                }
+                $order->save();
+
+                if ($i < 2) {
+                    $order->setCreatedAt($cleanupDate);
+                    $order->save();
+                    $ordersPastExpiration[$order->getId()] = $order;
+                } else {
+                    $activeOrders[$order->getId()] = $order;
+                }
+            }
+        }
 
         ////////////////////////////////
         // Call subject method
@@ -136,8 +177,6 @@ class Bolt_Boltpay_Model_CronTest extends PHPUnit_Framework_TestCase
 
         // make sure that we have create found and handled at least one order for each case
         $this->assertEquals(4, count($casesCovered));
-
-        Bolt_Boltpay_ProductProvider::deleteDummyProduct($productId);
     }
 
     /**
@@ -148,45 +187,45 @@ class Bolt_Boltpay_Model_CronTest extends PHPUnit_Framework_TestCase
      * @throws Mage_Core_Exception
      * @throws Mage_Core_Model_Store_Exception
      * @throws ReflectionException
-     * @throws Zend_Db_Adapter_Exception
      */
     public function cleanupOrders_ifremovePreAuthOrderThrowsException_callsNotifyExceptionAndLogWarning()
     {
-        $productId = Bolt_Boltpay_ProductProvider::createDummyProduct(uniqid('PHPUNIT_TEST_'), array(), 20);
+        $cleanupDate = gmdate(
+            'Y-m-d H:i:s',
+            time() - 60 * (Bolt_Boltpay_Model_Cron::PRE_AUTH_STATE_TIME_LIMIT_MINUTES + self::MINUTES_PADDING_FOR_TEST_ENTRY_TIMESTAMPS)
+        );
+        $order = Bolt_Boltpay_OrderHelper::createDummyOrder(self::$productId, 1, 'boltpay');
+        $order->setState(Mage_Sales_Model_Order::STATE_PENDING_PAYMENT)
+            ->setStatus(Bolt_Boltpay_Model_Payment::TRANSACTION_PRE_AUTH_PENDING);
+        $order->setCreatedAt($cleanupDate);
+        $order->save();
+
+        $boltOrderMock = $this->getClassPrototype('boltpay/order')
+            ->setMethods(array('removePreAuthOrder'))
+            ->getMock();
+        $boltOrderMock->method('removePreAuthOrder')
+            ->willThrowException(new Exception('expected exception'));
+        TestHelper::stubModel('boltpay/order', $boltOrderMock);
         $boltHelperMock = $this->getClassPrototype('Bolt_Boltpay_Helper_Data')
             ->setMethods(array('notifyException', 'logWarning'))
             ->getMock();
         $boltHelperMock->expects($this->once())->method('notifyException');
         $boltHelperMock->expects($this->once())->method('logWarning');
         TestHelper::stubHelper('boltpay', $boltHelperMock);
-        $pendingPaymentOrders = $paidOrders = $ordersPastExpiration = $activeOrders = [];
-        $cleanupDate = gmdate(
-            'Y-m-d H:i:s',
-            time() - 60 * (Bolt_Boltpay_Model_Cron::PRE_AUTH_STATE_TIME_LIMIT_MINUTES + self::MINUTES_PADDING_FOR_TEST_ENTRY_TIMESTAMPS)
-        );
-        $this->createDummyOrders($productId, $pendingPaymentOrders, $paidOrders, $cleanupDate, $ordersPastExpiration, $activeOrders);
-        $boltOrderMock = $this->getClassPrototype('boltpay/order')
-            ->setMethods(array('removePreAuthOrder'))
-            ->getMock();
-        $boltOrderMock->method('removePreAuthOrder')->willThrowException(new Exception('expected exception'));
-        TestHelper::stubModel('boltpay/order', $boltOrderMock);
 
         $this->_currentMock->cleanupOrders();
 
-        foreach ($activeOrders as $activeOrder) {
-            Bolt_Boltpay_OrderHelper::deleteDummyOrder($activeOrder);
-        }
-        foreach ($ordersPastExpiration as $expiredOrder) {
-            Bolt_Boltpay_OrderHelper::deleteDummyOrder($expiredOrder);
-        }
         TestHelper::restoreOriginals();
-        Bolt_Boltpay_ProductProvider::deleteDummyProduct($productId);
+        Bolt_Boltpay_OrderHelper::deleteDummyOrder($order);
     }
 
     /**
      * @test
      *
      * @covers ::cleanupOrders
+     *
+     * @throws Mage_Core_Exception
+     * @throws ReflectionException
      */
     public function cleanupOrders_ifExceptionIsThrown_callsNotifyExceptionAndLogWarning()
     {
@@ -211,21 +250,16 @@ class Bolt_Boltpay_Model_CronTest extends PHPUnit_Framework_TestCase
      * @covers ::deactivateQuote
      *
      * @throws Mage_Core_Exception
-     * @throws Zend_Db_Adapter_Exception
      */
     public function deactivateQuote_deactivatesQuotesAssociatedWithBoltOrders()
     {
-        $productId = Bolt_Boltpay_ProductProvider::createDummyProduct(uniqid('PHPUNIT_TEST_'), array(), 20);
-        $order = Bolt_Boltpay_OrderHelper::createDummyOrder($productId, 1, 'boltpay');
+        $order = Bolt_Boltpay_OrderHelper::createDummyOrder(self::$productId, 1, 'boltpay');
         $quoteId = $order->getQuoteId();
         $quoteModel = Mage::getModel('sales/quote');
         $quoteModel->loadByIdWithoutStore($quoteId)->setIsActive(1)->save();
         $this->_currentMock->deactivateQuote();
-
         $this->assertEquals(0, $quoteModel->loadByIdWithoutStore($quoteId)->getIsActive());
-
         Bolt_Boltpay_OrderHelper::deleteDummyOrder($order);
-        Bolt_Boltpay_ProductProvider::deleteDummyProduct($productId);
     }
 
     /**
@@ -254,42 +288,5 @@ class Bolt_Boltpay_Model_CronTest extends PHPUnit_Framework_TestCase
         TestHelper::stubSingleton('core/resource', $resourceMock);
         $this->_currentMock->deactivateQuote();
         TestHelper::restoreOriginals();
-    }
-
-    /**
-     * @param $productId int
-     * @param array $pendingPaymentOrders
-     * @param array $paidOrders
-     * @param string $cleanupDate
-     * @param array $ordersPastExpiration
-     * @param array $activeOrders
-     * @throws Mage_Core_Exception
-     */
-    private function createDummyOrders($productId, array &$pendingPaymentOrders, array &$paidOrders, $cleanupDate, array &$ordersPastExpiration, array &$activeOrders)
-    {
-        // Create dummy orders
-        for ($i = 0; $i < 5; $i++) {
-            for ($j = rand(2, 3); $j > 0; $j--) {
-                $order = Bolt_Boltpay_OrderHelper::createDummyOrder($productId, 1, 'boltpay');
-                if ($i % 2) {
-                    $order->setState(Mage_Sales_Model_Order::STATE_PENDING_PAYMENT)
-                        ->setStatus(Bolt_Boltpay_Model_Payment::TRANSACTION_PRE_AUTH_PENDING);
-                    $pendingPaymentOrders[$order->getId()] = $order;
-                } else {
-                    $order->setState(Mage_Sales_Model_Order::STATE_PROCESSING)
-                        ->setStatus(Mage_Sales_Model_Order::STATE_PROCESSING);
-                    $paidOrders[$order->getId()] = $order;
-                }
-                $order->save();
-
-                if ($i < 2) {
-                    $order->setCreatedAt($cleanupDate);
-                    $order->save();
-                    $ordersPastExpiration[$order->getId()] = $order;
-                } else {
-                    $activeOrders[$order->getId()] = $order;
-                }
-            }
-        }
     }
 }
