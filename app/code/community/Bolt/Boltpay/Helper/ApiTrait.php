@@ -51,9 +51,7 @@ trait Bolt_Boltpay_Helper_ApiTrait
      * A call to Fetch Bolt API endpoint. Gets the transaction info.
      *
      * @param string $reference Bolt transaction reference
-     *
      * @return bool|mixed Transaction info
-     * @throws Exception  thrown if a call fails
      * @throws GuzzleException
      */
     public function fetchTransaction($reference)
@@ -196,7 +194,6 @@ trait Bolt_Boltpay_Helper_ApiTrait
      *
      * @param $params Request body
      * @param $key Merchant key
-     *
      * @return array header info
      */
     private function constructRequestHeaders($params, $key)
