@@ -22,9 +22,6 @@ class Bolt_Boltpay_Helper_DataTest extends PHPUnit_Framework_TestCase
     {
         $this->currentMock = $this->getMockBuilder('Bolt_Boltpay_Helper_Data')
             ->setMethods()
-            ->disableOriginalConstructor()
-            ->disableOriginalClone()
-            ->disableArgumentCloning()
             ->getMock();
     }
 

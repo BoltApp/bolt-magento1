@@ -15,6 +15,8 @@
  * @license    http://opensource.org/licenses/osl-3.0.php  Open Software License (OSL 3.0)
  */
 
+use GuzzleHttp\Exception\GuzzleException;
+
 /**
  * Trait Bolt_Boltpay_Controller_Traits_WebHookTrait
  *
@@ -43,6 +45,7 @@ trait Bolt_Boltpay_Controller_Traits_WebHookTrait {
      * @return Mage_Core_Controller_Front_Action
      *
      * @throws Exception Thrown if request cannot be verified as originating from Bolt
+     * @throws GuzzleException
      */
     public function preDispatch()
     {
@@ -78,10 +81,11 @@ trait Bolt_Boltpay_Controller_Traits_WebHookTrait {
      * an error response is sent to caller and the execution of the script is halted
      * immediately
      *
-     * @param string $payload       The body to be compared against a signature
-     * @param string $signature     The signature against the payload with the signing secret
+     * @param string $payload The body to be compared against a signature
+     * @param string $signature The signature against the payload with the signing secret
      *
      * @throws Zend_Controller_Response_Exception if an invalid HTTP response code is set
+     * @throws GuzzleException
      */
     protected function verifyBoltSignature($payload, $signature ) {
         if (!$this->boltHelper()->verify_hook($payload, $signature)) {

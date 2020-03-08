@@ -98,9 +98,7 @@ class Bolt_Boltpay_Controller_Traits_WebHookTraitTest extends PHPUnit_Framework_
             ->getMock();
 
         $this->helperMock = $this->getMockBuilder('Bolt_Boltpay_Helper_Data')
-            ->setMethods(
-                array('setResponseContextHeaders', 'verify_hook', 'notifyException')
-            )
+            ->setMethods(array('setResponseContextHeaders', 'verify_hook', 'notifyException'))
             ->getMock();
 
         Mage::register('_helper/boltpay', $this->helperMock);
