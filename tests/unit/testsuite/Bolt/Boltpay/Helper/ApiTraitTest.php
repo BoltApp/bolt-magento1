@@ -2,6 +2,7 @@
 
 require_once('TestHelper.php');
 
+use GuzzleHttp\Exception\GuzzleException;
 use GuzzleHttp\Psr7\Response;
 use Bolt_Boltpay_TestHelper as TestHelper;
 use PHPUnit_Framework_MockObject_MockObject as MockObject;
@@ -76,12 +77,12 @@ class Bolt_Boltpay_Helper_ApiTraitTest extends PHPUnit_Framework_TestCase
 
     /**
      * @test
-     * that verify_hook calls verify_hook_secret and returns the correct result
+     * that verify_hook returns true if verify_hook_secret returns true
      *
      * @covers Bolt_Boltpay_Helper_ApiTrait::verify_hook
      * @covers Bolt_Boltpay_Helper_ApiTrait::verify_hook_secret
      */
-    public function verifyHook_callsVerifyHookSecret()
+    public function verifyHook_ifVerifyHookSecretReturnsTrue_returnsTrue()
     {
         $currentMock = $this->getCurrentMock();
         $encryptedSigningSecret = Mage::helper('core')->encrypt('signing secret');
@@ -92,120 +93,194 @@ class Bolt_Boltpay_Helper_ApiTraitTest extends PHPUnit_Framework_TestCase
 
     /**
      * @test
-     * @group        Helper
-     * @group        Trait
-     * @group        HelperApiTrait
-     * @dataProvider transmitCases
-     * @covers       Bolt_Boltpay_Helper_ApiTrait::transmit
-     * @param array $case
-     * @throws Mage_Core_Model_Store_Exception
+     * that verify_hook returns true if verify_hook_secret returns false and getStatusCode returns 200
+     *
+     * @covers Bolt_Boltpay_Helper_ApiTrait::verify_hook
+     * @covers Bolt_Boltpay_Helper_ApiTrait::verify_hook_api
      */
-    public function transmit_successScenario(array $case)
+    public function verifyHook_ifVerifyHookSecretReturnsFalse_callsVerifyHookApiAndReturnsTrue()
     {
-        $this->markTestSkipped();
-        $this->app->getStore()->setConfig('payment/boltpay/publishable_key_multipage', $case['publishable_key_multipage']);
-        $this->app->getStore()->setConfig('payment/boltpay/api_key', $case['api_key']);
-        $mock = $this->getMockForTrait(Bolt_Boltpay_Helper_ApiTrait::class, array(), '', true, true, true, array('getContextInfo', 'addMetaData', 'getApiClient'));
-        $guzzle = $this->getMockBuilder(Boltpay_Guzzle_ApiClient::class)->setMethods(array('post', 'get'))->getMock();
-        $response = $this->getMockBuilder(Response::class)->setMethods(array('getBody'))->getMock();
-        $response->method('getBody')->will($this->returnValue(json_encode($case['response'])));
-        $guzzle->method('post')->will($this->returnValue($response));
-        $guzzle->method('get')->will($this->returnValue($response));
-        $mock->method('getApiClient')->will($this->returnValue($guzzle));
-        $mock->method('getContextInfo')->will($this->returnValue($case['context']));
-        $mock->method('addMetaData');
-        // Start test
-        $result = $mock->transmit($case['command'], $case['data'], $case['object'], $case['type'], $case['storeId']);
-        $this->assertInternalType('array', $result);
-        $this->assertEquals($case['expect'], $result);
+        $currentMock = $this->getCurrentMock();
+        $apiClientMock = $this->getMockBuilder('Boltpay_Guzzle_ApiClient')
+            ->setMethods(array('post'))
+            ->getMock();
+        $responseMock = $this->getMockBuilder('Response')
+            ->setMethods(array('getBody', 'getStatusCode'))
+            ->getMock();
+        $responseMock->method('getBody')->willReturn('');
+        $responseMock->method('getStatusCode')->willReturn(200);
+        $apiClientMock->method('post')->willReturn($responseMock);
+        TestHelper::setNonPublicProperty($currentMock, 'apiClient', $apiClientMock);
+        $this->assertTrue($currentMock->verify_hook('payload', 'header'));
     }
 
     /**
-     * Test cases
+     * @test
+     * that verify_hook returns false if verify_hook_secret returns false and getStatusCode returns 500
+     *
+     * @covers Bolt_Boltpay_Helper_ApiTrait::verify_hook
+     * @covers Bolt_Boltpay_Helper_ApiTrait::verify_hook_api
+     */
+    public function verifyHook_ifVerifyHookSecretReturnsFalse_callsVerifyHookApiAndReturnsFalse()
+    {
+        $currentMock = $this->getCurrentMock();
+        $apiClientMock = $this->getMockBuilder('Boltpay_Guzzle_ApiClient')
+            ->setMethods(array('post'))
+            ->getMock();
+        $responseMock = $this->getMockBuilder('Response')
+            ->setMethods(array('getBody', 'getStatusCode'))
+            ->getMock();
+        $responseMock->method('getBody')->willReturn('');
+        $responseMock->method('getStatusCode')->willReturn(500);
+        $apiClientMock->method('post')->willReturn($responseMock);
+        TestHelper::setNonPublicProperty($currentMock, 'apiClient', $apiClientMock);
+        $this->assertFalse($currentMock->verify_hook('payload', 'header'));
+    }
+
+    /**
+     * @test
+     * that verify_hook returns false and logs exception if verify_hook_secret returns false and exception is thrown
+     * in verify_hook_api
+     *
+     * @covers Bolt_Boltpay_Helper_ApiTrait::verify_hook
+     * @covers Bolt_Boltpay_Helper_ApiTrait::verify_hook_api
+     */
+    public function verifyHook_ifVerifyHookSecretReturnsFalse_callsVerifyHookApiAndLogsException()
+    {
+        $currentMock = $this->getCurrentMock(array('notifyException', 'logException'));
+        $currentMock->expects($this->once())->method('notifyException');
+        $currentMock->expects($this->once())->method('logException');
+        $apiClientMock = $this->getMockBuilder('Boltpay_Guzzle_ApiClient')
+            ->setMethods(array('post'))
+            ->getMock();
+        $apiClientMock->method('post')->willThrowException(new Exception('expected exception'));
+        TestHelper::setNonPublicProperty($currentMock, 'apiClient', $apiClientMock);
+        $this->assertFalse($currentMock->verify_hook('payload', 'header'));
+    }
+
+    /**
+     * @test
+     *
+     * @dataProvider transmit_withDifferentParams_callsRightMethodWithRightParamsProvider
+     *
+     * @covers       Bolt_Boltpay_Helper_ApiTrait::transmit
+     *
+     * @param $command
+     * @param $data
+     * @param $object
+     * @param $type
+     * @param $url
+     * @param $key
+     * @param $method
+     * @throws Mage_Core_Exception
+     * @throws Mage_Core_Model_Store_Exception
+     * @throws ReflectionException
+     * @throws GuzzleException
+     */
+    public function transmit_withDifferentParams_callsRightMethodWithRightParams($command, $data, $object, $type, $url, $params, $key)
+    {
+        TestHelper::stubConfigValue('payment/boltpay/publishable_key_multipage', 'publishable_key_multipage');
+        TestHelper::stubConfigValue('payment/boltpay/api_key', 'api_key');
+        $currentMock = $this->getCurrentMock();
+        srand(1);
+        $headerInfo = TestHelper::callNonPublicFunction($currentMock, 'constructRequestHeaders', array($params, $key));
+        $apiClientMock = $this->getMockBuilder('Boltpay_Guzzle_ApiClient')
+            ->setMethods(array('post', 'get'))
+            ->getMock();
+        $responseMock = $this->getMockBuilder('Response')
+            ->setMethods(array('getBody'))
+            ->getMock();
+        $responseMock->method('getBody')->willReturn('');
+        if ($params) {
+            $apiClientMock->expects($this->once())->method('post')->with($url, $params, $headerInfo)->willReturn($responseMock);
+            $apiClientMock->expects($this->never())->method('get');
+        } else {
+            $apiClientMock->expects($this->never())->method('post');
+            $apiClientMock->expects($this->once())->method('get')->with($url, $headerInfo)->willReturn($responseMock);
+        }
+        TestHelper::setNonPublicProperty($currentMock, 'apiClient', $apiClientMock);
+
+        srand(1);
+        $currentMock->transmit($command, $data, $object, $type);
+
+        TestHelper::restoreOriginals();
+    }
+
+    /**
+     * Data provider for {@see transmit_withDifferentParams_callsRightMethodWithRightParams}
      *
      * @return array
      */
-    public function transmitCases()
+    public function transmit_withDifferentParams_callsRightMethodWithRightParamsProvider()
     {
         return array(
             array(
-                'case' => array(
-                    'expect' => array(),
-                    'command' => '',
-                    'data' => '',
-                    'object' => '',
-                    'type' => '',
-                    'storeId' => '',
-                    'publishable_key_multipage' => '',
-                    'api_key' => '',
-                    'context' => array(),
-                    'response' => array()
-                )
+                'command' => 'sign',
+                'data' => null,
+                'object' => 'merchant',
+                'type' => 'transactions',
+                'url' => 'https://api.bolt.com/v1/merchant/sign',
+                'params' => '',
+                'key' => 'api_key'
             ),
+            array(
+                'command' => 'orders',
+                'data' => null,
+                'object' => 'merchant',
+                'type' => 'transactions',
+                'url' => 'https://api.bolt.com/v1/merchant/orders',
+                'params' => '',
+                'key' => 'api_key'
+            ),
+            array(
+                'command' => null,
+                'data' => null,
+                'object' => 'merchant',
+                'type' => 'transactions',
+                'url' => 'https://api.bolt.com/v1/merchant',
+                'params' => '',
+                'key' => 'api_key'
+            ),
+            array(
+                'command' => '',
+                'data' => null,
+                'object' => 'merchant',
+                'type' => '',
+                'url' => 'https://api.bolt.com/v1/merchant',
+                'params' => '',
+                'key' => 'publishable_key_multipage'
+            ),
+            array(
+                'command' => 'testcmd',
+                'data' => array('data'),
+                'object' => 'testobj',
+                'type' => 'transactions',
+                'url' => 'https://api.bolt.com/v1/testobj/transactions/testcmd',
+                'params' => json_encode(array('data')),
+                'key' => 'api_key'
+            )
         );
     }
 
     /**
      * @test
-     * @group        Helper
-     * @group        Trait
-     * @group        HelperApiTrait
-     * @group        inProgress
-     * @dataProvider transmitExceptionCases
-     * @covers       Bolt_Boltpay_Helper_ApiTrait::transmit
-     * @expectedException Exception
-     * @param array $case
-     */
-    public function transmit_Exceptions(array $case)
-    {
-        $this->markTestSkipped();
-        $this->app->getStore()->setConfig('payment/boltpay/publishable_key_multipage', $case['publishable_key_multipage']);
-        $this->app->getStore()->setConfig('payment/boltpay/api_key', $case['api_key']);
-        $mock = $this->getMockForTrait(Bolt_Boltpay_Helper_ApiTrait::class, array(), '', true, true, true, array('getContextInfo', 'addMetaData', 'getApiClient', 'notifyException', 'logException'));
-        $guzzle = $this->getMockBuilder(Boltpay_Guzzle_ApiClient::class)->setMethods(array('post', 'get'))->getMock();
-        $response = $this->getMockBuilder(Response::class)->setMethods(array('getBody'))->getMock();
-        $response->method('getBody')->willThrowException(new Exception('Test Rejected request'));
-        $guzzle->method('post')->will($this->returnValue($response));
-        $guzzle->method('get')->will($this->returnValue($response));
-        $mock->method('getApiClient')->will($this->returnValue($guzzle));
-        $mock->method('getContextInfo')->will($this->returnValue($case['context']));
-        $mock->method('addMetaData');
-        $mock->method('notifyException')->willReturnSelf();
-        $mock->method('logException')->willReturnSelf();
-
-        if (method_exists($this, 'setExpectedException')) {
-            $this->setExpectedException('Exception', $case['exception']);
-        } else {
-            $this->expectExceptionMessage($case['exception']);
-        }
-        // Start test
-        $mock->transmit($case['command'], $case['data'], $case['object'], $case['type'], $case['storeId']);
-    }
-
-    /**
-     * Test cases
      *
-     * @return array
+     * @covers Bolt_Boltpay_Helper_ApiTrait::transmit
+     *
+     * @expectedException Exception
+     * @expectedExceptionMessage expected exception
      */
-    public function transmitExceptionCases()
+    public function transmit_whenGetThrowsException_logsExceptionAndRethrows()
     {
-        return array(
-            array(
-                'case' => array(
-                    'expect' => array(),
-                    'command' => '',
-                    'data' => '',
-                    'object' => '',
-                    'type' => '',
-                    'storeId' => '',
-                    'publishable_key_multipage' => '',
-                    'api_key' => '',
-                    'context' => array(),
-                    'response' => null,
-                    'exception' => 'Test Rejected request'
-                )
-            ),
-        );
+        $currentMock = $this->getCurrentMock(array('notifyException', 'logException'));
+        $currentMock->expects($this->once())->method('notifyException');
+        $currentMock->expects($this->once())->method('logException');
+        $apiClientMock = $this->getMockBuilder('Boltpay_Guzzle_ApiClient')
+            ->setMethods(array('get'))
+            ->getMock();
+        $apiClientMock->expects($this->once())->method('get')->willThrowException(new Exception('expected exception'));
+        TestHelper::setNonPublicProperty($currentMock, 'apiClient', $apiClientMock);
+        $currentMock->transmit('command', null);
     }
 
     /**
@@ -260,7 +335,7 @@ class Bolt_Boltpay_Helper_ApiTraitTest extends PHPUnit_Framework_TestCase
             'X-Api-Key' => 'test key'
         );
         $currentMock = $this->getCurrentMock();
-        $result = TestHelper::callNonPublicFunction($currentMock, 'constructRequestHeaders', ['this is a test', $encryptedKey]);
+        $result = TestHelper::callNonPublicFunction($currentMock, 'constructRequestHeaders', array('this is a test', $encryptedKey));
         $this->assertArraySubset($expected, $result);
         $this->assertTrue($result['X-Nonce'] >= 100000000);
         $this->assertTrue($result['X-Nonce'] < 1000000000);

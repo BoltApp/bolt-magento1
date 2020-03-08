@@ -200,14 +200,12 @@ trait Bolt_Boltpay_Helper_ApiTrait
     {
         $contextInfo = $this->getContextInfo();
 
-        $headerInfo = array(
+        return array(
             'User-Agent' => 'BoltPay/Magento-' . $contextInfo["Magento-Version"] . '/' . $contextInfo["Bolt-Plugin-Version"],
             'Content-Length' => strlen($params),
             'X-Nonce' => rand(100000000, 999999999),
             'X-Bolt-Plugin-Version' => $contextInfo["Bolt-Plugin-Version"],
             'X-Api-Key' => Mage::helper('core')->decrypt($key),
         );
-
-        return $headerInfo;
     }
 }
