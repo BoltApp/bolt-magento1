@@ -71,8 +71,7 @@ class Bolt_Boltpay_Model_Cron
             /* @var Mage_Sales_Model_Resource_Order_Collection $orderCollection */
             $orderCollection = Mage::getModel('sales/order')->getCollection();
 
-             $orderCollection
-                ->addFieldToFilter('created_at', array( 'gteq' => $expiration_time))
+            $orderCollection->addFieldToFilter('created_at', array('gteq' => $expiration_time))
                 ->setOrder('created_at', 'ASC');
 
             /** @var Mage_Sales_Model_Order $deletePendingPaymentOrdersBeforeThis */
@@ -81,9 +80,8 @@ class Bolt_Boltpay_Model_Cron
             /* @var Mage_Sales_Model_Resource_Order_Collection $expiredPendindOrderCollection */
             $expiredPendingPaymentOrderCollection = Mage::getModel('sales/order')->getCollection();
             $expiredPendingPaymentOrderCollection
-                ->addFieldToFilter('entity_id', array( 'lt' => $deletePendingPaymentOrdersBeforeThis->getId()))
-                ->addFieldToFilter('status', Bolt_Boltpay_Model_Payment::TRANSACTION_PRE_AUTH_PENDING)
-            ;
+                ->addFieldToFilter('entity_id', array('lt' => $deletePendingPaymentOrdersBeforeThis->getId()))
+                ->addFieldToFilter('status', Bolt_Boltpay_Model_Payment::TRANSACTION_PRE_AUTH_PENDING);
 
             $ordersToRemove = $expiredPendingPaymentOrderCollection->getItems();
 
