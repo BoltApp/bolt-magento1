@@ -24,11 +24,16 @@ class Bolt_Boltpay_Model_Cron
 {
     use Bolt_Boltpay_BoltGlobalTrait;
 
-    /*
+    /**
      * We will have a conservative tolerance of 30 minutes for non-confirmed pre-auth orders before we allow the system
      * to remove them
      */
     const PRE_AUTH_STATE_TIME_LIMIT_MINUTES = 30;
+
+    /**
+     * 60*60*24*7*2=1209600 is the amount of time in seconds we allow immutable quotes to exist before we delete them
+     */
+    const IMMUTABLE_QUOTE_EXPIRATION_SECONDS = 1209600;
 
     /**
      * After an immutable quote / unused generated session quote on PDP has existed for 2 weeks or more, we remove it from the system.
@@ -36,18 +41,25 @@ class Bolt_Boltpay_Model_Cron
      * quote that was to be converted will have been handled well before this time.
      *
      * As an artifact, we leave the parent quotes, (i.e. all Magento created quotes), and converted
-     * immutable quotes.  We delegate cleanup responsibility of these to the merchants.
+     * immutable quotes. We delegate cleanup responsibility of these to the merchants.
      */
     public function cleanupQuotes() {
         try {
             $sales_flat_quote_table = Mage::getSingleton('core/resource')->getTableName('sales/quote');
             $sales_flat_order_table = Mage::getSingleton('core/resource')->getTableName('sales/order');
 
-            $expiration_time = Mage::getModel('core/date')->date('Y-m-d H:i:s', time()-(60*60*24*7*2));
+            $expiration_time = Mage::getModel('core/date')->date('Y-m-d H:i:s', time()-self::IMMUTABLE_QUOTE_EXPIRATION_SECONDS);
 
             $connection = Mage::getSingleton('core/resource')->getConnection('core_write');
 
-            $sql = "DELETE sfq FROM $sales_flat_quote_table sfq LEFT JOIN $sales_flat_order_table sfo ON sfq.entity_id = sfo.quote_id WHERE (((sfq.parent_quote_id IS NOT NULL) AND (sfq.parent_quote_id < sfq.entity_id)) OR ((sfq.parent_quote_id IS NULL) AND (sfq.is_bolt_pdp = true))) AND (sfq.updated_at <= '$expiration_time') AND (sfo.entity_id IS NULL)";
+            $sql = "DELETE sfq
+                    FROM $sales_flat_quote_table sfq
+                    LEFT JOIN $sales_flat_order_table sfo
+                    ON sfq.entity_id = sfo.quote_id
+                    WHERE (((sfq.parent_quote_id IS NOT NULL) AND (sfq.parent_quote_id < sfq.entity_id)) OR
+                            ((sfq.parent_quote_id IS NULL) AND (sfq.is_bolt_pdp = true)))
+                    AND (sfq.updated_at <= '$expiration_time')
+                    AND (sfo.entity_id IS NULL)";
 
             $connection->query($sql);
         } catch ( Exception $e ) {
