@@ -124,7 +124,7 @@ class Bolt_Boltpay_Model_FeatureSwitch extends Bolt_Boltpay_Model_Abstract
         $boltFeatureSwitchId = Mage::getSingleton('core/cookie')->get(SELF::COOKIE_NAME);
         if (!$boltFeatureSwitchId) {
             $boltFeatureSwitchId = uniqid("BFS", true);
-            $boltFeatureSwitchId = Mage::getSingleton('core/cookie')->set(SELF::COOKIE_NAME, $boltFeatureSwitchId, true);
+            Mage::getSingleton('core/cookie')->set(SELF::COOKIE_NAME, $boltFeatureSwitchId, true);
         }
         return $boltFeatureSwitchId;
     }
