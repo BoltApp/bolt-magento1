@@ -37,6 +37,9 @@ class Bolt_Boltpay_Model_CronTest extends PHPUnit_Framework_TestCase
      * @test
      *
      * @covers ::cleanupQuotes
+     *
+     * @throws Mage_Core_Exception
+     * @throws ReflectionException
      */
     public function cleanupQuotes_ifExceptionIsThrown_callsNotifyExceptionAndLogWarning()
     {
@@ -141,6 +144,11 @@ class Bolt_Boltpay_Model_CronTest extends PHPUnit_Framework_TestCase
      * @test
      *
      * @covers ::cleanupOrders
+     *
+     * @throws Mage_Core_Exception
+     * @throws Mage_Core_Model_Store_Exception
+     * @throws ReflectionException
+     * @throws Zend_Db_Adapter_Exception
      */
     public function cleanupOrders_ifremovePreAuthOrderThrowsException_callsNotifyExceptionAndLogWarning()
     {
@@ -201,6 +209,9 @@ class Bolt_Boltpay_Model_CronTest extends PHPUnit_Framework_TestCase
      * @test
      *
      * @covers ::deactivateQuote
+     *
+     * @throws Mage_Core_Exception
+     * @throws Zend_Db_Adapter_Exception
      */
     public function deactivateQuote_deactivatesQuotesAssociatedWithBoltOrders()
     {
@@ -221,6 +232,9 @@ class Bolt_Boltpay_Model_CronTest extends PHPUnit_Framework_TestCase
      * @test
      *
      * @covers ::deactivateQuote
+     *
+     * @throws Mage_Core_Exception
+     * @throws ReflectionException
      */
     public function deactivateQuote_ifExceptionIsThrown_callsNotifyException()
     {
