@@ -2620,11 +2620,14 @@ class Bolt_Boltpay_Model_OrderTest extends PHPUnit_Framework_TestCase
 
     /**
      * @test
+     *
+     * @covers ::applyShipmentToQuoteFromTransaction
+     *
      * @throws ReflectionException
      */
     public function applyShipmentToQuoteFromTransaction_withVirtualCart_doesNotApplyShipment()
     {
-        $this->boltShippingAndTax->expects(self::never())->method('applyBoltAddressData');
+        $this->boltShippingAndTax->expects($this->never())->method('applyBoltAddressData');
         TestHelper::stubModel('boltpay/shippingAndTax', $this->boltShippingAndTax);
 
         TestHelper::callNonPublicFunction(
@@ -2633,7 +2636,59 @@ class Bolt_Boltpay_Model_OrderTest extends PHPUnit_Framework_TestCase
             array(
                 $this->immutableQuoteMock,
                 new stdClass(),
-                1
+                true
+            )
+        );
+
+        TestHelper::restoreModel('boltpay/shippingAndTax');
+    }
+
+    /**
+     * @test
+     *
+     * @covers ::applyShipmentToQuoteFromTransaction
+     */
+    public function applyShipmentToQuoteFromTransaction_withNoShippingMethodCode_callsNotifyExceptionAndLogWarning()
+    {
+
+    }
+
+    /**
+     * @test
+     *
+     * @covers ::applyShipmentToQuoteFromTransaction
+     */
+    public function applyShipmentToQuoteFromTransaction_withNoReferencePassedIn_fallsBackToService()
+    {
+
+    }
+
+    /**
+     * @test
+     *
+     * @covers ::applyShipmentToQuoteFromTransaction
+     *
+     * @throws ReflectionException
+     */
+    public function applyShipmentToQuoteFromTransaction_withShippingMethodCode_callsApplyShippingRate()
+    {
+        $this->boltShippingAndTax->expects($this->once())->method('applyBoltAddressData');
+        $this->boltShippingAndTax->expects($this->once())->method('applyShippingRate')
+            ->with($this->immutableQuoteMock, 'ground', true);
+        TestHelper::stubModel('boltpay/shippingAndTax', $this->boltShippingAndTax);
+
+        $transaction = new stdClass();
+        $transaction->order = new stdClass();
+        $transaction->order->cart = new stdClass();
+        $transaction->order->cart->shipments = array(new stdClass());
+        $transaction->order->cart->shipments[0]->reference = 'ground';
+        TestHelper::callNonPublicFunction(
+            $this->currentMock,
+            'applyShipmentToQuoteFromTransaction',
+            array(
+                $this->immutableQuoteMock,
+                $transaction,
+                false
             )
         );
 
