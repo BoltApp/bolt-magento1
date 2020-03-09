@@ -132,6 +132,11 @@ class Bolt_Boltpay_Model_FeatureSwitch extends Bolt_Boltpay_Model_Abstract
     /**
      * This method returns if a feature switch is enabled for a user.
      * The way this is computed is as follows:
+     * - get unique user id (from cookie)
+     * - salt it with switch name (to have different values for the same user but different switches)
+     * - calculate crc32 on salted string
+     * - two last digit of crc32 is pseudo-random sequence,
+     * we can use to identify if we need to enable feature switche or not
      *
      * @param string $switchName
      * @param int $rolloutPercentage
@@ -148,7 +153,7 @@ class Bolt_Boltpay_Model_FeatureSwitch extends Bolt_Boltpay_Model_Abstract
     }
 
     /**
-     * Fet feature switch object (value, defaultValue, rolloutPercentage) by switch name
+     * Fetch feature switch object (value, defaultValue, rolloutPercentage) by switch name
      *
      * @param $switchName string
      * @return object

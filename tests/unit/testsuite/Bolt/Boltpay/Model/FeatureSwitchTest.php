@@ -48,7 +48,7 @@ class Bolt_Boltpay_Model_FeatureSwitchTest extends PHPUnit_Framework_TestCase
     }
 
     /**
-     * Adjust cuttent mock
+     * Adjust current mock
      *
      * @param array $methods methods we need to stub (except of boltHelper, we ever stub it)
      * @throws Exception
@@ -215,7 +215,7 @@ class Bolt_Boltpay_Model_FeatureSwitchTest extends PHPUnit_Framework_TestCase
 
     /**
      * @test
-     * When call getSwitches feature switches is stored into switches class property if it was empty
+     * When call readSwitches feature switches is stored into switches class property if it was empty
      *
      * @covers ::readSwitches
      */
@@ -226,7 +226,7 @@ class Bolt_Boltpay_Model_FeatureSwitchTest extends PHPUnit_Framework_TestCase
             $this->generateConfigValue(),
             Bolt_Boltpay_TestHelper::getNonPublicProperty($this->currentMock, 'switches')
         );
-        $this->getSwitchesTearDown();
+        $this->readSwitchesTearDown();
     }
 
     /**
@@ -242,14 +242,14 @@ class Bolt_Boltpay_Model_FeatureSwitchTest extends PHPUnit_Framework_TestCase
             'test_value',
             Bolt_Boltpay_TestHelper::getNonPublicProperty($this->currentMock, 'switches')
         );
-        $this->getSwitchesTearDown();
+        $this->readSwitchesTearDown();
     }
 
     /**
      * Removes model stub of config "payment/boltpay/featureSwitches" after {@see Bolt_Boltpay_Model_FeatureSwitch::getSwitches}
      * tests
      */
-    private function getSwitchesTearDown()
+    private function readSwitchesTearDown()
     {
         Bolt_Boltpay_TestHelper::restoreConfigValue('payment/boltpay/featureSwitches');
     }
@@ -278,7 +278,7 @@ class Bolt_Boltpay_Model_FeatureSwitchTest extends PHPUnit_Framework_TestCase
      * @test
      * When call getUniqueUserId and cookie isn't set should set cookie and return value
      *
-     * @covers ::getSwitches
+     * @covers ::getUniqueUserId
      */
     public function getUniqueUserId_whenCookieIsNotSet_SetCookieAndReturn()
     {
@@ -291,10 +291,8 @@ class Bolt_Boltpay_Model_FeatureSwitchTest extends PHPUnit_Framework_TestCase
                 function ($name, $value, $period) use (&$newCookieValue) {
                     $newCookieValue = $value;
                 }));
-        $this->assertEquals(
-            $newCookieValue,
-            Bolt_Boltpay_TestHelper::callNonPublicFunction($this->currentMock, 'getUniqueUserId')
-        );
+        $userId = Bolt_Boltpay_TestHelper::callNonPublicFunction($this->currentMock, 'getUniqueUserId');
+        $this->assertEquals($newCookieValue,$userId);
         $this->getUniqueUserIdTearDown();
     }
 
@@ -302,7 +300,7 @@ class Bolt_Boltpay_Model_FeatureSwitchTest extends PHPUnit_Framework_TestCase
      * @test
      * When call getUniqueUserId and cookie isn't set should set cookie and return value
      *
-     * @covers ::getSwitches
+     * @covers ::getUniqueUserId
      */
     public function getUniqueUserId_whenCookieIsSet_ReturnCookieValue()
     {
@@ -555,7 +553,34 @@ class Bolt_Boltpay_Model_FeatureSwitchTest extends PHPUnit_Framework_TestCase
      */
     private function isSwitchEnabledProvider()
     {
-        return array(array(true),array(false));
+        return array(array(true), array(false));
     }
 
+    /**
+     * @test
+     * When call isSampleSwitchEnabled isSwitchEnables method should be called with the right parameter
+     *
+     * @covers ::isSampleSwitchEnabled
+     * @throws Exception
+     */
+    public function isSampleSwitchEnabled_shouldCallIsSwitchEnabledWithCorrectParameter()
+    {
+        $this->adjustCurrentMock(array('isSwitchEnabled'));
+        $this->currentMock->expects($this->once())->method('isSwitchEnabled')->with('M1_SAMPLE_SWITCH');
+        $this->currentMock->isSampleSwitchEnabled();
+    }
+
+    /**
+     * @test
+     * When call isBoltEnabled isSwitchEnables method should be called with the right parameter
+     *
+     * @covers ::isBoltEnabled
+     * @throws Exception
+     */
+    public function isBoltEnabled_shouldCallIsSwitchEnabledWithCorrectParameter()
+    {
+        $this->adjustCurrentMock(array('isSwitchEnabled'));
+        $this->currentMock->expects($this->once())->method('isSwitchEnabled')->with('M1_BOLT_ENABLED');
+        $this->currentMock->isBoltEnabled();
+    }
 }
