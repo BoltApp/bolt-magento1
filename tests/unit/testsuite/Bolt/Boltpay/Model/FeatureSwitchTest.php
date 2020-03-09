@@ -538,6 +538,7 @@ class Bolt_Boltpay_Model_FeatureSwitchTest extends PHPUnit_Framework_TestCase
             ->with('M1_SAMPLE_SWITCH', 37)->willReturn($expected_value);
 
         $this->assertEquals(
+            $expected_value,
             Bolt_Boltpay_TestHelper::callNonPublicFunction(
                 $this->currentMock,
                 'isSwitchEnabled',

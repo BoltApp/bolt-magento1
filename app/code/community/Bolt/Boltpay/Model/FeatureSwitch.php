@@ -57,7 +57,7 @@ class Bolt_Boltpay_Model_FeatureSwitch extends Bolt_Boltpay_Model_Abstract
     /**
      * Bolt_Boltpay_Model_FeatureSwitch constructor.
      */
-    public function __construct()
+    final public function __construct()
     {
         $this->defaultSwitches = array(
             self::SAMPLE_SWITCH_NAME => (object)array(
@@ -136,7 +136,7 @@ class Bolt_Boltpay_Model_FeatureSwitch extends Bolt_Boltpay_Model_Abstract
      * - salt it with switch name (to have different values for the same user but different switches)
      * - calculate crc32 on salted string
      * - two last digit of crc32 is pseudo-random sequence,
-     * we can use to identify if we need to enable feature switche or not
+     * we can use to identify if we need to enable feature switch or not
      *
      * @param string $switchName
      * @param int $rolloutPercentage
