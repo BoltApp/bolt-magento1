@@ -31,7 +31,7 @@ class Bolt_Boltpay_Model_Cron
     const PRE_AUTH_STATE_TIME_LIMIT_MINUTES = 30;
 
     /**
-     * Two weeks (60*60*24*7*2=1209600) is the amount of time in seconds we allow immutable quotes to exist before we delete them
+     * 60*60*24*7*2=1209600 is the amount of time in seconds we allow immutable quotes to exist before we delete them
      */
     const IMMUTABLE_QUOTE_EXPIRATION_SECONDS = 1209600;
 
