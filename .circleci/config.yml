@@ -114,6 +114,7 @@ workflows:
           filters:
             branches:
               only:
+                - master
                 - circleci
       - unit-php55-mage18
       - unit-php55-mage19
