@@ -14,12 +14,12 @@
     </testsuite>
     <filter>
         <whitelist addUncoveredFilesFromWhitelist="true" processUncoveredFilesFromWhitelist="true">
-            <directory suffix=".php">../../app/code/community/Bolt/</directory>
+            <directory suffix=".php">/Applications/MAMP/htdocs/magento/.modman/bolt-magento1/app/code/community/Bolt/</directory>
             <exclude>
                 <!-- Excluding installation and upgrade scripts -->
-                <directory>../../app/code/community/*/*/sql</directory>
+                <directory>/Applications/MAMP/htdocs/magento/.modman/bolt-magento1/app/code/community/*/*/sql</directory>
                 <!-- Excluding data installation and upgrade scripts -->
-                <directory>../../app/code/community/*/*/data</directory>
+                <directory>/Applications/MAMP/htdocs/magento/.modman/bolt-magento1/app/code/community/*/*/data</directory>
             </exclude>
         </whitelist>
     </filter>
