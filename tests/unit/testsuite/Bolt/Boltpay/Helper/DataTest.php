@@ -221,25 +221,8 @@ class Bolt_Boltpay_Helper_DataTest extends PHPUnit_Framework_TestCase
      * @test
      *
      * @covers ::buildOnCloseCallback
-     */
-    public function buildOnCloseCallback_whenCheckoutTypeIsProductPage_returnsEmptyString()
-    {
-        $checkoutType = Bolt_Boltpay_Block_Checkout_Boltpay::CHECKOUT_TYPE_PRODUCT_PAGE;
-        $closeCustom = "console.log('test');";
-        $expected = "";
-        $result = $this->currentMock->buildOnCloseCallback($closeCustom, $checkoutType);
-        $this->assertEquals(
-            preg_replace('/\s/', '', $expected),
-            preg_replace('/\s/', '', $result)
-        );
-    }
-
-    /**
-     * @test
      *
-     * @covers ::buildOnCloseCallback
-     *
-     * @dataProvider buildOnCloseCallback_whenCheckoutTypeIsNotAdminOrProductPage_returnsCorrectJsProvider
+     * @dataProvider buildOnCloseCallback_whenCheckoutTypeIsNotAdmin_returnsCorrectJsProvider
      */
     public function buildOnCloseCallback_whenCheckoutTypeIsFirecheckout_returnsCorrectJs($successUrl, $appendChar)
     {
@@ -276,7 +259,7 @@ class Bolt_Boltpay_Helper_DataTest extends PHPUnit_Framework_TestCase
      *
      * @covers ::buildOnCloseCallback
      *
-     * @dataProvider buildOnCloseCallback_whenCheckoutTypeIsNotAdminOrProductPage_returnsCorrectJsProvider
+     * @dataProvider buildOnCloseCallback_whenCheckoutTypeIsNotAdmin_returnsCorrectJsProvider
      */
     public function buildOnCloseCallback_whenCheckoutTypeIsMultiPage_returnsCorrectJs($successUrl, $appendChar)
     {
@@ -312,7 +295,7 @@ class Bolt_Boltpay_Helper_DataTest extends PHPUnit_Framework_TestCase
      *
      * @return array
      */
-    public function buildOnCloseCallback_whenCheckoutTypeIsNotAdminOrProductPage_returnsCorrectJsProvider()
+    public function buildOnCloseCallback_whenCheckoutTypeIsNotAdmin_returnsCorrectJsProvider()
     {
         return array(
             array('successUrl' => 'http://test.com/success', 'appendChar' => '?'),
@@ -335,6 +318,15 @@ class Bolt_Boltpay_Helper_DataTest extends PHPUnit_Framework_TestCase
         TestHelper::stubConfigValue('payment/boltpay/on_payment_submit', '');
         TestHelper::stubConfigValue('payment/boltpay/success', '');
         TestHelper::stubConfigValue('payment/boltpay/close', '');
+
+        $urlMock = $this->getMockBuilder('Mage_Core_Model_Url')
+            ->setMethods(array('sessionUrlVar'))
+            ->getMock();
+
+        $urlMock->expects($this->once())->method('sessionUrlVar')
+            ->willReturn("http://test.com/success");
+
+        TestHelper::stubModel('core/url', $urlMock);
 
         $expected = "{
           check: function() {
@@ -365,6 +357,9 @@ class Bolt_Boltpay_Helper_DataTest extends PHPUnit_Framework_TestCase
             callback();
           },
           close: function() {
+            if (window.bolt_transaction_reference) {
+                 window.location = 'http://test.com/success'+'?'+'bolt_transaction_reference='+window.bolt_transaction_reference;
+            }
           }
         }";
         $result = $this->currentMock->getBoltCallbacks(Bolt_Boltpay_Block_Checkout_Boltpay::CHECKOUT_TYPE_PRODUCT_PAGE);

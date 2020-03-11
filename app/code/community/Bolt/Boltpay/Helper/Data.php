@@ -196,8 +196,6 @@ class Bolt_Boltpay_Helper_Data extends Mage_Core_Helper_Abstract
                     }
                     ";
                 break;
-            case Bolt_Boltpay_Block_Checkout_Boltpay::CHECKOUT_TYPE_PRODUCT_PAGE:
-                break;
             case Bolt_Boltpay_Block_Checkout_Boltpay::CHECKOUT_TYPE_FIRECHECKOUT:
                 $javascript .=
                     "
