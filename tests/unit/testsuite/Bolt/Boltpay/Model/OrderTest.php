@@ -750,6 +750,49 @@ class Bolt_Boltpay_Model_OrderTest extends PHPUnit_Framework_TestCase
     }
 
     /**
+     * @test
+     * that validateTotals loads quote item by product id if is_bolt_pdp flag is set on quote
+     * by expecting exception message to be thrown due to different prices betwen product and transaction item
+     *
+     * @covers ::validateTotals
+     *
+     * @expectedException Bolt_Boltpay_OrderCreationException
+     * @expectedExceptionCode 2001004
+     * @expectedExceptionMessage "old_price": "23200", "new_price": "13200"
+     *
+     * @throws ReflectionException if validateTotals method doesn't exist
+     * @throws Mage_Core_Exception if unable to add product to cart
+     * @throws Exception if unable to create dummy product
+     */
+    public function validateTotals_fromProductPageCheckout_loadsCartItemByProductIdAndThrowsException()
+    {
+        $productId = Bolt_Boltpay_ProductProvider::createDummyProduct(
+            uniqid('validate_totals_ppc'),
+            array('price' => 132)
+        );
+        $transaction = new stdClass();
+        $transaction->order->cart->items = array(
+            (object)array('reference' => $productId, 'total_amount' => (object)array('amount' => 23200))
+        );
+        $cart = Mage::getModel('checkout/cart', array('quote' => Mage::getModel('sales/quote')));
+        $cart->addProduct($productId, 1);
+        $quote = $cart->getQuote();
+        $quote->getShippingAddress()->setPaymentMethod('boltpay');
+        $quote->getPayment()->importData(array('method' => Bolt_Boltpay_Model_Payment::METHOD_CODE));
+        $quote->setData('is_bolt_pdp', 1)->save();
+        try {
+            TestHelper::callNonPublicFunction(
+                $this->currentMock,
+                'validateTotals',
+                array($quote, $transaction)
+            );
+        } catch (Exception $e) {
+            Bolt_Boltpay_ProductProvider::deleteDummyProduct($productId);
+            throw $e;
+        }
+    }
+
+    /**
      * Setup method for tests covering {@see Bolt_Boltpay_Model_Order::createOrder}
      *
      * @return array containing mock instance, product id, parent quote id, immutable quote id and transaction
@@ -2076,8 +2119,7 @@ class Bolt_Boltpay_Model_OrderTest extends PHPUnit_Framework_TestCase
                         'salesrule/rule',
                         array('to_date' => Mage::getSingleton('core/date')->date(null, '-10 days'))
                     )
-                )
-            ,
+                ),
             $couponConfig =
                 array(
                     "reference" => self::COUPON_CODE,
@@ -2121,8 +2163,7 @@ class Bolt_Boltpay_Model_OrderTest extends PHPUnit_Framework_TestCase
                         'salesrule/rule',
                         array('is_active' => 0)
                     )
-                )
-            ,
+                ),
             $couponConfig =
                 array(
                     "reference" => self::COUPON_CODE,
@@ -2160,8 +2201,7 @@ class Bolt_Boltpay_Model_OrderTest extends PHPUnit_Framework_TestCase
                         'salesrule/rule',
                         array('to_date' => Mage::getSingleton('core/date')->date(null, '+1 days'))
                     )
-                )
-            ,
+                ),
             $couponConfig =
                 array(
                     "reference" => self::COUPON_CODE,

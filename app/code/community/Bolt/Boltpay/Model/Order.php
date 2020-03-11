@@ -694,7 +694,9 @@ class Bolt_Boltpay_Model_Order extends Bolt_Boltpay_Model_Abstract
 
         foreach ($transaction->order->cart->items as $boltCartItem) {
 
-            $cartItem = $immutableQuote->getItemById($boltCartItem->reference);
+            $cartItem = $immutableQuote->getData('is_bolt_pdp')
+                ? $immutableQuote->getItemsCollection()->getItemByColumnValue('product_id', $boltCartItem->reference)
+                : $immutableQuote->getItemById($boltCartItem->reference);
             if ( !($cartItem instanceof Mage_Sales_Model_Quote_Item) ) { continue; }
 
             $cartItem->shouldNotBeValidated = false;
