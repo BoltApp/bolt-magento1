@@ -193,6 +193,7 @@ class Bolt_Boltpay_Block_Catalog_Product_Boltpay extends Bolt_Boltpay_Block_Chec
             Mage_Catalog_Model_Product_Type::TYPE_SIMPLE,
             Mage_Catalog_Model_Product_Type::TYPE_VIRTUAL,
             Mage_Catalog_Model_Product_Type::TYPE_CONFIGURABLE,
+            Mage_Catalog_Model_Product_Type::TYPE_BUNDLE,
         ];
     }
 

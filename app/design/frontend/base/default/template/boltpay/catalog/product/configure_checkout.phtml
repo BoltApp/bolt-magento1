@@ -61,6 +61,12 @@ var boltConfigPDP = {
                     price += Number(optionsPrice.optionPrices.config.price);
                 }
                 break;
+            case 'bundle':
+                if (typeof optionsPrice.optionPrices.bundle !== 'undefined') {
+                    //override price with bundle price
+                    price = optionsPrice.optionPrices.bundle;
+                }
+                break;
         }
         return price;
     },
@@ -145,6 +151,12 @@ document.addEventListener("DOMContentLoaded", function() {
     if (typeof opConfig !== 'undefined') {
         opConfig.reloadPrice = function () {
             Product.Options.prototype.reloadPrice.apply(opConfig);
+            boltConfigPDP.init();
+        };
+    }
+    if (typeof bundle !== 'undefined') {
+        bundle.reloadPrice = function () {
+            Product.Bundle.prototype.reloadPrice.apply(bundle);
             boltConfigPDP.init();
         };
     }
