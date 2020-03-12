@@ -21,6 +21,7 @@
 <script type="text/javascript">
 var boltConfigPDP = {
     product: <?php echo $this->getProductJSON(); ?>,
+    customer: <?php echo $this->getCustomerJSON(); ?>,
     /**
      * Initializes BoltCheckout
      */
@@ -61,6 +62,12 @@ var boltConfigPDP = {
                     price += Number(optionsPrice.optionPrices.config.price);
                 }
                 break;
+            case 'downloadable':
+                if (typeof optionsPrice.optionPrices.downloadable !== 'undefined') {
+                    //add downloadable options price
+                    price += Number(optionsPrice.optionPrices.downloadable);
+                }
+                break;
         }
         return price;
     },
@@ -71,6 +78,12 @@ var boltConfigPDP = {
     validate: function () {
         var formValidation = new Validation('product_addtocart_form');
         try {
+            if (this.product.type_id == 'downloadable' && !this.customer.is_logged_in) {
+                throw '<?php echo $this->__(
+                    'Please <a href="%s">login</a> in order to purchase this product',
+                    $this->getCustomerLoginUrlWithReferrer()
+                ); ?>';
+            }
             if (this.product.stock.manage && (!this.product.stock.status || this.product.stock.qty < this.getQty())) {
                 throw '<?php echo $this->__("The requested quantity is not available."); ?>';
             }
@@ -145,6 +158,12 @@ document.addEventListener("DOMContentLoaded", function() {
     if (typeof opConfig !== 'undefined') {
         opConfig.reloadPrice = function () {
             Product.Options.prototype.reloadPrice.apply(opConfig);
+            boltConfigPDP.init();
+        };
+    }
+    if (typeof dConfig !== 'undefined') {
+        dConfig.reloadPrice = function () {
+            Product.Downloadable.prototype.reloadPrice.apply(dConfig);
             boltConfigPDP.init();
         };
     }

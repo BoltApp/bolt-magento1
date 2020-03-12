@@ -65,12 +65,17 @@ class Bolt_Boltpay_Block_Catalog_Product_BoltpayTest extends PHPUnit_Framework_T
     }
 
     /**
-     * Reset Magento registry values
+     * Reset Magento registry values and restore original stubbed values
+     *
+     * @throws ReflectionException if unable to restore _config property of Mage class
+     * @throws Mage_Core_Model_Store_Exception if unable to restore original config values due to missing store
+     * @throws Mage_Core_Exception if unable to restore original registry value due to key already been defined
      */
     protected function tearDown()
     {
         Mage::unregister('current_product');
         Mage::unregister('_helper/boltpay');
+        TestHelper::restoreOriginals();
     }
 
     /**
@@ -328,7 +333,8 @@ class Bolt_Boltpay_Block_Catalog_Product_BoltpayTest extends PHPUnit_Framework_T
             array(Mage_Catalog_Model_Product_Type::TYPE_CONFIGURABLE, true),
             array(Mage_Catalog_Model_Product_Type::TYPE_BUNDLE, false),
             array(Mage_Catalog_Model_Product_Type::TYPE_VIRTUAL, true),
-            array(Mage_Catalog_Model_Product_Type::TYPE_GROUPED, false)
+            array(Mage_Catalog_Model_Product_Type::TYPE_GROUPED, false),
+            array(Mage_Downloadable_Model_Product_Type::TYPE_DOWNLOADABLE, true),
         );
     }
 
@@ -375,7 +381,8 @@ class Bolt_Boltpay_Block_Catalog_Product_BoltpayTest extends PHPUnit_Framework_T
         $this->assertContains(Mage_Catalog_Model_Product_Type::TYPE_SIMPLE, $result);
         $this->assertContains(Mage_Catalog_Model_Product_Type::TYPE_VIRTUAL, $result);
         $this->assertContains(Mage_Catalog_Model_Product_Type::TYPE_CONFIGURABLE, $result);
-        $this->assertCount(3, $result);
+        $this->assertContains(Mage_Downloadable_Model_Product_Type::TYPE_DOWNLOADABLE, $result);
+        $this->assertCount(4, $result);
     }
 
     /**
@@ -454,5 +461,59 @@ class Bolt_Boltpay_Block_Catalog_Product_BoltpayTest extends PHPUnit_Framework_T
         $this->assertEquals(456.78, $productData['price']);
         $this->assertEquals($dummyTierPrices, $productData['tier_prices']);
         $this->assertEquals(array('manage' => 1, 'status' => 1, 'qty' => 1), $productData['stock']);
+    }
+
+    /**
+     * @test
+     * that getCustomerJSON returns expected customer data in JSON format
+     *
+     * @covers ::getCustomerJSON
+     *
+     * @dataProvider getCustomerJSON_inVariousStatesProvider
+     *
+     * @param bool $isCustomerLoggedIn customer session flag
+     *
+     * @throws Mage_Core_Exception if unable to stub singleton
+     */
+    public function getCustomerJSON_inVariousStates_returnsCustomerDataInJson($isCustomerLoggedIn)
+    {
+        $customerSessionMock = $this->getMockBuilder('Mage_Customer_Model_Session')
+            ->setMethods(array('isLoggedIn'))->getMock();
+        $customerSessionMock->expects($this->once())->method('isLoggedIn')->willReturn($isCustomerLoggedIn);
+        TestHelper::stubSingleton('customer/session', $customerSessionMock);
+        $customerJson = $this->currentMock->getCustomerJSON();
+        $this->assertJson($customerJson);
+        $customerData = json_decode($customerJson, true);
+        $this->assertEquals($isCustomerLoggedIn, $customerData['is_logged_in']);
+    }
+
+    /**
+     * Data provider for {@see getCustomerJSON_inVariousStates_returnsCustomerDataInJson}
+     *
+     * @return array containing customer logged in flag
+     */
+    public function getCustomerJSON_inVariousStatesProvider()
+    {
+        return array(
+            array('isCustomerLoggedIn' => true),
+            array('isCustomerLoggedIn' => false),
+        );
+    }
+
+    /**
+     * @test
+     * that getCustomerLoginUrlWithReferrer returns customer login url with referrer parameter set to current url
+     *
+     * @covers ::getCustomerLoginUrlWithReferrer
+     */
+    public function getCustomerLoginUrlWithReferrer_always_returnsLoginUrlWithReferrer()
+    {
+        $result = $this->currentMock->getCustomerLoginUrlWithReferrer();
+        list($base, $referrer) = explode(Mage_Customer_Helper_Data::REFERER_QUERY_PARAM_NAME, $result);
+        $this->assertEquals(Mage::getUrl('customer/account/login'), $base);
+        $this->assertEquals(
+            Mage::getUrl('*/*/*', array('_current' => true)),
+            Mage::helper('core')->urlDecode(trim($referrer, '/'))
+        );
     }
 }
