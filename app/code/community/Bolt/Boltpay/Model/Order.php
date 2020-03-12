@@ -476,10 +476,7 @@ class Bolt_Boltpay_Model_Order extends Bolt_Boltpay_Model_Abstract
         /// Refuse Bolt order creation for orders triggered
         /// outside of official Bolt Paths
         /////////////////////////////////////////////////////////////
-        if (
-            !Bolt_Boltpay_Helper_Data::$fromHooks
-            && !Mage::app()->getStore()->isAdmin()
-        ) {
+        if (!Bolt_Boltpay_Helper_Data::$fromHooks && !Mage::app()->getStore()->isAdmin()) {
             throw new Exception('Order creation with Boltpay not allowed for this path');
         }
         /////////////////////////////////////////////////////////////
@@ -526,7 +523,10 @@ class Bolt_Boltpay_Model_Order extends Bolt_Boltpay_Model_Abstract
 
     /**
      * Associate order to customer when placing on product detail page
+     *
      * @param string $orderIncrementId
+     *
+     * @throws Exception
      */
     protected function associateOrderToCustomerWhenPlacingOnPDP($orderIncrementId){
         /** @var Mage_Customer_Model_Customer $customer */
