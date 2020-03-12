@@ -2384,6 +2384,8 @@ class Bolt_Boltpay_Model_OrderTest extends PHPUnit_Framework_TestCase
      */
     public function validateBeforeOrderCommit_ifTransactionIsEmpty_skipsValidation()
     {
+        $this->paymentMock->expects($this->atLeastOnce())->method('getMethod')
+            ->willReturn(Bolt_Boltpay_Model_Payment::METHOD_CODE);
         $this->orderMock->expects($this->never())->method('getGrandTotal');
         $observer = $this->validateBeforeOrderCommitSetUp($this->orderMock, null);
         $this->currentMock->validateBeforeOrderCommit($observer);
