@@ -111,21 +111,52 @@ var boltConfigPDP = {
         return formValidation.validate();
     },
     /**
-     * Returns cart data provided to BoltConnect.configureProductCheckout
+     * Returns items data
+     * @returns {[{reference: number, quantity: number, price: number, name: string, options: string}]|[]}}
+     */
+    getItemData: function () {
+        if (this.product.type_id == 'grouped') {
+            var items = [];
+            for (var i in this.product.associated_products) {
+                if (!this.product.associated_products.hasOwnProperty(i) || !this.product.associated_products[i]) {
+                    continue;
+                }
+                var product = this.product.associated_products[i];
+                var qty = Number(document.getElementById('super_group_' + product.id).value);
+                if (qty > 0) {
+                    items.push(
+                        {
+                            reference: product.id,
+                            name: product.name,
+                            price: product.price,
+                            quantity: qty,
+                            options: $('product_addtocart_form').serialize(),
+                        }
+                    );
+                }
+            }
+            return items;
+        }
+        if (this.getQty() <= 0) {
+            return [];
+        }
+        return [
+            {
+                reference: this.product.id,
+                name: this.product.name,
+                price: this.getPrice(),
+                quantity: this.getQty(),
+                options: $('product_addtocart_form').serialize(),
+            },
+        ];
+    },
+    /**
+     * Returns cart data to be provided to BoltConnect.configureProductCheckout
      * @returns {{currency: string, items: ([{reference: number, quantity: number, price: number, name: string, options: string}]|[])}}
      */
     getCartData: function () {
-        var price = this.getPrice();
         return {
-            items: this.getQty() > 0 ? [
-                {
-                    reference: this.product.id,
-                    name: this.product.name,
-                    price: price,
-                    quantity: this.getQty(),
-                    options: $('product_addtocart_form').serialize(),
-                },
-            ] : [],
+            items: this.getItemData(),
             currency: '<?php echo Mage::app()->getStore()->getCurrentCurrencyCode(); ?>'
         };
     },
@@ -151,7 +182,9 @@ document.addEventListener("DOMContentLoaded", function() {
         }, 50
     );
 
-    document.getElementById('qty').addEventListener('input', boltConfigPDP.init.bind(boltConfigPDP));
+    document.querySelectorAll(('input[name=qty], input[name*=super_group], input[name*=qty]')).forEach(function (input) {
+        input.addEventListener('input', boltConfigPDP.init.bind(boltConfigPDP));
+    });
     if (typeof spConfig !== 'undefined') {
         spConfig.configureSubscribe(boltConfigPDP.init.bind(boltConfigPDP));
     }

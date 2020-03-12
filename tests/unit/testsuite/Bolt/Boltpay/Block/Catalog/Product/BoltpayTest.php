@@ -333,7 +333,7 @@ class Bolt_Boltpay_Block_Catalog_Product_BoltpayTest extends PHPUnit_Framework_T
             array(Mage_Catalog_Model_Product_Type::TYPE_CONFIGURABLE, true),
             array(Mage_Catalog_Model_Product_Type::TYPE_BUNDLE, false),
             array(Mage_Catalog_Model_Product_Type::TYPE_VIRTUAL, true),
-            array(Mage_Catalog_Model_Product_Type::TYPE_GROUPED, false),
+            array(Mage_Catalog_Model_Product_Type::TYPE_GROUPED, true),
             array(Mage_Downloadable_Model_Product_Type::TYPE_DOWNLOADABLE, true),
         );
     }
@@ -382,7 +382,8 @@ class Bolt_Boltpay_Block_Catalog_Product_BoltpayTest extends PHPUnit_Framework_T
         $this->assertContains(Mage_Catalog_Model_Product_Type::TYPE_VIRTUAL, $result);
         $this->assertContains(Mage_Catalog_Model_Product_Type::TYPE_CONFIGURABLE, $result);
         $this->assertContains(Mage_Downloadable_Model_Product_Type::TYPE_DOWNLOADABLE, $result);
-        $this->assertCount(4, $result);
+        $this->assertContains(Mage_Catalog_Model_Product_Type::TYPE_GROUPED, $result);
+        $this->assertCount(5, $result);
     }
 
     /**
@@ -447,7 +448,7 @@ class Bolt_Boltpay_Block_Catalog_Product_BoltpayTest extends PHPUnit_Framework_T
         $productMock->expects($this->once())->method('getFinalPrice')->willReturn(456.78);
         $productMock->expects($this->once())->method('getTierPrice')->willReturn($dummyTierPrices);
         $productMock->expects($this->once())->method('getStockItem')->willReturn($dummyTierPrices);
-        $productMock->expects($this->exactly(2))->method('getTypeId')
+        $productMock->expects($this->exactly(3))->method('getTypeId')
             ->willReturn(Mage_Catalog_Model_Product_Type::TYPE_SIMPLE);
         $stockItemMock->expects($this->once())->method('getManageStock')->willReturn(1);
         $stockItemMock->expects($this->once())->method('getIsInStock')->willReturn(1);
@@ -514,6 +515,60 @@ class Bolt_Boltpay_Block_Catalog_Product_BoltpayTest extends PHPUnit_Framework_T
         $this->assertEquals(
             Mage::getUrl('*/*/*', array('_current' => true)),
             Mage::helper('core')->urlDecode(trim($referrer, '/'))
+        );
+    }
+
+    /**
+     * @test
+     * that getProductJSON returns associated products for for grouped product
+     *
+     * @covers ::getProductJSON
+     *
+     * @throws Mage_Core_Exception if unable to stub current product registry value
+     */
+    public function getProductJSON_withGroupedProduct_returnsAssociatedProducts()
+    {
+        $productMock = $this->getMockBuilder('Mage_Catalog_Model_Product')
+            ->setMethods(
+                array(
+                    'getTypeId',
+                    'getTypeInstance',
+                    'getAssociatedProducts',
+                    'getStockItem',
+                )
+            )
+            ->getMock();
+        $productMock->method('getStockItem')->willReturnSelf();
+        $productMock->expects($this->atLeastOnce())->method('getTypeId')
+            ->willReturn(Mage_Catalog_Model_Product_Type::TYPE_GROUPED);
+        $productMock->expects($this->once())->method('getTypeInstance')->with(true)->willReturnSelf();
+        $productMock->expects($this->once())->method('getAssociatedProducts')->with($productMock)->willReturn(
+            array(
+                Mage::getModel(
+                    'catalog/product',
+                    array('entity_id' => 123, 'name' => 'Test Product 1', 'final_price' => 456.78)
+                ),
+                Mage::getModel(
+                    'catalog/product',
+                    array('entity_id' => 345, 'name' => 'Test Product 2', 'final_price' => 645.32)
+                ),
+                Mage::getModel(
+                    'catalog/product',
+                    array('entity_id' => 456, 'name' => 'Test Product 3', 'final_price' => 321.12)
+                ),
+            )
+        );
+        TestHelper::stubRegistryValue('current_product', $productMock);
+        $productDataJSON = $this->currentMock->getProductJSON();
+        $this->assertJson($productDataJSON);
+        $productData = json_decode($productDataJSON, true);
+        $this->assertEquals(
+            array(
+                array('id' => 123, 'name' => 'Test Product 1', 'price' => 456.78),
+                array('id' => 345, 'name' => 'Test Product 2', 'price' => 645.32),
+                array('id' => 456, 'name' => 'Test Product 3', 'price' => 321.12),
+            ),
+            $productData['associated_products']
         );
     }
 }
