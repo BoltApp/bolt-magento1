@@ -418,7 +418,6 @@ class Bolt_Boltpay_Model_Productpage_CartTest extends PHPUnit_Framework_TestCase
         $this->assertEquals($qty, $productItem->getQty());
     }
 
-
     /**
      * @test
      * that createCart provides product options when adding to cart if they exist in request
@@ -490,6 +489,78 @@ class Bolt_Boltpay_Model_Productpage_CartTest extends PHPUnit_Framework_TestCase
         $resultCart = Bolt_Boltpay_TestHelper::callNonPublicFunction($currentMock, 'createCart');
         $quote = $resultCart->getQuote();
         $this->assertEquals(self::$customerId, $quote->getCustomerId());
+    }
+
+    /**
+     * @test
+     * that createCart correctly handles grouped products by adding their parent to cart
+     *
+     * @covers ::createCart
+     *
+     * @throws ReflectionException if createCart method is undefined
+     * @throws Exception if test class name is not defined
+     */
+    public function createCart_withGroupedProduct_addsProductsAsGrouped()
+    {
+        $currentMock = $this->getTestClassPrototype()
+            ->setMethods(array('getCartRequestItems', 'getSessionCart'))
+            ->getMock();
+        $groupedProductId = 439;
+        $currentMock->expects($this->once())->method('getCartRequestItems')->willReturn(
+            array(
+                (object)array(
+                    'reference'    => '377',
+                    'name'         => 'Classic Hardshell Suitcase 29"',
+                    'options'      => 'form_key=RzzrHrDJSZzoDCsD&product=' . $groupedProductId . '&related_product=&super_group%5B377%5D=1&super_group%5B541%5D=2&super_group%5B376%5D=1',
+                    'total_amount' => 75000,
+                    'unit_price'   => 75000,
+                    'quantity'     => 1,
+                ),
+                (object)array(
+                    'reference'    => '541',
+                    'name'         => 'Classic Hardshell Suitcase 19"',
+                    'options'      => 'form_key=RzzrHrDJSZzoDCsD&product=' . $groupedProductId . '&related_product=&super_group%5B377%5D=1&super_group%5B541%5D=2&super_group%5B376%5D=1',
+                    'total_amount' => 120000,
+                    'unit_price'   => 60000,
+                    'quantity'     => 2,
+                ),
+                (object)array(
+                    'reference'    => '376',
+                    'name'         => 'Classic Hardshell Suitcase 21"',
+                    'options'      => 'form_key=RzzrHrDJSZzoDCsD&product=' . $groupedProductId . '&related_product=&super_group%5B377%5D=1&super_group%5B541%5D=2&super_group%5B376%5D=1',
+                    'total_amount' => 65000,
+                    'unit_price'   => 65000,
+                    'quantity'     => 1,
+                ),
+            )
+        );
+        $cartMock = $this->getClassPrototype('Mage_Checkout_Model_Cart')
+            ->setMethods(array('getQuote', 'addProduct', 'save'))
+            ->getMock();
+        $quoteMock = $this->getClassPrototype('Mage_Sales_Model_Quote')
+            ->setMethods(array('save', 'getId', 'reserveOrderId'))
+            ->getMock();
+        $cartMock->method('getQuote')->willReturn($quoteMock);
+        $currentMock->expects($this->once())->method('getSessionCart')->willReturn($cartMock);
+        $productMock = $this->getClassPrototype('Mage_Catalog_Model_Product')
+            ->setMethods(array('load'))->getMock();
+        $productMock->expects($this->once())->method('load')->with($groupedProductId)->willReturnSelf();
+        Bolt_Boltpay_TestHelper::stubModel('catalog/product', $productMock);
+        $cartMock->expects($this->once())->method('addProduct')->with(
+            $productMock,
+            array(
+                'form_key'        => 'RzzrHrDJSZzoDCsD',
+                'product'         => $groupedProductId,
+                'related_product' => '',
+                'super_group'     => array(
+                    377 => '1',
+                    541 => '2',
+                    376 => '1',
+                ),
+                'qty'             => 1,
+            )
+        );
+        Bolt_Boltpay_TestHelper::callNonPublicFunction($currentMock, 'createCart');
     }
 
     /**
