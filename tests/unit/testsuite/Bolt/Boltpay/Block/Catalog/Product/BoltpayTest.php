@@ -65,12 +65,17 @@ class Bolt_Boltpay_Block_Catalog_Product_BoltpayTest extends PHPUnit_Framework_T
     }
 
     /**
-     * Reset Magento registry values
+     * Reset Magento registry values and restore original stubbed values
+     *
+     * @throws ReflectionException if unable to restore _config property of Mage class
+     * @throws Mage_Core_Model_Store_Exception if unable to restore original config values due to missing store
+     * @throws Mage_Core_Exception if unable to restore original registry value due to key already been defined
      */
     protected function tearDown()
     {
         Mage::unregister('current_product');
         Mage::unregister('_helper/boltpay');
+        TestHelper::restoreOriginals();
     }
 
     /**
@@ -328,7 +333,8 @@ class Bolt_Boltpay_Block_Catalog_Product_BoltpayTest extends PHPUnit_Framework_T
             array(Mage_Catalog_Model_Product_Type::TYPE_CONFIGURABLE, true),
             array(Mage_Catalog_Model_Product_Type::TYPE_BUNDLE, false),
             array(Mage_Catalog_Model_Product_Type::TYPE_VIRTUAL, true),
-            array(Mage_Catalog_Model_Product_Type::TYPE_GROUPED, false)
+            array(Mage_Catalog_Model_Product_Type::TYPE_GROUPED, true),
+            array(Mage_Downloadable_Model_Product_Type::TYPE_DOWNLOADABLE, true),
         );
     }
 
@@ -375,7 +381,9 @@ class Bolt_Boltpay_Block_Catalog_Product_BoltpayTest extends PHPUnit_Framework_T
         $this->assertContains(Mage_Catalog_Model_Product_Type::TYPE_SIMPLE, $result);
         $this->assertContains(Mage_Catalog_Model_Product_Type::TYPE_VIRTUAL, $result);
         $this->assertContains(Mage_Catalog_Model_Product_Type::TYPE_CONFIGURABLE, $result);
-        $this->assertCount(3, $result);
+        $this->assertContains(Mage_Downloadable_Model_Product_Type::TYPE_DOWNLOADABLE, $result);
+        $this->assertContains(Mage_Catalog_Model_Product_Type::TYPE_GROUPED, $result);
+        $this->assertCount(5, $result);
     }
 
     /**
@@ -440,7 +448,7 @@ class Bolt_Boltpay_Block_Catalog_Product_BoltpayTest extends PHPUnit_Framework_T
         $productMock->expects($this->once())->method('getFinalPrice')->willReturn(456.78);
         $productMock->expects($this->once())->method('getTierPrice')->willReturn($dummyTierPrices);
         $productMock->expects($this->once())->method('getStockItem')->willReturn($dummyTierPrices);
-        $productMock->expects($this->exactly(2))->method('getTypeId')
+        $productMock->expects($this->exactly(3))->method('getTypeId')
             ->willReturn(Mage_Catalog_Model_Product_Type::TYPE_SIMPLE);
         $stockItemMock->expects($this->once())->method('getManageStock')->willReturn(1);
         $stockItemMock->expects($this->once())->method('getIsInStock')->willReturn(1);
@@ -454,5 +462,113 @@ class Bolt_Boltpay_Block_Catalog_Product_BoltpayTest extends PHPUnit_Framework_T
         $this->assertEquals(456.78, $productData['price']);
         $this->assertEquals($dummyTierPrices, $productData['tier_prices']);
         $this->assertEquals(array('manage' => 1, 'status' => 1, 'qty' => 1), $productData['stock']);
+    }
+
+    /**
+     * @test
+     * that getCustomerJSON returns expected customer data in JSON format
+     *
+     * @covers ::getCustomerJSON
+     *
+     * @dataProvider getCustomerJSON_inVariousStatesProvider
+     *
+     * @param bool $isCustomerLoggedIn customer session flag
+     *
+     * @throws Mage_Core_Exception if unable to stub singleton
+     */
+    public function getCustomerJSON_inVariousStates_returnsCustomerDataInJson($isCustomerLoggedIn)
+    {
+        $customerSessionMock = $this->getMockBuilder('Mage_Customer_Model_Session')
+            ->setMethods(array('isLoggedIn'))->getMock();
+        $customerSessionMock->expects($this->once())->method('isLoggedIn')->willReturn($isCustomerLoggedIn);
+        TestHelper::stubSingleton('customer/session', $customerSessionMock);
+        $customerJson = $this->currentMock->getCustomerJSON();
+        $this->assertJson($customerJson);
+        $customerData = json_decode($customerJson, true);
+        $this->assertEquals($isCustomerLoggedIn, $customerData['is_logged_in']);
+    }
+
+    /**
+     * Data provider for {@see getCustomerJSON_inVariousStates_returnsCustomerDataInJson}
+     *
+     * @return array containing customer logged in flag
+     */
+    public function getCustomerJSON_inVariousStatesProvider()
+    {
+        return array(
+            array('isCustomerLoggedIn' => true),
+            array('isCustomerLoggedIn' => false),
+        );
+    }
+
+    /**
+     * @test
+     * that getCustomerLoginUrlWithReferrer returns customer login url with referrer parameter set to current url
+     *
+     * @covers ::getCustomerLoginUrlWithReferrer
+     */
+    public function getCustomerLoginUrlWithReferrer_always_returnsLoginUrlWithReferrer()
+    {
+        $result = $this->currentMock->getCustomerLoginUrlWithReferrer();
+        list($base, $referrer) = explode(Mage_Customer_Helper_Data::REFERER_QUERY_PARAM_NAME, $result);
+        $this->assertEquals(Mage::getUrl('customer/account/login'), $base);
+        $this->assertEquals(
+            Mage::getUrl('*/*/*', array('_current' => true)),
+            Mage::helper('core')->urlDecode(trim($referrer, '/'))
+        );
+    }
+
+    /**
+     * @test
+     * that getProductJSON returns associated products for for grouped product
+     *
+     * @covers ::getProductJSON
+     *
+     * @throws Mage_Core_Exception if unable to stub current product registry value
+     */
+    public function getProductJSON_withGroupedProduct_returnsAssociatedProducts()
+    {
+        $productMock = $this->getMockBuilder('Mage_Catalog_Model_Product')
+            ->setMethods(
+                array(
+                    'getTypeId',
+                    'getTypeInstance',
+                    'getAssociatedProducts',
+                    'getStockItem',
+                )
+            )
+            ->getMock();
+        $productMock->method('getStockItem')->willReturnSelf();
+        $productMock->expects($this->atLeastOnce())->method('getTypeId')
+            ->willReturn(Mage_Catalog_Model_Product_Type::TYPE_GROUPED);
+        $productMock->expects($this->once())->method('getTypeInstance')->with(true)->willReturnSelf();
+        $productMock->expects($this->once())->method('getAssociatedProducts')->with($productMock)->willReturn(
+            array(
+                Mage::getModel(
+                    'catalog/product',
+                    array('entity_id' => 123, 'name' => 'Test Product 1', 'final_price' => 456.78)
+                ),
+                Mage::getModel(
+                    'catalog/product',
+                    array('entity_id' => 345, 'name' => 'Test Product 2', 'final_price' => 645.32)
+                ),
+                Mage::getModel(
+                    'catalog/product',
+                    array('entity_id' => 456, 'name' => 'Test Product 3', 'final_price' => 321.12)
+                ),
+            )
+        );
+        TestHelper::stubRegistryValue('current_product', $productMock);
+        $productDataJSON = $this->currentMock->getProductJSON();
+        $this->assertJson($productDataJSON);
+        $productData = json_decode($productDataJSON, true);
+        $this->assertEquals(
+            array(
+                array('id' => 123, 'name' => 'Test Product 1', 'price' => 456.78),
+                array('id' => 345, 'name' => 'Test Product 2', 'price' => 645.32),
+                array('id' => 456, 'name' => 'Test Product 3', 'price' => 321.12),
+            ),
+            $productData['associated_products']
+        );
     }
 }

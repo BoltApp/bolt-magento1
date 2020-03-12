@@ -2,198 +2,116 @@
 
 require_once('TestHelper.php');
 
+use Bolt_Boltpay_TestHelper as TestHelper;
+use PHPUnit_Framework_MockObject_MockObject as MockObject;
+
 /**
  * @coversDefaultClass Bolt_Boltpay_Helper_Data
  */
 class Bolt_Boltpay_Helper_DataTest extends PHPUnit_Framework_TestCase
 {
     /**
-     * @var int|null
-     */
-    private static $productId = null;
-
-    private $app = null;
-
-    /**
-     * @var $dataHelper Bolt_Boltpay_Helper_Data
-     */
-    private $dataHelper = null;
-
-    /**
-     * @var $testHelper Bolt_Boltpay_TestHelper
-     */
-    private $testHelper = null;
-
-    /**
-     * @var Bolt_Boltpay_Helper_Data
+     * @var MockObject|Bolt_Boltpay_Helper_Data
      */
     private $currentMock;
-
-    /**
-     * Generate dummy products for testing purposes
-     */
-    public static function setUpBeforeClass()
-    {
-        // Create some dummy product:
-        self::$productId = Bolt_Boltpay_ProductProvider::createDummyProduct(uniqid('PHPUNIT_TEST_'));
-    }
-
-    /**
-     * Delete dummy products after the test
-     */
-    public static function tearDownAfterClass()
-    {
-        Mage::getSingleton('checkout/cart')->truncate()->save();
-        Bolt_Boltpay_ProductProvider::deleteDummyProduct(self::$productId);
-    }
 
     /**
      * @throws Mage_Core_Model_Store_Exception
      */
     public function setUp()
     {
-        $this->app = Mage::app('default');
-        $this->app->getStore()->resetConfig();
-        $this->dataHelper = Mage::helper('boltpay');
-        $this->testHelper = new Bolt_Boltpay_TestHelper();
-
         $this->currentMock = $this->getMockBuilder('Bolt_Boltpay_Helper_Data')
-            ->setMethods(array('isAdminAndUseJsInAdmin'))
-            ->disableOriginalConstructor()
-            ->disableOriginalClone()
-            ->disableArgumentCloning()
+            ->setMethods()
             ->getMock();
     }
 
     /**
-     * @inheritdoc
+     * @test
+     *
+     * @covers ::buildOnCheckCallback
      */
-    public function testBuildOnCheckCallback()
+    public function buildOnCheckCallback_whenCheckoutTypeIsMultiPage_returnsEmptyString()
     {
         $checkoutType = Bolt_Boltpay_Block_Checkout_Boltpay::CHECKOUT_TYPE_MULTI_PAGE;
-        $quote = Mage::getModel('sales/quote');
-        $quote->setId(6);
-
-        $result = $this->currentMock->buildOnCheckCallback($checkoutType, $quote);
-
+        $result = $this->currentMock->buildOnCheckCallback($checkoutType);
         $this->assertEquals('', $result);
     }
 
     /**
-     * @inheritdoc
+     * @test
+     *
+     * @covers ::buildOnCheckCallback
+     *
+     * @dataProvider buildOnCheckCallback_whenCheckoutTypeIsAdmin_returnsCorrectJsProvider
      */
-    public function testBuildOnCheckCallbackIfAdminArea()
+    public function buildOnCheckCallback_whenCheckoutTypeIsAdmin_returnsCorrectJs($isVirtualQuote)
     {
         $checkoutType = Bolt_Boltpay_Block_Checkout_Boltpay::CHECKOUT_TYPE_ADMIN;
-        $isVirtualQuote = false;
         $checkCallback = "
-                    if ((typeof editForm !== 'undefined') && (typeof editForm.validate === 'function')) {
-                        var bolt_hidden = document.getElementById('boltpay_payment_button');
-                        bolt_hidden.classList.remove('required-entry');
-        
-                        var is_valid = true;
-        
-                        if (!editForm.validate()) {
-                            return false;
-                        } ". ($isVirtualQuote ? "" : " else {
-                            var shipping_method = $$('input:checked[type=\"radio\"][name=\"order[shipping_method]\"]')[0] || $$('input:checked[type=\"radio\"][name=\"shipping_method\"]')[0];
-                            if (typeof shipping_method === 'undefined') {
-                                alert('".Mage::helper('boltpay')->__('Please select a shipping method.')."');
-                                return false;
-                            }
-                        } "). "
-        
-                        bolt_hidden.classList.add('required-entry');
-                    }
-                    ";
-
-        $result = $this->currentMock->buildOnCheckCallback($checkoutType, $isVirtualQuote);
-
-        $this->assertEquals(preg_replace('/\s/', '', $checkCallback), preg_replace('/\s/', '', $result));
-    }
-
-    /**
-     * @inheritdoc
-     */
-    public function testBuildOnSuccessCallback()
-    {
-        $this->app->getStore()->setConfig('payment/boltpay/success', '');
-        $successCustom = "console.log('test')";
-        $checkoutType = Bolt_Boltpay_Block_Checkout_Boltpay::CHECKOUT_TYPE_MULTI_PAGE;
-        $saveOrderUrl = Mage::helper('boltpay')->getMagentoUrl("boltpay/order/save/checkoutType/$checkoutType");
-
-        $result = $this->currentMock->buildOnSuccessCallback($successCustom, $checkoutType);
-
-        $this->assertStringStartsWith('function', $result);
-        $this->assertContains($successCustom, $result);
-    }
-
-    /**
-     * @inheritdoc
-     */
-    public function testBuildOnSuccessCallbackIfAdminArea()
-    {
-        $this->app->getStore()->setConfig('payment/boltpay/success', '');
-        $successCustom = "console.log('test')";
-        $checkoutType = Bolt_Boltpay_Block_Checkout_Boltpay::CHECKOUT_TYPE_ADMIN;
-
-        $expected = "function(transaction, callback) {
-                $successCustom
-
-                var input = document.createElement('input');
-                input.setAttribute('type', 'hidden');
-                input.setAttribute('name', 'bolt_reference');
-                input.setAttribute('value', transaction.reference);
-                document.getElementById('edit_form').appendChild(input);
-
-                // order and order.submit should exist for admin
-                if ((typeof order !== 'undefined' ) && (typeof order.submit === 'function')) {
-                    window.order_completed = true;
-                    callback();
-                }
-            }";
-
-        $result = $this->currentMock->buildOnSuccessCallback($successCustom, $checkoutType);
-
-        $this->assertEquals(preg_replace('/\s/', '', $expected), preg_replace('/\s/', '', $result));
-
-    }
-
-    /**
-     * @inheritdoc
-     */
-    public function testBuildOnCloseCallback()
-    {
-        $successUrl = Mage::helper('boltpay')->getMagentoUrl('checkout/onepage/success');
-        $checkoutType = Bolt_Boltpay_Block_Checkout_Boltpay::CHECKOUT_TYPE_ONE_PAGE;
-        $closeCustom = 'console.log("test");';
-
-        $result = $this->currentMock->buildOnCloseCallback($closeCustom, $checkoutType);
-
-        $this->assertContains($closeCustom, $result);
-        $this->assertNotEquals($closeCustom, $result);
-    }
-
-    /**
-     * @inheritdoc
-     */
-    public function testBuildOnCloseCallbackIfAdminArea()
-    {
-        $checkoutType = Bolt_Boltpay_Block_Checkout_Boltpay::CHECKOUT_TYPE_ADMIN;
-        $closeCustom = '';
-
-        $expected = "
-             if (window.order_completed && (typeof order !== 'undefined' ) && (typeof order.submit === 'function')) {
-                $closeCustom
+            if ((typeof editForm !== 'undefined') && (typeof editForm.validate === 'function')) {
                 var bolt_hidden = document.getElementById('boltpay_payment_button');
                 bolt_hidden.classList.remove('required-entry');
-                order.submit();
-             }
+
+                var is_valid = true;
+
+                if (!editForm.validate()) {
+                    return false;
+                } " . ($isVirtualQuote ? "" : " else {
+                    var shipping_method = $$('input:checked[type=\"radio\"][name=\"order[shipping_method]\"]')[0] || $$('input:checked[type=\"radio\"][name=\"shipping_method\"]')[0];
+                    if (typeof shipping_method === 'undefined') {
+                        alert('" . Mage::helper('boltpay')->__('Please select a shipping method.') . "');
+                        return false;
+                    }
+                } ") . "
+
+                bolt_hidden.classList.add('required-entry');
+            }
         ";
+        $result = $this->currentMock->buildOnCheckCallback($checkoutType, $isVirtualQuote);
+        $this->assertEquals(
+            preg_replace('/\s/', '', $checkCallback),
+            preg_replace('/\s/', '', $result)
+        );
+    }
 
-        $result = $this->currentMock->buildOnCloseCallback($closeCustom, $checkoutType);
+    /**
+     * Data provider for {@see buildOnCheckCallback_whenCheckoutTypeIsAdmin_returnsCorrectJs}
+     *
+     * @return array containing if quote is virtual
+     */
+    public function buildOnCheckCallback_whenCheckoutTypeIsAdmin_returnsCorrectJsProvider()
+    {
+        return array(
+            array('isVirtualQuote' => true),
+            array('isVirtualQuote' => false),
+        );
+    }
 
-        $this->assertEquals(preg_replace('/\s/', '', $expected), preg_replace('/\s/', '', $result));
+    /**
+     * @test
+     * that buildOnCheckCallback returns the correct string whether isVirtual quote is true or not
+     *
+     * @covers ::buildOnCheckCallback
+     */
+    public function buildOnCheckCallback_whenCheckoutTypeIsFireCheckout_returnsCorrectJs()
+    {
+        $expected = 'if (!checkout.validate()) return false;';
+        $trueResult = $this->currentMock->buildOnCheckCallback(
+            Bolt_Boltpay_Block_Checkout_Boltpay::CHECKOUT_TYPE_FIRECHECKOUT,
+            true
+        );
+        $falseResult = $this->currentMock->buildOnCheckCallback(
+            Bolt_Boltpay_Block_Checkout_Boltpay::CHECKOUT_TYPE_FIRECHECKOUT,
+            false
+        );
+        $this->assertEquals(
+            preg_replace('/\s+/', '', $expected),
+            preg_replace('/\s+/', '', $trueResult)
+        );
+        $this->assertEquals(
+            preg_replace('/\s+/', '', $expected),
+            preg_replace('/\s+/', '', $falseResult)
+        );
     }
 
     /**
@@ -201,18 +119,43 @@ class Bolt_Boltpay_Helper_DataTest extends PHPUnit_Framework_TestCase
      * that buildOnCheckCallback returns quantity check for product page checkout regardless if quote is virtual or not
      *
      * @covers ::buildOnCheckCallback
-     *
-     * @dataProvider buildOnCheckCallback_whenCheckoutTypeIsProductPageProvider
-     *
-     * @param bool $isVirtualQuote flag designating whether quote is virtual or not
      */
-    public function buildOnCheckCallback_whenCheckoutTypeIsProductPage_returnsBoltConfigPDPValidation($isVirtualQuote)
+    public function buildOnCheckCallback_whenCheckoutTypeIsProductPage_returnsBoltConfigPDPValidation()
     {
-        $expected = /** @lang JavaScript */  'if (!boltConfigPDP.validate()) return false;';
-        $result = $this->currentMock->buildOnCheckCallback(
+        $expected = 'if (!boltConfigPDP.validate()) return false;';
+        $trueResult = $this->currentMock->buildOnCheckCallback(
             Bolt_Boltpay_Block_Checkout_Boltpay::CHECKOUT_TYPE_PRODUCT_PAGE,
-            $isVirtualQuote
+            true
         );
+        $falseResult = $this->currentMock->buildOnCheckCallback(
+            Bolt_Boltpay_Block_Checkout_Boltpay::CHECKOUT_TYPE_PRODUCT_PAGE,
+            false
+        );
+        $this->assertEquals(
+            preg_replace('/\s+/', '', $expected),
+            preg_replace('/\s+/', '', $trueResult)
+        );
+        $this->assertEquals(
+            preg_replace('/\s+/', '', $expected),
+            preg_replace('/\s+/', '', $falseResult)
+        );
+    }
+
+    /**
+     * @test
+     *
+     * @covers ::buildOnSuccessCallback
+     */
+    public function buildOnSuccessCallback_whenCheckoutTypeIsNotAdmin_returnsCorrectJs()
+    {
+        $successCustom = "console.log('test');";
+        $expected = "function(transaction, callback) {
+            window.bolt_transaction_reference = transaction.reference;
+            $successCustom
+            callback();
+        }";
+        $checkoutType = Bolt_Boltpay_Block_Checkout_Boltpay::CHECKOUT_TYPE_MULTI_PAGE;
+        $result = $this->currentMock->buildOnSuccessCallback($successCustom, $checkoutType);
         $this->assertEquals(
             preg_replace('/\s+/', '', $expected),
             preg_replace('/\s+/', '', $result)
@@ -221,49 +164,210 @@ class Bolt_Boltpay_Helper_DataTest extends PHPUnit_Framework_TestCase
 
     /**
      * @test
-     * that buildOnCheckCallback returns quantity check for product page checkout regardless if quote is virtual or not
-     * if product is not in stock that always fails
      *
-     * @covers ::buildOnCheckCallback
-     *
-     * @dataProvider buildOnCheckCallback_whenCheckoutTypeIsProductPageProvider
-     *
-     * @param bool $isVirtualQuote flag designating whether quote is virtual or not
-     *
-     * @throws Mage_Core_Exception if unable to stub current product
+     * @covers ::buildOnSuccessCallback
      */
-    public function buildOnCheckCallback_whenCheckoutTypeIsProductPageAndProductIsOutOfStock_returnsCheckThatFails($isVirtualQuote)
+    public function buildOnSuccessCallback_whenCheckoutTypeIsAdmin_returnsCorrectJs()
     {
-        $this->markTestSkipped('Stock validation delegated to boltConfigPDP');
-        $stockItem = Mage::getModel(
-            'cataloginventory/stock_item',
-            array('qty'                     => mt_rand(),
-                  'is_in_stock'             => false,
-                  'manage_stock'            => true,
-                  'use_config_manage_stock' => false
-            )
-        );
-        $product = Mage::getModel('catalog/product', array('stock_item' => $stockItem));
+        $successCustom = "console.log('test');";
+        $expected = "function(transaction, callback) {
+            $successCustom
 
-        Bolt_Boltpay_TestHelper::stubRegistryValue('current_product', $product);
-        $expected = 'return false;';
-        $result = $this->currentMock->buildOnCheckCallback(
-            Bolt_Boltpay_Block_Checkout_Boltpay::CHECKOUT_TYPE_PRODUCT_PAGE,
-            $isVirtualQuote
+            var input = document.createElement('input');
+            input.setAttribute('type', 'hidden');
+            input.setAttribute('name', 'bolt_reference');
+            input.setAttribute('value', transaction.reference);
+            document.getElementById('edit_form').appendChild(input);
+
+            // order and order.submit should exist for admin
+            if ((typeof order !== 'undefined' ) && (typeof order.submit === 'function')) { 
+                window.order_completed = true;
+                callback();
+            }
+        }";
+        $checkoutType = Bolt_Boltpay_Block_Checkout_Boltpay::CHECKOUT_TYPE_ADMIN;
+        $result = $this->currentMock->buildOnSuccessCallback($successCustom, $checkoutType);
+        $this->assertEquals(
+            preg_replace('/\s+/', '', $expected),
+            preg_replace('/\s+/', '', $result)
         );
-        $this->assertEquals(preg_replace('/\s+/', '', $expected), preg_replace('/\s+/', '', $result));
     }
 
     /**
-     * Data provider for {@see buildOnCheckCallback_whenCheckoutTypeIsProductPage_returnsQuantityCheck}
+     * @test
      *
-     * @return array containing if quote is virtual
+     * @covers ::buildOnCloseCallback
      */
-    public function buildOnCheckCallback_whenCheckoutTypeIsProductPageProvider()
+    public function buildOnCloseCallback_whenCheckoutTypeIsAdmin_returnsCorrectJs()
+    {
+        $checkoutType = Bolt_Boltpay_Block_Checkout_Boltpay::CHECKOUT_TYPE_ADMIN;
+        $closeCustom = "console.log('test');";
+        $expected = "
+             if (window.order_completed && (typeof order !== 'undefined' ) && (typeof order.submit === 'function')) {
+                $closeCustom
+                var bolt_hidden = document.getElementById('boltpay_payment_button');
+                bolt_hidden.classList.remove('required-entry');
+                order.submit();
+             }
+        ";
+        $result = $this->currentMock->buildOnCloseCallback($closeCustom, $checkoutType);
+        $this->assertEquals(
+            preg_replace('/\s/', '', $expected),
+            preg_replace('/\s/', '', $result)
+        );
+    }
+
+    /**
+     * @test
+     *
+     * @covers ::buildOnCloseCallback
+     *
+     * @dataProvider buildOnCloseCallback_whenCheckoutTypeIsNotAdmin_returnsCorrectJsProvider
+     */
+    public function buildOnCloseCallback_whenCheckoutTypeIsFirecheckout_returnsCorrectJs($successUrl, $appendChar)
+    {
+        $urlMock = $this->getMockBuilder('Mage_Core_Model_Url')
+            ->setMethods(array('sessionUrlVar'))
+            ->getMock();
+
+        $urlMock->expects($this->once())->method('sessionUrlVar')
+            ->willReturn($successUrl);
+
+        TestHelper::stubModel('core/url', $urlMock);
+
+        $checkoutType = Bolt_Boltpay_Block_Checkout_Boltpay::CHECKOUT_TYPE_FIRECHECKOUT;
+        $closeCustom = "console.log('test');";
+        $expected = "
+            $closeCustom
+            isFireCheckoutFormValid = false;
+            initBoltButtons();
+            if (window.bolt_transaction_reference) {
+                 window.location = '$successUrl'+'$appendChar'+'bolt_transaction_reference='+window.bolt_transaction_reference;
+            }
+        ";
+        $result = $this->currentMock->buildOnCloseCallback($closeCustom, $checkoutType);
+        $this->assertEquals(
+            preg_replace('/\s/', '', $expected),
+            preg_replace('/\s/', '', $result)
+        );
+
+        TestHelper::restoreOriginals();
+    }
+
+    /**
+     * @test
+     *
+     * @covers ::buildOnCloseCallback
+     *
+     * @dataProvider buildOnCloseCallback_whenCheckoutTypeIsNotAdmin_returnsCorrectJsProvider
+     */
+    public function buildOnCloseCallback_whenCheckoutTypeIsMultiPage_returnsCorrectJs($successUrl, $appendChar)
+    {
+        $urlMock = $this->getMockBuilder('Mage_Core_Model_Url')
+            ->setMethods(array('sessionUrlVar'))
+            ->getMock();
+
+        $urlMock->expects($this->once())->method('sessionUrlVar')
+            ->willReturn($successUrl);
+
+        TestHelper::stubModel('core/url', $urlMock);
+
+        $checkoutType = Bolt_Boltpay_Block_Checkout_Boltpay::CHECKOUT_TYPE_MULTI_PAGE;
+        $closeCustom = "console.log('test');";
+        $expected = "
+            $closeCustom
+            if (window.bolt_transaction_reference) {
+                 window.location = '$successUrl'+'$appendChar'+'bolt_transaction_reference='+window.bolt_transaction_reference;
+            }
+        ";
+        $result = $this->currentMock->buildOnCloseCallback($closeCustom, $checkoutType);
+        $this->assertEquals(
+            preg_replace('/\s/', '', $expected),
+            preg_replace('/\s/', '', $result)
+        );
+
+        TestHelper::restoreOriginals();
+    }
+
+    /**
+     * Data provider for {@see buildOnCloseCallback_whenCheckoutTypeIsFirecheckout_returnsCorrectJs}
+     *               and {@see buildOnCloseCallback_whenCheckoutTypeIsMultiPage_returnsCorrectJs}
+     *
+     * @return array
+     */
+    public function buildOnCloseCallback_whenCheckoutTypeIsNotAdmin_returnsCorrectJsProvider()
     {
         return array(
-            array('isVirtualQuote' => true),
-            array('isVirtualQuote' => false),
+            array('successUrl' => 'http://test.com/success', 'appendChar' => '?'),
+            array('successUrl' => 'http://test.com/success?blah=1', 'appendChar' => '&'),
         );
+    }
+
+    /**
+     * @test
+     *
+     * @covers ::getBoltCallbacks
+     */
+    public function getBoltCallbacks_returnsCorrectJs()
+    {
+        TestHelper::stubConfigValue('payment/boltpay/check', '');
+        TestHelper::stubConfigValue('payment/boltpay/on_checkout_start', '');
+        TestHelper::stubConfigValue('payment/boltpay/on_email_enter', '');
+        TestHelper::stubConfigValue('payment/boltpay/on_shipping_details_complete', '');
+        TestHelper::stubConfigValue('payment/boltpay/on_shipping_options_complete', '');
+        TestHelper::stubConfigValue('payment/boltpay/on_payment_submit', '');
+        TestHelper::stubConfigValue('payment/boltpay/success', '');
+        TestHelper::stubConfigValue('payment/boltpay/close', '');
+
+        $urlMock = $this->getMockBuilder('Mage_Core_Model_Url')
+            ->setMethods(array('sessionUrlVar'))
+            ->getMock();
+
+        $urlMock->expects($this->once())->method('sessionUrlVar')
+            ->willReturn("http://test.com/success");
+
+        TestHelper::stubModel('core/url', $urlMock);
+
+        $expected = "{
+          check: function() {
+            if (do_checks++) {
+                if (!boltConfigPDP.validate()) return false;
+            }
+            return true;
+          },
+          onCheckoutStart: function() {
+            // This function is called after the checkout form is presented to the user.
+          },
+          onEmailEnter: function(email) {
+            // This function is called after the user enters their email address.
+          },
+          onShippingDetailsComplete: function() {
+            // This function is called when the user proceeds to the shipping options page.
+            // This is applicable only to multi-step checkout.
+          },
+          onShippingOptionsComplete: function() {
+            // This function is called when the user proceeds to the payment details page.
+            // This is applicable only to multi-step checkout.
+          },
+          onPaymentSubmit: function() {
+            // This function is called after the user clicks the pay button.
+          },
+          success: function(transaction, callback) {
+            window.bolt_transaction_reference = transaction.reference;
+            callback();
+          },
+          close: function() {
+            if (window.bolt_transaction_reference) {
+                 window.location = 'http://test.com/success'+'?'+'bolt_transaction_reference='+window.bolt_transaction_reference;
+            }
+          }
+        }";
+        $result = $this->currentMock->getBoltCallbacks(Bolt_Boltpay_Block_Checkout_Boltpay::CHECKOUT_TYPE_PRODUCT_PAGE);
+        $this->assertEquals(
+            preg_replace('/\s/', '', $expected),
+            preg_replace('/\s/', '', $result)
+        );
+
+        TestHelper::restoreOriginals();
     }
 }

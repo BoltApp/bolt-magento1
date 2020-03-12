@@ -118,13 +118,13 @@ trait Bolt_Boltpay_Helper_BugsnagTrait
         $requestBody = file_get_contents('php://input');
 
         return array(
-                "Requested-URL" => $_SERVER["HTTP_HOST"] . $_SERVER['REQUEST_URI'],
-                "Magento-Version" => Mage::getVersion(),
-                "Bolt-Plugin-Version" => $version,
-                "Request-Method" => $_SERVER['REQUEST_METHOD'],
-                "Request-Body" => $requestBody,
-                "Time" => date("D M j, Y - G:i:s T")
-            ) + static::getRequestHeaders();
+            "Requested-URL" => $_SERVER["HTTP_HOST"] . $_SERVER['REQUEST_URI'],
+            "Magento-Version" => Mage::getVersion(),
+            "Bolt-Plugin-Version" => $version,
+            "Request-Method" => $_SERVER['REQUEST_METHOD'],
+            "Request-Body" => $requestBody,
+            "Time" => date("D M j, Y - G:i:s T")
+        ) + static::getRequestHeaders();
     }
 
     private static function getRequestHeaders()

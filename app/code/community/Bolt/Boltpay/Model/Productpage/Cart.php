@@ -220,12 +220,26 @@ class Bolt_Boltpay_Model_Productpage_Cart extends Bolt_Boltpay_Model_Abstract
         $quote->setIsSuperMode(true);
         ///////////////////////////////////////////////
 
+        $handledProductIds = array();
         foreach ($cartItems as $cartItem) {
             $productId = @$cartItem->reference;
-
-            $product = Mage::getModel('catalog/product')->load($productId);
-
             parse_str($cartItem->options, $params);
+
+            if (in_array($productId, $handledProductIds)) {
+                continue;
+            }
+
+            if (array_key_exists('super_group', $params)) {
+                $productId = $params['product'];
+                foreach ($params['super_group'] as $id => $qty) {
+                    if ($qty > 0) {
+                        $handledProductIds[] = $id;
+                    }
+                }
+            }
+
+            /** @var Mage_Catalog_Model_Product $product */
+            $product = Mage::getModel('catalog/product')->load($productId);
 
             $params = array_merge(
                 $params,
@@ -236,6 +250,7 @@ class Bolt_Boltpay_Model_Productpage_Cart extends Bolt_Boltpay_Model_Abstract
             );
             $cart->addProduct($product, $params);
         }
+
         if ($customerId = $this->getCartRequestCustomerId()) {
             /** @var Mage_Customer_Model_Customer $customer */
             $customer = Mage::getModel('customer/customer')->load($customerId);

@@ -15,6 +15,8 @@
  * @license    http://opensource.org/licenses/osl-3.0.php  Open Software License (OSL 3.0)
  */
 
+use GuzzleHttp\Exception\GuzzleException;
+
 /**
  * Trait Bolt_Boltpay_Helper_ApiTrait
  *
@@ -24,7 +26,6 @@
  * 2. Verifying Hook Requests.
  * 3. Making the calls towards Bolt API.
  * 4. Generates Bolt order submission data.
- *
  */
 trait Bolt_Boltpay_Helper_ApiTrait
 {
@@ -49,10 +50,9 @@ trait Bolt_Boltpay_Helper_ApiTrait
     /**
      * A call to Fetch Bolt API endpoint. Gets the transaction info.
      *
-     * @param string $reference        Bolt transaction reference
-     *
-     * @throws Exception  thrown if a call fails
+     * @param string $reference Bolt transaction reference
      * @return bool|mixed Transaction info
+     * @throws GuzzleException
      */
     public function fetchTransaction($reference)
     {
@@ -69,7 +69,7 @@ trait Bolt_Boltpay_Helper_ApiTrait
     private function verify_hook_secret($payload, $hmacHeader)
     {
         $signingSecret = Mage::helper('core')->decrypt(Mage::getStoreConfig('payment/boltpay/signing_key'));
-        $computedHmac  = trim(base64_encode(hash_hmac('sha256', $payload, $signingSecret, true)));
+        $computedHmac = trim(base64_encode(hash_hmac('sha256', $payload, $signingSecret, true)));
         return $hmacHeader == $computedHmac;
     }
 
@@ -79,6 +79,7 @@ trait Bolt_Boltpay_Helper_ApiTrait
      * @param $payload
      * @param $hmacHeader
      * @return bool if signature is verified
+     * @throws GuzzleException
      */
     private function verify_hook_api($payload, $hmacHeader)
     {
@@ -86,16 +87,16 @@ trait Bolt_Boltpay_Helper_ApiTrait
             $url = $this->getApiUrl() . "/v1/merchant/verify_signature";
             $key = Mage::helper('core')->decrypt(Mage::getStoreConfig('payment/boltpay/api_key'));
 
-            $httpHeader =array(
-                'X-Api-Key'=> $key,
-                'X-Bolt-Hmac-Sha256'=> $hmacHeader,
-                'X-Nonce'=> rand(100000000, 999999999)
+            $httpHeader = array(
+                'X-Api-Key' => $key,
+                'X-Bolt-Hmac-Sha256' => $hmacHeader,
+                'X-Nonce' => rand(100000000, 999999999)
             );
 
-            $this->addMetaData(array('BOLT API REQUEST' => array('verify-hook-api-header'=>$httpHeader)),true);
-            $this->addMetaData(array('BOLT API REQUEST' => array('verify-hook-api-data'=>$payload)),true);
-            $apiClient = $this->getApiClient()->post($url,$payload,$httpHeader);
-            $this->addMetaData(array('BOLT API RESPONSE' => array('verify-hook-api-response'=>(string)$apiClient->getBody())),true);
+            $this->addMetaData(array('BOLT API REQUEST' => array('verify-hook-api-header' => $httpHeader)), true);
+            $this->addMetaData(array('BOLT API REQUEST' => array('verify-hook-api-data' => $payload)), true);
+            $apiClient = $this->getApiClient()->post($url, $payload, $httpHeader);
+            $this->addMetaData(array('BOLT API RESPONSE' => array('verify-hook-api-response' => (string)$apiClient->getBody())), true);
 
             return $apiClient->getStatusCode() == 200;
         } catch (Exception $e) {
@@ -111,6 +112,7 @@ trait Bolt_Boltpay_Helper_ApiTrait
      * @param $payload
      * @param $hmacHeader
      * @return bool
+     * @throws GuzzleException
      */
     public function verify_hook($payload, $hmacHeader)
     {
@@ -120,20 +122,20 @@ trait Bolt_Boltpay_Helper_ApiTrait
     /**
      * Calls the Bolt API endpoint.
      *
-     * @param string $command  The endpoint to be called
-     * @param string $data     an object to be encoded to JSON as the value passed to the endpoint
-     * @param string $object   defines part of endpoint url which is normally/always??? set to merchant
-     * @param string $type     Defines the endpoint type (i.e. order|transactions|sign) that is used as part of the url
+     * @param string $command The endpoint to be called
+     * @param string $data an object to be encoded to JSON as the value passed to the endpoint
+     * @param string $object defines part of endpoint url which is normally/always??? set to merchant
+     * @param string $type Defines the endpoint type (i.e. order|transactions|sign) that is used as part of the url
      * @param null $storeId
      * @return mixed           Object derived from Json got as a response
-     * @throws \GuzzleHttp\Exception\GuzzleException thrown if an error is detected in a response
+     * @throws GuzzleException thrown if an error is detected in a response
      */
-    public function transmit($command, $data, $object='merchant', $type='transactions', $storeId = null)
+    public function transmit($command, $data, $object = 'merchant', $type = 'transactions', $storeId = null)
     {
         try {
             $url = $this->getApiUrl($storeId) . 'v1/';
 
-            if($command == 'sign' || $command == 'orders') {
+            if ($command == 'sign' || $command == 'orders') {
                 $url .= $object . '/' . $command;
             } elseif ($command == null || $command == '') {
                 $url .= $object;
@@ -154,21 +156,21 @@ trait Bolt_Boltpay_Helper_ApiTrait
 
             $headerInfo = $this->constructRequestHeaders($params, $key);
 
-            $this->addMetaData(array('BOLT API REQUEST' => array('header'=>$headerInfo)));
-            $this->addMetaData(array('BOLT API REQUEST' => array('data'=>$data)),true);
-            if($params){
-                $response =  (string)$this->getApiClient()->post($url,$params,$headerInfo)->getBody();
-            }else{
-                $response =  (string)$this->getApiClient()->get($url,$headerInfo)->getBody();
+            $this->addMetaData(array('BOLT API REQUEST' => array('header' => $headerInfo)));
+            $this->addMetaData(array('BOLT API REQUEST' => array('data' => $data)), true);
+            if ($params) {
+                $response = (string)$this->getApiClient()->post($url, $params, $headerInfo)->getBody();
+            } else {
+                $response = (string)$this->getApiClient()->get($url, $headerInfo)->getBody();
             }
 
             $resultJSON = json_decode($response);
 
-            $this->addMetaData(array('BOLT API RESPONSE' => array('verify-hook-api-response'=>$resultJSON)),true);
+            $this->addMetaData(array('BOLT API RESPONSE' => array('verify-hook-api-response' => $resultJSON)), true);
             Mage::getModel('boltpay/payment')->debugData($resultJSON);
 
             return $resultJSON;
-        }catch (\Exception $e){
+        } catch (Exception $e) {
             $this->notifyException($e);
             $this->logException($e);
             throw $e;
@@ -192,20 +194,18 @@ trait Bolt_Boltpay_Helper_ApiTrait
      *
      * @param $params Request body
      * @param $key Merchant key
-     *
-     * @return array
+     * @return array header info
      */
     private function constructRequestHeaders($params, $key)
     {
         $contextInfo = $this->getContextInfo();
 
-        $headerInfo = array(
+        return array(
             'User-Agent' => 'BoltPay/Magento-' . $contextInfo["Magento-Version"] . '/' . $contextInfo["Bolt-Plugin-Version"],
             'Content-Length' => strlen($params),
             'X-Nonce' => rand(100000000, 999999999),
             'X-Bolt-Plugin-Version' => $contextInfo["Bolt-Plugin-Version"],
             'X-Api-Key' => Mage::helper('core')->decrypt($key),
         );
-        return $headerInfo;
     }
 }

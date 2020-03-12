@@ -750,6 +750,49 @@ class Bolt_Boltpay_Model_OrderTest extends PHPUnit_Framework_TestCase
     }
 
     /**
+     * @test
+     * that validateTotals loads quote item by product id if is_bolt_pdp flag is set on quote
+     * by expecting exception message to be thrown due to different prices betwen product and transaction item
+     *
+     * @covers ::validateTotals
+     *
+     * @expectedException Bolt_Boltpay_OrderCreationException
+     * @expectedExceptionCode 2001004
+     * @expectedExceptionMessage "old_price": "23200", "new_price": "13200"
+     *
+     * @throws ReflectionException if validateTotals method doesn't exist
+     * @throws Mage_Core_Exception if unable to add product to cart
+     * @throws Exception if unable to create dummy product
+     */
+    public function validateTotals_fromProductPageCheckout_loadsCartItemByProductIdAndThrowsException()
+    {
+        $productId = Bolt_Boltpay_ProductProvider::createDummyProduct(
+            uniqid('validate_totals_ppc'),
+            array('price' => 132)
+        );
+        $transaction = new stdClass();
+        $transaction->order->cart->items = array(
+            (object)array('reference' => $productId, 'total_amount' => (object)array('amount' => 23200))
+        );
+        $cart = Mage::getModel('checkout/cart', array('quote' => Mage::getModel('sales/quote')));
+        $cart->addProduct($productId, 1);
+        $quote = $cart->getQuote();
+        $quote->getShippingAddress()->setPaymentMethod('boltpay');
+        $quote->getPayment()->importData(array('method' => Bolt_Boltpay_Model_Payment::METHOD_CODE));
+        $quote->setData('is_bolt_pdp', 1)->save();
+        try {
+            TestHelper::callNonPublicFunction(
+                $this->currentMock,
+                'validateTotals',
+                array($quote, $transaction)
+            );
+        } catch (Exception $e) {
+            Bolt_Boltpay_ProductProvider::deleteDummyProduct($productId);
+            throw $e;
+        }
+    }
+
+    /**
      * Setup method for tests covering {@see Bolt_Boltpay_Model_Order::createOrder}
      *
      * @return array containing mock instance, product id, parent quote id, immutable quote id and transaction
@@ -2076,8 +2119,7 @@ class Bolt_Boltpay_Model_OrderTest extends PHPUnit_Framework_TestCase
                         'salesrule/rule',
                         array('to_date' => Mage::getSingleton('core/date')->date(null, '-10 days'))
                     )
-                )
-            ,
+                ),
             $couponConfig =
                 array(
                     "reference" => self::COUPON_CODE,
@@ -2121,8 +2163,7 @@ class Bolt_Boltpay_Model_OrderTest extends PHPUnit_Framework_TestCase
                         'salesrule/rule',
                         array('is_active' => 0)
                     )
-                )
-            ,
+                ),
             $couponConfig =
                 array(
                     "reference" => self::COUPON_CODE,
@@ -2160,8 +2201,7 @@ class Bolt_Boltpay_Model_OrderTest extends PHPUnit_Framework_TestCase
                         'salesrule/rule',
                         array('to_date' => Mage::getSingleton('core/date')->date(null, '+1 days'))
                     )
-                )
-            ,
+                ),
             $couponConfig =
                 array(
                     "reference" => self::COUPON_CODE,
@@ -2620,11 +2660,14 @@ class Bolt_Boltpay_Model_OrderTest extends PHPUnit_Framework_TestCase
 
     /**
      * @test
+     *
+     * @covers ::applyShipmentToQuoteFromTransaction
+     *
      * @throws ReflectionException
      */
     public function applyShipmentToQuoteFromTransaction_withVirtualCart_doesNotApplyShipment()
     {
-        $this->boltShippingAndTax->expects(self::never())->method('applyBoltAddressData');
+        $this->boltShippingAndTax->expects($this->never())->method('applyBoltAddressData');
         TestHelper::stubModel('boltpay/shippingAndTax', $this->boltShippingAndTax);
 
         TestHelper::callNonPublicFunction(
@@ -2633,7 +2676,119 @@ class Bolt_Boltpay_Model_OrderTest extends PHPUnit_Framework_TestCase
             array(
                 $this->immutableQuoteMock,
                 new stdClass(),
-                1
+                true
+            )
+        );
+
+        TestHelper::restoreModel('boltpay/shippingAndTax');
+    }
+
+    /**
+     * @test
+     *
+     * @covers ::applyShipmentToQuoteFromTransaction
+     *
+     * @throws ReflectionException
+     */
+    public function applyShipmentToQuoteFromTransaction_withNoShippingMethodCode_callsNotifyExceptionAndLogWarning()
+    {
+        $shippingAddressMock = $this->getClassPrototype('Mage_Sales_Model_Quote_Address')
+            ->setMethods(array('getAllShippingRates'))
+            ->getMock();
+        $shippingAddressMock->method('getAllShippingRates')->willReturn(array());
+        $this->immutableQuoteMock->method('getShippingAddress')->willReturn($shippingAddressMock);
+        $this->boltShippingAndTax->expects($this->once())->method('applyBoltAddressData');
+        $this->boltShippingAndTax->expects($this->never())->method('applyShippingRate');
+        TestHelper::stubModel('boltpay/shippingAndTax', $this->boltShippingAndTax);
+        $this->boltHelperMock->expects($this->once())->method('logWarning');
+        $this->boltHelperMock->expects($this->once())->method('notifyException');
+
+        $transaction = new stdClass();
+        $transaction->order = new stdClass();
+        $transaction->order->cart = new stdClass();
+        $transaction->order->cart->shipments = array(new stdClass());
+        $transaction->order->cart->shipments[0]->service = 'fake service';
+        TestHelper::callNonPublicFunction(
+            $this->currentMock,
+            'applyShipmentToQuoteFromTransaction',
+            array(
+                $this->immutableQuoteMock,
+                $transaction,
+                false
+            )
+        );
+
+        TestHelper::restoreModel('boltpay/shippingAndTax');
+    }
+
+    /**
+     * @test
+     *
+     * @covers ::applyShipmentToQuoteFromTransaction
+     */
+    public function applyShipmentToQuoteFromTransaction_withNoReferencePassedIn_fallsBackToService()
+    {
+        $rateMock = $this->getClassPrototype('Mage_Sales_Model_Quote_Address_Rate')
+            ->setMethods(array('getCarrierTitle', 'getCarrier', 'getMethodTitle', 'getMethod'))
+            ->getMock();
+        $rateMock->method('getCarrierTitle')->willReturn('Fedex');
+        $rateMock->method('getCarrier')->willReturn('fedex');
+        $rateMock->method('getMethodTitle')->willReturn('Ground');
+        $rateMock->method('getMethod')->willReturn('ground');
+        $shippingAddressMock = $this->getClassPrototype('Mage_Sales_Model_Quote_Address')
+            ->setMethods(array('getAllShippingRates'))
+            ->getMock();
+        $shippingAddressMock->method('getAllShippingRates')->willReturn(array($rateMock));
+        $this->immutableQuoteMock->method('getShippingAddress')->willReturn($shippingAddressMock);
+        $this->boltShippingAndTax->expects($this->once())->method('applyBoltAddressData');
+        $this->boltShippingAndTax->expects($this->once())->method('applyShippingRate')
+            ->with($this->immutableQuoteMock, 'fedex_ground', true);
+        TestHelper::stubModel('boltpay/shippingAndTax', $this->boltShippingAndTax);
+
+        $transaction = new stdClass();
+        $transaction->order = new stdClass();
+        $transaction->order->cart = new stdClass();
+        $transaction->order->cart->shipments = array(new stdClass());
+        $transaction->order->cart->shipments[0]->service = 'Fedex - Ground';
+        TestHelper::callNonPublicFunction(
+            $this->currentMock,
+            'applyShipmentToQuoteFromTransaction',
+            array(
+                $this->immutableQuoteMock,
+                $transaction,
+                false
+            )
+        );
+
+        TestHelper::restoreModel('boltpay/shippingAndTax');
+    }
+
+    /**
+     * @test
+     *
+     * @covers ::applyShipmentToQuoteFromTransaction
+     *
+     * @throws ReflectionException
+     */
+    public function applyShipmentToQuoteFromTransaction_withShippingMethodCode_callsApplyShippingRate()
+    {
+        $this->boltShippingAndTax->expects($this->once())->method('applyBoltAddressData');
+        $this->boltShippingAndTax->expects($this->once())->method('applyShippingRate')
+            ->with($this->immutableQuoteMock, 'ground', false);
+        TestHelper::stubModel('boltpay/shippingAndTax', $this->boltShippingAndTax);
+
+        $transaction = new stdClass();
+        $transaction->order = new stdClass();
+        $transaction->order->cart = new stdClass();
+        $transaction->order->cart->shipments = array(new stdClass());
+        $transaction->order->cart->shipments[0]->reference = 'ground';
+        TestHelper::callNonPublicFunction(
+            $this->currentMock,
+            'applyShipmentToQuoteFromTransaction',
+            array(
+                $this->immutableQuoteMock,
+                $transaction,
+                true
             )
         );
 

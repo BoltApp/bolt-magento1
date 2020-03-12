@@ -4,6 +4,7 @@ require_once('TestHelper.php');
 require_once('StreamHelper.php');
 
 use Bolt_Boltpay_TestHelper as TestHelper;
+use GuzzleHttp\Exception\GuzzleException;
 
 /**
  * @coversDefaultClass Bolt_Boltpay_Controller_Traits_WebHookTrait
@@ -98,9 +99,7 @@ class Bolt_Boltpay_Controller_Traits_WebHookTraitTest extends PHPUnit_Framework_
             ->getMock();
 
         $this->helperMock = $this->getMockBuilder('Bolt_Boltpay_Helper_Data')
-            ->setMethods(
-                array('setResponseContextHeaders', 'verify_hook', 'notifyException')
-            )
+            ->setMethods(array('setResponseContextHeaders', 'verify_hook', 'notifyException'))
             ->getMock();
 
         Mage::register('_helper/boltpay', $this->helperMock);
@@ -169,6 +168,7 @@ class Bolt_Boltpay_Controller_Traits_WebHookTraitTest extends PHPUnit_Framework_
      *
      * @param string $payload Webhook payload in JSON format
      * @throws ReflectionException from TestHelper if a specified object, class or property does not exist.
+     * @throws GuzzleException
      */
     public function preDispatch_withRequestSignatureValidationEnabled_shouldTryToVerifyHook($payload)
     {
@@ -236,7 +236,7 @@ class Bolt_Boltpay_Controller_Traits_WebHookTraitTest extends PHPUnit_Framework_
     {
         return array(
             'Simple test payload'     => array('payload' => /** @lang JSON */ self::TEST_PAYLOAD),
-            'Wenhook example payload' => array(
+            'Webhook example payload' => array(
                 'payload' => /** @lang JSON */ '{"cart":{"display_id": "100001|61", "shipping_address": {}}}'
             )
         );
