@@ -53,7 +53,7 @@ class Bolt_Boltpay_Model_Coupon extends Bolt_Boltpay_Model_Abstract
     /**
      * Applies coupon from hook input to customer quote if the coupon is valid.
      *
-     * @return bool Whether or not coupon was applied
+     * @return bool Whether or not coupon was applied.
      */
     public function applyCoupon()
     {
