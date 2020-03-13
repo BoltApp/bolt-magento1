@@ -270,10 +270,8 @@ class Bolt_Boltpay_Model_ObserverTest extends PHPUnit_Framework_TestCase
         $cartHelperMock = $this->clearShoppingCartExceptPPCOrderSetUp(
             Bolt_Boltpay_Block_Checkout_Boltpay::CHECKOUT_TYPE_PRODUCT_PAGE
         );
-        Mage::app()->getRequest()->setParam('session_quote_id', 456);
         $cartHelperMock->expects($this->never())->method('getCart');
         Mage::dispatchEvent('checkout_onepage_controller_success_action');
-        $this->assertEquals(456, Mage::getSingleton('checkout/session')->getQuoteId());
         $this->clearShoppingCartExceptPPCOrderTearDown();
     }
 
@@ -293,7 +291,6 @@ class Bolt_Boltpay_Model_ObserverTest extends PHPUnit_Framework_TestCase
         $cartHelperMock->expects($this->once())->method('truncate')->willReturnSelf();
         $cartHelperMock->expects($this->once())->method('save')->willReturnSelf();
         Mage::dispatchEvent('checkout_onepage_controller_success_action');
-        $this->assertNull(Mage::getSingleton('checkout/session')->getQuoteId());
         $this->clearShoppingCartExceptPPCOrderTearDown();
     }
 
@@ -1005,6 +1002,71 @@ class Bolt_Boltpay_Model_ObserverTest extends PHPUnit_Framework_TestCase
                 'getApplicableQtyToInvoice',
                 array($shipmentItemMock)
             )
+        );
+    }
+
+    /**
+     * @test
+     * that clearShoppingCartExceptPPCOrder clears the cart for non-product-page checkouts
+     *
+     * @dataProvider clearShoppingCartExceptPPCOrderDataProvider
+     *
+     * @covers ::clearShoppingCartExceptPPCOrder
+     *
+     * @param string $checkoutType to be set as checkoutType request parameter
+     * @param bool   $shouldTruncate flag whether clearShoppingCartExceptPPCOrder should clear the cart
+     *
+     * @throws Mage_Core_Exception if unable to stub helper
+     */
+    public function clearShoppingCartExceptPPCOrder_withVariousCheckoutTypes_clearsCartExceptForPPC($checkoutType, $shouldTruncate)
+    {
+        $checkoutCartHelperMock = $this->getClassPrototype('Mage_Checkout_Helper_Cart')
+            ->setMethods(array('getCart', 'truncate', 'save'))
+            ->getMock();
+        if ($shouldTruncate) {
+            $checkoutCartHelperMock->expects($this->once())->method('getCart')->willReturnSelf();
+            $checkoutCartHelperMock->expects($this->once())->method('truncate')->willReturnSelf();
+            $checkoutCartHelperMock->expects($this->once())->method('save');
+        } else {
+            $checkoutCartHelperMock->expects($this->never())->method('getCart');
+        }
+
+        Mage::app()->getRequest()->setParam('checkoutType', $checkoutType);
+        TestHelper::stubHelper('checkout/cart', $checkoutCartHelperMock);
+        Mage::getModel('boltpay/observer')->clearShoppingCartExceptPPCOrder();
+
+        Mage::app()->getRequest()->setParam('checkoutType', null);
+        TestHelper::restoreHelper('checkout/cart');
+    }
+
+    /**
+     * Data provider for {@see clearShoppingCartExceptPPCOrder_withVariousCheckoutTypes_clearsCartExceptForPPC}
+     *
+     * @return array containing checkout type and whether clearCartCacheOnOrderCanceled should clear the cart
+     */
+    public function clearShoppingCartExceptPPCOrderDataProvider()
+    {
+        return array(
+            array(
+                'checkoutType'   => Bolt_Boltpay_Block_Checkout_Boltpay::CHECKOUT_TYPE_PRODUCT_PAGE,
+                'shouldTruncate' => false,
+            ),
+            array(
+                'checkoutType'   => Bolt_Boltpay_Block_Checkout_Boltpay::CHECKOUT_TYPE_FIRECHECKOUT,
+                'shouldTruncate' => true,
+            ),
+            array(
+                'checkoutType'   => Bolt_Boltpay_Block_Checkout_Boltpay::CHECKOUT_TYPE_MULTI_PAGE,
+                'shouldTruncate' => true,
+            ),
+            array(
+                'checkoutType'   => Bolt_Boltpay_Block_Checkout_Boltpay::CHECKOUT_TYPE_ONE_PAGE,
+                'shouldTruncate' => true,
+            ),
+            array(
+                'checkoutType'   => Bolt_Boltpay_Block_Checkout_Boltpay::CHECKOUT_TYPE_ADMIN,
+                'shouldTruncate' => true,
+            ),
         );
     }
 }

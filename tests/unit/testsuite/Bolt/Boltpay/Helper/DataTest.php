@@ -219,10 +219,18 @@ class Bolt_Boltpay_Helper_DataTest extends PHPUnit_Framework_TestCase
 
     /**
      * @test
+     * that buildOnCloseCallback returns expected onCloseCallback when checkout type is firecheckout
      *
      * @covers ::buildOnCloseCallback
      *
      * @dataProvider buildOnCloseCallback_whenCheckoutTypeIsNotAdmin_returnsCorrectJsProvider
+     *
+     * @param string $successUrl dummy success url
+     * @param string $appendChar expected append character to be used between dummy url and parameters
+     *
+     * @throws Mage_Core_Exception if unable to restore original of stubbed values
+     * @throws Mage_Core_Model_Store_Exception from tested method if unable to get url
+     * @throws ReflectionException if unable to stub model
      */
     public function buildOnCloseCallback_whenCheckoutTypeIsFirecheckout_returnsCorrectJs($successUrl, $appendChar)
     {
@@ -242,7 +250,7 @@ class Bolt_Boltpay_Helper_DataTest extends PHPUnit_Framework_TestCase
             isFireCheckoutFormValid = false;
             initBoltButtons();
             if (window.bolt_transaction_reference) {
-                 window.location = '$successUrl'+'$appendChar'+'bolt_transaction_reference='+window.bolt_transaction_reference;
+                 window.location = '$successUrl'+'$appendChar'+'bolt_transaction_reference='+window.bolt_transaction_reference+'&checkoutType=$checkoutType';
             }
         ";
         $result = $this->currentMock->buildOnCloseCallback($closeCustom, $checkoutType);
@@ -256,10 +264,18 @@ class Bolt_Boltpay_Helper_DataTest extends PHPUnit_Framework_TestCase
 
     /**
      * @test
+     * that buildOnCloseCallback returns expected on close callback when checkout type is multi-page
      *
      * @covers ::buildOnCloseCallback
      *
      * @dataProvider buildOnCloseCallback_whenCheckoutTypeIsNotAdmin_returnsCorrectJsProvider
+     *
+     * @param string $successUrl dummy success url
+     * @param string $appendChar expected append character to be used between dummy url and parameters
+     *
+     * @throws Mage_Core_Exception if unable to restore original of stubbed values
+     * @throws Mage_Core_Model_Store_Exception from tested method if unable to get url
+     * @throws ReflectionException if unable to stub model
      */
     public function buildOnCloseCallback_whenCheckoutTypeIsMultiPage_returnsCorrectJs($successUrl, $appendChar)
     {
@@ -277,7 +293,7 @@ class Bolt_Boltpay_Helper_DataTest extends PHPUnit_Framework_TestCase
         $expected = "
             $closeCustom
             if (window.bolt_transaction_reference) {
-                 window.location = '$successUrl'+'$appendChar'+'bolt_transaction_reference='+window.bolt_transaction_reference;
+                 window.location = '$successUrl'+'$appendChar'+'bolt_transaction_reference='+window.bolt_transaction_reference+'&checkoutType=$checkoutType';
             }
         ";
         $result = $this->currentMock->buildOnCloseCallback($closeCustom, $checkoutType);
@@ -305,8 +321,13 @@ class Bolt_Boltpay_Helper_DataTest extends PHPUnit_Framework_TestCase
 
     /**
      * @test
+     * that getBoltCallbacks returns expected javascript
      *
      * @covers ::getBoltCallbacks
+     *
+     * @throws Mage_Core_Exception if unable to stub config value
+     * @throws Mage_Core_Model_Store_Exception if unable to restore original of stubbed values
+     * @throws ReflectionException if unable to stub model
      */
     public function getBoltCallbacks_returnsCorrectJs()
     {
@@ -358,7 +379,7 @@ class Bolt_Boltpay_Helper_DataTest extends PHPUnit_Framework_TestCase
           },
           close: function() {
             if (window.bolt_transaction_reference) {
-                 window.location = 'http://test.com/success'+'?'+'bolt_transaction_reference='+window.bolt_transaction_reference;
+                 window.location = 'http://test.com/success'+'?'+'bolt_transaction_reference='+window.bolt_transaction_reference+'&checkoutType=product-page';
             }
           }
         }";
