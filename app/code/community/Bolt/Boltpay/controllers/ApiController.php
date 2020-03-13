@@ -35,7 +35,7 @@ class Bolt_Boltpay_ApiController extends Mage_Core_Controller_Front_Action imple
 
             $requestData = $this->getRequestData();
 
-            $reference = $requestData->reference;
+            $reference = @$requestData->reference;
             $transactionId = @$requestData->transaction_id ?: $requestData->id;
             $hookType = @$requestData->notification_type ?: $requestData->type;
             $incrementId = (strpos(@$requestData->display_id, '|') !== false)
