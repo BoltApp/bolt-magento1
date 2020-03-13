@@ -65,10 +65,10 @@ class Bolt_Boltpay_Helper_DataTest extends PHPUnit_Framework_TestCase
                 } ") . "
 
                 bolt_hidden.classList.add('required-entry');
-            }
+                new Ajax.Request('
         ";
         $result = $this->currentMock->buildOnCheckCallback($checkoutType, $isVirtualQuote);
-        $this->assertEquals(
+        $this->assertContains(
             preg_replace('/\s/', '', $checkCallback),
             preg_replace('/\s/', '', $result)
         );
@@ -95,7 +95,7 @@ class Bolt_Boltpay_Helper_DataTest extends PHPUnit_Framework_TestCase
      */
     public function buildOnCheckCallback_whenCheckoutTypeIsFireCheckout_returnsCorrectJs()
     {
-        $expected = 'if (!checkout.validate()) return false;';
+        $expected = 'if (!checkout.validate()) return false; new Ajax.Request(\'';
         $trueResult = $this->currentMock->buildOnCheckCallback(
             Bolt_Boltpay_Block_Checkout_Boltpay::CHECKOUT_TYPE_FIRECHECKOUT,
             true
@@ -104,11 +104,11 @@ class Bolt_Boltpay_Helper_DataTest extends PHPUnit_Framework_TestCase
             Bolt_Boltpay_Block_Checkout_Boltpay::CHECKOUT_TYPE_FIRECHECKOUT,
             false
         );
-        $this->assertEquals(
+        $this->assertContains(
             preg_replace('/\s+/', '', $expected),
             preg_replace('/\s+/', '', $trueResult)
         );
-        $this->assertEquals(
+        $this->assertContains(
             preg_replace('/\s+/', '', $expected),
             preg_replace('/\s+/', '', $falseResult)
         );
@@ -351,9 +351,7 @@ class Bolt_Boltpay_Helper_DataTest extends PHPUnit_Framework_TestCase
 
         $expected = "{
           check: function() {
-            if (do_checks++) {
-                if (!boltConfigPDP.validate()) return false;
-            }
+            if (!boltConfigPDP.validate()) return false;
             return true;
           },
           onCheckoutStart: function() {

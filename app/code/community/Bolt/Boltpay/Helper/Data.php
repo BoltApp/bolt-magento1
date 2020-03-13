@@ -62,10 +62,8 @@ class Bolt_Boltpay_Helper_Data extends Mage_Core_Helper_Abstract
 
         return "{
                   check: function() {
-                    if (do_checks++) {
-                        $checkCustom
-                        $onCheckCallback
-                    }
+                    $checkCustom
+                    $onCheckCallback
                     return true;
                   },
                   onCheckoutStart: function() {
@@ -98,13 +96,37 @@ class Bolt_Boltpay_Helper_Data extends Mage_Core_Helper_Abstract
     }
 
     /**
-     * @param      $checkoutType
+     * @param string $checkoutType
      * @param bool $isVirtualQuote
      *
      * @return string
+     *
+     * @throws Mage_Core_Model_Store_Exception
      */
     public function buildOnCheckCallback($checkoutType, $isVirtualQuote = false)
     {
+        if ( $checkoutType === Bolt_Boltpay_Block_Checkout_Boltpay::CHECKOUT_TYPE_ADMIN ) {
+            $checkoutTokenUrl = $this->getMagentoUrl("adminhtml/sales_order_create/create/checkoutType/$checkoutType", array(), true);
+        } else {
+            $checkoutTokenUrl = $this->getMagentoUrl("boltpay/order/create/checkoutType/$checkoutType");
+        }
+
+        $ajaxCall = "
+            new Ajax.Request('$checkoutTokenUrl', {
+                method:'post',
+                parameters: '',
+                onSuccess: function(response) {
+                    if(response.responseJSON.error) {
+                        // TODO: Consider informing the user of the error.  This could be handled Bolt-server-side
+                        rejectPromise(response.responseJSON.error_messages);
+                        location.reload();
+                    } else {                                     
+                        resolvePromise(response.responseJSON.cart_data);
+                    }                   
+                },
+                onFailure: function(error) { rejectPromise(error); }
+            }); 
+        ";
         switch ($checkoutType) {
             case Bolt_Boltpay_Block_Checkout_Boltpay::CHECKOUT_TYPE_ADMIN:
                 return
@@ -126,12 +148,14 @@ class Bolt_Boltpay_Helper_Data extends Mage_Core_Helper_Abstract
                         } "). "
         
                         bolt_hidden.classList.add('required-entry');
+                        $ajaxCall
                     }
                     ";
             case Bolt_Boltpay_Block_Checkout_Boltpay::CHECKOUT_TYPE_FIRECHECKOUT:
                 return
                     "
                     if (!checkout.validate()) return false;
+                    $ajaxCall
                     ";
             case Bolt_Boltpay_Block_Checkout_Boltpay::CHECKOUT_TYPE_PRODUCT_PAGE:
                 return /** @lang JavaScript */ 'if (!boltConfigPDP.validate()) return false;';
