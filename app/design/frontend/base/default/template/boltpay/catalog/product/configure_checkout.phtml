@@ -209,6 +209,7 @@ document.addEventListener("DOMContentLoaded", function() {
     if (typeof bundle !== 'undefined') {
         bundle.reloadPrice = function () {
             Product.Bundle.prototype.reloadPrice.apply(bundle);
+            boltConfigPDP.init();
         };
     }
 });

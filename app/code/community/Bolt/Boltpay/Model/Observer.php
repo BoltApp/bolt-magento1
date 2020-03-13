@@ -31,10 +31,9 @@ class Bolt_Boltpay_Model_Observer
      */
     public function initializeBenchmarkProfiler()
     {
-        $hasInitializedProfiler = Mage::registry('initializedBenchmark' );
+        $hasInitializedProfiler = Mage::registry('initializedBenchmark');
 
         if (!$hasInitializedProfiler) {
-
             Mage::register('bolt/request_start_time', microtime(true), true);
 
             /**
@@ -45,7 +44,7 @@ class Bolt_Boltpay_Model_Observer
              * @param bool   $shouldIncludeInFullLog If false, this benchmark will not be included in the full log
              * @param bool   $shouldFlushFullLog     If true, will log the full log up to this benchmark call.
              */
-            function benchmark( $label, $shouldLogIndividually = false, $shouldIncludeInFullLog = true, $shouldFlushFullLog = false )  {
+            function benchmark( $label, $shouldLogIndividually = false, $shouldIncludeInFullLog = true, $shouldFlushFullLog = false ) {
                 /** @var Bolt_Boltpay_Helper_Data $boltHelper */
                 $boltHelper = Mage::helper('boltpay');
                 $boltHelper->logBenchmark($label, $shouldLogIndividually, $shouldIncludeInFullLog, $shouldFlushFullLog);
@@ -74,7 +73,7 @@ class Bolt_Boltpay_Model_Observer
      */
     public function logFullBenchmarkProfile()
     {
-        benchmark(null, false, false, true );
+        benchmark(null, false, false, true);
     }
 
     /**
@@ -84,12 +83,8 @@ class Bolt_Boltpay_Model_Observer
      */
     public function clearShoppingCartExceptPPCOrder()
     {
-        $cartHelper = Mage::helper('checkout/cart');
-        if (Mage::app()->getRequest()->getParam('checkoutType') == Bolt_Boltpay_Block_Checkout_Boltpay::CHECKOUT_TYPE_PRODUCT_PAGE) {
-            $quoteId = Mage::app()->getRequest()->getParam('session_quote_id');
-            Mage::getSingleton('checkout/session')->setQuoteId($quoteId);
-        } else {
-            $cartHelper->getCart()->truncate()->save();
+        if (Mage::app()->getRequest()->getParam('checkoutType') != Bolt_Boltpay_Block_Checkout_Boltpay::CHECKOUT_TYPE_PRODUCT_PAGE) {
+            Mage::helper('checkout/cart')->getCart()->truncate()->save();
         }
     }
 
@@ -155,7 +150,7 @@ class Bolt_Boltpay_Model_Observer
 
             /* @var Mage_Sales_Model_Quote $immutableQuote */
             $immutableQuote = Mage::getModel('sales/quote')->loadByIdWithoutStore($quote->getParentQuoteId());
-
+            
         } else if (isset($requestParams['bolt_transaction_reference'])) {
             ////////////////////////////////////////////////////////////////////
             // Orphaned transaction and v 1.x (legacy) Success page handling
@@ -237,7 +232,8 @@ class Bolt_Boltpay_Model_Observer
 
         /** @var Mage_Sales_Model_Resource_Order_Grid_Collection $orderGridCollection */
         $orderGridCollection = $observer->getEvent()->getOrderGridCollection();
-        $orderGridCollection->addFieldToFilter('main_table.status',
+        $orderGridCollection->addFieldToFilter(
+            'main_table.status',
             array(
                 'nin'=>array(
                     Bolt_Boltpay_Model_Payment::TRANSACTION_PRE_AUTH_PENDING,
@@ -353,7 +349,7 @@ class Bolt_Boltpay_Model_Observer
         }
 
         return $invoiceItems;
-    }
+     }
 
     /**
      * Returns quantity to be invoiced for shipment item or false if it can't be invoiced

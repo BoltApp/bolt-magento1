@@ -171,10 +171,14 @@ class Bolt_Boltpay_Helper_Data extends Mage_Core_Helper_Abstract
     }
 
     /**
-     * @param $closeCustom
-     * @param $checkoutType
-     * @return string
-     * @throws Mage_Core_Model_Store_Exception
+     * Generates javascript on close callback for Bolt modal based on provided checkout type
+     *
+     * @param string $closeCustom javascript code to be prepended to result callback
+     * @param string $checkoutType to create callback for
+     *
+     * @return string on-close callback
+     *
+     * @throws Mage_Core_Model_Store_Exception if unable to get success url
      */
     public function buildOnCloseCallback($closeCustom, $checkoutType)
     {
@@ -214,7 +218,7 @@ class Bolt_Boltpay_Helper_Data extends Mage_Core_Helper_Abstract
                     "
                     $closeCustom
                     if (window.bolt_transaction_reference) {
-                         window.location = '$successUrl'+'$appendChar'+'bolt_transaction_reference='+window.bolt_transaction_reference;
+                         window.location = '$successUrl'+'$appendChar'+'bolt_transaction_reference='+window.bolt_transaction_reference+'&checkoutType=$checkoutType';
                     }
                     ";
         }
