@@ -24,7 +24,6 @@
  *
  * The purpose is to add the Bolt to the Product Page,
  * create the order on Bolt side through the javascript BoltCheckout.configureProductCheckout process.
- *
  */
 class Bolt_Boltpay_Block_Catalog_Product_Boltpay extends Bolt_Boltpay_Block_Checkout_Boltpay
 {
