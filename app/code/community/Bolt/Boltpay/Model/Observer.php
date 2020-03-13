@@ -150,7 +150,6 @@ class Bolt_Boltpay_Model_Observer
 
             /* @var Mage_Sales_Model_Quote $immutableQuote */
             $immutableQuote = Mage::getModel('sales/quote')->loadByIdWithoutStore($quote->getParentQuoteId());
-            
         } else if (isset($requestParams['bolt_transaction_reference'])) {
             ////////////////////////////////////////////////////////////////////
             // Orphaned transaction and v 1.x (legacy) Success page handling
@@ -338,7 +337,8 @@ class Bolt_Boltpay_Model_Observer
      * @param $shipment
      * @return array
      */
-     private function getInvoiceItemsFromShipment($shipment){
+    private function getInvoiceItemsFromShipment($shipment)
+    {
         $invoiceItems = array();
         $shipmentItems = $shipment->getAllItems();
         foreach ($shipmentItems as $shipmentItem) {
@@ -349,7 +349,7 @@ class Bolt_Boltpay_Model_Observer
         }
 
         return $invoiceItems;
-     }
+    }
 
     /**
      * Returns quantity to be invoiced for shipment item or false if it can't be invoiced

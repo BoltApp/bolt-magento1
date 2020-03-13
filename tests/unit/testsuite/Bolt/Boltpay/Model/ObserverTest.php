@@ -270,7 +270,6 @@ class Bolt_Boltpay_Model_ObserverTest extends PHPUnit_Framework_TestCase
         $cartHelperMock = $this->clearShoppingCartExceptPPCOrderSetUp(
             Bolt_Boltpay_Block_Checkout_Boltpay::CHECKOUT_TYPE_PRODUCT_PAGE
         );
-
         $cartHelperMock->expects($this->never())->method('getCart');
         Mage::dispatchEvent('checkout_onepage_controller_success_action');
         $this->clearShoppingCartExceptPPCOrderTearDown();
