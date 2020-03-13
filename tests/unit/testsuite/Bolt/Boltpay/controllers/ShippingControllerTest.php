@@ -295,7 +295,7 @@ class Bolt_Boltpay_ShippingControllerTest extends PHPUnit_Framework_TestCase
         );
 
         $expectedCacheId = $this->_shippingController->getEstimateCacheIdentifier($quote, $expectedAddressData);
-        $estimatePreCall = unserialize(Mage::app()->getCache()->load($expectedCacheId));
+        $estimatePreCall = json_decode(Mage::app()->getCache()->load($expectedCacheId));
 
         $geoIpAddressData = array(
             'city'         => 'Beverly Hills',
@@ -323,7 +323,7 @@ class Bolt_Boltpay_ShippingControllerTest extends PHPUnit_Framework_TestCase
 
         $actualAddressData = json_decode($actualResponse, true)['address_data'];
         $actualCacheId = $this->_shippingController->getEstimateCacheIdentifier($quote, $actualAddressData);
-        $estimatePostCall = unserialize(Mage::app()->getCache()->load($actualCacheId));
+        $estimatePostCall = json_decode(Mage::app()->getCache()->load($actualCacheId), true);
 
         $this->assertEquals($expectedCacheId, $actualCacheId);
         $this->assertEmpty(
@@ -1005,13 +1005,13 @@ class Bolt_Boltpay_ShippingControllerTest extends PHPUnit_Framework_TestCase
 
     /**
      * @test
-     * that cacheShippingAndTaxEstimate saves estimation to cache under the provided key in serialized format
+     * that cacheShippingAndTaxEstimate saves estimation to cache under the provided key in json_encode format
      *
      * @covers ::cacheShippingAndTaxEstimate
      *
      * @throws ReflectionException if cacheShippingAndTaxEstimate method doesn't exist
      */
-    public function cacheShippingAndTaxEstimate_always_savesSerializedEstimateToCache()
+    public function cacheShippingAndTaxEstimate_always_savesJsonizedEstimateToCache()
     {
         $dummyEstimate = array(
             'shipping_options' => array(),
@@ -1022,7 +1022,7 @@ class Bolt_Boltpay_ShippingControllerTest extends PHPUnit_Framework_TestCase
         $quoteCacheKey = md5('bolt');
         $lifetime = 600;
         $this->cacheMock->expects($this->once())->method('save')->with(
-            serialize($dummyEstimate),
+            json_encode($dummyEstimate, JSON_PRETTY_PRINT),
             $quoteCacheKey,
             array('BOLT_QUOTE_PREFETCH'),
             $lifetime

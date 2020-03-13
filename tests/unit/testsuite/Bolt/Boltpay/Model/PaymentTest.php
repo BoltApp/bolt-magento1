@@ -2237,11 +2237,11 @@ class Bolt_Boltpay_Model_PaymentTest extends PHPUnit_Framework_TestCase
         $this->assertEquals('92XB-GBX4-T49L-refund', $payment->getTransactionId());
         $this->assertEquals(
             array(Bolt_Boltpay_Model_Payment::TRANSACTION_PENDING),
-            unserialize($payment->getAdditionalInformation('bolt_refund_transaction_statuses'))
+            json_decode($payment->getAdditionalInformation('bolt_refund_transaction_statuses'))
         );
         $this->assertEquals(
             array('AAAABBBBCCCCDDDD'),
-            unserialize($payment->getAdditionalInformation('bolt_refund_merchant_transaction_ids'))
+            json_decode($payment->getAdditionalInformation('bolt_refund_merchant_transaction_ids'))
         );
         return $payment;
     }
@@ -2276,11 +2276,11 @@ class Bolt_Boltpay_Model_PaymentTest extends PHPUnit_Framework_TestCase
         $this->assertEquals('92XB-GBX4-T49L-refund', $payment->getTransactionId());
         $this->assertEquals(
             array(Bolt_Boltpay_Model_Payment::TRANSACTION_PENDING, Bolt_Boltpay_Model_Payment::TRANSACTION_AUTHORIZED),
-            unserialize($payment->getAdditionalInformation('bolt_refund_transaction_statuses'))
+            json_decode($payment->getAdditionalInformation('bolt_refund_transaction_statuses'))
         );
         $this->assertEquals(
             array('AAAABBBBCCCCDDDD', 'EEEEFFFFGGGGHHHH'),
-            unserialize($payment->getAdditionalInformation('bolt_refund_merchant_transaction_ids'))
+            json_decode($payment->getAdditionalInformation('bolt_refund_merchant_transaction_ids'))
         );
     }
 
