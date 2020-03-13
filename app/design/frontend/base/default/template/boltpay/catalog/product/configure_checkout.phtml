@@ -33,6 +33,15 @@ var boltConfigPDP = {
      * @returns {number}
      */
     getQty: function () {
+        if (this.product.type_id == 'grouped') {
+            var totalQty = 0;
+            for (var i in this.product.associated_products) {
+                if (this.product.associated_products.hasOwnProperty(i) && this.product.associated_products[i]) {
+                    totalQty += Number(document.getElementById('super_group_' + this.product.associated_products[i].id).value);
+                }
+            }
+            return totalQty;
+        }
         return Number(document.getElementById('qty').value);
     },
     /**
@@ -89,6 +98,9 @@ var boltConfigPDP = {
                     'Please <a href="%s">login</a> in order to purchase this product',
                     $this->getCustomerLoginUrlWithReferrer()
                 ); ?>';
+            }
+            if (this.getQty() <= 0) {
+                throw '<?php echo $this->__("Please specify the quantity of product(s)."); ?>';
             }
             if (this.product.stock.manage && (!this.product.stock.status || this.product.stock.qty < this.getQty())) {
                 throw '<?php echo $this->__("The requested quantity is not available."); ?>';
