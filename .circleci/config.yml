@@ -84,9 +84,9 @@ jobs:
     steps:
       - checkout
       - run:
-          name: Integration test (only for master/develop/circleci branch)
+          name: Integration tests (only for circleci branch)
           command: |
-              echo "Running integraiton test"
+              echo "Running integration tests"
               git clone git@github.com:BoltApp/integration-tests.git
               cd integration-tests
               npm install
