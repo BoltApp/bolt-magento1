@@ -194,11 +194,7 @@ class Bolt_Boltpay_Block_Checkout_Boltpay extends Mage_Checkout_Block_Onepage_Re
             case self::CHECKOUT_TYPE_ONE_PAGE:
                 if ($shouldCloneImmediately) break;
             case self::CHECKOUT_TYPE_ADMIN:
-                $checkoutTokenUrl = $this->boltHelper()->getMagentoUrl("adminhtml/sales_order_create/create/checkoutType/$checkoutType", array(), true);
             case self::CHECKOUT_TYPE_FIRECHECKOUT:
-                $checkoutTokenUrl = $this->boltHelper()->getMagentoUrl("boltpay/order/create/checkoutType/$checkoutType");
-                $parameters = "''";
-                $doChecks = 'var do_checks = 0;';
                 $boltConfigureCall = "
                     BoltCheckout.configure(
                         new Promise( 
