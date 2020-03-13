@@ -1,5 +1,16 @@
 # Changelog
-## [V2.3.0](https://s3-us-west-1.amazonaws.com/bolt-public/magento-integration-release/bolt-magento1_v2.3.0.zip) 2020-02-13
+## [V2.3.0](https://bolt-public.s3-us-west-1.amazonaws.com/magento-integration-release/bolt-magento1-v2.4.0.zip) 2020-02-13
+ - Added support for a bunch of product types for product page checkout. Now the following are supported:
+    - Simple Product
+    - Simple Product w/ Custom Options
+    - Configurable Product
+    - Grouped Product
+    - Virtual Product
+    - Bundle Product
+    - Downloadable Product with logged in customer required
+ - Fixed a bug where images for products with variants are not populated correctly
+ - Unit test coverage ~100%
+## [V2.3.0](https://bolt-public.s3-us-west-1.amazonaws.com/magento-integration-release/bolt-magento1-v2.3.0.zip) 2020-02-13
  - Fixed an intermittent issue related to virtual product
  - Prevent processing on non-Bolt orders or orders in unexpected states
  - Various other bug fixes
