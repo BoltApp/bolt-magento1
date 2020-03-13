@@ -99,7 +99,8 @@ trait Bolt_Boltpay_Controller_Traits_WebHookTrait {
                 ->setException($exception)
                 ->sendResponse();
             $this->boltHelper()->notifyException($exception, array(), 'warning');
-            exit;
+            $this->setFlag('', Mage_Core_Controller_Varien_Action::FLAG_NO_POST_DISPATCH, 1);
+            $this->getResponse()->sendHeadersAndExit(); # workaround to early exit.
         }
     }
 
@@ -124,12 +125,15 @@ trait Bolt_Boltpay_Controller_Traits_WebHookTrait {
         ini_set("implicit_flush", 1);
         $this->getResponse()
             ->setHttpResponseCode($httpCode)
-            ->sendHeaders();
+            ->setBody($content)
+            ->sendHeaders()
+        ;
 
         if ($exitImmediately) {
-            echo $content;
+            $this->getResponse()->sendResponse();
             Mage::dispatchEvent('controller_front_send_response_after');
-            exit;
+            $this->setFlag('', Mage_Core_Controller_Varien_Action::FLAG_NO_POST_DISPATCH, 1);
+            $this->getResponse()->sendHeadersAndExit(); # workaround to early exit.
         }
 
         ///////////////////////////////////////////////////////////
@@ -140,7 +144,7 @@ trait Bolt_Boltpay_Controller_Traits_WebHookTrait {
         header( 'Connection: Close' );
 
         # Send the prepared output
-        echo $content;
+        $this->getResponse()->sendResponse();
         @flush();
         ///////////////////////////////////////////////////////////
 
