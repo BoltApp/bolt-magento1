@@ -60,12 +60,12 @@ class Bolt_Boltpay_Model_FeatureSwitch extends Bolt_Boltpay_Model_Abstract
     final public function __construct()
     {
         $this->defaultSwitches = array(
-            self::SAMPLE_SWITCH_NAME => (object)array(
+            self::SAMPLE_SWITCH_NAME => array(
                 self::VAL_KEY => true,
                 self::DEFAULT_VAL_KEY => false,
                 self::ROLLOUT_KEY => 0
             ),
-            self::BOLT_ENABLED_SWITCH_NAME => (object)array(
+            self::BOLT_ENABLED_SWITCH_NAME => array(
                 self::VAL_KEY => true,
                 self::DEFAULT_VAL_KEY => false,
                 self::ROLLOUT_KEY => 100
@@ -93,14 +93,14 @@ class Bolt_Boltpay_Model_FeatureSwitch extends Bolt_Boltpay_Model_Abstract
 
         $switches = array();
         foreach ($switchesData as $switch) {
-            $switches[$switch->name] = (object)array(
+            $switches[$switch->name] = array(
                 self::VAL_KEY => $switch->value,
                 self::DEFAULT_VAL_KEY => $switch->defaultValue,
                 self::ROLLOUT_KEY => $switch->rolloutPercentage
             );
         }
         $this->switches = $switches;
-        Mage::getModel('core/config')->saveConfig('payment/boltpay/featureSwitches', serialize($switches));
+        Mage::getModel('core/config')->saveConfig('payment/boltpay/featureSwitches', json_encode($switches));
         Mage::getModel('core/config')->cleanCache();
     }
 
@@ -112,7 +112,7 @@ class Bolt_Boltpay_Model_FeatureSwitch extends Bolt_Boltpay_Model_Abstract
         if (isset($this->switches)) {
             return;
         }
-        $this->switches = unserialize(Mage::getStoreConfig('payment/boltpay/featureSwitches'));
+        $this->switches = json_decode(Mage::getStoreConfig('payment/boltpay/featureSwitches'), true);
     }
 
     /**
@@ -159,7 +159,8 @@ class Bolt_Boltpay_Model_FeatureSwitch extends Bolt_Boltpay_Model_Abstract
      * @return object
      * @throws Exception if default value for switch doesn't exists
      */
-    protected function getFeatureSwitchValueByName($switchName){
+    protected function getFeatureSwitchValueByName($switchName)
+    {
         $this->readSwitches();
         if (!isset($this->defaultSwitches[$switchName])) {
             throw new \Exception('Unknown feature switch');
@@ -181,14 +182,14 @@ class Bolt_Boltpay_Model_FeatureSwitch extends Bolt_Boltpay_Model_Abstract
     protected function isSwitchEnabled($switchName)
     {
         $switch = $this->getFeatureSwitchValueByName($switchName);
-        switch ($switch->rolloutPercentage) {
+        switch ($switch[self::ROLLOUT_KEY]) {
             case 0:
-                return $switch->defaultValue;
+                return $switch[self::DEFAULT_VAL_KEY];
             case 100:
-                return $switch->value;
+                return $switch[self::VAL_KEY];
             default:
-                $is_in_bucket = $this->isInBucket($switchName, $switch->rolloutPercentage);
-                return $is_in_bucket ? $switch->value : $switch->defaultValue;
+                $is_in_bucket = $this->isInBucket($switchName, $switch[self::ROLLOUT_KEY]);
+                return $is_in_bucket ? $switch[self::VAL_KEY] : $switch[self::DEFAULT_VAL_KEY];
         }
     }
 
