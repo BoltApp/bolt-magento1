@@ -179,7 +179,7 @@ class Bolt_Boltpay_Model_FeatureSwitch extends Bolt_Boltpay_Model_Abstract
      * @return bool
      * @throws \Exception
      */
-    protected function isSwitchEnabled($switchName)
+    public function isSwitchEnabled($switchName)
     {
         $switch = $this->getFeatureSwitchValueByName($switchName);
         switch ($switch[self::ROLLOUT_KEY]) {
@@ -191,18 +191,5 @@ class Bolt_Boltpay_Model_FeatureSwitch extends Bolt_Boltpay_Model_Abstract
                 $is_in_bucket = $this->isInBucket($switchName, $switch[self::ROLLOUT_KEY]);
                 return $is_in_bucket ? $switch[self::VAL_KEY] : $switch[self::DEFAULT_VAL_KEY];
         }
-    }
-
-    /***************************************************
-     * Switch Helpers below
-     ***************************************************/
-    public function isSampleSwitchEnabled()
-    {
-        return $this->isSwitchEnabled(SELF::SAMPLE_SWITCH_NAME);
-    }
-
-    public function isBoltEnabled()
-    {
-        return $this->isSwitchEnabled(SELF::BOLT_ENABLED_SWITCH_NAME);
     }
 }

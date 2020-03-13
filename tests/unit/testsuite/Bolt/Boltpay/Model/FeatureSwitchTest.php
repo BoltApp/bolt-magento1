@@ -556,32 +556,4 @@ class Bolt_Boltpay_Model_FeatureSwitchTest extends PHPUnit_Framework_TestCase
     {
         return array(array(true), array(false));
     }
-
-    /**
-     * @test
-     * When call isSampleSwitchEnabled isSwitchEnables method should be called with the right parameter
-     *
-     * @covers ::isSampleSwitchEnabled
-     * @throws Exception
-     */
-    public function isSampleSwitchEnabled_shouldCallIsSwitchEnabledWithCorrectParameter()
-    {
-        $this->adjustCurrentMock(array('isSwitchEnabled'));
-        $this->currentMock->expects($this->once())->method('isSwitchEnabled')->with('M1_SAMPLE_SWITCH');
-        $this->currentMock->isSampleSwitchEnabled();
-    }
-
-    /**
-     * @test
-     * When call isBoltEnabled isSwitchEnables method should be called with the right parameter
-     *
-     * @covers ::isBoltEnabled
-     * @throws Exception
-     */
-    public function isBoltEnabled_shouldCallIsSwitchEnabledWithCorrectParameter()
-    {
-        $this->adjustCurrentMock(array('isSwitchEnabled'));
-        $this->currentMock->expects($this->once())->method('isSwitchEnabled')->with('M1_BOLT_ENABLED');
-        $this->currentMock->isBoltEnabled();
-    }
 }
