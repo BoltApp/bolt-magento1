@@ -80,10 +80,7 @@ class Bolt_Boltpay_Model_Observer
     /**
      * Clears the Shopping Cart except product page checkout order after the success page
      *
-     * @param Varien_Event_Observer $observer   An Observer object with an empty event object
-     *
-     * Event: checkout_onepage_controller_success_action
-     * @param $observer
+     * event: checkout_onepage_controller_success_action
      */
     public function clearShoppingCartExceptPPCOrder()
     {
@@ -307,7 +304,7 @@ class Bolt_Boltpay_Model_Observer
     /**
      * Automatically create an invoice after creating a shipment
      *
-     * event: sales_model_service_quote_submit_before
+     * event: sales_order_shipment_save_after
      *
      * @param Varien_Event_Observer $observer Observer event contains a shipment object
      */
@@ -359,7 +356,9 @@ class Bolt_Boltpay_Model_Observer
     }
 
     /**
-     * @param $shipmentItem
+     * Returns quantity to be invoiced for shipment item or false if it can't be invoiced
+     *
+     * @param Mage_Sales_Model_Order_Shipment_Item $shipmentItem
      * @return bool|float
      */
     private function getApplicableQtyToInvoice($shipmentItem)

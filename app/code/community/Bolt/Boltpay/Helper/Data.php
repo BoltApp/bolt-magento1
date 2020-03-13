@@ -147,8 +147,6 @@ class Bolt_Boltpay_Helper_Data extends Mage_Core_Helper_Abstract
      */
     public function buildOnSuccessCallback($successCustom, $checkoutType)
     {
-        $saveOrderUrl = $this->getMagentoUrl("boltpay/order/save/checkoutType/$checkoutType");
-
         return ($checkoutType === Bolt_Boltpay_Block_Checkout_Boltpay::CHECKOUT_TYPE_ADMIN) ?
             "function(transaction, callback) {
                 $successCustom
@@ -176,6 +174,7 @@ class Bolt_Boltpay_Helper_Data extends Mage_Core_Helper_Abstract
      * @param $closeCustom
      * @param $checkoutType
      * @return string
+     * @throws Mage_Core_Model_Store_Exception
      */
     public function buildOnCloseCallback($closeCustom, $checkoutType)
     {
@@ -196,10 +195,6 @@ class Bolt_Boltpay_Helper_Data extends Mage_Core_Helper_Abstract
                         order.submit();
                     }
                     ";
-                break;
-            case Bolt_Boltpay_Block_Checkout_Boltpay::CHECKOUT_TYPE_PRODUCT_PAGE:
-                $quoteId = Mage::getSingleton('checkout/session')->getQuoteId();
-                $successUrl = $this->getMagentoUrl(Mage::getStoreConfig('payment/boltpay/successpage'), array('checkoutType' => $checkoutType, 'session_quote_id' => $quoteId));
                 break;
             case Bolt_Boltpay_Block_Checkout_Boltpay::CHECKOUT_TYPE_FIRECHECKOUT:
                 $javascript .=

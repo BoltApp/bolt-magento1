@@ -193,6 +193,8 @@ class Bolt_Boltpay_Block_Catalog_Product_Boltpay extends Bolt_Boltpay_Block_Chec
             Mage_Catalog_Model_Product_Type::TYPE_SIMPLE,
             Mage_Catalog_Model_Product_Type::TYPE_VIRTUAL,
             Mage_Catalog_Model_Product_Type::TYPE_CONFIGURABLE,
+            Mage_Downloadable_Model_Product_Type::TYPE_DOWNLOADABLE,
+            Mage_Catalog_Model_Product_Type::TYPE_GROUPED,
             Mage_Catalog_Model_Product_Type::TYPE_BUNDLE,
         ];
     }
@@ -209,24 +211,68 @@ class Bolt_Boltpay_Block_Catalog_Product_Boltpay extends Bolt_Boltpay_Block_Chec
 
         /** @var Mage_CatalogInventory_Model_Stock_Item $stockItem */
         $stockItem = $product->getStockItem();
+        $productData = array(
+            'id'          => $product->getId(),
+            'name'        => $product->getName(),
+            'price'       => $product->getFinalPrice(),
+            'tier_prices' => $product->getTierPrice(),
+            'type_id'     => $product->getTypeId(),
+            'stock'       => array(
+                'manage' => in_array(
+                    $product->getTypeId(),
+                    array(
+                        Mage_Catalog_Model_Product_Type::TYPE_SIMPLE,
+                        Mage_Catalog_Model_Product_Type::TYPE_VIRTUAL,
+                        Mage_Downloadable_Model_Product_Type::TYPE_DOWNLOADABLE,
+                    )
+                ) ? $stockItem->getManageStock() : false,
+                'status' => $stockItem->getIsInStock(),
+                'qty'    => (float) $stockItem->getQty(),
+            ),
+        );
+        if ($product->getTypeId() == Mage_Catalog_Model_Product_Type::TYPE_GROUPED) {
+            $productData['associated_products'] = array_map(
+                function ($associatedProduct) {
+                    /** @var Mage_Catalog_Model_Product $associatedProduct */
+                    return array(
+                        'id'    => $associatedProduct->getId(),
+                        'name'  => $associatedProduct->getName(),
+                        'price' => $associatedProduct->getFinalPrice(),
+                    );
+                },
+                $product->getTypeInstance(true)->getAssociatedProducts($product)
+            );
+        }
+        return Mage::helper('core')->jsonEncode($productData);
+    }
+
+    /**
+     * Returns customer data in JSON format
+     *
+     * @return string
+     */
+    public function getCustomerJSON()
+    {
         return Mage::helper('core')->jsonEncode(
             array(
-                'id'          => $product->getId(),
-                'name'        => $product->getName(),
-                'price'       => $product->getFinalPrice(),
-                'tier_prices' => $product->getTierPrice(),
-                'type_id'     => $product->getTypeId(),
-                'stock'       => array(
-                    'manage' => in_array(
-                        $product->getTypeId(),
-                        array(
-                            Mage_Catalog_Model_Product_Type::TYPE_SIMPLE,
-                            Mage_Catalog_Model_Product_Type::TYPE_VIRTUAL
-                        )
-                    ) ? $stockItem->getManageStock() : false,
-                    'status' => $stockItem->getIsInStock(),
-                    'qty'    => (float) $stockItem->getQty(),
-                ),
+                'is_logged_in' => Mage::getSingleton('customer/session')->isLoggedIn()
+            )
+        );
+    }
+
+    /**
+     * Returns url to login page with current as referrer
+     *
+     * @return string
+     */
+    public function getCustomerLoginUrlWithReferrer()
+    {
+        return $this->getUrl(
+            'customer/account/login',
+            array(
+                Mage_Customer_Helper_Data::REFERER_QUERY_PARAM_NAME => Mage::helper('core')->urlEncode(
+                    $this->getUrl('*/*/*', array('_current' => true))
+                )
             )
         );
     }

@@ -750,6 +750,49 @@ class Bolt_Boltpay_Model_OrderTest extends PHPUnit_Framework_TestCase
     }
 
     /**
+     * @test
+     * that validateTotals loads quote item by product id if is_bolt_pdp flag is set on quote
+     * by expecting exception message to be thrown due to different prices betwen product and transaction item
+     *
+     * @covers ::validateTotals
+     *
+     * @expectedException Bolt_Boltpay_OrderCreationException
+     * @expectedExceptionCode 2001004
+     * @expectedExceptionMessage "old_price": "23200", "new_price": "13200"
+     *
+     * @throws ReflectionException if validateTotals method doesn't exist
+     * @throws Mage_Core_Exception if unable to add product to cart
+     * @throws Exception if unable to create dummy product
+     */
+    public function validateTotals_fromProductPageCheckout_loadsCartItemByProductIdAndThrowsException()
+    {
+        $productId = Bolt_Boltpay_ProductProvider::createDummyProduct(
+            uniqid('validate_totals_ppc'),
+            array('price' => 132)
+        );
+        $transaction = new stdClass();
+        $transaction->order->cart->items = array(
+            (object)array('reference' => $productId, 'total_amount' => (object)array('amount' => 23200))
+        );
+        $cart = Mage::getModel('checkout/cart', array('quote' => Mage::getModel('sales/quote')));
+        $cart->addProduct($productId, 1);
+        $quote = $cart->getQuote();
+        $quote->getShippingAddress()->setPaymentMethod('boltpay');
+        $quote->getPayment()->importData(array('method' => Bolt_Boltpay_Model_Payment::METHOD_CODE));
+        $quote->setData('is_bolt_pdp', 1)->save();
+        try {
+            TestHelper::callNonPublicFunction(
+                $this->currentMock,
+                'validateTotals',
+                array($quote, $transaction)
+            );
+        } catch (Exception $e) {
+            Bolt_Boltpay_ProductProvider::deleteDummyProduct($productId);
+            throw $e;
+        }
+    }
+
+    /**
      * Setup method for tests covering {@see Bolt_Boltpay_Model_Order::createOrder}
      *
      * @return array containing mock instance, product id, parent quote id, immutable quote id and transaction
@@ -2076,8 +2119,7 @@ class Bolt_Boltpay_Model_OrderTest extends PHPUnit_Framework_TestCase
                         'salesrule/rule',
                         array('to_date' => Mage::getSingleton('core/date')->date(null, '-10 days'))
                     )
-                )
-            ,
+                ),
             $couponConfig =
                 array(
                     "reference" => self::COUPON_CODE,
@@ -2121,8 +2163,7 @@ class Bolt_Boltpay_Model_OrderTest extends PHPUnit_Framework_TestCase
                         'salesrule/rule',
                         array('is_active' => 0)
                     )
-                )
-            ,
+                ),
             $couponConfig =
                 array(
                     "reference" => self::COUPON_CODE,
@@ -2160,8 +2201,7 @@ class Bolt_Boltpay_Model_OrderTest extends PHPUnit_Framework_TestCase
                         'salesrule/rule',
                         array('to_date' => Mage::getSingleton('core/date')->date(null, '+1 days'))
                     )
-                )
-            ,
+                ),
             $couponConfig =
                 array(
                     "reference" => self::COUPON_CODE,
@@ -2260,48 +2300,19 @@ class Bolt_Boltpay_Model_OrderTest extends PHPUnit_Framework_TestCase
 
     /**
      * @test
-     * that validateBeforeOrderCommit method throws {@see Bolt_Boltpay_OrderCreationException} if totals are not matched
-     * between Bolt and Magento higher than tolerance amount
+     * that if order object provided to validateBeforeOrderCommit is considered empty an exception is thrown
      *
      * @covers ::validateBeforeOrderCommit
      *
-     * @expectedException Bolt_Boltpay_OrderCreationException
-     * @expectedExceptionCode 2001003
-     * @expectedExceptionMessage {"reason": "Grand total has changed", "old_value": "500", "new_value": "2500"}
+     * @expectedException Exception
+     * @expectedExceptionMessage Order was not able to be saved
+     *
+     * @throws Exception if order is empty
      */
-    public function validateBeforeOrderCommit_whenTotalsMismatchBeyondTolerance_throwsException()
+    public function validateBeforeOrderCommit_orderIsEmpty_throwsException()
     {
         $transaction = new stdClass();
-        $transaction->order->cart->total_amount->amount = 500;
-        $this->orderMock->expects($this->once())->method('getGrandTotal')->willReturn(25);
-        $this->paymentMock->expects($this->atLeastOnce())->method('getMethod')
-            ->willReturn(Bolt_Boltpay_Model_Payment::METHOD_CODE);
-        $observer = $this->validateBeforeOrderCommitSetUp($this->orderMock, $transaction);
-        $this->currentMock->validateBeforeOrderCommit($observer);
-    }
-
-    /**
-     * @test
-     * that if totals mismatch is inside tolerance totals are adjusted by the mismatch difference
-     *
-     * @covers ::validateBeforeOrderCommit
-     *
-     * @throws Bolt_Boltpay_OrderCreationException from method tested if the bottom line price total differs by allowed tolerance
-     */
-    public function validateBeforeOrderCommit_whenTotalsMismatchBelowTolerance_correctsTotals()
-    {
-        $transaction = new stdClass();
-        $transaction->order->cart->total_amount->amount = 500;
-        $this->paymentMock->expects($this->atLeastOnce())->method('getMethod')
-            ->willReturn(Bolt_Boltpay_Model_Payment::METHOD_CODE);
-        $this->orderMock->expects($this->once())->method('getGrandTotal')->willReturn(4.99);
-        $this->orderMock->expects($this->once())->method('getTaxAmount')->willReturn(0.99);
-        $this->orderMock->expects($this->once())->method('getBaseTaxAmount')->willReturn(0.99);
-        $this->orderMock->expects($this->once())->method('setTaxAmount')->with(1)->willReturnSelf();
-        $this->orderMock->expects($this->once())->method('setBaseTaxAmount')->with(1)->willReturnSelf();
-        $this->orderMock->expects($this->once())->method('setGrandTotal')->with(5)->willReturnSelf();
-        $this->orderMock->expects($this->once())->method('setBaseGrandTotal')->with(5)->willReturnSelf();
-        $observer = $this->validateBeforeOrderCommitSetUp($this->orderMock, $transaction);
+        $observer = $this->validateBeforeOrderCommitSetUp(null, $transaction);
         $this->currentMock->validateBeforeOrderCommit($observer);
     }
 
@@ -2323,24 +2334,6 @@ class Bolt_Boltpay_Model_OrderTest extends PHPUnit_Framework_TestCase
             );
         $this->orderMock->expects($this->never())->method('getGrandTotal')->willReturn(25);
         $observer = $this->validateBeforeOrderCommitSetUp($this->orderMock, $transaction);
-        $this->currentMock->validateBeforeOrderCommit($observer);
-    }
-
-    /**
-     * @test
-     * that if order object provided to validateBeforeOrderCommit is considered empty an exception is thrown
-     *
-     * @covers ::validateBeforeOrderCommit
-     *
-     * @expectedException Exception
-     * @expectedExceptionMessage Order was not able to be saved
-     *
-     * @throws Bolt_Boltpay_OrderCreationException from method tested if the bottom line price total differs by allowed tolerance
-     */
-    public function validateBeforeOrderCommit_orderIsEmpty_throwsException()
-    {
-        $transaction = new stdClass();
-        $observer = $this->validateBeforeOrderCommitSetUp(null, $transaction);
         $this->currentMock->validateBeforeOrderCommit($observer);
     }
 
@@ -2371,8 +2364,6 @@ class Bolt_Boltpay_Model_OrderTest extends PHPUnit_Framework_TestCase
      * is attempted from route that is in admin scope
      *
      * @covers ::validateBeforeOrderCommit
-     *
-     * @throws Bolt_Boltpay_OrderCreationException if there is a total mismatch beyond tolerance
      */
     public function validateBeforeOrderCommit_whenBoltOrderFromAdmin_continuesValidation()
     {
@@ -2382,6 +2373,66 @@ class Bolt_Boltpay_Model_OrderTest extends PHPUnit_Framework_TestCase
         $observer = $this->validateBeforeOrderCommitSetUp($this->orderMock, $transaction);
         Bolt_Boltpay_Helper_Data::$fromHooks = false;
         Mage::app()->setCurrentStore('admin');
+        $this->currentMock->validateBeforeOrderCommit($observer);
+    }
+
+    /**
+     * @test
+     * that if transaction is empty - validation is skipped
+     *
+     * @covers ::validateBeforeOrderCommit
+     */
+    public function validateBeforeOrderCommit_ifTransactionIsEmpty_skipsValidation()
+    {
+        $this->paymentMock->expects($this->atLeastOnce())->method('getMethod')
+            ->willReturn(Bolt_Boltpay_Model_Payment::METHOD_CODE);
+        $this->orderMock->expects($this->never())->method('getGrandTotal');
+        $observer = $this->validateBeforeOrderCommitSetUp($this->orderMock, null);
+        $this->currentMock->validateBeforeOrderCommit($observer);
+    }
+
+    /**
+     * @test
+     * that validateBeforeOrderCommit method throws {@see Bolt_Boltpay_OrderCreationException} if totals are not matched
+     * between Bolt and Magento higher than tolerance amount
+     *
+     * @covers ::validateBeforeOrderCommit
+     *
+     * @expectedException Bolt_Boltpay_OrderCreationException
+     * @expectedExceptionCode 2001003
+     * @expectedExceptionMessage {"reason": "Grand total has changed", "old_value": "500", "new_value": "2500"}
+     */
+    public function validateBeforeOrderCommit_whenTotalsMismatchBeyondTolerance_throwsException()
+    {
+        $transaction = new stdClass();
+        $transaction->order->cart->total_amount->amount = 500;
+        $this->orderMock->expects($this->once())->method('getGrandTotal')->willReturn(25);
+        $this->paymentMock->expects($this->atLeastOnce())->method('getMethod')
+            ->willReturn(Bolt_Boltpay_Model_Payment::METHOD_CODE);
+        $observer = $this->validateBeforeOrderCommitSetUp($this->orderMock, $transaction);
+        $this->currentMock->validateBeforeOrderCommit($observer);
+    }
+
+    /**
+     * @test
+     * that if totals mismatch is inside tolerance totals are adjusted by the mismatch difference
+     *
+     * @covers ::validateBeforeOrderCommit
+     */
+    public function validateBeforeOrderCommit_whenTotalsMismatchBelowTolerance_correctsTotals()
+    {
+        $transaction = new stdClass();
+        $transaction->order->cart->total_amount->amount = 500;
+        $this->paymentMock->expects($this->atLeastOnce())->method('getMethod')
+            ->willReturn(Bolt_Boltpay_Model_Payment::METHOD_CODE);
+        $this->orderMock->expects($this->once())->method('getGrandTotal')->willReturn(4.99);
+        $this->orderMock->expects($this->once())->method('getTaxAmount')->willReturn(0.99);
+        $this->orderMock->expects($this->once())->method('getBaseTaxAmount')->willReturn(0.99);
+        $this->orderMock->expects($this->once())->method('setTaxAmount')->with(1)->willReturnSelf();
+        $this->orderMock->expects($this->once())->method('setBaseTaxAmount')->with(1)->willReturnSelf();
+        $this->orderMock->expects($this->once())->method('setGrandTotal')->with(5)->willReturnSelf();
+        $this->orderMock->expects($this->once())->method('setBaseGrandTotal')->with(5)->willReturnSelf();
+        $observer = $this->validateBeforeOrderCommitSetUp($this->orderMock, $transaction);
         $this->currentMock->validateBeforeOrderCommit($observer);
     }
 
