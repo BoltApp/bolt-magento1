@@ -9,7 +9,10 @@
     - Bundle Product
     - Downloadable Product with logged in customer required
  - Fixed a bug where images for products with variants are not populated correctly
+ - Now displays an error if quantity is zero for product page checkout
+ - Other bugfixes
  - Unit test coverage ~100%
+ - Ready for Magento Marketplace!
 ## [V2.3.0](https://bolt-public.s3-us-west-1.amazonaws.com/magento-integration-release/bolt-magento1-v2.3.0.zip) 2020-02-13
  - Fixed an intermittent issue related to virtual product
  - Prevent processing on non-Bolt orders or orders in unexpected states
