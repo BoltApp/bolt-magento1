@@ -96,10 +96,12 @@ class Bolt_Boltpay_Helper_Data extends Mage_Core_Helper_Abstract
     }
 
     /**
-     * @param      $checkoutType
+     * @param string $checkoutType
      * @param bool $isVirtualQuote
      *
      * @return string
+     *
+     * @throws Mage_Core_Model_Store_Exception
      */
     public function buildOnCheckCallback($checkoutType, $isVirtualQuote = false)
     {
@@ -124,7 +126,7 @@ class Bolt_Boltpay_Helper_Data extends Mage_Core_Helper_Abstract
                         resolvePromise(response.responseJSON.cart_data);
                     }                   
                 },
-                 onFailure: function(error) { rejectPromise(error); }
+                onFailure: function(error) { rejectPromise(error); }
             }); 
         ";
         switch ($checkoutType) {

@@ -65,7 +65,7 @@ class Bolt_Boltpay_Helper_DataTest extends PHPUnit_Framework_TestCase
                 } ") . "
 
                 bolt_hidden.classList.add('required-entry');
-                newAjax.Request('
+                new Ajax.Request('
         ";
         $result = $this->currentMock->buildOnCheckCallback($checkoutType, $isVirtualQuote);
         $this->assertContains(
