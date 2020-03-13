@@ -181,6 +181,7 @@ class Bolt_Boltpay_Model_OrderTest extends PHPUnit_Framework_TestCase
             'setTotalsCollectedFlag',
             'prepareRecurringPaymentProfiles',
             'setInventoryProcessed',
+            'getPayment'
         );
         $this->immutableQuoteMock = $this->getClassPrototype('Mage_Sales_Model_Quote')
             ->setMethods($quoteMockMethods)->getMock();
@@ -1861,6 +1862,13 @@ class Bolt_Boltpay_Model_OrderTest extends PHPUnit_Framework_TestCase
         $this->orderMock->expects($this->once())->method('cancel')->willReturnSelf();
         $this->orderMock->expects($this->once())->method('setStatus')->with('canceled_bolt')->willReturnSelf();
 
+        $paymentMock = $this->getClassPrototype('Mage_Sales_Model_Quote_Payment')
+            ->setMethods(array('setMethod', 'save'))
+            ->getMock();
+        $paymentMock->expects($this->once())->method('setMethod')->with(null)->willReturnSelf();
+        $paymentMock->expects($this->once())->method('save')->willReturnSelf();
+        $this->immutableQuoteMock->expects($this->once())->method('getPayment')->willReturn($paymentMock);
+
         $currentMock->removePreAuthOrder($this->orderMock);
     }
 
@@ -1881,6 +1889,7 @@ class Bolt_Boltpay_Model_OrderTest extends PHPUnit_Framework_TestCase
         $this->orderMock->expects($this->never())->method('save');
         $this->orderMock->expects($this->never())->method('cancel')->willReturnSelf();
         $this->orderMock->expects($this->never())->method('setStatus')->with('canceled_bolt')->willReturnSelf();
+        $this->immutableQuoteMock->expects($this->never())->method('getPayment');
 
         $currentMock->removePreAuthOrder($this->orderMock);
     }
