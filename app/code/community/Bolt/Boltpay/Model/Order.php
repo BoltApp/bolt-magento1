@@ -1027,6 +1027,7 @@ class Bolt_Boltpay_Model_Order extends Bolt_Boltpay_Model_Abstract
         if ($this->isBoltOrder($order)) {
 
             $parentQuote = $this->getParentQuoteFromOrder($order);
+            $immutableQuote = $this->getQuoteFromOrder($order);
 
             ##############################################################
             # Cancel order for restocking inventory and triggering events
@@ -1056,6 +1057,12 @@ class Bolt_Boltpay_Model_Order extends Bolt_Boltpay_Model_Abstract
             Mage::dispatchEvent('bolt_boltpay_failed_order_removed_after', array('order' => $order));
             $this->reactivateUsedPromotion($order);
             Mage::app()->setCurrentStore($previousStoreId);
+            ###########################################################
+
+            ##########################################################
+            # Remove payment method
+            ##########################################################
+            $immutableQuote->getPayment()->setMethod(null)->save();
             ###########################################################
 
             ##########################################################
