@@ -262,6 +262,27 @@ class Bolt_Boltpay_Controller_Traits_WebHookTraitTest extends PHPUnit_Framework_
     }
 
     /**
+     * Captures the output buffering values before the test, creates its own output buffer to capture echoed
+     * test output and set response expectations
+     *
+     * @param $responseCode     The response code that we wish to return in the test
+     * @return array    Data used by the corresponding Teardown for the sendResponse test
+     */
+    private function responseSetUp($responseCode)
+    {
+        $initialImplicitFlushValue = ini_get("implicit_flush");
+        $bufferingLevelBeforeTest = ob_get_level();
+
+        $this->response->expects($this->once())->method('setHttpResponseCode')->with($responseCode)
+            ->willReturnSelf();
+
+        return array(
+            'initialImplicitFlushValue' => $initialImplicitFlushValue,
+            'bufferingLevelBeforeTest' => $bufferingLevelBeforeTest
+        );
+    }
+
+    /**
      * @test
      * Failing signature validation
      *
@@ -275,8 +296,9 @@ class Bolt_Boltpay_Controller_Traits_WebHookTraitTest extends PHPUnit_Framework_
         );
         $this->helperMock->expects($this->once())->method('verify_hook')
             ->with(self::TEST_PAYLOAD, self::TEST_HMAC)->willReturn(false);
-        $this->response->expects($this->once())->method('setHttpResponseCode')->with($exception->getHttpCode())
-            ->willReturnSelf();
+
+        ob_start();
+        $tearDownData = $this->responseSetUp($exception->getHttpCode());
         $this->response->expects($this->once())->method('setBody')->with($exception->getJson())
             ->willReturnCallback(
                 function($content) {
@@ -305,6 +327,9 @@ class Bolt_Boltpay_Controller_Traits_WebHookTraitTest extends PHPUnit_Framework_
             );
         } catch ( Exception $e ) {
             $this->assertEquals("Simulated early exit for test", $e->getMessage());
+        } finally {
+            $this->responseTearDown($tearDownData);
+            ob_end_clean();
         }
     }
 
@@ -317,23 +342,17 @@ class Bolt_Boltpay_Controller_Traits_WebHookTraitTest extends PHPUnit_Framework_
      */
     private function sendResponseSetUp($responseCode)
     {
-        $initialImplicitFlushValue = ini_get("implicit_flush");
-        $bufferingLevelBeforeTest = ob_get_level();
-
-        $this->response->expects($this->once())->method('setHttpResponseCode')->with($responseCode)
-            ->willReturnSelf();
         $this->response->expects($this->once())->method('sendHeaders')
             ->willReturnCallback(
                 function () {
                     // create buffer to capture our test's output
                     ob_start();
+                    return $this->response;
                 }
-            );
+            )
+        ;
 
-        return array(
-            'initialImplicitFlushValue' => $initialImplicitFlushValue,
-            'bufferingLevelBeforeTest' => $bufferingLevelBeforeTest
-        );
+        return $this->responseSetUp($responseCode);
     }
 
     /**
@@ -375,7 +394,7 @@ class Bolt_Boltpay_Controller_Traits_WebHookTraitTest extends PHPUnit_Framework_
 
         $this->assertEquals($expectedResponse, $actualResponse);
 
-        $this->sendResponseTearDown($tearDownData);
+        $this->responseTearDown($tearDownData);
     }
 
     /**
@@ -472,7 +491,7 @@ class Bolt_Boltpay_Controller_Traits_WebHookTraitTest extends PHPUnit_Framework_
         $this->assertTrue(self::$_fastcgiFinishRequestCalled);
         $this->assertEquals($expectedResponse, $actualResponse);
 
-        $this->sendResponseTearDown($tearDownData);
+        $this->responseTearDown($tearDownData);
     }
 
     /**
@@ -483,7 +502,6 @@ class Bolt_Boltpay_Controller_Traits_WebHookTraitTest extends PHPUnit_Framework_
      */
     public function sendResponse_whenExitImmediatelyIsTrue_callsDispatchEvent()
     {
-        $this->markTestIncomplete('incomplete');
         try {
             $previousApp = Mage::app('default');
             $httpResponseCode = 200;
@@ -493,8 +511,8 @@ class Bolt_Boltpay_Controller_Traits_WebHookTraitTest extends PHPUnit_Framework_
                 ->setMethods(array('dispatchEvent'))
                 ->getMock();
 
-            $appMock->expects($this->once())->method('dispatchEvent')
-                ->with('controller_front_send_response_after');
+            $appMock->expects($this->exactly(2))->method('dispatchEvent')
+                ->withConsecutive('controller_front_send_response_after', 'controller_front_send_response_after');
 
             TestHelper::setNonPublicProperty('Mage', '_app', $appMock);
 
@@ -502,6 +520,7 @@ class Bolt_Boltpay_Controller_Traits_WebHookTraitTest extends PHPUnit_Framework_
             $this->response->expects($this->once())->method('setBody')->with(json_encode($responseArray))
                 ->willReturnCallback(
                     function($content) {
+                        ob_start();  # buffer directly outputed text
                         $this->proxyResponse->setBody($content);
                         return $this->response;
                     }
@@ -528,9 +547,10 @@ class Bolt_Boltpay_Controller_Traits_WebHookTraitTest extends PHPUnit_Framework_
                 $this->assertEquals("Simulated early exit for test", $e->getMessage());
             }
 
-            $this->sendResponseTearDown($tearDownData);
+            $this->responseTearDown($tearDownData);
         } finally {
             TestHelper::setNonPublicProperty('Mage', '_app', $previousApp);
+            ob_end_clean();
         }
     }
 
@@ -539,7 +559,7 @@ class Bolt_Boltpay_Controller_Traits_WebHookTraitTest extends PHPUnit_Framework_
      *
      * @param array $outputBufferDataSettings Contains the initial output buffer settings before the test
      */
-    private function sendResponseTearDown($outputBufferDataSettings)
+    private function responseTearDown($outputBufferDataSettings)
     {
         //reset implicit_flush value to default, changed inside sendResponse
         ini_set("implicit_flush", $outputBufferDataSettings['initialImplicitFlushValue']);

@@ -532,18 +532,23 @@ class Bolt_Boltpay_Helper_GeneralTraitTest extends PHPUnit_Framework_TestCase
      * That when unserializeIntArray is provided with proper serialized data, then a populated array
      * is returned and that when the serialized data is in an improper format an empty array is returned
      *
-     * @covers Bolt_Boltpay_Helper_GeneralTrait::::unserializeIntArray
+     * @covers Bolt_Boltpay_Helper_GeneralTrait::unserializeIntArray
      * @dataProvider unserializeIntArrayProvider
      *
+     * @param string $serializedData        an array of data that is expected in the PHP serialize() format
+     * @param array  $expectedReturnArray   an array represented the result of applying PHP unserialize to the passed string
      */
-    public function unserializeIntArray_withVariousInputs_returnsAppropriateArray($serializeData, $expectedReturnArray) {
-        $this->markTestIncomplete("in development");
+    public function unserializeIntArray_withVariousInputs_returnsAppropriateArray($serializedData, $expectedReturnArray) {
+        $this->assertEquals(
+            $expectedReturnArray,
+            $this->currentMock->unserializeIntArray($serializedData)
+        );
     }
 
     /**
      * Data provider for {@see unserializeIntArray_withVariousInputs_returnsAppropriateArray}
      *
-     * @return array containing [$serializeData, $expectedReturnArray]
+     * @return array containing [$serializedData, $expectedReturnArray]
      */
     public function unserializeIntArrayProvider() {
         return array(
@@ -567,17 +572,23 @@ class Bolt_Boltpay_Helper_GeneralTraitTest extends PHPUnit_Framework_TestCase
      * That when unserializeStringArray is provided with proper serialized data, then a populated array
      * is returned and that when the serialized data is in an improper format an empty array is returned
      *
-     * @covers Bolt_Boltpay_Helper_GeneralTrait::::unserializeStringArray
+     * @covers Bolt_Boltpay_Helper_GeneralTrait::unserializeStringArray
      * @dataProvider unserializeStringArrayProvider
+     *
+     * @param string $serializedData        an array of data that is expected in the PHP serialize() format
+     * @param array  $expectedReturnArray   an array represented the result of applying PHP unserialize to the passed string
      */
-    public function unserializeStringArray_withVariousInputs_returnsAppropriateArray() {
-        $this->markTestIncomplete("in development");
+    public function unserializeStringArray_withVariousInputs_returnsAppropriateArray($serializedData, $expectedReturnArray) {
+        $this->assertEquals(
+            $expectedReturnArray,
+            $this->currentMock->unserializeStringArray($serializedData)
+        );
     }
 
     /**
      * Data provider for {@see unserializeStringArray_withVariousInputs_returnsAppropriateArray}
      *
-     * @return array containing [$serializeData, $expectedReturnArray]
+     * @return array containing [$serializedData, $expectedReturnArray]
      */
     public function unserializeStringArrayProvider() {
         return array(
