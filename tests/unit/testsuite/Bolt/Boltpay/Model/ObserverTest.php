@@ -270,10 +270,9 @@ class Bolt_Boltpay_Model_ObserverTest extends PHPUnit_Framework_TestCase
         $cartHelperMock = $this->clearShoppingCartExceptPPCOrderSetUp(
             Bolt_Boltpay_Block_Checkout_Boltpay::CHECKOUT_TYPE_PRODUCT_PAGE
         );
-        Mage::app()->getRequest()->setParam('session_quote_id', 456);
+
         $cartHelperMock->expects($this->never())->method('getCart');
         Mage::dispatchEvent('checkout_onepage_controller_success_action');
-        $this->assertEquals(456, Mage::getSingleton('checkout/session')->getQuoteId());
         $this->clearShoppingCartExceptPPCOrderTearDown();
     }
 
@@ -293,7 +292,6 @@ class Bolt_Boltpay_Model_ObserverTest extends PHPUnit_Framework_TestCase
         $cartHelperMock->expects($this->once())->method('truncate')->willReturnSelf();
         $cartHelperMock->expects($this->once())->method('save')->willReturnSelf();
         Mage::dispatchEvent('checkout_onepage_controller_success_action');
-        $this->assertNull(Mage::getSingleton('checkout/session')->getQuoteId());
         $this->clearShoppingCartExceptPPCOrderTearDown();
     }
 
