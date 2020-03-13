@@ -126,8 +126,7 @@ trait Bolt_Boltpay_Controller_Traits_WebHookTrait {
         $this->getResponse()
             ->setHttpResponseCode($httpCode)
             ->setBody($content)
-            ->sendHeaders()
-        ;
+            ->sendHeaders();
 
         if ($exitImmediately) {
             $this->getResponse()->sendResponse();

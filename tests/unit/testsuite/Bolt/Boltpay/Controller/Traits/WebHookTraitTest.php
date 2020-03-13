@@ -299,14 +299,12 @@ class Bolt_Boltpay_Controller_Traits_WebHookTraitTest extends PHPUnit_Framework_
 
         ob_start();
         $tearDownData = $this->responseSetUp($exception->getHttpCode());
-        $this->response->expects($this->once())->method('setBody')->with($exception->getJson())
-            ->willReturnCallback(
-                function($content) {
-                    $this->proxyResponse->setBody($content);
-                    return $this->response;
-                }
-            )
-        ;
+        $this->response->expects($this->once())->method('setBody')->with($exception->getJson())->willReturnCallback(
+            function ($content) {
+                $this->proxyResponse->setBody($content);
+                return $this->response;
+            }
+        );
 
         $this->response->expects($this->once())->method('setException')->with($exception)->willReturnSelf();
 
@@ -342,15 +340,13 @@ class Bolt_Boltpay_Controller_Traits_WebHookTraitTest extends PHPUnit_Framework_
      */
     private function sendResponseSetUp($responseCode)
     {
-        $this->response->expects($this->once())->method('sendHeaders')
-            ->willReturnCallback(
-                function () {
-                    // create buffer to capture our test's output
-                    ob_start();
-                    return $this->response;
-                }
-            )
-        ;
+        $this->response->expects($this->once())->method('sendHeaders')->willReturnCallback(
+            function () {
+                // create buffer to capture our test's output
+                ob_start();
+                return $this->response;
+            }
+        );
 
         return $this->responseSetUp($responseCode);
     }
@@ -371,14 +367,12 @@ class Bolt_Boltpay_Controller_Traits_WebHookTraitTest extends PHPUnit_Framework_
     {
         $tearDownData = $this->sendResponseSetup($responseCode);
         $expectedResponse = is_string($responseData) ? $responseData : json_encode($responseData);
-        $this->response->expects($this->once())->method('setBody')->with($expectedResponse)
-            ->willReturnCallback(
-                function($content) {
-                    $this->proxyResponse->setBody($content);
-                    return $this->response;
-                }
-            )
-        ;
+        $this->response->expects($this->once())->method('setBody')->with($expectedResponse)->willReturnCallback(
+            function ($content) {
+                $this->proxyResponse->setBody($content);
+                return $this->response;
+            }
+        );
 
         TestHelper::callNonPublicFunction(
             $this->currentMock,
@@ -454,14 +448,12 @@ class Bolt_Boltpay_Controller_Traits_WebHookTraitTest extends PHPUnit_Framework_
     public function sendResponse_whenUsedOnFPM_shouldCallPlatformSpecificMethod()
     {
         $expectedResponse = json_encode(array("something" => "that can be verified"));
-        $this->response->expects($this->once())->method('setBody')->with($expectedResponse)
-            ->willReturnCallback(
-                function($content) {
-                    $this->proxyResponse->setBody($content);
-                    return $this->response;
-                }
-            )
-        ;
+        $this->response->expects($this->once())->method('setBody')->with($expectedResponse)->willReturnCallback(
+            function ($content) {
+                $this->proxyResponse->setBody($content);
+                return $this->response;
+            }
+        );
 
         if (function_exists('fastcgi_finish_request')) {
             $this->markTestSkipped('Test not available with the Ngnix/PHP-FPM environment');
@@ -471,7 +463,6 @@ class Bolt_Boltpay_Controller_Traits_WebHookTraitTest extends PHPUnit_Framework_
                 Bolt_Boltpay_Controller_Traits_WebHookTraitTest::$_fastcgiFinishRequestCalled = true;
             }
         }
-
 
         $httpResponseCode = 200;
         $tearDownData = $this->sendResponseSetUp($httpResponseCode);
@@ -517,15 +508,13 @@ class Bolt_Boltpay_Controller_Traits_WebHookTraitTest extends PHPUnit_Framework_
             TestHelper::setNonPublicProperty('Mage', '_app', $appMock);
 
             $responseArray = array('useful' => 'test response');
-            $this->response->expects($this->once())->method('setBody')->with(json_encode($responseArray))
-                ->willReturnCallback(
-                    function($content) {
-                        ob_start();  # buffer directly outputed text
-                        $this->proxyResponse->setBody($content);
-                        return $this->response;
-                    }
-                )
-            ;
+            $this->response->expects($this->once())->method('setBody')->with(json_encode($responseArray))->willReturnCallback(
+                function ($content) {
+                    ob_start();  # buffer directly outputed text
+                    $this->proxyResponse->setBody($content);
+                    return $this->response;
+                }
+            );
 
             $this->currentMock->expects($this->once())->method('setFlag')->with(
                 '',
@@ -543,7 +532,7 @@ class Bolt_Boltpay_Controller_Traits_WebHookTraitTest extends PHPUnit_Framework_
                         true
                     )
                 );
-            } catch ( Exception $e ) {
+            } catch (Exception $e) {
                 $this->assertEquals("Simulated early exit for test", $e->getMessage());
             }
 

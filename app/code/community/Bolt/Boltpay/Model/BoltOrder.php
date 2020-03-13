@@ -661,14 +661,14 @@ class Bolt_Boltpay_Model_BoltOrder extends Bolt_Boltpay_Model_Abstract
      * @return string   The calculated key for this quote's cart.
      *                  Format is {quote id}_{md5 hash of cart content}
      */
-    private function calculateCartCacheKey( $quote, $checkoutType )
+    private function calculateCartCacheKey($quote, $checkoutType)
     {
         $boltCartArray = is_array($quote) ? $quote : $this->buildOrder($quote, $checkoutType === 'multi-page');
         if ($boltCartArray['cart']) {
             unset($boltCartArray['cart']['display_id']);
             unset($boltCartArray['cart']['order_reference']);
         }
-        return $quote->getId() . '_' . hash('md5',json_encode($boltCartArray));
+        return $quote->getId() . '_' . hash('md5', json_encode($boltCartArray));
     }
 
     /**
