@@ -116,11 +116,9 @@ class Bolt_Boltpay_Helper_Data extends Mage_Core_Helper_Abstract
                 method:'post',
                 parameters: '',
                 onSuccess: function(response) {
-                    if(response.responseJSON.error) {                                                        
+                    if(response.responseJSON.error) {
+                        // TODO: Consider informing the user of the error.  This could be handled Bolt-server-side
                         rejectPromise(response.responseJSON.error_messages);
-                        
-                        // BoltCheckout is currently not doing anything reasonable to alert the user of a problem, so we will do something as a backup
-                        alert(response.responseJSON.error_messages);
                         location.reload();
                     } else {                                     
                         resolvePromise(response.responseJSON.cart_data);
