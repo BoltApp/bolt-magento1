@@ -526,4 +526,84 @@ class Bolt_Boltpay_Helper_GeneralTraitTest extends PHPUnit_Framework_TestCase
             array('new_parameterless_filter_3', 'value')
         );
     }
+
+    /**
+     * @test
+     * That when unserializeIntArray is provided with proper serialized data, then a populated array
+     * is returned and that when the serialized data is in an improper format an empty array is returned
+     *
+     * @covers Bolt_Boltpay_Helper_GeneralTrait::unserializeIntArray
+     * @dataProvider unserializeIntArrayProvider
+     *
+     * @param string $serializedData        an array of data that is expected in the PHP serialize() format
+     * @param array  $expectedReturnArray   an array represented the result of applying PHP unserialize to the passed string
+     */
+    public function unserializeIntArray_withVariousInputs_returnsAppropriateArray($serializedData, $expectedReturnArray) {
+        $this->assertEquals(
+            $expectedReturnArray,
+            $this->currentMock->unserializeIntArray($serializedData)
+        );
+    }
+
+    /**
+     * Data provider for {@see unserializeIntArray_withVariousInputs_returnsAppropriateArray}
+     *
+     * @return array containing [$serializedData, $expectedReturnArray]
+     */
+    public function unserializeIntArrayProvider() {
+        return array(
+            array(
+                'serializeData' => 'badFormat',
+                'expectedReturnArray' => array()
+            ),
+            array(
+                'serializeData' => 'a:3:{i:0;s:5:"larry";i:1;s:5:"curly";i:2;s:3:"moe";}', # string array
+                'expectedReturnArray' => array()
+            ),
+            array(
+                'serializeData' => 'a:5:{i:0;i:1;i:1;i:1;i:2;i:2;i:3;i:3;i:4;i:5;}', # int array
+                'expectedReturnArray' => array(1,1,2,3,5)
+            ),
+        );
+    }
+
+    /**
+     * @test
+     * That when unserializeStringArray is provided with proper serialized data, then a populated array
+     * is returned and that when the serialized data is in an improper format an empty array is returned
+     *
+     * @covers Bolt_Boltpay_Helper_GeneralTrait::unserializeStringArray
+     * @dataProvider unserializeStringArrayProvider
+     *
+     * @param string $serializedData        an array of data that is expected in the PHP serialize() format
+     * @param array  $expectedReturnArray   an array represented the result of applying PHP unserialize to the passed string
+     */
+    public function unserializeStringArray_withVariousInputs_returnsAppropriateArray($serializedData, $expectedReturnArray) {
+        $this->assertEquals(
+            $expectedReturnArray,
+            $this->currentMock->unserializeStringArray($serializedData)
+        );
+    }
+
+    /**
+     * Data provider for {@see unserializeStringArray_withVariousInputs_returnsAppropriateArray}
+     *
+     * @return array containing [$serializedData, $expectedReturnArray]
+     */
+    public function unserializeStringArrayProvider() {
+        return array(
+            array(
+                'serializeData' => 'badFormat',
+                'expectedReturnArray' => array()
+            ),
+            array(
+                'serializeData' => 'a:3:{i:0;s:5:"larry";i:1;s:5:"curly";i:2;s:3:"moe";}', # string array
+                'expectedReturnArray' => array('larry','curly','moe')
+            ),
+            array(
+                'serializeData' => 'a:5:{i:0;i:1;i:1;i:1;i:2;i:2;i:3;i:3;i:4;i:5;}', # int array
+                'expectedReturnArray' => array()
+            ),
+        );
+    }
 }

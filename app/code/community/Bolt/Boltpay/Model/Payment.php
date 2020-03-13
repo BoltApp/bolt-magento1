@@ -708,13 +708,15 @@ class Bolt_Boltpay_Model_Payment extends Mage_Payment_Model_Method_Abstract
         if (is_null($refundTransactionStatuses)) {
             $refundTransactionStatuses = array();
         } else {
-            $refundTransactionStatuses = unserialize($refundTransactionStatuses);
+            $refundTransactionStatuses = json_decode($refundTransactionStatuses)
+                ?: $this->boltHelper()->unserializeStringArray($refundTransactionStatuses);
         }
 
         if (is_null($refundTransactionIds)) {
             $refundTransactionIds = array();
         } else {
-            $refundTransactionIds = unserialize($refundTransactionIds);
+            $refundTransactionIds = json_decode($refundTransactionIds)
+                ?: $this->boltHelper()->unserializeStringArray($refundTransactionIds);
         }
 
         array_push($refundTransactionStatuses, $refundTransactionStatus);
@@ -726,9 +728,9 @@ class Bolt_Boltpay_Model_Payment extends Mage_Payment_Model_Method_Abstract
         );
         $payment->getOrder()->addStatusHistoryComment($msg);
         $payment->setAdditionalInformation('bolt_refund_transaction_statuses',
-            serialize($refundTransactionStatuses));
+            json_encode($refundTransactionStatuses));
         $payment->setAdditionalInformation('bolt_refund_merchant_transaction_ids',
-            serialize($refundTransactionIds));
+            json_encode($refundTransactionIds));
         $payment->setTransactionId(sprintf("%s-refund", $refundReference));
         $payment->setAdditionalInformation('bolt_transaction_status', $refundTransactionStatus);
     }

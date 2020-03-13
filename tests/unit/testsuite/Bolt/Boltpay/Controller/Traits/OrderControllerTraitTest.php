@@ -386,7 +386,7 @@ class Bolt_Boltpay_Controller_Traits_OrderControllerTraitTest extends PHPUnit_Fr
             array(
                 'creation_time' => time(),
                 'key'           => $quoteCacheKey,
-                'cart_data'     => serialize((object)array('token' => self::BOLT_ORDER_TOKEN))
+                'cart_data'     => json_encode((object)array('token' => self::BOLT_ORDER_TOKEN))
             )
         );
 

@@ -44,6 +44,11 @@ class Bolt_Boltpay_Controller_Traits_WebHookTraitTest extends PHPUnit_Framework_
     private $response;
 
     /**
+     * @var PHPUnit_Framework_MockObject_MockObject|Mage_Core_Controller_Response_Http Proxy instance of response object
+     */
+    private $proxyResponse;
+
+    /**
      * @var PHPUnit_Framework_MockObject_MockObject|Mage_Core_Model_Layout Mocked instance of layout object
      */
     private $layout;
@@ -68,12 +73,12 @@ class Bolt_Boltpay_Controller_Traits_WebHookTraitTest extends PHPUnit_Framework_
     {
         Mage::app('default');
 
-        $this->currentMock = $this->getMockBuilder('Bolt_Boltpay_Controller_Traits_WebHookTrait')
-            ->setMethods(array('getRequest', 'getLayout', 'getResponse'))
+        $this->currentMock = $this->getMockBuilder('Bolt_Boltpay_Controller_Traits_WebHookTraitMockObject')
+            ->setMethods(array('getRequest', 'getLayout', 'getResponse', 'setFlag'))
             ->disableOriginalConstructor()
             ->disableOriginalClone()
             ->disableArgumentCloning()
-            ->getMockForTrait();
+            ->getMock();
 
         $this->request = $this->getMockBuilder('Mage_Core_Controller_Request_Http')
             ->setMethods(array('isAjax', 'getParam'))
@@ -83,6 +88,7 @@ class Bolt_Boltpay_Controller_Traits_WebHookTraitTest extends PHPUnit_Framework_
             ->setMethods(array('setDirectOutput'))
             ->getMock();
 
+        $this->proxyResponse = new Mage_Core_Controller_Response_Http();
         $this->response = $this->getMockBuilder('Mage_Core_Controller_Response_Http')
             ->setMethods(
                 array(
@@ -93,10 +99,22 @@ class Bolt_Boltpay_Controller_Traits_WebHookTraitTest extends PHPUnit_Framework_
                     'clearBody',
                     'setHttpResponseCode',
                     'sendHeaders',
-                    'sendResponse'
+                    'sendResponse',
+                    'sendHeadersAndExit'
                 )
             )
             ->getMock();
+
+        $this->response->method('sendResponse')->willReturnCallback(
+            function() {
+                $this->proxyResponse->sendResponse();
+                return $this->response;
+            }
+        );
+
+        $this->response->method('sendHeadersAndExit')->willThrowException(
+            new Exception("Simulated early exit for test")
+        );
 
         $this->helperMock = $this->getMockBuilder('Bolt_Boltpay_Helper_Data')
             ->setMethods(array('setResponseContextHeaders', 'verify_hook', 'notifyException'))
@@ -134,18 +152,18 @@ class Bolt_Boltpay_Controller_Traits_WebHookTraitTest extends PHPUnit_Framework_
         $this->response->expects($this->once())->method('clearAllHeaders')->willReturnSelf();
         $this->response->expects($this->once())->method('clearBody')->willReturnSelf();
         $this->helperMock->expects($this->once())->method('setResponseContextHeaders');
-        $this->response->expects($this->once())->method('setHeader')->with('Content-type', 'application/json', true);
-        $this->layout->expects($this->once())->method('setDirectOutput')->with(true)
-            ->willThrowException(new Exception('Avoid calling parent::preDispatch'));
+        $this->response->method('setHeader')->withConsecutive(
+            array('Content-type', 'application/json', true),
+            array($this->anything(), $this->anything(), $this->anything())
+        );
+        $this->layout->expects($this->once())->method('setDirectOutput')->with(true);
         $this->helperMock->expects($this->never())->method('verify_hook');
+
         TestHelper::setNonPublicProperty(
             $this->currentMock,
             'requestMustBeSigned',
             false
         );
-
-        //this is expected because we are mocking a trait
-        $this->setExpectedException('Exception', 'Avoid calling parent::preDispatch');
 
         // check to disable output buffering since ob_start() is called inside preDispatch
         if (ob_get_level() > 0) {
@@ -163,8 +181,6 @@ class Bolt_Boltpay_Controller_Traits_WebHookTraitTest extends PHPUnit_Framework_
      * @covers       Bolt_Boltpay_Controller_Traits_WebHookTrait::verifyBoltSignature
      * @covers       Bolt_Boltpay_Controller_Traits_WebHookTrait::preDispatch
      * @dataProvider payloadProvider
-     * @expectedException Exception
-     * @expectedExceptionMessage Avoid calling parent::preDispatch
      *
      * @param string $payload Webhook payload in JSON format
      * @throws ReflectionException from TestHelper if a specified object, class or property does not exist.
@@ -175,7 +191,10 @@ class Bolt_Boltpay_Controller_Traits_WebHookTraitTest extends PHPUnit_Framework_
         $this->response->expects($this->once())->method('clearAllHeaders')->willReturnSelf();
         $this->response->expects($this->once())->method('clearBody')->willReturnSelf();
         $this->helperMock->expects($this->once())->method('setResponseContextHeaders');
-        $this->response->expects($this->once())->method('setHeader')->with('Content-type', 'application/json', true);
+        $this->response->method('setHeader')->withConsecutive(
+            array('Content-type', 'application/json', true),
+            array($this->anything(), $this->anything(), $this->anything())
+        );
         $this->layout->expects($this->once())->method('setDirectOutput')->with(true);
         TestHelper::setNonPublicProperty(
             $this->currentMock,
@@ -188,7 +207,7 @@ class Bolt_Boltpay_Controller_Traits_WebHookTraitTest extends PHPUnit_Framework_
         Bolt_Boltpay_StreamHelper::setData($payload);
 
         $this->helperMock->expects($this->once())->method('verify_hook')->with($payload, self::TEST_HMAC)
-            ->willThrowException(new Exception('Avoid calling parent::preDispatch'));
+            ->willReturn(true);
 
         // check to disable output buffering since ob_start() is called inside preDispatch
         if (ob_get_level() > 0) {
@@ -243,12 +262,31 @@ class Bolt_Boltpay_Controller_Traits_WebHookTraitTest extends PHPUnit_Framework_
     }
 
     /**
+     * Captures the output buffering values before the test, creates its own output buffer to capture echoed
+     * test output and set response expectations
+     *
+     * @param $responseCode     The response code that we wish to return in the test
+     * @return array    Data used by the corresponding Teardown for the sendResponse test
+     */
+    private function responseSetUp($responseCode)
+    {
+        $initialImplicitFlushValue = ini_get("implicit_flush");
+        $bufferingLevelBeforeTest = ob_get_level();
+
+        $this->response->expects($this->once())->method('setHttpResponseCode')->with($responseCode)
+            ->willReturnSelf();
+
+        return array(
+            'initialImplicitFlushValue' => $initialImplicitFlushValue,
+            'bufferingLevelBeforeTest' => $bufferingLevelBeforeTest
+        );
+    }
+
+    /**
      * @test
      * Failing signature validation
      *
      * @covers Bolt_Boltpay_Controller_Traits_WebHookTrait::verifyBoltSignature
-     * @expectedException Exception
-     * @expectedExceptionMessage Expected exception before exit call
      */
     public function verifyBoltSignature_withRequestSignatureValidationEnabledAndInvalidSignature_shouldSendErrorResponse()
     {
@@ -258,23 +296,39 @@ class Bolt_Boltpay_Controller_Traits_WebHookTraitTest extends PHPUnit_Framework_
         );
         $this->helperMock->expects($this->once())->method('verify_hook')
             ->with(self::TEST_PAYLOAD, self::TEST_HMAC)->willReturn(false);
-        $this->response->expects($this->once())->method('setHttpResponseCode')->with($exception->getHttpCode())
-            ->willReturnSelf();
-        $this->response->expects($this->once())->method('setBody')->with($exception->getJson())->willReturnSelf();
-        $this->response->expects($this->once())->method('setException')->with($exception)->willReturnSelf();
-        $this->response->expects($this->once())->method('sendResponse');
 
-        $this->helperMock->expects($this->once())->method('notifyException')->with($exception, array(), 'warning')
-            ->willThrowException(new Exception('Expected exception before exit call'));
-
-        TestHelper::callNonPublicFunction(
-            $this->currentMock,
-            'verifyBoltSignature',
-            array(
-                self::TEST_PAYLOAD,
-                self::TEST_HMAC
-            )
+        ob_start();
+        $tearDownData = $this->responseSetUp($exception->getHttpCode());
+        $this->response->expects($this->once())->method('setBody')->with($exception->getJson())->willReturnCallback(
+            function ($content) {
+                $this->proxyResponse->setBody($content);
+                return $this->response;
+            }
         );
+
+        $this->response->expects($this->once())->method('setException')->with($exception)->willReturnSelf();
+
+        $this->currentMock->expects($this->once())->method('setFlag')->with(
+            '',
+            Mage_Core_Controller_Varien_Action::FLAG_NO_POST_DISPATCH,
+            1
+        );
+
+        try {
+            TestHelper::callNonPublicFunction(
+                $this->currentMock,
+                'verifyBoltSignature',
+                array(
+                    self::TEST_PAYLOAD,
+                    self::TEST_HMAC
+                )
+            );
+        } catch ( Exception $e ) {
+            $this->assertEquals("Simulated early exit for test", $e->getMessage());
+        } finally {
+            $this->responseTearDown($tearDownData);
+            ob_end_clean();
+        }
     }
 
     /**
@@ -286,23 +340,15 @@ class Bolt_Boltpay_Controller_Traits_WebHookTraitTest extends PHPUnit_Framework_
      */
     private function sendResponseSetUp($responseCode)
     {
-        $initialImplicitFlushValue = ini_get("implicit_flush");
-        $bufferingLevelBeforeTest = ob_get_level();
-
-        $this->response->expects($this->once())->method('setHttpResponseCode')->with($responseCode)
-            ->willReturnSelf();
-        $this->response->expects($this->once())->method('sendHeaders')
-            ->willReturnCallback(
-                function () {
-                    // create buffer to capture our test's output
-                    ob_start();
-                }
-            );
-
-        return array(
-            'initialImplicitFlushValue' => $initialImplicitFlushValue,
-            'bufferingLevelBeforeTest' => $bufferingLevelBeforeTest
+        $this->response->expects($this->once())->method('sendHeaders')->willReturnCallback(
+            function () {
+                // create buffer to capture our test's output
+                ob_start();
+                return $this->response;
+            }
         );
+
+        return $this->responseSetUp($responseCode);
     }
 
     /**
@@ -320,6 +366,13 @@ class Bolt_Boltpay_Controller_Traits_WebHookTraitTest extends PHPUnit_Framework_
     public function sendResponse_withVariousResponseCodesAndData_shouldOutputItDirectly($responseCode, $responseData)
     {
         $tearDownData = $this->sendResponseSetup($responseCode);
+        $expectedResponse = is_string($responseData) ? $responseData : json_encode($responseData);
+        $this->response->expects($this->once())->method('setBody')->with($expectedResponse)->willReturnCallback(
+            function ($content) {
+                $this->proxyResponse->setBody($content);
+                return $this->response;
+            }
+        );
 
         TestHelper::callNonPublicFunction(
             $this->currentMock,
@@ -332,11 +385,10 @@ class Bolt_Boltpay_Controller_Traits_WebHookTraitTest extends PHPUnit_Framework_
         );
 
         $actualResponse = ob_get_clean(); # get the calls response and remove our buffer
-        $expectedResponse = is_string($responseData) ? $responseData : json_encode($responseData);
 
         $this->assertEquals($expectedResponse, $actualResponse);
 
-        $this->sendResponseTearDown($tearDownData);
+        $this->responseTearDown($tearDownData);
     }
 
     /**
@@ -395,6 +447,14 @@ class Bolt_Boltpay_Controller_Traits_WebHookTraitTest extends PHPUnit_Framework_
      */
     public function sendResponse_whenUsedOnFPM_shouldCallPlatformSpecificMethod()
     {
+        $expectedResponse = json_encode(array("something" => "that can be verified"));
+        $this->response->expects($this->once())->method('setBody')->with($expectedResponse)->willReturnCallback(
+            function ($content) {
+                $this->proxyResponse->setBody($content);
+                return $this->response;
+            }
+        );
+
         if (function_exists('fastcgi_finish_request')) {
             $this->markTestSkipped('Test not available with the Ngnix/PHP-FPM environment');
         } else {
@@ -412,18 +472,17 @@ class Bolt_Boltpay_Controller_Traits_WebHookTraitTest extends PHPUnit_Framework_
             'sendResponse',
             array(
                 $httpResponseCode,
-                array(),
+                $expectedResponse,
                 false
             )
         );
 
         $actualResponse = ob_get_clean(); # get the calls response and remove our buffer
-        $expectedResponse = json_encode(array()); # we expect the default empty body
 
         $this->assertTrue(self::$_fastcgiFinishRequestCalled);
         $this->assertEquals($expectedResponse, $actualResponse);
 
-        $this->sendResponseTearDown($tearDownData);
+        $this->responseTearDown($tearDownData);
     }
 
     /**
@@ -434,42 +493,53 @@ class Bolt_Boltpay_Controller_Traits_WebHookTraitTest extends PHPUnit_Framework_
      */
     public function sendResponse_whenExitImmediatelyIsTrue_callsDispatchEvent()
     {
-        $httpResponseCode = 200;
-        $tearDownData = $this->sendResponseSetUp($httpResponseCode);
-
-        $appMock = $this->getMockBuilder('Mage_Core_Model_App')
-            ->setMethods(array('dispatchEvent'))
-            ->getMock();
-
-        $appMock->expects($this->once())->method('dispatchEvent')
-            ->with('controller_front_send_response_after')
-            ->willThrowException(new Exception('Expected exception before exit call'));
-
-        $previousApp = Mage::app('default');
-
-        TestHelper::setNonPublicProperty('Mage', '_app', $appMock);
-
         try {
-            TestHelper::callNonPublicFunction(
-                $this->currentMock,
-                'sendResponse',
-                array(
-                    $httpResponseCode,
-                    array(),
-                    true
-                )
+            $previousApp = Mage::app('default');
+            $httpResponseCode = 200;
+            $tearDownData = $this->sendResponseSetUp($httpResponseCode);
+
+            $appMock = $this->getMockBuilder('Mage_Core_Model_App')
+                ->setMethods(array('dispatchEvent'))
+                ->getMock();
+
+            $appMock->expects($this->exactly(2))->method('dispatchEvent')
+                ->withConsecutive('controller_front_send_response_after', 'controller_front_send_response_after');
+
+            TestHelper::setNonPublicProperty('Mage', '_app', $appMock);
+
+            $responseArray = array('useful' => 'test response');
+            $this->response->expects($this->once())->method('setBody')->with(json_encode($responseArray))->willReturnCallback(
+                function ($content) {
+                    ob_start();  # buffer directly outputed text
+                    $this->proxyResponse->setBody($content);
+                    return $this->response;
+                }
             );
-        } catch (Exception $exception) {
-            $this->assertInstanceOf(Exception::class, $exception, 'Expected exception before exit call');
 
-            $actualResponse = ob_get_clean(); # get the calls response and remove our buffer
-            $expectedResponse = json_encode(array()); # we expect the default empty body
+            $this->currentMock->expects($this->once())->method('setFlag')->with(
+                '',
+                Mage_Core_Controller_Varien_Action::FLAG_NO_POST_DISPATCH,
+                1
+            );
 
-            $this->assertEquals($expectedResponse, $actualResponse);
+            try {
+                TestHelper::callNonPublicFunction(
+                    $this->currentMock,
+                    'sendResponse',
+                    array(
+                        $httpResponseCode,
+                        $responseArray,
+                        true
+                    )
+                );
+            } catch (Exception $e) {
+                $this->assertEquals("Simulated early exit for test", $e->getMessage());
+            }
 
-            $this->sendResponseTearDown($tearDownData);
+            $this->responseTearDown($tearDownData);
         } finally {
             TestHelper::setNonPublicProperty('Mage', '_app', $previousApp);
+            ob_end_clean();
         }
     }
 
@@ -478,7 +548,7 @@ class Bolt_Boltpay_Controller_Traits_WebHookTraitTest extends PHPUnit_Framework_
      *
      * @param array $outputBufferDataSettings Contains the initial output buffer settings before the test
      */
-    private function sendResponseTearDown($outputBufferDataSettings)
+    private function responseTearDown($outputBufferDataSettings)
     {
         //reset implicit_flush value to default, changed inside sendResponse
         ini_set("implicit_flush", $outputBufferDataSettings['initialImplicitFlushValue']);
@@ -487,5 +557,21 @@ class Bolt_Boltpay_Controller_Traits_WebHookTraitTest extends PHPUnit_Framework_
         while (ob_get_level() < $outputBufferDataSettings['bufferingLevelBeforeTest']) {
             ob_start();
         }
+    }
+}
+
+/**
+ * Internal class instantiation of trait that allows for calling of parent methods
+ */
+class Bolt_Boltpay_Controller_Traits_WebHookTraitMockObject extends Mage_Core_Controller_Front_Action
+{
+    use Bolt_Boltpay_Controller_Traits_WebHookTrait;
+
+    /**
+     * Override of signed request setting
+     */
+    protected function _construct()
+    {
+        $this->requestMustBeSigned = false;
     }
 }

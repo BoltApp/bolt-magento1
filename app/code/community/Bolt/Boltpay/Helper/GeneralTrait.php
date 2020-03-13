@@ -196,4 +196,30 @@ trait Bolt_Boltpay_Helper_GeneralTrait {
 
         return $valueWrapper->getValue();
     }
+
+    /**
+     * Unserializes a homogeneous non-associative array of integers from PHP serialized format to
+     * to a PHP array without using the unserialize method
+     *
+     * @param string $serializedData    A non-associative array of integers in PHP serialized format
+     *
+     * @return  array the converted array of integers in PHP format
+     */
+    public function unserializeIntArray($serializedData) {
+        preg_match_all('/i:\d+;i:(\d+);/', $serializedData, $convertedArray);
+        return $convertedArray[1];
+    }
+
+    /**
+     * Unserializes a homogeneous non-associative array of strings from PHP serialized format to
+     * to a PHP array without using the unserialize method
+     *
+     * @param string $serializedData    A non-associative array of strings in PHP serialized format
+     *
+     * @return  array the converted array of strings in PHP format
+     */
+    public function unserializeStringArray($serializedData) {
+        preg_match_all('/i:\d+;s:\d+:"([^"]*)";/', $serializedData, $convertedArray);
+        return $convertedArray[1];
+    }
 }

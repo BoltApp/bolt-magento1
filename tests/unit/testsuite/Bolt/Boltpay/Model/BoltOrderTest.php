@@ -1667,13 +1667,13 @@ class Bolt_Boltpay_Model_BoltOrderTest extends PHPUnit_Framework_TestCase
 					$checkoutType
 				)
 			),
-			'cart_data' => serialize(array())
+			'cart_data' => json_encode(array('cartContent' => array('item 1', 'item 2')))
 		);
 		$sessionMock->method('getCachedCartData')->willReturn($cachedCartDataJS);
 		$sessionMock->expects($this->never())->method('unsCachedCartData');
 		$currentMock->method('calculateCartCacheKey')->willReturn($cachedCartDataJS['key']);
 		$this->assertEquals(
-			unserialize($cachedCartDataJS['cart_data']),
+			json_decode($cachedCartDataJS['cart_data']),
 			$currentMock->getCachedCartData(
 				$quote,
 				$checkoutType
@@ -1698,7 +1698,7 @@ class Bolt_Boltpay_Model_BoltOrderTest extends PHPUnit_Framework_TestCase
 			->setMethods(array('setCachedCartData'))->getMock();
 		TestHelper::stubSingleton('core/session', $sessionMock);
 
-		$cartData = array();
+		$cartData = array('cartContent' => array('item 1', 'item 2', 'item 3', 'item 4'));
 		$quote = Mage::getModel('sales/quote');
 		$checkoutType = Bolt_Boltpay_Block_Checkout_Boltpay::CHECKOUT_TYPE_ADMIN;
 
@@ -1713,7 +1713,7 @@ class Bolt_Boltpay_Model_BoltOrderTest extends PHPUnit_Framework_TestCase
 							$checkoutType
 						)
 					),
-					'cart_data' => serialize($cartData)
+					'cart_data' => json_encode($cartData)
 				)
 			)
 		);
