@@ -68,6 +68,12 @@ var boltConfigPDP = {
                     price += Number(optionsPrice.optionPrices.downloadable);
                 }
                 break;
+            case 'bundle':
+                if (typeof optionsPrice.optionPrices.bundle !== 'undefined') {
+                    //override price with bundle price
+                    price = optionsPrice.optionPrices.bundle;
+                }
+                break;
         }
         return price;
     },
@@ -198,6 +204,11 @@ document.addEventListener("DOMContentLoaded", function() {
         dConfig.reloadPrice = function () {
             Product.Downloadable.prototype.reloadPrice.apply(dConfig);
             boltConfigPDP.init();
+        };
+    }
+    if (typeof bundle !== 'undefined') {
+        bundle.reloadPrice = function () {
+            Product.Bundle.prototype.reloadPrice.apply(bundle);
         };
     }
 });
