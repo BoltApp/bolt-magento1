@@ -1656,11 +1656,10 @@ SCSS;
      * @param string $checkoutType currently in use
      * @param bool   $isShoppingCartPage whether current page is checkout/cart
      * @param bool   $shouldCloneImmediately inverse of extra-config flag for cloneOnClick
-     * @param bool   $expectPostponedConfiguration is postponed or normal configuration expected
      *
      * @throws Mage_Core_Exception from test setup if unable to stub helper
      */
-    public function buildBoltCheckoutJavascript_withVariousConfigs_returnsBoltJs($checkoutType, $isShoppingCartPage, $shouldCloneImmediately, $expectPostponedConfiguration)
+    public function buildBoltCheckoutJavascript_withVariousConfigs_returnsBoltJs($checkoutType, $isShoppingCartPage, $shouldCloneImmediately)
     {
         list($hintData, $cartData, $currentMock, $quoteMock) = $this->buildBoltCheckoutJavascript_withVariousConfigsSetUp(
             $checkoutType,
@@ -1671,7 +1670,7 @@ SCSS;
             ->with(
                 'bolt_boltpay_filter_bolt_checkout_javascript',
                 $this->callback(
-                    function ($js) use ($cartData, $hintData, $expectPostponedConfiguration) {
+                    function ($js) use ($cartData, $hintData, $shouldCloneImmediately) {
                         $this->assertContains(
                             sprintf('var $hints_transform = %s;', self::HINTS_TRANSFORM_FUNCTION),
                             $js
@@ -1692,25 +1691,25 @@ SCSS;
                         );
                         $this->assertContains(sprintf("var quote_id = '%s';", self::QUOTE_ID), $js);
                         $this->assertContains('var order_completed = false;', $js);
-                        $this->assertContains(sprintf('var do_checks = %d;', !$expectPostponedConfiguration), $js);
                         $windowBoltModal = explode('window.BoltModal = ', $js)[1];
-                        $this->assertContains(
-                            'BoltCheckout.configure(get_json_cart(),json_hints,/*BOLT-CALLBACKS*/);',
-                            preg_replace('/\s*/', '', $windowBoltModal)
-                        );
 
-                        if ($expectPostponedConfiguration) {
-                            $this->assertRegExp(
-                                /** @lang PhpRegExp */ '/BoltCheckout\.configure\(\s*new Promise/',
-                                $windowBoltModal
+                        if ($shouldCloneImmediately) {
+                            $this->assertContains(
+                                'BoltCheckout.configure(get_json_cart(),json_hints,/*BOLT-CALLBACKS*/);',
+                                preg_replace('/\s*/', '', $windowBoltModal)
                             );
-                            $this->assertRegExp(
-                                sprintf(
-                                    /** @lang PhpRegExp */ '/\{\s*check: function\(\) \{\s*%s\s*%s/',
-                                    preg_quote(self::CHECK_FUNCTION),
-                                    preg_quote(self::ON_CHECK_CALLBACK)
-                                ),
-                                $windowBoltModal
+                            $this->assertNotContains(
+                                'BoltCheckout.configure(newPromise((resolve,reject)=>{resolvePromise=resolve;rejectPromise=reject;}),json_hints,/*BOLT-CALLBACKS*/);',
+                                preg_replace('/\s*/', '', $windowBoltModal)
+                            );
+                        } else {
+                            $this->assertContains(
+                                'BoltCheckout.configure(newPromise((resolve,reject)=>{resolvePromise=resolve;rejectPromise=reject;}),json_hints,/*BOLT-CALLBACKS*/);',
+                                preg_replace('/\s*/', '', $windowBoltModal)
+                            );
+                            $this->assertNotContains(
+                                'BoltCheckout.configure(get_json_cart(),json_hints,/*BOLT-CALLBACKS*/);',
+                                preg_replace('/\s*/', '', $windowBoltModal)
                             );
                         }
 
@@ -1731,7 +1730,7 @@ SCSS;
     /**
      * Data provider for {@see buildBoltCheckoutJavascript_withVariousConfigs_returnsBoltJs}
      *
-     * @return array containing checkout type, is current page cart flag, should clone immediately config and flag whether to expect postponed configuration
+     * @return array containing checkout type, is current page cart flag, and should clone immediately config
      */
     public function buildBoltCheckoutJavascript_withVariousConfigsProvider()
     {
@@ -1739,44 +1738,37 @@ SCSS;
             array(
                 'checkoutType'                 => BoltpayCheckoutBlock::CHECKOUT_TYPE_MULTI_PAGE,
                 'isShoppingCartPage'           => true,
-                'shouldCloneImmediately'       => true,
-                'expectPostponedConfiguration' => false
+                'shouldCloneImmediately'       => true
             ),
             array(
                 'checkoutType'                 => BoltpayCheckoutBlock::CHECKOUT_TYPE_MULTI_PAGE,
                 'isShoppingCartPage'           => true,
-                'shouldCloneImmediately'       => false,
-                'expectPostponedConfiguration' => true
+                'shouldCloneImmediately'       => false
             ),
             array(
                 'checkoutType'                 => BoltpayCheckoutBlock::CHECKOUT_TYPE_MULTI_PAGE,
                 'isShoppingCartPage'           => false,
-                'shouldCloneImmediately'       => false,
-                'expectPostponedConfiguration' => true
+                'shouldCloneImmediately'       => false
             ),
             array(
                 'checkoutType'                 => BoltpayCheckoutBlock::CHECKOUT_TYPE_ONE_PAGE,
                 'isShoppingCartPage'           => true,
-                'shouldCloneImmediately'       => true,
-                'expectPostponedConfiguration' => false
+                'shouldCloneImmediately'       => true
             ),
             array(
                 'checkoutType'                 => BoltpayCheckoutBlock::CHECKOUT_TYPE_ONE_PAGE,
                 'isShoppingCartPage'           => true,
-                'shouldCloneImmediately'       => false,
-                'expectPostponedConfiguration' => true
+                'shouldCloneImmediately'       => false
             ),
             array(
                 'checkoutType'                 => BoltpayCheckoutBlock::CHECKOUT_TYPE_ADMIN,
                 'isShoppingCartPage'           => false,
-                'shouldCloneImmediately'       => false,
-                'expectPostponedConfiguration' => true
+                'shouldCloneImmediately'       => false
             ),
             array(
                 'checkoutType'                 => BoltpayCheckoutBlock::CHECKOUT_TYPE_FIRECHECKOUT,
                 'isShoppingCartPage'           => false,
-                'shouldCloneImmediately'       => false,
-                'expectPostponedConfiguration' => true
+                'shouldCloneImmediately'       => false
             ),
         );
     }
@@ -1820,7 +1812,6 @@ SCSS;
                         );
                         $this->assertContains(sprintf("var quote_id = '%s';", self::QUOTE_ID), $js);
                         $this->assertContains('var order_completed = false;', $js);
-                        $this->assertContains('var do_checks = 1;', $js);
                         $windowBoltModal = explode('window.BoltModal = ', $js)[1];
                         $this->assertContains(
                             "BoltCheckout.configureProductCheckout(get_json_cart(),json_hints,/*BOLT-CALLBACKS*/,{checkoutButtonClassName:'bolt-product-checkout-button'});",
