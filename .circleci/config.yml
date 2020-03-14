@@ -121,7 +121,6 @@ jobs:
         path: ./integration-tests/allure-report
     - notify-buildcop
 workflows:
-  version: 2
   tests:
     jobs:
     - integration-sandbox:
