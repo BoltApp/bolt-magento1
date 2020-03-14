@@ -126,7 +126,11 @@ class Bolt_Boltpay_ShippingController
                 benchmark('Notified bugsnag of address error');
                 $this->sendResponse(
                     422,
-                    array('status' => 'failure','error' => $addressErrorDetails)
+                    array('status' => 'failure', 'error' => $addressErrorDetails),
+                    call_user_func(function () {
+                        benchmark('Sending shipping address failure to Bolt');
+                        return true;
+                    })
                 );
             }
             ////////////////////////////////////////////////////////////////////////////////
