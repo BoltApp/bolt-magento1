@@ -1,7 +1,3 @@
-version: 2.1
-orbs:
-  slack: circleci/slack@3.3.0
-  swissknife: roopakv/swissknife@0.25.0
 commands:
   if-php-modified:
     description: Runs if any php file is modified
@@ -120,6 +116,10 @@ jobs:
     - store_artifacts:
         path: ./integration-tests/allure-report
     - notify-buildcop
+orbs:
+  slack: circleci/slack@3.3.0
+  swissknife: roopakv/swissknife@0.25.0
+version: 2.1
 workflows:
   tests:
     jobs:
