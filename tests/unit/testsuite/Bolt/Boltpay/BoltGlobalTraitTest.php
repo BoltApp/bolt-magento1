@@ -9,7 +9,7 @@ class Bolt_Boltpay_BoltGlobalTraitTest extends PHPUnit_Framework_TestCase
 {
     use Bolt_Boltpay_MockingTrait;
 
-    /** @var string Name of the class tested. */
+    /** @var string Name of the class tested */
     protected $testClassName = 'Bolt_Boltpay_BoltGlobalTrait';
 
     /**
