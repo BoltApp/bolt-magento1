@@ -23,7 +23,7 @@
 trait Bolt_Boltpay_BoltGlobalTrait {
 
     /**
-     * Returns the main helper class used by Bolt
+     * Returns the main helper class used by Bolt.
      *
      * @return Bolt_Boltpay_Helper_Data|Mage_Core_Helper_Abstract
      */
