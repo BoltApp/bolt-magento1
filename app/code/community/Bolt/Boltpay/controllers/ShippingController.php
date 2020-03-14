@@ -128,7 +128,6 @@ class Bolt_Boltpay_ShippingController
                     422,
                     array('status' => 'failure','error' => $addressErrorDetails)
                 );
-                benchmark('Sent shipping address failure to Bolt');
             }
             ////////////////////////////////////////////////////////////////////////////////
 
