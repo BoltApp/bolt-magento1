@@ -1,16 +1,30 @@
 version: 2.1
 orbs:
   slack: circleci/slack@3.3.0
+  swissknife: roopakv/swissknife@0.26.0
 
 commands:
+  if-php-modified:
+    description: Runs if any php file is modified
+    parameters:
+      steps:
+        description: The steps to run if modified
+        type: steps
+    steps:
+      - swissknife/run_if_modified:
+          always-run-on-branch: master
+          pattern: .*\.zip$
+          steps-to-run: << parameters.steps >>
+          use-divergence-point: true
+
   notify-buildcop:
     description: 'Notifies #mx-greenkeeper when a build on master fails.'
     steps:
-    - slack/status:
-        fail_only: true
-        failure_message: ':red_circle: M1: A $CIRCLE_JOB job has failed!'
-        only_for_branches: master
-        webhook: $SLACK_GREENKEEPER_WEBHOOK
+      - slack/status:
+          fail_only: true
+          failure_message: ':red_circle: M1: A $CIRCLE_JOB job has failed!'
+          only_for_branches: master
+          webhook: $SLACK_GREENKEEPER_WEBHOOK
 
 jobs:
   unit-php55-mage18:
@@ -19,6 +33,7 @@ jobs:
       - image: circleci/mysql:5.7
     steps:
       - checkout
+      - if-php-modified
       - run:
           name: PHP 5.5 Magento 1.8
           command: |
@@ -35,6 +50,7 @@ jobs:
       - image: circleci/mysql:5.7
     steps:
       - checkout
+      - if-php-modified
       - run:
           name: PHP 5.5 Magento 1.9
           command: |
@@ -51,6 +67,7 @@ jobs:
       - image: circleci/mysql:5.7
     steps:
       - checkout
+      - if-php-modified
       - run:
           name: PHP 5.6 Magento 1.8
           command: |
@@ -67,6 +84,7 @@ jobs:
       - image: circleci/mysql:5.7
     steps:
       - checkout
+      - if-php-modified
       - run:
           name: PHP 5.6 Magento 1.9
           command: |
@@ -86,12 +104,12 @@ jobs:
       - run:
           name: Integration tests (only for circleci branch)
           command: |
-              echo "Running integration tests"
-              git clone git@github.com:BoltApp/integration-tests.git
-              cd integration-tests
-              npm install
-              mkdir -p ./screenshots
-              JUNIT_REPORT_DIR=./test-results SCREENSHOT_DIR=./screenshots TEST_ENV=sandbox npm run test-checkout-magento1
+            echo "Running integration tests"
+            git clone git@github.com:BoltApp/integration-tests.git
+            cd integration-tests
+            npm install
+            mkdir -p ./screenshots
+            JUNIT_REPORT_DIR=./test-results SCREENSHOT_DIR=./screenshots TEST_ENV=sandbox npm run test-checkout-magento1
       - store_test_results:
           path: ./integration-tests/test-results
       - store_artifacts:
