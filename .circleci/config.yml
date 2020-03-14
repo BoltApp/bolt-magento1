@@ -10,7 +10,9 @@ commands:
         command: |
           echo $PWD
           ls
+          echo
           ls /root
+          echo
           ls /
     - swissknife/run_if_modified:
         always-run-on-branch: master
