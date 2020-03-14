@@ -25,6 +25,10 @@ jobs:
     - image: bylexus/apache-php55
     - image: circleci/mysql:5.7
     steps:
+    - run:
+        command: |
+          apt-get install git
+          apt-get install openssh-server
     - checkout
     - if-php-modified:
         steps:
@@ -42,6 +46,10 @@ jobs:
     - image: bylexus/apache-php55
     - image: circleci/mysql:5.7
     steps:
+    - run:
+        command: |
+          apt-get install git
+          apt-get install openssh-server
     - checkout
     - if-php-modified:
         steps:
@@ -59,6 +67,10 @@ jobs:
     - image: bylexus/apache-php56
     - image: circleci/mysql:5.7
     steps:
+    - run:
+        command: |
+          apt-get install git
+          apt-get install openssh-server
     - checkout
     - if-php-modified:
         steps:
@@ -76,6 +88,10 @@ jobs:
     - image: bylexus/apache-php56
     - image: circleci/mysql:5.7
     steps:
+    - run:
+        command: |
+          apt-get install git
+          apt-get install openssh-server
     - checkout
     - if-php-modified:
         steps:
