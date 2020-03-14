@@ -26,11 +26,6 @@ jobs:
     - image: circleci/mysql:5.7
     steps:
     - checkout
-    - run:
-        command: |
-          echo $PWD
-          echo
-          git status
     - if-php-modified:
         steps:
         - run:
@@ -48,11 +43,6 @@ jobs:
     - image: circleci/mysql:5.7
     steps:
     - checkout
-    - run:
-        command: |
-          echo $PWD
-          echo
-          git status
     - if-php-modified:
         steps:
         - run:
@@ -70,11 +60,6 @@ jobs:
     - image: circleci/mysql:5.7
     steps:
     - checkout
-    - run:
-        command: |
-          echo $PWD
-          echo
-          git status
     - if-php-modified:
         steps:
         - run:
@@ -92,11 +77,6 @@ jobs:
     - image: circleci/mysql:5.7
     steps:
     - checkout
-    - run:
-        command: |
-          echo $PWD
-          echo
-          git status
     - if-php-modified:
         steps:
         - run:
