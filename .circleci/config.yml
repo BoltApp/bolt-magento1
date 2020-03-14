@@ -37,6 +37,7 @@ jobs:
         - store_artifacts:
             path: ./artifacts
         - notify-buildcop
+    working_directory: /home/circleci/bolt-magento1
   unit-php55-mage19:
     docker:
     - image: bylexus/apache-php55
@@ -54,6 +55,7 @@ jobs:
         - store_artifacts:
             path: ./artifacts
         - notify-buildcop
+    working_directory: /home/circleci/bolt-magento1
   unit-php56-mage18:
     docker:
     - image: bylexus/apache-php56
@@ -71,6 +73,7 @@ jobs:
         - store_artifacts:
             path: ./artifacts
         - notify-buildcop
+    working_directory: /home/circleci/bolt-magento1
   unit-php56-mage19:
     docker:
     - image: bylexus/apache-php56
@@ -88,6 +91,7 @@ jobs:
         - store_artifacts:
             path: ./artifacts
         - notify-buildcop
+    working_directory: /home/circleci/bolt-magento1
   integration-sandbox:
     docker:
     - image: circleci/openjdk:latest-node
