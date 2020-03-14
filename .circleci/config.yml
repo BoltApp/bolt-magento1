@@ -6,14 +6,6 @@ commands:
         description: The steps to run if modified
         type: steps
     steps:
-    - run:
-        command: |
-          echo $PWD
-          ls
-          echo
-          ls /root
-          echo
-          ls /
     - swissknife/run_if_modified:
         always-run-on-branch: master
         pattern: .*\.php$
@@ -34,6 +26,11 @@ jobs:
     - image: circleci/mysql:5.7
     steps:
     - checkout
+    - run:
+        command: |
+          echo $PWD
+          echo
+          git status
     - if-php-modified:
         steps:
         - run:
@@ -51,6 +48,11 @@ jobs:
     - image: circleci/mysql:5.7
     steps:
     - checkout
+    - run:
+        command: |
+          echo $PWD
+          echo
+          git status
     - if-php-modified:
         steps:
         - run:
@@ -68,6 +70,11 @@ jobs:
     - image: circleci/mysql:5.7
     steps:
     - checkout
+    - run:
+        command: |
+          echo $PWD
+          echo
+          git status
     - if-php-modified:
         steps:
         - run:
@@ -85,6 +92,11 @@ jobs:
     - image: circleci/mysql:5.7
     steps:
     - checkout
+    - run:
+        command: |
+          echo $PWD
+          echo
+          git status
     - if-php-modified:
         steps:
         - run:
