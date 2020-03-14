@@ -9,6 +9,9 @@ commands:
     - run:
         command: |
           echo $PWD
+          ls
+          ls /root
+          ls /
     - swissknife/run_if_modified:
         always-run-on-branch: master
         pattern: .*\.php$
