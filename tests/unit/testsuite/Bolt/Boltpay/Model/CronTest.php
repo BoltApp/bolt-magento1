@@ -83,14 +83,18 @@ class Bolt_Boltpay_Model_CronTest extends PHPUnit_Framework_TestCase
             $quoteAssociatedWithOrder,
             Mage::getModel('sales/quote')->loadByIdWithoutStore($quoteAssociatedWithOrder)->getId()
         );
+        Bolt_Boltpay_CouponHelper::deleteDummyQuote($quoteToBeDeleted);
+        Bolt_Boltpay_CouponHelper::deleteDummyQuote($nonBoltQuote);
+        Bolt_Boltpay_CouponHelper::deleteDummyQuote($nonExpiredQuote);
+        Bolt_Boltpay_CouponHelper::deleteDummyQuote($quoteAssociatedWithOrder);
     }
 
     /**
      * Creates and returns a dummy quote given the provided parameters
      *
-     * @param $isBolt bool
-     * @param $isExpired bool
-     * @param $hasAssociatedOrder bool
+     * @param bool $isBolt
+     * @param bool $isExpired
+     * @param bool $hasAssociatedOrder
      *
      * @return int|null
      *
@@ -100,8 +104,7 @@ class Bolt_Boltpay_Model_CronTest extends PHPUnit_Framework_TestCase
     {
         $quoteId = null;
         if ($hasAssociatedOrder) {
-            $order = Bolt_Boltpay_OrderHelper::createDummyOrder(self::$productId, 1);
-            $quoteId = $order->getQuoteId();
+            $quoteId = Bolt_Boltpay_OrderHelper::createDummyOrder(self::$productId, 1, 'boltpay')->getQuoteId();
         } else {
             $quoteId = Bolt_Boltpay_CouponHelper::createDummyQuote();
         }
@@ -171,7 +174,7 @@ class Bolt_Boltpay_Model_CronTest extends PHPUnit_Framework_TestCase
 
         for ($i = 0; $i < 5; $i++) {
             for ($j = rand(2, 3); $j > 0; $j--) {
-                $order = Bolt_Boltpay_OrderHelper::createDummyOrder(self::$productId, 1);
+                $order = Bolt_Boltpay_OrderHelper::createDummyOrder(self::$productId, 1, 'boltpay');
                 if ($i % 2) {
                     $order->setState(Mage_Sales_Model_Order::STATE_PENDING_PAYMENT)
                         ->setStatus(Bolt_Boltpay_Model_Payment::TRANSACTION_PRE_AUTH_PENDING);
@@ -263,7 +266,7 @@ class Bolt_Boltpay_Model_CronTest extends PHPUnit_Framework_TestCase
             'Y-m-d H:i:s',
             time() - 60 * (Bolt_Boltpay_Model_Cron::PRE_AUTH_STATE_TIME_LIMIT_MINUTES + self::MINUTES_PADDING_FOR_TEST_ENTRY_TIMESTAMPS)
         );
-        $order = Bolt_Boltpay_OrderHelper::createDummyOrder(self::$productId, 1);
+        $order = Bolt_Boltpay_OrderHelper::createDummyOrder(self::$productId, 1, 'boltpay');
         $order->setState(Mage_Sales_Model_Order::STATE_PENDING_PAYMENT)
             ->setStatus(Bolt_Boltpay_Model_Payment::TRANSACTION_PRE_AUTH_PENDING);
         $order->setCreatedAt($cleanupDate);
@@ -322,7 +325,7 @@ class Bolt_Boltpay_Model_CronTest extends PHPUnit_Framework_TestCase
      */
     public function deactivateQuote_deactivatesQuotesAssociatedWithBoltOrders()
     {
-        $order = Bolt_Boltpay_OrderHelper::createDummyOrder(self::$productId, 1);
+        $order = Bolt_Boltpay_OrderHelper::createDummyOrder(self::$productId, 1, 'boltpay');
         $quoteId = $order->getQuoteId();
         $quoteModel = Mage::getModel('sales/quote');
         $quoteModel->loadByIdWithoutStore($quoteId)->setIsActive(1)->save();
