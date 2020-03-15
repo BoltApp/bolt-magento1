@@ -61,7 +61,7 @@ class Bolt_Boltpay_Model_FeatureSwitchTest extends PHPUnit_Framework_TestCase
     }
 
     /**
-     * Return simple config value
+     * Return simple config value with two feature switches
      * @return array
      */
     private function generateConfigValue()
@@ -78,6 +78,38 @@ class Bolt_Boltpay_Model_FeatureSwitchTest extends PHPUnit_Framework_TestCase
                 'rolloutPercentage' => 0
             )
         );
+    }
+
+    /**
+     * Return default switches values
+     * This method should be updated when we add new feature switch to plugin
+     * @return array
+     */
+    private function generateDefaultSwitchesValue()
+    {
+        return array(
+            'M1_BOLT_ENABLED' => array(
+                'value' => true,
+                'defaultValue' => false,
+                'rolloutPercentage' => 100
+            ),
+            'M1_SAMPLE_SWITCH' => array(
+                'value' => true,
+                'defaultValue' => false,
+                'rolloutPercentage' => 0
+            )
+        );
+    }
+
+    /**
+     * @test
+     * check that constructor set default features properly
+     *
+     * @covers ::__construct
+     */
+    public function __construct_always_shouldSetDefaultFeaturesProperly()
+    {
+        $this->assertAttributeEquals($this->generateDefaultSwitchesValue(),'defaultSwitches',$this->currentMock);
     }
 
     /**
