@@ -65,10 +65,11 @@ class Bolt_Boltpay_Model_CronTest extends PHPUnit_Framework_TestCase
      */
     public function cleanupQuotes_deletesExpiredBoltQuotes()
     {
-        $quoteToBeDeleted = $this->createDummyQuote(true, true, false);
-        $nonBoltQuote = $this->createDummyQuote(false, true, false);
-        $nonExpiredQuote = $this->createDummyQuote(true, false, false);
-        $quoteAssociatedWithOrder = $this->createDummyQuote(true, true, true);
+        $quoteToBeDeleted = $this->createDummyQuote(true, true);
+        $nonBoltQuote = $this->createDummyQuote(false, true);
+        $nonExpiredQuote = $this->createDummyQuote(true, false);
+        $order = Bolt_Boltpay_OrderHelper::createDummyOrder(self::$productId, 1, 'boltpay');
+        $quoteAssociatedWithOrder = $this->createDummyQuote(true, true, $order);
         $this->_currentMock->cleanupQuotes();
         $this->assertNull(Mage::getModel('sales/quote')->loadByIdWithoutStore($quoteToBeDeleted)->getId());
         $this->assertEquals(
@@ -83,10 +84,7 @@ class Bolt_Boltpay_Model_CronTest extends PHPUnit_Framework_TestCase
             $quoteAssociatedWithOrder,
             Mage::getModel('sales/quote')->loadByIdWithoutStore($quoteAssociatedWithOrder)->getId()
         );
-        Bolt_Boltpay_CouponHelper::deleteDummyQuote($quoteToBeDeleted);
-        Bolt_Boltpay_CouponHelper::deleteDummyQuote($nonBoltQuote);
-        Bolt_Boltpay_CouponHelper::deleteDummyQuote($nonExpiredQuote);
-        Bolt_Boltpay_CouponHelper::deleteDummyQuote($quoteAssociatedWithOrder);
+        Bolt_Boltpay_OrderHelper::deleteDummyOrder($order);
     }
 
     /**
@@ -94,17 +92,17 @@ class Bolt_Boltpay_Model_CronTest extends PHPUnit_Framework_TestCase
      *
      * @param bool $isBolt
      * @param bool $isExpired
-     * @param bool $hasAssociatedOrder
+     * @param Mage_Sales_Model_Order|null $order
      *
      * @return int|null
      *
      * @throws Exception
      */
-    private function createDummyQuote($isBolt, $isExpired, $hasAssociatedOrder)
+    private function createDummyQuote($isBolt, $isExpired, $order = null)
     {
         $quoteId = null;
-        if ($hasAssociatedOrder) {
-            $quoteId = Bolt_Boltpay_OrderHelper::createDummyOrder(self::$productId, 1, 'boltpay')->getQuoteId();
+        if ($order) {
+            $quoteId = $order->getQuoteId();
         } else {
             $quoteId = Bolt_Boltpay_CouponHelper::createDummyQuote();
         }
