@@ -1,3 +1,7 @@
+version: 2.1
+orbs:
+  slack: circleci/slack@3.3.0
+  swissknife: roopakv/swissknife@0.25.0
 commands:
   if-php-modified:
     description: Runs if any php file is modified
@@ -8,7 +12,7 @@ commands:
     steps:
     - swissknife/run_if_modified:
         always-run-on-branch: master
-        pattern: .*\.php$
+        pattern: ^\.circleci.*|.*\.php$
         steps-to-run: << parameters.steps >>
         use-divergence-point: true
   notify-buildcop:
@@ -108,46 +112,9 @@ jobs:
         - store_artifacts:
             path: ./artifacts
         - notify-buildcop
-  integration-sandbox:
-    docker:
-    - image: circleci/openjdk:latest-node
-    - image: selenium/standalone-chrome
-    steps:
-    - checkout
-    - run:
-        name: Integration tests (only for circleci branch)
-        command: |
-          echo "Running integration tests"
-          git clone git@github.com:BoltApp/integration-tests.git
-          cd integration-tests
-          npm install
-          mkdir -p ./screenshots
-          JUNIT_REPORT_DIR=./test-results SCREENSHOT_DIR=./screenshots TEST_ENV=sandbox npm run test-checkout-magento1
-    - store_test_results:
-        path: ./integration-tests/test-results
-    - store_artifacts:
-        path: ./integration-tests/screenshots
-    - run:
-        name: Generate Report
-        command: |
-          cd integration-tests
-          npm run generate-report
-        when: always
-    - store_artifacts:
-        path: ./integration-tests/allure-report
-    - notify-buildcop
-orbs:
-  slack: circleci/slack@3.3.0
-  swissknife: roopakv/swissknife@0.25.0
-version: 2.1
 workflows:
   tests:
     jobs:
-    - integration-sandbox:
-        filters:
-          branches:
-            only:
-            - circleci
     - unit-php55-mage18
     - unit-php55-mage19
     - unit-php56-mage18
