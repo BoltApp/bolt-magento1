@@ -42,8 +42,6 @@ class Bolt_Boltpay_Model_Cron
      *
      * As an artifact, we leave the parent quotes, (i.e. all Magento created quotes), and converted
      * immutable quotes. We delegate cleanup responsibility of these to the merchants.
-     *
-     * @codeCoverageIgnore Temporarily ignoring to reach 100%. Very difficult to test.
      */
     public function cleanupQuotes() {
         try {
