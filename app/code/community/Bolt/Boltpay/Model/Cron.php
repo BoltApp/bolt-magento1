@@ -43,7 +43,7 @@ class Bolt_Boltpay_Model_Cron
      * As an artifact, we leave the parent quotes, (i.e. all Magento created quotes), and converted
      * immutable quotes. We delegate cleanup responsibility of these to the merchants.
      *
-     * @codeCoverageIgnore Not really testable. For one thing sfo.entity_id is the primary key, so should never be NULL.
+     * @codeCoverageIgnore Temporarily ignoring to reach 100%. Very difficult to test.
      */
     public function cleanupQuotes() {
         try {
