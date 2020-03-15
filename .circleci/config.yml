@@ -56,7 +56,7 @@ jobs:
           command: |
             mkdir ./artifacts
             export TEST_ENV=php56-mage18
-            PHPUNIT_PHAR=tests/unit/phpunit-5.7.9.phar MAGENTO_VERSION=magento-mirror-1.8.1.0 tests/scripts/ci.sh
+            PHPUNIT_PHAR=tests/unit/phpunit-5.7.9.phar MAGENTO_VERSION=magento-mirror-1.8.1.0 tests/scripts/ci.sh withcov
       - store_artifacts:
           path: ./artifacts
       - notify-buildcop
@@ -72,7 +72,7 @@ jobs:
           command: |
             mkdir ./artifacts
             export TEST_ENV=php56-mage19
-            PHPUNIT_PHAR=tests/unit/phpunit-5.7.9.phar MAGENTO_VERSION=magento-mirror-1.9.3.6 tests/scripts/ci.sh
+            PHPUNIT_PHAR=tests/unit/phpunit-5.7.9.phar MAGENTO_VERSION=magento-mirror-1.9.3.6 tests/scripts/ci.sh withcov
       - store_artifacts:
           path: ./artifacts
       - notify-buildcop
