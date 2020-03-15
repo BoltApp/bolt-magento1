@@ -32,7 +32,6 @@ class Bolt_Boltpay_FeatureswitchesControllerTest extends PHPUnit_Framework_TestC
     protected function setUp()
     {
         $this->currentMock = $this->getTestClassPrototype()
-            //->setMethods(array('getResponse', 'sendResponse', 'getRequestData'))
             ->setMethods(array('sendResponse'))
             ->getMock();
         $this->featureSwitchMock = $this->getMockBuilder('Bolt_Boltpay_Model_FeatureSwitch')
