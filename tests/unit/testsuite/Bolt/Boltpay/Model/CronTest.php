@@ -1,6 +1,7 @@
 <?php
 
 require_once('OrderHelper.php');
+require_once('CouponHelper.php');
 require_once('TestHelper.php');
 require_once('MockingTrait.php');
 
@@ -52,6 +53,75 @@ class Bolt_Boltpay_Model_CronTest extends PHPUnit_Framework_TestCase
     public static function tearDownAfterClass()
     {
         Bolt_Boltpay_ProductProvider::deleteDummyProduct(self::$productId);
+    }
+
+    /**
+     * @test
+     *
+     * @covers ::cleanupQuotes
+     *
+     * @throws Mage_Core_Exception
+     * @throws Exception
+     */
+    public function cleanupQuotes_deletesExpiredBoltQuotes()
+    {
+        $quoteToBeDeleted = $this->createDummyQuote(true, true);
+        $nonBoltQuote = $this->createDummyQuote(false, true);
+        $nonExpiredQuote = $this->createDummyQuote(true, false);
+        $order = Bolt_Boltpay_OrderHelper::createDummyOrder(self::$productId, 1, 'boltpay');
+        $quoteAssociatedWithOrder = $this->createDummyQuote(true, true, $order);
+        $this->_currentMock->cleanupQuotes();
+        $this->assertNull(Mage::getModel('sales/quote')->loadByIdWithoutStore($quoteToBeDeleted)->getId());
+        $this->assertEquals(
+            $nonBoltQuote,
+            Mage::getModel('sales/quote')->loadByIdWithoutStore($nonBoltQuote)->getId()
+        );
+        $this->assertEquals(
+            $nonExpiredQuote,
+            Mage::getModel('sales/quote')->loadByIdWithoutStore($nonExpiredQuote)->getId()
+        );
+        $this->assertEquals(
+            $quoteAssociatedWithOrder,
+            Mage::getModel('sales/quote')->loadByIdWithoutStore($quoteAssociatedWithOrder)->getId()
+        );
+        Bolt_Boltpay_OrderHelper::deleteDummyOrder($order);
+    }
+
+    /**
+     * Creates and returns a dummy quote given the provided parameters
+     *
+     * @param bool $isBolt
+     * @param bool $isExpired
+     * @param Mage_Sales_Model_Order|null $order
+     *
+     * @return int|null
+     *
+     * @throws Exception
+     */
+    private function createDummyQuote($isBolt, $isExpired, $order = null)
+    {
+        $quoteId = null;
+        if ($order) {
+            $quoteId = $order->getQuoteId();
+        } else {
+            $quoteId = Bolt_Boltpay_CouponHelper::createDummyQuote();
+        }
+        if ($isBolt) {
+            Mage::getModel('sales/quote')->loadByIdWithoutStore($quoteId)->setData('is_bolt_pdp', true)->save();
+        }
+        if ($isExpired) {
+            $connection = Mage::getSingleton('core/resource')->getConnection('core_write');
+            $sales_flat_quote_table = Mage::getSingleton('core/resource')->getTableName('sales/quote');
+            $expiration = Mage::getModel('core/date')->date(
+                'Y-m-d H:i:s',
+                time() - (Bolt_Boltpay_Model_Cron::IMMUTABLE_QUOTE_EXPIRATION_SECONDS + 60 * self::MINUTES_PADDING_FOR_TEST_ENTRY_TIMESTAMPS)
+            );
+            $setExpirationQuery = "UPDATE $sales_flat_quote_table
+                                   SET updated_at='$expiration'
+                                   WHERE entity_id=$quoteId";
+            $connection->query($setExpirationQuery);
+        }
+        return $quoteId;
     }
 
     /**
