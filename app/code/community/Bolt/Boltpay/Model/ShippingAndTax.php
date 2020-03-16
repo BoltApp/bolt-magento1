@@ -454,23 +454,4 @@ class Bolt_Boltpay_Model_ShippingAndTax extends Bolt_Boltpay_Model_Abstract
             || preg_match($poBoxRegexStrict, $address1)
             || preg_match($poBoxRegexStrict, $address2);
     }
-
-    /**
-     * Applies the address data provide by Bolt to the Magento quote and customer
-     *
-     * @param Mage_Sales_Model_Quote    $quote             The quote to which the address will be applied
-     * @param array                     $shippingAddress   The Bolt formatted address data
-     *
-     * @return  array   The shipping address applied in Magento compatible format
-     *
-     * @throws Exception  if the bolt address does not contain an postal or country code
-     * @throws Exception  if there is a failure saving the customer or address data to the database
-     *
-     * @deprecated Use {@see Bolt_Boltpay_Model_ShippingAndTax::applyBoltAddressData()} instead
-     * 
-     * @codeCoverageIgnore
-     */
-    public function applyShippingAddressToQuote($quote, $shippingAddress) {
-        return $this->applyBoltAddressData($quote, $shippingAddress);
-    }
 }
