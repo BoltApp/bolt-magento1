@@ -74,7 +74,7 @@ class Bolt_Boltpay_Model_FeatureSwitch extends Bolt_Boltpay_Model_Abstract
     {
         try {
             $switchesResponse = $this->boltHelper()->getFeatureSwitches();
-        } catch (\Exception $e) {
+        } catch (Exception $e) {
             // We already created bugsnag about exception
             return;
         }
@@ -110,6 +110,7 @@ class Bolt_Boltpay_Model_FeatureSwitch extends Bolt_Boltpay_Model_Abstract
 
     /**
      * Get unique ID from cookie or generate it and save it in cookie and session
+     *
      * @return string
      */
     protected function getUniqueUserId()
@@ -149,14 +150,16 @@ class Bolt_Boltpay_Model_FeatureSwitch extends Bolt_Boltpay_Model_Abstract
      * Fetch feature switch object (value, defaultValue, rolloutPercentage) by switch name
      *
      * @param $switchName string
+     *
      * @return object
+     *
      * @throws Exception if default value for switch doesn't exists
      */
     protected function getFeatureSwitchValueByName($switchName)
     {
         $this->readSwitches();
         if (!isset($this->defaultSwitches[$switchName])) {
-            throw new \Exception('Unknown feature switch');
+            throw new Exception('Unknown feature switch');
         }
         if (isset($this->switches[$switchName])) {
             return $this->switches[$switchName];
@@ -170,7 +173,8 @@ class Bolt_Boltpay_Model_FeatureSwitch extends Bolt_Boltpay_Model_Abstract
      * @param string $switchName name of the switch
      *
      * @return bool
-     * @throws \Exception
+     *
+     * @throws Exception
      */
     public function isSwitchEnabled($switchName)
     {

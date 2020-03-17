@@ -42,9 +42,11 @@ class Bolt_Boltpay_Model_FeatureSwitchTest extends PHPUnit_Framework_TestCase
     public function setUp()
     {
         $this->currentMock = $this->getTestClassPrototype()
-            ->setMethods(array('boltHelper'))->getMock();
+            ->setMethods(array('boltHelper'))
+            ->getMock();
         $this->boltHelperMock = $this->getClassPrototype('Bolt_Boltpay_Helper_Data')
-            ->setMethods(array('getFeatureSwitches'))->getMock();
+            ->setMethods(array('getFeatureSwitches'))
+            ->getMock();
     }
 
     /**
@@ -56,12 +58,14 @@ class Bolt_Boltpay_Model_FeatureSwitchTest extends PHPUnit_Framework_TestCase
     private function adjustCurrentMock($methods = array())
     {
         $this->currentMock = $this->getTestClassPrototype()
-            ->setMethods(array_merge(array('boltHelper'), $methods))->getMock();
+            ->setMethods(array_merge(array('boltHelper'), $methods))
+            ->getMock();
         $this->currentMock->method('boltHelper')->willReturn($this->boltHelperMock);
     }
 
     /**
-     * Return simple config value with two feature switches
+     * Return simple config value with one feature switch
+     *
      * @return array
      */
     private function generateConfigValue()
@@ -71,11 +75,6 @@ class Bolt_Boltpay_Model_FeatureSwitchTest extends PHPUnit_Framework_TestCase
                 'value' => true,
                 'defaultValue' => false,
                 'rolloutPercentage' => 100
-            ),
-            'M1_SAMPLE_SWITCH' => array(
-                'value' => true,
-                'defaultValue' => false,
-                'rolloutPercentage' => 0
             )
         );
     }
@@ -83,6 +82,7 @@ class Bolt_Boltpay_Model_FeatureSwitchTest extends PHPUnit_Framework_TestCase
     /**
      * Return default switches values
      * This method should be updated when we add new feature switch to plugin
+     *
      * @return array
      */
     private function generateDefaultSwitchesValue()
@@ -104,7 +104,7 @@ class Bolt_Boltpay_Model_FeatureSwitchTest extends PHPUnit_Framework_TestCase
      */
     public function __construct_always_shouldSetDefaultFeaturesProperly()
     {
-        $this->assertAttributeEquals($this->generateDefaultSwitchesValue(),'defaultSwitches',$this->currentMock);
+        $this->assertAttributeEquals($this->generateDefaultSwitchesValue(), 'defaultSwitches', $this->currentMock);
     }
 
     /**
@@ -117,12 +117,8 @@ class Bolt_Boltpay_Model_FeatureSwitchTest extends PHPUnit_Framework_TestCase
     {
         $this->adjustCurrentMock();
         $this->configMock = $this->getMockBuilder('Mage_Core_Model_Config')
-            ->setMethods(
-                array(
-                    'saveConfig',
-                    'cleanCache',
-                )
-            )->getMock();
+            ->setMethods(array('saveConfig', 'cleanCache'))
+            ->getMock();
         Bolt_Boltpay_TestHelper::stubModel('core/config', $this->configMock);
         Bolt_Boltpay_TestHelper::setNonPublicProperty($this->currentMock, 'switches', null);
     }
@@ -144,13 +140,9 @@ class Bolt_Boltpay_Model_FeatureSwitchTest extends PHPUnit_Framework_TestCase
                     'value' => true,
                     'defaultValue' => false,
                     'rolloutPercentage' => 100
-                ),
-                (object)array(
-                    'name' => 'M1_SAMPLE_SWITCH',
-                    'value' => true,
-                    'defaultValue' => false,
-                    'rolloutPercentage' => 0)
-            ))));
+                )
+            )
+        )));
         $expectedConfigValue = $this->generateConfigValue();
 
         $this->boltHelperMock->expects($this->once())->method('getFeatureSwitches')
@@ -177,7 +169,7 @@ class Bolt_Boltpay_Model_FeatureSwitchTest extends PHPUnit_Framework_TestCase
     public function updateFeatureSwitches_withNoSwitches_returnsWithoutSaving()
     {
         $this->updateFeatureSwitchesSetUp();
-        
+
         $boltAnswer = '';
         $this->boltHelperMock->expects($this->once())->method('getFeatureSwitches')
             ->willReturn($boltAnswer);
@@ -204,7 +196,7 @@ class Bolt_Boltpay_Model_FeatureSwitchTest extends PHPUnit_Framework_TestCase
         $this->updateFeatureSwitchesSetUp();
 
         $this->boltHelperMock->expects($this->once())->method('getFeatureSwitches')
-            ->willThrowException(new \Exception('Any exception'));
+            ->willThrowException(new Exception('Any exception'));
 
         $this->configMock->expects($this->never())->method('saveConfig');
         $this->configMock->expects($this->never())->method('cleanCache');
@@ -231,6 +223,7 @@ class Bolt_Boltpay_Model_FeatureSwitchTest extends PHPUnit_Framework_TestCase
      * tests
      *
      * @throws ReflectionException  if there is a problem in stubbing model
+     * @throws Mage_Core_Model_Store_Exception
      */
     private function readSwitchesSetUp($propertySwitchesValue)
     {
@@ -281,23 +274,18 @@ class Bolt_Boltpay_Model_FeatureSwitchTest extends PHPUnit_Framework_TestCase
         Bolt_Boltpay_TestHelper::restoreConfigValue('payment/boltpay/featureSwitches');
     }
 
-
     /**
      * Stubs core/config model for {@see Bolt_Boltpay_Model_FeatureSwitch::getUniqueUserId}
      * tests
      *
-     * @throws ReflectionException if there is a problem in stubbing model
+     * @throws Mage_Core_Exception
      */
     private function getUniqueUserIdSetUp()
     {
         $this->adjustCurrentMock();
         $this->cookieMock = $this->getMockBuilder('Mage_Core_Model_Cookie')
-            ->setMethods(
-                array(
-                    'get',
-                    'set',
-                )
-            )->getMock();
+            ->setMethods(array('get', 'set'))
+            ->getMock();
         Bolt_Boltpay_TestHelper::stubSingleton('core/cookie', $this->cookieMock);
     }
 
@@ -317,9 +305,10 @@ class Bolt_Boltpay_Model_FeatureSwitchTest extends PHPUnit_Framework_TestCase
             ->will($this->returnCallback(
                 function ($name, $value, $period) use (&$newCookieValue) {
                     $newCookieValue = $value;
-                }));
+                })
+            );
         $userId = Bolt_Boltpay_TestHelper::callNonPublicFunction($this->currentMock, 'getUniqueUserId');
-        $this->assertEquals($newCookieValue,$userId);
+        $this->assertEquals($newCookieValue, $userId);
         $this->getUniqueUserIdTearDown();
     }
 
@@ -379,17 +368,15 @@ class Bolt_Boltpay_Model_FeatureSwitchTest extends PHPUnit_Framework_TestCase
     }
 
     /**
-     * Provides calculated value for @see isMarkedForRollout calls
+     * Data provider for {@see isMarkedForRollout_withDifferentParameters_returnResultAsExpected}
      *
-     * @return array of feature name, cookie value, threshold rollow percentage and expected value
+     * @return array of feature name, cookie value, rollout percentage and expected value
      */
     public function isMarkedForRolloutProvider()
     {
         return array(
             array('M1_BOLT_ENABLED', 'BFS5e650cf94e1892.48522620', 45, true),
-            array('M1_BOLT_ENABLED', 'BFS5e650cf94e1892.48522620', 44, false),
-            array('M1_SAMPLE_SWITCH', 'BFS5e650d757e5123.00941996', 88, true),
-            array('M1_SAMPLE_SWITCH', 'BFS5e650d757e5123.00941996', 87, false),
+            array('M1_BOLT_ENABLED', 'BFS5e650cf94e1892.48522620', 44, false)
         );
     }
 
@@ -435,7 +422,7 @@ class Bolt_Boltpay_Model_FeatureSwitchTest extends PHPUnit_Framework_TestCase
      * Stubs core/config model for {@see Bolt_Boltpay_Model_FeatureSwitch::getFeatureSwitch}
      * tests
      *
-     * @throws ReflectionException if there is a problem in stubbing model
+     * @throws Exception
      */
     private function getFeatureSwitchValueByNameSetUp()
     {
@@ -459,7 +446,7 @@ class Bolt_Boltpay_Model_FeatureSwitchTest extends PHPUnit_Framework_TestCase
                 'getFeatureSwitchValueByName',
                 array('unknownFeatureName')
             );
-        } catch (\Exception $e) {
+        } catch (Exception $e) {
             if ($e->getMessage() == 'Unknown feature switch') {
                 $catchException = true;
             }
@@ -525,7 +512,7 @@ class Bolt_Boltpay_Model_FeatureSwitchTest extends PHPUnit_Framework_TestCase
      * When call isSwitchEnabled when feature rollout percentage is 0 should return default value
      *
      * @covers ::isSwitchEnabled
-     * @dateProvider isSwitchEnabledProvider
+     * @dataProvider isSwitchEnabledProvider
      * @param bool $expectedValue
      * @throws ReflectionException
      */
@@ -538,13 +525,13 @@ class Bolt_Boltpay_Model_FeatureSwitchTest extends PHPUnit_Framework_TestCase
             'rolloutPercentage' => 0
         );
         $this->currentMock->expects($this->once())->method('getFeatureSwitchValueByName')
-            ->with('M1_SAMPLE_SWITCH')->willReturn($feature);
+            ->with('TEST_SWITCH')->willReturn($feature);
         $this->assertEquals(
             $expectedValue,
             Bolt_Boltpay_TestHelper::callNonPublicFunction(
                 $this->currentMock,
                 'isSwitchEnabled',
-                array('M1_SAMPLE_SWITCH')
+                array('TEST_SWITCH')
             )
         );
     }
@@ -554,26 +541,26 @@ class Bolt_Boltpay_Model_FeatureSwitchTest extends PHPUnit_Framework_TestCase
      * When call isSwitchEnabled when feature rollout percentage is 100 should return feature value
      *
      * @covers ::isSwitchEnabled
-     * @dateProvider isSwitchEnabledProvider
-     * @param bool $expected_value
+     * @dataProvider isSwitchEnabledProvider
+     * @param bool $expectedValue
      * @throws ReflectionException
      */
-    public function isSwitchEnabled_whenRolloutPercentageIs100_shouldReturnValue($expected_value)
+    public function isSwitchEnabled_whenRolloutPercentageIs100_shouldReturnValue($expectedValue)
     {
         $this->adjustCurrentMock(array('getFeatureSwitchValueByName'));
         $feature = array(
-            'value' => $expected_value,
+            'value' => $expectedValue,
             'defaultValue' => false,
             'rolloutPercentage' => 100
         );
         $this->currentMock->expects($this->once())->method('getFeatureSwitchValueByName')
-            ->with('M1_SAMPLE_SWITCH')->willReturn($feature);
+            ->with('TEST_SWITCH')->willReturn($feature);
         $this->assertEquals(
-            $expected_value,
+            $expectedValue,
             Bolt_Boltpay_TestHelper::callNonPublicFunction(
                 $this->currentMock,
                 'isSwitchEnabled',
-                array('M1_SAMPLE_SWITCH')
+                array('TEST_SWITCH')
             )
         );
     }
@@ -585,11 +572,11 @@ class Bolt_Boltpay_Model_FeatureSwitchTest extends PHPUnit_Framework_TestCase
      * - return its value
      *
      * @covers ::isSwitchEnabled
-     * @dateProvider isSwitchEnabledProvider
-     * @param bool $expected_value
+     * @dataProvider isSwitchEnabledProvider
+     * @param bool $expectedValue
      * @throws ReflectionException
      */
-    public function isSwitchEnabled_whenRolloutPercentageBetween0And100_shouldCallIsMarkedForRolloutAndReturnItsResult($expected_value)
+    public function isSwitchEnabled_whenRolloutPercentageBetween0And100_shouldCallIsMarkedForRolloutAndReturnItsResult($expectedValue)
     {
         $this->adjustCurrentMock(array('getFeatureSwitchValueByName', 'isMarkedForRollout'));
         $feature = array(
@@ -598,27 +585,30 @@ class Bolt_Boltpay_Model_FeatureSwitchTest extends PHPUnit_Framework_TestCase
             'rolloutPercentage' => 37
         );
         $this->currentMock->expects($this->once())->method('getFeatureSwitchValueByName')
-            ->with('M1_SAMPLE_SWITCH')->willReturn($feature);
+            ->with('TEST_SWITCH')->willReturn($feature);
         $this->currentMock->expects($this->once())->method('isMarkedForRollout')
-            ->with('M1_SAMPLE_SWITCH', 37)->willReturn($expected_value);
+            ->with('TEST_SWITCH', 37)->willReturn($expectedValue);
 
         $this->assertEquals(
-            $expected_value,
+            $expectedValue,
             Bolt_Boltpay_TestHelper::callNonPublicFunction(
                 $this->currentMock,
                 'isSwitchEnabled',
-                array('M1_SAMPLE_SWITCH')
+                array('TEST_SWITCH')
             )
         );
     }
 
     /**
-     * Provides calculated value for @see isSwitchEnabled
+     * Data provider for isSwitchEnabled tests
      *
-     * @return array of true and false
+     * @return array
      */
-    private function isSwitchEnabledProvider()
+    public function isSwitchEnabledProvider()
     {
-        return array(array(true), array(false));
+        return array(
+            array('expectedValue' => true),
+            array('expectedValue' => false)
+        );
     }
 }
