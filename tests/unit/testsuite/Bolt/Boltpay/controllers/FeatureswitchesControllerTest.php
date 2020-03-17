@@ -4,6 +4,8 @@ require_once 'Bolt/Boltpay/controllers/FeatureswitchesController.php';
 require_once 'MockingTrait.php';
 require_once 'TestHelper.php';
 
+use Bolt_Boltpay_TestHelper as TestHelper;
+
 /**
  * @coversDefaultClass Bolt_Boltpay_FeatureswitchesController
  */
@@ -47,11 +49,11 @@ class Bolt_Boltpay_FeatureswitchesControllerTest extends PHPUnit_Framework_TestC
 
     /**
      * @test
-     * when call changedAction and updateFeatureSwitches call return success response
+     * when call updateAction and updateFeatureSwitches call return success response
      *
-     * @covers ::changedAction
+     * @covers ::updateAction
      */
-    public function changedAction_whenUpdateFeatureSwithesReturnTrue_returnsSuccessResponse()
+    public function updateAction_whenUpdateFeatureSwithesReturnTrue_returnsSuccessResponse()
     {
         $this->featureSwitchMock->expects($this->once())->method('updateFeatureSwitches')
             ->willReturn(true);
@@ -60,16 +62,16 @@ class Bolt_Boltpay_FeatureswitchesControllerTest extends PHPUnit_Framework_TestC
                 200,
                 array('status' => 'success')
             );
-        $this->currentMock->changedAction();
+        $this->currentMock->updateAction();
     }
 
     /**
      * @test
-     * when call changedAction and updateFeatureSwitches call return failure response
+     * when call updateAction and updateFeatureSwitches call return failure response
      *
-     * @covers ::changedAction
+     * @covers ::updateAction
      */
-    public function changedAction_whenUpdateFeatureSwithesReturnFalse_returnsFailureResponse()
+    public function updateAction_whenUpdateFeatureSwithesReturnFalse_returnsFailureResponse()
     {
         $this->featureSwitchMock->expects($this->once())->method('updateFeatureSwitches')
             ->willReturn(false);
@@ -78,6 +80,19 @@ class Bolt_Boltpay_FeatureswitchesControllerTest extends PHPUnit_Framework_TestC
                 422,
                 array('status' => 'failure')
             );
-        $this->currentMock->changedAction();
+        $this->currentMock->updateAction();
+    }
+
+    /**
+     * @test
+     * when call _construct should set requestMustBeSigned to False
+     *
+     * @covers ::_construct
+     */
+    public function _construct_always_shouldSetRequestMustBeSignedToFalse()
+    {
+        TestHelper::setNonPublicProperty($this->currentMock, 'requestMustBeSigned', true);
+        $this->currentMock->_construct();
+        $this->assertFalse(TestHelper::getNonPublicProperty($this->currentMock, 'requestMustBeSigned'));
     }
 }

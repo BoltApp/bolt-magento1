@@ -28,7 +28,7 @@ class Bolt_Boltpay_FeatureswitchesController
      */
     public function _construct()
     {
-        //TODO: remove this method after adding signature support on bolt side
+        // Bolt server doesn't sign this request because it doesn't send any payload
         $this->requestMustBeSigned = false;
     }
 
@@ -37,7 +37,7 @@ class Bolt_Boltpay_FeatureswitchesController
      * Send to bolt API request to update feature switches
      * Send response with status - success or failure
      */
-    public function changedAction()
+    public function updateAction()
     {
         $updateResult = Mage::getSingleton("boltpay/featureSwitch")->updateFeatureSwitches();
         if ($updateResult) {
