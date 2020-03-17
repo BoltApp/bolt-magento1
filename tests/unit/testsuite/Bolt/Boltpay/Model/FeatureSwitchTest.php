@@ -589,7 +589,7 @@ class Bolt_Boltpay_Model_FeatureSwitchTest extends PHPUnit_Framework_TestCase
      * @param bool $expected_value
      * @throws ReflectionException
      */
-    public function isSwitchEnabled_whenRolloutPercentageBetween0And100_shouldCallisMarkedForRolloutAndReturnItsResult($expected_value)
+    public function isSwitchEnabled_whenRolloutPercentageBetween0And100_shouldCallIsMarkedForRolloutAndReturnItsResult($expected_value)
     {
         $this->adjustCurrentMock(array('getFeatureSwitchValueByName', 'isMarkedForRollout'));
         $feature = array(
