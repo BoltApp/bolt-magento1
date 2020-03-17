@@ -405,8 +405,8 @@ class Bolt_Boltpay_Model_FeatureSwitchTest extends PHPUnit_Framework_TestCase
     public function isMarkedForRollout_whenCallManyTimes_shouldReturnExpectedDistribution()
     {
         $this->adjustCurrentMock();
-        $reflectedMethod = Bolt_Boltpay_TestHelper::getReflectedClass($this->currentMock)->getMethod('isMarkedForRollout');
-        $reflectedMethod->setAccessible(true);
+        $isMarkedForRolloutMethod = Bolt_Boltpay_TestHelper::getReflectedClass($this->currentMock)->getMethod('isMarkedForRollout');
+        $isMarkedForRolloutMethod->setAccessible(true);
 
         $callsInAttempt = 5000;
         $numAttempts = 10;
@@ -418,7 +418,7 @@ class Bolt_Boltpay_Model_FeatureSwitchTest extends PHPUnit_Framework_TestCase
         for ($attemptCounter = 0; $attemptCounter < $numAttempts; $attemptCounter++) {
             $numPositive = 0;
             for ($i = 0; $i < $callsInAttempt; $i++) {
-                $numPositive += (int)$reflectedMethod->invokeArgs($this->currentMock, array($switchName, $rolloutPercentage));
+                $numPositive += (int)$isMarkedForRolloutMethod->invokeArgs($this->currentMock, array($switchName, $rolloutPercentage));
             }
             $expectedNumPositive = $callsInAttempt * $rolloutPercentage / 100;
             $tolerance[$attemptCounter] = abs($numPositive - $expectedNumPositive) / $callsInAttempt;
@@ -428,7 +428,7 @@ class Bolt_Boltpay_Model_FeatureSwitchTest extends PHPUnit_Framework_TestCase
         $this->assertLessThan(0.007, $tolerance[0], $error_message);
         $this->assertLessThan(0.04, $tolerance[$numAttempts - 1], $error_message);
 
-        $reflectedMethod->setAccessible(false);
+        $isMarkedForRolloutMethod->setAccessible(false);
     }
 
     /**
