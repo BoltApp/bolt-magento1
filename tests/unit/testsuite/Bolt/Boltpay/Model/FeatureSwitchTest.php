@@ -394,6 +394,44 @@ class Bolt_Boltpay_Model_FeatureSwitchTest extends PHPUnit_Framework_TestCase
     }
 
     /**
+     * @test
+     * When call isMarkedForRollout many times we should have expected distribution
+     *
+     * Algorithm:
+     * - make 10 attempt, 5000 calls in one attempt
+     * - calculate tolerance for each attempt
+     * - compare the smallest and the biggest tolerance with expected values
+     */
+    public function isMarkedForRollout_whenCallManyTimes_shouldReturnExpectedDistribution()
+    {
+        $this->adjustCurrentMock();
+        $reflectedMethod = Bolt_Boltpay_TestHelper::getReflectedClass($this->currentMock)->getMethod('isMarkedForRollout');
+        $reflectedMethod->setAccessible(true);
+
+        $callsInAttempt = 5000;
+        $numAttempts = 10;
+        $error_message = 'This test works with pseudo-random numbers and probabilities so in very rare cases it can fail';
+        $switchName = "M1_BOLT_ENABLED";
+
+        $rolloutPercentage = rand(1, 99);
+        $tolerance = array();
+        for ($attemptCounter = 0; $attemptCounter < $numAttempts; $attemptCounter++) {
+            $numPositive = 0;
+            for ($i = 0; $i < $callsInAttempt; $i++) {
+                $numPositive += (int)$reflectedMethod->invokeArgs($this->currentMock, array($switchName, $rolloutPercentage));
+            }
+            $expectedNumPositive = $callsInAttempt * $rolloutPercentage / 100;
+            $tolerance[$attemptCounter] = abs($numPositive - $expectedNumPositive) / $callsInAttempt;
+        }
+        sort($tolerance);
+
+        $this->assertLessThan(0.007, $tolerance[0], $error_message);
+        $this->assertLessThan(0.04, $tolerance[$numAttempts - 1], $error_message);
+
+        $reflectedMethod->setAccessible(false);
+    }
+
+    /**
      * Stubs core/config model for {@see Bolt_Boltpay_Model_FeatureSwitch::getFeatureSwitch}
      * tests
      *
