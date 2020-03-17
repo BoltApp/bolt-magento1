@@ -218,8 +218,17 @@ trait Bolt_Boltpay_Helper_GeneralTrait {
      *
      * @return  array the converted array of strings in PHP format
      */
-    public function unserializeStringArray($serializedData) {
+    public function unserializeStringArray($serializedData)
+    {
         preg_match_all('/i:\d+;s:\d+:"([^"]*)";/', $serializedData, $convertedArray);
         return $convertedArray[1];
+    }
+
+    /***************************************************
+     * Switch Helpers below
+     ***************************************************/
+    public function isSwitchBoltEnabled()
+    {
+        return Mage::getSingleton("boltpay/featureSwitch")->isSwitchEnabled(Bolt_Boltpay_Model_FeatureSwitch::BOLT_ENABLED_SWITCH_NAME);
     }
 }
