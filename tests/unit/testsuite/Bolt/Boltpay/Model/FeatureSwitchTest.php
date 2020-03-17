@@ -402,7 +402,7 @@ class Bolt_Boltpay_Model_FeatureSwitchTest extends PHPUnit_Framework_TestCase
      * - calculate tolerance for each attempt
      * - compare the smallest and the biggest tolerance with expected values
      */
-    public function isMarkedForRollout_whenCallManyTimes_shouldReturnExpectedDistribution()
+    public function isMarkedForRollout_whenCalledManyTimes_shouldReturnExpectedDistribution()
     {
         $this->adjustCurrentMock();
         $isMarkedForRolloutMethod = Bolt_Boltpay_TestHelper::getReflectedClass($this->currentMock)->getMethod('isMarkedForRollout');
