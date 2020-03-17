@@ -624,22 +624,7 @@ class Bolt_Boltpay_Helper_GeneralTraitTest extends PHPUnit_Framework_TestCase
 
     /**
      * @test
-     * When call isSwitchSampleSwitchEnabled Bolt_Boltpay_Model_FeatureSwitch::isSwitchEnables should be called with the right parameter
      *
-     * @covers Bolt_Boltpay_Helper_GeneralTrait::isSwitchSampleSwitchEnabled
-     * @throws Exception
-     */
-    public function isSwitchSampleSwitchEnabled_shouldCallAppropriateMethodWithCorrectParameter()
-    {
-        $this->isSwitchSetUp();
-        $this->featureSwitchMock->expects($this->once())->method('isSwitchEnabled')->with('M1_SAMPLE_SWITCH');
-        $this->currentMock->isSwitchSampleSwitchEnabled();
-        $this->isSwitchTearDown();
-    }
-
-
-    /**
-     * @test
      * When call isSwitchBoltEnabled Bolt_Boltpay_Model_FeatureSwitch::isSwitchEnables should be called with the right parameter
      *
      * @covers Bolt_Boltpay_Helper_GeneralTrait::isSwitchBoltEnabled

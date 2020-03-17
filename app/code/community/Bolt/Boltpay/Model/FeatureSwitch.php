@@ -35,11 +35,9 @@ class Bolt_Boltpay_Model_FeatureSwitch extends Bolt_Boltpay_Model_Abstract
     const ROLLOUT_KEY = 'rolloutPercentage';
 
     /**
-     * This switch is a sample of how to set up a feature switch.
      * Every feature switch added here should have a corresponding helper
-     * in this class
+     * in GeneralTrait
      */
-    const SAMPLE_SWITCH_NAME = 'M1_SAMPLE_SWITCH';
     const BOLT_ENABLED_SWITCH_NAME = 'M1_BOLT_ENABLED';
 
     const COOKIE_NAME = 'BoltFeatureSwitchId';
@@ -60,11 +58,6 @@ class Bolt_Boltpay_Model_FeatureSwitch extends Bolt_Boltpay_Model_Abstract
     final public function __construct()
     {
         $this->defaultSwitches = array(
-            self::SAMPLE_SWITCH_NAME => array(
-                self::VAL_KEY => true,
-                self::DEFAULT_VAL_KEY => false,
-                self::ROLLOUT_KEY => 0
-            ),
             self::BOLT_ENABLED_SWITCH_NAME => array(
                 self::VAL_KEY => true,
                 self::DEFAULT_VAL_KEY => false,
