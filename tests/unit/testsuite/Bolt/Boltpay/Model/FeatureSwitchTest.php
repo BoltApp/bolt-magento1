@@ -262,7 +262,7 @@ class Bolt_Boltpay_Model_FeatureSwitchTest extends PHPUnit_Framework_TestCase
      *
      * @covers ::readSwitches
      */
-    public function readSwitches_whenSwitchesPropertyIsNotEmpty_doNothing()
+    public function readSwitches_whenSwitchesPropertyIsNotEmpty_doesNothing()
     {
         $this->readSwitchesSetUp('test_value');
         $this->assertEquals(
