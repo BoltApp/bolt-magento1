@@ -465,7 +465,7 @@ class Bolt_Boltpay_Model_FeatureSwitchTest extends PHPUnit_Framework_TestCase
     public function getFeatureSwitchValueByName_whenFeatureSwitchIsSet_shouldReturnFeatureValue()
     {
         $configValue = $this->generateConfigValue();
-        $configValue['M1_SAMPLE_SWITCH']['rolloutPercentage'] = 57;
+        $configValue['M1_BOLT_ENABLED']['rolloutPercentage'] = 57;
         Bolt_Boltpay_TestHelper::setNonPublicProperty($this->currentMock, 'switches', $configValue);
 
         $this->assertEquals(
@@ -476,7 +476,7 @@ class Bolt_Boltpay_Model_FeatureSwitchTest extends PHPUnit_Framework_TestCase
             Bolt_Boltpay_TestHelper::callNonPublicFunction(
                 $this->currentMock,
                 'getFeatureSwitchValueByName',
-                array('M1_SAMPLE_SWITCH')
+                array('M1_BOLT_ENABLED')
             )
         );
         Bolt_Boltpay_TestHelper::setNonPublicProperty($this->currentMock, 'switches', null);
