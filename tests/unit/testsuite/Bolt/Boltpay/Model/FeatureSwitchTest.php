@@ -353,17 +353,17 @@ class Bolt_Boltpay_Model_FeatureSwitchTest extends PHPUnit_Framework_TestCase
 
     /**
      * @test
-     * When call isInBucket with different values should return expected, precalculated result
+     * When call isMarkedForRollout with different values should return expected, precalculated result
      *
-     * @covers ::isInBucket
-     * @dataProvider isInBucketProvider
+     * @covers ::isMarkedForRollout
+     * @dataProvider isMarkedForRolloutProvider
      * @param $switchName string switch name
      * @param $boltFeatureSwitchId string feature switch id (stubbed cooqie value)
      * @param $rolloutPercentage int rollout percentage
      * @param $expectedResult bool expected result
      * @throws ReflectionException
      */
-    public function isInBucket_withDifferentParameters_returnResultAsExpected($switchName, $boltFeatureSwitchId, $rolloutPercentage, $expectedResult)
+    public function isMarkedForRollout_withDifferentParameters_returnResultAsExpected($switchName, $boltFeatureSwitchId, $rolloutPercentage, $expectedResult)
     {
         $this->adjustCurrentMock(array('getUniqueUserId'));
         $this->currentMock->expects($this->once())->method('getUniqueUserId')
@@ -372,18 +372,18 @@ class Bolt_Boltpay_Model_FeatureSwitchTest extends PHPUnit_Framework_TestCase
             $expectedResult,
             Bolt_Boltpay_TestHelper::callNonPublicFunction(
                 $this->currentMock,
-                'isInBucket',
+                'isMarkedForRollout',
                 array($switchName, $rolloutPercentage)
             )
         );
     }
 
     /**
-     * Provides calculated value for @see isInBucket calls
+     * Provides calculated value for @see isMarkedForRollout calls
      *
      * @return array of feature name, cookie value, threshold rollow percentage and expected value
      */
-    public function isInBucketProvider()
+    public function isMarkedForRolloutProvider()
     {
         return array(
             array('M1_BOLT_ENABLED', 'BFS5e650cf94e1892.48522620', 45, true),
@@ -543,7 +543,7 @@ class Bolt_Boltpay_Model_FeatureSwitchTest extends PHPUnit_Framework_TestCase
     /**
      * @test
      * When call isSwitchEnabled when feature rollout percentage is betwen 0 and 100 should
-     * - call IsInBucket() method
+     * - call isMarkedForRollout() method
      * - return its value
      *
      * @covers ::isSwitchEnabled
@@ -551,9 +551,9 @@ class Bolt_Boltpay_Model_FeatureSwitchTest extends PHPUnit_Framework_TestCase
      * @param bool $expected_value
      * @throws ReflectionException
      */
-    public function isSwitchEnabled_whenRolloutPercentageBetween0And100_shouldCallIsInBucketAndReturnItsResult($expected_value)
+    public function isSwitchEnabled_whenRolloutPercentageBetween0And100_shouldCallisMarkedForRolloutAndReturnItsResult($expected_value)
     {
-        $this->adjustCurrentMock(array('getFeatureSwitchValueByName', 'isInBucket'));
+        $this->adjustCurrentMock(array('getFeatureSwitchValueByName', 'isMarkedForRollout'));
         $feature = array(
             'value' => true,
             'defaultValue' => false,
@@ -561,7 +561,7 @@ class Bolt_Boltpay_Model_FeatureSwitchTest extends PHPUnit_Framework_TestCase
         );
         $this->currentMock->expects($this->once())->method('getFeatureSwitchValueByName')
             ->with('M1_SAMPLE_SWITCH')->willReturn($feature);
-        $this->currentMock->expects($this->once())->method('isInBucket')
+        $this->currentMock->expects($this->once())->method('isMarkedForRollout')
             ->with('M1_SAMPLE_SWITCH', 37)->willReturn($expected_value);
 
         $this->assertEquals(

@@ -136,7 +136,7 @@ class Bolt_Boltpay_Model_FeatureSwitch extends Bolt_Boltpay_Model_Abstract
      *
      * @return bool
      */
-    protected function isInBucket($switchName, $rolloutPercentage)
+    protected function isMarkedForRollout($switchName, $rolloutPercentage)
     {
         $boltFeatureSwitchId = $this->getUniqueUserId();
         $saltedString = $boltFeatureSwitchId . '-' . $switchName;
@@ -181,8 +181,8 @@ class Bolt_Boltpay_Model_FeatureSwitch extends Bolt_Boltpay_Model_Abstract
             case 100:
                 return $switch[self::VAL_KEY];
             default:
-                $is_in_bucket = $this->isInBucket($switchName, $switch[self::ROLLOUT_KEY]);
-                return $is_in_bucket ? $switch[self::VAL_KEY] : $switch[self::DEFAULT_VAL_KEY];
+                $isMarkedForRollout = $this->isMarkedForRollout($switchName, $switch[self::ROLLOUT_KEY]);
+                return $isMarkedForRollout ? $switch[self::VAL_KEY] : $switch[self::DEFAULT_VAL_KEY];
         }
     }
 }
