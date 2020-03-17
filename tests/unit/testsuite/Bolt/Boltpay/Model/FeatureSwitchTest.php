@@ -347,7 +347,7 @@ class Bolt_Boltpay_Model_FeatureSwitchTest extends PHPUnit_Framework_TestCase
      * @covers ::isMarkedForRollout
      * @dataProvider isMarkedForRolloutProvider
      * @param $switchName string switch name
-     * @param $boltFeatureSwitchId string feature switch id (stubbed cooqie value)
+     * @param $boltFeatureSwitchId string feature switch id (stubbed cookie value)
      * @param $rolloutPercentage int rollout percentage
      * @param $expectedResult bool expected result
      * @throws ReflectionException
