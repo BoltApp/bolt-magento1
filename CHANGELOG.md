@@ -1,5 +1,7 @@
 # Changelog
-## [V2.4.0](https://bolt-public.s3-us-west-1.amazonaws.com/magento-integration-release/bolt-magento1-v2.4.0.zip) 2020-03-17
+## [V2.4.1](https://bolt-public.s3-us-west-1.amazonaws.com/magento-integration-release/bolt-magento1-v2.4.1.zip) 2020-03-18
+ - Fixed a bug that caused minicart checkout to stop working
+## [V2.4.0](https://bolt-public.s3-us-west-1.amazonaws.com/magento-integration-release/bolt-magento1-v2.4.0.zip) 2020-03-16
  - Added support for a bunch of product types for product page checkout. Now the following are supported:
     - Simple Product
     - Simple Product w/ Custom Options
@@ -11,7 +13,7 @@
  - Fixed a bug where images for products with variants are not populated correctly
  - Now displays an error if quantity is zero for product page checkout
  - Other bugfixes
- - Unit test coverage ~100%
+ - Unit test coverage 100%
  - Ready for Magento Marketplace!
 ## [V2.3.0](https://bolt-public.s3-us-west-1.amazonaws.com/magento-integration-release/bolt-magento1-v2.3.0.zip) 2020-02-13
  - Fixed an intermittent issue related to virtual product
