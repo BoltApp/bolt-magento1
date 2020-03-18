@@ -468,7 +468,7 @@ class Bolt_Boltpay_Model_Coupon extends Bolt_Boltpay_Model_Abstract
 
         return array(
             'total_amount' => $cart['total_amount'],
-            'tax_amount'   => $cart['tax_amount'],
+            'tax_amount'   => @$cart['tax_amount'],
             'discounts'    => $cart['discounts'],
         );
     }
