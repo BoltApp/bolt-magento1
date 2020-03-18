@@ -276,7 +276,6 @@ class Bolt_Boltpay_Helper_ConfigTraitTest extends PHPUnit_Framework_TestCase
      * @test
      * various one line methods return the correct config values
      *
-     * @covers Bolt_Boltpay_Helper_ConfigTrait::isBoltPayActive
      * @covers Bolt_Boltpay_Helper_ConfigTrait::getPublishableKeyMultiPage
      * @covers Bolt_Boltpay_Helper_ConfigTrait::getPublishableKeyOnePage
      * @covers Bolt_Boltpay_Helper_ConfigTrait::getPublishableKeyBackOffice
@@ -294,7 +293,6 @@ class Bolt_Boltpay_Helper_ConfigTraitTest extends PHPUnit_Framework_TestCase
      */
     public function simpleConfigMethods_returnsCorrectConfigValue()
     {
-        TestHelper::stubConfigValue('payment/boltpay/active', 'false');
         TestHelper::stubConfigValue('payment/boltpay/publishable_key_multipage', 'multipage key');
         TestHelper::stubConfigValue('payment/boltpay/publishable_key_onepage', 'onepage key');
         TestHelper::stubConfigValue('payment/boltpay/publishable_key_admin', 'backoffice key');
@@ -308,7 +306,6 @@ class Bolt_Boltpay_Helper_ConfigTraitTest extends PHPUnit_Framework_TestCase
         TestHelper::stubConfigValue('payment/boltpay/product_page_checkout_selector', '.ppcBtn');
         TestHelper::stubConfigValue('payment/boltpay/auto_create_invoice_after_creating_shipment', true);
 
-        $this->assertFalse($this->currentMock->isBoltPayActive());
         $this->assertEquals('multipage key', $this->currentMock->getPublishableKeyMultiPage());
         $this->assertEquals('onepage key', $this->currentMock->getPublishableKeyOnePage());
         $this->assertEquals('backoffice key', $this->currentMock->getPublishableKeyBackOffice());
@@ -321,5 +318,66 @@ class Bolt_Boltpay_Helper_ConfigTraitTest extends PHPUnit_Framework_TestCase
         $this->assertTrue($this->currentMock->getAutoCreateInvoiceAfterCreatingShipment());
 
         TestHelper::restoreOriginals();
+    }
+
+    /**
+     * @test
+     * various one line methods return the correct config values
+     *
+     * @covers Bolt_Boltpay_Helper_ConfigTrait::isBoltPayActive
+     *
+     * @dataProvider isBoltPayActiveProvider
+     *
+     * @param bool $isBoltActiveLocally      true if the Bolt plugin is activated by the local config, otherwise false
+     * @param bool $isBoltEnabledServerSide  true if the Bolt plugin is enabled at the Bolt server, otherwise false
+     * @param bool $expectedValue            true if Bolt is enabled both locally and via remote switch, otherwise false
+     *
+     * @throws Mage_Core_Exception              if there is an issue stubbing singleton Bolt_Boltpay_Model_FeatureSwitch
+     * @throws Mage_Core_Model_Store_Exception  if there is an issue stubbing config `payment/boltpay/active`
+     */
+    public function isBoltPayActive_withVariousLocalAndBoltDefinedValues_returnsCorrectValue($isBoltActiveLocally, $isBoltEnabledServerSide, $expectedValue)
+    {
+        TestHelper::stubConfigValue('payment/boltpay/active', $isBoltActiveLocally);
+
+        $featureSwitchMock = $this->getMockBuilder('Bolt_Boltpay_Model_FeatureSwitch')
+            ->setMethods(array('isSwitchEnabled'))->getMock();
+        $featureSwitchMock->expects($this->once())
+            ->method('isSwitchEnabled')
+            ->with(Bolt_Boltpay_Model_FeatureSwitch::BOLT_ENABLED_SWITCH_NAME)
+            ->willReturn($isBoltEnabledServerSide);
+        Bolt_Boltpay_TestHelper::stubSingleton('boltpay/featureSwitch', $featureSwitchMock);
+
+        $this->assertEquals($expectedValue, $this->currentMock->isBoltPayActive());
+        TestHelper::restoreOriginals();
+    }
+
+    /**
+     * Data provider for {@see isBoltPayActive_withVariousLocalAndBoltDefinedValues_returnsCorrectValue}
+     *
+     * @return array containing $isBoltActiveLocally, $isBoltEnabledServerSide, $expectedValue
+     */
+    public function isBoltPayActiveProvider() {
+        return array(
+            array(
+                'isBoltActiveLocally' => true,
+                'isBoltEnabledServerSide' => true,
+                'expectedValue' => true
+            ),
+            array(
+                'isBoltActiveLocally' => true,
+                'isBoltEnabledServerSide' => false,
+                'expectedValue' => false
+            ),
+            array(
+                'isBoltActiveLocally' => false,
+                'isBoltEnabledServerSide' => true,
+                'expectedValue' => false
+            ),
+            array(
+                'isBoltActiveLocally' => false,
+                'isBoltEnabledServerSide' => false,
+                'expectedValue' => false
+            )
+        );
     }
 }
