@@ -611,5 +611,4 @@ class Bolt_Boltpay_Helper_GeneralTraitTest extends PHPUnit_Framework_TestCase
             ),
         );
     }
-
 }

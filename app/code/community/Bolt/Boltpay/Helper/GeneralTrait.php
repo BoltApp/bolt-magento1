@@ -223,5 +223,4 @@ trait Bolt_Boltpay_Helper_GeneralTrait {
         preg_match_all('/i:\d+;s:\d+:"([^"]*)";/', $serializedData, $convertedArray);
         return $convertedArray[1];
     }
-
 }

@@ -35,7 +35,7 @@ class Bolt_Boltpay_Model_FeatureSwitch extends Bolt_Boltpay_Model_Abstract
     const ROLLOUT_KEY = 'rolloutPercentage';
 
     /**
-     * Determines if the Bolt server side has disabled the plugin.  A false value will override local settings
+     * Determines if the Bolt server side has disabled the plugin. A false value will override local settings.
      */
     const BOLT_ENABLED_SWITCH_NAME = 'M1_BOLT_ENABLED';
 
