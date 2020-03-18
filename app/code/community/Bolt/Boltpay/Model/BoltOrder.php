@@ -689,7 +689,7 @@ class Bolt_Boltpay_Model_BoltOrder extends Bolt_Boltpay_Model_Abstract
             && (($cachedCartDataJS['creation_time'] + self::$cached_token_expiration_time) > time())
             && ($cachedCartDataJS['key'] === $this->calculateCartCacheKey($quote, $checkoutType))
         ) {
-            return json_decode($cachedCartDataJS["cart_data"]);
+            return json_decode($cachedCartDataJS["cart_data"], true);
         }
 
         Mage::getSingleton('core/session')->unsCachedCartData();
