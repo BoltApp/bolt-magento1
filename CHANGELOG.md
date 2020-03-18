@@ -1,6 +1,6 @@
 # Changelog
 ## [V2.4.1](https://bolt-public.s3-us-west-1.amazonaws.com/magento-integration-release/bolt-magento1-v2.4.1.zip) 2020-03-18
- - Fixed a bug that caused minicart checkout to stop working
+ - Fixed a bug that caused minicart checkout to stop working.
 ## [V2.4.0](https://bolt-public.s3-us-west-1.amazonaws.com/magento-integration-release/bolt-magento1-v2.4.0.zip) 2020-03-16
  - Added support for a bunch of product types for product page checkout. Now the following are supported:
     - Simple Product
