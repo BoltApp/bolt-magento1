@@ -1673,7 +1673,7 @@ class Bolt_Boltpay_Model_BoltOrderTest extends PHPUnit_Framework_TestCase
 		$sessionMock->expects($this->never())->method('unsCachedCartData');
 		$currentMock->method('calculateCartCacheKey')->willReturn($cachedCartDataJS['key']);
 		$this->assertEquals(
-			json_decode($cachedCartDataJS['cart_data']),
+			json_decode($cachedCartDataJS['cart_data'], true),
 			$currentMock->getCachedCartData(
 				$quote,
 				$checkoutType
