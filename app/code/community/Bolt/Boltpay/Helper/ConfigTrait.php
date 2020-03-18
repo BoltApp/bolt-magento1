@@ -27,7 +27,9 @@ trait Bolt_Boltpay_Helper_ConfigTrait
      */
     public function isBoltPayActive()
     {
-        return Mage::getStoreConfigFlag('payment/boltpay/active');
+        return
+            Mage::getSingleton("boltpay/featureSwitch")->isSwitchEnabled(Bolt_Boltpay_Model_FeatureSwitch::BOLT_ENABLED_SWITCH_NAME)
+            && Mage::getStoreConfigFlag('payment/boltpay/active');
     }
 
     /**

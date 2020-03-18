@@ -224,11 +224,4 @@ trait Bolt_Boltpay_Helper_GeneralTrait {
         return $convertedArray[1];
     }
 
-    /***************************************************
-     * Switch Helpers below
-     ***************************************************/
-    public function isSwitchBoltEnabled()
-    {
-        return Mage::getSingleton("boltpay/featureSwitch")->isSwitchEnabled(Bolt_Boltpay_Model_FeatureSwitch::BOLT_ENABLED_SWITCH_NAME);
-    }
 }
