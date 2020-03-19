@@ -1,167 +1,167 @@
 version: 2.1
 orbs:
-    slack: circleci/slack@3.4.2
-    swissknife: roopakv/swissknife@0.25.0
+  slack: circleci/slack@3.4.2
+  swissknife: roopakv/swissknife@0.25.0
 commands:
-    if-php-modified:
-        description: Runs if any php file is modified
-        parameters:
-            steps:
-                description: The steps to run if modified
-                type: steps
-        steps:
-        - swissknife/run_if_modified:
-            always-run-on-branch: master
-            pattern: ^\.circleci.*|.*\.php$
-            steps-to-run: << parameters.steps >>
-            use-divergence-point: true
-    notify-buildcop:
-        description: 'Notifies #mx-greenkeeper when a build on master fails.'
-        steps:
-        - slack/status:
-            fail_only: true
-            failure_message: ':red_circle: M1: A $CIRCLE_JOB job has failed!'
-            only_for_branches: master
-            webhook: $SLACK_GREENKEEPER_WEBHOOK
-    notify-rc-tag:
-        description: 'Notifies #eng-magento1 when a release candidate is tagged.'
-        parameters:
-            tag:
-                type: string
-                default: ''
-        steps:
-        - slack/notify:
-            channel: "#eng-magento1"
-            color: '#33ff00'
-            mentions: '@oleksii,@Pavel,'
-            message: ":white_check_mark: A new RC << parameters.tag >> has been tagged for Magento 1!"
-            webhook: $SLACK_GREENKEEPER_WEBHOOK
+  if-php-modified:
+    description: Runs if any php file is modified
+    parameters:
+      steps:
+        description: The steps to run if modified
+        type: steps
+    steps:
+    - swissknife/run_if_modified:
+        always-run-on-branch: master
+        pattern: ^\.circleci.*|.*\.php$
+        steps-to-run: << parameters.steps >>
+        use-divergence-point: true
+  notify-buildcop:
+    description: 'Notifies #mx-greenkeeper when a build on master fails.'
+    steps:
+    - slack/status:
+        fail_only: true
+        failure_message: ':red_circle: M1: A $CIRCLE_JOB job has failed!'
+        only_for_branches: master
+        webhook: $SLACK_GREENKEEPER_WEBHOOK
+  notify-rc-tag:
+    description: 'Notifies #eng-magento1 when a release candidate is tagged.'
+    parameters:
+      tag:
+        type: string
+        default: ''
+    steps:
+    - slack/notify:
+        channel: "#eng-magento1"
+        color: '#33ff00'
+        mentions: '@oleksii,@Pavel,'
+        message: ":white_check_mark: A new RC << parameters.tag >> has been tagged for Magento 1!"
+        webhook: $SLACK_GREENKEEPER_WEBHOOK
 jobs:
-    tag-rc-candidate:
-        description: Tag master as rc every 3 weeks
-        docker:
-        - image: bylexus/apache-php55
-        - image: circleci/mysql:5.7
-        steps:
-        - run:
-            name: Validate eligibility to tag rc
-            command: |
-                .circleci/scripts/rc-tag.sh
-        - when:
-            condition: $TAGTHISWEEK
-            steps:
-            - run:
-                name: Tag RC on Master
-                command: |
-                    apt-get update
-                    apt-get install -y git
-                    apt-get install -y openssh-server
-            - swissknife/publish_github_release:
-                tag: $NEWTAGNAME
-            - notify-rc-tag:
-                tag: $NEWTAGNAME
-    unit-php55-mage18:
-        docker:
-        - image: bylexus/apache-php55
-        - image: circleci/mysql:5.7
-        steps:
-        - run:
-            command: |
+  tag-rc-candidate:
+    description: Tag master as rc every 3 weeks
+    docker:
+    - image: bylexus/apache-php55
+    - image: circleci/mysql:5.7
+    steps:
+      - run:
+          name: Validate eligibility to tag rc
+          command: |
+            .circleci/scripts/rc-tag.sh
+      - when:
+          condition: $TAGTHISWEEK
+          steps:
+          - run:
+              name: Tag RC on Master
+              command: |
                 apt-get update
                 apt-get install -y git
                 apt-get install -y openssh-server
-        - checkout
-        - if-php-modified:
-            steps:
-            - run:
-                name: PHP 5.5 Magento 1.8
-                command: |
-                    mkdir ./artifacts
-                    export TEST_ENV=php55-mage18
-                    PHPUNIT_PHAR=tests/unit/phpunit-4.8.36.phar MAGENTO_VERSION=magento-mirror-1.8.1.0 tests/scripts/ci.sh nocov
-            - store_artifacts:
-                path: ./artifacts
-            - notify-buildcop
-    unit-php55-mage19:
-        docker:
-        - image: bylexus/apache-php55
-        - image: circleci/mysql:5.7
+          - swissknife/publish_github_release:
+              tag: $NEWTAGNAME
+          - notify-rc-tag:
+              tag: $NEWTAGNAME
+  unit-php55-mage18:
+    docker:
+    - image: bylexus/apache-php55
+    - image: circleci/mysql:5.7
+    steps:
+    - run:
+        command: |
+          apt-get update
+          apt-get install -y git
+          apt-get install -y openssh-server
+    - checkout
+    - if-php-modified:
         steps:
         - run:
+            name: PHP 5.5 Magento 1.8
             command: |
-                apt-get update
-                apt-get install -y git
-                apt-get install -y openssh-server
-        - checkout
-        - if-php-modified:
-            steps:
-            - run:
-                name: PHP 5.5 Magento 1.9
-                command: |
-                    mkdir ./artifacts
-                    export TEST_ENV=php55-mage19
-                    PHPUNIT_PHAR=tests/unit/phpunit-4.8.36.phar MAGENTO_VERSION=magento-mirror-1.9.3.6 tests/scripts/ci.sh nocov
-            - store_artifacts:
-                path: ./artifacts
-            - notify-buildcop
-    unit-php56-mage18:
-        docker:
-        - image: bylexus/apache-php56
-        - image: circleci/mysql:5.7
+              mkdir ./artifacts
+              export TEST_ENV=php55-mage18
+              PHPUNIT_PHAR=tests/unit/phpunit-4.8.36.phar MAGENTO_VERSION=magento-mirror-1.8.1.0 tests/scripts/ci.sh nocov
+        - store_artifacts:
+            path: ./artifacts
+        - notify-buildcop
+  unit-php55-mage19:
+    docker:
+    - image: bylexus/apache-php55
+    - image: circleci/mysql:5.7
+    steps:
+    - run:
+        command: |
+          apt-get update
+          apt-get install -y git
+          apt-get install -y openssh-server
+    - checkout
+    - if-php-modified:
         steps:
         - run:
+            name: PHP 5.5 Magento 1.9
             command: |
-                apt-get update
-                apt-get install -y git
-                apt-get install -y openssh-server
-        - checkout
-        - if-php-modified:
-            steps:
-            - run:
-                name: PHP 5.6 Magento 1.8
-                command: |
-                    mkdir ./artifacts
-                    export TEST_ENV=php56-mage18
-                    PHPUNIT_PHAR=tests/unit/phpunit-5.7.9.phar MAGENTO_VERSION=magento-mirror-1.8.1.0 tests/scripts/ci.sh withcov
-            - store_artifacts:
-                path: ./artifacts
-            - notify-buildcop
-    unit-php56-mage19:
-        docker:
-        - image: bylexus/apache-php56
-        - image: circleci/mysql:5.7
+              mkdir ./artifacts
+              export TEST_ENV=php55-mage19
+              PHPUNIT_PHAR=tests/unit/phpunit-4.8.36.phar MAGENTO_VERSION=magento-mirror-1.9.3.6 tests/scripts/ci.sh nocov
+        - store_artifacts:
+            path: ./artifacts
+        - notify-buildcop
+  unit-php56-mage18:
+    docker:
+    - image: bylexus/apache-php56
+    - image: circleci/mysql:5.7
+    steps:
+    - run:
+        command: |
+          apt-get update
+          apt-get install -y git
+          apt-get install -y openssh-server
+    - checkout
+    - if-php-modified:
         steps:
         - run:
+            name: PHP 5.6 Magento 1.8
             command: |
-                apt-get update
-                apt-get install -y git
-                apt-get install -y openssh-server
-        - checkout
-        - if-php-modified:
-            steps:
-            - run:
-                name: PHP 5.6 Magento 1.9
-                command: |
-                    mkdir ./artifacts
-                    export TEST_ENV=php56-mage19
-                    PHPUNIT_PHAR=tests/unit/phpunit-5.7.9.phar MAGENTO_VERSION=magento-mirror-1.9.3.6 tests/scripts/ci.sh withcov
-            - store_artifacts:
-                path: ./artifacts
-            - notify-buildcop
+              mkdir ./artifacts
+              export TEST_ENV=php56-mage18
+              PHPUNIT_PHAR=tests/unit/phpunit-5.7.9.phar MAGENTO_VERSION=magento-mirror-1.8.1.0 tests/scripts/ci.sh withcov
+        - store_artifacts:
+            path: ./artifacts
+        - notify-buildcop
+  unit-php56-mage19:
+    docker:
+    - image: bylexus/apache-php56
+    - image: circleci/mysql:5.7
+    steps:
+    - run:
+        command: |
+          apt-get update
+          apt-get install -y git
+          apt-get install -y openssh-server
+    - checkout
+    - if-php-modified:
+        steps:
+        - run:
+            name: PHP 5.6 Magento 1.9
+            command: |
+              mkdir ./artifacts
+              export TEST_ENV=php56-mage19
+              PHPUNIT_PHAR=tests/unit/phpunit-5.7.9.phar MAGENTO_VERSION=magento-mirror-1.9.3.6 tests/scripts/ci.sh withcov
+        - store_artifacts:
+            path: ./artifacts
+        - notify-buildcop
 workflows:
-    tests:
-        jobs:
-        - unit-php55-mage18
-        - unit-php55-mage19
-        - unit-php56-mage18
-        - unit-php56-mage19
-    tagger:
-        triggers:
-        - schedule:
-            cron: "0 5 * * 5"
-            filters:
-                branches:
-                    only:
-                    - master
-        jobs:
-        - tag-rc-candidate
+  tests:
+    jobs:
+    - unit-php55-mage18
+    - unit-php55-mage19
+    - unit-php56-mage18
+    - unit-php56-mage19
+  tagger:
+    triggers:
+    - schedule:
+        cron: "0 5 * * 5"
+        filters:
+          branches:
+            only:
+            - master
+    jobs:
+    - tag-rc-candidate
