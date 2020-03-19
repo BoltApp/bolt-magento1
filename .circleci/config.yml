@@ -1,6 +1,6 @@
 version: 2.1
 orbs:
-  slack: circleci/slack@3.3.0
+  slack: circleci/slack@3.4.2
   swissknife: roopakv/swissknife@0.25.0
 commands:
   if-php-modified:
@@ -23,7 +23,42 @@ commands:
         failure_message: ':red_circle: M1: A $CIRCLE_JOB job has failed!'
         only_for_branches: master
         webhook: $SLACK_GREENKEEPER_WEBHOOK
+  notify-rc-tag:
+    description: 'Notifies #eng-magento1 when a release candidate is tagged.'
+    parameters:
+      tag:
+        type: string
+        default: ''
+    steps:
+      - slack/notify:
+        channel: "#eng-magento1"
+        color: '#33ff00'
+        mentions: '@oleksii,@Pavel,'
+        message: ":white_check_mark: A new RC << parameters.tag >> has been tagged for Magento 1!"
+        webhook: $SLACK_GREENKEEPER_WEBHOOK
+
 jobs:
+  tag-rc-candidate:
+    description: Tag master as rc every 3 weeks
+    docker:
+      - image: bylexus/apache-php55
+      - image: circleci/mysql:5.7
+    steps:
+      - run: |
+        .circleci/scripts/rc-tag.sh
+      - when:
+        condition: $TAGTHISWEEK
+        steps:
+          - run:
+            command: |
+              apt-get update
+              apt-get install -y git
+              apt-get install -y openssh-server
+          - swissknife/publish_github_release:
+            tag: $NEWTAGNAME
+          - notify-rc-tag:
+            tag: $NEWTAGNAME
+
   unit-php55-mage18:
     docker:
     - image: bylexus/apache-php55
@@ -119,3 +154,13 @@ workflows:
     - unit-php55-mage19
     - unit-php56-mage18
     - unit-php56-mage19
+  tagger:
+    triggers:
+      - schedule:
+        cron: "0 5 * * 5"
+        filters:
+          branches:
+            only:
+              - master
+    jobs:
+      - tag-rc-candidate
