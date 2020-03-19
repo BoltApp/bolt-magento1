@@ -35,8 +35,7 @@ class Bolt_Boltpay_Model_FeatureSwitch extends Bolt_Boltpay_Model_Abstract
     const ROLLOUT_KEY = 'rolloutPercentage';
 
     /**
-     * Every feature switch added here should have a corresponding helper
-     * in GeneralTrait
+     * Determines if the Bolt server side has disabled the plugin. A false value will override local settings.
      */
     const BOLT_ENABLED_SWITCH_NAME = 'M1_BOLT_ENABLED';
 
@@ -54,6 +53,8 @@ class Bolt_Boltpay_Model_FeatureSwitch extends Bolt_Boltpay_Model_Abstract
 
     /**
      * Bolt_Boltpay_Model_FeatureSwitch constructor.
+     *
+     * All feature switches will have a corresponding array entry here to set rollout percentage and default values
      */
     final public function __construct()
     {
