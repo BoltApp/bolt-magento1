@@ -43,8 +43,10 @@ jobs:
     - image: bylexus/apache-php55
     - image: circleci/mysql:5.7
     steps:
-    - run: |
-      .circleci/scripts/rc-tag.sh
+    - run:
+        name: Validate eligibility to tag rc
+        command: |
+          .circleci/scripts/rc-tag.sh
     - when:
       condition: $TAGTHISWEEK
       steps:
