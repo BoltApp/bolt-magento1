@@ -30,12 +30,12 @@ commands:
         type: string
         default: ''
     steps:
-      - slack/notify:
-        channel: "#eng-magento1"
-        color: '#33ff00'
-        mentions: '@oleksii,@Pavel,'
-        message: ":white_check_mark: A new RC << parameters.tag >> has been tagged for Magento 1!"
-        webhook: $SLACK_GREENKEEPER_WEBHOOK
+    - slack/notify:
+      channel: "#eng-magento1"
+      color: '#33ff00'
+      mentions: '@oleksii,@Pavel,'
+      message: ":white_check_mark: A new RC << parameters.tag >> has been tagged for Magento 1!"
+      webhook: $SLACK_GREENKEEPER_WEBHOOK
 jobs:
   tag-rc-candidate:
     description: Tag master as rc every 3 weeks
@@ -155,11 +155,11 @@ workflows:
     - unit-php56-mage19
   tagger:
     triggers:
-      - schedule:
-        cron: "0 5 * * 5"
-        filters:
-          branches:
-            only:
-              - master
+    - schedule:
+      cron: "0 5 * * 5"
+      filters:
+        branches:
+          only:
+          - master
     jobs:
-      - tag-rc-candidate
+    - tag-rc-candidate
