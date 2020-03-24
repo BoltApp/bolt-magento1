@@ -1,7 +1,7 @@
 <?xml version="1.0"?>
 <ruleset name="MEQP1">
-    <description>Code Sniffer Configuration</description>
+    <description>Magento EQP Coding Standard</description>
     <file>app/</file>
-    <arg name="extensions" value="php"/>
+    <arg name="extensions" value="php,phtml"/>
     <rule ref="MEQP1" />
 </ruleset>

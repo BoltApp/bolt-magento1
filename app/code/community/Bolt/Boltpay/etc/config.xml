@@ -20,7 +20,7 @@
 
   <modules>
     <Bolt_Boltpay>
-      <version>2.2.0</version> <!-- version number should be incremented appropriately  -->
+      <version>2.4.1</version> <!-- version number should be incremented appropriately  -->
     </Bolt_Boltpay>
   </modules>
 
@@ -58,7 +58,7 @@
       <bolt_boltpay_setup>
         <setup>
           <module>Bolt_Boltpay</module>
-          <class>Mage_Eav_Model_Entity_Setup</class>
+          <class>Bolt_Boltpay_Model_Setup</class>
         </setup>
 
         <connection>
@@ -74,6 +74,10 @@
                   <class>Bolt_Boltpay_Model_Observer</class>
                   <method>initializeBenchmarkProfiler</method>
               </bolt_boltpay_init_benchmarking>
+              <bolt_boltpay_update_feautureswitches>
+                  <class>Bolt_Boltpay_Model_Observer</class>
+                  <method>updateFeatureSwitches</method>
+              </bolt_boltpay_update_feautureswitches>
           </observers>
       </controller_front_init_before>
       <controller_front_send_response_after>

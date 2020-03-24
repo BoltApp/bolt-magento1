@@ -39,11 +39,6 @@ class Bolt_Boltpay_ShippingControllerTest extends PHPUnit_Framework_TestCase
     private static $_productIds = array();
 
     /**
-     * @var Bolt_Boltpay_TestHelper  Used for working with the shopping cart
-     */
-    private $testHelper;
-
-    /**
      * @var string  Used for storing $cacheBoltHeader in the header of response
      */
     private $_cacheBoltHeader;
@@ -87,10 +82,16 @@ class Bolt_Boltpay_ShippingControllerTest extends PHPUnit_Framework_TestCase
      * @var MockObject|Mage_Checkout_Model_Session Mocked instance of Mage::getSingleton('checkout/session')
      */
     private $checkoutSessionMock;
+
     /**
      * @var MockObject|Mage_Core_Model_Cache Mocked instance of Mage::app()->getCache()
      */
     private $cacheMock;
+
+    /**
+     * @var MockObject|Mage_Core_Controller_Response_Http Mocked instance of Magento controller response object
+     */
+    private $responseMock;
 
     /**
      * Sets up a shipping controller that mocks Bolt HMAC request validation with all helper
@@ -118,15 +119,23 @@ class Bolt_Boltpay_ShippingControllerTest extends PHPUnit_Framework_TestCase
 
         $this->checkoutSessionMock = $this->getClassPrototype('Mage_Checkout_Model_Session')->getMock();
 
-        $this->currentMock->method('getRequest')->willReturn($this->requestMock);
-        $this->currentMock->method('boltHelper')->willReturn($this->boltHelperMock);
-
         TestHelper::setNonPublicProperty($this->currentMock, '_shippingAndTaxModel', $this->shippingAndTaxModelMock);
         TestHelper::setNonPublicProperty($this->currentMock, '_cache', $this->cacheMock);
 
         $this->quoteMock = $this->getClassPrototype('Mage_Sales_Model_Quote')
             ->setMethods(
-                array('getItemsCount', 'getId', 'getShippingAddress', 'getStore', 'loadByIdWithoutStore')
+                array(
+                    'getItemsCount',
+                    'getId',
+                    'getShippingAddress',
+                    'getStore',
+                    'loadByIdWithoutStore',
+                    'getAllVisibleItems',
+                    'getAppliedRuleIds',
+                    'getCustomerId',
+                    'getCustomerTaxClassId',
+                    'getBaseSubtotalWithDiscount',
+                )
             )->getMock();
         $this->quoteShippingAddressMock = $this->getClassPrototype('Mage_Sales_Model_Quote_Address')->getMock();
         $this->quoteMock->method('getShippingAddress')->willReturn($this->quoteShippingAddressMock);
@@ -142,11 +151,11 @@ class Bolt_Boltpay_ShippingControllerTest extends PHPUnit_Framework_TestCase
             ->setMethods(array('boltHelper', 'getResponse', 'sendResponse'))
             ->getMock();
 
-        $stubbedResponse = $this->getMockBuilder('Mage_Core_Controller_Response_Http')
+        $this->responseMock = $this->getClassPrototype('Mage_Core_Controller_Response_Http')
             ->setMethods(array('setHeader'))
             ->getMock();
 
-        $stubbedResponse->method('setHeader')
+        $this->responseMock->method('setHeader')
             ->with(
                 $this->anything(),
                 $this->callback(
@@ -155,21 +164,21 @@ class Bolt_Boltpay_ShippingControllerTest extends PHPUnit_Framework_TestCase
                             $this->_cacheBoltHeader = $headerValue;
                         }
 
-                        return $headerValue;
+                        return true;
                     }
                 )
             )
-            ->willReturn($stubbedResponse);
+            ->willReturnSelf();
+
+        $this->currentMock->method('getRequest')->willReturn($this->requestMock);
+        $this->currentMock->method('getResponse')->willReturn($this->responseMock);
+        $this->currentMock->method('boltHelper')->willReturn($this->boltHelperMock);
 
         $this->boltHelperMock->method('verify_hook')->willReturn(true);
-
-        $this->boltHelperMock->method('setResponseContextHeaders')->willReturn($stubbedResponse);
+        $this->boltHelperMock->method('setResponseContextHeaders')->willReturn($this->responseMock);
 
         $this->_shippingController->method('boltHelper')->willReturn($this->boltHelperMock);
-
-        $this->_shippingController->method('getResponse')->willReturn($stubbedResponse);
-
-        $this->testHelper = new Bolt_Boltpay_TestHelper();
+        $this->_shippingController->method('getResponse')->willReturn($this->responseMock);
 
         $websiteId = Mage::app()->getWebsite()->getId();
         $store = Mage::app()->getStore();
@@ -202,6 +211,8 @@ class Bolt_Boltpay_ShippingControllerTest extends PHPUnit_Framework_TestCase
 
     /**
      * Generate dummy products for testing purposes before test
+     *
+     * @throws Exception if unable to delete dummy products
      */
     public static function setUpBeforeClass()
     {
@@ -231,6 +242,8 @@ class Bolt_Boltpay_ShippingControllerTest extends PHPUnit_Framework_TestCase
      * that if cache is in a valid state after prefetch data is sent.  Prior to
      * the prefetch, there should be no cache data.  After the prefetch, there should be
      * cached data.
+     *
+     * @covers ::prefetchEstimateAction
      *
      * @throws ReflectionException      on unexpected problems with reflection
      * @throws Zend_Cache_Exception     on unexpected problems reading or writing to Magento cache
@@ -282,7 +295,7 @@ class Bolt_Boltpay_ShippingControllerTest extends PHPUnit_Framework_TestCase
         );
 
         $expectedCacheId = $this->_shippingController->getEstimateCacheIdentifier($quote, $expectedAddressData);
-        $estimatePreCall = unserialize(Mage::app()->getCache()->load($expectedCacheId));
+        $estimatePreCall = json_decode(Mage::app()->getCache()->load($expectedCacheId));
 
         $geoIpAddressData = array(
             'city'         => 'Beverly Hills',
@@ -310,7 +323,7 @@ class Bolt_Boltpay_ShippingControllerTest extends PHPUnit_Framework_TestCase
 
         $actualAddressData = json_decode($actualResponse, true)['address_data'];
         $actualCacheId = $this->_shippingController->getEstimateCacheIdentifier($quote, $actualAddressData);
-        $estimatePostCall = unserialize(Mage::app()->getCache()->load($actualCacheId));
+        $estimatePostCall = json_decode(Mage::app()->getCache()->load($actualCacheId), true);
 
         $this->assertEquals($expectedCacheId, $actualCacheId);
         $this->assertEmpty(
@@ -338,13 +351,15 @@ class Bolt_Boltpay_ShippingControllerTest extends PHPUnit_Framework_TestCase
      * with address data changed, there should be a MISS.  A fourth call with the original address
      * data should yield a HIT.
      *
+     * @covers ::indexAction
+     *
      * @throws Mage_Core_Exception from setup if website is not defined
      * @throws Mage_Core_Model_Store_Exception from setup if store is not defined
      * @throws ReflectionException on unexpected problems with reflection
      * @throws Zend_Cache_Exception on unexpected problems reading or writing to Magento cache
      * @throws Zend_Controller_Request_Exception if unable to create controller
      */
-    public function prefetchEstimateAction_withMultipleConsecutiveCallsWithDifferentAddresses_estimatesOncePerAddressAndReturnsFromCache()
+    public function indexAction_withMultipleConsecutiveCallsWithDifferentAddresses_estimatesOncePerAddressAndReturnsFromCache()
     {
 
         Mage::app()->getCache()->clean('matchingAnyTag', array('BOLT_QUOTE_PREFETCH'));
@@ -357,7 +372,7 @@ class Bolt_Boltpay_ShippingControllerTest extends PHPUnit_Framework_TestCase
         $quote->setCustomerTaxClassId(2);
 
         foreach (self::$_productIds as $productId) {
-            $this->testHelper->addProduct($productId, rand(1, 3));
+            TestHelper::addProduct($productId, rand(1, 3));
         }
 
         $quote->setTotalsCollectedFlag(false);
@@ -546,10 +561,14 @@ class Bolt_Boltpay_ShippingControllerTest extends PHPUnit_Framework_TestCase
 
     /**
      * @test
+     * that Magento internal constructor sets requestMustBeSigned property of the object to false
+     * if request path contains prefetchEstimate
+     *
      * @covers ::_construct
-     * @throws ReflectionException
+     *
+     * @throws ReflectionException if _construct method is not defined
      */
-    public function _construct_pathInfoContainsPrefetchEstimate_requestMustBeSignedPropertySetToFalse()
+    public function _construct_ifPathInfoContainsPrefetchEstimate_requestDoesntHaveToBeSigned()
     {
         $this->requestMock->expects($this->once())->method('getPathInfo')->willReturn('shipping/prefetchEstimate');
         Bolt_Boltpay_TestHelper::callNonPublicFunction($this->currentMock, '_construct');
@@ -568,7 +587,7 @@ class Bolt_Boltpay_ShippingControllerTest extends PHPUnit_Framework_TestCase
 
     /**
      * @test
-     * that indexAction will return failure response with appropriate error code and message
+     * that indexAction will return failure response stating that PO Boxes are not allowed
      * if PO box addresses are not allowed and one is provided
      *
      * @covers ::indexAction
@@ -576,7 +595,7 @@ class Bolt_Boltpay_ShippingControllerTest extends PHPUnit_Framework_TestCase
      * @expectedException Exception
      * @expectedExceptionMessage Expected exception that simulates exit in sendResponse
      */
-    public function indexAction_POBoxNotAllowedAndAddressContainsPOBox_returnsFailureResponse()
+    public function indexAction_ifPOBoxIsNotAllowedAndAddressContainsPOBox_returnsFailureResponse()
     {
         $requestData = new stdClass();
         $requestData->shipping_address->street_address1 = 'Sample Street 10';
@@ -600,9 +619,8 @@ class Bolt_Boltpay_ShippingControllerTest extends PHPUnit_Framework_TestCase
             )
             ->willThrowException(new Exception('Expected exception that simulates exit in sendResponse'));
 
-        $this->boltHelperMock->expects($this->atLeastOnce())->method('logWarning')->with(
-            'Address with P.O. Box is not allowed.'
-        );
+        $this->boltHelperMock->expects($this->atLeastOnce())->method('logWarning')
+            ->with('Address with P.O. Box is not allowed.');
         $this->currentMock->indexAction();
     }
 
@@ -628,7 +646,6 @@ class Bolt_Boltpay_ShippingControllerTest extends PHPUnit_Framework_TestCase
         $this->quoteShippingAddressMock->expects($this->once())->method('validate')
             ->willReturn(array('Please enter the first name.', 'Please enter the last name.'));
 
-
         $this->currentMock->expects($this->once())->method('sendResponse')
             ->with(
                 422,
@@ -648,6 +665,7 @@ class Bolt_Boltpay_ShippingControllerTest extends PHPUnit_Framework_TestCase
      * Setup method for tests covering {@see Bolt_Boltpay_ShippingController::indexAction}
      *
      * @param Mage_Sales_Model_Quote $quote to be returned from checkout session
+     *
      * @throws Mage_Core_Exception if unable to stub singleton
      */
     private function prefetchEstimateActionSetUp($quote)
@@ -665,8 +683,10 @@ class Bolt_Boltpay_ShippingControllerTest extends PHPUnit_Framework_TestCase
      *
      * @expectedException Exception
      * @expectedExceptionMessage Expected exception that simulates exit from sendResponse
+     *
+     * @throws Mage_Core_Exception from setup if unable to stub singleton
      */
-    public function prefetchEstimateAction_sessionQuoteWithoutId_willNotProceed()
+    public function prefetchEstimateAction_whenSessionQuoteHasNoId_doesNotPrefetchEstimate()
     {
         $this->prefetchEstimateActionSetUp($this->quoteMock);
         $this->quoteMock->expects($this->once())->method('getId')->willReturn(null);
@@ -686,8 +706,10 @@ class Bolt_Boltpay_ShippingControllerTest extends PHPUnit_Framework_TestCase
      *
      * @expectedException Exception
      * @expectedExceptionMessage Expected exception that simulates exit from sendResponse
+     *
+     * @throws Mage_Core_Exception from setup if unable to stub singleton
      */
-    public function prefetchEstimateAction_sessionQuoteWithoutItems_willNotProceed()
+    public function prefetchEstimateAction_whenSessionQuoteHasNoItems_doesNotPrefetchEstimate()
     {
         $this->prefetchEstimateActionSetUp($this->quoteMock);
         $this->quoteMock->expects($this->atLeastOnce())->method('getId')->willReturn(self::QUOTE_ID);
@@ -704,8 +726,10 @@ class Bolt_Boltpay_ShippingControllerTest extends PHPUnit_Framework_TestCase
      * that prefetchEstimateAction doesn't perform estimation if it is already cached for provided address data
      *
      * @covers ::prefetchEstimateAction
+     *
+     * @throws Mage_Core_Exception from setup if unable to stub singleton
      */
-    public function prefetchEstimateAction_estimateInCache_returnsSuccessResponseWithoutEstimating()
+    public function prefetchEstimateAction_ifEstimateAlreadyInCache_returnsSuccessResponseWithoutPreFetching()
     {
         $this->prefetchEstimateActionSetUp($this->quoteMock);
         $this->quoteMock->expects($this->atLeastOnce())->method('getId')->willReturn(self::QUOTE_ID);
@@ -718,13 +742,11 @@ class Bolt_Boltpay_ShippingControllerTest extends PHPUnit_Framework_TestCase
             'region'     => 'California',
             'postcode'   => '90210'
         );
-        $this->quoteShippingAddressMock->method('getData')->willReturn(
-            $addressData
-        );
+        $this->quoteShippingAddressMock->method('getData')->willReturn($addressData);
 
-        $this->cacheMock->expects($this->once())->method('load')->with(
-            $this->currentMock->getEstimateCacheIdentifier($this->quoteMock, $addressData)
-        )->willReturn(true);
+        $this->cacheMock->expects($this->once())->method('load')
+            ->with($this->currentMock->getEstimateCacheIdentifier($this->quoteMock, $addressData))
+            ->willReturn(true);
 
         $this->currentMock->expects($this->once())->method('sendResponse')->with(
             200,
@@ -743,6 +765,8 @@ class Bolt_Boltpay_ShippingControllerTest extends PHPUnit_Framework_TestCase
      * that if an exception is thrown during estimation process, it is logged and a success response is returned
      *
      * @covers ::prefetchEstimateAction
+     *
+     * @throws Mage_Core_Exception from setup if unable to stub singleton
      */
     public function prefetchEstimateAction_estimationThrowsException_returnsSuccessResponseAndLogsTheException()
     {
@@ -791,7 +815,7 @@ class Bolt_Boltpay_ShippingControllerTest extends PHPUnit_Framework_TestCase
      *
      * @covers ::getGeoIpAddress
      *
-     * @throws ReflectionException
+     * @throws ReflectionException if getGeoIpAddress method doesn't exist
      */
     public function getGeoIpAddress_addressCountryHasRegions_returnsAddressDataInMagentoFormat()
     {
@@ -819,11 +843,11 @@ class Bolt_Boltpay_ShippingControllerTest extends PHPUnit_Framework_TestCase
 
     /**
      * @test
-     * that geoIpAddress returns address data in Magento format containing region_id if country supports it
+     * that geoIpAddress returns address data in Magento format without region_id if country doesn't support it
      *
      * @covers ::getGeoIpAddress
      *
-     * @throws ReflectionException
+     * @throws ReflectionException if getGeoIpAddress method doesn't exist
      */
     public function getGeoIpAddress_addressCountryDoesntHaveRegions_returnsAddressDataInMagentoFormat()
     {
@@ -845,6 +869,172 @@ class Bolt_Boltpay_ShippingControllerTest extends PHPUnit_Framework_TestCase
                 'country_id'  => 'GB'
             ),
             TestHelper::callNonPublicFunction($this->currentMock, 'getGeoIpAddress')
+        );
+    }
+
+    /**
+     * @test
+     * that isApplePayRequest asserts if request is Apple Pay by checking that shipping address name is equal to n/a
+     *
+     * @covers ::isApplePayRequest
+     *
+     * @throws ReflectionException if isApplePayRequest method doesn't exist
+     */
+    public function isApplePayRequest_withAppleRedactedAddressName_returnsTrue()
+    {
+        $requestData = new stdClass();
+        $requestData->shipping_address->name = 'n/a';
+        $this->currentMock->expects($this->once())->method('getRequestData')->willReturn($requestData);
+        $this->assertTrue(TestHelper::callNonPublicFunction($this->currentMock, 'isApplePayRequest'));
+    }
+
+    /**
+     * @test
+     * that isApplePayRequest asserts if request is Apple Pay by checking that shipping address name is equal to n/a
+     *
+     * @covers ::isApplePayRequest
+     *
+     * @throws ReflectionException if isApplePayRequest method is not defined
+     */
+    public function isApplePayRequest_withNameEqualToNull_returnsFalse()
+    {
+        $requestData = new stdClass();
+        $requestData->shipping_address->name = null;
+        $this->currentMock->expects($this->once())->method('getRequestData')->willReturn($requestData);
+        $this->assertFalse(TestHelper::callNonPublicFunction($this->currentMock, 'isApplePayRequest'));
+    }
+
+    /**
+     * @test
+     * that shouldDoAddressValidation determines if address validation should be performed
+     * based on provided request data
+     *
+     * @covers ::shouldDoAddressValidation
+     *
+     * @dataProvider shouldDoAddressValidation_withVariousResultsOfInternalCalls_determinesIfAddressValidationShouldBeDoneProvider
+     *
+     * @param object $requestData to be returned from {@see Bolt_Boltpay_Controller_Traits_WebHookTrait::getRequestData}
+     * @param bool   $expectedResult of the method call
+     *
+     * @throws ReflectionException if shouldDoAddressValidation method is not defined
+     */
+    public function shouldDoAddressValidation_withVariousResultsOfInternalCalls_determinesIfAddressValidationShouldBeDone($requestData, $expectedResult)
+    {
+        $this->currentMock->expects($this->once())->method('getRequestData')->willReturn($requestData);
+        $this->assertSame(
+            $expectedResult,
+            TestHelper::callNonPublicFunction($this->currentMock, 'shouldDoAddressValidation')
+        );
+    }
+
+    /**
+     * Data provider for {@see shouldDoAddressValidation_withVariousResultsOfInternalCalls_determinesIfAddressValidationShouldBeDone}
+     *
+     * @return array containing request data and expected result of the method call
+     */
+    public function shouldDoAddressValidation_withVariousResultsOfInternalCalls_determinesIfAddressValidationShouldBeDoneProvider()
+    {
+        return array(
+            'Not Apple pay request - should validate' => array(
+                'requestData'    => (object)array('shipping_address' => (object)array('name' => null)),
+                'expectedResult' => true
+            ),
+            'Apple pay request - should not validate' => array(
+                'requestData'    => (object)array('shipping_address' => (object)array('name' => 'n/a')),
+                'expectedResult' => false
+            ),
+        );
+    }
+
+    /**
+     * @test
+     * that getEstimateCacheIdentifier returns hash of provided data concatenated in a expected format
+     *
+     * @covers ::getEstimateCacheIdentifier
+     */
+    public function getEstimateCacheIdentifier_withProvidedData_returnsEstimateCacheIdentifier()
+    {
+        $baseSubtotalWithDiscount = 123;
+        $customerId = 456;
+        $taxClassId = 758;
+        $addressData = array(
+            'city'       => 'Los Angeles',
+            'postcode'   => '90014',
+            'country_id' => 'US',
+            'region_id'  => '12',
+            'region'     => 'California'
+        );
+        $itemsData = array(
+            array('product_id' => 789, 'qty' => 12),
+            array('product_id' => 987, 'qty' => 21),
+        );
+        $appliedRuleIds = array(178, 212);
+        $this->quoteMock->method('getId')->willReturn(self::QUOTE_ID);
+        $this->quoteMock->method('getBaseSubtotalWithDiscount')->willReturn($baseSubtotalWithDiscount);
+        $this->quoteMock->method('getCustomerId')->willReturn($customerId);
+        $this->quoteMock->method('getCustomerTaxClassId')->willReturn($taxClassId);
+        $this->quoteMock->method('getAllVisibleItems')->willReturn(
+            array_map(
+                function ($itemData) {
+                    return Mage::getModel('sales/quote_item', $itemData);
+                },
+                $itemsData
+            )
+        );
+        $this->quoteMock->method('getAppliedRuleIds')->willReturn($appliedRuleIds);
+
+        $expectedCacheIdentifierString = self::QUOTE_ID . "_subtotal-" . $baseSubtotalWithDiscount * 100;
+        $expectedCacheIdentifierString .= "_customer-" . $customerId;
+        $expectedCacheIdentifierString .= "_tax-class-" . $taxClassId;
+        $expectedCacheIdentifierString .= "_country-id-" . $addressData['country_id'];
+        $expectedCacheIdentifierString .= "_postcode-" . $addressData['postcode'];
+        $expectedCacheIdentifierString .= "_city-" . $addressData['city'];
+        $expectedCacheIdentifierString .= "_region-" . $addressData['region'];
+        $expectedCacheIdentifierString .= "_region-id-" . $addressData['region_id'];
+        foreach ($itemsData as $key => $itemData) {
+            $expectedCacheIdentifierString .= '_item-' . $itemData['product_id'] . '-quantity-' . $itemData['qty'];
+        }
+
+        $expectedCacheIdentifierString .= "_applied-rules-" . json_encode($appliedRuleIds);
+
+        $this->assertSame(
+            md5($expectedCacheIdentifierString),
+            $this->currentMock->getEstimateCacheIdentifier($this->quoteMock, $addressData)
+        );
+    }
+
+    /**
+     * @test
+     * that cacheShippingAndTaxEstimate saves estimation to cache under the provided key in json_encode format
+     *
+     * @covers ::cacheShippingAndTaxEstimate
+     *
+     * @throws ReflectionException if cacheShippingAndTaxEstimate method doesn't exist
+     */
+    public function cacheShippingAndTaxEstimate_always_savesJsonizedEstimateToCache()
+    {
+        $dummyEstimate = array(
+            'shipping_options' => array(),
+            'tax_result' => array(
+                "amount" => 0
+            ),
+        );
+        $quoteCacheKey = md5('bolt');
+        $lifetime = 600;
+        $this->cacheMock->expects($this->once())->method('save')->with(
+            json_encode($dummyEstimate, JSON_PRETTY_PRINT),
+            $quoteCacheKey,
+            array('BOLT_QUOTE_PREFETCH'),
+            $lifetime
+        );
+        TestHelper::callNonPublicFunction(
+            $this->currentMock,
+            'cacheShippingAndTaxEstimate',
+            array(
+                $dummyEstimate,
+                $quoteCacheKey,
+                $lifetime
+            )
         );
     }
 }

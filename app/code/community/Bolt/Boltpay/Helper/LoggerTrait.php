@@ -193,15 +193,12 @@ trait Bolt_Boltpay_Helper_LoggerTrait
                         'time' => number_format(round(($processingTime), 3), 3)
                     ];
                 }
-                usort(
-                    $percentSummaryArray,
-                    function ($a, $b) {
-                        if ($a['percent'] == $b['percent']) {
-                            return 0;
-                        }
-                        return ($a['percent'] < $b['percent']) ? 1 : -1;
+                usort($percentSummaryArray, function ($a, $b) {
+                    if ($a['percent'] == $b['percent']) {
+                        return 0;
                     }
-                );
+                    return ($a['percent'] < $b['percent']) ? 1 : -1;
+                });
 
                 $percentSummary = $percentSummaryArray
                     ? "\n\n$sectionDivider\n\n-- Aggregate Benchmark Processing Time Summary --\n\n"

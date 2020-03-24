@@ -24,11 +24,16 @@ class Bolt_Boltpay_Model_Cron
 {
     use Bolt_Boltpay_BoltGlobalTrait;
 
-    /*
+    /**
      * We will have a conservative tolerance of 30 minutes for non-confirmed pre-auth orders before we allow the system
      * to remove them
      */
     const PRE_AUTH_STATE_TIME_LIMIT_MINUTES = 30;
+
+    /**
+     * Two weeks (60*60*24*7*2=1209600) is the amount of time in seconds we allow immutable quotes to exist before we delete them
+     */
+    const IMMUTABLE_QUOTE_EXPIRATION_SECONDS = 1209600;
 
     /**
      * After an immutable quote / unused generated session quote on PDP has existed for 2 weeks or more, we remove it from the system.
@@ -36,18 +41,25 @@ class Bolt_Boltpay_Model_Cron
      * quote that was to be converted will have been handled well before this time.
      *
      * As an artifact, we leave the parent quotes, (i.e. all Magento created quotes), and converted
-     * immutable quotes.  We delegate cleanup responsibility of these to the merchants.
+     * immutable quotes. We delegate cleanup responsibility of these to the merchants.
      */
     public function cleanupQuotes() {
         try {
             $sales_flat_quote_table = Mage::getSingleton('core/resource')->getTableName('sales/quote');
             $sales_flat_order_table = Mage::getSingleton('core/resource')->getTableName('sales/order');
 
-            $expiration_time = Mage::getModel('core/date')->date('Y-m-d H:i:s', time()-(60*60*24*7*2));
+            $expiration_time = Mage::getModel('core/date')->date('Y-m-d H:i:s', time()-self::IMMUTABLE_QUOTE_EXPIRATION_SECONDS);
 
             $connection = Mage::getSingleton('core/resource')->getConnection('core_write');
 
-            $sql = "DELETE sfq FROM $sales_flat_quote_table sfq LEFT JOIN $sales_flat_order_table sfo ON sfq.entity_id = sfo.quote_id WHERE (((sfq.parent_quote_id IS NOT NULL) AND (sfq.parent_quote_id < sfq.entity_id)) OR ((sfq.parent_quote_id IS NULL) AND (sfq.is_bolt_pdp = true))) AND (sfq.updated_at <= '$expiration_time') AND (sfo.entity_id IS NULL)";
+            $sql = "DELETE sfq
+                    FROM $sales_flat_quote_table sfq
+                    LEFT JOIN $sales_flat_order_table sfo
+                    ON sfq.entity_id = sfo.quote_id
+                    WHERE (((sfq.parent_quote_id IS NOT NULL) AND (sfq.parent_quote_id < sfq.entity_id)) OR
+                            ((sfq.parent_quote_id IS NULL) AND (sfq.is_bolt_pdp = true)))
+                    AND (sfq.updated_at <= '$expiration_time')
+                    AND (sfo.entity_id IS NULL)";
 
             $connection->query($sql);
         } catch ( Exception $e ) {
@@ -64,26 +76,35 @@ class Bolt_Boltpay_Model_Cron
      * ( e.g. when the Bolt server-side is configured to ignore the pre-auth flow on timeouts or "abnormal responses"
      * and authorization fails. )
      */
-    public function cleanupOrders() {
+    public function cleanupOrders()
+    {
         try {
-            $expiration_time = gmdate('Y-m-d H:i:s', time()-(60*self::PRE_AUTH_STATE_TIME_LIMIT_MINUTES));  // Magento uses GMT to save in DB
+            $expiration_time = gmdate(
+                'Y-m-d H:i:s',
+                time() - (60 * self::PRE_AUTH_STATE_TIME_LIMIT_MINUTES)
+            );  // Magento uses GMT to save in DB
 
             /* @var Mage_Sales_Model_Resource_Order_Collection $orderCollection */
             $orderCollection = Mage::getModel('sales/order')->getCollection();
-
-             $orderCollection
-                ->addFieldToFilter('created_at', array( 'gteq' => $expiration_time))
+            $orderCollection->addFieldToFilter('created_at', array('gteq' => $expiration_time))
                 ->setOrder('created_at', 'ASC');
 
             /** @var Mage_Sales_Model_Order $deletePendingPaymentOrdersBeforeThis */
             $deletePendingPaymentOrdersBeforeThis = $orderCollection->getFirstItem();
 
-            /* @var Mage_Sales_Model_Resource_Order_Collection $expiredPendindOrderCollection */
+            $firstNonExpiredId = $deletePendingPaymentOrdersBeforeThis->getId();
+            /* @var Mage_Sales_Model_Resource_Order_Collection $expiredPendingPaymentOrderCollection */
             $expiredPendingPaymentOrderCollection = Mage::getModel('sales/order')->getCollection();
-            $expiredPendingPaymentOrderCollection
-                ->addFieldToFilter('entity_id', array( 'lt' => $deletePendingPaymentOrdersBeforeThis->getId()))
-                ->addFieldToFilter('status', Bolt_Boltpay_Model_Payment::TRANSACTION_PRE_AUTH_PENDING)
-            ;
+            if ($firstNonExpiredId) {
+                $expiredPendingPaymentOrderCollection->addFieldToFilter(
+                    'entity_id',
+                    array('lt' => $firstNonExpiredId)
+                );
+            }
+            $expiredPendingPaymentOrderCollection->addFieldToFilter(
+                'status',
+                Bolt_Boltpay_Model_Payment::TRANSACTION_PRE_AUTH_PENDING
+            );
 
             $ordersToRemove = $expiredPendingPaymentOrderCollection->getItems();
 
@@ -91,7 +112,7 @@ class Bolt_Boltpay_Model_Cron
             $orderModel = Mage::getModel('boltpay/order');
 
             /** @var Mage_Sales_Model_Order $order */
-            foreach($ordersToRemove as $order) {
+            foreach ($ordersToRemove as $order) {
                 try {
                     $orderModel->removePreAuthOrder($order);
                 } catch (Exception $e) {
@@ -100,7 +121,7 @@ class Bolt_Boltpay_Model_Cron
                     $this->boltHelper()->logWarning($e->getMessage());
                 }
             }
-        } catch ( Exception $e ) {
+        } catch (Exception $e) {
             // Catch-all for unexpected exceptions
             $this->boltHelper()->notifyException($e, array(), 'warning');
             $this->boltHelper()->logWarning($e->getMessage());

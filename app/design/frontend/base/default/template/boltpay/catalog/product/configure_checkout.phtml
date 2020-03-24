@@ -15,56 +15,169 @@
  * @license    http://opensource.org/licenses/osl-3.0.php  Open Software License (OSL 3.0)
  */
 
-/* @var $this Bolt_Boltpay_Block_Catalog_Product_Boltpay */
+/* @var Bolt_Boltpay_Block_Catalog_Product_Boltpay $this */
 ?>
 <?php if ($this->isEnabledProductPageCheckout() && $this->isSupportedProductType()): ?>
 <script type="text/javascript">
-var productPageCheckoutSelector = '<?php $this->escapeHtml($this->getProductPageCheckoutSelector()) ?>';
-var order_completed = false;
-var do_checks = 1;
-<?php $productTierPrice = $this->getProductTierPrice(); ?>
 var boltConfigPDP = {
-    _jsonProductCart: <?php echo $this->getCartDataJsForProductPage(); ?>,
-    _tierPrices : <?php echo json_encode($productTierPrice) ?>,
-    getPrice : function (qty) {
-        qty = Number(qty);
-        var i;
-        for (i = this._tierPrices.length; i > 0; --i) {
-            if (qty >= this._tierPrices[i-1]['price_qty']){
-                return this._tierPrices[i-1]['price'];
+    product: <?php echo $this->getProductJSON(); ?>,
+    customer: <?php echo $this->getCustomerJSON(); ?>,
+    /**
+     * Initializes BoltCheckout
+     */
+    init: function () {
+        <?php echo $this->getCartDataJs(Bolt_Boltpay_Block_Checkout_Boltpay::CHECKOUT_TYPE_PRODUCT_PAGE); ?>
+    },
+    /**
+     * Returns current quantity value
+     * @returns {number}
+     */
+    getQty: function () {
+        if (this.product.type_id == 'grouped') {
+            var totalQty = 0;
+            for (var i in this.product.associated_products) {
+                if (this.product.associated_products.hasOwnProperty(i) && this.product.associated_products[i]) {
+                    totalQty += Number(document.getElementById('super_group_' + this.product.associated_products[i].id).value);
+                }
+            }
+            return totalQty;
+        }
+        return Number(document.getElementById('qty').value);
+    },
+    /**
+     * Returns price of the currently configured product
+     * @returns {number}
+     */
+    getPrice: function () {
+        var price = Number(this.product.price);
+        //use tier price instead, if qty matches
+        for (var i = 0; i < this.product.tier_prices.length; i++) {
+            if (this.getQty() >= Number(this.product.tier_prices[i]['price_qty'])) {
+                price = Number(this.product.tier_prices[i]['price']);
             }
         }
-
-        return this._jsonProductCart.items[0].price;
-    },
-
-    increaseQty: function(number) {
-        if (this._jsonProductCart) {
-            this._jsonProductCart.items[0].quantity = parseInt(number);
-            if(this._tierPrices){
-                this._jsonProductCart.items[0].price = this.getPrice(number);
+        //add custom options prices
+        if (typeof optionsPrice !== 'undefined') {
+            for (var key in optionsPrice.customPrices){
+                if (optionsPrice.customPrices.hasOwnProperty(key) && typeof optionsPrice.customPrices[key].price !== 'undefined') {
+                    price += Number(optionsPrice.customPrices[key].price);
+                }
             }
-            this._jsonProductCart.total = parseFloat(this._jsonProductCart.items[0].price) * number;
-        } else {
-            console.log('There is no json product data');
         }
+        switch (this.product.type_id) {
+            case 'configurable':
+                if (typeof optionsPrice.optionPrices.config !== 'undefined') {
+                    //add configurable options prices
+                    price += Number(optionsPrice.optionPrices.config.price);
+                }
+                break;
+            case 'downloadable':
+                if (typeof optionsPrice.optionPrices.downloadable !== 'undefined') {
+                    //add downloadable options price
+                    price += Number(optionsPrice.optionPrices.downloadable);
+                }
+                break;
+            case 'bundle':
+                if (typeof optionsPrice.optionPrices.bundle !== 'undefined') {
+                    //override price with bundle price
+                    price = optionsPrice.optionPrices.bundle;
+                }
+                break;
+        }
+        return price;
     },
-    init: function(removeItems) {
-        // copy object that we always have correct product data.
-        var jsonProductCart = Object.assign({}, this._jsonProductCart),
-            boltJsonProductHints = null;
-
-        if (removeItems === true) {
-            jsonProductCart.items = [];
+    /**
+     * Called by BoltCheckout check callback and will prevent Bolt popup from opening if false is returned
+     * @returns {boolean}
+     */
+    validate: function () {
+        var formValidation = new Validation('product_addtocart_form');
+        try {
+            if (this.product.type_id == 'downloadable' && !this.customer.is_logged_in) {
+                throw '<?php echo $this->__(
+                    'Please <a href="%s">login</a> in order to purchase this product',
+                    $this->getCustomerLoginUrlWithReferrer()
+                ); ?>';
+            }
+            if (this.getQty() <= 0) {
+                throw '<?php echo $this->__("Please specify the quantity of product(s)."); ?>';
+            }
+            if (this.product.stock.manage && (!this.product.stock.status || this.product.stock.qty < this.getQty())) {
+                throw '<?php echo $this->__("The requested quantity is not available."); ?>';
+            }
+            //TODO: support file type custom options
+            //currently not supported because it would require custom upload and expiration logic
+            document.querySelectorAll("#product_addtocart_form input[type='file']").forEach(function(fileInput) {
+                if (fileInput.value) {
+                    var name = 'file-upload-not-supported-bolt';
+                    var advice = Validation.getAdvice(name, fileInput);
+                    if (advice == null) {
+                        advice = Validation.createAdvice(name, fileInput, false, '<?php echo $this->__('Files not supported with Product Page BoltCheckout. Please add product to cart and then use Bolt from the cart page to checkout.'); ?>');
+                    }
+                    Validation.showAdvice(fileInput, advice, name);
+                    fileInput.focus();
+                    throw '<?php echo $this->__('Files not supported with Product Page BoltCheckout. Please add product to cart and then use Bolt from the cart page to checkout.'); ?>';
+                }
+            });
+        } catch (e) {
+            if (typeof BoltPopup !== 'undefined' && typeof e === 'string') {
+                BoltPopup.setMessage(e);
+                BoltPopup.show();
+            }
+            return false;
         }
-
-        window.BoltModal = BoltCheckout.configureProductCheckout(
-            jsonProductCart,
-            boltJsonProductHints,
-            <?php echo $this->getBoltCallbacks(); ?>,
-            { checkoutButtonClassName: 'bolt-product-checkout-button' }
-        );
-    }
+        return formValidation.validate();
+    },
+    /**
+     * Returns items data
+     * @returns {[{reference: number, quantity: number, price: number, name: string, options: string}]|[]}}
+     */
+    getItemData: function () {
+        if (this.product.type_id == 'grouped') {
+            var items = [];
+            for (var i in this.product.associated_products) {
+                if (!this.product.associated_products.hasOwnProperty(i) || !this.product.associated_products[i]) {
+                    continue;
+                }
+                var product = this.product.associated_products[i];
+                var qty = Number(document.getElementById('super_group_' + product.id).value);
+                if (qty > 0) {
+                    items.push(
+                        {
+                            reference: product.id,
+                            name: product.name,
+                            price: product.price,
+                            quantity: qty,
+                            options: $('product_addtocart_form').serialize(),
+                        }
+                    );
+                }
+            }
+            return items;
+        }
+        if (this.getQty() <= 0) {
+            return [];
+        }
+        return [
+            {
+                reference: this.product.id,
+                name: this.product.name,
+                price: this.getPrice(),
+                quantity: this.getQty(),
+                options: $('product_addtocart_form').serialize(),
+            },
+        ];
+    },
+    /**
+     * Returns cart data to be provided to BoltConnect.configureProductCheckout
+     * @returns {{currency: string, items: ([{reference: number, quantity: number, price: number, name: string, options: string}]|[])}}
+     */
+    getCartData: function () {
+        return {
+            items: this.getItemData(),
+            currency: '<?php echo Mage::app()->getStore()->getCurrentCurrencyCode(); ?>'
+        };
+    },
 };
 
 document.addEventListener("DOMContentLoaded", function() {
@@ -78,14 +191,7 @@ document.addEventListener("DOMContentLoaded", function() {
             processIntervalCounter++;
             if (typeof BoltCheckout !== "undefined") {
                 clearInterval(processIntervalProd);
-                var qtyValue = parseInt(document.getElementById('qty').value);
-
-                if (qtyValue > 0 && !isNaN(qtyValue)) {
-                    boltConfigPDP.increaseQty(qtyValue);
-                    boltConfigPDP.init();
-                } else {
-                    boltConfigPDP.init(true);
-                }
+                boltConfigPDP.init();
             }
 
             if (processIntervalCounter > 50) {
@@ -94,16 +200,30 @@ document.addEventListener("DOMContentLoaded", function() {
         }, 50
     );
 
-    document.getElementById('qty').addEventListener('input', function() {
-        var qtyValue = parseInt(this.value);
-
-        if (qtyValue > 0 && !isNaN(qtyValue)) {
-            boltConfigPDP.increaseQty(qtyValue);
-            boltConfigPDP.init();
-        } else {
-            boltConfigPDP.init(true);
-        }
+    document.querySelectorAll(('input[name=qty], input[name*=super_group], input[name*=qty]')).forEach(function (input) {
+        input.addEventListener('input', boltConfigPDP.init.bind(boltConfigPDP));
     });
+    if (typeof spConfig !== 'undefined') {
+        spConfig.configureSubscribe(boltConfigPDP.init.bind(boltConfigPDP));
+    }
+    if (typeof opConfig !== 'undefined') {
+        opConfig.reloadPrice = function () {
+            Product.Options.prototype.reloadPrice.apply(opConfig);
+            boltConfigPDP.init();
+        };
+    }
+    if (typeof dConfig !== 'undefined') {
+        dConfig.reloadPrice = function () {
+            Product.Downloadable.prototype.reloadPrice.apply(dConfig);
+            boltConfigPDP.init();
+        };
+    }
+    if (typeof bundle !== 'undefined') {
+        bundle.reloadPrice = function () {
+            Product.Bundle.prototype.reloadPrice.apply(bundle);
+            boltConfigPDP.init();
+        };
+    }
 });
 
 </script>

@@ -15,6 +15,8 @@
  * @license    http://opensource.org/licenses/osl-3.0.php  Open Software License (OSL 3.0)
  */
 
+use GuzzleHttp\Exception\GuzzleException;
+
 /**
  * Trait Bolt_Boltpay_Controller_Traits_WebHookTrait
  *
@@ -43,9 +45,14 @@ trait Bolt_Boltpay_Controller_Traits_WebHookTrait {
      * @return Mage_Core_Controller_Front_Action
      *
      * @throws Exception Thrown if request cannot be verified as originating from Bolt
+     * @throws GuzzleException
      */
     public function preDispatch()
     {
+        # Allows actions to be used even if the Bolt plugin is disabled.
+        # This accounts for orders that have already been processed by Bolt
+        Bolt_Boltpay_Helper_Data::$fromHooks = true;
+
         # disables web server compression if enabled
         @ini_set("zlib.output_compression", 0);
 
@@ -74,10 +81,11 @@ trait Bolt_Boltpay_Controller_Traits_WebHookTrait {
      * an error response is sent to caller and the execution of the script is halted
      * immediately
      *
-     * @param string $payload       The body to be compared against a signature
-     * @param string $signature     The signature against the payload with the signing secret
+     * @param string $payload The body to be compared against a signature
+     * @param string $signature The signature against the payload with the signing secret
      *
      * @throws Zend_Controller_Response_Exception if an invalid HTTP response code is set
+     * @throws GuzzleException
      */
     protected function verifyBoltSignature($payload, $signature ) {
         if (!$this->boltHelper()->verify_hook($payload, $signature)) {
@@ -91,7 +99,8 @@ trait Bolt_Boltpay_Controller_Traits_WebHookTrait {
                 ->setException($exception)
                 ->sendResponse();
             $this->boltHelper()->notifyException($exception, array(), 'warning');
-            exit;
+            $this->setFlag('', Mage_Core_Controller_Varien_Action::FLAG_NO_POST_DISPATCH, 1);
+            $this->getResponse()->sendHeadersAndExit(); # workaround to early exit.
         }
     }
 
@@ -116,12 +125,14 @@ trait Bolt_Boltpay_Controller_Traits_WebHookTrait {
         ini_set("implicit_flush", 1);
         $this->getResponse()
             ->setHttpResponseCode($httpCode)
+            ->setBody($content)
             ->sendHeaders();
 
         if ($exitImmediately) {
-            echo $content;
+            $this->getResponse()->sendResponse();
             Mage::dispatchEvent('controller_front_send_response_after');
-            exit;
+            $this->setFlag('', Mage_Core_Controller_Varien_Action::FLAG_NO_POST_DISPATCH, 1);
+            $this->getResponse()->sendHeadersAndExit(); # workaround to early exit.
         }
 
         ///////////////////////////////////////////////////////////
@@ -132,7 +143,7 @@ trait Bolt_Boltpay_Controller_Traits_WebHookTrait {
         header( 'Connection: Close' );
 
         # Send the prepared output
-        echo $content;
+        $this->getResponse()->sendResponse();
         @flush();
         ///////////////////////////////////////////////////////////
 

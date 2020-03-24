@@ -31,10 +31,9 @@ class Bolt_Boltpay_Model_Observer
      */
     public function initializeBenchmarkProfiler()
     {
-        $hasInitializedProfiler = Mage::registry('initializedBenchmark' );
+        $hasInitializedProfiler = Mage::registry('initializedBenchmark');
 
         if (!$hasInitializedProfiler) {
-
             Mage::register('bolt/request_start_time', microtime(true), true);
 
             /**
@@ -45,7 +44,7 @@ class Bolt_Boltpay_Model_Observer
              * @param bool   $shouldIncludeInFullLog If false, this benchmark will not be included in the full log
              * @param bool   $shouldFlushFullLog     If true, will log the full log up to this benchmark call.
              */
-            function benchmark( $label, $shouldLogIndividually = false, $shouldIncludeInFullLog = true, $shouldFlushFullLog = false )  {
+            function benchmark( $label, $shouldLogIndividually = false, $shouldIncludeInFullLog = true, $shouldFlushFullLog = false ) {
                 /** @var Bolt_Boltpay_Helper_Data $boltHelper */
                 $boltHelper = Mage::helper('boltpay');
                 $boltHelper->logBenchmark($label, $shouldLogIndividually, $shouldIncludeInFullLog, $shouldFlushFullLog);
@@ -56,31 +55,36 @@ class Bolt_Boltpay_Model_Observer
     }
 
     /**
+     * Update Feature Switches if necessary
+     *
+     * event: controller_front_init_before
+     */
+    public function updateFeatureSwitches()
+    {
+        if (Bolt_Boltpay_Model_FeatureSwitch::$shouldUpdateFeatureSwitches) {
+            Mage::getSingleton("boltpay/featureSwitch")->updateFeatureSwitches();
+        }
+    }
+
+    /**
      * Submits the final benchmark profiler log
      *
      * event: controller_front_send_response_after
      */
     public function logFullBenchmarkProfile()
     {
-        benchmark(null, false, false, true );
+        benchmark(null, false, false, true);
     }
 
     /**
      * Clears the Shopping Cart except product page checkout order after the success page
      *
-     * @param Varien_Event_Observer $observer   An Observer object with an empty event object
-     *
-     * Event: checkout_onepage_controller_success_action
-     * @param $observer
+     * event: checkout_onepage_controller_success_action
      */
     public function clearShoppingCartExceptPPCOrder()
     {
-        $cartHelper = Mage::helper('checkout/cart');
-        if (Mage::app()->getRequest()->getParam('checkoutType') == Bolt_Boltpay_Block_Checkout_Boltpay::CHECKOUT_TYPE_PRODUCT_PAGE) {
-            $quoteId = Mage::app()->getRequest()->getParam('session_quote_id');
-            Mage::getSingleton('checkout/session')->setQuoteId($quoteId);
-        } else {
-            $cartHelper->getCart()->truncate()->save();
+        if (Mage::app()->getRequest()->getParam('checkoutType') != Bolt_Boltpay_Block_Checkout_Boltpay::CHECKOUT_TYPE_PRODUCT_PAGE) {
+            Mage::helper('checkout/cart')->getCart()->truncate()->save();
         }
     }
 
@@ -146,7 +150,6 @@ class Bolt_Boltpay_Model_Observer
 
             /* @var Mage_Sales_Model_Quote $immutableQuote */
             $immutableQuote = Mage::getModel('sales/quote')->loadByIdWithoutStore($quote->getParentQuoteId());
-
         } else if (isset($requestParams['bolt_transaction_reference'])) {
             ////////////////////////////////////////////////////////////////////
             // Orphaned transaction and v 1.x (legacy) Success page handling
@@ -228,7 +231,8 @@ class Bolt_Boltpay_Model_Observer
 
         /** @var Mage_Sales_Model_Resource_Order_Grid_Collection $orderGridCollection */
         $orderGridCollection = $observer->getEvent()->getOrderGridCollection();
-        $orderGridCollection->addFieldToFilter('main_table.status',
+        $orderGridCollection->addFieldToFilter(
+            'main_table.status',
             array(
                 'nin'=>array(
                     Bolt_Boltpay_Model_Payment::TRANSACTION_PRE_AUTH_PENDING,
@@ -295,7 +299,7 @@ class Bolt_Boltpay_Model_Observer
     /**
      * Automatically create an invoice after creating a shipment
      *
-     * event: sales_model_service_quote_submit_before
+     * event: sales_order_shipment_save_after
      *
      * @param Varien_Event_Observer $observer Observer event contains a shipment object
      */
@@ -333,7 +337,8 @@ class Bolt_Boltpay_Model_Observer
      * @param $shipment
      * @return array
      */
-     private function getInvoiceItemsFromShipment($shipment){
+    private function getInvoiceItemsFromShipment($shipment)
+    {
         $invoiceItems = array();
         $shipmentItems = $shipment->getAllItems();
         foreach ($shipmentItems as $shipmentItem) {
@@ -347,7 +352,9 @@ class Bolt_Boltpay_Model_Observer
     }
 
     /**
-     * @param $shipmentItem
+     * Returns quantity to be invoiced for shipment item or false if it can't be invoiced
+     *
+     * @param Mage_Sales_Model_Order_Shipment_Item $shipmentItem
      * @return bool|float
      */
     private function getApplicableQtyToInvoice($shipmentItem)

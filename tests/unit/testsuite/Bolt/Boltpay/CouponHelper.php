@@ -5,11 +5,12 @@ class Bolt_Boltpay_CouponHelper
     /**
      * Makes a dummy request object for coupon api
      *
-     * @param array $additionalData
+     * @param array $additionalData to override existing data if needed
      *
-     * @return object
+     * @return object dummy request object
      */
-    public function setUpRequest($additionalData = array()) {
+    public static function setUpRequest($additionalData = array())
+    {
 
         $requestData = array(
             'type'           => 'discounts.code.apply',

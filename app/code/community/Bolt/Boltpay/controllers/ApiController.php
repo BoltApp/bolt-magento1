@@ -35,11 +35,8 @@ class Bolt_Boltpay_ApiController extends Mage_Core_Controller_Front_Action imple
 
             $requestData = $this->getRequestData();
 
-            /* Allows this method to be used even if the Bolt plugin is disabled.  This accounts for orders that have already been processed by Bolt */
-            Bolt_Boltpay_Helper_Data::$fromHooks = true;
-
-            $reference = $requestData->reference;
-            $transactionId = @$requestData->transaction_id ?: $requestData->id;
+            $reference = @$requestData->reference;
+            $transactionId = @$requestData->transaction_id ?: @$requestData->id;
             $hookType = @$requestData->notification_type ?: $requestData->type;
             $incrementId = (strpos(@$requestData->display_id, '|') !== false)
                 ? explode("|", $requestData->display_id)[0]
@@ -201,13 +198,8 @@ class Bolt_Boltpay_ApiController extends Mage_Core_Controller_Front_Action imple
                 }
             }
         } catch (Exception $e) {
-            $metaData = array();
-            if (isset($quote)){
-                $metaData['quote'] = var_export($quote->debug(), true);
-            }
-
-            $this->boltHelper()->notifyException($e, $metaData);
-            $this->boltHelper()->logException($e, $metaData);
+            $this->boltHelper()->notifyException($e);
+            $this->boltHelper()->logException($e);
 
             $this->sendResponse(
                 422,

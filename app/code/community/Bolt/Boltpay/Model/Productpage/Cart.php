@@ -45,20 +45,19 @@ class Bolt_Boltpay_Model_Productpage_Cart extends Bolt_Boltpay_Model_Abstract
     }
 
     /**
-     * Generate Data
+     * Creates cart based on initialized cart request
+     *
+     * @return bool false if an exception occurs, otherwise true
      */
     public function generateData()
     {
         try {
             $this->validateCartRequest();
-            $this->createCart();
-            $immutableQuote = $this->createImmutableQuote();
-            $this->setCartResponse($immutableQuote);
+            $cart = $this->createCart();
+            $this->setCartResponse($cart->getQuote());
         } catch (\Bolt_Boltpay_BadInputException $e) {
-            $this->boltHelper()->notifyException($e);
-            $this->boltHelper()->logException($e);
             return false;
-        } catch (\Exception $e) {
+        } catch (Exception $e) {
             $this->boltHelper()->notifyException($e);
             $this->boltHelper()->logException($e);
             return false;
@@ -70,8 +69,9 @@ class Bolt_Boltpay_Model_Productpage_Cart extends Bolt_Boltpay_Model_Abstract
     /**
      * Validate cart request data
      *
-     * @return bool
-     * @throws \Exception
+     * @throws Exception upon any error in validation
+     *
+     * @todo re-enable stock validation when Bolt server-side code supports the error type
      */
     protected function validateCartRequest()
     {
@@ -79,16 +79,13 @@ class Bolt_Boltpay_Model_Productpage_Cart extends Bolt_Boltpay_Model_Abstract
         $this->validateEmptyCart();
         $this->validateProductsExist();
         $this->validateProductsQty();
-        //$this->validateProductsStock();  # For now, Bolt does not handle out of stock errors well
-                                           # at this end point.  Instead, we will defer to pre-auth validation
-                                           # and the future update order interface
-
-        return true;
+        // $this->validateProductsStock();  # we will temporarily disable stock checks as sending this error
+                                            # is currently not supported on Bolt server-side
     }
 
     /**
      * @return bool
-     * @throws \Exception
+     * @throws Exception
      */
     protected function validateCartInfo()
     {
@@ -105,7 +102,7 @@ class Bolt_Boltpay_Model_Productpage_Cart extends Bolt_Boltpay_Model_Abstract
 
     /**
      * @return bool
-     * @throws \Exception
+     * @throws Exception
      */
     protected function validateEmptyCart()
     {
@@ -122,7 +119,7 @@ class Bolt_Boltpay_Model_Productpage_Cart extends Bolt_Boltpay_Model_Abstract
 
     /**
      * @return bool
-     * @throws \Exception
+     * @throws Exception
      */
     protected function validateProductsExist()
     {
@@ -149,7 +146,7 @@ class Bolt_Boltpay_Model_Productpage_Cart extends Bolt_Boltpay_Model_Abstract
 
     /**
      * @return bool
-     * @throws \Exception
+     * @throws Exception
      */
     protected function validateProductsQty()
     {
@@ -170,14 +167,16 @@ class Bolt_Boltpay_Model_Productpage_Cart extends Bolt_Boltpay_Model_Abstract
 
     /**
      * @return bool
-     * @throws \Exception
+     * @throws Exception
+     *
+     * @codeCoverageIgnore Out of stock error codes currently not supported by Bolt Backend
      */
     protected function validateProductsStock()
     {
         $cartItems = $this->getCartRequestItems();
 
         foreach ($cartItems as $cartItem) {
-            $product = $this->getProductById($cartItem->reference);
+            $product = Mage::getModel('catalog/product')->load($cartItem->reference);
             $stockInfo = Mage::getModel('cataloginventory/stock_item')->loadByProduct($product);
             if ($stockInfo->getManageStock()) {
                 if (($stockInfo->getQty() < $cartItem->quantity) && !$stockInfo->getBackorders()) {
@@ -194,83 +193,101 @@ class Bolt_Boltpay_Model_Productpage_Cart extends Bolt_Boltpay_Model_Abstract
     }
 
     /**
+     * Creates a cart that contains the exact contents of the request sent from Bolt
+     * This operates in a context outside of the true client session, so it is never reflected
+     * in the Magento frontend.
      *
-     * @return Mage_Checkout_Model_Cart
+     * @return Mage_Checkout_Model_Cart  Magento cart containing the quote which is used for Bolt
+     *                                   order JSON
+     *
+     * @todo remove disabling of stock management once Bolt server-side adds support
+     *       for out of stock error codes
      */
     protected function createCart()
     {
         $cartItems = $this->getCartRequestItems();
         $cart = $this->getSessionCart();
-        $parentQuote = $cart->getQuote();
+        $quote = $cart->getQuote();
 
+
+        ///////////////////////////////////////////////
+        // Remove stock validation as a temporary
+        // solution for the Bolt backend unable to
+        // handle stock error codes
+        // TODO: remove this once Bolt adds PPC
+        //       out-of-stock error code support
+        ///////////////////////////////////////////////
+        $quote->setIsSuperMode(true);
+        ///////////////////////////////////////////////
+
+        $handledProductIds = array();
         foreach ($cartItems as $cartItem) {
             $productId = @$cartItem->reference;
+            parse_str($cartItem->options, $params);
 
-            $product = $this->getProductById($productId);
-            /** @var Mage_CatalogInventory_Model_Stock_Item $stockItem */
-            $stockItem = Mage::getModel('cataloginventory/stock_item')->loadByProduct($product);
+            if (in_array($productId, $handledProductIds)) {
+                continue;
+            }
 
-            ////////////////////////////////////////////////////////////////////////////////////
-            // We've already passed front-end stock validation
-            // Defer further validation to pre-auth by disabling manage
-            // stock
-            ////////////////////////////////////////////////////////////////////////////////////
-            $originalUseConfigBackorders = $stockItem->getUseConfigBackorders();
-            $originalBackorders = $stockItem->getBackorders();
-            $originalIsInStock = $stockItem->getIsInStock();
-            $stockItem->setUseConfigBackorders(0);
-            $stockItem->setBackorders(1);
-            $stockItem->setIsInStock(1);
-            $stockItem->save();
+            if (array_key_exists('super_group', $params)) {
+                $productId = $params['product'];
+                foreach ($params['super_group'] as $id => $qty) {
+                    if ($qty > 0) {
+                        $handledProductIds[] = $id;
+                    }
+                }
+            }
 
-            $param = array(
-                'product' => $productId,
-                'qty'     => @$cartItem->quantity
+            /** @var Mage_Catalog_Model_Product $product */
+            $product = Mage::getModel('catalog/product')->load($productId);
+
+            $params = array_merge(
+                $params,
+                array(
+                    'product' => $productId,
+                    'qty'     => @$cartItem->quantity
+                )
             );
-
-            $parentQuote->addProduct($product, new Varien_Object($param));
-
-            $stockItem->setUseConfigBackorders($originalUseConfigBackorders);
-            $stockItem->setBackorders($originalBackorders);
-            $stockItem->setIsInStock($originalIsInStock);
-            $stockItem->save();
-            ////////////////////////////////////////////////////////////////////////////////////
-
+            $cart->addProduct($product, $params);
         }
-        $parentQuote->setIsBoltPdp(true);
-        $parentQuote->save();
+
+        if ($customerId = $this->getCartRequestCustomerId()) {
+            /** @var Mage_Customer_Model_Customer $customer */
+            $customer = Mage::getModel('customer/customer')->load($customerId);
+            $quote->assignCustomer($customer);
+        }
+        
+        $quote->setIsBoltPdp(true);
+        $cart->save();
+
+        //add circular dependency to quote itself as we don't have immutable quote
+        $quote->setParentQuoteId($quote->getId());
+        $quote->reserveOrderId();
+        $quote->save();
 
         return $cart;
     }
 
     /**
-     * The cloned copy of the source quote
+     * Configures response properties based on provided quote data
      *
-     * @return Mage_Sales_Model_Quote
-     * @throws Exception
-     */
-    protected function createImmutableQuote()
-    {
-        $cart = $this->getSessionCart();
-        $sessionQuote = $cart->getQuote();
-
-        return Mage::getModel('boltpay/boltOrder')->cloneQuote($sessionQuote);
-    }
-
-    /**
      * @param Mage_Sales_Model_Quote $quote
-     * @return array
+     *
+     * @return array configured cart response
+     *
+     * @throws Mage_Core_Model_Store_Exception if unable to build Bolt order data
      */
     protected function setCartResponse($quote)
     {
+        $boltOrderData = Mage::getModel('boltpay/boltOrder')->buildOrder($quote, true, true);
         $this->cartResponse = array(
-            'order_reference' => $quote->getParentQuoteId(),
-            'currency'        => $quote->getQuoteCurrencyCode(),
-            'items'           => $this->getGeneratedItems($quote),
-            'total_amount'    => $this->getGeneratedTotal()
+            'order_reference' => $boltOrderData['cart']['order_reference'],
+            'currency'        => $boltOrderData['cart']['currency'],
+            'items'           => $boltOrderData['cart']['items'],
+            'total_amount'    => $boltOrderData['cart']['total_amount']
         );
         $this->httpCode = 200;
-$this->boltHelper()->notifyException(new Exception(json_encode($this->cartResponse, JSON_PRETTY_PRINT)));
+
         return $this->cartResponse;
     }
 
@@ -290,6 +307,8 @@ $this->boltHelper()->notifyException(new Exception(json_encode($this->cartRespon
     /**
      *
      * @return array
+     *
+     * @deprecated
      */
     protected function getGeneratedItems($quote)
     {
@@ -299,7 +318,7 @@ $this->boltHelper()->notifyException(new Exception(json_encode($this->cartRespon
         return array_map(
             function ($item) use ($quoteId) {
                 $imageUrl = $this->boltHelper()->getItemImageUrl($item);
-                $product = $this->getProductById($item->getProductId());
+                $product = Mage::getModel('catalog/product')->load($item->getProductId());
                 $type = $product->getTypeId() == 'virtual' ? self::ITEM_TYPE_DIGITAL : self::ITEM_TYPE_PHYSICAL;
 
                 $unitPrice = (int)round($item->getPrice() * 100);
@@ -324,6 +343,8 @@ $this->boltHelper()->notifyException(new Exception(json_encode($this->cartRespon
     /**
      *
      * @return string
+     *
+     * @deprecated
      */
     protected function getGeneratedTotal()
     {
@@ -361,7 +382,7 @@ $this->boltHelper()->notifyException(new Exception(json_encode($this->cartRespon
      *
      * @throws Exception
      */
-    protected function setErrorResponseAndThrowException($errCode, $message, $httpStatusCode, \Exception $exception = null)
+    protected function setErrorResponseAndThrowException($errCode, $message, $httpStatusCode, Exception $exception = null)
     {
         $this->responseError = array(
             'code'    => $errCode,
@@ -410,6 +431,24 @@ $this->boltHelper()->notifyException(new Exception(json_encode($this->cartRespon
     }
 
     /**
+     * Returns decrypted customer id from request
+     *
+     * @return string
+     */
+    protected function getCartRequestCustomerId()
+    {
+        $encryptedUserId = @$this->cartRequest->metadata->encrypted_user_id;
+        try {
+            $userId = Mage::getSingleton('core/encryption')->decrypt($encryptedUserId);
+        } catch (Exception $e) {
+            $this->boltHelper()->notifyException($e);
+            $this->boltHelper()->logException($e);
+            $userId = null;
+        }
+        return $userId;
+    }
+
+    /**
      * Get cart request items
      *
      * @return array
@@ -417,15 +456,5 @@ $this->boltHelper()->notifyException(new Exception(json_encode($this->cartRespon
     protected function getCartRequestItems()
     {
         return @$this->cartRequest->items;
-    }
-
-    /**
-     * @param $id
-     *
-     * @return Mage_Catalog_Model_Product
-     */
-    protected function getProductById($id)
-    {
-        return Mage::getModel('catalog/product')->load($id);
     }
 }

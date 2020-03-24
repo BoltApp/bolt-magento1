@@ -353,12 +353,12 @@ class Bolt_Boltpay_Model_Admin_ExtraConfigTest extends PHPUnit_Framework_TestCas
                     'expectedResult'   => false
                 )
             ,
-            'Allow reception statuses, if not configured, will return Bolt pending payment' =>
+            'Allow reception statuses, if not configured, will return Bolt pending payment and pending' =>
                 array(
                     'configName'       => 'allowedReceptionStatuses',
                     'jsonFromDb'       => '',
                     'filterParameters' => array(),
-                    'expectedResult'   => array(Bolt_Boltpay_Model_Payment::TRANSACTION_PRE_AUTH_PENDING)
+                    'expectedResult'   => array(Bolt_Boltpay_Model_Payment::TRANSACTION_PRE_AUTH_PENDING, Bolt_Boltpay_Model_Payment::TRANSACTION_PENDING)
                 )
             ,
             'Allow reception statuses, when configured, will return array of configured strings' =>

@@ -23,7 +23,7 @@ class Bolt_Boltpay_TestHelper
      * @return Mage_Checkout_Model_Cart
      * @throws Exception
      */
-    public function addProduct($productId, $quantity)
+    public static function addProduct($productId, $quantity)
     {
         /** @var Mage_Catalog_Model_Product $product */
         $product = Mage::getModel('catalog/product')->load($productId);
@@ -85,7 +85,7 @@ class Bolt_Boltpay_TestHelper
      * @param $checkoutType
      * @return Mage_Checkout_Model_Type_Onepage
      */
-    public function createCheckout($checkoutType)
+    public static function createCheckout($checkoutType)
     {
         Mage::unregister('_singleton/checkout/type_onepage');
         Mage::unregister('_singleton/checkout/cart');
@@ -112,7 +112,7 @@ class Bolt_Boltpay_TestHelper
     /**
      * @return Mage_Sales_Model_Quote
      */
-    public function getCheckoutQuote()
+    public static function getCheckoutQuote()
     {
         /** @var Mage_Checkout_Model_Type_Onepage $checkout */
         $checkout = Mage::getSingleton('checkout/type_onepage');
@@ -448,6 +448,7 @@ class Bolt_Boltpay_TestHelper
      */
     public static function restoreRegistryValue($key)
     {
+        Mage::unregister($key);
         if (isset(static::$_substitutedRegistryValues[$key])) {
             Mage::register($key, static::$_substitutedRegistryValues[$key]);
             unset(static::$_substitutedRegistryValues[$key]);

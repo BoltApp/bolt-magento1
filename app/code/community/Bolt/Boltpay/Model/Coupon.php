@@ -51,14 +51,6 @@ class Bolt_Boltpay_Model_Coupon extends Bolt_Boltpay_Model_Abstract
     protected $mockTransaction = null;
 
     /**
-     * Bolt_Boltpay_Model_Coupon constructor.
-     */
-    public function __construct()
-    {
-        parent::__construct();
-    }
-
-    /**
      * Applies coupon from hook input to customer quote if the coupon is valid.
      *
      * @return bool Whether or not coupon was applied
@@ -122,7 +114,7 @@ class Bolt_Boltpay_Model_Coupon extends Bolt_Boltpay_Model_Abstract
     /**
      * Verifies the coupon isn't an empty string.
      *
-     * @throws Exception
+     * @throws Bolt_Boltpay_BadInputException if coupon code is empty
      */
     public function validateEmptyCoupon()
     {
@@ -231,7 +223,8 @@ class Bolt_Boltpay_Model_Coupon extends Bolt_Boltpay_Model_Abstract
     /**
      * Verifies that the immutable quote exists.
      *
-     * @throws Exception
+     * @throws Bolt_Boltpay_BadInputException if immutable quote data is empty
+     * @throws Varien_Exception if unable to get immutable quote
      */
     public function validateImmutableQuote()
     {
@@ -240,7 +233,10 @@ class Bolt_Boltpay_Model_Coupon extends Bolt_Boltpay_Model_Abstract
         if ($immutableQuote->isEmpty()) {
             $this->setErrorResponseAndThrowException(
                 self::ERR_INSUFFICIENT_INFORMATION,
-                sprintf('The immutable quote reference [%s] was not found.', $immutableQuote->getId()),
+                sprintf(
+                    'The immutable quote reference [%s] was not found.',
+                    $this->boltHelper()->getImmutableQuoteIdFromTransaction($this->mockTransaction)
+                ),
                 404
             );
         }
@@ -411,9 +407,9 @@ class Bolt_Boltpay_Model_Coupon extends Bolt_Boltpay_Model_Abstract
     }
 
     /**
-     * Verifies that the coupon code was applied to the quote.
+     * Verifies that the coupon code was applied to the immutable quote.
      *
-     * @throws Exception  thrown if coupon in quote doesn't match the coupon applied.
+     * @throws Exception if coupon in quote doesn't match the coupon applied.
      */
     protected function validateAfterApplyingCoupon()
     {
@@ -429,12 +425,14 @@ class Bolt_Boltpay_Model_Coupon extends Bolt_Boltpay_Model_Abstract
 
     /**
      * Sets the response error and the http status code and then throws an exception.
-     * @param int $errCode
-     * @param string $message
-     * @param int $httpStatusCode
-     * @param Exception $exception
      *
-     * @throws Exception
+     * @param int $errCode Bolt error code
+     * @param string $message of the error
+     * @param int $httpStatusCode to be used in response
+     * @param Exception|null $exception to be logged and thrown
+     *
+     * @throws Exception if $exception argument is provided
+     * @throws Bolt_Boltpay_BadInputException if $exception argument is not provided
      */
     protected function setErrorResponseAndThrowException($errCode, $message, $httpStatusCode, \Exception $exception = null)
     {
@@ -457,21 +455,20 @@ class Bolt_Boltpay_Model_Coupon extends Bolt_Boltpay_Model_Abstract
     /**
      * Gets all cart totals from Bolt buildCart.
      *
-     * @return array
-     * @throws Varien_Exception
+     * @return array cart totals
+     * @throws Varien_Exception if unable to retrieve immutable quote
+     * @throws Mage_Core_Model_Store_Exception if unable to build cart
      */
     protected function getCartTotals()
     {
         $quote = $this->getImmutableQuote();
         /** @var Bolt_Boltpay_Model_BoltOrder $quoteModel */
         $boltOrderModel = Mage::getModel('boltpay/boltOrder');
-        $items = @$quote->getAllVisibleItems();
-
-        $cart = $boltOrderModel->buildCart($quote, $items, 'multi-page');
+        $cart = $boltOrderModel->buildCart($quote, true);
 
         return array(
             'total_amount' => $cart['total_amount'],
-            'tax_amount'   => $cart['tax_amount'],
+            'tax_amount'   => @$cart['tax_amount'],
             'discounts'    => $cart['discounts'],
         );
     }

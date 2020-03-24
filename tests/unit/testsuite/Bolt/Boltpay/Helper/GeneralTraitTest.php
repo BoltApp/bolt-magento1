@@ -1,12 +1,16 @@
 <?php
 require_once('TestHelper.php');
 require_once('CouponHelper.php');
+require_once('MockingTrait.php');
+
+use Bolt_Boltpay_TestHelper as TestHelper;
 
 /**
  * @coversDefaultClass Bolt_Boltpay_Helper_GeneralTrait
  */
 class Bolt_Boltpay_Helper_GeneralTraitTest extends PHPUnit_Framework_TestCase
 {
+    use Bolt_Boltpay_MockingTrait;
 
     /**
      * @var int|null Dummy product id
@@ -31,6 +35,11 @@ class Bolt_Boltpay_Helper_GeneralTraitTest extends PHPUnit_Framework_TestCase
      * @var Bolt_Boltpay_TestHelper Instance of test helper
      */
     private $testHelper;
+
+    /**
+     * @var MockObject|Bolt_Boltpay_Model_FeatureSwitch
+     */
+    private $featureSwitchMock;
 
     /**
      * Create dummy products and unregister objects we are going to mock
@@ -294,10 +303,16 @@ class Bolt_Boltpay_Helper_GeneralTraitTest extends PHPUnit_Framework_TestCase
     public function getItemImageUrl_onQuoteItem_returnsThumbnailUrl()
     {
         $quoteItem = Mage::getModel('sales/quote_item');
-        $product = Mage::getModel('catalog/product');
-        $product->setData('thumbnail', '/t/e/test.jpg');
-        $quoteItem->setProduct($product);
+        $quoteItem->setData('sku', 'test');
+        $productMock = $this->getClassPrototype('Mage_Catalog_Model_Product')
+            ->setMethods(array('load', 'getIdBySku', 'getThumbnail'))
+            ->getMock();
+        $productMock->method('load')->willReturnSelf();
+        $productMock->method('getIdBySku')->willReturn(1);
+        $productMock->method('getThumbnail')->willReturn('/t/e/test.jpg');
+        TestHelper::stubModel('catalog/product', $productMock);
         $this->assertStringStartsWith('http', $this->currentMock->getItemImageUrl($quoteItem));
+        TestHelper::restoreModel('catalog/product');
     }
 
     /**
@@ -307,6 +322,7 @@ class Bolt_Boltpay_Helper_GeneralTraitTest extends PHPUnit_Framework_TestCase
      * @covers Bolt_Boltpay_Helper_GeneralTrait::getItemImageUrl
      *
      * @throws Mage_Core_Exception if registry key already exists
+     * @throws ReflectionException if Mage class doesn't have _config property
      */
     public function getItemImageUrl_whenImageHelperThrowsException_returnsEmptyString()
     {
@@ -318,10 +334,15 @@ class Bolt_Boltpay_Helper_GeneralTraitTest extends PHPUnit_Framework_TestCase
         Mage::register('_helper/catalog/image', $imageHelperMock);
 
         $quoteItem = Mage::getModel('sales/quote_item');
-        $product = Mage::getModel('catalog/product');
-        $product->setData('thumbnail', '/t/e/test.jpg');
-        $quoteItem->setProduct($product);
+        $productMock = $this->getClassPrototype('Mage_Catalog_Model_Product')
+            ->setMethods(array('load', 'getIdBySku', 'getThumbnail'))
+            ->getMock();
+        $productMock->method('load')->willReturnSelf();
+        $productMock->method('getIdBySku')->willReturn(1);
+        $productMock->method('getThumbnail')->willReturn('/t/e/test.jpg');
+        TestHelper::stubModel('catalog/product', $productMock);
         $this->assertEquals('', $this->currentMock->getItemImageUrl($quoteItem));
+        TestHelper::restoreModel('catalog/product');
         Mage::unregister('_helper/catalog/image');
     }
 
@@ -363,12 +384,13 @@ class Bolt_Boltpay_Helper_GeneralTraitTest extends PHPUnit_Framework_TestCase
      * @covers       Bolt_Boltpay_Helper_GeneralTrait::getCartDataJs
      *
      * @param string $checkoutType Bolt parameter
+     * @param string $configureCall expected Bolt configure call
      */
-    public function getCartDataJs_withVariousCheckoutTypes_returnsCartData($checkoutType)
+    public function getCartDataJs_withVariousCheckoutTypes_returnsCartData($checkoutType, $configureCall)
     {
         $cartDataJs = $this->currentMock->getCartDataJs($checkoutType);
         $this->assertContains('window.BoltModal', $cartDataJs);
-        $this->assertContains('BoltCheckout.configure(', $cartDataJs);
+        $this->assertContains($configureCall, $cartDataJs);
     }
 
     /**
@@ -379,11 +401,26 @@ class Bolt_Boltpay_Helper_GeneralTraitTest extends PHPUnit_Framework_TestCase
     public function getCartDataJs_withVariousCheckoutTypes_returnsCartDataProvider()
     {
         return array(
-            'Admin checkout type'        => array('checkoutType' => 'admin'),
-            'Multi-page checkout type'   => array('checkoutType' => 'multi-page'),
-            'One-page checkout type'     => array('checkoutType' => 'one-page'),
-            'Firecheckout type'          => array('checkoutType' => 'firecheckout'),
-            'Product page checkout type' => array('checkoutType' => 'product-page'),
+            'Admin checkout type'        => array(
+                'checkoutType'  => 'admin',
+                'configureCall' => 'BoltCheckout.configure'
+            ),
+            'Multi-page checkout type'   => array(
+                'checkoutType'  => 'multi-page',
+                'configureCall' => 'BoltCheckout.configure'
+            ),
+            'One-page checkout type'     => array(
+                'checkoutType'  => 'one-page',
+                'configureCall' => 'BoltCheckout.configure'
+            ),
+            'Firecheckout type'          => array(
+                'checkoutType'  => 'firecheckout',
+                'configureCall' => 'BoltCheckout.configure'
+            ),
+            'Product page checkout type' => array(
+                'checkoutType'  => 'product-page',
+                'configureCall' => 'BoltCheckout.configureProductCheckout'
+            ),
         );
     }
 
@@ -492,6 +529,86 @@ class Bolt_Boltpay_Helper_GeneralTraitTest extends PHPUnit_Framework_TestCase
             array('new_parameterless_filter_1', 'value', array()),
             array('new_parameterless_filter_2', 'value', null),
             array('new_parameterless_filter_3', 'value')
+        );
+    }
+
+    /**
+     * @test
+     * That when unserializeIntArray is provided with proper serialized data, then a populated array
+     * is returned and that when the serialized data is in an improper format an empty array is returned
+     *
+     * @covers Bolt_Boltpay_Helper_GeneralTrait::unserializeIntArray
+     * @dataProvider unserializeIntArrayProvider
+     *
+     * @param string $serializedData        an array of data that is expected in the PHP serialize() format
+     * @param array  $expectedReturnArray   an array represented the result of applying PHP unserialize to the passed string
+     */
+    public function unserializeIntArray_withVariousInputs_returnsAppropriateArray($serializedData, $expectedReturnArray) {
+        $this->assertEquals(
+            $expectedReturnArray,
+            $this->currentMock->unserializeIntArray($serializedData)
+        );
+    }
+
+    /**
+     * Data provider for {@see unserializeIntArray_withVariousInputs_returnsAppropriateArray}
+     *
+     * @return array containing [$serializedData, $expectedReturnArray]
+     */
+    public function unserializeIntArrayProvider() {
+        return array(
+            array(
+                'serializeData' => 'badFormat',
+                'expectedReturnArray' => array()
+            ),
+            array(
+                'serializeData' => 'a:3:{i:0;s:5:"larry";i:1;s:5:"curly";i:2;s:3:"moe";}', # string array
+                'expectedReturnArray' => array()
+            ),
+            array(
+                'serializeData' => 'a:5:{i:0;i:1;i:1;i:1;i:2;i:2;i:3;i:3;i:4;i:5;}', # int array
+                'expectedReturnArray' => array(1,1,2,3,5)
+            ),
+        );
+    }
+
+    /**
+     * @test
+     * That when unserializeStringArray is provided with proper serialized data, then a populated array
+     * is returned and that when the serialized data is in an improper format an empty array is returned
+     *
+     * @covers Bolt_Boltpay_Helper_GeneralTrait::unserializeStringArray
+     * @dataProvider unserializeStringArrayProvider
+     *
+     * @param string $serializedData        an array of data that is expected in the PHP serialize() format
+     * @param array  $expectedReturnArray   an array represented the result of applying PHP unserialize to the passed string
+     */
+    public function unserializeStringArray_withVariousInputs_returnsAppropriateArray($serializedData, $expectedReturnArray) {
+        $this->assertEquals(
+            $expectedReturnArray,
+            $this->currentMock->unserializeStringArray($serializedData)
+        );
+    }
+
+    /**
+     * Data provider for {@see unserializeStringArray_withVariousInputs_returnsAppropriateArray}
+     *
+     * @return array containing [$serializedData, $expectedReturnArray]
+     */
+    public function unserializeStringArrayProvider() {
+        return array(
+            array(
+                'serializeData' => 'badFormat',
+                'expectedReturnArray' => array()
+            ),
+            array(
+                'serializeData' => 'a:3:{i:0;s:5:"larry";i:1;s:5:"curly";i:2;s:3:"moe";}', # string array
+                'expectedReturnArray' => array('larry','curly','moe')
+            ),
+            array(
+                'serializeData' => 'a:5:{i:0;i:1;i:1;i:1;i:2;i:2;i:3;i:3;i:4;i:5;}', # int array
+                'expectedReturnArray' => array()
+            ),
         );
     }
 }

@@ -21,11 +21,11 @@ See [CHANGELOG.md](./CHANGELOG.md) for change history.
 
 Run the following from root magento folder:
 
-> php tests/unit/phpunit-5.7.9.phar -c tests/unit/phpunit.xml
+> php tests/unit/phpunit-5.7.9.phar --stderr --report-useless-tests -c tests/unit/phpunit.xml
 
 Run phpunit test with coverage html report:
 
-> php tests/unit/phpunit-5.7.9.phar -c tests/unit/phpunit.xml --coverage-html tests/unit/coverage
+> php tests/unit/phpunit-5.7.9.phar --stderr --report-useless-tests -c tests/unit/phpunit.xml --coverage-html tests/unit/coverage
 
 If you prefer to run test through PHPStorm, please read:
 
@@ -64,13 +64,14 @@ If you would like to pull the latest Bolt code from the Git repo and update Mage
 | bolt_boltpay_validate_totals_after | global | Entry for adding additional subtotal validation behavior performed after standard subtotal validation | **quote**<br>_Mage_Sales_Model_Quote_<br>the Magento cart copy of the Bolt order<br><br>**transaction**<br>_object_<br>Bolt payload |
 | bolt_boltpay_admin_normalize_order_data_after | global | Entry for additional normalization of admin order data performed after standard order data normalization | **request**<br>_Zend_Controller_Request_Abstract_<br>request object containing the post data to the order creation controller call<br><br>**orderCreateModel**<br>_Mage_Adminhtml_Model_Sales_Order_Create_<br>order create model |
 | bolt_boltpay_failed_order_removed_after | global | Execute after deleting the failed order | **order**<br>_Mage_Sales_Model_Order_<br>removed order object |
+| bolt_boltpay_capture_before | global | Execute before capturing payment | **payment**<br>Varien_Object<br>payment object<br> <br>**amount**<br>float</br> |
 
 ## Custom Bolt Filter Event Reference
 
 | Name | Area | Description | Parameters | Filtered Value | 
 | --- | --- | --- | --- | --- |
 | bolt_boltpay_filter_adjusted_shipping_amount | global | Entry to override the logic for adjusting the shipping totals with the discount and quote data taken into account | **originalDiscountTotal**<br>float<br>the original discount amount that was reported to Bolt<br><br>**quote**<br>_Mage_Sales_Model_Quote_<br>the Magento cart copy of the Bolt order<br><br>**boltOrder**<br>_object_<br>The order data sent as reported by Bolt |
-| bolt_boltpay_filter_bolt_order | global | Filters Bolt order data before sending it to the Bolt server | **quote**<br>_Mage_Sales_Model_Quote_<br>the Magento cart copy of the Bolt order<br><br>**isMultiPage**<br>_boolean_<br>true if the order is from the standard multistore context, otherwise false | **array**<br>The PHP formatted order data that is to be sent to Bolt |
+| bolt_boltpay_filter_bolt_order | global | Filters Bolt order data before sending it to the Bolt server | **quote**<br>_Mage_Sales_Model_Quote_<br>the Magento cart copy of the Bolt order<br><br>**isMultiPage**<br>_boolean_<br>true if the order is from the standard multistore context, otherwise false<br><br>**isProductPage**<br>true if in the product page checkout context, otherwise false | **array**<br>The PHP formatted order data that is to be sent to Bolt |
 | bolt_boltpay_filter_cloned_quote | global | Entry for filtering the order quote copy after the quote cloning | **sourceQuote**<br>_Mage_Sales_Model_Quote_<br>Original quote that is being cloned<br><br>**checkoutType**<br>_string_<br>The type of the order checkout | **Mage_Sales_Model_Quote**<br>resulting quote |
 | bolt_boltpay_filter_discount_amount | global | Allows changing of individual discount amount that is displayed in Bolt | **quote**<br>_Mage_Sales_Model_Quote_<br>the Magento cart copy of the Bolt order<br><br>**discount**<br>string<br>the Magento totals array index/label for the discount |
 | bolt_boltpay_filter_shipping_label | global | Allows changing of individual shipping labels that are displayed in Bolt | **rate**<br>_Mage_Sales_Model_Quote_Address_Rate_<br>The information for this calculated rate, including method, carrier, and price | **string**<br>The label to be displayed in the Bolt order |

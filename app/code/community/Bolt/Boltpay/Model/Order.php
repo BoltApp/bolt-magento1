@@ -116,58 +116,8 @@ class Bolt_Boltpay_Model_Order extends Bolt_Boltpay_Model_Abstract
             ///  Apply shipping address and shipping method data to quote directly from
             ///  the Bolt transaction.
             //////////////////////////////////////////////////////////////////////////////////
-            $packagesToShip = $transaction->order->cart->shipments;
+            $this->applyShipmentToQuoteFromTransaction($immutableQuote, $transaction, $isPreAuthCreation);
 
-            if ($packagesToShip) {
-                benchmark( "Applying shipping" );
-                $shippingAddress = $immutableQuote->getShippingAddress();
-                $shippingMethodCode = null;
-
-                /** @var Bolt_Boltpay_Model_ShippingAndTax $shippingAndTaxModel */
-                $shippingAndTaxModel = Mage::getModel("boltpay/shippingAndTax");
-                $shouldRecalculateShipping = ((bool) $this->boltHelper()->getExtraConfig("recalculateShipping")) || !$isPreAuthCreation; # false by default
-
-                benchmark( "Applying shipping - Applying shipping address data" );
-                $shippingAndTaxModel->applyBoltAddressData($immutableQuote, $packagesToShip[0]->shipping_address, $shouldRecalculateShipping);
-                benchmark( "Finished applying shipping - Applying shipping address data" );
-
-                $shippingMethodCode = $packagesToShip[0]->reference;
-
-                if (!$shippingMethodCode) {
-                    benchmark( "Applying shipping - Collecting shipping rates, legacy" );
-                    // Legacy transaction does not have shipments reference - fallback to $service field
-                    $shippingMethod = $packagesToShip[0]->service;
-
-                    $this->boltHelper()->collectTotals($immutableQuote, $shouldRecalculateShipping);
-
-                    $rates = $shippingAddress->getAllShippingRates();
-
-                    foreach ($rates as $rate) {
-                        if ($rate->getCarrierTitle() . ' - ' . $rate->getMethodTitle() === $shippingMethod
-                            || (!$rate->getMethodTitle() && $rate->getCarrierTitle() === $shippingMethod)) {
-                            $shippingMethodCode = $rate->getCarrier() . '_' . $rate->getMethod();
-                            break;
-                        }
-                    }
-                    benchmark( "Finished applying shipping - Collecting shipping rates, legacy" );
-                }
-
-                if ($shippingMethodCode) {
-                    $shippingAndTaxModel->applyShippingRate($immutableQuote, $shippingMethodCode, $shouldRecalculateShipping);
-                } else {
-                    $errorMessage = $this->boltHelper()->__('Shipping method not found');
-                    $metaData = array(
-                        'transaction'   => $transaction,
-                        'rates' => $this->getRatesDebuggingData($rates),
-                        'service' => $shippingMethod,
-                        'shipping_address' => var_export($shippingAddress->debug(), true),
-                        'quote' => var_export($immutableQuote->debug(), true)
-                    );
-                    $this->boltHelper()->logWarning($errorMessage);
-                    $this->boltHelper()->notifyException(new Exception($errorMessage), $metaData);
-                }
-                benchmark( "Finished applying shipping" );
-            }
             //////////////////////////////////////////////////////////////////////////////////
 
             //////////////////////////////////////////////////////////////////////////////////
@@ -329,6 +279,71 @@ class Bolt_Boltpay_Model_Order extends Bolt_Boltpay_Model_Abstract
         return $order;
     }
 
+    /**
+     * Apply shipping address and shipping method data to quote directly from the Bolt transaction
+     *
+     * @param Mage_Sales_Model_Quote $immutableQuote    Copy of the Magento session quote used by Bolt
+     * @param object                 $transaction       The Bolt transaction object sent from the Bolt server
+     * @param bool                   $isPreAuthCreation true if this validation is happening via pre-auth, otherwise false
+     *
+     * @throws Exception if an unknown error occurs
+     */
+    private function applyShipmentToQuoteFromTransaction($immutableQuote, $transaction, $isPreAuthCreation){
+        $packagesToShip = @$transaction->order->cart->shipments;
+
+        if (!$packagesToShip) {
+            return;
+        }
+
+        benchmark( "Applying shipping" );
+        $shippingAddress = $immutableQuote->getShippingAddress();
+        $shippingMethodCode = null;
+
+        /** @var Bolt_Boltpay_Model_ShippingAndTax $shippingAndTaxModel */
+        $shippingAndTaxModel = Mage::getModel("boltpay/shippingAndTax");
+        $shouldRecalculateShipping = ((bool) $this->boltHelper()->getExtraConfig("recalculateShipping")) || !$isPreAuthCreation; # false by default
+
+        benchmark( "Applying shipping - Applying shipping address data" );
+        $shippingAndTaxModel->applyBoltAddressData($immutableQuote, $packagesToShip[0]->shipping_address, $shouldRecalculateShipping);
+        benchmark( "Finished applying shipping - Applying shipping address data" );
+
+        $shippingMethodCode = $packagesToShip[0]->reference;
+
+        if (!$shippingMethodCode) {
+            benchmark( "Applying shipping - Collecting shipping rates, legacy" );
+            // Legacy transaction does not have shipments reference - fallback to $service field
+            $shippingMethod = $packagesToShip[0]->service;
+
+            $this->boltHelper()->collectTotals($immutableQuote, $shouldRecalculateShipping);
+
+            $rates = $shippingAddress->getAllShippingRates();
+
+            foreach ($rates as $rate) {
+                if ($rate->getCarrierTitle() . ' - ' . $rate->getMethodTitle() === $shippingMethod
+                    || (!$rate->getMethodTitle() && $rate->getCarrierTitle() === $shippingMethod)) {
+                    $shippingMethodCode = $rate->getCarrier() . '_' . $rate->getMethod();
+                    break;
+                }
+            }
+            benchmark( "Finished applying shipping - Collecting shipping rates, legacy" );
+        }
+
+        if ($shippingMethodCode) {
+            $shippingAndTaxModel->applyShippingRate($immutableQuote, $shippingMethodCode, $shouldRecalculateShipping);
+        } else {
+            $errorMessage = $this->boltHelper()->__('Shipping method not found');
+            $metaData = array(
+                'transaction'   => $transaction,
+                'rates' => $this->getRatesDebuggingData($rates),
+                'service' => $shippingMethod,
+                'shipping_address' => var_export($shippingAddress->debug(), true),
+                'quote' => var_export($immutableQuote->debug(), true)
+            );
+            $this->boltHelper()->logWarning($errorMessage);
+            $this->boltHelper()->notifyException(new Exception($errorMessage), $metaData);
+        }
+        benchmark( "Finished applying shipping" );
+    }
 
     /**
      * Checks several indicators to see if the Magento session or cart has expired
@@ -379,23 +394,25 @@ class Bolt_Boltpay_Model_Order extends Bolt_Boltpay_Model_Abstract
             if ( $cartItem->shouldNotBeValidated ){ continue; }
 
             $product = $cartItem->getProduct();
+
+            /** @var Mage_CatalogInventory_Model_Stock_Item $stockItem */
+            $stockItem = Mage::getModel('cataloginventory/stock_item')->loadByProduct($product->getId());
+            $quantityNeeded = $cartItem->getTotalQty();
+            $isOutOfStock = !$stockItem->getIsInStock();
+            $quantityAvailable = $isOutOfStock ? 0 : $stockItem->getQty()-$stockItem->getMinQty();
+            if (!$cartItem->getHasChildren() && ($isOutOfStock || !$stockItem->checkQty($quantityNeeded))) {
+                throw new Bolt_Boltpay_OrderCreationException(
+                    OCE::E_BOLT_OUT_OF_INVENTORY,
+                    OCE::E_BOLT_OUT_OF_INVENTORY_TMPL,
+                    array($product->getId(), $quantityAvailable , $quantityNeeded)
+                );
+            }
+
             if (!$product->isSaleable()) {
                 throw new Bolt_Boltpay_OrderCreationException(
                     OCE::E_BOLT_CART_HAS_EXPIRED,
                     OCE::E_BOLT_CART_HAS_EXPIRED_TMPL_NOT_PURCHASABLE,
                     array($product->getId())
-                );
-            }
-
-            /** @var Mage_CatalogInventory_Model_Stock_Item $stockItem */
-            $stockItem = Mage::getModel('cataloginventory/stock_item')->loadByProduct($product->getId());
-            $quantityNeeded = $cartItem->getTotalQty();
-            $quantityAvailable = $stockItem->getQty()-$stockItem->getMinQty();
-            if (!$cartItem->getHasChildren() && !$stockItem->checkQty($quantityNeeded)) {
-                throw new Bolt_Boltpay_OrderCreationException(
-                    OCE::E_BOLT_OUT_OF_INVENTORY,
-                    OCE::E_BOLT_OUT_OF_INVENTORY_TMPL,
-                    array($product->getId(), $quantityAvailable , $quantityNeeded)
                 );
             }
         }
@@ -422,7 +439,7 @@ class Bolt_Boltpay_Model_Order extends Bolt_Boltpay_Model_Abstract
      *                                        -  object (bolt) transaction (ONLY pre-auth; will be empty for admin)
      *
      *
-     * @throws Exception    if an unknown error occurs
+     * @throws Exception    if order is empty or order creation is not allowed
      * @throws Bolt_Boltpay_OrderCreationException if the bottom line price total differs by allowed tolerance
      *
      */
@@ -446,13 +463,27 @@ class Bolt_Boltpay_Model_Order extends Bolt_Boltpay_Model_Abstract
         }
         /////////////////////////////////////////////////////////////
 
-        $payment = $order->getPayment();
-
         /** @var Mage_Sales_Model_Quote $quote */
         $immutableQuote = $order->getQuote();
         $boltTransaction = $immutableQuote->getTransaction();
 
-        if ( (strtolower($payment->getMethod()) !== Bolt_Boltpay_Model_Payment::METHOD_CODE) || empty($boltTransaction) ) {
+        // Do not validate non-Bolt orders
+        if ( !$this->isBoltOrder($order) ) {
+            return;
+        }
+
+        /////////////////////////////////////////////////////////////
+        /// Refuse Bolt order creation for orders triggered
+        /// outside of official Bolt Paths
+        /////////////////////////////////////////////////////////////
+        if (!Bolt_Boltpay_Helper_Data::$fromHooks && !Mage::app()->getStore()->isAdmin()) {
+            throw new Exception('Order creation with Boltpay not allowed for this path');
+        }
+        /////////////////////////////////////////////////////////////
+
+        // Bolt order pre-commit validation can be canceled by removing the Bolt transaction
+        // from the order's quote in the bolt_boltpay_validation_pre_order_commit_before event
+        if( empty($boltTransaction) ) {
             return;
         }
 
@@ -492,7 +523,10 @@ class Bolt_Boltpay_Model_Order extends Bolt_Boltpay_Model_Abstract
 
     /**
      * Associate order to customer when placing on product detail page
+     *
      * @param string $orderIncrementId
+     *
+     * @throws Exception
      */
     protected function associateOrderToCustomerWhenPlacingOnPDP($orderIncrementId){
         /** @var Mage_Customer_Model_Customer $customer */
@@ -660,7 +694,9 @@ class Bolt_Boltpay_Model_Order extends Bolt_Boltpay_Model_Abstract
 
         foreach ($transaction->order->cart->items as $boltCartItem) {
 
-            $cartItem = $immutableQuote->getItemById($boltCartItem->reference);
+            $cartItem = $immutableQuote->getData('is_bolt_pdp')
+                ? $immutableQuote->getItemsCollection()->getItemByColumnValue('product_id', $boltCartItem->reference)
+                : $immutableQuote->getItemById($boltCartItem->reference);
             if ( !($cartItem instanceof Mage_Sales_Model_Quote_Item) ) { continue; }
 
             $cartItem->shouldNotBeValidated = false;
@@ -677,7 +713,7 @@ class Bolt_Boltpay_Model_Order extends Bolt_Boltpay_Model_Abstract
 
             $boltPrice = (int)$boltCartItem->total_amount->amount;
             $magentoRowPrice = (int) ( $cartItem->getRowTotalWithDiscount() * 100 );
-            $magentoCalculatedPrice = (int) round($cartItem->getCalculationPrice() * 100 * $cartItem->getQty());
+            $magentoCalculatedPrice = (int) round($cartItem->getCalculationPrice() * 100) * $cartItem->getQty();
 
             if ( !in_array($boltPrice, [$magentoRowPrice, $magentoCalculatedPrice]) ) {
                 throw new Bolt_Boltpay_OrderCreationException(
@@ -991,6 +1027,7 @@ class Bolt_Boltpay_Model_Order extends Bolt_Boltpay_Model_Abstract
         if ($this->isBoltOrder($order)) {
 
             $parentQuote = $this->getParentQuoteFromOrder($order);
+            $immutableQuote = $this->getQuoteFromOrder($order);
 
             ##############################################################
             # Cancel order for restocking inventory and triggering events
@@ -1020,6 +1057,12 @@ class Bolt_Boltpay_Model_Order extends Bolt_Boltpay_Model_Abstract
             Mage::dispatchEvent('bolt_boltpay_failed_order_removed_after', array('order' => $order));
             $this->reactivateUsedPromotion($order);
             Mage::app()->setCurrentStore($previousStoreId);
+            ###########################################################
+
+            ##########################################################
+            # Remove payment method
+            ##########################################################
+            $immutableQuote->getPayment()->setMethod(null)->save();
             ###########################################################
 
             ##########################################################

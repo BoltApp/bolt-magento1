@@ -86,7 +86,7 @@ trait Bolt_Boltpay_Helper_GeneralTrait {
     }
 
     /**
-     * @param $item
+     * @param $item Mage_Sales_Model_Quote_Item
      *
      * @return string
      */
@@ -95,18 +95,20 @@ trait Bolt_Boltpay_Helper_GeneralTrait {
         /** @var Mage_Catalog_Helper_Image $imageHelper */
         $imageHelper = Mage::helper('catalog/image');
 
-        /** @var Mage_Catalog_Model_Product $_product */
-        $_product = $item->getProduct();
+        /** @var Mage_Catalog_Model_Product $product */
+        $product = Mage::getModel('catalog/product');
+        $product->load($product->getIdBySku($item->getSku()));
 
         $image = '';
         try {
-            if ($_product->getThumbnail()) {
+            if ($product->getThumbnail()) {
                 /** @var Mage_Catalog_Helper_Image $image */
-                $image = $imageHelper->init($_product, 'thumbnail', $_product->getThumbnail());
+                $image = $imageHelper->init($product, 'thumbnail', $product->getThumbnail());
             }
-        } catch (Exception $e) {  }
+        } catch (Exception $e) {
+        }
 
-        return (string) $image;
+        return (string)$image;
     }
 
     /**
@@ -193,5 +195,32 @@ trait Bolt_Boltpay_Helper_GeneralTrait {
         );
 
         return $valueWrapper->getValue();
+    }
+
+    /**
+     * Unserializes a homogeneous non-associative array of integers from PHP serialized format to
+     * to a PHP array without using the unserialize method
+     *
+     * @param string $serializedData    A non-associative array of integers in PHP serialized format
+     *
+     * @return  array the converted array of integers in PHP format
+     */
+    public function unserializeIntArray($serializedData) {
+        preg_match_all('/i:\d+;i:(\d+);/', $serializedData, $convertedArray);
+        return $convertedArray[1];
+    }
+
+    /**
+     * Unserializes a homogeneous non-associative array of strings from PHP serialized format to
+     * to a PHP array without using the unserialize method
+     *
+     * @param string $serializedData    A non-associative array of strings in PHP serialized format
+     *
+     * @return  array the converted array of strings in PHP format
+     */
+    public function unserializeStringArray($serializedData)
+    {
+        preg_match_all('/i:\d+;s:\d+:"([^"]*)";/', $serializedData, $convertedArray);
+        return $convertedArray[1];
     }
 }

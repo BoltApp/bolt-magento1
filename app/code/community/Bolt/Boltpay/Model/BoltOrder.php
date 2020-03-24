@@ -62,33 +62,35 @@ class Bolt_Boltpay_Model_BoltOrder extends Bolt_Boltpay_Model_Abstract
      *
      * @param Mage_Sales_Model_Quote        $quote      Magento quote instance
      * @param bool                          $isMultiPage  Is checkout type Multi-Page Checkout, the default is true, set to false for One Page Checkout
+     * @param bool                          $isProductPage Is checkout type Product-Page checkout, the default is false, set to true for PPC
      *
      * @return array            The order payload to be sent as to bolt in API call as a PHP array
      *
      * @throws Mage_Core_Model_Store_Exception if the store cannot be determined
      */
-    public function buildOrder($quote, $isMultiPage)
+    public function buildOrder($quote, $isMultiPage, $isProductPage = false)
     {
-        $cart = $this->buildCart($quote, $isMultiPage);
+        $cart = $this->buildCart($quote, $isMultiPage, $isProductPage);
         $boltOrder = ['cart' => $cart];
         return $this->boltHelper()->dispatchFilterEvent(
             "bolt_boltpay_filter_bolt_order",
             $boltOrder,
-            ['quote' => $quote, 'isMultiPage' => $isMultiPage]
+            ['quote' => $quote, 'isMultiPage' => $isMultiPage, 'isProductPage' => $isProductPage]
         );
     }
 
     /**
      * Generates cart submission data for sending to Bolt order cart field.
      *
-     * @param Mage_Sales_Model_Quote        $quote      Magento quote instance
-     * @param bool                          $isMultipage  Is checkout type Multi-Page Checkout, the default is true, set to false for One Page Checkout
+     * @param Mage_Sales_Model_Quote $quote Magento quote instance
+     * @param bool                   $isMultipage Is checkout type Multi-Page Checkout, the default is true, set to false for One Page Checkout
+     * @param bool                   $isProductPage Is checkout type Product-Page checkout, the default is false, set to true for PPC
      *
      * @return array            The cart data part of the order payload to be sent as to bolt in API call as a PHP array
      *
      * @throws Mage_Core_Model_Store_Exception if the store cannot be determined
      */
-    public function buildCart($quote, $isMultipage)
+    public function buildCart($quote, $isMultipage, $isProductPage = false)
     {
 
         ///////////////////////////////////////////////////////////////////////////////////
@@ -133,14 +135,14 @@ class Bolt_Boltpay_Model_BoltOrder extends Bolt_Boltpay_Model_Abstract
             'order_reference' => $quote->getParentQuoteId(),
             'display_id'      => $quote->getReservedOrderId().'|'.$quote->getId(),
             'items'           => array_map(
-                function ($item) use ($quote, &$calculatedTotal) {
+                function ($item) use ($quote, &$calculatedTotal, $isProductPage) {
                     /** @var Mage_Sales_Model_Quote_Item $item */
                     $imageUrl = $this->boltHelper()->getItemImageUrl($item);
-                    $product   = Mage::getModel('catalog/product')->load($item->getProductId());
+                    $product = Mage::getModel('catalog/product')->load($item->getProductId());
                     $type = $product->getTypeId() == 'virtual' ? self::ITEM_TYPE_DIGITAL : self::ITEM_TYPE_PHYSICAL;
                     $calculatedTotal += round($item->getPrice() * 100 * $item->getQty());
                     return array(
-                        'reference'    => $item->getId(),
+                        'reference'    => $isProductPage ? $item->getProductId() : $item->getId(),
                         'image_url'    => $imageUrl,
                         'name'         => $item->getName(),
                         'sku'          => $item->getSku(),
@@ -280,22 +282,7 @@ class Bolt_Boltpay_Model_BoltOrder extends Bolt_Boltpay_Model_Abstract
                     $shippingMethodBlock = $this->createLayoutBlock("adminhtml/sales_order_create_shipping_method_form");
                     $shippingRate = $shippingMethodBlock->getActiveMethodRate();
 
-                    if ($shippingRate) {
-                        /* @var Mage_Sales_Model_Quote_Address_Total $shippingTotal */
-                        $shippingTotal = $totalsBlock->getTotals()['shipping'];
-
-                        $this->addShippingForAdmin( $shippingTotal, $cartSubmissionData, $shippingRate, $cartShippingAddress);
-                    }else{
-                        if($quote->isVirtual()){
-                            $cartSubmissionData['shipments'] = array(array(
-                                'shipping_address' => $cartShippingAddress,
-                                'tax_amount'       => 0,
-                                'service'          => $this->boltHelper()->__('No Shipping Required'),
-                                'reference'        => "noshipping",
-                                'cost'             => 0
-                            ));
-                        }
-                    }
+                    $this->addShippingForAdmin($totalsBlock, $cartSubmissionData, $shippingRate, $cartShippingAddress, $quote);
                 }
 
                 $calculatedTotal += isset($cartSubmissionData['shipments']) ? array_sum(array_column($cartSubmissionData['shipments'], 'cost')) : 0;
@@ -424,23 +411,38 @@ class Bolt_Boltpay_Model_BoltOrder extends Bolt_Boltpay_Model_Abstract
     /**
      * Adds the calculated shipping to the Bolt order from the admin context
      *
-     * @param Mage_Sales_Model_Quote_Address_Total  $shippingTotal      calculated shipping totals
+     * @param Mage_Adminhtml_Block_Sales_Order_Create_Totals  $totalsBlock      totals block
      * @param array                                 $cartSubmissionData data to be sent to Bolt
      * @param Mage_Sales_Model_Quote_Address_Rate   $shippingRate       shipping rate meta data
      * @param array                                 $boltFormatAddress  shipping address in Bolt format
-     * @param Mage_Sales_Model_Quote                $quote              the quote associated with the order
+     * @param Mage_Sales_Model_Quote|null           $quote              the quote associated with the order
      *
      * @return int    The total shipping in cents
      */
-    protected function addShippingForAdmin( $shippingTotal, &$cartSubmissionData, $shippingRate, $boltFormatAddress, $quote ) {
-        $totalShipping = $shippingTotal ? (int) round($shippingTotal->getValue() * 100) : 0;
-        $cartSubmissionData['shipments'] = array(array(
-            'shipping_address' => $boltFormatAddress,
-            'tax_amount'       => 0,
-            'service'          => $shippingRate->getMethodTitle(),
-            'carrier'          => $shippingRate->getCarrierTitle(),
-            'cost'             => $totalShipping,
-        ));
+    protected function addShippingForAdmin($totalsBlock, &$cartSubmissionData, $shippingRate, $boltFormatAddress, $quote = null) {
+        $totalShipping = 0;
+        if ($shippingRate){
+            /* @var Mage_Sales_Model_Quote_Address_Total $addressShippingTotal */
+            $addressShippingTotal =  $totalsBlock->getTotals()['shipping'];
+            $totalShipping = $addressShippingTotal ? (int) round($addressShippingTotal->getValue() * 100) : 0;
+            $cartSubmissionData['shipments'] = array(array(
+                'shipping_address' => $boltFormatAddress,
+                'tax_amount'       => 0,
+                'service'          => $shippingRate->getMethodTitle(),
+                'carrier'          => $shippingRate->getCarrierTitle(),
+                'cost'             => $totalShipping,
+            ));
+        }else{
+            if ($quote->isVirtual()) {
+                $cartSubmissionData['shipments'] = array(array(
+                    'tax_amount'       => 0,
+                    'service'          => $this->boltHelper()->__('No Shipping Required'),
+                    'reference'        => "noshipping",
+                    'cost'             => $totalShipping
+                ));
+            }
+        }
+
         return $totalShipping;
     }
 
@@ -458,10 +460,10 @@ class Bolt_Boltpay_Model_BoltOrder extends Bolt_Boltpay_Model_Abstract
     /**
      * Utility method that attempts to correct totals if the projected total that was calculated from
      * all items and the given discount, does not match the $magento calculated total.  The totals may vary
-     * do to an error in the internal Magento code
+     * due to an error in the internal Magento code
      *
      * @param int $projectedTotal            total calculated from items, discounts, taxes and shipping
-     * @param int $magentoDerivedCartData    totals returned by magento and formatted for Bolt
+     * @param array $magentoDerivedCartData    totals returned by magento and formatted for Bolt
      *
      * @return array  the corrected Bolt formatted cart data.
      */
@@ -659,14 +661,14 @@ class Bolt_Boltpay_Model_BoltOrder extends Bolt_Boltpay_Model_Abstract
      * @return string   The calculated key for this quote's cart.
      *                  Format is {quote id}_{md5 hash of cart content}
      */
-    private function calculateCartCacheKey( $quote, $checkoutType )
+    private function calculateCartCacheKey($quote, $checkoutType)
     {
         $boltCartArray = is_array($quote) ? $quote : $this->buildOrder($quote, $checkoutType === 'multi-page');
         if ($boltCartArray['cart']) {
             unset($boltCartArray['cart']['display_id']);
             unset($boltCartArray['cart']['order_reference']);
         }
-        return $quote->getId() . '_' . md5(json_encode($boltCartArray));
+        return $quote->getId() . '_' . hash('md5', json_encode($boltCartArray));
     }
 
     /**
@@ -687,7 +689,7 @@ class Bolt_Boltpay_Model_BoltOrder extends Bolt_Boltpay_Model_Abstract
             && (($cachedCartDataJS['creation_time'] + self::$cached_token_expiration_time) > time())
             && ($cachedCartDataJS['key'] === $this->calculateCartCacheKey($quote, $checkoutType))
         ) {
-            return unserialize($cachedCartDataJS["cart_data"]);
+            return json_decode($cachedCartDataJS["cart_data"], true);
         }
 
         Mage::getSingleton('core/session')->unsCachedCartData();
@@ -707,7 +709,7 @@ class Bolt_Boltpay_Model_BoltOrder extends Bolt_Boltpay_Model_Abstract
             array(
                 'creation_time' => time(),
                 'key' => $this->calculateCartCacheKey($quote, $checkoutType),
-                'cart_data' => serialize($cartData)
+                'cart_data' => json_encode($cartData)
             )
         );
     }

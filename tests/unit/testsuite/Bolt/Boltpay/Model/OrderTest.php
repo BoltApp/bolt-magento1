@@ -80,9 +80,13 @@ class Bolt_Boltpay_Model_OrderTest extends PHPUnit_Framework_TestCase
 
     /**
      * Initialize benchmarking and remove events
+     *
+     * @throws ReflectionException if unable to remove events
+     * @throws Mage_Core_Exception if unable to clean registry
      */
     public static function setUpBeforeClass()
     {
+        TestHelper::clearRegistry();
         Mage::getModel('boltpay/observer')->initializeBenchmarkProfiler();
 
         $events = TestHelper::getNonPublicProperty(Mage::app(), '_events');
@@ -177,6 +181,7 @@ class Bolt_Boltpay_Model_OrderTest extends PHPUnit_Framework_TestCase
             'setTotalsCollectedFlag',
             'prepareRecurringPaymentProfiles',
             'setInventoryProcessed',
+            'getPayment'
         );
         $this->immutableQuoteMock = $this->getClassPrototype('Mage_Sales_Model_Quote')
             ->setMethods($quoteMockMethods)->getMock();
@@ -196,6 +201,8 @@ class Bolt_Boltpay_Model_OrderTest extends PHPUnit_Framework_TestCase
     {
         TestHelper::restoreOriginals();
         Mage::getSingleton('checkout/cart')->truncate();
+        Mage::app()->setCurrentStore('default');
+        Bolt_Boltpay_Helper_Data::$fromHooks = false;
     }
 
     /**
@@ -540,6 +547,44 @@ class Bolt_Boltpay_Model_OrderTest extends PHPUnit_Framework_TestCase
 
     /**
      * @test
+     *
+     * @covers ::validateTotals
+     *
+     * @throws ReflectionException if validateTotals method doesn't exist
+     */
+    public function validateTotals_ifItemProductPriceDoesNotChange_notThrowsException()
+    {
+        $transaction = new stdClass();
+        $transaction->order->cart->items = array(
+            (object)array('reference' => 1, 'unit_price' => 460, 'total_amount' => (object)array('amount' => 2300))
+        );
+
+        $this->immutableQuoteMock->expects($this->once())->method('getTotals')
+            ->willReturnCallback(
+                function () use ($transaction) {
+                    //disable validations we are not interested in this test
+                    $transaction->shouldDoTaxTotalValidation = false;
+                    $transaction->shouldSkipDiscountAndShippingTotalValidation = true;
+                }
+            );
+
+        $this->immutableQuoteMock->expects($this->once())->method('getItemById')->with(1)
+            ->willReturn(
+                Mage::getModel(
+                    'sales/quote_item',
+                    array('row_total_with_discount' => 0, 'calculation_price' => 4.6035, 'qty' => 5, 'product_id' => 1001)
+                )
+            );
+
+        TestHelper::callNonPublicFunction(
+            $this->currentMock,
+            'validateTotals',
+            array($this->immutableQuoteMock, $transaction)
+        );
+    }
+
+    /**
+     * @test
      * that when the tax total amount is different at Bolt than Magento BEYOND the price fault tolerance
      * a mismatch exception is thrown that includes the mismatch reason, Bolt tax amount and Magento tax amount
      *
@@ -703,6 +748,49 @@ class Bolt_Boltpay_Model_OrderTest extends PHPUnit_Framework_TestCase
             'validateTotals',
             array($this->immutableQuoteMock, $transaction)
         );
+    }
+
+    /**
+     * @test
+     * that validateTotals loads quote item by product id if is_bolt_pdp flag is set on quote
+     * by expecting exception message to be thrown due to different prices betwen product and transaction item
+     *
+     * @covers ::validateTotals
+     *
+     * @expectedException Bolt_Boltpay_OrderCreationException
+     * @expectedExceptionCode 2001004
+     * @expectedExceptionMessage "old_price": "23200", "new_price": "13200"
+     *
+     * @throws ReflectionException if validateTotals method doesn't exist
+     * @throws Mage_Core_Exception if unable to add product to cart
+     * @throws Exception if unable to create dummy product
+     */
+    public function validateTotals_fromProductPageCheckout_loadsCartItemByProductIdAndThrowsException()
+    {
+        $productId = Bolt_Boltpay_ProductProvider::createDummyProduct(
+            uniqid('validate_totals_ppc'),
+            array('price' => 132)
+        );
+        $transaction = new stdClass();
+        $transaction->order->cart->items = array(
+            (object)array('reference' => $productId, 'total_amount' => (object)array('amount' => 23200))
+        );
+        $cart = Mage::getModel('checkout/cart', array('quote' => Mage::getModel('sales/quote')));
+        $cart->addProduct($productId, 1);
+        $quote = $cart->getQuote();
+        $quote->getShippingAddress()->setPaymentMethod('boltpay');
+        $quote->getPayment()->importData(array('method' => Bolt_Boltpay_Model_Payment::METHOD_CODE));
+        $quote->setData('is_bolt_pdp', 1)->save();
+        try {
+            TestHelper::callNonPublicFunction(
+                $this->currentMock,
+                'validateTotals',
+                array($quote, $transaction)
+            );
+        } catch (Exception $e) {
+            Bolt_Boltpay_ProductProvider::deleteDummyProduct($productId);
+            throw $e;
+        }
     }
 
     /**
@@ -1285,12 +1373,58 @@ class Bolt_Boltpay_Model_OrderTest extends PHPUnit_Framework_TestCase
         $this->parentQuoteMock->expects($this->once())->method('getIsActive')->willReturn(true);
         $this->immutableQuoteMock->expects($this->once())->method('getAllItems')
             ->willReturn(array(Mage::getModel('sales/quote_item', array('product' => $productMock, 'qty' => 2))));
-        $productMock->expects($this->once())->method('isSaleable')->willReturn(true);
+        $productMock->method('isSaleable')->willReturn(false);
         $productMock->expects($this->atLeastOnce())->method('getId')->willReturn(1);
         $stockItemMock = $this->getClassPrototype('cataloginventory/stock_item')
-            ->setMethods(array('loadByProduct', 'getQty', 'getMinQty', 'checkQty'))->getMock();
+            ->setMethods(array('loadByProduct', 'getQty', 'getMinQty', 'checkQty', 'getIsInStock'))->getMock();
         $stockItemMock->expects($this->once())->method('loadByProduct')->willReturnSelf();
-        $stockItemMock->expects($this->once())->method('getQty')->willReturn(0);
+        $stockItemMock->expects($this->once())->method('getIsInStock')->willReturn(false);
+        $stockItemMock->expects($this->never())->method('getQty');
+        $stockItemMock->expects($this->never())->method('getMinQty');
+        $stockItemMock->expects($this->never())->method('checkQty');
+        TestHelper::stubModel('cataloginventory/stock_item', $stockItemMock);
+        TestHelper::callNonPublicFunction(
+            $currentMock,
+            'validateCartSessionData',
+            array(
+                $this->immutableQuoteMock,
+                $this->parentQuoteMock,
+                new stdClass(),
+                false
+            )
+        );
+    }
+
+    /**
+     * @test
+     * that validateCartSessionData throws OrderCreationException if one of the products in quote is out of stock
+     *
+     * @covers ::validateCartSessionData
+     *
+     * @expectedException Bolt_Boltpay_OrderCreationException
+     * @expectedExceptionCode 2001005
+     * @expectedExceptionMessage {"product_id": "1", "available_quantity": 1, "needed_quantity": 2}
+     *
+     * @throws ReflectionException if validateCartSessionData doesn't exist
+     * @throws Exception from test setup if tested class name is not set
+     */
+    public function validateCartSessionData_whenProductHasInsufficientQty_throwsException()
+    {
+        $productMock = $this->getClassPrototype('Mage_Catalog_Model_Product')->getMock();
+        $isImmutableQuoteNew = false;
+        $currentMock = $this->validateCartSessionDataSetUp();
+        $this->immutableQuoteMock->expects($this->once())->method('isObjectNew')->willReturn($isImmutableQuoteNew);
+        $this->parentQuoteMock->expects($this->once())->method('isObjectNew')->willReturn(false);
+        $this->parentQuoteMock->expects($this->once())->method('getIsActive')->willReturn(true);
+        $this->immutableQuoteMock->expects($this->once())->method('getAllItems')
+            ->willReturn(array(Mage::getModel('sales/quote_item', array('product' => $productMock, 'qty' => 2))));
+        $productMock->method('isSaleable')->willReturn(false);
+        $productMock->expects($this->atLeastOnce())->method('getId')->willReturn(1);
+        $stockItemMock = $this->getClassPrototype('cataloginventory/stock_item')
+            ->setMethods(array('loadByProduct', 'getQty', 'getMinQty', 'checkQty', 'getIsInStock'))->getMock();
+        $stockItemMock->expects($this->once())->method('loadByProduct')->willReturnSelf();
+        $stockItemMock->expects($this->once())->method('getIsInStock')->willReturn(true);
+        $stockItemMock->expects($this->once())->method('getQty')->willReturn(1);
         $stockItemMock->expects($this->once())->method('getMinQty')->willReturn(0);
         $stockItemMock->expects($this->once())->method('checkQty')->willReturn(false);
         TestHelper::stubModel('cataloginventory/stock_item', $stockItemMock);
@@ -1728,6 +1862,13 @@ class Bolt_Boltpay_Model_OrderTest extends PHPUnit_Framework_TestCase
         $this->orderMock->expects($this->once())->method('cancel')->willReturnSelf();
         $this->orderMock->expects($this->once())->method('setStatus')->with('canceled_bolt')->willReturnSelf();
 
+        $paymentMock = $this->getClassPrototype('Mage_Sales_Model_Quote_Payment')
+            ->setMethods(array('setMethod', 'save'))
+            ->getMock();
+        $paymentMock->expects($this->once())->method('setMethod')->with(null)->willReturnSelf();
+        $paymentMock->expects($this->once())->method('save')->willReturnSelf();
+        $this->immutableQuoteMock->expects($this->once())->method('getPayment')->willReturn($paymentMock);
+
         $currentMock->removePreAuthOrder($this->orderMock);
     }
 
@@ -1748,6 +1889,7 @@ class Bolt_Boltpay_Model_OrderTest extends PHPUnit_Framework_TestCase
         $this->orderMock->expects($this->never())->method('save');
         $this->orderMock->expects($this->never())->method('cancel')->willReturnSelf();
         $this->orderMock->expects($this->never())->method('setStatus')->with('canceled_bolt')->willReturnSelf();
+        $this->immutableQuoteMock->expects($this->never())->method('getPayment');
 
         $currentMock->removePreAuthOrder($this->orderMock);
     }
@@ -1986,8 +2128,7 @@ class Bolt_Boltpay_Model_OrderTest extends PHPUnit_Framework_TestCase
                         'salesrule/rule',
                         array('to_date' => Mage::getSingleton('core/date')->date(null, '-10 days'))
                     )
-                )
-            ,
+                ),
             $couponConfig =
                 array(
                     "reference" => self::COUPON_CODE,
@@ -2031,8 +2172,7 @@ class Bolt_Boltpay_Model_OrderTest extends PHPUnit_Framework_TestCase
                         'salesrule/rule',
                         array('is_active' => 0)
                     )
-                )
-            ,
+                ),
             $couponConfig =
                 array(
                     "reference" => self::COUPON_CODE,
@@ -2070,8 +2210,7 @@ class Bolt_Boltpay_Model_OrderTest extends PHPUnit_Framework_TestCase
                         'salesrule/rule',
                         array('to_date' => Mage::getSingleton('core/date')->date(null, '+1 days'))
                     )
-                )
-            ,
+                ),
             $couponConfig =
                 array(
                     "reference" => self::COUPON_CODE,
@@ -2164,7 +2303,101 @@ class Bolt_Boltpay_Model_OrderTest extends PHPUnit_Framework_TestCase
         $this->immutableQuoteMock->method('getTransaction')->willReturn($transaction);
         $this->orderMock->method('getQuote')->willReturn($this->immutableQuoteMock);
         $this->boltHelperMock->method('getExtraConfig')->with('priceFaultTolerance')->willReturn(1);
+        Bolt_Boltpay_Helper_Data::$fromHooks = true;
         return $observer;
+    }
+
+    /**
+     * @test
+     * that if order object provided to validateBeforeOrderCommit is considered empty an exception is thrown
+     *
+     * @covers ::validateBeforeOrderCommit
+     *
+     * @expectedException Exception
+     * @expectedExceptionMessage Order was not able to be saved
+     *
+     * @throws Exception if order is empty
+     */
+    public function validateBeforeOrderCommit_orderIsEmpty_throwsException()
+    {
+        $transaction = new stdClass();
+        $observer = $this->validateBeforeOrderCommitSetUp(null, $transaction);
+        $this->currentMock->validateBeforeOrderCommit($observer);
+    }
+
+    /**
+     * @test
+     * that if payment method is not Bolt - validation is skipped
+     *
+     * @covers ::validateBeforeOrderCommit
+     *
+     * @throws Bolt_Boltpay_OrderCreationException from method tested if the bottom line price total differs by allowed tolerance
+     */
+    public function validateBeforeOrderCommit_ifPaymentMethodIsNotBolt_skipValidation()
+    {
+        $transaction = new stdClass();
+        $transaction->order->cart->total_amount->amount = 500;
+        $this->orderMock->expects($this->atLeastOnce())->method('getPayment')
+            ->willReturn(
+                Mage::getModel('sales/order_payment', array('method' => 'checkmo'))
+            );
+        $this->orderMock->expects($this->never())->method('getGrandTotal')->willReturn(25);
+        $observer = $this->validateBeforeOrderCommitSetUp($this->orderMock, $transaction);
+        $this->currentMock->validateBeforeOrderCommit($observer);
+    }
+
+    /**
+     * @test
+     * that validateBeforeOrderCommit throws an exception if a Bolt order
+     * is attempted from route that is not a hook nor in admin scope
+     *
+     * @covers ::validateBeforeOrderCommit
+     *
+     * @expectedException Exception
+     * @expectedExceptionMessage Order creation with Boltpay not allowed for this path
+     */
+    public function validateBeforeOrderCommit_whenBoltOrderNotFromHookNorFromAdmin_throwsException()
+    {
+        $transaction = new stdClass();
+        $this->paymentMock->expects($this->atLeastOnce())->method('getMethod')
+            ->willReturn(Bolt_Boltpay_Model_Payment::METHOD_CODE);
+        $observer = $this->validateBeforeOrderCommitSetUp($this->orderMock, $transaction);
+        Bolt_Boltpay_Helper_Data::$fromHooks = false;
+        Mage::app()->setCurrentStore('default');
+        $this->currentMock->validateBeforeOrderCommit($observer);
+    }
+
+    /**
+     * @test
+     * that validateBeforeOrderCommit does not throw exception if a Bolt order
+     * is attempted from route that is in admin scope
+     *
+     * @covers ::validateBeforeOrderCommit
+     */
+    public function validateBeforeOrderCommit_whenBoltOrderFromAdmin_continuesValidation()
+    {
+        $transaction = new stdClass();
+        $this->paymentMock->expects($this->atLeastOnce())->method('getMethod')
+            ->willReturn(Bolt_Boltpay_Model_Payment::METHOD_CODE);
+        $observer = $this->validateBeforeOrderCommitSetUp($this->orderMock, $transaction);
+        Bolt_Boltpay_Helper_Data::$fromHooks = false;
+        Mage::app()->setCurrentStore('admin');
+        $this->currentMock->validateBeforeOrderCommit($observer);
+    }
+
+    /**
+     * @test
+     * that if transaction is empty - validation is skipped
+     *
+     * @covers ::validateBeforeOrderCommit
+     */
+    public function validateBeforeOrderCommit_ifTransactionIsEmpty_skipsValidation()
+    {
+        $this->paymentMock->expects($this->atLeastOnce())->method('getMethod')
+            ->willReturn(Bolt_Boltpay_Model_Payment::METHOD_CODE);
+        $this->orderMock->expects($this->never())->method('getGrandTotal');
+        $observer = $this->validateBeforeOrderCommitSetUp($this->orderMock, null);
+        $this->currentMock->validateBeforeOrderCommit($observer);
     }
 
     /**
@@ -2178,12 +2411,12 @@ class Bolt_Boltpay_Model_OrderTest extends PHPUnit_Framework_TestCase
      * @expectedExceptionCode 2001003
      * @expectedExceptionMessage {"reason": "Grand total has changed", "old_value": "500", "new_value": "2500"}
      */
-    public function validateBeforeOrderCommit_totalsMismatchBeyondTolerance_throwsException()
+    public function validateBeforeOrderCommit_whenTotalsMismatchBeyondTolerance_throwsException()
     {
         $transaction = new stdClass();
         $transaction->order->cart->total_amount->amount = 500;
         $this->orderMock->expects($this->once())->method('getGrandTotal')->willReturn(25);
-        $this->paymentMock->expects($this->once())->method('getMethod')
+        $this->paymentMock->expects($this->atLeastOnce())->method('getMethod')
             ->willReturn(Bolt_Boltpay_Model_Payment::METHOD_CODE);
         $observer = $this->validateBeforeOrderCommitSetUp($this->orderMock, $transaction);
         $this->currentMock->validateBeforeOrderCommit($observer);
@@ -2194,14 +2427,12 @@ class Bolt_Boltpay_Model_OrderTest extends PHPUnit_Framework_TestCase
      * that if totals mismatch is inside tolerance totals are adjusted by the mismatch difference
      *
      * @covers ::validateBeforeOrderCommit
-     *
-     * @throws Bolt_Boltpay_OrderCreationException from method tested if the bottom line price total differs by allowed tolerance
      */
-    public function validateBeforeOrderCommit_totalsMismatchInsideTolerance_correctsTotals()
+    public function validateBeforeOrderCommit_whenTotalsMismatchBelowTolerance_correctsTotals()
     {
         $transaction = new stdClass();
         $transaction->order->cart->total_amount->amount = 500;
-        $this->paymentMock->expects($this->once())->method('getMethod')
+        $this->paymentMock->expects($this->atLeastOnce())->method('getMethod')
             ->willReturn(Bolt_Boltpay_Model_Payment::METHOD_CODE);
         $this->orderMock->expects($this->once())->method('getGrandTotal')->willReturn(4.99);
         $this->orderMock->expects($this->once())->method('getTaxAmount')->willReturn(0.99);
@@ -2211,45 +2442,6 @@ class Bolt_Boltpay_Model_OrderTest extends PHPUnit_Framework_TestCase
         $this->orderMock->expects($this->once())->method('setGrandTotal')->with(5)->willReturnSelf();
         $this->orderMock->expects($this->once())->method('setBaseGrandTotal')->with(5)->willReturnSelf();
         $observer = $this->validateBeforeOrderCommitSetUp($this->orderMock, $transaction);
-        $this->currentMock->validateBeforeOrderCommit($observer);
-    }
-
-    /**
-     * @test
-     * that if payment method is not Bolt - validation is skipped
-     *
-     * @covers ::validateBeforeOrderCommit
-     *
-     * @throws Bolt_Boltpay_OrderCreationException from method tested if the bottom line price total differs by allowed tolerance
-     */
-    public function validateBeforeOrderCommit_paymentMethodNotBolt_skipValidation()
-    {
-        $transaction = new stdClass();
-        $transaction->order->cart->total_amount->amount = 500;
-        $this->orderMock->expects($this->once())->method('getPayment')
-            ->willReturn(
-                Mage::getModel('sales/order_payment', array('method' => 'checkmo'))
-            );
-        $this->orderMock->expects($this->never())->method('getGrandTotal')->willReturn(25);
-        $observer = $this->validateBeforeOrderCommitSetUp($this->orderMock, $transaction);
-        $this->currentMock->validateBeforeOrderCommit($observer);
-    }
-
-    /**
-     * @test
-     * that if order object provided to validateBeforeOrderCommit is considered empty an exception is thrown
-     *
-     * @covers ::validateBeforeOrderCommit
-     *
-     * @expectedException Exception
-     * @expectedExceptionMessage Order was not able to be saved
-     *
-     * @throws Bolt_Boltpay_OrderCreationException from method tested if the bottom line price total differs by allowed tolerance
-     */
-    public function validateBeforeOrderCommit_orderIsEmpty_throwsException()
-    {
-        $transaction = new stdClass();
-        $observer = $this->validateBeforeOrderCommitSetUp(null, $transaction);
         $this->currentMock->validateBeforeOrderCommit($observer);
     }
 
@@ -2484,5 +2676,142 @@ class Bolt_Boltpay_Model_OrderTest extends PHPUnit_Framework_TestCase
                 (object)array('notification_type' => Bolt_Boltpay_Model_Payment::TRANSACTION_PENDING)
             )
         );
+    }
+
+    /**
+     * @test
+     *
+     * @covers ::applyShipmentToQuoteFromTransaction
+     *
+     * @throws ReflectionException
+     */
+    public function applyShipmentToQuoteFromTransaction_withVirtualCart_doesNotApplyShipment()
+    {
+        $this->boltShippingAndTax->expects($this->never())->method('applyBoltAddressData');
+        TestHelper::stubModel('boltpay/shippingAndTax', $this->boltShippingAndTax);
+
+        TestHelper::callNonPublicFunction(
+            $this->currentMock,
+            'applyShipmentToQuoteFromTransaction',
+            array(
+                $this->immutableQuoteMock,
+                new stdClass(),
+                true
+            )
+        );
+
+        TestHelper::restoreModel('boltpay/shippingAndTax');
+    }
+
+    /**
+     * @test
+     *
+     * @covers ::applyShipmentToQuoteFromTransaction
+     *
+     * @throws ReflectionException
+     */
+    public function applyShipmentToQuoteFromTransaction_withNoShippingMethodCode_callsNotifyExceptionAndLogWarning()
+    {
+        $shippingAddressMock = $this->getClassPrototype('Mage_Sales_Model_Quote_Address')
+            ->setMethods(array('getAllShippingRates'))
+            ->getMock();
+        $shippingAddressMock->method('getAllShippingRates')->willReturn(array());
+        $this->immutableQuoteMock->method('getShippingAddress')->willReturn($shippingAddressMock);
+        $this->boltShippingAndTax->expects($this->once())->method('applyBoltAddressData');
+        $this->boltShippingAndTax->expects($this->never())->method('applyShippingRate');
+        TestHelper::stubModel('boltpay/shippingAndTax', $this->boltShippingAndTax);
+        $this->boltHelperMock->expects($this->once())->method('logWarning');
+        $this->boltHelperMock->expects($this->once())->method('notifyException');
+
+        $transaction = new stdClass();
+        $transaction->order = new stdClass();
+        $transaction->order->cart = new stdClass();
+        $transaction->order->cart->shipments = array(new stdClass());
+        $transaction->order->cart->shipments[0]->service = 'fake service';
+        TestHelper::callNonPublicFunction(
+            $this->currentMock,
+            'applyShipmentToQuoteFromTransaction',
+            array(
+                $this->immutableQuoteMock,
+                $transaction,
+                false
+            )
+        );
+
+        TestHelper::restoreModel('boltpay/shippingAndTax');
+    }
+
+    /**
+     * @test
+     *
+     * @covers ::applyShipmentToQuoteFromTransaction
+     */
+    public function applyShipmentToQuoteFromTransaction_withNoReferencePassedIn_fallsBackToService()
+    {
+        $rateMock = $this->getClassPrototype('Mage_Sales_Model_Quote_Address_Rate')
+            ->setMethods(array('getCarrierTitle', 'getCarrier', 'getMethodTitle', 'getMethod'))
+            ->getMock();
+        $rateMock->method('getCarrierTitle')->willReturn('Fedex');
+        $rateMock->method('getCarrier')->willReturn('fedex');
+        $rateMock->method('getMethodTitle')->willReturn('Ground');
+        $rateMock->method('getMethod')->willReturn('ground');
+        $shippingAddressMock = $this->getClassPrototype('Mage_Sales_Model_Quote_Address')
+            ->setMethods(array('getAllShippingRates'))
+            ->getMock();
+        $shippingAddressMock->method('getAllShippingRates')->willReturn(array($rateMock));
+        $this->immutableQuoteMock->method('getShippingAddress')->willReturn($shippingAddressMock);
+        $this->boltShippingAndTax->expects($this->once())->method('applyBoltAddressData');
+        $this->boltShippingAndTax->expects($this->once())->method('applyShippingRate')
+            ->with($this->immutableQuoteMock, 'fedex_ground', true);
+        TestHelper::stubModel('boltpay/shippingAndTax', $this->boltShippingAndTax);
+
+        $transaction = new stdClass();
+        $transaction->order = new stdClass();
+        $transaction->order->cart = new stdClass();
+        $transaction->order->cart->shipments = array(new stdClass());
+        $transaction->order->cart->shipments[0]->service = 'Fedex - Ground';
+        TestHelper::callNonPublicFunction(
+            $this->currentMock,
+            'applyShipmentToQuoteFromTransaction',
+            array(
+                $this->immutableQuoteMock,
+                $transaction,
+                false
+            )
+        );
+
+        TestHelper::restoreModel('boltpay/shippingAndTax');
+    }
+
+    /**
+     * @test
+     *
+     * @covers ::applyShipmentToQuoteFromTransaction
+     *
+     * @throws ReflectionException
+     */
+    public function applyShipmentToQuoteFromTransaction_withShippingMethodCode_callsApplyShippingRate()
+    {
+        $this->boltShippingAndTax->expects($this->once())->method('applyBoltAddressData');
+        $this->boltShippingAndTax->expects($this->once())->method('applyShippingRate')
+            ->with($this->immutableQuoteMock, 'ground', false);
+        TestHelper::stubModel('boltpay/shippingAndTax', $this->boltShippingAndTax);
+
+        $transaction = new stdClass();
+        $transaction->order = new stdClass();
+        $transaction->order->cart = new stdClass();
+        $transaction->order->cart->shipments = array(new stdClass());
+        $transaction->order->cart->shipments[0]->reference = 'ground';
+        TestHelper::callNonPublicFunction(
+            $this->currentMock,
+            'applyShipmentToQuoteFromTransaction',
+            array(
+                $this->immutableQuoteMock,
+                $transaction,
+                true
+            )
+        );
+
+        TestHelper::restoreModel('boltpay/shippingAndTax');
     }
 }

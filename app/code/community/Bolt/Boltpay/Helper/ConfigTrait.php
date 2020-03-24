@@ -20,14 +20,16 @@
  *
  * Defines convenience functions used to access Bolt configuration values
  */
-trait Bolt_Boltpay_Helper_ConfigTrait {
-
+trait Bolt_Boltpay_Helper_ConfigTrait
+{
     /**
      * @return bool
      */
     public function isBoltPayActive()
     {
-        return Mage::getStoreConfigFlag('payment/boltpay/active');
+        return
+            Mage::getSingleton("boltpay/featureSwitch")->isSwitchEnabled(Bolt_Boltpay_Model_FeatureSwitch::BOLT_ENABLED_SWITCH_NAME)
+            && Mage::getStoreConfigFlag('payment/boltpay/active');
     }
 
     /**
@@ -71,9 +73,9 @@ trait Bolt_Boltpay_Helper_ConfigTrait {
     }
 
     /**
-     *  Returns the primary color customized for Bolt
+     * Returns the primary color customized for Bolt
      *
-     * @return string   If set, a 6 or 8 digit hexadecimal color value preceded by a '#' character, otherwise an empty string
+     * @return string If set, a 6 or 8 digit hexadecimal color value preceded by a '#' character, otherwise an empty string
      */
     public function getBoltPrimaryColor()
     {
@@ -81,7 +83,16 @@ trait Bolt_Boltpay_Helper_ConfigTrait {
     }
 
     /**
+     * Get Api key configuration
      *
+     * @return mixed
+     */
+    public function getApiKeyConfig()
+    {
+        return $this->getExtraConfig('datadogKey');
+    }
+
+    /**
      * @return string
      */
     public function getAdditionalButtonClasses()
@@ -108,7 +119,8 @@ trait Bolt_Boltpay_Helper_ConfigTrait {
     /**
      * @return mixed
      */
-    public function getAutoCreateInvoiceAfterCreatingShipment(){
+    public function getAutoCreateInvoiceAfterCreatingShipment()
+    {
         return Mage::getStoreConfig('payment/boltpay/auto_create_invoice_after_creating_shipment');
     }
 
@@ -122,9 +134,11 @@ trait Bolt_Boltpay_Helper_ConfigTrait {
     public function getPaymentBoltpayConfig($configPath, $checkoutType)
     {
         /** @var string $configValue */
-        $configValue = Mage::getStoreConfig('payment/boltpay/'.$configPath);
+        $configValue = Mage::getStoreConfig('payment/boltpay/' . $configPath);
+        $isAdminCheckout = $checkoutType === Bolt_Boltpay_Block_Checkout_Boltpay::CHECKOUT_TYPE_ADMIN;
+        $useJsInAdmin = Mage::getStoreConfig('payment/boltpay/use_javascript_in_admin');
 
-        return ($checkoutType === Bolt_Boltpay_Block_Checkout_Boltpay::CHECKOUT_TYPE_ADMIN) && !Mage::getStoreConfig('payment/boltpay/use_javascript_in_admin') ? '' : $configValue;
+        return $isAdminCheckout && !$useJsInAdmin ? '' : $configValue;
     }
 
     /**
@@ -144,13 +158,13 @@ trait Bolt_Boltpay_Helper_ConfigTrait {
     /**
      * Check if the Bolt payment method can be used for specific country
      *
-     * @param string $country   the country to be compared in check for allowing Bolt as a payment method
-     * @return bool   true if Bolt can be used, otherwise false
+     * @param string $country the country to be compared in check for allowing Bolt as a payment method
+     *
+     * @return bool true if Bolt can be used, otherwise false
      */
     public function canUseForCountry($country)
     {
-
-        if(!$this->isBoltPayActive()) {
+        if (!$this->isBoltPayActive()) {
             return false;
         }
 
@@ -159,9 +173,8 @@ trait Bolt_Boltpay_Helper_ConfigTrait {
         }
 
         if (Mage::getStoreConfig('payment/boltpay/allowspecific') == 1) {
-            $availableCountries =
-                explode(',', Mage::getStoreConfig('payment/boltpay/specificcountry'));
-            if (!in_array($country, $availableCountries)){
+            $availableCountries = explode(',', Mage::getStoreConfig('payment/boltpay/specificcountry'));
+            if (!in_array($country, $availableCountries)) {
                 return false;
             }
         }
@@ -170,29 +183,22 @@ trait Bolt_Boltpay_Helper_ConfigTrait {
     }
 
     /**
-     * Gets the value of a Bolt non-publicized or non-emphasized
-     * configuration value after passing it through an optionally
-     * defined filter method.
+     * Gets the value of a Bolt non-publicized or non-emphasized configuration value after passing it through an
+     * optionally defined filter method.
      *
-     * @param string $configName        The name of the config as defined
-     *                                  the configuration JSON
-     * @param array $filterParameters   Optional set of parameters passed to
-     *                                  the optionally defined filter method
-     *                                  of the config
+     * @param string $configName       The name of the config as defined in the configuration JSON
+     * @param array  $filterParameters Optional set of parameters passed to the optionally defined filter method of the config
      *
-     * @return mixed    Typically a string representing the config value, but
-     *                  is not limited to this type.  If the config is not defined,
-     *                  an empty string is returned
+     * @return mixed The config value. If the config is not defined, an empty string is returned.
      */
-    public function getExtraConfig($configName, $filterParameters = array() ) {
+    public function getExtraConfig($configName, $filterParameters = array())
+    {
         /** @var Bolt_Boltpay_Model_Admin_ExtraConfig $extraConfigModel */
         $extraConfigModel = Mage::getSingleton('boltpay/admin_extraConfig');
         return $extraConfigModel->getExtraConfig($configName, $filterParameters);
     }
 
     /**
-     * Checking the config
-     *
      * @return bool
      */
     public function canUseEverywhere()
@@ -200,17 +206,7 @@ trait Bolt_Boltpay_Helper_ConfigTrait {
         $active = $this->isBoltPayActive();
         $isEverywhere = $this->shouldAddButtonEverywhere();
 
-        return ($active && $isEverywhere);
-    }
-
-    /**
-     * Get Api key configuration
-     *
-     * @return mixed
-     */
-    public function getApiKeyConfig()
-    {
-        return $this->getExtraConfig('datadogKey');
+        return $active && $isEverywhere;
     }
 
     /**
@@ -222,8 +218,22 @@ trait Bolt_Boltpay_Helper_ConfigTrait {
     {
         $severityString = $this->getExtraConfig('datadogKeySeverity');
         $severityString = preg_replace('/\s+/', '', $severityString);
-        $severities = explode(',', $severityString);
+        return explode(',', $severityString);
+    }
 
-        return $severities;
+    /**
+     * Get Bolt plugin version
+     *
+     * @return string|null
+     */
+    public static function getBoltPluginVersion()
+    {
+        $versionElm = Mage::getConfig()->getModuleConfig("Bolt_Boltpay")->xpath("version");
+
+        if (isset($versionElm[0])) {
+            return (string)$versionElm[0];
+        }
+
+        return null;
     }
 }

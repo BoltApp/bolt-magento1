@@ -84,7 +84,7 @@ class Bolt_Boltpay_Adminhtml_Sales_Order_CreateController
         /////////////////////////////////////////////////////////////////////////////
         // Case 1:
         // If there is no bolt reference, then it indicates this is another payment
-        // method.  In this case, we differ to Magento to handle this
+        // method.  In this case, we defer to Magento to handle this
         /////////////////////////////////////////////////////////////////////////////
         $boltReference = $this->getRequest()->getPost('bolt_reference');
         if (!$boltReference) {
@@ -137,12 +137,15 @@ class Bolt_Boltpay_Adminhtml_Sales_Order_CreateController
 
             $order =  $orderCreateModel->createOrder();
 
-            $this->_postOrderCreateProcessing($order, $immutableQuoteId);
+            $this->_postOrderCreateProcessing($order);
 
             $this->_getSession()->clear();
             Mage::getSingleton('adminhtml/session')->addSuccess($this->__('The order has been created.'));
 
-            $this->boltHelper()->logInfo("The order {$order->getIncrementId()} has been created.",array('order' => var_export($order->debug(), true)));
+            $this->boltHelper()->logInfo(
+                "The order {$order->getIncrementId()} has been created.",
+                array('order' => var_export($order->debug(), true))
+            );
 
             if (Mage::getSingleton('admin/session')->isAllowed('sales/order/actions/view')) {
                 $this->_redirect('*/sales_order/view', array('order_id' => $order->getId()));

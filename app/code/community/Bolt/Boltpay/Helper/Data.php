@@ -24,11 +24,11 @@
  */
 class Bolt_Boltpay_Helper_Data extends Mage_Core_Helper_Abstract
 {
-    use Bolt_Boltpay_Helper_ApiTrait;
     use Bolt_Boltpay_Helper_GeneralTrait;
     use Bolt_Boltpay_Helper_LoggerTrait;
     use Bolt_Boltpay_Helper_TransactionTrait;
     use Bolt_Boltpay_Helper_DataDogTrait;
+    use Bolt_Boltpay_Helper_GraphQLTrait;
 
     /**
      * Collect Bolt callbacks for js config.
@@ -62,10 +62,8 @@ class Bolt_Boltpay_Helper_Data extends Mage_Core_Helper_Abstract
 
         return "{
                   check: function() {
-                    if (do_checks++) {
-                        $checkCustom
-                        $onCheckCallback
-                    }
+                    $checkCustom
+                    $onCheckCallback
                     return true;
                   },
                   onCheckoutStart: function() {
@@ -98,13 +96,37 @@ class Bolt_Boltpay_Helper_Data extends Mage_Core_Helper_Abstract
     }
 
     /**
-     * @param      $checkoutType
+     * @param string $checkoutType
      * @param bool $isVirtualQuote
      *
      * @return string
+     *
+     * @throws Mage_Core_Model_Store_Exception
      */
     public function buildOnCheckCallback($checkoutType, $isVirtualQuote = false)
     {
+        if ( $checkoutType === Bolt_Boltpay_Block_Checkout_Boltpay::CHECKOUT_TYPE_ADMIN ) {
+            $checkoutTokenUrl = $this->getMagentoUrl("adminhtml/sales_order_create/create/checkoutType/$checkoutType", array(), true);
+        } else {
+            $checkoutTokenUrl = $this->getMagentoUrl("boltpay/order/create/checkoutType/$checkoutType");
+        }
+
+        $ajaxCall = "
+            new Ajax.Request('$checkoutTokenUrl', {
+                method:'post',
+                parameters: '',
+                onSuccess: function(response) {
+                    if(response.responseJSON.error) {
+                        // TODO: Consider informing the user of the error.  This could be handled Bolt-server-side
+                        rejectPromise(response.responseJSON.error_messages);
+                        location.reload();
+                    } else {                                     
+                        resolvePromise(response.responseJSON.cart_data);
+                    }                   
+                },
+                onFailure: function(error) { rejectPromise(error); }
+            }); 
+        ";
         switch ($checkoutType) {
             case Bolt_Boltpay_Block_Checkout_Boltpay::CHECKOUT_TYPE_ADMIN:
                 return
@@ -126,13 +148,17 @@ class Bolt_Boltpay_Helper_Data extends Mage_Core_Helper_Abstract
                         } "). "
         
                         bolt_hidden.classList.add('required-entry');
+                        $ajaxCall
                     }
                     ";
             case Bolt_Boltpay_Block_Checkout_Boltpay::CHECKOUT_TYPE_FIRECHECKOUT:
                 return
                     "
                     if (!checkout.validate()) return false;
+                    $ajaxCall
                     ";
+            case Bolt_Boltpay_Block_Checkout_Boltpay::CHECKOUT_TYPE_PRODUCT_PAGE:
+                return /** @lang JavaScript */ 'if (!boltConfigPDP.validate()) return false;';
             default:
                 return '';
         }
@@ -145,8 +171,6 @@ class Bolt_Boltpay_Helper_Data extends Mage_Core_Helper_Abstract
      */
     public function buildOnSuccessCallback($successCustom, $checkoutType)
     {
-        $saveOrderUrl = $this->getMagentoUrl("boltpay/order/save/checkoutType/$checkoutType");
-
         return ($checkoutType === Bolt_Boltpay_Block_Checkout_Boltpay::CHECKOUT_TYPE_ADMIN) ?
             "function(transaction, callback) {
                 $successCustom
@@ -171,9 +195,14 @@ class Bolt_Boltpay_Helper_Data extends Mage_Core_Helper_Abstract
     }
 
     /**
-     * @param $closeCustom
-     * @param $checkoutType
-     * @return string
+     * Generates javascript on close callback for Bolt modal based on provided checkout type
+     *
+     * @param string $closeCustom javascript code to be prepended to result callback
+     * @param string $checkoutType to create callback for
+     *
+     * @return string on-close callback
+     *
+     * @throws Mage_Core_Model_Store_Exception if unable to get success url
      */
     public function buildOnCloseCallback($closeCustom, $checkoutType)
     {
@@ -195,10 +224,6 @@ class Bolt_Boltpay_Helper_Data extends Mage_Core_Helper_Abstract
                     }
                     ";
                 break;
-            case Bolt_Boltpay_Block_Checkout_Boltpay::CHECKOUT_TYPE_PRODUCT_PAGE:
-                $quoteId = Mage::getSingleton('checkout/session')->getQuoteId();
-                $successUrl = $this->getMagentoUrl(Mage::getStoreConfig('payment/boltpay/successpage'), array('checkoutType' => $checkoutType, 'session_quote_id' => $quoteId));
-                break;
             case Bolt_Boltpay_Block_Checkout_Boltpay::CHECKOUT_TYPE_FIRECHECKOUT:
                 $javascript .=
                     "
@@ -217,7 +242,7 @@ class Bolt_Boltpay_Helper_Data extends Mage_Core_Helper_Abstract
                     "
                     $closeCustom
                     if (window.bolt_transaction_reference) {
-                         window.location = '$successUrl'+'$appendChar'+'bolt_transaction_reference='+window.bolt_transaction_reference;
+                         window.location = '$successUrl'+'$appendChar'+'bolt_transaction_reference='+window.bolt_transaction_reference+'&checkoutType=$checkoutType';
                     }
                     ";
         }

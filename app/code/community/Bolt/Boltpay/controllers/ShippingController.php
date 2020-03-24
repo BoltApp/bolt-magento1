@@ -44,7 +44,7 @@ class Bolt_Boltpay_ShippingController
         $this->_cache = Mage::app()->getCache();
         benchmark('Initializing Shipping and Tax: Finished retrieving cache');
         $this->_shippingAndTaxModel = Mage::getModel("boltpay/shippingAndTax");
-        if (strpos($this->getRequest()->getPathInfo(), 'prefetchEstimate')) {
+        if (strstr($this->getRequest()->getPathInfo(), 'prefetchEstimate')) {
             $this->requestMustBeSigned = false;
         }
         benchmark('Finished Initializing Shipping and Tax');
@@ -126,9 +126,12 @@ class Bolt_Boltpay_ShippingController
                 benchmark('Notified bugsnag of address error');
                 $this->sendResponse(
                     422,
-                    array('status' => 'failure','error' => $addressErrorDetails)
+                    array('status' => 'failure', 'error' => $addressErrorDetails),
+                    call_user_func(function () {
+                        benchmark('Sending shipping address failure to Bolt');
+                        return true;
+                    })
                 );
-                benchmark('Sent shipping address failure to Bolt');
             }
             ////////////////////////////////////////////////////////////////////////////////
 
@@ -139,14 +142,14 @@ class Bolt_Boltpay_ShippingController
             $cachedIdentifier = $this->getEstimateCacheIdentifier($quote, $addressData);
             benchmark('Calculated Cache identifier');
 
-            $estimate = unserialize($this->_cache->load($cachedIdentifier));
+            $responseJSON = $this->_cache->load($cachedIdentifier);
             benchmark('Queried cache for save shipping and tax quote');
 
-            if ($estimate) {
+            if ($responseJSON) {
                 $cacheBoltHeader = 'HIT';
             } else {
-                //Mage::log('Generating address from quote', null, 'shipping_and_tax.log');
-                //Mage::log('Live address: '.var_export($address_data, true), null, 'shipping_and_tax.log');
+                $cacheBoltHeader = 'MISS';
+
                 benchmark('Creating New Estimate');
                 $estimate = $this->_shippingAndTaxModel->getShippingAndTaxEstimate($quote, $requestData);
                 benchmark('Finished Creating New Estimate');
@@ -156,13 +159,10 @@ class Bolt_Boltpay_ShippingController
                     $this->cacheShippingAndTaxEstimate($estimate, $cachedIdentifier);
                     benchmark('Cached shipping and tax estimate for address');
                 }
-                $cacheBoltHeader = 'MISS';
+                $responseJSON = json_encode($estimate, JSON_PRETTY_PRINT);
             }
             ////////////////////////////////////////////////////////////////////////////////////////
 
-            $responseJSON = json_encode($estimate, JSON_PRETTY_PRINT);
-
-            //Mage::log('SHIPPING AND TAX RESPONSE: ' . $response, null, 'shipping_and_tax.log');
             $this->getResponse()
                 ->setHeader('X-Nonce', rand(100000000, 999999999), true)
                 ->setHeader('X-Bolt-Cache-Hit', $cacheBoltHeader);
@@ -265,7 +265,7 @@ class Bolt_Boltpay_ShippingController
     protected function cacheShippingAndTaxEstimate($estimate, $quoteCacheKey, $lifeTime = 600)
     {
         $this->_cache->save(
-            serialize($estimate),
+            json_encode($estimate, JSON_PRETTY_PRINT),
             $quoteCacheKey,
             array('BOLT_QUOTE_PREFETCH'),
             $lifeTime
@@ -363,7 +363,7 @@ class Bolt_Boltpay_ShippingController
         $cacheIdentifier .= '_applied-rules-'.json_encode($rulesReferenceQuote->getAppliedRuleIds());
         ////////////////////////////////////////////////////////////////////////////////////
 
-        return md5($cacheIdentifier);
+        return hash('md5', $cacheIdentifier);
     }
 
     /**

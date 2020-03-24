@@ -170,9 +170,9 @@ class Bolt_Boltpay_Block_Checkout_Boltpay extends Mage_Checkout_Block_Onepage_Re
         $jsonCart = (is_string($cartData)) ? $cartData : json_encode($cartData);
         $jsonHints = json_encode($hintData, JSON_FORCE_OBJECT);
 
-        $callbacks = $this->boltHelper()->getBoltCallbacks($checkoutType, $quote);
+        $callbacks = $this->boltHelper()->getBoltCallbacks($checkoutType, $quote->isVirtual());
         $checkCustom = $this->boltHelper()->getPaymentBoltpayConfig('check', $checkoutType);
-        $onCheckCallback = $this->boltHelper()->buildOnCheckCallback($checkoutType, $quote);
+        $onCheckCallback = $this->boltHelper()->buildOnCheckCallback($checkoutType, $quote->isVirtual());
 
         $hintsTransformFunction = $this->boltHelper()->getExtraConfig('hintsTransform');
         $shouldCloneImmediately = !$this->boltHelper()->getExtraConfig( 'cloneOnClick' );
@@ -195,39 +195,42 @@ class Bolt_Boltpay_Block_Checkout_Boltpay extends Mage_Checkout_Block_Onepage_Re
                 if ($shouldCloneImmediately) break;
             case self::CHECKOUT_TYPE_ADMIN:
             case self::CHECKOUT_TYPE_FIRECHECKOUT:
-                // We postpone calling configure until Bolt button clicked and form is ready
-                // This also allows us to save in cost of unnecessary quote creation
-                $doChecks = 'var do_checks = 0;';
                 $boltConfigureCall = "
                     BoltCheckout.configure(
                         new Promise( 
-                            function (resolve, reject) {
-                                // Store state must be validated prior to open                          
+                            (resolve, reject) => {
+                                resolvePromise = resolve; 
+                                rejectPromise = reject;                          
                             }
                         ),
                         json_hints,
-                        {
-                            check: function() {
-                                $checkCustom
-                                $onCheckCallback
-                                $boltConfigureCall
-                                return true;
-                            }
-                        }
-                    ); 
+                        $callbacks
+                    );
                 ";
-        }
+                break;
+            case self::CHECKOUT_TYPE_PRODUCT_PAGE:
+                $jsonCart = /** @lang JavaScript */ 'boltConfigPDP.getCartData();';
 
-        if (!isset($doChecks)) $doChecks = 'var do_checks = 1;';
+                $boltConfigureCall = <<<JS
+BoltCheckout.configureProductCheckout(
+    get_json_cart(),
+    json_hints,
+    {$callbacks},
+    { checkoutButtonClassName: 'bolt-product-checkout-button' }
+);
+JS;
+                break;
+        }
 
         $boltCheckoutJavascript = "
             var \$hints_transform = $hintsTransformFunction;
             
+            var resolvePromise;
+            var rejectPromise;
             var get_json_cart = function() { return $jsonCart };
             var json_hints = \$hints_transform($jsonHints);
             var quote_id = '{$quote->getId()}';
             var order_completed = false;
-            $doChecks
                 
             window.BoltModal = $boltConfigureCall   
         ";
@@ -315,6 +318,17 @@ class Bolt_Boltpay_Block_Checkout_Boltpay extends Mage_Checkout_Block_Onepage_Re
         // Skip pre-fill for Apple Pay related data.
         if (!(@$prefill['email'] == 'fake@email.com' || @$prefill['phone'] == '1111111111')) {
             $hints['prefill'] = $prefill;
+        }
+
+        if ($checkoutType == self::CHECKOUT_TYPE_PRODUCT_PAGE && $session->isLoggedIn()) {
+            try {
+                $hints['metadata']['encrypted_user_id'] = Mage::getSingleton('core/encryption')->encrypt(
+                    $session->getCustomerId()
+                );
+            } catch (Exception $e) {
+                $this->boltHelper()->notifyException($e);
+                $this->boltHelper()->logException($e);
+            }
         }
 
         return $hints;

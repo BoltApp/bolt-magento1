@@ -22,6 +22,34 @@ $isAllowedConnectJs = $this->isAllowedConnectJsOnCurrentPage();
 <?php if ($isAllowedConnectJs): ?>
     <?php $publishableKey = $this->getPublishableKeyForRoute(); ?>
     <?php if ($publishableKey): ?>
+        <script>
+           /**
+            * Resolve conflict between String.sub methods added by PrototypeJS and Bolt Connect
+            * by merging their functionalities based on arguments provided
+            * If no arguments - call Bolt(ECMAScript 2015) sub, otherwise call Prototype sub
+            * Magento custom options relies heavily on ProtoypeJS and its custom String.sub function so this 
+            * resolves the conflict between this and Bolt, otherwise Product Page Checkout will
+            * throw exceptions
+            */
+            var prototypeSub = String.prototype.sub;
+            var processIntervalCounter = 0;
+            var processIntervalProd = setInterval(
+                function() {
+                    processIntervalCounter++;
+                    if (typeof BoltCheckout !== "undefined") {
+                        clearInterval(processIntervalProd);
+                        var boltSub = String.prototype.sub;
+                        String.prototype.sub = function () {
+                            return (arguments.length == 0 ? boltSub : prototypeSub).apply(this, arguments);
+                        };
+                    }
+
+                    if (processIntervalCounter > 50) {
+                        clearInterval(processIntervalProd);
+                    }
+                }, 50
+            );
+        </script>
     <script src="<?=$this->getJsUrl();?>" id="bolt-connect"
             type="text/javascript" data-shopping-cart-id="Magento"
             data-publishable-key="<?=$publishableKey?>"></script>
