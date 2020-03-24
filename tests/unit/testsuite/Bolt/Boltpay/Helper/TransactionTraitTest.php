@@ -1,7 +1,5 @@
 <?php
 
-require_once('CouponHelper.php');
-
 /**
  * @coversDefaultClass Bolt_Boltpay_Helper_TransactionTrait
  */

@@ -1,6 +1,4 @@
 <?php
-require_once('TestHelper.php');
-require_once('MockingTrait.php');
 
 use PHPUnit_Framework_MockObject_MockObject as MockObject;
 

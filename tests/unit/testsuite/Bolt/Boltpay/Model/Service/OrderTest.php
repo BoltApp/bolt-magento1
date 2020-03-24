@@ -1,8 +1,5 @@
 <?php
 
-require_once('MockingTrait.php');
-require_once('OrderHelper.php');
-
 use PHPUnit_Framework_MockObject_MockObject as MockObject;
 
 /**

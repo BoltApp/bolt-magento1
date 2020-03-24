@@ -1,8 +1,5 @@
 <?php
 
-require_once('MockingTrait.php');
-require_once('TestHelper.php');
-
 /**
  * @coversDefaultClass Bolt_Boltpay_Model_Stats
  */

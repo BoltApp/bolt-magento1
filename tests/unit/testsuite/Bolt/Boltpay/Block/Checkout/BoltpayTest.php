@@ -1,9 +1,5 @@
 <?php
 
-require_once('TestHelper.php');
-require_once('MockingTrait.php');
-require_once('CouponHelper.php');
-
 use Bolt_Boltpay_Block_Checkout_Boltpay as BoltpayCheckoutBlock;
 use Bolt_Boltpay_TestHelper as TestHelper;
 use PHPUnit_Framework_MockObject_MockObject as MockObject;

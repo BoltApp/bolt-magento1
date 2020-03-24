@@ -21,7 +21,29 @@ ini_set('memory_limit', '512M');
 //Include Magento libraries
 require_once 'Mage.php';
 
-require_once 'ProductProvider.php';
+//autoload test helpers and controllers
+spl_autoload_register(
+    function ($name) {
+        $classPathParts = explode('_', $name);
+
+        $classPath = implode(DS, array_merge(array(BP, 'tests', 'unit', 'testsuite'), $classPathParts)) . '.php';
+        if (file_exists($classPath)) {
+            require $classPath;
+            return;
+        }
+
+        foreach (array('local', 'community', 'core') as $codePool) {
+            $controllerPathParts = $classPathParts;
+            array_splice($controllerPathParts, 2, 0, 'controllers');
+            array_unshift($controllerPathParts, BP, 'app', 'code', $codePool);
+            $controllerPath = implode(DS, $controllerPathParts) . '.php';
+            if (file_exists($controllerPath)) {
+                require $controllerPath;
+                return;
+            }
+        }
+    }
+);
 
 //Start the Magento application
 Mage::app('default');

@@ -1,7 +1,5 @@
 <?php
 
-require_once('TestHelper.php');
-
 use GuzzleHttp\Exception\GuzzleException;
 use GuzzleHttp\Psr7\Response;
 use Bolt_Boltpay_TestHelper as TestHelper;

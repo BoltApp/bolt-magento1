@@ -1,7 +1,5 @@
 <?php
 
-require_once('TestHelper.php');
-
 use Bolt_Boltpay_TestHelper as TestHelper;
 
 class Bolt_Boltpay_Helper_DataDogTraitTest extends PHPUnit_Framework_TestCase

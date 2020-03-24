@@ -1,5 +1,4 @@
 <?php
-require_once('TestHelper.php');
 
 class Bolt_Boltpay_Helper_GraphQLTest extends PHPUnit_Framework_TestCase
 {

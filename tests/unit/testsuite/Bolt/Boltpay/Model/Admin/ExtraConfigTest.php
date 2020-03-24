@@ -1,7 +1,5 @@
 <?php
 
-require_once('TestHelper.php');
-
 /**
  * @coversDefaultClass Bolt_Boltpay_Model_Admin_ExtraConfig
  */

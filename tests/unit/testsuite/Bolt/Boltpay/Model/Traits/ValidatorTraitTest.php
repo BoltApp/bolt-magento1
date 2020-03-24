@@ -1,7 +1,5 @@
 <?php
 
-require_once('MockingTrait.php');
-
 /**
  * @coversDefaultClass Bolt_Boltpay_Model_Traits_ValidatorTrait
  */
