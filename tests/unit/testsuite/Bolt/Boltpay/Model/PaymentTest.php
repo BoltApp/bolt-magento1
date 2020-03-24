@@ -751,7 +751,7 @@ class Bolt_Boltpay_Model_PaymentTest extends PHPUnit_Framework_TestCase
         $currentMock->expects($this->never())->method('getInfoInstance');
         $currentMock->expects($this->never())->method('boltHelper');
         $currentMock->expects($this->never())->method('setRefundPaymentInfo');
-        $this->assertEquals($currentMock, $currentMock->refund($payment, 0));
+        $this->assertEquals($currentMock, $currentMock->refund($payment, 12.50));
     }
 
     /**
