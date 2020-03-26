@@ -212,28 +212,28 @@ class Bolt_Boltpay_Adminhtml_Sales_Order_CreateController
      */
     protected function _normalizeOrderData()
     {
-        $requestPost = $this->getRequest()->getPost();
-        if (isset($requestPost['shipping_method']) && $requestPost['shipping_method']) {
-            $this->getRequest()->setPost('order', array(
-                'shipping_method' => $requestPost['shipping_method']
-            ));
+        $request = $this->getRequest();
+
+        if ($request->getPost('shipping_method')) {
+            $orderPostData = $request->getPost('order');
+            $orderPostData['shipping_method'] = $request->getPost('shipping_method');
+            $request->setPost('order', $orderPostData);
         }
 
-        if (@$requestPost['shipping_as_billing']) {
-            $this->getRequest()->setPost('shipping_as_billing', @$requestPost['shipping_as_billing']);
-        } else {
-            $this->getRequest()->setPost('shipping_as_billing', @$requestPost['shipping_same_as_billing']);
-        }
+        $request->setPost('shipping_as_billing',
+            $request->getPost(
+                'shipping_as_billing',
+                $request->getPost('shipping_same_as_billing')
+            )
+        );
 
         // We must assure that Magento knows to recalculate the shipping
-        $this->getRequest()->setPost('collect_shipping_rates', 1);
-
-        unset($requestPost);
+        $request->setPost('collect_shipping_rates', 1);
 
         /**
          * Saving order data
          */
-        if ($data = $this->getRequest()->getPost('order')) {
+        if ($data = $request->getPost('order')) {
             $this->_getOrderCreateModel()->importPostData($data);
         }
 
@@ -246,7 +246,7 @@ class Bolt_Boltpay_Adminhtml_Sales_Order_CreateController
          * Flag for using billing address for shipping
          */
         if (!$this->_getOrderCreateModel()->getQuote()->isVirtual()) {
-            $syncFlag = $this->getRequest()->getPost('shipping_as_billing');
+            $syncFlag = $request->getPost('shipping_as_billing');
             $shippingMethod = $this->_getOrderCreateModel()->getShippingAddress()->getShippingMethod();
             if (is_null($syncFlag)
                 && $this->_getOrderCreateModel()->getShippingAddress()->getSameAsBilling()
@@ -261,7 +261,7 @@ class Bolt_Boltpay_Adminhtml_Sales_Order_CreateController
         /**
          * Change shipping address flag
          */
-        if (!$this->_getOrderCreateModel()->getQuote()->isVirtual() && $this->getRequest()->getPost('reset_shipping')) {
+        if (!$this->_getOrderCreateModel()->getQuote()->isVirtual() && $request->getPost('reset_shipping')) {
             $this->_getOrderCreateModel()->resetShippingMethod(true);
         }
 
@@ -275,12 +275,11 @@ class Bolt_Boltpay_Adminhtml_Sales_Order_CreateController
         Mage::dispatchEvent(
             'bolt_boltpay_admin_normalize_order_data_after',
             array(
-                'request' => $this->getRequest(),
+                'request' => $request,
                 'order_create_model' => $this->_getOrderCreateModel()
             )
         );
     }
-
 
     /**
      * Function to process the order and the quote directly after order creation

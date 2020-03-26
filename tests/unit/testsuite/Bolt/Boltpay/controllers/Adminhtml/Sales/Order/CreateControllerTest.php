@@ -477,15 +477,16 @@ class Bolt_Boltpay_Adminhtml_Sales_Order_CreateControllerTest extends PHPUnit_Fr
     /**
      * Setup method for tests covering {@see Bolt_Boltpay_Adminhtml_Sales_Order_CreateController::_normalizeOrderData}
      *
-     * @param string $shippingMethod to be used for order
+     * @param string $shippingMethod    to be used for order
      * @param int    $shippingAsBilling flag used to indicate if shipping address is same as billing
+     * @param bool   $shouldStubRequest if true, will stub request methods, others will not
      *
      * @return MockObject instance of class tested
      *
      * @throws Mage_Core_Exception if unable to stub singleton
      * @throws Exception if tested class name is not defined
      */
-    private function _normalizeOrderDataSetUp($shippingMethod, $shippingAsBilling)
+    private function _normalizeOrderDataSetUp($shippingMethod, $shippingAsBilling, $shouldStubRequest = true)
     {
         TestHelper::stubSingleton('adminhtml/sales_order_create', $this->salesOrderCreateMock);
         $quoteShippingAddress = $this->getClassPrototype('Mage_Sales_Model_Quote_Address')
@@ -516,17 +517,21 @@ class Bolt_Boltpay_Adminhtml_Sales_Order_CreateControllerTest extends PHPUnit_Fr
             'shipping_method'     => $shippingMethod,
             'shipping_as_billing' => $shippingAsBilling
         );
-        $this->requestMock->expects($this->any())->method('getPost')->willReturnMap(
-            array(
-                array(null, null, $requestPost),
-                array('shipping_as_billing', null, null),
-                array('order', null, $this->orderData),
-                array('reset_shipping', null, 1)
-            )
-        );
 
-        $this->salesOrderCreateMock->expects($this->once())->method('importPostData')->with($this->orderData);
-        $this->salesOrderCreateMock->expects($this->once())->method('resetShippingMethod')->with(true);
+        if ($shouldStubRequest) {
+            $this->requestMock->expects($this->any())->method('getPost')->willReturnMap(
+                array(
+                    array(null, null, $requestPost),
+                    array('shipping_as_billing', null, $shippingAsBilling),
+                    array('order', null, $this->orderData),
+                    array('reset_shipping', null, 1),
+                    array('shipping_method', null, $shippingMethod)
+                )
+            );
+
+            $this->salesOrderCreateMock->expects($this->once())->method('importPostData')->with($this->orderData);
+            $this->salesOrderCreateMock->expects($this->once())->method('resetShippingMethod')->with(true);
+        }
 
         $quoteShippingAddress->expects($this->once())->method('setCollectShippingRates')->with(true)->willReturnSelf();
         $quoteShippingAddress->expects($this->once())->method('collectShippingRates')->willReturnSelf();
@@ -552,17 +557,14 @@ class Bolt_Boltpay_Adminhtml_Sales_Order_CreateControllerTest extends PHPUnit_Fr
         $currentMock = $this->_normalizeOrderDataSetUp($shippingMethod, $shippingAsBilling);
         $this->requestMock->expects($this->any())->method('setPost')
             ->withConsecutive(
-                array('order', array('shipping_method' => $shippingMethod)),
+                array('order', array('shipping_method' => $shippingMethod, 'increment_id' => 123)),
                 array('shipping_as_billing', 1),
                 array('collect_shipping_rates', 1)
             );
 
         TestHelper::callNonPublicFunction(
             $currentMock,
-            '_normalizeOrderData',
-            array(
-                self::BOLT_REFERENCE
-            )
+            '_normalizeOrderData'
         );
     }
 
@@ -588,10 +590,60 @@ class Bolt_Boltpay_Adminhtml_Sales_Order_CreateControllerTest extends PHPUnit_Fr
 
         TestHelper::callNonPublicFunction(
             $currentMock,
-            '_normalizeOrderData',
+            '_normalizeOrderData'
+        );
+    }
+
+    /**
+     * @test
+     * Verifies that if a shipping method is provide in the POST data, the shipping method is added
+     * to the other order data, preserving all other order data fields intact.
+     *
+     * @covers ::_normalizeOrderData
+     */
+    public function _normalizeOrderData_whenShippingMethodPosted_addsMethodToOrderData() {
+
+        # Allow proxying to all original methods or request
+        $this->requestMock = $this->getClassPrototype('Mage_Core_Controller_Request_Http')
+            ->setMethods(null)
+            ->getMock();
+
+        $currentMock = $this->_normalizeOrderDataSetUp(
+            $shippingMethod = null,
+            $shippingAsBilling = true,
+            $shouldStubRequest = false
+        );
+
+        $this->requestMock->setPost('order', $this->orderData);
+
+        $this->requestMock->setPost('bolt_reference', 'AAAA-BBBB-1234');
+        $this->requestMock->setPost('payment', false);
+        $this->requestMock->setPost('shipping_method', 'bolt_shipping');
+
+        # confirm no shipping is set in order array before call
+        $this->assertEquals(
+            array('increment_id' => self::ORDER_INCREMENT_ID),
+            $this->requestMock->getPost('order')
+        );
+
+        Bolt_Boltpay_TestHelper::callNonPublicFunction($currentMock, '_normalizeOrderData');
+
+        $this->assertArraySubset(
             array(
-                self::BOLT_REFERENCE
-            )
+                'bolt_reference' => 'AAAA-BBBB-1234',
+                'payment' => false,
+                'shipping_method' => 'bolt_shipping'
+            ),
+            $this->requestMock->getPost()
+        );
+
+        # confirm shipping was added and increment ID was not erased by call
+        $this->assertArraySubset(
+            array(
+                'shipping_method' => 'bolt_shipping',
+                'increment_id' => self::ORDER_INCREMENT_ID
+            ),
+            $this->requestMock->getPost('order')
         );
     }
 
