@@ -1,7 +1,5 @@
 <?php
 
-require_once('TestHelper.php');
-
 use Bolt_Boltpay_TestHelper as TestHelper;
 use PHPUnit_Framework_MockObject_MockObject as MockObject;
 

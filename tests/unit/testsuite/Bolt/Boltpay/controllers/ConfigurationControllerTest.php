@@ -1,9 +1,5 @@
 <?php
 
-require_once('TestHelper.php');
-require_once('StreamHelper.php');
-require_once('Bolt/Boltpay/controllers/ConfigurationController.php');
-
 use Bolt_Boltpay_TestHelper as TestHelper;
 
 /**

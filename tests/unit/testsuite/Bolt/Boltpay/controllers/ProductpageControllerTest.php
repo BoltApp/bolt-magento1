@@ -1,10 +1,5 @@
 <?php
 
-require_once 'Bolt/Boltpay/controllers/ProductpageController.php';
-require_once 'ProductProvider.php';
-require_once 'MockingTrait.php';
-require_once 'TestHelper.php';
-
 /**
  * @coversDefaultClass Bolt_Boltpay_ProductpageController
  */

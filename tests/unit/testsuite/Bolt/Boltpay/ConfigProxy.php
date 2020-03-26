@@ -1,7 +1,5 @@
 <?php
 
-require_once('TestHelper.php');
-
 /**
  * Used by {@see Bolt_Boltpay_TestHelper to replace Mage::_config}
  */

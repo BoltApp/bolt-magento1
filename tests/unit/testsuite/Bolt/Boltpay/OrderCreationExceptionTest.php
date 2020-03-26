@@ -1,5 +1,4 @@
 <?php
-require_once('TestHelper.php');
 
 use Bolt_Boltpay_Controller_Interface as RESPONSE_CODE;
 

@@ -1,6 +1,4 @@
 <?php
-require_once('TestHelper.php');
-require_once('StreamHelper.php');
 
 /**
  * @coversDefaultClass Bolt_Boltpay_Helper_BugsnagTrait

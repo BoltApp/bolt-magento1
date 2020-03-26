@@ -1,10 +1,5 @@
 <?php
 
-require_once 'Bolt/Boltpay/controllers/Adminhtml/Sales/Order/CreateController.php';
-
-require_once('MockingTrait.php');
-require_once('TestHelper.php');
-
 use Bolt_Boltpay_TestHelper as TestHelper;
 use PHPUnit_Framework_MockObject_MockObject as MockObject;
 

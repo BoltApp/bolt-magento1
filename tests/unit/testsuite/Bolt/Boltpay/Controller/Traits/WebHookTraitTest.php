@@ -1,8 +1,5 @@
 <?php
 
-require_once('TestHelper.php');
-require_once('StreamHelper.php');
-
 use Bolt_Boltpay_TestHelper as TestHelper;
 use GuzzleHttp\Exception\GuzzleException;
 

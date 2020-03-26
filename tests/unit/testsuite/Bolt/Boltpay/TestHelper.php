@@ -1,7 +1,5 @@
 <?php
 
-require_once('ConfigProxy.php');
-
 class Bolt_Boltpay_TestHelper
 {
 

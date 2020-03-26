@@ -1,9 +1,5 @@
 <?php
 
-require_once 'Bolt/Boltpay/controllers/FeatureswitchesController.php';
-require_once 'MockingTrait.php';
-require_once 'TestHelper.php';
-
 use Bolt_Boltpay_TestHelper as TestHelper;
 
 /**

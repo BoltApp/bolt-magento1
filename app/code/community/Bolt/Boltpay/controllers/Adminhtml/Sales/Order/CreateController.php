@@ -15,7 +15,9 @@
  * @license    http://opensource.org/licenses/osl-3.0.php  Open Software License (OSL 3.0)
  */
 
+// @codeCoverageIgnoreStart
 require_once(Mage::getModuleDir('controllers','Mage_Adminhtml').DS.'Sales'.DS.'Order'.DS.'CreateController.php');
+// @codeCoverageIgnoreEnd
 
 /**
  * Adminhtml sales orders creation process controller
