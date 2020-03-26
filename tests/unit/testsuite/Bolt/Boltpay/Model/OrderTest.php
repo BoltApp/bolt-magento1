@@ -2468,14 +2468,7 @@ class Bolt_Boltpay_Model_OrderTest extends PHPUnit_Framework_TestCase
         $currentMock->method('getQuoteFromOrder')->with($this->orderMock)->willReturn($this->immutableQuoteMock);
         $currentMock->method('getParentQuoteFromOrder')->with($this->orderMock)->willReturn($this->parentQuoteMock);
         $currentMock->method('boltHelper')->willReturn($this->boltHelperMock);
-
-        $this->boltHelperMock
-            ->expects($this->once())->method('getExtraConfig')
-            ->with('allowedReceptionStatuses')
-            ->willReturn(array(Bolt_Boltpay_Model_Payment::TRANSACTION_PRE_AUTH_PENDING));
-
-        $this->orderMock->expects($this->once())->method('getStatus')
-            ->willReturn(Bolt_Boltpay_Model_Payment::TRANSACTION_PRE_AUTH_PENDING);
+        
         $this->orderMock->expects($this->once())->method('getCreatedAt')->willReturn(null);
         $this->orderMock->expects($this->once())->method('setCreatedAt')->with($this->anything())->willReturnSelf();
         $this->orderMock->expects($this->once())->method('save')->willReturnSelf();
@@ -2490,91 +2483,6 @@ class Bolt_Boltpay_Model_OrderTest extends PHPUnit_Framework_TestCase
 
         $this->paymentMock->expects($this->once())->method('setAdditionalInformation')->willReturnSelf();
         $this->paymentMock->expects($this->once())->method('save')->willReturnSelf();
-        $currentMock->receiveOrder($this->orderMock, $payload);
-    }
-
-    /**
-     * @test
-     * that receiveOrder activates received order and sets Bolt user id with irregular statuses if
-     * that status is configured to be accepted
-     *
-     * @covers ::receiveOrder
-     * @covers ::activateOrder
-     *
-     * @throws Mage_Core_Exception from method tested if there is a problem retrieving the bolt transaction reference from the payload
-     * @throws Exception if test class name is not defined
-     */
-    public function receiveOrder_withAcceptedStatus_activatesOrderAndSetsBoltUserId()
-    {
-        $payload = new stdClass();
-        $payload->notification_type = Bolt_Boltpay_Model_Payment::HOOK_TYPE_PENDING;
-
-        /** @var MockObject|Bolt_Boltpay_Model_Order $currentMock */
-        $currentMock = $this->getTestClassPrototype()
-            ->setMethods(array('getQuoteFromOrder', 'getParentQuoteFromOrder', 'sendOrderEmail','boltHelper'))
-            ->getMock();
-        $currentMock->method('getQuoteFromOrder')->with($this->orderMock)->willReturn($this->immutableQuoteMock);
-        $currentMock->method('getParentQuoteFromOrder')->with($this->orderMock)->willReturn($this->parentQuoteMock);
-        $currentMock->method('boltHelper')->willReturn($this->boltHelperMock);
-
-        $this->boltHelperMock
-            ->expects($this->once())->method('getExtraConfig')
-            ->with('allowedReceptionStatuses')
-            ->willReturn(array(Bolt_Boltpay_Model_Payment::TRANSACTION_PRE_AUTH_PENDING,'status_configured_as_ok'));
-
-        $this->orderMock->expects($this->once())->method('getStatus')
-            ->willReturn('status_configured_as_ok');
-        $this->orderMock->expects($this->once())->method('getCreatedAt')->willReturn(null);
-        $this->orderMock->expects($this->once())->method('setCreatedAt')->with($this->anything())->willReturnSelf();
-        $this->orderMock->expects($this->once())->method('save')->willReturnSelf();
-
-        $this->parentQuoteMock->expects($this->once())->method('setIsActive')->with(false)->willReturnSelf();
-        $this->parentQuoteMock->expects($this->once())->method('save')->willReturnSelf();
-
-        $this->immutableQuoteMock->expects($this->once())->method('setTotalsCollectedFlag')->with(true)
-            ->willReturnSelf();
-        $this->immutableQuoteMock->expects($this->once())->method('prepareRecurringPaymentProfiles');
-        $this->immutableQuoteMock->expects($this->atLeastOnce())->method('setInventoryProcessed')->with(true);
-
-        $this->paymentMock->expects($this->once())->method('setAdditionalInformation')->willReturnSelf();
-        $this->paymentMock->expects($this->once())->method('save')->willReturnSelf();
-        $currentMock->receiveOrder($this->orderMock, $payload);
-    }
-
-    /**
-     * @test
-     * that receiveOrder throws an exception and does not activate an order for an irregular order status that
-     * is not configured to be accepted
-     *
-     * @covers ::receiveOrder
-     *
-     * @expectedException Bolt_Boltpay_InvalidTransitionException
-     * @expectedExceptionMessage Order has an unexpected status at order reception.  An order status of [unexpected_status] was found
-     *
-     * @throws Mage_Core_Exception from method tested if there is a problem retrieving the bolt transaction reference from the payload
-     * @throws Exception if test class name is not defined
-     */
-    public function receiveOrder_withUnexpectedStatus_throwExceptionWithoutActivatingOrder()
-    {
-        $payload = new stdClass();
-        $payload->notification_type = Bolt_Boltpay_Model_Payment::HOOK_TYPE_PENDING;
-
-        /** @var MockObject|Bolt_Boltpay_Model_Order $currentMock */
-        $currentMock = $this->getTestClassPrototype()
-            ->setMethods(array('boltHelper', 'activateOrder'))
-            ->getMock();
-        $currentMock->method('boltHelper')->willReturn($this->boltHelperMock);
-
-        $this->boltHelperMock
-            ->expects($this->once())->method('getExtraConfig')
-            ->with('allowedReceptionStatuses')
-            ->willReturn(array(Bolt_Boltpay_Model_Payment::TRANSACTION_PRE_AUTH_PENDING,'status_configured_as_ok'));
-
-        $this->orderMock->expects($this->once())->method('getStatus')
-            ->willReturn('unexpected_status');
-
-        $currentMock->expects($this->never())->method('activateOrder');
-
         $currentMock->receiveOrder($this->orderMock, $payload);
     }
 

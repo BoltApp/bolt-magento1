@@ -83,12 +83,24 @@ class Bolt_Boltpay_OrderHelper
      * @param int $productId to be used for order creation
      * @param int $qty of the product provided
      * @param string $paymentMethod code used for order creation
+     * @param bool $overrideObserverStates determines if this method should override what the observer sets for
+     *                                     {@see Bolt_Boltpay_Helper_Data::$boltOrderWasJustPlaced} and
+     *                                     {@see Bolt_Boltpay_Helper_Data::$canChangePreAuthStatus}
+     * @param bool $orderWasJustPlaced determines if Bolt order should be considered as just placed for safe-guarding
+     * @param bool $canChangePreAuthStatus sets if Bolt order's pre-auth status should be safe-guarded
      *
      * @return Mage_Sales_Model_Order dummy order
      *
      * @throws Mage_Core_Exception if provided payment method is not available
      */
-    public static function createDummyOrder($productId, $qty = 2, $paymentMethod = 'boltpay')
+    public static function createDummyOrder(
+        $productId,
+        $qty = 2,
+        $paymentMethod = 'boltpay',
+        $overrideObserverStates = true,
+        $orderWasJustPlaced = false,
+        $canChangePreAuthStatus = true
+    )
     {
         $testHelper = new Bolt_Boltpay_TestHelper();
         $testHelper->addTestBillingAddress();
@@ -111,15 +123,18 @@ class Bolt_Boltpay_OrderHelper
         $quote->getPayment()->importData(array('method' => $paymentMethod));
         $service = Mage::getModel('sales/service_quote', $quote);
 
+        $previousHookValue = Bolt_Boltpay_Helper_Data::$fromHooks;
         if ($paymentMethod == Bolt_Boltpay_Model_Payment::METHOD_CODE) {
-            $previousHookValue = Bolt_Boltpay_Helper_Data::$fromHooks;
             //temporarily set flag to true in order to pass order validation
             Bolt_Boltpay_Helper_Data::$fromHooks = true;
         }
-
         $service->submitAll();
         if ($paymentMethod == Bolt_Boltpay_Model_Payment::METHOD_CODE) {
             Bolt_Boltpay_Helper_Data::$fromHooks = $previousHookValue;
+            if ($overrideObserverStates) {
+                Bolt_Boltpay_Helper_Data::$boltOrderWasJustPlaced = $orderWasJustPlaced;
+                Bolt_Boltpay_Helper_Data::$canChangePreAuthStatus = $canChangePreAuthStatus;
+            }
         }
 
         /** @var Mage_Sales_Model_Order $order */

@@ -71,11 +71,6 @@ class Bolt_Boltpay_ApiController extends Mage_Core_Controller_Front_Action imple
                 ///////////////////////////////////////
                 Mage::app()->setCurrentStore($order->getStore());
 
-                if (empty($transaction) && $hookType !== 'pending') {
-                    // further transaction details are required from the Bolt API to process hook
-                    $transaction = $this->boltHelper()->fetchTransaction($reference);
-                }
-
                 $orderPayment = $order->getPayment();
                 $paymentMethod = strtolower($orderPayment->getMethod());
                 if ($paymentMethod !== Bolt_Boltpay_Model_Payment::METHOD_CODE) {
@@ -84,6 +79,12 @@ class Bolt_Boltpay_ApiController extends Mage_Core_Controller_Front_Action imple
                         "Order #{$order->getIncrementId()} is not a Bolt order.  Order type: $paymentMethod"
                     );
                 }
+
+                if (empty($transaction) && $hookType !== 'pending') {
+                    // further transaction details are required from the Bolt API to process hook
+                    $transaction = $this->boltHelper()->fetchTransaction($reference);
+                }
+
                 if (!$orderPayment->getAdditionalInformation('bolt_reference')) {
                     if ($hookType === Bolt_Boltpay_Model_Payment::HOOK_TYPE_REJECTED_IRREVERSIBLE) {
                         // This is a special case of failed payment hook where Bolt immediately

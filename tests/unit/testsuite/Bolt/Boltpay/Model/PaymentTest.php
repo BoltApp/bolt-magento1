@@ -1135,7 +1135,7 @@ class Bolt_Boltpay_Model_PaymentTest extends PHPUnit_Framework_TestCase
      */
     private function handleTransactionUpdateSetUp($product, $orderProductQty = 1)
     {
-
+        Bolt_Boltpay_Helper_Data::$fromHooks = true;
         $initialQty = (int)$product->getQty();
 
         // Assert initial product store stock is greater than what we will order
@@ -1875,7 +1875,7 @@ class Bolt_Boltpay_Model_PaymentTest extends PHPUnit_Framework_TestCase
         );
         $this->assertEquals($order->getGrandTotal(), $order->getTotalInvoiced());
         $this->assertEquals(Mage_Sales_Model_Order::STATE_PROCESSING, $order->getState());
-        $this->assertEquals('pending_bolt', $order->getStatus());
+        $this->assertEquals(Mage_Sales_Model_Order::STATE_PROCESSING, $order->getStatus());
         $this->assertEquals(1, $order->getInvoiceCollection()->getSize());
         Bolt_Boltpay_OrderHelper::deleteDummyOrder($order);
     }
@@ -3537,6 +3537,7 @@ class Bolt_Boltpay_Model_PaymentTest extends PHPUnit_Framework_TestCase
      */
     private function createDummyOrder($quoteData = array())
     {
+        Bolt_Boltpay_Helper_Data::$fromHooks = true;
         $cart = Mage::getModel('checkout/cart', array('quote' => Mage::getModel('sales/quote')));
         $cart->addProduct(self::$productId, 1);
         $address = array(
@@ -3560,9 +3561,9 @@ class Bolt_Boltpay_Model_PaymentTest extends PHPUnit_Framework_TestCase
         $quote->getPayment()->importData(array('method' => Bolt_Boltpay_Model_Payment::METHOD_CODE));
         $quote->save();
         $service = Mage::getModel('sales/service_quote', $quote);
-        Bolt_Boltpay_Helper_Data::$fromHooks = true;
         $service->submitAll();
-        Bolt_Boltpay_Helper_Data::$fromHooks = false;
+        Bolt_Boltpay_Helper_Data::$boltOrderWasJustPlaced = false;
+        Bolt_Boltpay_Helper_Data::$canChangePreAuthStatus = true;
         /** @var Mage_Sales_Model_Order $order */
         $order = Mage::getModel('sales/order')->load($service->getOrder()->getId());
         return $order;

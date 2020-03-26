@@ -125,6 +125,15 @@
           </bolt_boltpay_filter_preauth_orders>
         </observers>
       </sales_order_grid_collection_load_before>
+      <sales_order_place_after>
+        <observers>
+          <bolt_boltpay_mark_order_as_placed>
+            <type>singleton</type>
+            <class>Bolt_Boltpay_Model_Observer</class>
+            <method>markThatBoltOrderWasJustPlaced</method>
+          </bolt_boltpay_mark_order_as_placed>
+        </observers>
+      </sales_order_place_after>
       <sales_order_save_before>
         <observers>
           <bolt_boltpay_safeguard_preauth_status>
