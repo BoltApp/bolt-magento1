@@ -344,6 +344,16 @@ class Bolt_Boltpay_Model_Payment extends Mage_Payment_Model_Method_Abstract
     public function refund(Varien_Object $payment, $amount)
     {
         try {
+            if ($amount < 0.01) {
+                ////////////////////////////////////////////////////////////////////////////////
+                // In certain circumstances, an amount's value of zero can be sent, for
+                // example if the complete invoice has already been refunded using
+                // store credit. This will then result in an exception by the Bolt API.  In
+                // these instances, there is no need to call the Bolt API, so we simply return
+                ////////////////////////////////////////////////////////////////////////////////
+                return $this;
+            }
+
             $boltTransactionWasRefundedByWebhook = $payment->getAdditionalInformation('bolt_transaction_was_refunded_by_webhook');
             if(!empty($boltTransactionWasRefundedByWebhook)){
                 return $this;

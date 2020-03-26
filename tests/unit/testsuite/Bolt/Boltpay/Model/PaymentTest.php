@@ -34,6 +34,16 @@ class Bolt_Boltpay_Model_PaymentTest extends PHPUnit_Framework_TestCase
     private $boltHelperMock;
 
     /**
+     * @var MockObject|Bolt_Boltpay_Model_Payment mocked instance of Bolt payment model
+     */
+    private $paymentMock;
+
+    /**
+     * @var MockObject|Mage_Sales_Model_Order mocked instance of order model
+     */
+    private $orderMock;
+
+    /**
      * Setup test dependencies, called before each test
      *
      * @throws Exception if test class name is not defined
@@ -46,6 +56,10 @@ class Bolt_Boltpay_Model_PaymentTest extends PHPUnit_Framework_TestCase
         $this->boltHelperMock = $this->getClassPrototype('Bolt_Boltpay_Helper_Data')
             ->setMethods(array('transmit', 'canUseBolt', 'notifyException', 'logWarning', 'fetchTransaction'))
             ->getMock();
+        $this->paymentMock = $this->getTestClassPrototype()->setMethods(array('getAdditionalInformation', 'getOrder'))
+            ->getMock();
+        $this->orderMock = $this->getClassPrototype('Mage_Sales_Model_Order')
+            ->setMethods(array())->getMock();
         $this->currentMock->method('boltHelper')->willReturn($this->boltHelperMock);
     }
 
@@ -733,7 +747,7 @@ class Bolt_Boltpay_Model_PaymentTest extends PHPUnit_Framework_TestCase
         $currentMock->expects($this->never())->method('getInfoInstance');
         $currentMock->expects($this->never())->method('boltHelper');
         $currentMock->expects($this->never())->method('setRefundPaymentInfo');
-        $this->assertEquals($currentMock, $currentMock->refund($payment, 0));
+        $this->assertEquals($currentMock, $currentMock->refund($payment, 12.50));
     }
 
     /**
@@ -746,6 +760,7 @@ class Bolt_Boltpay_Model_PaymentTest extends PHPUnit_Framework_TestCase
      * @expectedExceptionMessage Waiting for a transaction update from Bolt. Please retry after 60 seconds.
      *
      * @throws Exception from tested method
+     * @throws \GuzzleHttp\Exception\GuzzleException from tested method
      */
     public function refund_withoutTransactionId_throwsException()
     {
@@ -760,7 +775,7 @@ class Bolt_Boltpay_Model_PaymentTest extends PHPUnit_Framework_TestCase
             )
         );
         $this->currentMock->expects($this->once())->method('getInfoInstance')->willReturn($payment);
-        $this->currentMock->refund($payment, 0);
+        $this->currentMock->refund($payment, 100);
     }
 
     /**
@@ -3460,6 +3475,66 @@ class Bolt_Boltpay_Model_PaymentTest extends PHPUnit_Framework_TestCase
                 Mage::getModel('payment/info', array('order' => $orderMock)),
                 Bolt_Boltpay_Model_Payment::DECISION_REJECT
             )
+        );
+    }
+
+    /**
+     * Setup method for tests covering {@see Bolt_Boltpay_Model_Payment::refund}
+     *
+     * @return MockObject|Bolt_Boltpay_Model_Payment
+     * @throws Exception if test class name is not defined
+     */
+    private function refundSetUp()
+    {
+        /** @var MockObject|Bolt_Boltpay_Model_Payment $currentMock */
+        $currentMock = $this->getTestClassPrototype()->setMethods(array('boltHelper', 'getInfoInstance'))->getMock();
+        $currentMock->method('boltHelper')->willReturn($this->boltHelperMock);
+        $currentMock->method('getInfoInstance')->willReturn($this->paymentMock);
+        $this->paymentMock->method('getAdditionalInformation')->willReturnMap(
+            array(
+                array('bolt_merchant_transaction_id', self::BOLT_MERCHANT_TRANSACTION_ID)
+            )
+        );
+        $this->paymentMock->method('getOrder')->willReturn($this->orderMock);
+        return $currentMock;
+    }
+
+    /**
+     * @test
+     * that refund avoids calling Bolt refund API for amounts lower than 1 cent
+     *
+     * @covers ::refund
+     *
+     * @dataProvider refund_withAmountsLessThanOneCent_refundsWithoutCallingTheBoltApiProvider
+     *
+     * @param float $amount to be refunded
+     *
+     * @throws Exception from setup if test class name is not defined
+     */
+    public function refund_withAmountsLessThanOneCent_refundsWithoutCallingTheBoltApi($amount)
+    {
+        $currentMock = $this->refundSetUp();
+
+        $this->boltHelperMock->expects($this->never())->method('transmit');
+
+        $this->assertSame($currentMock, $currentMock->refund($this->paymentMock, $amount));
+    }
+
+    /**
+     * Data provider for {@see refund_withAmountsLessThanOneCent_refundsWithoutCallingTheBoltApi}
+     *
+     * @return array containing zero or negative values for which to avoid calling Bolt API refund
+     */
+    public function refund_withAmountsLessThanOneCent_refundsWithoutCallingTheBoltApiProvider()
+    {
+        return array(
+            array('amount' => 0),
+            array('amount' => null),
+            array('amount' => 0.001),
+            array('amount' => 0.009),
+            array('amount' => -1),
+            array('amount' => PHP_INT_MIN),
+            array('amount' => PHP_FLOAT_MIN),
         );
     }
 
