@@ -2081,73 +2081,80 @@ PROMISE;
 		);
 	}
 
-	/**
-	 * @test
-	 * that cloneQuote returns a clone of the provided quote
-	 *
-	 * @covers ::cloneQuote
-	 *
-	 * @dataProvider checkoutTypesProvider
-	 *
-	 * @param string $checkoutType currently in use
-	 *
-	 * @throws Exception if unable to clone quote
-	 */
-	public function cloneQuote_withProvidedQuoteInVariousCheckoutTypes_returnsClonedQuote($checkoutType)
-	{
-		/** @var Mage_Catalog_Model_Product $product */
-		$product = Mage::getModel('catalog/product')->load(self::$productId);
-		/** @var Mage_Sales_Model_Quote $quote */
-		$quote = Mage::getModel('sales/quote', array('test_field' => 'test_value'));
-		$quote->addProduct($product, 5);
-		$quote->getBillingAddress()->addData(self::$defaultAddressData);
-		$quote->getShippingAddress()->setShippingMethod('flatrate_flatrate')
-			->addData(self::$defaultAddressData);
+    /**
+     * @test
+     * that cloneQuote returns a clone of the provided quote
+     *
+     * @covers ::cloneQuote
+     *
+     * @dataProvider checkoutTypesProvider
+     *
+     * @param string $checkoutType currently in use
+     *
+     * @throws Exception if unable to clone quote
+     */
+    public function cloneQuote_withProvidedQuoteInVariousCheckoutTypes_returnsClonedQuote($checkoutType)
+    {
+        /** @var Mage_Catalog_Model_Product $product */
+        $product = Mage::getModel('catalog/product')->load(self::$productId);
+        /** @var Mage_Sales_Model_Quote $quote */
+        $quote = Mage::getModel('sales/quote', array('test_field' => 'test_value'));
+        $quote->addProduct($product, 5);
+        $quote->getBillingAddress()->addData(self::$defaultAddressData);
+        $quote->getShippingAddress()->setShippingMethod('flatrate_flatrate')
+            ->addData(self::$defaultAddressData);
+        $quote->collectTotals();
 
-		$clonedQuote = $this->currentMock->cloneQuote($quote, $checkoutType);
+        $clonedQuote = $this->currentMock->cloneQuote($quote, $checkoutType);
 
-		$this->assertNotEquals($quote->getId(), $clonedQuote->getId());
-		/** @var Mage_Sales_Model_Quote_Item $quoteItem */
-		$quoteItem = $quote->getItemByProduct($product);
-		$clonedQuoteItem = $clonedQuote->getItemByProduct($product);
-		$this->assertTrue($quoteItem->compare($clonedQuoteItem));
-		$this->assertEquals($quoteItem->getQty(), $clonedQuoteItem->getQty());
+        $this->assertNotEquals($quote->getId(), $clonedQuote->getId());
+        /** @var Mage_Sales_Model_Quote_Item $quoteItem */
+        $quoteItem = $quote->getItemByProduct($product);
+        $clonedQuoteItem = $clonedQuote->getItemByProduct($product);
+        $this->assertTrue($quoteItem->compare($clonedQuoteItem));
+        $this->assertEquals($quoteItem->getQty(), $clonedQuoteItem->getQty());
+        foreach (array('SubtotalWithDiscount', 'Subtotal', 'GrandTotal', 'CurrencyCode') as $total) {
+            $getterMethodName = 'get' . $total;
+            $baseGetterMethodName = 'getBase' . $total;
+            $this->assertEquals($quote->$getterMethodName(), $clonedQuote->$getterMethodName());
+            $this->assertEquals($quote->$baseGetterMethodName(), $clonedQuote->$baseGetterMethodName());
+        }
 
-		$this->assertEquals($quote->getReservedOrderId(), $clonedQuote->getReservedOrderId());
-		$this->assertEquals($quote->getStoreId(), $clonedQuote->getStoreId());
-		$this->assertEquals($quote->getId(), $clonedQuote->getParentQuoteId());
-		$this->assertEquals(
-			$quote->getReservedOrderId(),
-			Mage::getSingleton('core/session')->getReservedOrderId()
-		);
+        $this->assertEquals($quote->getReservedOrderId(), $clonedQuote->getReservedOrderId());
+        $this->assertEquals($quote->getStoreId(), $clonedQuote->getStoreId());
+        $this->assertEquals($quote->getId(), $clonedQuote->getParentQuoteId());
+        $this->assertEquals(
+            $quote->getReservedOrderId(),
+            Mage::getSingleton('core/session')->getReservedOrderId()
+        );
 
-		$clonedQuoteShippingAddress = $clonedQuote->getShippingAddress();
-		$clonedQuoteBillingAddress = $clonedQuote->getBillingAddress();
-		if ($checkoutType != Bolt_Boltpay_Block_Checkout_Boltpay::CHECKOUT_TYPE_MULTI_PAGE) {
-			$this->assertArraySubset(self::$defaultAddressData, $clonedQuoteShippingAddress->getData());
-			$this->assertArraySubset(self::$defaultAddressData, $clonedQuoteBillingAddress->getData());
-			$this->assertEquals('flatrate_flatrate', $clonedQuoteShippingAddress->getShippingMethod());
-		} else {
-			$this->assertNull($clonedQuoteShippingAddress->getShippingMethod());
-		}
+        $clonedQuoteShippingAddress = $clonedQuote->getShippingAddress();
+        $clonedQuoteBillingAddress = $clonedQuote->getBillingAddress();
+        if ($checkoutType != Bolt_Boltpay_Block_Checkout_Boltpay::CHECKOUT_TYPE_MULTI_PAGE) {
+            $this->assertArraySubset(self::$defaultAddressData, $clonedQuoteShippingAddress->getData());
+            $this->assertArraySubset(self::$defaultAddressData, $clonedQuoteBillingAddress->getData());
+            $this->assertEquals('flatrate_flatrate', $clonedQuoteShippingAddress->getShippingMethod());
+        } else {
+            $this->assertNull($clonedQuoteShippingAddress->getShippingMethod());
+        }
 
-		if ($checkoutType == Bolt_Boltpay_Block_Checkout_Boltpay::CHECKOUT_TYPE_ADMIN) {
-			//verify totals collected
-			$this->assertAttributeNotEmpty('_totalAmounts', $clonedQuoteShippingAddress);
-			//verify shipping rates collected
-			$this->assertFalse($clonedQuoteShippingAddress->getCollectShippingRates());
-		} else {
-			//verify totals not collected
-			$this->assertAttributeEmpty('_totalAmounts', $clonedQuoteShippingAddress);
-			//verify shipping rates not collected
-			$this->assertNull($clonedQuoteShippingAddress->getCollectShippingRates());
-		}
+        if ($checkoutType == Bolt_Boltpay_Block_Checkout_Boltpay::CHECKOUT_TYPE_ADMIN) {
+            //verify totals collected
+            $this->assertAttributeNotEmpty('_totalAmounts', $clonedQuoteShippingAddress);
+            //verify shipping rates collected
+            $this->assertFalse($clonedQuoteShippingAddress->getCollectShippingRates());
+        } else {
+            //verify totals not collected
+            $this->assertAttributeEmpty('_totalAmounts', $clonedQuoteShippingAddress);
+            //verify shipping rates not collected
+            $this->assertNull($clonedQuoteShippingAddress->getCollectShippingRates());
+        }
 
-		$this->assertFalse($clonedQuote->getIsActive());
+        $this->assertFalse($clonedQuote->getIsActive());
 
-		$quote->delete();
-		$clonedQuote->delete();
-	}
+        $quote->delete();
+        $clonedQuote->delete();
+    }
 
 	/**
 	 * @test

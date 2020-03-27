@@ -855,6 +855,11 @@ PROMISE;
                 ->save();
         }
 
+        $clonedQuote->getBillingAddress()->setBaseSubtotal($sourceQuote->getBillingAddress()->getBaseSubtotal());
+        $clonedQuote->getShippingAddress()->setBaseSubtotal($sourceQuote->getShippingAddress()->getBaseSubtotal());
+        $clonedQuote->getBillingAddress()->setBaseDiscountAmount($sourceQuote->getBillingAddress()->getBaseDiscountAmount());
+        $clonedQuote->getShippingAddress()->setBaseDiscountAmount($sourceQuote->getShippingAddress()->getBaseDiscountAmount());
+
         /////////////////////////////////////////////////////////////////////
         /// Exclude fields that we are not interested in copying that will
         /// cause the cloned quote to be misinterpreted as the parent quote.
