@@ -855,35 +855,18 @@ PROMISE;
                 ->save();
         }
 
-        //////////////////////////////////////////////////////////////////////////////////////////////////
-        // Attempting to reset some of the values already set by merge affects the totals passed to
-        // Bolt in such a way that the grand total becomes 0.  Since we do not need to reset these values
-        // we ignore them all.
-        //////////////////////////////////////////////////////////////////////////////////////////////////
-        $fieldsSetByMerge = array(
-            'coupon_code',
-            'subtotal',
-            'base_subtotal',
-            'subtotal_with_discount',
-            'base_subtotal_with_discount',
-            'grand_total',
-            'base_grand_total',
-            'auctaneapi_discounts',
-            'applied_rule_ids',
-            'items_count',
-            'items_qty',
-            'virtual_items_qty',
+        $clonedQuote->getBillingAddress()->setBaseSubtotal($sourceQuote->getBillingAddress()->getBaseSubtotal());
+        $clonedQuote->getShippingAddress()->setBaseSubtotal($sourceQuote->getShippingAddress()->getBaseSubtotal());
+        $clonedQuote->getBillingAddress()->setBaseDiscountAmount($sourceQuote->getBillingAddress()->getBaseDiscountAmount());
+        $clonedQuote->getShippingAddress()->setBaseDiscountAmount($sourceQuote->getShippingAddress()->getBaseDiscountAmount());
+
+        /////////////////////////////////////////////////////////////////////
+        /// Exclude fields that we are not interested in copying that will
+        /// cause the cloned quote to be misinterpreted as the parent quote.
+        /////////////////////////////////////////////////////////////////////
+        $fieldsToIgnore = array(
             'trigger_recollect',
-            'can_apply_msrp',
             'totals_collected_flag',
-            'global_currency_code',
-            'base_currency_code',
-            'store_currency_code',
-            'quote_currency_code',
-            'store_to_base_rate',
-            'store_to_quote_rate',
-            'base_to_global_rate',
-            'base_to_quote_rate',
             'is_changed',
             'created_at',
             'updated_at',
@@ -892,7 +875,7 @@ PROMISE;
 
         // Add all previously saved data that may have been added by other plugins
         foreach ($sourceQuote->getData() as $key => $value) {
-            if (!in_array($key, $fieldsSetByMerge)) {
+            if (!in_array($key, $fieldsToIgnore)) {
                 $clonedQuote->setData($key, $value);
             }
         }
