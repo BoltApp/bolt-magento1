@@ -1810,6 +1810,10 @@ SCSS;
                         $this->assertContains('var order_completed = false;', $js);
                         $windowBoltModal = explode('window.BoltModal = ', $js)[1];
                         $this->assertContains(
+                            "varcontainers=document.getElementsByClassName('bolt-checkout-button-product');if(containers.length>0){console.log('boltbuttoncontainerfound');",
+                            preg_replace('/\s*/', '', $windowBoltModal)
+                        );
+                        $this->assertContains(
                             "BoltCheckout.configureProductCheckout(get_json_cart(),json_hints,/*BOLT-CALLBACKS*/,{checkoutButtonClassName:'bolt-product-checkout-button'});",
                             preg_replace('/\s*/', '', $windowBoltModal)
                         );
