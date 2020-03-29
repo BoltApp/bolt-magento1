@@ -62,7 +62,7 @@ jobs:
             tag: $NEWTAGNAME
   unit-php55-mage18:
     docker:
-    - image: boltdev/php5.5-circle:0.0.2
+    - image: boltdev/php5.5-circle:0.0.4
     - image: circleci/mysql:5.7
     steps:
     - checkout
@@ -76,7 +76,7 @@ jobs:
         - notify-buildcop
   unit-php55-mage19:
     docker:
-    - image: boltdev/php5.5-circle:0.0.2
+    - image: boltdev/php5.5-circle:0.0.4
     - image: circleci/mysql:5.7
     steps:
     - checkout
@@ -84,51 +84,35 @@ jobs:
         steps:
         - run:
             name: PHP 5.5 Magento 1.9
-            command: MAGENTO_VERSION=magento-mirror-1.9.3.6 PHPUNIT_PHAR=tests/unit/phpunit-4.8.36.phar TEST_ENV=php55-mage18 tests/scripts/setup_and_test.sh nocov
+            command: MAGENTO_VERSION=magento-mirror-1.9.3.6 PHPUNIT_PHAR=tests/unit/phpunit-4.8.36.phar TEST_ENV=php55-mage19 tests/scripts/setup_and_test.sh nocov
         - store_artifacts:
             path: ./artifacts
         - notify-buildcop
   unit-php56-mage18:
     docker:
-    - image: bylexus/apache-php56
+    - image: boltdev/php5.6-circle:0.0.1
     - image: circleci/mysql:5.7
     steps:
-    - run:
-        command: |
-          apt-get update
-          apt-get install -y git
-          apt-get install -y openssh-server
     - checkout
     - if-php-modified:
         steps:
         - run:
             name: PHP 5.6 Magento 1.8
-            command: |
-              mkdir ./artifacts
-              export TEST_ENV=php56-mage18
-              PHPUNIT_PHAR=tests/unit/phpunit-5.7.9.phar MAGENTO_VERSION=magento-mirror-1.8.1.0 tests/scripts/ci.sh withcov
+            command: MAGENTO_VERSION=magento-mirror-1.8.1.0 PHPUNIT_PHAR=tests/unit/phpunit-5.7.9.phar TEST_ENV=php56-mage18 tests/scripts/setup_and_test.sh withcov
         - store_artifacts:
             path: ./artifacts
         - notify-buildcop
   unit-php56-mage19:
     docker:
-    - image: bylexus/apache-php56
+    - image: boltdev/php5.6-circle:0.0.1
     - image: circleci/mysql:5.7
     steps:
-    - run:
-        command: |
-          apt-get update
-          apt-get install -y git
-          apt-get install -y openssh-server
     - checkout
     - if-php-modified:
         steps:
         - run:
             name: PHP 5.6 Magento 1.9
-            command: |
-              mkdir ./artifacts
-              export TEST_ENV=php56-mage19
-              PHPUNIT_PHAR=tests/unit/phpunit-5.7.9.phar MAGENTO_VERSION=magento-mirror-1.9.3.6 tests/scripts/ci.sh withcov
+            command: MAGENTO_VERSION=magento-mirror-1.9.3.6 PHPUNIT_PHAR=tests/unit/phpunit-5.7.9.phar TEST_ENV=php56-mage19 tests/scripts/setup_and_test.sh withcov
         - store_artifacts:
             path: ./artifacts
         - notify-buildcop
