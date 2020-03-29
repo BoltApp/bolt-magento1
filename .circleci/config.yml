@@ -63,7 +63,6 @@ jobs:
   unit-php55-mage18:
     docker:
     - image: boltdev/php5.5-circle:0.0.4
-    - image: circleci/mysql:5.7
     steps:
     - checkout
     - if-php-modified:
@@ -75,7 +74,6 @@ jobs:
   unit-php55-mage19:
     docker:
     - image: boltdev/php5.5-circle:0.0.4
-    - image: circleci/mysql:5.7
     steps:
     - checkout
     - if-php-modified:
@@ -87,7 +85,6 @@ jobs:
   unit-php56-mage18:
     docker:
     - image: boltdev/php5.6-circle:0.0.1
-    - image: circleci/mysql:5.7
     steps:
     - checkout
     - if-php-modified:
@@ -103,7 +100,6 @@ jobs:
   unit-php56-mage19:
     docker:
     - image: boltdev/php5.6-circle:0.0.1
-    - image: circleci/mysql:5.7
     steps:
     - checkout
     - if-php-modified:
