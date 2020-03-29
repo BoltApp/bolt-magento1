@@ -212,12 +212,16 @@ class Bolt_Boltpay_Block_Checkout_Boltpay extends Mage_Checkout_Block_Onepage_Re
                 $jsonCart = /** @lang JavaScript */ 'boltConfigPDP.getCartData();';
 
                 $boltConfigureCall = <<<JS
-BoltCheckout.configureProductCheckout(
-    get_json_cart(),
-    json_hints,
-    {$callbacks},
-    { checkoutButtonClassName: 'bolt-product-checkout-button' }
-);
+var containers = document.getElementsByClassName('bolt-product-checkout-button');
+if (containers.length > 0) {
+    console.log('bolt button container found');
+    BoltCheckout.configureProductCheckout(
+        get_json_cart(),
+        json_hints,
+        {$callbacks},
+        { checkoutButtonClassName: 'bolt-product-checkout-button' }
+    );
+}
 JS;
                 break;
         }
