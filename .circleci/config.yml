@@ -43,43 +43,34 @@ jobs:
     - image: bylexus/apache-php55
     - image: circleci/mysql:5.7
     steps:
-      - run:
-          name: Validate eligibility to tag rc
-          command: |
-            .circleci/scripts/rc-tag.sh
-      - when:
-          condition: $TAGTHISWEEK
-          steps:
-          - run:
-              name: Tag RC on Master
-              command: |
-                apt-get update
-                apt-get install -y git
-                apt-get install -y openssh-server
-          - swissknife/publish_github_release:
-              tag: $NEWTAGNAME
-          - notify-rc-tag:
-              tag: $NEWTAGNAME
+    - run:
+        name: Validate eligibility to tag rc
+        command: |
+          .circleci/scripts/rc-tag.sh
+    - when:
+        condition: $TAGTHISWEEK
+        steps:
+        - run:
+            name: Tag RC on Master
+            command: |
+              apt-get update
+              apt-get install -y git
+              apt-get install -y openssh-server
+        - swissknife/publish_github_release:
+            tag: $NEWTAGNAME
+        - notify-rc-tag:
+            tag: $NEWTAGNAME
   unit-php55-mage18:
     docker:
-    - image: bylexus/apache-php55
+    - image: boltdev/php5.5-circle:0.0.1
     - image: circleci/mysql:5.7
     steps:
-    - run:
-        command: |
-          echo $PWD
-          apt-get update
-          apt-get install -y git
-          apt-get install -y openssh-server
     - checkout
     - if-php-modified:
         steps:
         - run:
             name: PHP 5.5 Magento 1.8
-            command: |
-              mkdir ./artifacts
-              export TEST_ENV=php55-mage18
-              PHPUNIT_PHAR=tests/unit/phpunit-4.8.36.phar MAGENTO_VERSION=magento-mirror-1.8.1.0 tests/scripts/ci.sh nocov
+            command: MAGENTO_VERSION=magento-mirror-1.8.1.0 PHPUNIT_PHAR=tests/unit/phpunit-4.8.36.phar TEST_ENV=php55-mage18 tests/scripts/ci.sh nocov
         - store_artifacts:
             path: ./artifacts
         - notify-buildcop
