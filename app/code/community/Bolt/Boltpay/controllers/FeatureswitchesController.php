@@ -33,16 +33,20 @@ class Bolt_Boltpay_FeatureswitchesController
     }
 
     /**
-     * Received empty request from Bolt.
-     * Send to bolt API request to update feature switches
-     * Send response with status - success or failure
+     * Receives push directive to pull feature switches from Bolt and
+     * to update them locally.  The success of failure of the local update
+     * is then reported back to Bolt
+     *
+     * @throws Zend_Controller_Response_Exception if response code is out of expected range
      */
     public function updateAction()
     {
-        $updateResult = Mage::getSingleton("boltpay/featureSwitch")->updateFeatureSwitches();
-        if ($updateResult) {
+        try {
+            Mage::getSingleton("boltpay/featureSwitch")->updateFeatureSwitches();
             $this->sendResponse(self::HTTP_OK, array('status' => 'success'));
-        } else {
+        } catch (GuzzleHttp\Exception\GuzzleException $exception) {
+            $this->boltHelper()->logException($exception);
+            $this->boltHelper()->notifyException($exception, array(), 'error');
             $this->sendResponse(self::HTTP_UNPROCESSABLE_ENTITY, array('status' => 'failure'));
         }
     }

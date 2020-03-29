@@ -67,10 +67,10 @@ class Bolt_Boltpay_FeatureswitchesControllerTest extends PHPUnit_Framework_TestC
      *
      * @covers ::updateAction
      */
-    public function updateAction_whenUpdateFeatureSwithesReturnFalse_returnsFailureResponse()
+    public function updateAction_whenUpdateFeatureSwitchesThrowsException_returnsFailureResponse()
     {
         $this->featureSwitchMock->expects($this->once())->method('updateFeatureSwitches')
-            ->willReturn(false);
+            ->willThrowException(new GuzzleHttp\Exception\RequestException('Test exception', null));
         $this->currentMock->expects($this->once())->method('sendResponse')
             ->with(
                 422,

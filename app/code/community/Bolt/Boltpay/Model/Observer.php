@@ -62,7 +62,16 @@ class Bolt_Boltpay_Model_Observer
     public function updateFeatureSwitches()
     {
         if (Bolt_Boltpay_Model_FeatureSwitch::$shouldUpdateFeatureSwitches) {
-            Mage::getSingleton("boltpay/featureSwitch")->updateFeatureSwitches();
+            try {
+                Mage::getSingleton("boltpay/featureSwitch")->updateFeatureSwitches();
+            } catch (\GuzzleHttp\Exception\GuzzleException $guzzleException) {
+                // We are treating failure to update feature switches as
+                // a non-fatal exception.  In other words, if the feature
+                // switches fail to update on an upgrade, we do not block Magento
+                // from functioning
+                $this->boltHelper()->logException($guzzleException);
+                $this->boltHelper()->notifyException($guzzleException, array(), 'error');
+            }
         }
     }
 
