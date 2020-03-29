@@ -9,3 +9,4 @@ RUN echo "deb [check-valid-until=no] http://archive.debian.org/debian jessie-bac
 RUN apt-get -o Acquire::Check-Valid-Until=false update && \
     apt-get -y install curl php5-curl mysql-client php5-mcrypt && \
     php5enmod mcrypt
+USER circleci
