@@ -62,7 +62,7 @@ jobs:
             tag: $NEWTAGNAME
   unit-php55-mage18:
     docker:
-    - image: boltdev/php5.5-circle:0.0.3
+    - image: boltdev/php5.5-circle:0.0.2
     - image: circleci/mysql:5.7
     steps:
     - checkout
@@ -76,7 +76,7 @@ jobs:
         - notify-buildcop
   unit-php55-mage19:
     docker:
-    - image: boltdev/php5.5-circle:0.0.3
+    - image: boltdev/php5.5-circle:0.0.2
     - image: circleci/mysql:5.7
     steps:
     - checkout
