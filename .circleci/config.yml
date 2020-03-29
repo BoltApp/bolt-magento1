@@ -40,22 +40,14 @@ jobs:
   tag-rc-candidate:
     description: Tag master as rc every 3 weeks
     docker:
-    - image: bylexus/apache-php55
-    - image: circleci/mysql:5.7
+    - image: cimg/base:2020.01
     steps:
     - run:
         name: Validate eligibility to tag rc
-        command: |
-          .circleci/scripts/rc-tag.sh
+        command: .circleci/scripts/rc-tag.sh
     - when:
         condition: $TAGTHISWEEK
         steps:
-        - run:
-            name: Tag RC on Master
-            command: |
-              apt-get update
-              apt-get install -y git
-              apt-get install -y openssh-server
         - swissknife/publish_github_release:
             tag: $NEWTAGNAME
         - notify-rc-tag:
