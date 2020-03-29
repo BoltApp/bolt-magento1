@@ -70,7 +70,7 @@ jobs:
         steps:
         - run:
             name: PHP 5.5 Magento 1.8
-            command: MAGENTO_VERSION=magento-mirror-1.8.1.0 PHPUNIT_PHAR=tests/unit/phpunit-4.8.36.phar TEST_ENV=php55-mage18 tests/scripts/ci.sh nocov
+            command: MAGENTO_VERSION=magento-mirror-1.8.1.0 PHPUNIT_PHAR=tests/unit/phpunit-4.8.36.phar TEST_ENV=php55-mage18 tests/scripts/setup_and_test.sh nocov
         - store_artifacts:
             path: ./artifacts
         - notify-buildcop
