@@ -16,8 +16,7 @@ php n98-magerun.phar config:set currency/options/default USD --root-dir $MAGENTO
 php n98-magerun.phar config:set currency/options/allow USD --root-dir $MAGENTO_DIR
 cp -r magento/. .
 
-mkdir ./artifacts
-
+export TEST_ENV=local
 export PHPUNIT_ENVIRONMENT=true
 
 if [ "$1" == "nocov" ]; then
