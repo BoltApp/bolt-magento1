@@ -71,8 +71,6 @@ jobs:
         - run:
             name: PHP 5.5 Magento 1.8
             command: MAGENTO_VERSION=magento-mirror-1.8.1.0 PHPUNIT_PHAR=tests/unit/phpunit-4.8.36.phar TEST_ENV=php55-mage18 tests/scripts/setup_and_test.sh nocov
-        - store_artifacts:
-            path: ./artifacts
         - notify-buildcop
   unit-php55-mage19:
     docker:
@@ -85,8 +83,6 @@ jobs:
         - run:
             name: PHP 5.5 Magento 1.9
             command: MAGENTO_VERSION=magento-mirror-1.9.3.6 PHPUNIT_PHAR=tests/unit/phpunit-4.8.36.phar TEST_ENV=php55-mage19 tests/scripts/setup_and_test.sh nocov
-        - store_artifacts:
-            path: ./artifacts
         - notify-buildcop
   unit-php56-mage18:
     docker:
