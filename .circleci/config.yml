@@ -67,6 +67,7 @@ jobs:
     steps:
     - run:
         command: |
+          echo $PWD
           apt-get update
           apt-get install -y git
           apt-get install -y openssh-server
