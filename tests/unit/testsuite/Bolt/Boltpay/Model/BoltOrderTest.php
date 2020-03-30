@@ -139,7 +139,7 @@ class Bolt_Boltpay_Model_BoltOrderTest extends PHPUnit_Framework_TestCase
 		$this->currentMock = $this->getTestClassPrototype()->setMethods(array('boltHelper', 'isAdmin'))
 			->getMock();
 		$this->boltHelperMock = $this->getClassPrototype('Bolt_Boltpay_Helper_Data')
-			->setMethods(array('notifyException', 'transmit'))
+			->setMethods(array('notifyException', 'transmit', 'getMinOrderDescriptionMessage'))
 			->getMock();
 		$this->currentMock->method('boltHelper')->willReturn($this->boltHelperMock);
 	}
@@ -1716,91 +1716,95 @@ class Bolt_Boltpay_Model_BoltOrderTest extends PHPUnit_Framework_TestCase
 		$this->currentMock->cacheCartData($cartData, $quote, $checkoutType);
 	}
 
-	/**
-	 * Setup method for tests covering {@see Bolt_Boltpay_Model_BoltOrder::getBoltOrderToken}
-	 *
-	 * @param array $items array of quote visible items
-	 * @param string $shippingMethod quote shipping method
-	 * @param bool $isVirtual quote flag
-	 *
-	 * @return MockObject|Mage_Sales_Model_Quote
-	 */
-	private function getBoltOrderTokenSetUp($items = array(), $shippingMethod = '', $isVirtual = false)
-	{
-		$shipAddressMock = $this->getClassPrototype('Mage_Sales_Model_Quote_Address')
-			->setMethods(array('getShippingMethod'))
-			->getMock();
-		$shipAddressMock->method('getShippingMethod')->willReturn($shippingMethod);
+    /**
+     * Setup method for tests covering {@see Bolt_Boltpay_Model_BoltOrder::getBoltOrderToken}
+     *
+     * @param array  $items array of quote visible items
+     * @param string $shippingMethod quote shipping method
+     * @param bool   $isVirtual quote flag
+     * @param bool   $minimumAmountValid stubbed result or {@see Mage_Sales_Model_Quote::validateMinimumAmount}
+     *
+     * @return MockObject|Mage_Sales_Model_Quote
+     */
+    private function getBoltOrderTokenSetUp($items = array(), $shippingMethod = '', $isVirtual = false, $minimumAmountValid = true)
+    {
+        $shipAddressMock = $this->getClassPrototype('Mage_Sales_Model_Quote_Address')
+            ->setMethods(array('getShippingMethod'))
+            ->getMock();
+        $shipAddressMock->method('getShippingMethod')->willReturn($shippingMethod);
 
-		$storeMock = $this->getMockBuilder('Mage_Core_Model_Store')
-			->setMethods(array('getId', 'getWebsiteId'))
-			->getMock();
-		$storeMock->method('getId')->willReturn(1);
-		$storeMock->method('getWebsiteId')->willReturn(1);
+        $storeMock = $this->getMockBuilder('Mage_Core_Model_Store')
+            ->setMethods(array('getId', 'getWebsiteId'))
+            ->getMock();
+        $storeMock->method('getId')->willReturn(1);
+        $storeMock->method('getWebsiteId')->willReturn(1);
 
-		$quoteMock = $this->getMockBuilder('Mage_Sales_Model_Quote')
-			->setMethods(
-				array(
-					'getAllVisibleItems',
-					'getShippingAddress',
-					'isVirtual',
-					'getStore',
-					'getCustomerGroupId'
-				)
-			)
-			->getMock();
-		$quoteMock->method('getAllVisibleItems')->willReturn($items);
-		$quoteMock->method('getShippingAddress')->willReturn($shipAddressMock);
-		$quoteMock->method('isVirtual')->willReturn($isVirtual);
-		$quoteMock->method('getCustomerGroupId')->willReturn(1);
-		$quoteMock->method('getStore')->willReturn($storeMock);
+        $quoteMock = $this->getMockBuilder('Mage_Sales_Model_Quote')
+            ->setMethods(
+                array(
+                    'getAllVisibleItems',
+                    'getShippingAddress',
+                    'isVirtual',
+                    'getStore',
+                    'getCustomerGroupId',
+                    'collectTotals',
+                    'validateMinimumAmount',
+                )
+            )
+            ->getMock();
+        $quoteMock->method('getAllVisibleItems')->willReturn($items);
+        $quoteMock->method('getShippingAddress')->willReturn($shipAddressMock);
+        $quoteMock->method('isVirtual')->willReturn($isVirtual);
+        $quoteMock->method('getCustomerGroupId')->willReturn(1);
+        $quoteMock->method('getStore')->willReturn($storeMock);
+        $quoteMock->method('collectTotals')->willReturnSelf();
+        $quoteMock->method('validateMinimumAmount')->willReturn($minimumAmountValid);
 
-		return $quoteMock;
-	}
+        return $quoteMock;
+    }
 
-	/**
-	 * @test
-	 * that getBoltOrderToken builds order request, transmits it to Bolt API and returns the API response
-	 *
-	 * @covers ::getBoltOrderToken
-	 *
-	 * @dataProvider getBoltOrderToken_withValidQuoteProvider
-	 *
-	 * @param string $checkoutType currently in use
-	 * @param string $shippingMethod to be set as quote shipping method
-	 * @param bool $isAdmin flag representing if current request is from admin area
-	 * @param bool|array $adminActiveMethodRate returned from shipping method form block
-	 * @param bool $quoteIsVirtual flag that determines if quote is virtual
-	 *
-	 * @throws Mage_Core_Model_Store_Exception from tested method if unable to find store
-	 * @throws Exception if test class name is not defined
-	 */
-	public function getBoltOrderToken_withValidQuote_buildsOrderAndTransmitsToBoltAPI(
-		$checkoutType,
-		$shippingMethod,
-		$isAdmin,
-		$adminActiveMethodRate,
-		$quoteIsVirtual
-	)
-	{
-		$quoteMock = $this->getBoltOrderTokenSetUp(
-			self::$orderRequest['cart']['items'],
-			$shippingMethod,
-			$quoteIsVirtual
-		);
-		$shippingMethodBlockMock = $this->getMockBuilder('Mage_Adminhtml_Block_Sales_Order_Create_Shipping_Method_Form')
-			->setMethods(array('getActiveMethodRate'))
-			->getMock();
-		$shippingMethodBlockMock->method('getActiveMethodRate')->willReturn($adminActiveMethodRate);
+    /**
+     * @test
+     * that getBoltOrderToken builds order request, transmits it to Bolt API and returns the API response
+     *
+     * @covers ::getBoltOrderToken
+     *
+     * @dataProvider getBoltOrderToken_withValidQuoteProvider
+     *
+     * @param string     $checkoutType currently in use
+     * @param string     $shippingMethod to be set as quote shipping method
+     * @param bool       $isAdmin flag representing if current request is from admin area
+     * @param bool|array $adminActiveMethodRate returned from shipping method form block
+     * @param bool       $quoteIsVirtual flag that determines if quote is virtual
+     *
+     * @throws Mage_Core_Model_Store_Exception from tested method if unable to find store
+     * @throws Exception if test class name is not defined
+     */
+    public function getBoltOrderToken_withValidQuote_buildsOrderAndTransmitsToBoltAPI(
+        $checkoutType,
+        $shippingMethod,
+        $isAdmin,
+        $adminActiveMethodRate,
+        $quoteIsVirtual
+    ) {
+        $quoteMock = $this->getBoltOrderTokenSetUp(
+            self::$orderRequest['cart']['items'],
+            $shippingMethod,
+            $quoteIsVirtual
+        );
+        $shippingMethodBlockMock = $this->getMockBuilder('Mage_Adminhtml_Block_Sales_Order_Create_Shipping_Method_Form')
+            ->setMethods(array('getActiveMethodRate'))
+            ->getMock();
+        $shippingMethodBlockMock->method('getActiveMethodRate')->willReturn($adminActiveMethodRate);
 
-		/** @var MockObject|Bolt_Boltpay_Model_BoltOrder $currentMock */
-		$currentMock = $this->getTestClassPrototype()
-			->setMethods(array('validateVirtualQuote', 'buildOrder', 'boltHelper', 'isAdmin', 'createLayoutBlock'))
-			->getMock();
-		$currentMock->method('validateVirtualQuote')->willReturn(false);
-		$currentMock->method('isAdmin')->willReturn($isAdmin);
-		$currentMock->method('createLayoutBlock')->willReturn($shippingMethodBlockMock);
-		$currentMock->method('buildOrder')->willReturn(self::$orderRequest);
+        /** @var MockObject|Bolt_Boltpay_Model_BoltOrder $currentMock */
+        $currentMock = $this->getTestClassPrototype()
+            ->setMethods(array('validateVirtualQuote', 'buildOrder', 'boltHelper', 'isAdmin', 'createLayoutBlock'))
+            ->getMock();
+        $currentMock->method('validateVirtualQuote')->willReturn(false);
+        $currentMock->method('isAdmin')->willReturn($isAdmin);
+        $currentMock->method('createLayoutBlock')->willReturn($shippingMethodBlockMock);
+        $currentMock->method('buildOrder')->willReturn(self::$orderRequest);
 
 		$this->boltHelperMock->method('transmit')->with('orders', self::$orderRequest)
 			->willReturn(self::$orderResponse);
@@ -1878,134 +1882,160 @@ class Bolt_Boltpay_Model_BoltOrderTest extends PHPUnit_Framework_TestCase
 		$this->assertEquals(self::$orderResponse, $result);
 	}
 
-	/**
-	 * @test
-	 * that returns object containing expected error if provided quote is incomplete
-	 *
-	 * @covers ::getBoltOrderToken
-	 *
-	 * @dataProvider getBoltOrderToken_withIncompleteQuoteProvider
-	 *
-	 * @param array $case
-	 *
-	 * @throws Exception if test class name is not defined
-	 */
-	public function getBoltOrderToken_withIncompleteQuote_returnsJSONError(array $case)
-	{
-		$quoteMock = $this->getBoltOrderTokenSetUp($case['items'], $case['shipping_method'], $case['quote_is_virtual']);
-		$blockMock = $this->getClassPrototype('Mage_Adminhtml_Block_Sales_Order_Create_Shipping_Method_Form')
-			->setMethods(array('getActiveMethodRate'))
-			->getMock();
-		$blockMock->method('getActiveMethodRate')->willReturn($case['admin_active_method_rate']);
+    /**
+     * @test
+     * that returns object containing expected error if provided quote is incomplete
+     *
+     * @covers ::getBoltOrderToken
+     *
+     * @dataProvider getBoltOrderToken_withIncompleteQuoteProvider
+     *
+     * @param array $case
+     *
+     * @throws Exception if test class name is not defined
+     */
+    public function getBoltOrderToken_withIncompleteQuote_returnsJSONError(array $case)
+    {
+        $quoteMock = $this->getBoltOrderTokenSetUp(
+            $case['items'],
+            $case['shipping_method'],
+            $case['quote_is_virtual'],
+            $case['minimum_amount_valid']
+        );
+        $blockMock = $this->getClassPrototype('Mage_Adminhtml_Block_Sales_Order_Create_Shipping_Method_Form')
+            ->setMethods(array('getActiveMethodRate'))
+            ->getMock();
+        $blockMock->method('getActiveMethodRate')->willReturn($case['admin_active_method_rate']);
 
-		/** @var MockObject|Bolt_Boltpay_Model_BoltOrder $currentMock */
-		$currentMock = $this->getTestClassPrototype()
-			->setMethods(
-				array(
-					'validateVirtualQuote',
-					'buildOrder',
-					'boltHelper',
-					'createLayoutBlock',
-					'isAdmin'
-				)
-			)
-			->getMock();
-		$currentMock->method('validateVirtualQuote')->willReturn($case['validate_virtual_quote']);
-		$currentMock->method('createLayoutBlock')->with('adminhtml/sales_order_create_shipping_method_form')
-			->willReturn($blockMock);
-		$currentMock->method('isAdmin')->willReturn($case['is_admin']);
-		$currentMock->method('boltHelper')->willReturn($this->boltHelperMock);
+        /** @var MockObject|Bolt_Boltpay_Model_BoltOrder $currentMock */
+        $currentMock = $this->getTestClassPrototype()
+            ->setMethods(
+                array(
+                    'validateVirtualQuote',
+                    'buildOrder',
+                    'boltHelper',
+                    'createLayoutBlock',
+                    'isAdmin'
+                )
+            )
+            ->getMock();
+        $currentMock->method('validateVirtualQuote')->willReturn($case['validate_virtual_quote']);
+        $currentMock->method('createLayoutBlock')->with('adminhtml/sales_order_create_shipping_method_form')
+            ->willReturn($blockMock);
+        $currentMock->method('isAdmin')->willReturn($case['is_admin']);
+        $currentMock->method('boltHelper')->willReturn($this->boltHelperMock);
 
-		$this->boltHelperMock->expects($this->never())->method('transmit');
+        $this->boltHelperMock->method('getMinOrderDescriptionMessage')->willReturn('Minimum order amount is $123');
+        $this->boltHelperMock->expects($this->never())->method('transmit');
 
-		$result = $currentMock->getBoltOrderToken($quoteMock, $case['checkoutType']);
+        $result = $currentMock->getBoltOrderToken($quoteMock, $case['checkoutType']);
 
-		$this->assertEquals($case['expect'], $result);
-	}
+        $this->assertEquals($case['expect'], $result);
+    }
 
-	/**
-	 * Data provider for {@see getBoltOrderToken_withIncompleteQuote_returnsJSONError}
-	 *
-	 * @return array containing
-	 * 1. expected result of the method call
-	 * 2. checkout type to be provided
-	 * 3. value to stub {@see Mage_Sales_Model_Quote::getAllVisibleItems}
-	 * 4. current quote shipping method
-	 * 5. admin active method rate
-	 * 6. is quote virtual flag
-	 * 7. stubbed result of {@see Bolt_Boltpay_Model_BoltOrder::validateVirtualQuote}
-	 * 8. is admin flag
-	 */
-	public function getBoltOrderToken_withIncompleteQuoteProvider()
-	{
-		$orderRequestData = self::$orderRequest;
-		return array(
-			array(
-				'case' => array(
-					'expect' => json_decode(
-						'{"token" : "", "error": "Your shopping cart is empty. Please add products to the cart."}'
-					),
-					'checkoutType' => Bolt_Boltpay_Block_Checkout_Boltpay::CHECKOUT_TYPE_MULTI_PAGE,
-					'items' => array(),
-					'shipping_method' => '',
-					'admin_active_method_rate' => array(),
-					'validate_virtual_quote' => false,
-					'quote_is_virtual' => false,
-					'is_admin' => false
-				),
-			),
-			array(
-				'case' => array(
-					'expect' => json_decode(
-						'{"token" : "", "error": "A valid shipping method must be selected.  Please check your address data and that you have selected a shipping method, then, refresh to try again."}'
-					),
-					'checkoutType' => Bolt_Boltpay_Block_Checkout_Boltpay::CHECKOUT_TYPE_ADMIN,
-					'items' => $orderRequestData['cart']['items'],
-					'shipping_method' => '',
-					'admin_active_method_rate' => array(),
-					'quote_is_virtual' => false,
-					'validate_virtual_quote' => true,
-					'is_admin' => true,
-				),
-			),
-			array(
-				'case' => array(
-					'expect' => json_decode(
-						'{"token" : "", "error": "Billing address is required."}'
-					),
-					'checkoutType' => Bolt_Boltpay_Block_Checkout_Boltpay::CHECKOUT_TYPE_ADMIN,
-					'items' => $orderRequestData['cart']['items'],
-					'shipping_method' => '',
-					'admin_active_method_rate' => array(),
-					'quote_is_virtual' => true,
-					'validate_virtual_quote' => false,
-					'is_admin' => true,
-				),
-			),
-		);
-	}
+    /**
+     * Data provider for {@see getBoltOrderToken_withIncompleteQuote_returnsJSONError}
+     *
+     * @return array containing
+     * 1. expected result of the method call
+     * 2. checkout type to be provided
+     * 3. value to stub {@see Mage_Sales_Model_Quote::getAllVisibleItems}
+     * 4. current quote shipping method
+     * 5. admin active method rate
+     * 6. is quote virtual flag
+     * 7. stubbed result of {@see Bolt_Boltpay_Model_BoltOrder::validateVirtualQuote}
+     * 8. is admin flag
+     */
+    public function getBoltOrderToken_withIncompleteQuoteProvider()
+    {
+        $orderRequestData = self::$orderRequest;
+        return array(
+            array(
+                'case' => array(
+                    'expect'                   => json_decode(
+                        '{"token" : "", "error": "Your shopping cart is empty. Please add products to the cart."}'
+                    ),
+                    'checkoutType'             => Bolt_Boltpay_Block_Checkout_Boltpay::CHECKOUT_TYPE_MULTI_PAGE,
+                    'items'                    => array(),
+                    'shipping_method'          => '',
+                    'admin_active_method_rate' => array(),
+                    'validate_virtual_quote'   => false,
+                    'quote_is_virtual'         => false,
+                    'is_admin'                 => false,
+                    'minimum_amount_valid'     => true,
+                ),
+            ),
+            array(
+                'case' => array(
+                    'expect'                   => json_decode(
+                        '{"token" : "", "error": "A valid shipping method must be selected.  Please check your address data and that you have selected a shipping method, then, refresh to try again."}'
+                    ),
+                    'checkoutType'             => Bolt_Boltpay_Block_Checkout_Boltpay::CHECKOUT_TYPE_ADMIN,
+                    'items'                    => $orderRequestData['cart']['items'],
+                    'shipping_method'          => '',
+                    'admin_active_method_rate' => array(),
+                    'quote_is_virtual'         => false,
+                    'validate_virtual_quote'   => true,
+                    'is_admin'                 => true,
+                    'minimum_amount_valid'     => true,
+                ),
+            ),
+            array(
+                'case' => array(
+                    'expect'                   => json_decode(
+                        '{"token" : "", "error": "Billing address is required."}'
+                    ),
+                    'checkoutType'             => Bolt_Boltpay_Block_Checkout_Boltpay::CHECKOUT_TYPE_ADMIN,
+                    'items'                    => $orderRequestData['cart']['items'],
+                    'shipping_method'          => '',
+                    'admin_active_method_rate' => array(),
+                    'quote_is_virtual'         => true,
+                    'validate_virtual_quote'   => false,
+                    'is_admin'                 => true,
+                    'minimum_amount_valid'     => true,
+                ),
+            ),
+            array(
+                'case' => array(
+                    'expect'                   => (object)array(
+                        'token' => '',
+                        'error' => 'Minimum order amount is $123'
+                    ),
+                    'checkoutType'             => Bolt_Boltpay_Block_Checkout_Boltpay::CHECKOUT_TYPE_MULTI_PAGE,
+                    'items'                    => $orderRequestData['cart']['items'],
+                    'shipping_method'          => 'flatrate_flatrate',
+                    'admin_active_method_rate' => array(),
+                    'quote_is_virtual'         => true,
+                    'validate_virtual_quote'   => false,
+                    'is_admin'                 => false,
+                    'minimum_amount_valid'     => false,
+                ),
+            ),
+        );
+    }
 
-	/**
-	 * @test
-	 * that getBoltOrderTokenPromise returns javascript promise containing expected checkoutTokenUrl and parameters
-	 *
-	 * @covers ::getBoltOrderTokenPromise
-	 *
-	 * @dataProvider getBoltOrderTokenPromise_withVariousCheckoutTypesProvider
-	 *
-	 * @param string $checkoutType currently in use
-	 * @param array $checkoutTokenUrlParams provided to {@see Bolt_Boltpay_Helper_UrlTrait::getMagentoUrl}
-	 *                                       for getting checkout token URL
-	 * @param string $parameters expected AJAX parameters inside promise
-	 */
-	public function getBoltOrderTokenPromise_withVariousCheckoutTypes_returnsTokenPromise($checkoutType, $checkoutTokenUrlParams, $parameters)
-	{
-		$result = $this->currentMock->getBoltOrderTokenPromise($checkoutType);
-		$checkoutTokenUrl = call_user_func_array(
-			array($this->boltHelperMock, 'getMagentoUrl'),
-			$checkoutTokenUrlParams
-		);
-		$expectedResult = <<<PROMISE
+    /**
+     * @test
+     * that getBoltOrderTokenPromise returns javascript promise containing expected checkoutTokenUrl and parameters
+     *
+     * @covers ::getBoltOrderTokenPromise
+     *
+     * @dataProvider getBoltOrderTokenPromise_withVariousCheckoutTypesProvider
+     *
+     * @param string $checkoutType currently in use
+     * @param array  $checkoutTokenUrlParams provided to {@see Bolt_Boltpay_Helper_UrlTrait::getMagentoUrl}
+     *                                       for getting checkout token URL
+     * @param string $parameters expected AJAX parameters inside promise
+     * @param string $onError callback to be expected on error response
+     */
+    public function getBoltOrderTokenPromise_withVariousCheckoutTypes_returnsTokenPromise($checkoutType, $checkoutTokenUrlParams, $parameters, $onError)
+    {
+        $result = $this->currentMock->getBoltOrderTokenPromise($checkoutType);
+        $checkoutTokenUrl = call_user_func_array(
+            array($this->boltHelperMock, 'getMagentoUrl'),
+            $checkoutTokenUrlParams
+        );
+        $expectedResult = <<<PROMISE
                     new Promise( 
                         function (resolve, reject) {
                             new Ajax.Request('$checkoutTokenUrl', {
@@ -2016,8 +2046,7 @@ class Bolt_Boltpay_Model_BoltOrderTest extends PHPUnit_Framework_TestCase
                                         reject(response.responseJSON.error_messages);
                                         
                                         // BoltCheckout is currently not doing anything reasonable to alert the user of a problem, so we will do something as a backup
-                                        alert(response.responseJSON.error_messages);
-                                        location.reload();
+                                        $onError
                                     } else {                                     
                                         resolve(response.responseJSON.cart_data);
                                     }                   
@@ -2027,59 +2056,71 @@ class Bolt_Boltpay_Model_BoltOrderTest extends PHPUnit_Framework_TestCase
                         }
                     )
 PROMISE;
-		$this->assertEquals(
-			preg_replace('/\s+/', '', $expectedResult),
-			preg_replace('/\s+/', '', $result)
-		);
-	}
+        $this->assertEquals(
+            preg_replace('/\s+/', '', $expectedResult),
+            preg_replace('/\s+/', '', $result)
+        );
+    }
 
-	/**
-	 * Data provider for {@see getBoltOrderTokenPromise_withVariousCheckoutTypes_returnsTokenPromise}
-	 *
-	 * @return array containing checkout type, checkout token url parameters and expected AJAX parameters
-	 */
-	public function getBoltOrderTokenPromise_withVariousCheckoutTypesProvider()
-	{
-		return array(
-			'Admin checkout' => array(
-				'checkoutType' => $checkoutType = Bolt_Boltpay_Block_Checkout_Boltpay::CHECKOUT_TYPE_ADMIN,
-				'checkoutTokenUrlParams' => array(
-					'route' => "adminhtml/sales_order_create/create/checkoutType/$checkoutType",
-					'params' => array(),
-					'isAdmin' => true
-				),
-				'parameters' => "''"
-			),
-			'Firecheckout' => array(
-				'checkoutType' => $checkoutType = Bolt_Boltpay_Block_Checkout_Boltpay::CHECKOUT_TYPE_FIRECHECKOUT,
-				'checkoutTokenUrlParams' => array(
-					'route' => 'boltpay/order/firecheckoutcreate'
-				),
-				'parameters' => "checkout.getFormData ? checkout.getFormData() : Form.serialize(checkout.form, true)"
-			),
-			'Multi-page checkout' => array(
-				'checkoutType' => $checkoutType = Bolt_Boltpay_Block_Checkout_Boltpay::CHECKOUT_TYPE_MULTI_PAGE,
-				'checkoutTokenUrlParams' => array(
-					'route' => "boltpay/order/create/checkoutType/$checkoutType"
-				),
-				'parameters' => "''"
-			),
-			'One-page checkout' => array(
-				'checkoutType' => $checkoutType = Bolt_Boltpay_Block_Checkout_Boltpay::CHECKOUT_TYPE_ONE_PAGE,
-				'checkoutTokenUrlParams' => array(
-					'route' => "boltpay/order/create/checkoutType/$checkoutType"
-				),
-				'parameters' => "''"
-			),
-			'Product page checkout' => array(
-				'checkoutType' => $checkoutType = Bolt_Boltpay_Block_Checkout_Boltpay::CHECKOUT_TYPE_PRODUCT_PAGE,
-				'checkoutTokenUrlParams' => array(
-					'route' => "boltpay/order/create/checkoutType/$checkoutType"
-				),
-				'parameters' => "''"
-			)
-		);
-	}
+    /**
+     * Data provider for {@see getBoltOrderTokenPromise_withVariousCheckoutTypes_returnsTokenPromise}
+     *
+     * @return array containing checkout type, checkout token url parameters and expected AJAX parameters
+     */
+    public function getBoltOrderTokenPromise_withVariousCheckoutTypesProvider()
+    {
+        $defaultOnError = /** @lang JavaScript */ <<<JS
+if (typeof BoltPopup !== 'undefined' && typeof response.responseJSON.error_messages === 'string') {
+    BoltPopup.setMessage(response.responseJSON.error_messages);
+    BoltPopup.addOnCloseCallback(function() {location.reload();});
+    BoltPopup.show();
+}
+JS;
+        return array(
+            'Admin checkout'        => array(
+                'checkoutType'           => $checkoutType = Bolt_Boltpay_Block_Checkout_Boltpay::CHECKOUT_TYPE_ADMIN,
+                'checkoutTokenUrlParams' => array(
+                    'route'   => "adminhtml/sales_order_create/create/checkoutType/$checkoutType",
+                    'params'  => array(),
+                    'isAdmin' => true
+                ),
+                'parameters'             => "''",
+                'onError'                => $defaultOnError
+            ),
+            'Firecheckout'          => array(
+                'checkoutType'           => $checkoutType = Bolt_Boltpay_Block_Checkout_Boltpay::CHECKOUT_TYPE_FIRECHECKOUT,
+                'checkoutTokenUrlParams' => array(
+                    'route' => 'boltpay/order/firecheckoutcreate'
+                ),
+                'parameters'             => "checkout.getFormData ? checkout.getFormData() : Form.serialize(checkout.form, true)",
+                'onError'                => $defaultOnError
+            ),
+            'Multi-page checkout'   => array(
+                'checkoutType'           => $checkoutType = Bolt_Boltpay_Block_Checkout_Boltpay::CHECKOUT_TYPE_MULTI_PAGE,
+                'checkoutTokenUrlParams' => array(
+                    'route' => "boltpay/order/create/checkoutType/$checkoutType"
+                ),
+                'parameters'             => "''",
+                'onError'                => "checkError = response.responseJSON.error_messages;"
+            ),
+            'One-page checkout'     => array(
+                'checkoutType'           => $checkoutType = Bolt_Boltpay_Block_Checkout_Boltpay::CHECKOUT_TYPE_ONE_PAGE,
+                'checkoutTokenUrlParams' => array(
+                    'route' => "boltpay/order/create/checkoutType/$checkoutType"
+                ),
+                'parameters'             => "''",
+                'onError'                => $defaultOnError
+            ),
+            'Product page checkout' => array(
+                'checkoutType'           => $checkoutType = Bolt_Boltpay_Block_Checkout_Boltpay::CHECKOUT_TYPE_PRODUCT_PAGE,
+                'checkoutTokenUrlParams' => array(
+                    'route' => "boltpay/order/create/checkoutType/$checkoutType"
+                ),
+                'parameters'             => "''",
+                'onError'                => $defaultOnError
+            )
+        );
+    }
 
     /**
      * @test

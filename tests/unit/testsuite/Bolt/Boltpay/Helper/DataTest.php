@@ -25,14 +25,27 @@ class Bolt_Boltpay_Helper_DataTest extends PHPUnit_Framework_TestCase
 
     /**
      * @test
+     * that buildOnCheckCallback returns expected callback for multi-page checkout
      *
      * @covers ::buildOnCheckCallback
      */
-    public function buildOnCheckCallback_whenCheckoutTypeIsMultiPage_returnsEmptyString()
+    public function buildOnCheckCallback_whenCheckoutTypeIsMultiPage_returnsCheckCallback()
     {
         $checkoutType = Bolt_Boltpay_Block_Checkout_Boltpay::CHECKOUT_TYPE_MULTI_PAGE;
         $result = $this->currentMock->buildOnCheckCallback($checkoutType);
-        $this->assertEquals('', $result);
+        $this->assertEquals(
+            <<<JS
+if (checkError){
+    if (typeof BoltPopup !== 'undefined' && typeof checkError === 'string') {
+        BoltPopup.setMessage(checkError);
+        BoltPopup.show();
+    }
+    return false;
+}
+JS
+            ,
+            $result
+        );
     }
 
     /**

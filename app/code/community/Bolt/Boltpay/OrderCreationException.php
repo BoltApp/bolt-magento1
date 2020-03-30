@@ -89,6 +89,12 @@ class Bolt_Boltpay_OrderCreationException extends Bolt_Boltpay_BoltException
     const E_BOLT_SHIPPING_PRICE_HAS_BEEN_UPDATED_TMPL      = '{"reason": "Shipping total has changed", "old_value": "%d", "new_value": "%d"}';
 
     /**
+     * Minimum price amount not met
+     */
+    const E_BOLT_MINIMUM_PRICE_NOT_MET = 2001011;
+    const E_BOLT_MINIMUM_PRICE_NOT_MET_TMPL = '{"reason": "The minimum order amount of %s has not been met"}';
+
+    /**
      * @var int http response code that is to be returned
      */
     protected $httpCode;
@@ -109,7 +115,8 @@ class Bolt_Boltpay_OrderCreationException extends Bolt_Boltpay_BoltException
         self::E_BOLT_OUT_OF_INVENTORY,
         self::E_BOLT_DISCOUNT_CANNOT_APPLY,
         self::E_BOLT_DISCOUNT_DOES_NOT_EXIST,
-        self::E_BOLT_SHIPPING_PRICE_HAS_BEEN_UPDATED
+        self::E_BOLT_SHIPPING_PRICE_HAS_BEEN_UPDATED,
+        self::E_BOLT_MINIMUM_PRICE_NOT_MET,
     );
 
     /**

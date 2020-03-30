@@ -73,6 +73,7 @@ class Bolt_Boltpay_Block_Catalog_Product_BoltpayTest extends PHPUnit_Framework_T
     {
         Mage::unregister('current_product');
         Mage::unregister('_helper/boltpay');
+        Mage::app()->setCurrentStore(self::$originalStore);
         TestHelper::restoreOriginals();
     }
 
@@ -568,6 +569,34 @@ class Bolt_Boltpay_Block_Catalog_Product_BoltpayTest extends PHPUnit_Framework_T
                 array('id' => 456, 'name' => 'Test Product 3', 'price' => 321.12),
             ),
             $productData['associated_products']
+        );
+    }
+
+    /**
+     * @test
+     * that getConfigJSON returns minimum order amount config
+     *
+     * @covers ::getConfigJSON
+     *
+     * @throws Mage_Core_Model_Store_Exception if unable to stub config value
+     * @throws Zend_Currency_Exception from tested method
+     */
+    public function getConfigJSON_always_returnsConfigurationInJSON()
+    {
+        TestHelper::stubConfigValue('sales/minimum_order/active', true);
+        TestHelper::stubConfigValue('sales/minimum_order/amount', 123);
+        TestHelper::stubConfigValue('sales/minimum_order/description', 'Minimum order amount is $123');
+        $result = $this->currentMock->getConfigJSON();
+        $this->assertJson($result);
+        $this->assertEquals(
+            array(
+                'minimum_order' => array(
+                    'enabled' => true,
+                    'amount'  => 123,
+                    'message' => 'Minimum order amount is $123'
+                )
+            ),
+            json_decode($result, true)
         );
     }
 }

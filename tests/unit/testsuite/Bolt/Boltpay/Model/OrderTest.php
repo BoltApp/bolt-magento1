@@ -176,7 +176,8 @@ class Bolt_Boltpay_Model_OrderTest extends PHPUnit_Framework_TestCase
             'setTotalsCollectedFlag',
             'prepareRecurringPaymentProfiles',
             'setInventoryProcessed',
-            'getPayment'
+            'getPayment',
+            'validateMinimumAmount',
         );
         $this->immutableQuoteMock = $this->getClassPrototype('Mage_Sales_Model_Quote')
             ->setMethods($quoteMockMethods)->getMock();
@@ -1437,6 +1438,41 @@ class Bolt_Boltpay_Model_OrderTest extends PHPUnit_Framework_TestCase
 
     /**
      * @test
+     * that validateCartSessionData throws OrderCreationException if minimum order amount is not met
+     *
+     * @covers ::validateCartSessionData
+     *
+     * @expectedException Bolt_Boltpay_OrderCreationException
+     * @expectedExceptionCode Bolt_Boltpay_OrderCreationException::E_BOLT_MINIMUM_PRICE_NOT_MET
+     * @expectedExceptionMessageRegExp  /{"reason": "The minimum order amount of \$?123(\.|,)00(.+\$)? has not been met"}/
+     *
+     * @throws ReflectionException if validateCartSessionData doesn't exist
+     * @throws Exception from test setup if tested class name is not set
+     */
+    public function validateCartSessionData_withMinimumAmountNotValid_throwsException()
+    {
+        TestHelper::stubConfigValue('sales/minimum_order/amount', 123);
+        $isImmutableQuoteNew = false;
+        $currentMock = $this->validateCartSessionDataSetUp();
+        $this->immutableQuoteMock->expects($this->once())->method('isObjectNew')->willReturn($isImmutableQuoteNew);
+        $this->parentQuoteMock->expects($this->once())->method('isObjectNew')->willReturn(false);
+        $this->parentQuoteMock->expects($this->once())->method('getIsActive')->willReturn(true);
+        $this->immutableQuoteMock->expects($this->once())->method('getAllItems')->willReturn(array());
+        $this->immutableQuoteMock->expects($this->once())->method('validateMinimumAmount')->willReturn(false);
+        TestHelper::callNonPublicFunction(
+            $currentMock,
+            'validateCartSessionData',
+            array(
+                $this->immutableQuoteMock,
+                $this->parentQuoteMock,
+                new stdClass(),
+                false
+            )
+        );
+    }
+
+    /**
+     * @test
      * that validateCartSessionData returns valid for cart with only
      * salable, in stock products
      *
@@ -1472,6 +1508,7 @@ class Bolt_Boltpay_Model_OrderTest extends PHPUnit_Framework_TestCase
                     )
                 )
             );
+        $this->immutableQuoteMock->expects($this->once())->method('validateMinimumAmount')->willReturn(true);
         TestHelper::callNonPublicFunction(
             $currentMock,
             'validateCartSessionData',
