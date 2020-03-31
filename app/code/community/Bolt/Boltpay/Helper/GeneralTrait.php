@@ -31,6 +31,16 @@ trait Bolt_Boltpay_Helper_GeneralTrait {
     public static $fromHooks = false;
 
     /**
+     * @var bool    a flag set to true if the an order was placed in this request, otherwise false
+     */
+    public static $boltOrderWasJustPlaced = false;
+
+    /**
+     * @var bool    a flag set to true if the class is instantiated from web hook call, otherwise false
+     */
+    public static $canChangePreAuthStatus = true;
+
+    /**
      * Determines if the Bolt payment method can be used to pay for the given quote using the quote's context
      *
      * @param Mage_Sales_Model_Quote $quote        The cart to be inspected as viable for Bolt payment

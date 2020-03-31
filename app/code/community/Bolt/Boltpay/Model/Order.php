@@ -826,22 +826,12 @@ class Bolt_Boltpay_Model_Order extends Bolt_Boltpay_Model_Abstract
      * @param object|string                 $payload    payload sent from Bolt
      *
      * @throws Mage_Core_Exception if there is a problem retrieving the bolt transaction reference from the payload
+     * @throws Bolt_Boltpay_InvalidTransitionException if order is moving from an unexpected
      */
     public function receiveOrder( $order, $payload ) {
         /** @var Mage_Sales_Model_Order $order */
         $order = is_object($order) ? $order : Mage::getModel('sales/order')->loadByIncrementId($order);
-        $orderStatus = $order->getStatus();
-        $allowedReceptionStatuses = $this->boltHelper()->getExtraConfig('allowedReceptionStatuses');
-        if (!in_array($orderStatus, $allowedReceptionStatuses)) {
-            throw new Bolt_Boltpay_InvalidTransitionException(
-                $orderStatus,
-                Bolt_Boltpay_Model_Payment::TRANSACTION_PRE_AUTH_PENDING,
-                'Order has an unexpected status at order reception.  An order status of [' .
-                $orderStatus . '] was found, while Bolt orders are expected to have a status in [' .
-                implode(', ', $allowedReceptionStatuses) . '].  Has some 3rd party software created ' .
-                'or altered this order?'
-            );
-        }
+
         $payloadObject = is_object($payload) ? $payload : json_decode($payload);
         $immutableQuote = $this->getQuoteFromOrder($order);
 
@@ -1032,9 +1022,9 @@ class Bolt_Boltpay_Model_Order extends Bolt_Boltpay_Model_Abstract
             ##############################################################
             # Cancel order for restocking inventory and triggering events
             ##############################################################
-            if ($order->getStatus() !== 'canceled_bolt') {
+            if ($order->getStatus() !== Bolt_Boltpay_Model_Payment::TRANSACTION_PRE_AUTH_CANCELED) {
                 $order->setQuoteId(null)->save();
-                $order->cancel()->setStatus('canceled_bolt')->save();
+                $order->cancel()->setStatus(Bolt_Boltpay_Model_Payment::TRANSACTION_PRE_AUTH_CANCELED)->save();
             }
 
             $event = new Varien_Event(['quote' => $this->getQuoteFromOrder($order)]);

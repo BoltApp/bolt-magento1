@@ -73,7 +73,6 @@ class Bolt_Boltpay_Model_Admin_ExtraConfigTest extends PHPUnit_Framework_TestCas
      * @covers ::filterKeepPreAuthOrderTimeStamps
      * @covers ::filterKeepPreAuthOrders
      * @covers ::filterEnableBenchmarkProfiling
-     * @covers ::filterAllowedReceptionStatuses
      *
      * @dataProvider getExtraConfig_throughVariousFilters_returnsExpectedResultProvider
      *
@@ -349,22 +348,6 @@ class Bolt_Boltpay_Model_Admin_ExtraConfigTest extends PHPUnit_Framework_TestCas
                     'jsonFromDb'       => '{"keepPreAuthOrders": "Y"}',
                     'filterParameters' => array(),
                     'expectedResult'   => false
-                )
-            ,
-            'Allow reception statuses, if not configured, will return Bolt pending payment and pending' =>
-                array(
-                    'configName'       => 'allowedReceptionStatuses',
-                    'jsonFromDb'       => '',
-                    'filterParameters' => array(),
-                    'expectedResult'   => array(Bolt_Boltpay_Model_Payment::TRANSACTION_PRE_AUTH_PENDING, Bolt_Boltpay_Model_Payment::TRANSACTION_PENDING)
-                )
-            ,
-            'Allow reception statuses, when configured, will return array of configured strings' =>
-                array(
-                    'configName'       => 'allowedReceptionStatuses',
-                    'jsonFromDb'       => '{"keepPreAuthOrders": "Y", "allowedReceptionStatuses": "pending, pending_bolt   ,new"}',
-                    'filterParameters' => array(),
-                    'expectedResult'   => array('pending','pending_bolt','new')
                 )
             ,
         );

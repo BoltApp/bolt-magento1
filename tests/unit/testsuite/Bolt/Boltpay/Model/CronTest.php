@@ -157,8 +157,9 @@ class Bolt_Boltpay_Model_CronTest extends PHPUnit_Framework_TestCase
      *
      * @throws Mage_Core_Exception on failure to create or delete a dummy order
      */
-    public function cleanupOrders_deletesOrdersOlderThan15Minutes()
+    public function cleanupOrders_always_deletesOrdersOlderThan15Minutes()
     {
+        Bolt_Boltpay_Helper_Data::$fromHooks = true;
         $pendingPaymentOrders = $paidOrders = $ordersPastExpiration = $activeOrders = [];
         $cleanupDate = gmdate(
             'Y-m-d H:i:s',

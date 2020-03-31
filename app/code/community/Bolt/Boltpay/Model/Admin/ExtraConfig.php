@@ -343,22 +343,6 @@ JS;
     }
 
     /**
-     * Formats the result as an array statuses while defining the default value as a single element array
-     * containing {@see Bolt_Boltpay_Model_Payment::TRANSACTION_PRE_AUTH_PENDING, Bolt_Boltpay_Model_Payment::TRANSACTION_PENDING}
-     *
-     * @param int|string $rawConfigValue    The config value pre-filter. Will be comma delimited string
-     * @param array      $additionalParams  unused for this filter
-     *
-     * @return array  an array of statuses accepted by the plugin to receive Bolt orders for hook processing
-     */
-    public function filterAllowedReceptionStatuses($rawConfigValue, $additionalParams = array() ) {
-        return !empty($rawConfigValue)
-            ? array_map('trim', explode(',', $rawConfigValue))
-            : array(Bolt_Boltpay_Model_Payment::TRANSACTION_PRE_AUTH_PENDING, Bolt_Boltpay_Model_Payment::TRANSACTION_PENDING)
-        ;
-    }
-
-    /**
      * Normalizes JSON by stripping new lines from the given string and returning null
      * in the case of only white space.
      *

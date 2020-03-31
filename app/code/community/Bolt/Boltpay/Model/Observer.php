@@ -25,6 +25,19 @@ class Bolt_Boltpay_Model_Observer
     use Bolt_Boltpay_BoltGlobalTrait;
 
     /**
+     * @var Bolt_Boltpay_Model_Order  Model used for utility functions concerning Bolt orders
+     */
+    public $orderModel;
+
+    /**
+     * Creates reusable objects for the class
+     */
+    function __construct()
+    {
+        $this->orderModel = Mage::getSingleton('boltpay/order');
+    }
+
+    /**
      * Initializes the benchmark profiler
      *
      * event: controller_front_init_before
@@ -243,6 +256,23 @@ class Bolt_Boltpay_Model_Observer
     }
 
     /**
+     * Marks order as just placed to assist in preventing 3rd party plugins from
+     * changing Bolt order status
+     *
+     * event: sales_order_place_after
+     *
+     * @param Varien_Event_Observer $observer Observer event contains an order object
+     */
+    public function markThatBoltOrderWasJustPlaced($observer) {
+        /** @var Mage_Sales_Model_Order $order */
+        $order = $observer->getEvent()->getOrder();
+
+        if (!$this->orderModel->isBoltOrder($order)) { return; }
+
+        Bolt_Boltpay_Helper_Data::$boltOrderWasJustPlaced = true;
+    }
+
+    /**
      * Prevents Magento from changing the Bolt preauth statuses
      *
      * event: sales_order_save_before
@@ -250,11 +280,31 @@ class Bolt_Boltpay_Model_Observer
      * @param Varien_Event_Observer $observer Observer event contains an order object
      */
     public function safeguardPreAuthStatus($observer) {
+        /** @var Mage_Sales_Model_Order $order */
         $order = $observer->getEvent()->getOrder();
+
+        if (!$this->orderModel->isBoltOrder($order)) { return; }
+
+        ////////////////////////////////////////////////////////////////////////////////////
+        // Load the old data directly from the DB in case a model is used without loading
+        // where $model->getOrigData() will not be populated
+        ////////////////////////////////////////////////////////////////////////////////////
+        /** @var Mage_Sales_Model_Order $orderInOriginalState */
+        $orderInOriginalState = Mage::getModel('Mage_Sales_Model_Order')->load($order->getId());
+        $originalOrderStatus = $orderInOriginalState->getStatus();
+        $originalOrderState = $orderInOriginalState->getState();
+        ////////////////////////////////////////////////////////////////////////////////////
+
         if (
-            !Bolt_Boltpay_Helper_Data::$fromHooks
+            (
+                !Bolt_Boltpay_Helper_Data::$fromHooks ||
+                (
+                    Bolt_Boltpay_Helper_Data::$boltOrderWasJustPlaced
+                    && !Bolt_Boltpay_Helper_Data::$canChangePreAuthStatus
+                )
+            )
             && in_array(
-                $order->getOrigData('status'),
+                $originalOrderStatus,
                 array(
                     Bolt_Boltpay_Model_Payment::TRANSACTION_PRE_AUTH_PENDING,
                     Bolt_Boltpay_Model_Payment::TRANSACTION_PRE_AUTH_CANCELED
@@ -262,7 +312,12 @@ class Bolt_Boltpay_Model_Observer
             )
         )
         {
-            $order->setStatus($order->getOrigData('status'));
+            $order->setState($originalOrderState, $originalOrderStatus);
+        }
+
+        if (Bolt_Boltpay_Helper_Data::$boltOrderWasJustPlaced) {
+            # prevent any further changing of status by observers on initial save
+            Bolt_Boltpay_Helper_Data::$canChangePreAuthStatus = false;
         }
     }
 

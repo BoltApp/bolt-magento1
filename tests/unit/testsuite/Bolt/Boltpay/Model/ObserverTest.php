@@ -695,37 +695,215 @@ class Bolt_Boltpay_Model_ObserverTest extends PHPUnit_Framework_TestCase
 
     /**
      * @test
-     * that safeguardPreAuthStatus overrides status with original status value if not hook request
-     * and original status is one of preauth statuses
+     * that the flag for Bolt order being placed is set to true for Bolt orders after the order is created
+     *
+     * @covers ::markThatBoltOrderWasJustPlaced
+     */
+    public function markThatBoltOrderWasJustPlaced_forBoltOrders_flagsOrderAsJustPlaced()
+    {
+        Bolt_Boltpay_Helper_Data::$boltOrderWasJustPlaced = false;
+        $order = Bolt_Boltpay_OrderHelper::createDummyOrder(
+            self::$productId,
+            $qty = 2,
+            $paymentMethod = 'boltpay',
+            $overrideNormalOrderStateAndStatusSetByObservers = false
+        ); # triggers markThatBoltOrderWasJustPlaced
+        $this->assertTrue(Bolt_Boltpay_Helper_Data::$boltOrderWasJustPlaced);
+        Bolt_Boltpay_OrderHelper::deleteDummyOrder($order);
+    }
+
+    /**
+     * @test
+     * that the flag for Bolt order being placed remains false for non-Bolt orders after the order is created
+     *
+     * @covers ::markThatBoltOrderWasJustPlaced
+     */
+    public function markThatBoltOrderWasJustPlaced_forNonBoltOrders_keepsOrderJustPlacedFlagAsFalse()
+    {
+        Bolt_Boltpay_Helper_Data::$boltOrderWasJustPlaced = false;
+        $order = Bolt_Boltpay_OrderHelper::createDummyOrder(
+            self::$productId,
+            $qty = 2,
+            $paymentMethod = 'checkmo',
+            $overrideNormalOrderStateAndStatusSetByObservers = false
+        ); # triggers markThatBoltOrderWasJustPlaced
+
+        $this->assertFalse(Bolt_Boltpay_Helper_Data::$boltOrderWasJustPlaced);
+        Bolt_Boltpay_OrderHelper::deleteDummyOrder($order);
+    }
+
+    /**
+     * @test
+     * that safeguardPreAuthStatus allows for state and status when directive comes from
+     * a hook request and the request in not after the order has just been place
+     *
+     * @covers ::safeguardPreAuthStatus
+     *
+     * @throws Mage_Core_Exception if unable to create dummy order
+     */
+    public function safeguardPreAuthStatus_whenFromHook_setsStatus()
+    {
+        $order = Bolt_Boltpay_OrderHelper::createDummyOrder(self::$productId);
+        $this->assertEquals(Mage_Sales_Model_Order::STATE_PENDING_PAYMENT, $order->getState());
+        $this->assertEquals(Bolt_Boltpay_Model_Payment::TRANSACTION_PRE_AUTH_PENDING, $order->getStatus());
+        $this->assertFalse(Bolt_Boltpay_Helper_Data::$boltOrderWasJustPlaced);
+        $this->assertTrue(Bolt_Boltpay_Helper_Data::$canChangePreAuthStatus);
+
+        Bolt_Boltpay_Helper_Data::$fromHooks = true;
+
+        $order->setState(Mage_Sales_Model_Order::STATE_PROCESSING, Mage_Sales_Model_Order::STATE_PROCESSING)
+            ->save();  # triggers event that invokes safeguardPreAuthStatus
+
+        $this->assertEquals(Mage_Sales_Model_Order::STATE_PROCESSING, $order->getStatus());
+        $this->assertEquals(Mage_Sales_Model_Order::STATE_PROCESSING, $order->getStatus());
+
+        Bolt_Boltpay_OrderHelper::deleteDummyOrder($order);
+    }
+
+    /**
+     * @test
+     * that safeguardPreAuthStatus overrides state and status with original values if the
+     * hook request has recently created the order.  This represents the case when third party plugins
+     * attempt to change our pre-auth status
+     *
+     * @covers ::safeguardPreAuthStatus
+     *
+     * @throws Mage_Core_Exception if unable to create dummy order
+     */
+    public function safeguardPreAuthStatus_whenFromHookAfterOrderJustPlaced_blocksStatusChange()
+    {
+        $order = Bolt_Boltpay_OrderHelper::createDummyOrder(
+            self::$productId,
+            $qty = 2,
+            $paymentMethod = 'boltpay',
+            $overrideNormalOrderStateAndStatusSetByObservers = false
+        );
+        $this->assertEquals(Mage_Sales_Model_Order::STATE_PENDING_PAYMENT, $order->getState());
+        $this->assertEquals(Bolt_Boltpay_Model_Payment::TRANSACTION_PRE_AUTH_PENDING, $order->getStatus());
+        $this->assertTrue(Bolt_Boltpay_Helper_Data::$boltOrderWasJustPlaced);
+        $this->assertFalse(Bolt_Boltpay_Helper_Data::$canChangePreAuthStatus);
+
+        Bolt_Boltpay_Helper_Data::$fromHooks = true;
+
+        $order->setState(Mage_Sales_Model_Order::STATE_PROCESSING, Mage_Sales_Model_Order::STATE_PROCESSING)
+            ->save();  # triggers safeguardPreAuthStatus
+        $this->assertEquals(Mage_Sales_Model_Order::STATE_PENDING_PAYMENT, $order->getState());
+        $this->assertEquals(Bolt_Boltpay_Model_Payment::TRANSACTION_PRE_AUTH_PENDING, $order->getStatus());
+
+        Bolt_Boltpay_OrderHelper::deleteDummyOrder($order);
+    }
+
+    /**
+     * @test
+     * that safeguardPreAuthStatus does not block status change if the
+     * directive comes outside of a hook request and original state and status are
+     * not Bolt preauth
+     *
+     * @covers ::safeguardPreAuthStatus
+     *
+     * @throws Mage_Core_Exception if unable to create dummy order
+     */
+    public function safeguardPreAuthStatus_whenNotFromHookAndStatusNotPreAuth_setsStatus()
+    {
+        Bolt_Boltpay_Helper_Data::$fromHooks = true;
+        $order = Bolt_Boltpay_OrderHelper::createDummyOrder(self::$productId);
+
+        $order->setState(
+            Mage_Sales_Model_Order::STATE_PROCESSING,
+            true
+        )->save();
+
+        $this->assertEquals(Mage_Sales_Model_Order::STATE_PROCESSING, $order->getState());
+        $this->assertEquals(Mage_Sales_Model_Order::STATE_PROCESSING, $order->getStatus());
+        $this->assertFalse(Bolt_Boltpay_Helper_Data::$boltOrderWasJustPlaced);
+        $this->assertTrue(Bolt_Boltpay_Helper_Data::$canChangePreAuthStatus);
+
+        Bolt_Boltpay_Helper_Data::$fromHooks = false;
+        $order->setState(Mage_Sales_Model_Order::STATE_NEW, 'pending' )
+            ->save(); # triggers safeguardPreAuthStatus
+        $this->assertEquals(Mage_Sales_Model_Order::STATE_NEW, $order->getState());
+        $this->assertEquals('pending', $order->getStatus());
+
+        $order->setState(Mage_Sales_Model_Order::STATE_CANCELED, true)
+            ->save(); # triggers safeguardPreAuthStatus
+        $this->assertEquals(Mage_Sales_Model_Order::STATE_CANCELED, $order->getState());
+        $this->assertEquals(Mage_Sales_Model_Order::STATE_CANCELED, $order->getStatus());
+
+        Bolt_Boltpay_OrderHelper::deleteDummyOrder($order);
+    }
+
+    /**
+     * @test
+     * that safeguardPreAuthStatus blocks state and status change if initiated from
+     * outside a hook request and the order is has preauth state and status
      *
      * @covers ::safeguardPreAuthStatus
      *
      * @dataProvider safeguardPreAuthStatus_whenNotFromHookAndStatusIsPreAuthProvider
      *
+     * @param string $preAuthState  original value of order state
      * @param string $preAuthStatus original value of order status
      *
      * @throws Mage_Core_Exception if unable to create dummy order
      */
-    public function safeguardPreAuthStatus_whenNotFromHookAndStatusIsPreAuth_overridesStatusToOriginalValue($preAuthStatus)
+    public function safeguardPreAuthStatus_whenNotFromHookAndStatusIsPreAuth_overridesStatusToOriginalValue(
+        $preAuthState,
+        $preAuthStatus
+    )
     {
-        Bolt_Boltpay_Helper_Data::$fromHooks = false;
+        Bolt_Boltpay_Helper_Data::$fromHooks = true;
         $order = Bolt_Boltpay_OrderHelper::createDummyOrder(self::$productId);
-        $order->setOrigData('status', $preAuthStatus);
-        Mage::dispatchEvent('sales_order_save_before', array('order' => $order));
-        $this->assertEquals($order->getStatus(), $preAuthStatus);
+
+        if ($preAuthStatus === Bolt_Boltpay_Model_Payment::TRANSACTION_PRE_AUTH_CANCELED) {
+                $order->setState(
+                    Mage_Sales_Model_Order::STATE_CANCELED,
+                    Bolt_Boltpay_Model_Payment::TRANSACTION_PRE_AUTH_CANCELED
+                )->save();
+        }
+
+        $this->assertFalse(Bolt_Boltpay_Helper_Data::$boltOrderWasJustPlaced);
+        $this->assertTrue(Bolt_Boltpay_Helper_Data::$canChangePreAuthStatus);
+        $this->assertEquals($preAuthState, $order->getState());
+        $this->assertEquals($preAuthStatus, $order->getStatus());
+
+        /////////////////////////////////////////////////////////////////////////////////
+        /// We'll use verbose assertions to emphasize that the status is not
+        /// changing from preauth despite attempting to save a new status from a
+        ///  context outside of webhooks
+        /////////////////////////////////////////////////////////////////////////////////
+        Bolt_Boltpay_Helper_Data::$fromHooks = false;
+        $order->setState(Mage_Sales_Model_Order::STATE_NEW, 'pending' )->save();
+        $this->assertNotEquals(Mage_Sales_Model_Order::STATE_NEW, $order->getState());
+        $this->assertNotEquals('pending', $order->getStatus());
+        $this->assertEquals($preAuthState, $order->getState());
+        $this->assertEquals($preAuthStatus, $order->getStatus());
+
+        $order->setState(Mage_Sales_Model_Order::STATE_HOLDED, true)->save();
+        $this->assertNotEquals(Mage_Sales_Model_Order::STATE_HOLDED, $order->getState());
+        $this->assertNotEquals(Mage_Sales_Model_Order::STATE_HOLDED, $order->getStatus());
+        $this->assertEquals($preAuthState, $order->getState());
+        $this->assertEquals($preAuthStatus, $order->getStatus());
+        /////////////////////////////////////////////////////////////////////////////////
+
         Bolt_Boltpay_OrderHelper::deleteDummyOrder($order);
     }
 
     /**
      * Data provider for {@see safeguardPreAuthStatus_whenNotFromHookAndStatusIsPreAuth_overridesStatusToOriginalValue}
      *
-     * @return array containing preAuthStatus
+     * @return array containing [preAuthState, preAuthStatus]
      */
     public function safeguardPreAuthStatus_whenNotFromHookAndStatusIsPreAuthProvider()
     {
         return array(
-            array('preAuthStatus' => Bolt_Boltpay_Model_Payment::TRANSACTION_PRE_AUTH_PENDING),
-            array('preAuthStatus' => Bolt_Boltpay_Model_Payment::TRANSACTION_PRE_AUTH_CANCELED),
+            array(
+                'preAuthState' => Mage_Sales_Model_Order::STATE_PENDING_PAYMENT,
+                'preAuthStatus' => Bolt_Boltpay_Model_Payment::TRANSACTION_PRE_AUTH_PENDING
+            ),
+            array(
+                'preAuthState' => Mage_Sales_Model_Order::STATE_CANCELED,
+                'preAuthStatus' => Bolt_Boltpay_Model_Payment::TRANSACTION_PRE_AUTH_CANCELED
+            ),
         );
     }
 
