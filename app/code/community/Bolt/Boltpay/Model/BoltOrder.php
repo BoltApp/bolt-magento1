@@ -752,12 +752,19 @@ class Bolt_Boltpay_Model_BoltOrder extends Bolt_Boltpay_Model_Abstract
                 return json_decode('{"token" : "", "error": "'.$this->boltHelper()->__('Billing address is required.').'"}');
             }
         }
+
+        ////////////////////////////////////////////////////////////////////////////////////////////////
+        // We only need Bolt front-end validation for minimum order amount in the multi-step context
+        // where we are bypassing the native Magento interface which would normally perform this check
+        // for us
+        ////////////////////////////////////////////////////////////////////////////////////////////////
         if ($isMultiPage && !$quote->validateMinimumAmount()) {
             return (object)array(
                 'token' => '',
                 'error' => $this->boltHelper()->getMinOrderDescriptionMessage()
             );
         }
+        ////////////////////////////////////////////////////////////////////////////////////////////////
 
         // Generates order data for sending to Bolt create order API.
         $orderRequest = $this->buildOrder($quote, $isMultiPage);
@@ -781,16 +788,21 @@ if (typeof BoltPopup !== 'undefined' && typeof response.responseJSON.error_messa
     BoltPopup.show();
 }
 JS;
-        $checkoutTokenUrl = $this->boltHelper()->getMagentoUrl("boltpay/order/create/checkoutType/$checkoutType");
+
         $parameters = "''";
-        if ( $checkoutType === Bolt_Boltpay_Block_Checkout_Boltpay::CHECKOUT_TYPE_FIRECHECKOUT ) {
-            $checkoutTokenUrl = $this->boltHelper()->getMagentoUrl('boltpay/order/firecheckoutcreate');
-            $parameters = 'checkout.getFormData ? checkout.getFormData() : Form.serialize(checkout.form, true)';
-        } else if ( $checkoutType === Bolt_Boltpay_Block_Checkout_Boltpay::CHECKOUT_TYPE_ADMIN ) {
-            $checkoutTokenUrl = $this->boltHelper()->getMagentoUrl("adminhtml/sales_order_create/create/checkoutType/$checkoutType", array(), true);
-            $parameters = "''";
-        } else if($checkoutType === Bolt_Boltpay_Block_Checkout_Boltpay::CHECKOUT_TYPE_MULTI_PAGE){
-            $onError = /** @lang JavaScript */ "checkError = response.responseJSON.error_messages;";
+        switch ($checkoutType) {
+            case Bolt_Boltpay_Block_Checkout_Boltpay::CHECKOUT_TYPE_FIRECHECKOUT:
+                $checkoutTokenUrl = $this->boltHelper()->getMagentoUrl('boltpay/order/firecheckoutcreate');
+                $parameters = 'checkout.getFormData ? checkout.getFormData() : Form.serialize(checkout.form, true)';
+                break;
+            case Bolt_Boltpay_Block_Checkout_Boltpay::CHECKOUT_TYPE_ADMIN:
+                $checkoutTokenUrl = $this->boltHelper()->getMagentoUrl("adminhtml/sales_order_create/create/checkoutType/$checkoutType", array(), true);
+                break;
+            case Bolt_Boltpay_Block_Checkout_Boltpay::CHECKOUT_TYPE_MULTI_PAGE:
+                $onError = /** @lang JavaScript */ "checkError = response.responseJSON.error_messages;";
+                // fall through to default
+            default:
+                $checkoutTokenUrl = $this->boltHelper()->getMagentoUrl("boltpay/order/create/checkoutType/$checkoutType");
         }
 
         return /** @lang JavaScript */ <<<PROMISE
