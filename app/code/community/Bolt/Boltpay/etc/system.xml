@@ -23,6 +23,7 @@
         <boltpay translate="label" module="boltpay">
           <label>Bolt Pay</label>
           <frontend_type>text</frontend_type>
+          <frontend_class>complex</frontend_class>
           <sort_order>34</sort_order>
           <show_in_default>1</show_in_default>
           <show_in_website>1</show_in_website>
@@ -32,7 +33,7 @@
               <label>Enabled</label>
               <frontend_type>select</frontend_type>
               <source_model>adminhtml/system_config_source_yesno</source_model>
-              <sort_order>1</sort_order>
+              <sort_order>10</sort_order>
               <show_in_default>1</show_in_default>
               <show_in_website>1</show_in_website>
               <show_in_store>1</show_in_store>
@@ -41,455 +42,439 @@
               <label>Sandbox Mode</label>
               <frontend_type>select</frontend_type>
               <source_model>adminhtml/system_config_source_yesno</source_model>
-              <sort_order>2</sort_order>
-              <show_in_default>1</show_in_default>
-              <show_in_website>1</show_in_website>
-              <show_in_store>1</show_in_store>
-            </test>
-
-            <api_key translate="label">
-              <label>API Key</label>
-              <frontend_type>obscure</frontend_type>
-              <backend_model>boltpay/admin_apiKey</backend_model>
-              <sort_order>10</sort_order>
-              <show_in_default>1</show_in_default>
-              <show_in_website>1</show_in_website>
-              <show_in_store>1</show_in_store>
-            </api_key>
-            <publishable_key_multipage translate="label">
-              <label> Publishable Key - Multi Step Checkout (default)</label>
-              <frontend_type>text</frontend_type>
-              <sort_order>11</sort_order>
-              <show_in_default>1</show_in_default>
-              <show_in_website>1</show_in_website>
-              <show_in_store>1</show_in_store>
-            </publishable_key_multipage>
-            <publishable_key_admin translate="label">
-              <label> Publishable Key - Backoffice (optional)</label>
-              <comment>This key is required to process payment from magento admin. Please consult with your account manager if you don't have the key.</comment>
-              <frontend_type>text</frontend_type>
-              <sort_order>12</sort_order>
-              <show_in_default>1</show_in_default>
-              <show_in_website>1</show_in_website>
-              <show_in_store>1</show_in_store>
-            </publishable_key_admin>
-            <publishable_key_onepage translate="label">
-              <label> Publishable Key - One Page Checkout (optional)</label>
-              <frontend_type>text</frontend_type>
-              <sort_order>13</sort_order>
-              <show_in_default>1</show_in_default>
-              <show_in_website>1</show_in_website>
-              <show_in_store>1</show_in_store>
-            </publishable_key_onepage>
-            <!--
-                The Bolt Signing Secret Key configuration, used to verify web hook request signature.
-             -->
-            <signing_key translate="label">
-              <label>Signing Secret</label>
-              <frontend_type>obscure</frontend_type>
-              <backend_model>adminhtml/system_config_backend_encrypted</backend_model>
-              <sort_order>15</sort_order>
-              <show_in_default>1</show_in_default>
-              <show_in_website>1</show_in_website>
-              <show_in_store>1</show_in_store>
-            </signing_key>
-
-            <ipstack_key translate="label">
-              <label>Ipstack Access Key</label>
-              <frontend_type>obscure</frontend_type>
-              <backend_model>adminhtml/system_config_backend_encrypted</backend_model>
-              <tooltip>
-                <![CDATA[
-                <b>If provided, Bolt plugin performs address lookup to optimize the performance. Obtain API key via https://ipstack.com/ or contact Bolt</b>
-                ]]>
-              </tooltip>
-              <sort_order>16</sort_order>
-              <show_in_default>1</show_in_default>
-              <show_in_website>1</show_in_website>
-              <show_in_store>1</show_in_store>
-            </ipstack_key>
-
-            <title translate="label">
-              <label>Title</label>
-              <frontend_type>text</frontend_type>
               <sort_order>20</sort_order>
               <show_in_default>1</show_in_default>
               <show_in_website>1</show_in_website>
               <show_in_store>1</show_in_store>
-            </title>
-            <button_classes translate="label">
-              <label>Additional button CSS classes</label>
-              <frontend_type>text</frontend_type>
-              <sort_order>22</sort_order>
+            </test>
+            <keys type="group" translate="label comment">
+              <label>Keys</label>
+              <comment><![CDATA[<div style="margin-left:-5px;margin-right:-5px;font-weight:bold;">Keys and URL Configurations can be found at <a href="merchant.bolt.com/settings">merchant.bolt.com/settings</a> or <a href="merchant-sandbox.bolt.com/settings">merchant-sandbox.bolt.com/settings</a>.</div>]]></comment>
+              <sort_order>30</sort_order>
               <show_in_default>1</show_in_default>
               <show_in_website>1</show_in_website>
               <show_in_store>1</show_in_store>
-            </button_classes>
-
-            <selectors translate="label">
-              <label>Replace Button Selectors</label>
-              <frontend_type>text</frontend_type>
-              <comment>CSS selectors of buttons to be replaced by Bolt.  Selectors are comma delimited, default: .btn-proceed-checkout</comment>
-              <sort_order>35</sort_order>
-              <show_in_default>1</show_in_default>
-              <show_in_website>1</show_in_website>
-              <show_in_store>1</show_in_store>
-            </selectors>
-
-            <selector_styles translate="label">
-              <label>Targeted CSS</label>
-              <frontend_type>textarea</frontend_type>
-              <comment>
-                A `||` delimited list of blocks of CSS associated with a replace button
-                selector added to the pages on which the specified button it is found.
-                An example can be seen in the tooltip for adding css depending on if a
-                specific button is found.
-              </comment>
-              <tooltip>
-                <![CDATA[
-<b>Example of adding styles based on two different selectors:</b>
-<pre>
-  .btn-proceed-checkout {
-    body { max-width: 95%;}
-    li.button-box { float: right; margin: 2px;}
-  }
-  <b>||</b>
-  .btn-quickbuy {
-    li.button-container { float: left; }
-    .btn-quickbuy { width: 10px; }
-  }
-</pre>
-                ]]>
-              </tooltip>
-              <sort_order>36</sort_order>
-              <show_in_default>1</show_in_default>
-              <show_in_website>1</show_in_website>
-              <show_in_store>1</show_in_store>
-            </selector_styles>
-
-            <allowed_button_by_custom_routes>
-                <label>Show Bolt Button on Pages By Custom Route(s)</label>
-                <frontend_type>text</frontend_type>
-                <comment>Routes are comma delimited. Leave empty if not require additional custom route.</comment>
-                <sort_order>38</sort_order>
-                <show_in_default>1</show_in_default>
-                <show_in_website>1</show_in_website>
-                <show_in_store>0</show_in_store>
-            </allowed_button_by_custom_routes>
-
-            <enable_product_page_checkout>
-              <label>[Experimental] Enable Product Page Checkout</label>
-              <comment></comment>
-              <frontend_type>select</frontend_type>
-              <source_model>adminhtml/system_config_source_yesno</source_model>
+              <expanded>1</expanded>
+              <fields>
+                <api_key translate="label tooltip">
+                  <label>API Key</label>
+                  <config_path>payment/boltpay/api_key</config_path>
+                  <frontend_type>obscure</frontend_type>
+                  <backend_model>boltpay/admin_apiKey</backend_model>
+                  <sort_order>10</sort_order>
+                  <show_in_default>1</show_in_default>
+                  <show_in_website>1</show_in_website>
+                  <show_in_store>1</show_in_store>
+                  <tooltip>Used for calling Bolt API from your backend server.</tooltip>
+                </api_key>
+                <signing_key translate="label tooltip">
+                  <label>Signing Secret</label>
+                  <config_path>payment/boltpay/signing_key</config_path>
+                  <frontend_type>obscure</frontend_type>
+                  <backend_model>adminhtml/system_config_backend_encrypted</backend_model>
+                  <sort_order>20</sort_order>
+                  <show_in_default>1</show_in_default>
+                  <show_in_website>1</show_in_website>
+                  <show_in_store>1</show_in_store>
+                  <tooltip>Used for signature verification</tooltip>
+                </signing_key>
+                <publishable_key_multipage translate="label tooltip">
+                  <label>Publishable Key - Multistep</label>
+                  <config_path>payment/boltpay/publishable_key_multipage</config_path>
+                  <frontend_type>text</frontend_type>
+                  <sort_order>30</sort_order>
+                  <show_in_default>1</show_in_default>
+                  <show_in_website>1</show_in_website>
+                  <show_in_store>1</show_in_store>
+                  <tooltip>Used by Bolt JavaScript to display the Multistep Experience</tooltip>
+                </publishable_key_multipage>
+                <publishable_key_onepage translate="label tooltip">
+                  <label>Publishable Key - Payment Only</label>
+                  <config_path>payment/boltpay/publishable_key_onepage</config_path>
+                  <frontend_type>text</frontend_type>
+                  <sort_order>40</sort_order>
+                  <show_in_default>1</show_in_default>
+                  <show_in_website>1</show_in_website>
+                  <show_in_store>1</show_in_store>
+                  <tooltip>Used by Bolt JavaScript to display the Payment Only Experience</tooltip>
+                </publishable_key_onepage>
+                <publishable_key_admin translate="label tooltip">
+                  <label>Publishable Key - Back Office</label>
+                  <config_path>payment/boltpay/publishable_key_admin</config_path>
+                  <frontend_type>text</frontend_type>
+                  <sort_order>50</sort_order>
+                  <show_in_default>1</show_in_default>
+                  <show_in_website>1</show_in_website>
+                  <show_in_store>1</show_in_store>
+                  <tooltip>Used by Bolt JavaScript to display the Back Office Experience</tooltip>
+                </publishable_key_admin>
+                <checkapi translate="label">
+                  <label>Check Boltpay API</label>
+                  <config_path>payment/boltpay/checkapi</config_path>
+                  <frontend_type>button</frontend_type>
+                  <frontend_model>boltpay/adminhtml_system_config_form_button</frontend_model>
+                  <sort_order>60</sort_order>
+                  <show_in_default>1</show_in_default>
+                  <show_in_website>1</show_in_website>
+                  <show_in_store>1</show_in_store>
+                  <comment><![CDATA[<p class="check_boltpay_api_error"></p>]]></comment>
+                </checkapi>
+              </fields>
+            </keys>
+            <where_to_add_bolt type="group" translate="label">
+              <label>Where To Add Bolt</label>
               <sort_order>40</sort_order>
               <show_in_default>1</show_in_default>
               <show_in_website>1</show_in_website>
               <show_in_store>1</show_in_store>
-            </enable_product_page_checkout>
-            <product_page_checkout_selector>
-              <label>[Experimental] Product Page Checkout Selector</label>
-              <frontend_type>text</frontend_type>
-              <comment>CSS selectors of buttons to be replaced by Bolt.  Selectors are comma delimited, default: .btn-cart</comment>
-              <sort_order>43</sort_order>
-              <show_in_default>1</show_in_default>
-              <show_in_website>1</show_in_website>
-              <show_in_store>1</show_in_store>
-            </product_page_checkout_selector>
-
-            <additional_css translate="label">
-              <label>Global CSS</label>
-              <comment>Any CSS that is to be added to pages when any Bolt button selector is found</comment>
-              <frontend_type>textarea</frontend_type>
-              <sort_order>45</sort_order>
-              <show_in_default>1</show_in_default>
-              <show_in_website>1</show_in_website>
-              <show_in_store>1</show_in_store>
-            </additional_css>
-
-            <additional_js translate="label">
-              <label>Global JS</label>
-              <comment>Any JS that is to be added to pages when any Bolt button selector is found</comment>
-              <frontend_type>textarea</frontend_type>
-              <sort_order>47</sort_order>
-              <show_in_default>1</show_in_default>
-              <show_in_website>1</show_in_website>
-              <show_in_store>1</show_in_store>
-            </additional_js>
-
-            <successpage translate="label">
-              <label>Success Page Redirect</label>
-              <frontend_type>text</frontend_type>
+              <expanded>1</expanded>
+              <fields>
+                <hide_on_checkout translate="label">
+                  <label>Hide On Checkout Page</label>
+                  <config_path>payment/boltpay/hide_on_checkout</config_path>
+                  <sort_order>10</sort_order>
+                  <frontend_type>select</frontend_type>
+                  <source_model>adminhtml/system_config_source_yesno</source_model>
+                  <show_in_default>1</show_in_default>
+                  <show_in_website>1</show_in_website>
+                  <show_in_store>1</show_in_store>
+                </hide_on_checkout>
+                <add_button_everywhere translate="label comment">
+                  <label>Display Bolt Checkout In Mini Cart</label>
+                  <config_path>payment/boltpay/add_button_everywhere</config_path>
+                  <frontend_type>select</frontend_type>
+                  <source_model>adminhtml/system_config_source_yesno</source_model>
+                  <comment>By default, Bolt checkout button is displayed in cart page. Enable this option if you plan to display Bolt checkout outside of cart page, such as mini cart.</comment>
+                  <sort_order>20</sort_order>
+                  <show_in_default>1</show_in_default>
+                  <show_in_website>1</show_in_website>
+                  <show_in_store>1</show_in_store>
+                </add_button_everywhere>
+                <allowed_button_by_custom_routes translate="label comment">
+                  <label>Show Bolt Button on Pages By Custom Route(s)</label>
+                  <config_path>payment/boltpay/allowed_button_by_custom_routes</config_path>
+                  <frontend_type>text</frontend_type>
+                  <comment>Routes are comma delimited. Leave empty if not require additional custom route.</comment>
+                  <sort_order>30</sort_order>
+                  <show_in_default>1</show_in_default>
+                  <show_in_website>1</show_in_website>
+                  <show_in_store>1</show_in_store>
+                </allowed_button_by_custom_routes>
+                <selectors translate="label comment">
+                  <label>Replace Button Selectors</label>
+                  <config_path>payment/boltpay/selectors</config_path>
+                  <frontend_type>text</frontend_type>
+                  <comment>CSS selectors of buttons to be replaced by Bolt. Selectors are comma delimited, default: .btn-proceed-checkout</comment>
+                  <sort_order>40</sort_order>
+                  <show_in_default>1</show_in_default>
+                  <show_in_website>1</show_in_website>
+                  <show_in_store>1</show_in_store>
+                </selectors>
+              </fields>
+            </where_to_add_bolt>
+            <additional_options type="group" translate="label">
+              <label>Additional Options</label>
               <sort_order>50</sort_order>
               <show_in_default>1</show_in_default>
               <show_in_website>1</show_in_website>
               <show_in_store>1</show_in_store>
-            </successpage>
-            
-            <bolt_disabled_customer_groups>
-                <label>Disabled Customer Groups for Bolt</label>
-                <frontend_type>multiselect</frontend_type>
-                <can_be_empty>1</can_be_empty>
-                <source_model>adminhtml/system_config_source_customer_group_multiselect</source_model>
-                <sort_order>56</sort_order>
-                <show_in_default>1</show_in_default>
-                <show_in_website>1</show_in_website>
-                <show_in_store>1</show_in_store>
-            </bolt_disabled_customer_groups>
-
-            <hide_on_checkout>
-              <label>Hide On Checkout Page</label>
-              <sort_order>55</sort_order>
-              <frontend_type>select</frontend_type>
-              <source_model>adminhtml/system_config_source_yesno</source_model>
-              <show_in_default>1</show_in_default>
-              <show_in_website>1</show_in_website>
-              <show_in_store>1</show_in_store>
-            </hide_on_checkout>
-
-            <disable_complete_authorize translate="label">
-              <label>Disable Complete Authorize</label>
-              <frontend_type>select</frontend_type>
-              <source_model>adminhtml/system_config_source_yesno</source_model>
+              <expanded>1</expanded>
+              <fields>
+                <enable_product_page_checkout translate="label comment">
+                  <label>Product Page Checkout</label>
+                  <config_path>payment/boltpay/enable_product_page_checkout</config_path>
+                  <comment>Enable Bolt Checkout on Product Pages</comment>
+                  <frontend_type>select</frontend_type>
+                  <source_model>adminhtml/system_config_source_yesno</source_model>
+                  <sort_order>10</sort_order>
+                  <show_in_default>1</show_in_default>
+                  <show_in_website>1</show_in_website>
+                  <show_in_store>1</show_in_store>
+                </enable_product_page_checkout>
+                <product_page_checkout_selector translate="label comment">
+                  <label>Product Page Checkout Selector</label>
+                  <config_path>payment/boltpay/product_page_checkout_selector</config_path>
+                  <frontend_type>text</frontend_type>
+                  <comment>CSS selectors of buttons to be replaced by Bolt. Selectors are comma delimited, default: .btn-cart</comment>
+                  <sort_order>20</sort_order>
+                  <show_in_default>1</show_in_default>
+                  <show_in_website>1</show_in_website>
+                  <show_in_store>1</show_in_store>
+                </product_page_checkout_selector>
+                <additional_css translate="label comment">
+                  <label>Additional CSS</label>
+                  <config_path>payment/boltpay/additional_css</config_path>
+                  <comment>This CSS will be added to any page that displays the Bolt Checkout button.</comment>
+                  <frontend_type>textarea</frontend_type>
+                  <sort_order>30</sort_order>
+                  <show_in_default>1</show_in_default>
+                  <show_in_website>1</show_in_website>
+                  <show_in_store>1</show_in_store>
+                </additional_css>
+                <additional_js translate="label comment">
+                  <label>Additional JS</label>
+                  <config_path>payment/boltpay/additional_js</config_path>
+                  <comment>This JS will be added to any page that displays the Bolt Checkout button.</comment>
+                  <frontend_type>textarea</frontend_type>
+                  <sort_order>40</sort_order>
+                  <show_in_default>1</show_in_default>
+                  <show_in_website>1</show_in_website>
+                  <show_in_store>1</show_in_store>
+                </additional_js>
+              </fields>
+            </additional_options>
+            <advanced_settings type="group" translate="label">
+              <label>Configure Advanced Settings</label>
               <sort_order>60</sort_order>
               <show_in_default>1</show_in_default>
               <show_in_website>1</show_in_website>
               <show_in_store>1</show_in_store>
-            </disable_complete_authorize>
-
-            <enable_merchant_scoped_account translate="label">
-              <label>Enable merchant scoped account</label>
-              <frontend_type>select</frontend_type>
-              <source_model>adminhtml/system_config_source_yesno</source_model>
-              <sort_order>65</sort_order>
-              <show_in_default>1</show_in_default>
-              <show_in_website>1</show_in_website>
-              <show_in_store>1</show_in_store>
-            </enable_merchant_scoped_account>
-
-            <allow_po_box translate="label">
-              <label>Allow Shipping To PO Box</label>
-              <frontend_type>select</frontend_type>
-              <source_model>adminhtml/system_config_source_yesno</source_model>
-              <sort_order>70</sort_order>
-              <show_in_default>1</show_in_default>
-              <show_in_website>1</show_in_website>
-              <show_in_store>1</show_in_store>
-            </allow_po_box>
-
-            <skip_payment translate="label">
-              <label>Skip Payment Method Step</label>
-              <frontend_type>select</frontend_type>
-              <source_model>adminhtml/system_config_source_yesno</source_model>
-              <comment>Makes Bolt the only payment method when available</comment>
-              <sort_order>75</sort_order>
-              <show_in_default>1</show_in_default>
-              <show_in_website>1</show_in_website>
-              <show_in_store>1</show_in_store>
-            </skip_payment>
-
-            <allowspecific translate="label">
-              <label>Payment from Applicable Countries</label>
-              <frontend_type>allowspecific</frontend_type>
-              <sort_order>80</sort_order>
-              <source_model>adminhtml/system_config_source_payment_allspecificcountries</source_model>
-              <show_in_default>1</show_in_default>
-              <show_in_website>1</show_in_website>
-              <show_in_store>1</show_in_store>
-              <depends><skip_payment>0</skip_payment></depends>
-            </allowspecific>
-            <specificcountry translate="label">
-              <label>Payment from Specific Countries</label>
-              <frontend_type>multiselect</frontend_type>
-              <sort_order>90</sort_order>
-              <source_model>adminhtml/system_config_source_country</source_model>
-              <show_in_default>1</show_in_default>
-              <show_in_website>1</show_in_website>
-              <show_in_store>1</show_in_store>
-              <depends><skip_payment>0</skip_payment></depends>
-            </specificcountry>
-            <check translate="label">
-              <label>Javascript: check</label>
-              <comment>
-                <![CDATA[
-                    <p>
-This function is called just before the checkout form loads.
-This is a hook to determine whether Bolt can actually proceed
-with checkout at this point. This function should return a boolean.
-                    </p>
-                    ]]>
-              </comment>
-              <frontend_type>textarea</frontend_type>
-              <show_in_default>1</show_in_default>
-              <show_in_website>1</show_in_website>
-              <show_in_store>1</show_in_store>
-              <sort_order>100</sort_order>
-            </check>
-            <on_checkout_start translate="label">
-              <label>Javascript: onCheckoutStart</label>
-              <comment>
-                <![CDATA[
-                    <p>
-This function is called after the checkout form is presented to the user.
-                    </p>
-                    ]]>
-              </comment>
-              <frontend_type>textarea</frontend_type>
-              <show_in_default>1</show_in_default>
-              <show_in_website>1</show_in_website>
-              <show_in_store>1</show_in_store>
-              <sort_order>103</sort_order>
-            </on_checkout_start>
-            <on_email_enter translate="label">
-              <label>Javascript: onEmailEnter</label>
-              <comment>
-                <![CDATA[
-                    <p>
-This function is called after the user enters their email address.
-                    </p>
-                    ]]>
-              </comment>
-              <frontend_type>textarea</frontend_type>
-              <show_in_default>1</show_in_default>
-              <show_in_website>1</show_in_website>
-              <show_in_store>1</show_in_store>
-              <sort_order>106</sort_order>
-            </on_email_enter>
-            <on_shipping_details_complete translate="label">
-              <label>Javascript: onShippingDetailsComplete</label>
-              <comment>
-                <![CDATA[
-                    <p>
-This function is called when the user proceeds to the shipping options page.
-This is applicable only to multi-step checkout.
-                    </p>
-                    ]]>
-              </comment>
-              <frontend_type>textarea</frontend_type>
-              <show_in_default>1</show_in_default>
-              <show_in_website>1</show_in_website>
-              <show_in_store>1</show_in_store>
-              <sort_order>109</sort_order>
-            </on_shipping_details_complete>
-            <on_shipping_options_complete translate="label">
-              <label>Javascript: onShippingOptionsComplete</label>
-              <comment>
-                <![CDATA[
-                    <p>
-This function is called when the user proceeds to the payment details page.
-This is applicable only to multi-step checkout.
-                    </p>
-                    ]]>
-              </comment>
-              <frontend_type>textarea</frontend_type>
-              <show_in_default>1</show_in_default>
-              <show_in_website>1</show_in_website>
-              <show_in_store>1</show_in_store>
-              <sort_order>112</sort_order>
-            </on_shipping_options_complete>
-            <on_payment_submit translate="label">
-              <label>onPaymentSubmit</label>
-              <comment>
-                <![CDATA[
-                    <p>
-This function is called after the user clicks the pay button.
-                    </p>
-                    ]]>
-              </comment>
-              <frontend_type>textarea</frontend_type>
-              <show_in_default>1</show_in_default>
-              <show_in_website>1</show_in_website>
-              <show_in_store>1</show_in_store>
-              <sort_order>115</sort_order>
-            </on_payment_submit>
-            <success translate="label">
-              <label>Javascript: success</label>
-              <comment>
-                <![CDATA[
-                    <p>
-This function is called when the Bolt checkout transaction is successful.
-                    </p>
-                    ]]>
-              </comment>
-              <frontend_type>textarea</frontend_type>
-              <show_in_default>1</show_in_default>
-              <show_in_website>1</show_in_website>
-              <show_in_store>1</show_in_store>
-              <sort_order>117</sort_order>
-            </success>
-            <close translate="label">
-              <label>Javascript: close</label>
-              <comment>
-                <![CDATA[
-                    <p>
-This function is called when the Bolt checkout modal is closed.
-                    </p>
-                    ]]>
-              </comment>
-              <frontend_type>textarea</frontend_type>
-              <show_in_default>1</show_in_default>
-              <show_in_website>1</show_in_website>
-              <show_in_store>1</show_in_store>
-              <sort_order>120</sort_order>
-            </close>
-            <use_javascript_in_admin translate="label">
-              <label>Use Custom Javascript in Admin Order Creation?</label>
-              <frontend_type>select</frontend_type>
-              <source_model>adminhtml/system_config_source_yesno</source_model>
-              <comment>The javascript events above are usually intended for the frontend store pages.  Enable this option if you also want them applied to the admin order creation interface.</comment>
-              <sort_order>123</sort_order>
-              <show_in_default>1</show_in_default>
-              <show_in_website>1</show_in_website>
-              <show_in_store>1</show_in_store>
-            </use_javascript_in_admin>
-            <add_button_everywhere translate="label">
-              <label>Add Bolt Button Everywhere</label>
-              <frontend_type>select</frontend_type>
-              <source_model>adminhtml/system_config_source_yesno</source_model>
-              <comment>By default, Bolt checkout button is displayed in cart page. Enable this option if you plan to display Bolt checkout outside of cart page, such as mini cart.</comment>
-              <sort_order>130</sort_order>
-              <show_in_default>1</show_in_default>
-              <show_in_website>1</show_in_website>
-              <show_in_store>1</show_in_store>
-            </add_button_everywhere>
-            <sort_order translate="label">
-              <label>Sort Order</label>
-              <frontend_type>text</frontend_type>
-              <comment>Influences display order on checkout pages relative to other payment options.  This does not affect any other pages including the shopping cart and product pages.</comment>
-              <sort_order>140</sort_order>
-              <show_in_default>1</show_in_default>
-              <show_in_website>1</show_in_website>
-              <show_in_store>1</show_in_store>
-              <frontend_class>validate-number</frontend_class>
-            </sort_order>
-            <auto_create_invoice_after_creating_shipment>
-              <label>Automatically create an invoice after creating a shipmentt</label>
-              <frontend_type>select</frontend_type>
-              <source_model>adminhtml/system_config_source_yesno</source_model>
-              <sort_order>145</sort_order>
-              <show_in_default>1</show_in_default>
-              <show_in_website>1</show_in_website>
-              <show_in_store>1</show_in_store>
-            </auto_create_invoice_after_creating_shipment>
-            <extra_options translate="label">
-              <label>Extra config</label>
-              <frontend_type>textarea</frontend_type>
-              <sort_order>150</sort_order>
-              <show_in_default>1</show_in_default>
-              <show_in_website>1</show_in_website>
-              <show_in_store>1</show_in_store>
-              <backend_model>boltpay/admin_extraConfig</backend_model>
-            </extra_options>
-            <checkapi translate="label">
-              <label>Check Boltpay API</label>
-              <frontend_type>button</frontend_type>
-              <frontend_model>boltpay/adminhtml_system_config_form_button</frontend_model>
-              <sort_order>160</sort_order>
-              <show_in_default>1</show_in_default>
-              <show_in_website>1</show_in_website>
-              <show_in_store>1</show_in_store>
-              <comment> </comment>
-            </checkapi>
+              <fields>
+                <ipstack_key translate="label tooltip">
+                  <label>Ipstack Access Key</label>
+                  <config_path>payment/boltpay/ipstack_key</config_path>
+                  <frontend_type>obscure</frontend_type>
+                  <backend_model>adminhtml/system_config_backend_encrypted</backend_model>
+                  <tooltip><![CDATA[<b>If provided, Bolt plugin performs address lookup to optimize the performance. Obtain API key via https://ipstack.com/ or contact Bolt</b>]]></tooltip>
+                  <sort_order>10</sort_order>
+                  <show_in_default>1</show_in_default>
+                  <show_in_website>1</show_in_website>
+                  <show_in_store>1</show_in_store>
+                </ipstack_key>
+                <title translate="label">
+                  <label>Title</label>
+                  <config_path>payment/boltpay/title</config_path>
+                  <frontend_type>text</frontend_type>
+                  <sort_order>20</sort_order>
+                  <show_in_default>1</show_in_default>
+                  <show_in_website>1</show_in_website>
+                  <show_in_store>1</show_in_store>
+                </title>
+                <button_classes translate="label">
+                  <label>Additional Button CSS Classes</label>
+                  <config_path>payment/boltpay/button_classes</config_path>
+                  <frontend_type>text</frontend_type>
+                  <sort_order>30</sort_order>
+                  <show_in_default>1</show_in_default>
+                  <show_in_website>1</show_in_website>
+                  <show_in_store>1</show_in_store>
+                </button_classes>
+                <selector_styles translate="label comment tooltip">
+                  <label>Targeted CSS</label>
+                  <config_path>payment/boltpay/selector_styles</config_path>
+                  <frontend_type>textarea</frontend_type>
+                  <comment>
+                    A `||` delimited list of blocks of CSS associated with a replace button
+                    selector added to the pages on which the specified button it is found.
+                    An example can be seen in the tooltip for adding css depending on if a
+                    specific button is found.
+                  </comment>
+                  <tooltip>
+                    <![CDATA[
+<b>Example of adding styles based on two different selectors:</b>
+<pre>
+.btn-proceed-checkout {
+  body { max-width: 95%;}
+  li.button-box { float: right; margin: 2px;}
+}
+<b>||</b>
+.btn-quickbuy {
+  li.button-container { float: left; }
+  .btn-quickbuy { width: 10px; }
+}
+</pre>]]>
+                  </tooltip>
+                  <sort_order>40</sort_order>
+                  <show_in_default>1</show_in_default>
+                  <show_in_website>1</show_in_website>
+                  <show_in_store>1</show_in_store>
+                </selector_styles>
+                <successpage translate="label">
+                  <label>Success Page Redirect</label>
+                  <config_path>payment/boltpay/successpage</config_path>
+                  <frontend_type>text</frontend_type>
+                  <sort_order>50</sort_order>
+                  <show_in_default>1</show_in_default>
+                  <show_in_website>1</show_in_website>
+                  <show_in_store>1</show_in_store>
+                </successpage>
+                <bolt_disabled_customer_groups translate="label">
+                  <label>Disabled Customer Groups For Bolt</label>
+                  <config_path>payment/boltpay/bolt_disabled_customer_groups</config_path>
+                  <frontend_type>multiselect</frontend_type>
+                  <can_be_empty>1</can_be_empty>
+                  <source_model>adminhtml/system_config_source_customer_group_multiselect</source_model>
+                  <sort_order>55</sort_order>
+                  <show_in_default>1</show_in_default>
+                  <show_in_website>1</show_in_website>
+                  <show_in_store>1</show_in_store>
+                </bolt_disabled_customer_groups>
+                <enable_merchant_scoped_account translate="label">
+                  <label>Enable Merchant Scoped Account</label>
+                  <config_path>payment/boltpay/enable_merchant_scoped_account</config_path>
+                  <frontend_type>select</frontend_type>
+                  <source_model>adminhtml/system_config_source_yesno</source_model>
+                  <sort_order>60</sort_order>
+                  <show_in_default>1</show_in_default>
+                  <show_in_website>1</show_in_website>
+                  <show_in_store>1</show_in_store>
+                </enable_merchant_scoped_account>
+                <allow_po_box translate="label">
+                  <label>Allow Shipping To PO Box</label>
+                  <config_path>payment/boltpay/allow_po_box</config_path>
+                  <frontend_type>select</frontend_type>
+                  <source_model>adminhtml/system_config_source_yesno</source_model>
+                  <sort_order>70</sort_order>
+                  <show_in_default>1</show_in_default>
+                  <show_in_website>1</show_in_website>
+                  <show_in_store>1</show_in_store>
+                </allow_po_box>
+                <skip_payment translate="label comment">
+                  <label>Skip Payment Method Step</label>
+                  <config_path>payment/boltpay/skip_payment</config_path>
+                  <frontend_type>select</frontend_type>
+                  <source_model>adminhtml/system_config_source_yesno</source_model>
+                  <comment>Makes Bolt the only payment method when available</comment>
+                  <sort_order>80</sort_order>
+                  <show_in_default>1</show_in_default>
+                  <show_in_website>1</show_in_website>
+                  <show_in_store>1</show_in_store>
+                </skip_payment>
+                <allowspecific translate="label">
+                  <label>Payment From Applicable Countries</label>
+                  <config_path>payment/boltpay/allowspecific</config_path>
+                  <frontend_type>allowspecific</frontend_type>
+                  <sort_order>90</sort_order>
+                  <source_model>adminhtml/system_config_source_payment_allspecificcountries</source_model>
+                  <show_in_default>1</show_in_default>
+                  <show_in_website>1</show_in_website>
+                  <show_in_store>1</show_in_store>
+                  <depends><skip_payment>0</skip_payment></depends>
+                </allowspecific>
+                <specificcountry translate="label">
+                  <label>Payment From Specific Countries</label>
+                  <config_path>payment/boltpay/specificcountry</config_path>
+                  <frontend_type>multiselect</frontend_type>
+                  <sort_order>100</sort_order>
+                  <source_model>adminhtml/system_config_source_country</source_model>
+                  <show_in_default>1</show_in_default>
+                  <show_in_website>1</show_in_website>
+                  <show_in_store>1</show_in_store>
+                  <depends><skip_payment>0</skip_payment></depends>
+                </specificcountry>
+                <check translate="label comment">
+                  <label>Javascript: check</label>
+                  <config_path>payment/boltpay/check</config_path>
+                  <comment><![CDATA[<p>This function is called just before the checkout form loads. This is a hook to determine whether Bolt can actually proceed with checkout at this point. This function should return a boolean.</p>]]></comment>
+                  <frontend_type>textarea</frontend_type>
+                  <show_in_default>1</show_in_default>
+                  <show_in_website>1</show_in_website>
+                  <show_in_store>1</show_in_store>
+                  <sort_order>110</sort_order>
+                </check>
+                <on_checkout_start translate="label comment">
+                  <label>Javascript: onCheckoutStart</label>
+                  <config_path>payment/boltpay/on_checkout_start</config_path>
+                  <comment><![CDATA[<p>This function is called after the checkout form is presented to the user.</p>]]></comment>
+                  <frontend_type>textarea</frontend_type>
+                  <show_in_default>1</show_in_default>
+                  <show_in_website>1</show_in_website>
+                  <show_in_store>1</show_in_store>
+                  <sort_order>120</sort_order>
+                </on_checkout_start>
+                <on_email_enter translate="label comment">
+                  <label>Javascript: onEmailEnter</label>
+                  <config_path>payment/boltpay/on_email_enter</config_path>
+                  <comment><![CDATA[<p>This function is called after the user enters their email address.</p>]]></comment>
+                  <frontend_type>textarea</frontend_type>
+                  <show_in_default>1</show_in_default>
+                  <show_in_website>1</show_in_website>
+                  <show_in_store>1</show_in_store>
+                  <sort_order>130</sort_order>
+                </on_email_enter>
+                <on_shipping_details_complete translate="label comment">
+                  <label>Javascript: onShippingDetailsComplete</label>
+                  <config_path>payment/boltpay/on_shipping_details_complete</config_path>
+                  <comment><![CDATA[<p>This function is called when the user proceeds to the shipping options page. This is applicable only to multi-step checkout.</p>]]></comment>
+                  <frontend_type>textarea</frontend_type>
+                  <show_in_default>1</show_in_default>
+                  <show_in_website>1</show_in_website>
+                  <show_in_store>1</show_in_store>
+                  <sort_order>140</sort_order>
+                </on_shipping_details_complete>
+                <on_shipping_options_complete translate="label comment">
+                  <label>Javascript: onShippingOptionsComplete</label>
+                  <config_path>payment/boltpay/on_shipping_options_complete</config_path>
+                  <comment><![CDATA[<p>This function is called when the user proceeds to the payment details page. This is applicable only to multi-step checkout.</p>]]></comment>
+                  <frontend_type>textarea</frontend_type>
+                  <show_in_default>1</show_in_default>
+                  <show_in_website>1</show_in_website>
+                  <show_in_store>1</show_in_store>
+                  <sort_order>150</sort_order>
+                </on_shipping_options_complete>
+                <on_payment_submit translate="label comment">
+                  <label>Javascript: onPaymentSubmit</label>
+                  <config_path>payment/boltpay/on_payment_submit</config_path>
+                  <comment><![CDATA[<p>This function is called after the user clicks the pay button.</p>]]></comment>
+                  <frontend_type>textarea</frontend_type>
+                  <show_in_default>1</show_in_default>
+                  <show_in_website>1</show_in_website>
+                  <show_in_store>1</show_in_store>
+                  <sort_order>160</sort_order>
+                </on_payment_submit>
+                <success translate="label comment">
+                  <label>Javascript: success</label>
+                  <config_path>payment/boltpay/success</config_path>
+                  <comment><![CDATA[<p>This function is called when the Bolt checkout transaction is successful.</p>]]></comment>
+                  <frontend_type>textarea</frontend_type>
+                  <show_in_default>1</show_in_default>
+                  <show_in_website>1</show_in_website>
+                  <show_in_store>1</show_in_store>
+                  <sort_order>170</sort_order>
+                </success>
+                <close translate="label comment">
+                  <label>Javascript: close</label>
+                  <config_path>payment/boltpay/close</config_path>
+                  <comment><![CDATA[<p>This function is called when the Bolt checkout modal is closed.</p>]]></comment>
+                  <frontend_type>textarea</frontend_type>
+                  <show_in_default>1</show_in_default>
+                  <show_in_website>1</show_in_website>
+                  <show_in_store>1</show_in_store>
+                  <sort_order>180</sort_order>
+                </close>
+                <use_javascript_in_admin translate="label comment">
+                  <label>Use Custom Javascript In Admin Order Creation</label>
+                  <config_path>payment/boltpay/use_javascript_in_admin</config_path>
+                  <frontend_type>select</frontend_type>
+                  <source_model>adminhtml/system_config_source_yesno</source_model>
+                  <comment>The javascript events above are usually intended for the frontend store pages. Enable this option if you also want them applied to the admin order creation interface.</comment>
+                  <sort_order>190</sort_order>
+                  <show_in_default>1</show_in_default>
+                  <show_in_website>1</show_in_website>
+                  <show_in_store>1</show_in_store>
+                </use_javascript_in_admin>
+                <auto_create_invoice_after_creating_shipment translate="label">
+                  <label>Automatically Create An Invoice After Creating A Shipmentt</label>
+                  <config_path>payment/boltpay/auto_create_invoice_after_creating_shipment</config_path>
+                  <frontend_type>select</frontend_type>
+                  <source_model>adminhtml/system_config_source_yesno</source_model>
+                  <sort_order>195</sort_order>
+                  <show_in_default>1</show_in_default>
+                  <show_in_website>1</show_in_website>
+                  <show_in_store>1</show_in_store>
+                </auto_create_invoice_after_creating_shipment>
+                <extra_options translate="label">
+                  <label>Extra Config</label>
+                  <config_path>payment/boltpay/extra_options</config_path>
+                  <frontend_type>textarea</frontend_type>
+                  <sort_order>200</sort_order>
+                  <show_in_default>1</show_in_default>
+                  <show_in_website>1</show_in_website>
+                  <show_in_store>1</show_in_store>
+                  <backend_model>boltpay/admin_extraConfig</backend_model>
+                </extra_options>
+              </fields>
+            </advanced_settings>
           </fields>
         </boltpay>
       </groups>

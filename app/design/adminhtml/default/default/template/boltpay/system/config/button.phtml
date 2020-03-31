@@ -18,17 +18,17 @@
 /** @var Bolt_Boltpay_Block_Adminhtml_System_Config_Form_Button $this */
 ?>
 <style>
-    #row_payment_boltpay_checkapi .note span {
+    #row_payment_keys_checkapi p.check_boltpay_api_error {
         color: red;
     }
 </style>
 <script>
     function check() {
-        var apiKey = document.getElementById("payment_boltpay_api_key").value;
-        var signingSecret = document.getElementById("payment_boltpay_signing_key").value;
-        var keyOnepage = document.getElementById("payment_boltpay_publishable_key_onepage").value;
-        var keyMultiPage = document.getElementById("payment_boltpay_publishable_key_multipage").value;
-        var errorElement = document.querySelector('#row_payment_boltpay_checkapi .note span');
+        var apiKey = document.getElementById("payment_keys_api_key").value;
+        var signingSecret = document.getElementById("payment_keys_signing_key").value;
+        var keyOnePage = document.getElementById("payment_keys_publishable_key_onepage").value;
+        var keyMultiPage = document.getElementById("payment_keys_publishable_key_multipage").value;
+        var errorElement = document.querySelector('#row_payment_keys_checkapi p.check_boltpay_api_error');
         var loadingElement = document.getElementById("loading-mask");
         var boltButtonElement = document.getElementById('boltpay_check_button');
 
@@ -40,8 +40,8 @@
             errorElement.innerText = '<?php echo $this->boltHelper()->__('Signing Secret is required')?>';
             return;
         }
-        if (!keyOnepage && !keyMultiPage) {
-            errorElement.innerText = '<?php echo $this->boltHelper()->__('Field "Publishable Key - One Page Checkout" or "Publishable Key - Multi-Page Checkout" must contain a value.')?>';
+        if (!keyOnePage && !keyMultiPage) {
+            errorElement.innerText = '<?php echo $this->boltHelper()->__('Field Publishable Key - Payment Only" or "Publishable Key - Multistep" must contain a value.')?>';
             return;
         }
 

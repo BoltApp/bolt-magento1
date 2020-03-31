@@ -29,16 +29,16 @@ class Bolt_Boltpay_ConfigurationController
     const INVALID_CONFIGURATION_MESSAGE = 'Invalid configuration';
 
     /** @var string Message that is returned when API key is invalid */
-    const INVALID_API_KEY_MESSAGE = 'Api Key is invalid';
+    const INVALID_API_KEY_MESSAGE = 'API Key is invalid';
 
     /** @var string Message that is returned when signing secret is invalid */
     const INVALID_SIGNING_SECRET_MESSAGE = 'Signing Secret is invalid';
 
     /** @var string Message that is returned when multi page checkout publishable key is invalid */
-    const INVALID_MULTI_PAGE_PUBLISHABLE_KEY_MESSAGE = 'Publishable Key - Multi-Page Checkout is invalid';
+    const INVALID_MULTI_PAGE_PUBLISHABLE_KEY_MESSAGE = 'Publishable Key - Multistep is invalid';
 
     /** @var string Message that is returned when multi page checkout publishable key is invalid */
-    const INVALID_ONE_PAGE_PUBLISHABLE_KEY_MESSAGE = 'Publishable Key - One Page Checkout is invalid';
+    const INVALID_ONE_PAGE_PUBLISHABLE_KEY_MESSAGE = 'Publishable Key - Payment Only is invalid';
 
     /** @var string Message that is returned when database schema is invalid */
     const INVALID_SCHEMA_MESSAGE = 'Schema is invalid';
@@ -69,7 +69,7 @@ class Bolt_Boltpay_ConfigurationController
             $this->setErrorResponseData($responseData, $this->boltHelper()->__(self::INVALID_SIGNING_SECRET_MESSAGE));
         }
 
-        // Validate Publishable Key - Multi-Page Checkout / Publishable Key - One Page Checkout
+        // Validate Publishable Key - Multistep / Publishable Key - Payment Only
         if (!($this->checkPublishableKeyMultiPage())) {
             $this->setErrorResponseData($responseData, $this->boltHelper()->__(self::INVALID_MULTI_PAGE_PUBLISHABLE_KEY_MESSAGE));
         }
