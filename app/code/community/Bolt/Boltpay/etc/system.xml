@@ -110,7 +110,6 @@
                 </publishable_key_admin>
                 <checkapi translate="label">
                   <label>Check Boltpay API</label>
-                  <config_path>payment/boltpay/checkapi</config_path>
                   <frontend_type>button</frontend_type>
                   <frontend_model>boltpay/adminhtml_system_config_form_button</frontend_model>
                   <sort_order>60</sort_order>
