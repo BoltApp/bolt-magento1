@@ -485,6 +485,7 @@ class Bolt_Boltpay_TestHelper
         if (isset(static::$_substitutedConfigurationValues[$path])) {
             $store = Mage::app()->getStore();
             $store->setConfig($path, static::$_substitutedConfigurationValues[$path]);
+            Mage::getModel('core/config')->saveConfig($path,static::$_substitutedConfigurationValues[$path]);
             unset(static::$_substitutedConfigurationValues[$path]);
         }
     }

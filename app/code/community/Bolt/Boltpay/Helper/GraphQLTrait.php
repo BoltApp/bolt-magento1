@@ -39,33 +39,26 @@ trait Bolt_Boltpay_Helper_GraphQLTrait
      */
     private function makeGqlCall($query, $operation, $variables)
     {
-        try {
+        $gqlRequest = array(
+            "operationName" => $operation,
+            "variables" => $variables,
+            "query" => $query
+        );
 
-            $gqlRequest = array(
-                "operationName" => $operation,
-                "variables" => $variables,
-                "query" => $query
-            );
+        $requestData = json_encode($gqlRequest, JSON_UNESCAPED_SLASHES);
 
-            $requestData = json_encode($gqlRequest, JSON_UNESCAPED_SLASHES);
+        $apiURL = $url = $this->getApiUrl() . Boltpay_GraphQL_Constants::MERCHANT_API_GQL_ENDPOINT;
 
-            $apiURL = $url = $this->getApiUrl() . Boltpay_GraphQL_Constants::MERCHANT_API_GQL_ENDPOINT;
+        $apiKey = Mage::getStoreConfig('payment/boltpay/api_key');
 
-            $apiKey = Mage::getStoreConfig('payment/boltpay/api_key');
+        $headerInfo = $this->constructRequestHeaders($requestData, $apiKey);
 
-            $headerInfo = $this->constructRequestHeaders($requestData, $apiKey);
+        $this->addMetaData(array('BOLT API REQUEST' => array('header' => $headerInfo)));
+        $this->addMetaData(array('BOLT API REQUEST' => array('data' => $requestData)), true);
 
-            $this->addMetaData(array('BOLT API REQUEST' => array('header' => $headerInfo)));
-            $this->addMetaData(array('BOLT API REQUEST' => array('data' => $requestData)), true);
+        $response = (string)$this->getApiClient()->post($apiURL, $requestData, $headerInfo)->getBody();
 
-            $response = (string)$this->getApiClient()->post($apiURL, $requestData, $headerInfo)->getBody();
-
-            return json_decode($response);
-        } catch (\Exception $e) {
-            $this->notifyException($e);
-            $this->logException($e);
-            throw $e;
-        }
+        return json_decode($response);
     }
 
     /**

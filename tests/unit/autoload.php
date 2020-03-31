@@ -21,14 +21,15 @@ ini_set('memory_limit', '512M');
 //Include Magento libraries
 require_once 'Mage.php';
 
-//autoload test helpers and controllers
+//autoload test helpers, module controllers, and lib classes
 spl_autoload_register(
     function ($name) {
-        $classPathParts = explode('_', $name);
+        $classPathParts = preg_split("/[_\\\\]/", $name);
+        $classFile = implode(DS, $classPathParts) . '.php';
 
-        $classPath = implode(DS, array_merge(array(BP, 'tests', 'unit', 'testsuite'), $classPathParts)) . '.php';
-        if (file_exists($classPath)) {
-            require $classPath;
+        $testClassPath = implode(DS, array(BP, 'tests', 'unit', 'testsuite')). DS . $classFile;
+        if (file_exists($testClassPath)) {
+            require $testClassPath;
             return;
         }
 
@@ -41,6 +42,12 @@ spl_autoload_register(
                 require $controllerPath;
                 return;
             }
+        }
+
+        $libFilePath = BP . DS . 'lib' . DS . 'Boltpay' . DS . $classFile;
+        if (file_exists($libFilePath)) {
+            require $libFilePath;
+            return;
         }
     }
 );

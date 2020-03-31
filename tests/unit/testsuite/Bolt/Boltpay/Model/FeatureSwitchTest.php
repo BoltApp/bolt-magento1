@@ -160,23 +160,41 @@ class Bolt_Boltpay_Model_FeatureSwitchTest extends PHPUnit_Framework_TestCase
 
     /**
      * @test
-     * When GraphQL call returns empty answer we should not save it
+     * that when GraphQL call returns empty answer it is saved
      *
      * @covers ::updateFeatureSwitches
      */
-    public function updateFeatureSwitches_withNoSwitches_returnsWithoutSaving()
+    public function updateFeatureSwitches_withEmptyReplyFromBolt_clearsLocalSwitches()
     {
         $this->updateFeatureSwitchesSetUp();
+        Bolt_Boltpay_TestHelper::setNonPublicProperty(
+            $this->currentMock,
+            'switches',
+            array(
+                'M1_IM_A_BAD_SWITCH_MAMA_PLEASE_REMOVE_ME' => array(
+                    'value' => true,
+                    'defaultValue' => true,
+                    'rolloutPercentage' => 100
+                ),
+            )
+        );
 
-        $boltAnswer = '';
+        $this->assertNotEmpty(
+            Bolt_Boltpay_TestHelper::getNonPublicProperty($this->currentMock, 'switches')
+        );
+
+        $emptyBoltResponse = '';
         $this->boltHelperMock->expects($this->once())->method('getFeatureSwitches')
-            ->willReturn($boltAnswer);
+            ->willReturn($emptyBoltResponse);
 
-        $this->configMock->expects($this->never())->method('saveConfig');
-        $this->configMock->expects($this->never())->method('cleanCache');
+        $this->configMock->expects($this->once())->method('saveConfig')
+            ->with( 'payment/boltpay/featureSwitches', json_encode(array()) );
+
+        $this->configMock->expects($this->once())->method('cleanCache');
 
         $this->currentMock->updateFeatureSwitches();
-        $this->assertNull(
+
+        $this->assertEmpty(
             Bolt_Boltpay_TestHelper::getNonPublicProperty($this->currentMock, 'switches')
         );
 
@@ -185,22 +203,40 @@ class Bolt_Boltpay_Model_FeatureSwitchTest extends PHPUnit_Framework_TestCase
 
     /**
      * @test
-     * When GraphQL call throws exception we should not change feature switches
+     * that updateFeatureSwitches, upon error retrieving remote values, throws an exception
+     * and does not update local feature switches
      *
      * @covers ::updateFeatureSwitches
+     *
+     * @expectedException GuzzleHttp\Exception\RequestException
+     * @expectedExceptionMessage Request exception
      */
-    public function updateFeatureSwitches_whenException_returnsWithoutSaving()
+    public function updateFeatureSwitches_withErrorWhileRetrieving_throwsExceptionAndDoesNotUpdate()
     {
         $this->updateFeatureSwitchesSetUp();
+        $originalLocalSwitches = array(
+            'M1_WAS_HERE_BEFORE_AND_WILL_REMAIN' => array(
+                'value' => true,
+                'defaultValue' => false,
+                'rolloutPercentage' => 85
+            ),
+        );
+
+        Bolt_Boltpay_TestHelper::setNonPublicProperty(
+            $this->currentMock,
+            'switches',
+            $originalLocalSwitches
+        );
 
         $this->boltHelperMock->expects($this->once())->method('getFeatureSwitches')
-            ->willThrowException(new Exception('Any exception'));
+            ->willThrowException(new GuzzleHttp\Exception\RequestException('Request exception', null));
 
         $this->configMock->expects($this->never())->method('saveConfig');
         $this->configMock->expects($this->never())->method('cleanCache');
 
         $this->currentMock->updateFeatureSwitches();
-        $this->assertNull(
+        $this->assertEquals(
+            $originalLocalSwitches,
             Bolt_Boltpay_TestHelper::getNonPublicProperty($this->currentMock, 'switches')
         );
 

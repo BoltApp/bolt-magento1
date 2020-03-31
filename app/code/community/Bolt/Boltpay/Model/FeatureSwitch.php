@@ -69,23 +69,18 @@ class Bolt_Boltpay_Model_FeatureSwitch extends Bolt_Boltpay_Model_Abstract
 
     /**
      * This method gets feature switches from Bolt and updates the local DB with
-     * the latest values. To be used in upgrade data and webhooks.
+     * the latest values. It is expected to be called on plugin updates, changing
+     * of merchant keys, and direct calls from the Bolt server
      *
-     * @return bool true if feature switches updates successfully, false otherwise
+     * @throws GuzzleHttp\Exception\GuzzleException if there is an error getting feature switch values
      */
     public function updateFeatureSwitches()
     {
-        try {
-            $switchesResponse = $this->boltHelper()->getFeatureSwitches();
-        } catch (Exception $e) {
-            // We already created bugsnag about exception
-            return false;
-        }
-        $switchesData = @$switchesResponse->data->plugin->features;
+        $switchesResponse = $this->boltHelper()->getFeatureSwitches();
 
-        if (empty($switchesData)) {
-            return false;
-        }
+        // We get the set features and allow for an empty value so that all switches
+        // can be removed remotely
+        $switchesData = @$switchesResponse->data->plugin->features ?: array();
 
         $switches = array();
         foreach ($switchesData as $switch) {
@@ -98,7 +93,6 @@ class Bolt_Boltpay_Model_FeatureSwitch extends Bolt_Boltpay_Model_Abstract
         $this->switches = $switches;
         Mage::getModel('core/config')->saveConfig('payment/boltpay/featureSwitches', json_encode($switches));
         Mage::getModel('core/config')->cleanCache();
-        return true;
     }
 
     /**

@@ -1,9 +1,12 @@
 <?php
 
+/**
+ * @coversDefaultClass Bolt_Boltpay_Helper_GraphQLTrait
+ */
 class Bolt_Boltpay_Helper_GraphQLTest extends PHPUnit_Framework_TestCase
 {
     /**
-     * @var PHPUnit_Framework_MockObject_MockObject|Bolt_Boltpay_Helper_GraphQLTest Mocked instance of trait tested
+     * @var PHPUnit_Framework_MockObject_MockObject|Bolt_Boltpay_Helper_GraphQLTrait Mocked instance of trait tested
      */
     private $currentMock;
 
@@ -76,19 +79,19 @@ class Bolt_Boltpay_Helper_GraphQLTest extends PHPUnit_Framework_TestCase
 
     /**
      * @test
+     * that getFeatureSwitches throws exceptions if there is problem with a GraphQL call
      *
-     * @expectedException Exception
+     * @covers Bolt_Boltpay_Helper_GraphQLTrait::getFeatureSwitches
+     *
+     * @expectedException GuzzleHttp\Exception\GuzzleException
      * @expectedExceptionMessage Test exception
      */
-    public function getFeatureSwitches_withException_logsException()
+    public function getFeatureSwitches_uponGraphQLCallError_willThrowException()
     {
-        $exception = new Exception('Test exception');
+        $exception = new GuzzleHttp\Exception\RequestException('Test exception', null);
         $this->guzzleClientMock->expects($this->once())->method('post')->will($this->throwException($exception));
 
-        $this->currentMock->expects($this->once())->method('notifyException')->with($exception);
-        $this->currentMock->expects($this->once())->method('logException')->with($exception);
-
-        $response = $this->currentMock->getFeatureSwitches();
+        $this->currentMock->getFeatureSwitches();
     }
 }
 
