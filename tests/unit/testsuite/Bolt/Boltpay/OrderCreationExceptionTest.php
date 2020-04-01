@@ -4,6 +4,8 @@ use Bolt_Boltpay_Controller_Interface as RESPONSE_CODE;
 
 /**
  * Class Bolt_Boltpay_OrderCreationExceptionTest
+ *
+ * @coversDefaultClass Bolt_Boltpay_OrderCreationException
  */
 class Bolt_Boltpay_OrderCreationExceptionTest extends PHPUnit_Framework_TestCase
 {
@@ -323,6 +325,30 @@ class Bolt_Boltpay_OrderCreationExceptionTest extends PHPUnit_Framework_TestCase
         $this->assertNotEquals($dataValues[1], $exception->error[0]->data[0]->new_value);
         $this->assertEquals(0, $exception->error[0]->data[0]->old_value);
         $this->assertEquals(0, $exception->error[0]->data[0]->new_value);
+        $this->assertEquals(RESPONSE_CODE::HTTP_UNPROCESSABLE_ENTITY, $boltOrderCreationException->getHttpCode());
+    }
+
+    /**
+     * @test
+     * that correct JSON and HTTP response code is set when throwing exception with
+     * @see Bolt_Boltpay_OrderCreationException::E_BOLT_MINIMUM_PRICE_NOT_MET code
+     *
+     * @covers ::__construct
+     */
+    public function initialize_withMinimumPriceNotMetException_setsCorrectJsonAndHttpCode()
+    {
+        $boltOrderCreationException = new Bolt_Boltpay_OrderCreationException(
+            Bolt_Boltpay_OrderCreationException::E_BOLT_MINIMUM_PRICE_NOT_MET,
+            Bolt_Boltpay_OrderCreationException::E_BOLT_MINIMUM_PRICE_NOT_MET_TMPL,
+            array(
+                '$123.45'
+            )
+        );
+        $exceptionJson = $boltOrderCreationException->getJson();
+        $exception = json_decode($exceptionJson);
+
+        $this->assertExceptionProperties($exception, Bolt_Boltpay_OrderCreationException::E_BOLT_MINIMUM_PRICE_NOT_MET);
+        $this->assertEquals('The minimum order amount of $123.45 has not been met', $exception->error[0]->data[0]->reason);
         $this->assertEquals(RESPONSE_CODE::HTTP_UNPROCESSABLE_ENTITY, $boltOrderCreationException->getHttpCode());
     }
 

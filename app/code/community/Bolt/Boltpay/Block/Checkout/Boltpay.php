@@ -231,6 +231,7 @@ JS;
             
             var resolvePromise;
             var rejectPromise;
+            var checkError;
             var get_json_cart = function() { return $jsonCart };
             var json_hints = \$hints_transform($jsonHints);
             var quote_id = '{$quote->getId()}';

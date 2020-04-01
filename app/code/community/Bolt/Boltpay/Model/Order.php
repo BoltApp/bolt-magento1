@@ -417,6 +417,15 @@ class Bolt_Boltpay_Model_Order extends Bolt_Boltpay_Model_Abstract
             }
         }
 
+        if (!$immutableQuote->validateMinimumAmount()) {
+            throw new Bolt_Boltpay_OrderCreationException(
+                OCE::E_BOLT_MINIMUM_PRICE_NOT_MET,
+                OCE::E_BOLT_MINIMUM_PRICE_NOT_MET_TMPL,
+                array(
+                    $this->boltHelper()->getMinOrderAmountInStoreCurrency($immutableQuote->getStoreId())
+                )
+            );
+        }
     }
 
     /**

@@ -159,6 +159,16 @@ class Bolt_Boltpay_Helper_Data extends Mage_Core_Helper_Abstract
                     ";
             case Bolt_Boltpay_Block_Checkout_Boltpay::CHECKOUT_TYPE_PRODUCT_PAGE:
                 return /** @lang JavaScript */ 'if (!boltConfigPDP.validate()) return false;';
+            case Bolt_Boltpay_Block_Checkout_Boltpay::CHECKOUT_TYPE_MULTI_PAGE:
+                return /** @lang JavaScript */ <<<JS
+if (checkError){
+    if (typeof BoltPopup !== 'undefined' && typeof checkError === 'string') {
+        BoltPopup.setMessage(checkError);
+        BoltPopup.show();
+    }
+    return false;
+}
+JS;
             default:
                 return '';
         }

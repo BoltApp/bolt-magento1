@@ -24,7 +24,7 @@ class Bolt_Boltpay_Model_Admin_ApiKey extends Mage_Adminhtml_Model_System_Config
 
     /**
      * Updates feature switches if the API Key is changed to a valid non-empty value
-     * 
+     *
      * @return Mage_Core_Model_Abstract  $this
      *
      * @throws Exception when there is an error saving the extra config to the database

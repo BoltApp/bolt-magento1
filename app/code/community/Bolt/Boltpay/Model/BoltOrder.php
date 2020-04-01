@@ -753,6 +753,19 @@ class Bolt_Boltpay_Model_BoltOrder extends Bolt_Boltpay_Model_Abstract
             }
         }
 
+        ////////////////////////////////////////////////////////////////////////////////////////////////
+        // We only need Bolt front-end validation for minimum order amount in the multi-step context
+        // where we are bypassing the native Magento interface which would normally perform this check
+        // for us
+        ////////////////////////////////////////////////////////////////////////////////////////////////
+        if ($isMultiPage && !$quote->validateMinimumAmount()) {
+            return (object)array(
+                'token' => '',
+                'error' => $this->boltHelper()->getMinOrderDescriptionMessage()
+            );
+        }
+        ////////////////////////////////////////////////////////////////////////////////////////////////
+
         // Generates order data for sending to Bolt create order API.
         $orderRequest = $this->buildOrder($quote, $isMultiPage);
 
@@ -768,19 +781,31 @@ class Bolt_Boltpay_Model_BoltOrder extends Bolt_Boltpay_Model_Abstract
      * @return string javascript Promise string used for initializing BoltCheckout
      */
     public function getBoltOrderTokenPromise($checkoutType) {
+        $onError = /** @lang JavaScript */<<<JS
+if (typeof BoltPopup !== 'undefined' && typeof response.responseJSON.error_messages === 'string') {
+    BoltPopup.setMessage(response.responseJSON.error_messages);
+    BoltPopup.addOnCloseCallback(function() {location.reload();});
+    BoltPopup.show();
+}
+JS;
 
-        if ( $checkoutType === Bolt_Boltpay_Block_Checkout_Boltpay::CHECKOUT_TYPE_FIRECHECKOUT ) {
-            $checkoutTokenUrl = $this->boltHelper()->getMagentoUrl('boltpay/order/firecheckoutcreate');
-            $parameters = 'checkout.getFormData ? checkout.getFormData() : Form.serialize(checkout.form, true)';
-        } else if ( $checkoutType === Bolt_Boltpay_Block_Checkout_Boltpay::CHECKOUT_TYPE_ADMIN ) {
-            $checkoutTokenUrl = $this->boltHelper()->getMagentoUrl("adminhtml/sales_order_create/create/checkoutType/$checkoutType", array(), true);
-            $parameters = "''";
-        } else {
-            $checkoutTokenUrl = $this->boltHelper()->getMagentoUrl("boltpay/order/create/checkoutType/$checkoutType");
-            $parameters = "''";
+        $parameters = "''";
+        switch ($checkoutType) {
+            case Bolt_Boltpay_Block_Checkout_Boltpay::CHECKOUT_TYPE_FIRECHECKOUT:
+                $checkoutTokenUrl = $this->boltHelper()->getMagentoUrl('boltpay/order/firecheckoutcreate');
+                $parameters = 'checkout.getFormData ? checkout.getFormData() : Form.serialize(checkout.form, true)';
+                break;
+            case Bolt_Boltpay_Block_Checkout_Boltpay::CHECKOUT_TYPE_ADMIN:
+                $checkoutTokenUrl = $this->boltHelper()->getMagentoUrl("adminhtml/sales_order_create/create/checkoutType/$checkoutType", array(), true);
+                break;
+            case Bolt_Boltpay_Block_Checkout_Boltpay::CHECKOUT_TYPE_MULTI_PAGE:
+                $onError = /** @lang JavaScript */ "checkError = response.responseJSON.error_messages;";
+                // fall through to default
+            default:
+                $checkoutTokenUrl = $this->boltHelper()->getMagentoUrl("boltpay/order/create/checkoutType/$checkoutType");
         }
 
-        return <<<PROMISE
+        return /** @lang JavaScript */ <<<PROMISE
                     new Promise( 
                         function (resolve, reject) {
                             new Ajax.Request('$checkoutTokenUrl', {
@@ -791,8 +816,7 @@ class Bolt_Boltpay_Model_BoltOrder extends Bolt_Boltpay_Model_Abstract
                                         reject(response.responseJSON.error_messages);
                                         
                                         // BoltCheckout is currently not doing anything reasonable to alert the user of a problem, so we will do something as a backup
-                                        alert(response.responseJSON.error_messages);
-                                        location.reload();
+                                        $onError
                                     } else {                                     
                                         resolve(response.responseJSON.cart_data);
                                     }                   
