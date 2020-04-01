@@ -236,4 +236,38 @@ trait Bolt_Boltpay_Helper_ConfigTrait
 
         return null;
     }
+
+    /**
+     * Returns message to be displayed to customer if attempting to checkout with order lower than minimum amount
+     *
+     * @return string
+     */
+    public function getMinOrderDescriptionMessage()
+    {
+        return Mage::getStoreConfig('sales/minimum_order/description')
+            ? Mage::getStoreConfig('sales/minimum_order/description')
+            : Mage::helper('checkout')->__(
+                'Minimum order amount is %s',
+                $this->getMinOrderAmountInStoreCurrency()
+            );
+    }
+
+    /**
+     * Return minimum order amount in current store currency
+     *
+     * @param int|null $storeId
+     *
+     * @return string
+     */
+    public function getMinOrderAmountInStoreCurrency($storeId = null)
+    {
+        $amount = Mage::getStoreConfig('sales/minimum_order/amount', $storeId);
+        try {
+            return Mage::app()->getLocale()
+                ->currency(Mage::app()->getStore($storeId)->getCurrentCurrencyCode())
+                ->toCurrency($amount);
+        } catch (Exception $e) {
+            return $amount;
+        }
+    }
 }

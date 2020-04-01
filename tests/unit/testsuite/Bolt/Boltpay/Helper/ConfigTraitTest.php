@@ -378,4 +378,95 @@ class Bolt_Boltpay_Helper_ConfigTraitTest extends PHPUnit_Framework_TestCase
             )
         );
     }
+
+    /**
+     * @test
+     * that getMinOrderDescriptionMessage returns description from config if present
+     *
+     * @covers Bolt_Boltpay_Helper_ConfigTrait::getMinOrderDescriptionMessage
+     *
+     * @throws Mage_Core_Model_Store_Exception if unable to stub config
+     */
+    public function getMinOrder_withCustomDescription_returnsDescriptionFromConfig()
+    {
+        TestHelper::stubConfigValue('sales/minimum_order/description', 'Minimum order amount is $123');
+        $this->assertEquals('Minimum order amount is $123', $this->currentMock->getMinOrderDescriptionMessage());
+    }
+
+    /**
+     * @test
+     * that getMinOrderDescriptionMessage returns default description if one is not configured
+     *
+     * @covers Bolt_Boltpay_Helper_ConfigTrait::getMinOrderDescriptionMessage
+     *
+     * @throws Mage_Core_Model_Store_Exception if unable to stub config
+     */
+    public function getMinOrder_withoutCustomDescription_returnsDefaultDescription()
+    {
+        TestHelper::stubConfigValue('sales/minimum_order/amount', 123);
+        TestHelper::stubConfigValue('sales/minimum_order/description', '');
+        $this->assertRegExp(
+            '/Minimum order amount is \$?123(\.|,)00(.+\$)?/', # Supports American and European locale
+            $this->currentMock->getMinOrderDescriptionMessage()
+        );
+    }
+
+    /**
+     * @test
+     * that getMinOrderAmountInStoreCurrency returns minimum order amount in default store currency
+     * if no store id is provided
+     *
+     * @covers Bolt_Boltpay_Helper_ConfigTrait::getMinOrderAmountInStoreCurrency
+     *
+     * @throws Mage_Core_Model_Store_Exception if unable to stub config value
+     */
+    public function getMinOrderAmountInStoreCurrency_withoutStoreId_returnsMinOrderAmountInDefaultStoreCurrency()
+    {
+        TestHelper::stubConfigValue('sales/minimum_order/amount', 123);
+        $this->assertRegExp(
+            '/\$?123(\.|,)00(.+\$)?/', # Supports American and European locale
+            $this->currentMock->getMinOrderAmountInStoreCurrency())
+        ;
+    }
+
+    /**
+     * @test
+     * that getMinOrderAmountInStoreCurrency returns minimum order amount in store currency if store id is provided
+     *
+     * @covers Bolt_Boltpay_Helper_ConfigTrait::getMinOrderAmountInStoreCurrency
+     *
+     * @throws Mage_Core_Model_Store_Exception if unable to stub config value
+     */
+    public function getMinOrderAmountInStoreCurrency_withStoreId_returnsAmountInProvidedStoreCurrency()
+    {
+        TestHelper::stubConfigValue('sales/minimum_order/amount', 123);
+        $this->assertRegExp(
+            '/\$?123(\.|,)00(.+\$)?/', # Supports American and European locale
+            $this->currentMock->getMinOrderAmountInStoreCurrency(
+                Mage::app()->getStore()->getId()
+            )
+        );
+    }
+
+    /**
+     * @test
+     * that getMinOrderAmountInStoreCurrency returns plain minimum order amount if an exception occurs
+     * when converting to currency
+     *
+     * @covers Bolt_Boltpay_Helper_ConfigTrait::getMinOrderAmountInStoreCurrency
+     *
+     * @throws Mage_Core_Model_Store_Exception if unable to stub config value
+     */
+    public function getMinOrderAmountInStoreCurrency_withInvalidStore_returnsAmountWithoutCurrency()
+    {
+        TestHelper::stubConfigValue('sales/minimum_order/amount', 'non number value that fails validation');
+        $this->assertEquals(
+            'non number value that fails validation',
+            $this->currentMock->getMinOrderAmountInStoreCurrency(
+                Mage::app()->getStore()->getId()
+            )
+        );
+    }
+
+
 }

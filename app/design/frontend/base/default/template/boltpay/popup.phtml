@@ -33,6 +33,7 @@
     var BoltPopup = {
         popupElmId: 'bolt-popup',
         popupElm: null,
+        onCloseCallbacks: [],
         init: function() {
             this.popupElm = document.getElementById(this.popupElmId);
             this.initPopupEvents()
@@ -54,6 +55,12 @@
         close: function() {
             this.popupElm.classList.remove('active');
             this.fade();
+            for (var i = 0; i < this.onCloseCallbacks.length; i++) {
+                if(typeof this.onCloseCallbacks[i] === 'function'){
+                    this.onCloseCallbacks[i].call(this);
+                }
+            }
+            this.onCloseCallbacks = [];
         },
         show: function() {
             this.popupElm.classList.add('active');
@@ -91,7 +98,10 @@
                 elms[0].innerHTML = title;
             }
             return this;
-        }
+        },
+        addOnCloseCallback: function (callback) {
+            this.onCloseCallbacks.push(callback);
+        },
     };
     BoltPopup.init();
 </script>
@@ -103,7 +113,7 @@
         height: 100vh;
         position: fixed;
         width: 100%;
-        z-index: 99;
+        z-index: 1000;
         left: 0;
         top: 0;
     }

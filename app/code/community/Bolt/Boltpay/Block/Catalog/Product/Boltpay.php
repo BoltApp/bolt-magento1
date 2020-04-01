@@ -261,6 +261,27 @@ class Bolt_Boltpay_Block_Catalog_Product_Boltpay extends Bolt_Boltpay_Block_Chec
     }
 
     /**
+     * Get configuration options that can affect product page checkout
+     *
+     * @return string
+     *
+     * @throws Mage_Core_Model_Store_Exception if unable to get store
+     * @throws Zend_Currency_Exception if unable to convert amount to currency
+     */
+    public function getConfigJSON()
+    {
+        return Mage::helper('core')->jsonEncode(
+            array(
+                'minimum_order' => array(
+                    'enabled' => Mage::getStoreConfigFlag('sales/minimum_order/active'),
+                    'amount' => Mage::getStoreConfig('sales/minimum_order/amount'),
+                    'message' => $this->boltHelper()->getMinOrderDescriptionMessage(),
+                )
+            )
+        );
+    }
+
+    /**
      * Returns url to login page with current as referrer
      *
      * @return string

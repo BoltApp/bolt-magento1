@@ -19,9 +19,19 @@
 ?>
 <?php if ($this->isEnabledProductPageCheckout() && $this->isSupportedProductType()): ?>
 <script type="text/javascript">
+/**
+ * @namespace
+ * @property {{minimum_order:{enabled:bool,amount:number,message:string}}} config
+ */
 var boltConfigPDP = {
+    config: <?php echo $this->getConfigJSON(); ?>,
     product: <?php echo $this->getProductJSON(); ?>,
     customer: <?php echo $this->getCustomerJSON(); ?>,
+    validateMinOrderAmount: function () {
+        if (this.config.minimum_order.enabled && this.getTotalAmount() < this.config.minimum_order.amount) {
+            throw this.config.minimum_order.message;
+        }
+    },
     /**
      * Initializes BoltCheckout
      */
@@ -105,6 +115,7 @@ var boltConfigPDP = {
             if (this.product.stock.manage && (!this.product.stock.status || this.product.stock.qty < this.getQty())) {
                 throw '<?php echo $this->__("The requested quantity is not available."); ?>';
             }
+            this.validateMinOrderAmount();
             //TODO: support file type custom options
             //currently not supported because it would require custom upload and expiration logic
             document.querySelectorAll("#product_addtocart_form input[type='file']").forEach(function(fileInput) {
@@ -178,6 +189,21 @@ var boltConfigPDP = {
             currency: '<?php echo Mage::app()->getStore()->getCurrentCurrencyCode(); ?>'
         };
     },
+    /**
+     * Get items total amount
+     * @returns {number}
+     */
+    getTotalAmount: function () {
+        var itemData = this.getItemData();
+        var totalAmount = 0;
+        for (var i in itemData) {
+            if (!itemData.hasOwnProperty(i) || !itemData[i]) {
+                continue;
+            }
+            totalAmount += itemData[i].price * itemData[i].quantity;
+        }
+        return totalAmount;
+    }
 };
 
 document.addEventListener("DOMContentLoaded", function() {
