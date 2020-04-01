@@ -19,7 +19,6 @@
  * Class Bolt_Boltpay_Block_Adminhtml_System_Config_Form_Button
  *
  * Generates button used to fire check() javascript function which validates if Bolt configuration is correct.
- *
  */
 class Bolt_Boltpay_Block_Adminhtml_System_Config_Form_Button extends Mage_Adminhtml_Block_System_Config_Form_Field
 {
@@ -30,7 +29,8 @@ class Bolt_Boltpay_Block_Adminhtml_System_Config_Form_Button extends Mage_Adminh
     /**
      * Return element html
      *
-     * @param  Varien_Data_Form_Element_Abstract $element
+     * @param Varien_Data_Form_Element_Abstract $element
+     *
      * @return string
      */
     protected function _getElementHtml(Varien_Data_Form_Element_Abstract $element)
@@ -45,29 +45,28 @@ class Bolt_Boltpay_Block_Adminhtml_System_Config_Form_Button extends Mage_Adminh
      */
     public function getButtonHtml()
     {
-        $button = $this->getLayout()->createBlock('adminhtml/widget_button')
-            ->setData(array(
-                'id' => 'boltpay_check_button',
-                'label' => $this->boltHelper()->__('Check'),
-                'onclick' => 'javascript:check(); return false;'
-            ));
-
+        $button = $this->getLayout()->createBlock('adminhtml/widget_button')->setData(array(
+            'id' => 'boltpay_check_button',
+            'label' => $this->boltHelper()->__('Check'),
+            'onclick' => 'javascript:check(); return false;'
+        ));
         return $button->toHtml();
     }
 
     /**
      * Gets storeId from current scope
+     *
      * @return int
+     *
+     * @throws Mage_Core_Exception
      */
     public function getStoreId()
     {
-        if (strlen($code = Mage::getSingleton('adminhtml/config_data')->getStore()))
-        {
+        if (strlen($code = Mage::getSingleton('adminhtml/config_data')->getStore())) {
             return Mage::getModel('core/store')->load($code)->getId();
         }
 
-        if (strlen($code = Mage::getSingleton('adminhtml/config_data')->getWebsite()))
-        {
+        if (strlen($code = Mage::getSingleton('adminhtml/config_data')->getWebsite())) {
             $website_id = Mage::getModel('core/website')->load($code)->getId();
             return Mage::app()->getWebsite($website_id)->getDefaultStore()->getId();
         }
