@@ -10,7 +10,12 @@ TAGDATE=$(echo $PREVRC | cut -d"|" -f2)
 taggedDate=$(date --date "$TAGDATE" +'%s')
 threeWeekDate=$(date --date "21 days ago" +'%s')
 
-echo $(echo $PREVRC | cut -d"|" -f1)
+TAG=$(echo $PREVRC | cut -d"|" -f1)
+echo $PREVRC
+echo $TAGDATE
+echo $taggedDate
+echo $threeWeekDate
+echo $TAG
 
 if [[ ${taggedDate} -lt ${threeWeekDate} ]];
 then
