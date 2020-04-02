@@ -16,10 +16,10 @@ then
   NEWTAGNAME=$(echo $OLDTAGNAME | awk -F. '{print $1 "." $2+1 ".0-rc"}')
 
   SLACK_MENTIONS="<@aden>"
-  curl -X POST -H "Content-type: application/json" --data '{
-    "attachments": [{
-        "text": "$NEWTAGNAME $SLACK_MENTIONS",
-        "color": "#58a359"
+  curl -X POST -H "Content-type: application/json" --data "{
+    \"attachments\": [{
+      \"text\": \"$NEWTAGNAME $SLACK_MENTIONS\",
+      \"color\": \"#58a359\"
     }]
-  }' https://hooks.slack.com/services/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
+  }" https://hooks.slack.com/services/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
 fi
