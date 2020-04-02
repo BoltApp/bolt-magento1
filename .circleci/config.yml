@@ -45,7 +45,7 @@ jobs:
     - checkout
     - run:
         name: Validate eligibility to tag rc
-        command: .circleci/scripts/rc-tag.sh
+        command: sudo .circleci/scripts/rc-tag.sh
     - when:
         condition: $TAGTHISWEEK
         steps:
