@@ -30,12 +30,14 @@ commands:
         type: string
         default: ''
     steps:
-    - slack/approval:
-        mentions: 'aden,matt'
+    - slack/notify:
+        color: '#58a359'
+        mentions: 'aden'
         message: ':+1: test'
         webhook: $SLACK_INTEGRATIONS_WEBHOOK
         include_job_number_field: false
         include_project_field: false
+        include_visit_job_action: false
 jobs:
   tag-rc-candidate:
     description: Tag master as rc every 3 weeks
