@@ -364,12 +364,14 @@ class Bolt_Boltpay_Controller_Traits_WebHookTraitTest extends PHPUnit_Framework_
     {
         $tearDownData = $this->sendResponseSetup($responseCode);
         $expectedResponse = is_string($responseData) ? $responseData : json_encode($responseData);
-        $this->response->expects($this->once())->method('setBody')->with($expectedResponse)->willReturnCallback(
-            function ($content) {
-                $this->proxyResponse->setBody($content);
-                return $this->response;
-            }
-        );
+        $this->response->expects($this->exactly(2))->method('setBody')
+            ->withConsecutive(array($expectedResponse), array(''))
+            ->willReturnCallback(
+                function ($content) {
+                    $this->proxyResponse->setBody($content);
+                    return $this->response;
+                }
+            );
 
         TestHelper::callNonPublicFunction(
             $this->currentMock,
@@ -445,12 +447,14 @@ class Bolt_Boltpay_Controller_Traits_WebHookTraitTest extends PHPUnit_Framework_
     public function sendResponse_whenUsedOnFPM_shouldCallPlatformSpecificMethod()
     {
         $expectedResponse = json_encode(array("something" => "that can be verified"));
-        $this->response->expects($this->once())->method('setBody')->with($expectedResponse)->willReturnCallback(
-            function ($content) {
-                $this->proxyResponse->setBody($content);
-                return $this->response;
-            }
-        );
+        $this->response->expects($this->exactly(2))->method('setBody')
+            ->withConsecutive(array($expectedResponse), array(''))
+            ->willReturnCallback(
+                function ($content) {
+                    $this->proxyResponse->setBody($content);
+                    return $this->response;
+                }
+            );
 
         if (function_exists('fastcgi_finish_request')) {
             $this->markTestSkipped('Test not available with the Ngnix/PHP-FPM environment');
