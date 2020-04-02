@@ -31,10 +31,11 @@ commands:
         default: ''
     steps:
     - slack/notify:
-        channel: "CKBBANKD2"
+        channel: CKBBANKD2
         color: '#33ff00'
         mentions: 'aden'
         message: ":+1: test"
+        webhook: $SLACK_GREENKEEPER_WEBHOOK
 jobs:
   tag-rc-candidate:
     description: Tag master as rc every 3 weeks
