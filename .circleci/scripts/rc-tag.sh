@@ -16,7 +16,7 @@ if [[ ${taggedDate} -lt ${threeWeekDate} ]];
 then
   export TAGTHISWEEK=true
   TAG=$(echo $PREVRC | cut -d"|" -f1)
-  export NEWTAGNAME=$(echo $TAG | awk -F. '{print $1 "." $2+1 ".0-rc"}')
+  export NEWTAGNAME=\"$(echo $TAG | awk -F. '{print $1 "." $2+1 ".0-rc"}')\"
 else
   export TAGTHISWEEK=false
 fi
