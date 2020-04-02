@@ -97,5 +97,12 @@ workflows:
     - unit-php56-mage18
     - unit-php56-mage19
   tagger:
+    triggers:
+    - schedule:
+        cron: "0 5 * * 5"
+        filters:
+          branches:
+            only:
+            - master
     jobs:
     - tag-release-candidate
