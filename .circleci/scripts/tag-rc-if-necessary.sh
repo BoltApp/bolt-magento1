@@ -10,8 +10,7 @@ TAGDATE=$(echo $PREVRC | cut -d"|" -f2)
 taggedDate=$(date --date "$TAGDATE" +"%s")
 threeWeekDate=$(date --date "21 days ago" +"%s")
 
-if [[ ${taggedDate} -lt ${threeWeekDate} ]]
-then
+if [[ ${taggedDate} -lt ${threeWeekDate} ]]; then
   OLDTAGNAME=$(echo $PREVRC | cut -d"|" -f1)
   NEWTAGNAME=$(echo $OLDTAGNAME | awk -F. '{print $1 "." $2+1 ".0-rc"}')
 

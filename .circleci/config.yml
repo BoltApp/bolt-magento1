@@ -24,14 +24,13 @@ commands:
         only_for_branches: master
         webhook: $SLACK_GREENKEEPER_WEBHOOK
 jobs:
-  tag-rc-candidate:
-    description: Tag master as rc every 3 weeks
+  tag-release-candidate:
+    description: Tag master as release candidate every 3 weeks
     docker:
     - image: cimg/base:2020.01
     steps:
     - checkout
     - run:
-        name: Tag rc every three weeks
         command: chmod +x .circleci/scripts/tag-rc-if-necessary.sh && .circleci/scripts/tag-rc-if-necessary.sh
   unit-php55-mage18:
     docker:
@@ -98,4 +97,4 @@ workflows:
     - unit-php56-mage19
   tagger:
     jobs:
-    - tag-rc-candidate
+    - tag-release-candidate
