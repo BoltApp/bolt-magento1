@@ -32,8 +32,8 @@ commands:
     steps:
     - slack/notify:
         color: '#58a359'
-        mentions: 'oleksii,Pavel'
-        message: 'white_check_mark: A new RC << parameters.tag >> has been tagged for Magento 1!'
+        mentions: 'aden'
+        message: 'test'
         webhook: $SLACK_INTEGRATIONS_WEBHOOK
         include_job_number_field: false
         include_project_field: false
