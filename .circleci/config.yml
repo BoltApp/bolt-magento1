@@ -31,9 +31,7 @@ jobs:
     - checkout
     - run:
         name: Tag master as release candidate every 3 weeks
-        command: |
-          chmod +x .circleci/scripts/tag-rc-if-necessary.sh
-          .circleci/scripts/tag-rc-if-necessary.sh
+        command: .circleci/scripts/tag-rc-if-necessary.sh
     - notify-buildcop
   unit-php55-mage18:
     docker:
@@ -99,12 +97,5 @@ workflows:
     - unit-php56-mage18
     - unit-php56-mage19
   tagger:
-    triggers:
-    - schedule:
-        cron: "0 0 * * 5"
-        filters:
-          branches:
-            only:
-            - master
     jobs:
     - tag-release-candidate
