@@ -36,7 +36,6 @@ commands:
         webhook: $SLACK_INTEGRATIONS_WEBHOOK
         include_job_number_field: false
         include_project_field: false
-        include_visit_job_action: false
 jobs:
   tag-rc-candidate:
     description: Tag master as rc every 3 weeks
