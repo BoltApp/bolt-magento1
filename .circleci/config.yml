@@ -30,8 +30,9 @@ commands:
         type: string
         default: ''
     steps:
-    - slack/notify:
-        message: ':+1: test @aden'
+    - slack/approval:
+        mentions: 'aden,matt'
+        message: ':+1: test'
         webhook: $SLACK_INTEGRATIONS_WEBHOOK
         include_job_number_field: false
         include_project_field: false
