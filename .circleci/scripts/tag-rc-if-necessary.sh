@@ -4,11 +4,10 @@ set -e
 set -u
 set -x
 
-PREVRC=$(git for-each-ref --sort=-creatordate --format="%(refname:short)|%(creatordate:short)" refs/tags/* | grep "0-rc|" | head -n 1)
+PREVRC=$(git for-each-ref --sort=-creatordate --format="%(refname:short)|%(creatordate:unix)" refs/tags/* | grep "0-rc|" | head -n 1)
 
-TAGDATE=$(echo $PREVRC | cut -d"|" -f2)
-taggedDate=$(date --date "$TAGDATE" +"%s")
-threeWeekDate=$(date --date "21 days ago" +"%s")
+taggedDate=$(echo $PREVRC | cut -d"|" -f2)
+threeWeekDate=$(date --date "20 days ago" +"%s")
 
 if [[ ${taggedDate} -lt ${threeWeekDate} ]]; then
   OLDTAGNAME=$(echo $PREVRC | cut -d"|" -f1)
