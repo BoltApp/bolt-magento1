@@ -14,10 +14,8 @@ if [[ ${taggedDate} -lt ${threeWeekDate} ]]; then
   OLDTAGNAME=$(echo $PREVRC | cut -d"|" -f1)
   NEWTAGNAME=$(echo $OLDTAGNAME | awk -F. '{print $1 "." $2+1 ".0-rc"}')
 
-  mkdir -p /tmp/swissknife/
-  wget -P /tmp/swissknife/ -qi - https://github.com/aktau/github-release/releases/download/v0.7.2/linux-amd64-github-release.tar.bz2
-  tar xjf /tmp/swissknife/*.tar.bz2 -C /tmp/swissknife
-  /tmp/swissknife/bin/linux/amd64/github-release release --security-token "$GITHUB_TOKEN" --user "$CIRCLE_PROJECT_USERNAME" --repo "$CIRCLE_PROJECT_REPONAME" --tag "$NEWTAGNAME"
+  git tag $NEWTAGNAME
+  git push origin $NEWTAGNAME
 
   SLACK_MENTIONS="<@aden>"
   curl -X POST -H "Content-type: application/json" --data "{
