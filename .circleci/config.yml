@@ -32,8 +32,8 @@ commands:
     steps:
     - slack/notify:
         color: '#58a359'
-        mentions: 'aden'
-        message: ':+1: test'
+        mentions: 'oleksii,Pavel'
+        message: 'white_check_mark: A new RC << parameters.tag >> has been tagged for Magento 1!'
         webhook: $SLACK_INTEGRATIONS_WEBHOOK
         include_job_number_field: false
         include_project_field: false
@@ -51,6 +51,8 @@ jobs:
     - when:
         condition: $TAGTHISWEEK
         steps:
+        - swissknife/publish_github_release:
+            tag: $NEWTAGNAME
         - notify-rc-tag:
             tag: $NEWTAGNAME
   unit-php55-mage18:
@@ -117,5 +119,12 @@ workflows:
     - unit-php56-mage18
     - unit-php56-mage19
   tagger:
+    triggers:
+    - schedule:
+        cron: "0 5 * * 5"
+        filters:
+          branches:
+            only:
+            - master
     jobs:
     - tag-rc-candidate
