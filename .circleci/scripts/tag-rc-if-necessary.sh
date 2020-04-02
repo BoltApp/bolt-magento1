@@ -17,6 +17,8 @@ if [[ ${taggedDate} -lt ${threeWeekDate} ]]; then
   git tag $NEWTAGNAME
   git push origin $NEWTAGNAME
 
+  echo $SLACK_GREENKEEPER_WEBHOOK
+
   SLACK_MENTIONS="<@oleksii> <@Pavel>"
   curl -X POST -H "Content-type: application/json" --data "{
     \"attachments\": [{
