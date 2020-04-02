@@ -33,7 +33,7 @@ commands:
     - slack/notify:
         color: '#58a359'
         mentions: 'aden'
-        message: 'test'
+        message: '<< parameters.tag >>'
         webhook: $SLACK_INTEGRATIONS_WEBHOOK
         include_job_number_field: false
         include_project_field: false
@@ -52,7 +52,7 @@ jobs:
         condition: $TAGTHISWEEK
         steps:
         - swissknife/publish_github_release:
-            tag: $NEWTAGNAME
+            tag: "$NEWTAGNAME"
         - notify-rc-tag:
             tag: $NEWTAGNAME
   unit-php55-mage18:
