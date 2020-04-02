@@ -13,15 +13,9 @@ threeWeekDate=$(date --date "21 days ago" +"%s")
 if [[ ${taggedDate} -lt ${threeWeekDate} ]]; then
   OLDTAGNAME=$(echo $PREVRC | cut -d"|" -f1)
   NEWTAGNAME=$(echo $OLDTAGNAME | awk -F. '{print $1 "." $2+1 ".0-rc"}')
-
   git tag $NEWTAGNAME
   git push origin $NEWTAGNAME
-
-  SLACK_MENTIONS="<@oleksii> <@Pavel>"
   curl -X POST -H "Content-type: application/json" --data "{
-    \"attachments\": [{
-      \"text\": \":white_check_mark: A new RC $NEWTAGNAME has been tagged for Magento 1! $SLACK_MENTIONS\",
-      \"color\": \"#58a359\"
-    }]
+    \"text\": \":white_check_mark: A new RC $NEWTAGNAME has been tagged for Magento 1! @oleksii @Pavel\"
   }" $SLACK_MAGENTO1_WEBHOOK
 fi
