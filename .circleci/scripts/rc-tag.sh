@@ -6,7 +6,7 @@ set -x
 
 echo $PWD
 
-PREVRC=$(git for-each-ref --sort=-creatordate --format="%(refname:short)|%(creatordate)" refs/tags/* | grep "0-rc " | head -n 1)
+PREVRC=$(git for-each-ref --sort=-creatordate --format="%(refname:short)|%(creatordate)" refs/tags/* | grep "0-rc|" | head -n 1)
 
 TAGDATE=$(echo $PREVRC | cut -d"|" -f2)
 taggedDate=$(date --date "$TAGDATE" +'%s')
