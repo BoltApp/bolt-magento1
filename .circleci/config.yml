@@ -31,11 +31,10 @@ commands:
         default: ''
     steps:
     - slack/notify:
-        channel: "#eng-magento1"
+        channel: "CKBBANKD2"
         color: '#33ff00'
-        mentions: '@aden'
+        mentions: 'aden'
         message: ":+1: test"
-        webhook: $SLACK_GREENKEEPER_WEBHOOK
 jobs:
   tag-rc-candidate:
     description: Tag master as rc every 3 weeks
@@ -45,9 +44,7 @@ jobs:
     - checkout
     - run:
         name: Validate eligibility to tag rc
-        command: |
-          chmod +x .circleci/scripts/rc-tag.sh
-          .circleci/scripts/rc-tag.sh
+        command: chmod +x .circleci/scripts/rc-tag.sh && .circleci/scripts/rc-tag.sh
     - when:
         condition: $TAGTHISWEEK
         steps:
