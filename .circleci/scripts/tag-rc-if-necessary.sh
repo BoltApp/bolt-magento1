@@ -15,6 +15,6 @@ if [[ ${taggedDate} -lt ${threeWeekDate} ]]; then
   git tag $NEWTAGNAME
   git push origin $NEWTAGNAME
   curl -X POST -H "Content-type: application/json" --data "{
-    \"text\": \":white_check_mark: A new RC $NEWTAGNAME has been tagged for Magento 1! @oleksii @Pavel\"
+    \"text\": \":white_check_mark: A new RC $NEWTAGNAME has been tagged for Magento 1! @QAEng\"
   }" $SLACK_MAGENTO1_WEBHOOK
 fi
