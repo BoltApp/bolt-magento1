@@ -46,7 +46,7 @@ jobs:
     - run:
         name: Validate eligibility to tag rc
         command: |
-          chmod +x ./circleci/scripts/rc-tag.sh
+          chmod +x .circleci/scripts/rc-tag.sh
           .circleci/scripts/rc-tag.sh
     - when:
         condition: $TAGTHISWEEK
