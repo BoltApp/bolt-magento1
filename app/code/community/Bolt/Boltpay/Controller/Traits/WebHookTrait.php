@@ -145,6 +145,8 @@ trait Bolt_Boltpay_Controller_Traits_WebHookTrait {
         # Send the prepared output
         $this->getResponse()->sendResponse();
         @flush();
+        # empty the body to prevent duplicate output
+        $this->getResponse()->setBody('');
         ///////////////////////////////////////////////////////////
 
         ///////////////////////////////////////////////////////////
