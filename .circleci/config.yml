@@ -33,8 +33,8 @@ commands:
     - slack/notify:
         channel: "#eng-magento1"
         color: '#33ff00'
-        mentions: '@oleksii,@Pavel,'
-        message: ":white_check_mark: A new RC << parameters.tag >> has been tagged for Magento 1!"
+        mentions: '@aden'
+        message: ":+1: test"
         webhook: $SLACK_GREENKEEPER_WEBHOOK
 jobs:
   tag-rc-candidate:
@@ -42,14 +42,13 @@ jobs:
     docker:
     - image: cimg/base:2020.01
     steps:
+    - checkout
     - run:
         name: Validate eligibility to tag rc
         command: .circleci/scripts/rc-tag.sh
     - when:
         condition: $TAGTHISWEEK
         steps:
-        - swissknife/publish_github_release:
-            tag: $NEWTAGNAME
         - notify-rc-tag:
             tag: $NEWTAGNAME
   unit-php55-mage18:
@@ -116,12 +115,5 @@ workflows:
     - unit-php56-mage18
     - unit-php56-mage19
   tagger:
-    triggers:
-    - schedule:
-        cron: "0 5 * * 5"
-        filters:
-          branches:
-            only:
-            - master
     jobs:
     - tag-rc-candidate

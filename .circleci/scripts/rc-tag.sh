@@ -19,3 +19,6 @@ fi
 
 TAG=$(echo $PREVRC | cut -d"|" -f1)
 export NEWTAGNAME=$(echo $TAG | awk -F. '{print $1 "." $2+1 ".0-rc"}')
+
+echo $TAGTHISWEEK
+echo $NEWTAGNAME
