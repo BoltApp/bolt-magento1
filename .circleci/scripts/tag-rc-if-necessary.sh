@@ -12,9 +12,10 @@ threeWeekDate=$(date --date "20 days ago" +"%s")
 if [[ ${taggedDate} -lt ${threeWeekDate} ]]; then
   OLDTAGNAME=$(echo $PREVRC | cut -d"|" -f1)
   NEWTAGNAME=$(echo $OLDTAGNAME | awk -F. '{print $1 "." $2+1 ".0-rc"}')
+  echo "Tagging $NEWTAGNAME"
   git tag $NEWTAGNAME
   git push origin $NEWTAGNAME
-  curl -X POST -H "Content-type: application/json" --data "{
-    \"text\": \":white_check_mark: A new RC $NEWTAGNAME has been tagged for Magento 1! @QAEng\"
-  }" $SLACK_MAGENTO1_WEBHOOK
+else
+  echo "No rc tag this week"
+  circleci-agent step halt
 fi
