@@ -2,7 +2,6 @@
 
 set -e
 set -u
-set -x
 
 PREVRC=$(git for-each-ref --sort=-creatordate --format="%(refname:short)|%(creatordate:unix)" refs/tags/* | grep "0-rc|" | head -n 1)
 
