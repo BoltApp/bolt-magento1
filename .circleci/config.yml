@@ -49,9 +49,7 @@ jobs:
         command: |
           .circleci/scripts/tag-rc-if-necessary.sh
           echo "export NEWTAGNAME=$NEWTAGNAME" >> $BASH_ENV
-          source $BASH_ENV
-    - notify-rc-tag:
-        tag: $NEWTAGNAME
+          echo $NEWTAGNAME
   unit-php55-mage18:
     docker:
     - image: boltdev/php5.5-circle:0.0.4
