@@ -41,12 +41,6 @@ class Bolt_Boltpay_InvalidTransitionException extends Bolt_Boltpay_BoltException
         $this->_newStatus = $newStatus;
         parent::__construct($message, $code, $previous);
     }
-
-    /**
-     * Gets the original status of the transaction
-     *
-     * @return string
-     */
     public function getOldStatus()
     {
         return $this->_oldStatus;
