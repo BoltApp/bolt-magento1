@@ -24,34 +24,31 @@ commands:
         only_for_branches: master
         webhook: $SLACK_GREENKEEPER_WEBHOOK
   notify-rc-tag:
-    description: 'Notifies #eng-magento1 when a release candidate is tagged.'
+    description: 'Notify #eng-magento1 after a release candidate is tagged.'
     parameters:
       tag:
         type: string
         default: ''
     steps:
     - slack/notify:
-        channel: "#eng-magento1"
-        color: '#33ff00'
-        mentions: '@oleksii,@Pavel,'
+        color: '#58a359'
+        mentions: 'oleksii,Pavel'
         message: ":white_check_mark: A new RC << parameters.tag >> has been tagged for Magento 1!"
-        webhook: $SLACK_GREENKEEPER_WEBHOOK
+        webhook: $SLACK_MAGENTO1_WEBHOOK
+        include_job_number_field: false
+        include_project_field: false
+        include_visit_job_action: false
 jobs:
-  tag-rc-candidate:
-    description: Tag master as rc every 3 weeks
+  tag-release-candidate:
     docker:
     - image: cimg/base:2020.01
     steps:
+    - checkout
     - run:
-        name: Validate eligibility to tag rc
-        command: .circleci/scripts/rc-tag.sh
-    - when:
-        condition: $TAGTHISWEEK
-        steps:
-        - swissknife/publish_github_release:
-            tag: $NEWTAGNAME
-        - notify-rc-tag:
-            tag: $NEWTAGNAME
+        name: Tag master as release candidate every 3 weeks
+        command: .circleci/scripts/tag-rc-if-necessary.sh
+    - notify-rc-tag:
+        tag: $NEWTAGNAME
   unit-php55-mage18:
     docker:
     - image: boltdev/php5.5-circle:0.0.4
@@ -124,4 +121,4 @@ workflows:
             only:
             - master
     jobs:
-    - tag-rc-candidate
+    - tag-release-candidate
