@@ -29,7 +29,7 @@ class Bolt_Boltpay_InvalidTransitionException extends Bolt_Boltpay_BoltException
     /**
      * Bolt_Boltpay_InvalidTransitionException constructor.
      *
-     * @param string $oldStatus         The original status of the transaction
+     * @param string $oldStatus         The original status of the transaction1
      * @param int $newStatus            The failed destination status
      * @param string $message           [optional] The Exception message to throw.
      * @param int $code                 [optional] The Exception code.
