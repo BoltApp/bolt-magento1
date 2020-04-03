@@ -46,10 +46,7 @@ jobs:
     - checkout
     - run:
         name: Tag master as release candidate every 3 weeks
-        command: |
-          .circleci/scripts/tag-rc-if-necessary.sh
-          echo "export NEWTAGNAME=$NEWTAGNAME" >> $BASH_ENV
-          echo $NEWTAGNAME
+        command: .circleci/scripts/tag-rc-if-necessary.sh
   unit-php55-mage18:
     docker:
     - image: boltdev/php5.5-circle:0.0.4
