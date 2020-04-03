@@ -245,8 +245,7 @@ trait Bolt_Boltpay_Helper_ConfigTrait
     public function getMinOrderDescriptionMessage()
     {
         return Mage::getStoreConfig('sales/minimum_order/description')
-            ? Mage::getStoreConfig('sales/minimum_order/description')
-            : Mage::helper('checkout')->__(
+            ?: Mage::helper('checkout')->__(
                 'Minimum order amount is %s',
                 $this->getMinOrderAmountInStoreCurrency()
             );
