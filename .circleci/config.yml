@@ -1,124 +1,105 @@
-version: 2.1
-orbs:
-  slack: circleci/slack@3.4.2
-  swissknife: roopakv/swissknife@0.25.0
-commands:
-  if-php-modified:
-    description: Runs if any php file is modified
-    parameters:
-      steps:
-        description: The steps to run if modified
-        type: steps
-    steps:
-    - swissknife/run_if_modified:
-        always-run-on-branch: master
-        pattern: ^\.circleci.*|.*\.php$
-        steps-to-run: << parameters.steps >>
-        use-divergence-point: true
-  notify-buildcop:
-    description: 'Notifies #mx-greenkeeper when a build on master fails.'
-    steps:
-    - slack/status:
-        fail_only: true
-        failure_message: ':red_circle: M1: A $CIRCLE_JOB job has failed!'
-        only_for_branches: master
-        webhook: $SLACK_GREENKEEPER_WEBHOOK
-  notify-rc-tag:
-    description: 'Notify #eng-magento1 after a release candidate is tagged.'
-    parameters:
-      tag:
-        type: string
-        default: ''
-    steps:
-    - slack/notify:
-        color: '#58a359'
-        mentions: 'oleksii,Pavel'
-        message: ":white_check_mark: A new RC << parameters.tag >> has been tagged for Magento 1!"
-        webhook: $SLACK_MAGENTO1_WEBHOOK
-        include_job_number_field: false
-        include_project_field: false
-        include_visit_job_action: false
+version: 2
 jobs:
-  tag-release-candidate:
-    docker:
-    - image: cimg/base:2020.01
-    steps:
-    - checkout
-    - run:
-        name: Tag master as release candidate every 3 weeks
-        command: .circleci/scripts/tag-rc-if-necessary.sh
-    - notify-rc-tag:
-        tag: $NEWTAGNAME
   unit-php55-mage18:
     docker:
-    - image: boltdev/php5.5-circle:0.0.4
-    - image: circleci/mysql:5.7
+      - image: bylexus/apache-php55
+      - image: circleci/mysql:5.7
     steps:
-    - checkout
-    - if-php-modified:
-        steps:
-        - run:
-            name: PHP 5.5 Magento 1.8
-            command: MAGENTO_VERSION=magento-mirror-1.8.1.0 PHPUNIT_PHAR=tests/unit/phpunit-4.8.36.phar tests/scripts/setup_and_test.sh nocov
-        - notify-buildcop
+      - checkout
+      - run:
+          name: PHP 5.5 Magento 1.8
+          command: |
+            mkdir ./artifacts
+            export TEST_ENV=php55-mage18
+            PHPUNIT_PHAR=tests/unit/phpunit-4.8.36.phar MAGENTO_VERSION=magento-mirror-1.8.1.0 tests/scripts/ci.sh
+      - store_artifacts:
+          path: ./artifacts
+
   unit-php55-mage19:
     docker:
-    - image: boltdev/php5.5-circle:0.0.4
-    - image: circleci/mysql:5.7
+      - image: bylexus/apache-php55
+      - image: circleci/mysql:5.7
     steps:
-    - checkout
-    - if-php-modified:
-        steps:
-        - run:
-            name: PHP 5.5 Magento 1.9
-            command: MAGENTO_VERSION=magento-mirror-1.9.3.6 PHPUNIT_PHAR=tests/unit/phpunit-4.8.36.phar tests/scripts/setup_and_test.sh nocov
-        - notify-buildcop
+      - checkout
+      - run:
+          name: PHP 5.5 Magento 1.9
+          command: |
+            mkdir ./artifacts
+            export TEST_ENV=php55-mage19
+            PHPUNIT_PHAR=tests/unit/phpunit-4.8.36.phar MAGENTO_VERSION=magento-mirror-1.9.3.6 tests/scripts/ci.sh
+      - store_artifacts:
+          path: ./artifacts
+
   unit-php56-mage18:
     docker:
-    - image: boltdev/php5.6-circle:0.0.1
-    - image: circleci/mysql:5.7
+      - image: bylexus/apache-php56
+      - image: circleci/mysql:5.7
     steps:
-    - checkout
-    - if-php-modified:
-        steps:
-        - run:
-            name: PHP 5.6 Magento 1.8
-            command: |
-              mkdir ./artifacts
-              MAGENTO_VERSION=magento-mirror-1.8.1.0 PHPUNIT_PHAR=tests/unit/phpunit-5.7.9.phar tests/scripts/setup_and_test.sh withcov
-        - store_artifacts:
-            path: ./artifacts
-        - notify-buildcop
+      - checkout
+      - run:
+          name: PHP 5.6 Magento 1.8
+          command: |
+            mkdir ./artifacts
+            export TEST_ENV=php56-mage18
+            PHPUNIT_PHAR=tests/unit/phpunit-5.7.9.phar MAGENTO_VERSION=magento-mirror-1.8.1.0 tests/scripts/ci.sh
+      - store_artifacts:
+          path: ./artifacts
+
   unit-php56-mage19:
     docker:
-    - image: boltdev/php5.6-circle:0.0.1
-    - image: circleci/mysql:5.7
+      - image: bylexus/apache-php56
+      - image: circleci/mysql:5.7
     steps:
-    - checkout
-    - if-php-modified:
-        steps:
-        - run:
-            name: PHP 5.6 Magento 1.9
-            command: |
-              mkdir ./artifacts
-              MAGENTO_VERSION=magento-mirror-1.9.3.6 PHPUNIT_PHAR=tests/unit/phpunit-5.7.9.phar tests/scripts/setup_and_test.sh withcov
-        - store_artifacts:
-            path: ./artifacts
-        - notify-buildcop
+      - checkout
+      - run:
+          name: PHP 5.6 Magento 1.9
+          command: |
+            mkdir ./artifacts
+            export TEST_ENV=php56-mage19
+            PHPUNIT_PHAR=tests/unit/phpunit-5.7.9.phar MAGENTO_VERSION=magento-mirror-1.9.3.6 tests/scripts/ci.sh
+      - store_artifacts:
+          path: ./artifacts
+
+  integration-tests:
+    docker:
+      - image: boltdev/m1-plugin-ci-php56-mage19:v3
+        auth: 
+          username: $DOCKERHUB_USER
+          password: $DOCKERHUB_PASS
+      - image: circleci/mysql:5.7
+      - image: selenium/standalone-chrome
+    steps:
+      - checkout
+      - run:
+          name: Integration test
+          command: |  
+              MAGENTO_VERSION=magento-mirror-1.9.3.6 tests/scripts/setup_integration.sh
+              echo "Running integraiton test"
+              git clone git@github.com:BoltApp/integration-tests.git
+              cd integration-tests
+              git checkout m1_ci
+              npm install
+              mkdir -p ./screenshots
+              JUNIT_REPORT_DIR=./test-results SCREENSHOT_DIR=./screenshots TEST_ENV=plugin_ci npm run test-checkout-magento1
+      - store_test_results:
+          path: ./integration-tests/test-results
+      - store_artifacts:
+          path: ./integration-tests/screenshots
+      - run:
+          name: Generate Report
+          command: |
+            cd integration-tests
+            npm run generate-report
+          when: always
+      - store_artifacts:
+          path: ./integration-tests/allure-report
+
 workflows:
+  version: 2
   tests:
     jobs:
-    - unit-php55-mage18
-    - unit-php55-mage19
-    - unit-php56-mage18
-    - unit-php56-mage19
-  tagger:
-    triggers:
-    - schedule:
-        cron: "0 5 * * 5"
-        filters:
-          branches:
-            only:
-            - master
-    jobs:
-    - tag-release-candidate
+      - integration-tests
+#      - unit-php55-mage18
+#      - unit-php55-mage19
+#      - unit-php56-mage18
+#      - unit-php56-mage19
