@@ -8,7 +8,7 @@ $api_key=Mage::getModel('core/encryption')->encrypt($argv[1]);
 $signing_key=Mage::getModel('core/encryption')->encrypt($argv[2]);
 $publishable_key_multipage=$argv[3];
 
-// Set all keys
+Mage::getConfig()->saveConfig('general/locale/code','en_US');
 Mage::getModel('core/config')->saveConfig('currency/options/allow', "USD");
 Mage::getModel('core/config')->saveConfig('currency/options/base', "USD");
 Mage::getModel('core/config')->saveConfig('currency/options/default', "USD");
