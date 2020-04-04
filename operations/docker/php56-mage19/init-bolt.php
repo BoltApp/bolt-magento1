@@ -12,6 +12,7 @@ Mage::getModel('core/config')->saveConfig('general/locale/code','en_US');
 Mage::getModel('core/config')->saveConfig('currency/options/allow', "USD");
 Mage::getModel('core/config')->saveConfig('currency/options/base', "USD");
 Mage::getModel('core/config')->saveConfig('currency/options/default', "USD");
+Mage::getModel('core/config')->saveConfig('carriers/flatrate/active', 1);
 Mage::getModel('core/config')->saveConfig('payment/boltpay/active', 1);
 Mage::getModel('core/config')->saveConfig('payment/boltpay/test', 1);
 Mage::getModel('core/config')->saveConfig('payment/boltpay/api_key', $api_key);

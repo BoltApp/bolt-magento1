@@ -8,7 +8,7 @@ cd /home/circleci
 
 ls -al /var/www/html
 sudo rsync -a project/ /var/www/html/
-rm -rf project/*
+# rm -rf project/*
 
 echo "Waiting for DB..."
 while ! mysql -uroot -h 127.0.0.1 -e "SELECT 1" >/dev/null 2>&1; do
@@ -24,6 +24,7 @@ php -d memroy_limit=512M n98-magerun.phar admin:user:create bolttest dev+m1-inte
 
 cd /var/www/html
 php init-bolt.php $BOLT_SANDBOX_MERCHANT_API_KEY $BOLT_SANDBOX_MERCHANT_SIGNING_SECRET $BOLT_SANDBOX_MERCHANT_PUBLISHABLE_KEY
+php ~/project/operations/docker/php56-mage19/init-bolt.php $BOLT_SANDBOX_MERCHANT_API_KEY $BOLT_SANDBOX_MERCHANT_SIGNING_SECRET $BOLT_SANDBOX_MERCHANT_PUBLISHABLE_KEY
 
 sudo chown -R www-data:www-data /var/www/html
 
