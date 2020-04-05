@@ -7,6 +7,8 @@ Mage::init();
 $api_key=Mage::getModel('core/encryption')->encrypt($argv[1]);
 $signing_key=Mage::getModel('core/encryption')->encrypt($argv[2]);
 $publishable_key_multipage=$argv[3];
+$publishable_key_paymentonly=$argv[4];
+$publishable_key_admin=$argv[5];
 
 Mage::getModel('core/config')->saveConfig('general/locale/code','en_US');
 Mage::getModel('core/config')->saveConfig('currency/options/allow', "USD");
@@ -18,5 +20,7 @@ Mage::getModel('core/config')->saveConfig('payment/boltpay/test', 1);
 Mage::getModel('core/config')->saveConfig('payment/boltpay/api_key', $api_key);
 Mage::getModel('core/config')->saveConfig('payment/boltpay/signing_key', $signing_key);
 Mage::getModel('core/config')->saveConfig('payment/boltpay/publishable_key_multipage', $publishable_key_multipage);
+Mage::getModel('core/config')->saveConfig('payment/boltpay/publishable_key_onepage', $publishable_key_paymentonly);
+Mage::getModel('core/config')->saveConfig('payment/boltpay/publishable_key_admin', $publishable_key_admin);
 
 Mage::app()->getCacheInstance()->flush(); 
