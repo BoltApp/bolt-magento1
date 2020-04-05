@@ -6,7 +6,15 @@ set -x
 
 cd /home/circleci
 
-sudo apt-get install -y chrome-stable
+# update chrome
+sudo apt-get update
+sudo apt-get install lsb-release libappindicator3-1
+curl -L -o google-chrome.deb https://dl.google.com/linux/direct/google-chrome-stable_current_amd64.deb
+sudo dpkg -i google-chrome.deb
+sudo sed -i 's|HERE/chrome"|HERE/chrome" --no-sandbox|g' /opt/google/chrome/google-chrome
+rm google-chrome.deb
+
+sudo apt-get upgrade -y git
 
 ls -al /var/www/html
 sudo rsync -a project/ /var/www/html/
