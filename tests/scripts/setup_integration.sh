@@ -6,6 +6,8 @@ set -x
 
 cd /home/circleci
 
+sudo apt-get install -y chrome-stable
+
 ls -al /var/www/html
 sudo rsync -a project/ /var/www/html/
 # rm -rf project/*
