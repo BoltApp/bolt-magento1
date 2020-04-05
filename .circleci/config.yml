@@ -1,7 +1,6 @@
 version: 2.1
 jobs:
   integration-tests:
-    context: integration-tests-secrets
     docker:
       - image: boltdev/m1-plugin-ci-php56-mage19:v3
         auth: 
@@ -38,4 +37,5 @@ jobs:
 workflows:
   integration-tests:
     jobs:
-    - integration-tests
+    - integration-tests:  
+        context: integration-tests-secrets
