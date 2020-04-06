@@ -82,11 +82,12 @@ class Bolt_Boltpay_Model_CouponTest extends PHPUnit_Framework_TestCase
                     'logWarning',
                     'notifyException',
                     'logException',
+                    'getMinOrderAmountInStoreCurrency',
                 )
             )
             ->getMock();
         $this->currentMock->method('boltHelper')->willReturn($this->boltHelperMock);
-        $quoteMockMethods = array('getIsActive', 'isEmpty', 'getCustomerId', 'getItemsCount', 'getId', 'getCouponCode');
+        $quoteMockMethods = array('getIsActive', 'isEmpty', 'getCustomerId', 'getItemsCount', 'getId', 'getCouponCode', 'validateMinimumAmount');
         $this->parentQuoteMock = $this->getClassPrototype('sales/quote')
             ->setMethods($quoteMockMethods)->getMock();
         $this->immutableQuoteMock = $this->getClassPrototype('sales/quote')
@@ -1128,6 +1129,8 @@ class Bolt_Boltpay_Model_CouponTest extends PHPUnit_Framework_TestCase
      *
      * @covers ::validateAfterApplyingCoupon
      *
+     * @expectedException Bolt_Boltpay_BadInputException
+     *
      * @throws ReflectionException if validateAfterApplyingCoupon method is not defined
      */
     public function validateAfterApplyingCoupon_withDifferentCouponCodes_setsErrorResponseAndThrowsException()
@@ -1139,6 +1142,10 @@ class Bolt_Boltpay_Model_CouponTest extends PHPUnit_Framework_TestCase
             Bolt_Boltpay_Model_Coupon::ERR_SERVICE,
             sprintf("Invalid coupon code response for coupon [%s]", self::$invalidCouponCode),
             422
+        )->willThrowException(
+            new Bolt_Boltpay_BadInputException(
+                sprintf("Invalid coupon code response for coupon [%s]", self::$invalidCouponCode)
+            )
         );
         Bolt_Boltpay_TestHelper::callNonPublicFunction(
             $this->currentMock,
@@ -1148,17 +1155,59 @@ class Bolt_Boltpay_Model_CouponTest extends PHPUnit_Framework_TestCase
 
     /**
      * @test
-     * that validateAfterApplyingCoupon succeeds if coupon code applied to immutable quote matches the one in request
+     * that validateAfterApplyingCoupon sets error response and throws exception
+     * if minimum order amount validation on immutable quote doesn't succeed
      *
      * @covers ::validateAfterApplyingCoupon
      *
      * @throws ReflectionException if validateAfterApplyingCoupon method is not defined
      */
-    public function validateAfterApplyingCoupon_withSameCouponCodes_succeeds()
+    public function validateAfterApplyingCoupon_withInvalidMinimumAmount_setsErrorResponseAndThrowsException()
+    {
+        $currentMock = $this->getTestClassPrototype()->setMethods(
+            array(
+                'getImmutableQuote',
+                'getCouponCode',
+                'applyCouponToQuote',
+                'setErrorResponseAndThrowException',
+                'boltHelper'
+            )
+        )->getMock();
+        $currentMock->method('getParentQuote')->willReturn($this->parentQuoteMock);
+        $currentMock->method('getImmutableQuote')->willReturn($this->immutableQuoteMock);
+        $currentMock->method('boltHelper')->willReturn($this->boltHelperMock);
+        $currentMock->method('getCouponCode')->willReturn(self::$validCouponCode);
+        $this->immutableQuoteMock->expects($this->once())->method('getCouponCode')
+            ->willReturn(self::$validCouponCode);
+        $this->immutableQuoteMock->expects($this->once())->method('validateMinimumAmount')->willReturn(false);
+        $this->boltHelperMock->expects($this->once())->method('getMinOrderAmountInStoreCurrency')
+            ->willReturn('$123.45');
+
+
+        $currentMock->expects($this->once())->method('setErrorResponseAndThrowException')->with(
+            Bolt_Boltpay_Model_Coupon::ERR_MINIMUM_CART_AMOUNT_REQUIRED,
+            "The minimum order amount of \$123.45 has not been met",
+            422
+        );
+        Bolt_Boltpay_TestHelper::callNonPublicFunction($currentMock, 'validateAfterApplyingCoupon');
+    }
+
+    /**
+     * @test
+     * that validateAfterApplyingCoupon succeeds if coupon code applied to immutable quote matches the one in request
+     * and minimum order amount is valid
+     *
+     * @covers ::validateAfterApplyingCoupon
+     *
+     * @throws ReflectionException if validateAfterApplyingCoupon method is not defined
+     */
+    public function validateAfterApplyingCoupon_withSameCouponCodesAndValidMinOrderAmount_succeeds()
     {
         $this->setupEnvironment(array('discount_code' => self::$validCouponCode));
         $this->immutableQuoteMock->expects($this->once())->method('getCouponCode')
             ->willReturn(self::$validCouponCode);
+        $this->immutableQuoteMock->expects($this->once())->method('validateMinimumAmount')
+            ->willReturn(true);
         $this->currentMock->expects($this->never())->method('setErrorResponseAndThrowException');
         Bolt_Boltpay_TestHelper::callNonPublicFunction($this->currentMock, 'validateAfterApplyingCoupon');
     }
