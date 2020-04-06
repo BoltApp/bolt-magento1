@@ -1,5 +1,5 @@
 # Changelog
-## [V2.5.0](https://bolt-public.s3-us-west-1.amazonaws.com/magento-integration-release/bolt-magento1-v2.5.0.zip) 2020-04-07
+## [V2.5.0](https://bolt-public.s3-us-west-1.amazonaws.com/magento-integration-release/bolt-magento1-v2.5.0.zip) 2020-04-06
  - Reorganized and updated strings for admin settings
  - Fixed a bug with 0 dollar refund
  - Added minimum order amount support
