@@ -25,8 +25,7 @@ Mage::getModel('core/config')->saveConfig('payment/boltpay/publishable_key_onepa
 Mage::getModel('core/config')->saveConfig('payment/boltpay/publishable_key_admin', $publishable_key_admin);
 
 // Create discounts
-function createDiscountRule($couponCode, $additionalData) {
-    $allCustomerGroupIds = Mage::getModel('customer/group')->getCollection()->getAllIds();
+function createDiscountRule($couponCode, $action, $additionalData) {
     $rule = Mage::getModel('salesrule/rule');
     $rule->setName($couponCode)
         ->setDescription($couponCode)
@@ -35,7 +34,8 @@ function createDiscountRule($couponCode, $additionalData) {
         ->setCouponCode($couponCode)
         ->setUsesPerCustomer(0)
         ->setUsesPerCoupon(0)
-        ->setCustomerGroupIds($allCustomerIds)
+        // for some reason Mage::getModel('customer/group')->getCollection()->getAllIds(); doesn't work
+        ->setCustomerGroupIds(array(0,1,2,4,5))
         ->setIsActive(1)
         ->setConditionsSerialized('')
         ->setActionsSerialized('')
@@ -43,7 +43,7 @@ function createDiscountRule($couponCode, $additionalData) {
         ->setIsAdvanced(1)
         ->setProductIds('')
         ->setSortOrder(0)
-        ->setSimpleAction(Mage_SalesRule_Model_Rule::BY_PERCENT_ACTION)
+        ->setSimpleAction($action)
         ->setDiscountAmount(0)
         ->setDiscountStep(0)
         ->setSimpleFreeShipping('0')
@@ -58,19 +58,24 @@ function createDiscountRule($couponCode, $additionalData) {
     return $rule->getId();
 }
 
-createDiscountRule("30poff", array(
+createDiscountRule("30poff", Mage_SalesRule_Model_Rule::BY_PERCENT_ACTION, array(
     'discount_amount'         => '30',
 ));
-createDiscountRule("1234centsoff", array(
-    'discount_amount'         => '1234',
-    'simple_action' => 'Mage_SalesRule_Model_Rule::BY_FIXED_ACTION',
+createDiscountRule("1234centsoff", Mage_SalesRule_Model_Rule::BY_FIXED_ACTION, array(
+    'discount_amount'         => '12.34',
 ));
-createDiscountRule("freeship", array(
+createDiscountRule("freeship", Mage_SalesRule_Model_Rule::BY_FIXED_ACTION, array(
     'simple_free_shipping'         => '1',
 ));
-createDiscountRule("expired", array(
+createDiscountRule("expired", Mage_SalesRule_Model_Rule::BY_FIXED_ACTION, array(
     'from_date'         => '2000-01-01',
     'to_date'           => '2000-01-02',
 ));
-    
+
+// Bump inventory of aviator sunglasses
+$productId = 337;
+$stockItem = Mage::getModel('cataloginventory/stock_item')->loadByProduct($productId);
+$stockItem->setQty(10000);
+$stockItem->save();
+
 Mage::app()->getCacheInstance()->flush(); 

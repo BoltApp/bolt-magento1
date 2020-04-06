@@ -6,28 +6,24 @@ set -x
 
 cd /home/circleci
 
-# update chrome
-sudo apt-get update
-sudo apt-get install lsb-release libappindicator3-1
-curl -L -o google-chrome.deb https://dl.google.com/linux/direct/google-chrome-stable_current_amd64.deb
-sudo dpkg -i google-chrome.deb
-sudo sed -i 's|HERE/chrome"|HERE/chrome" --no-sandbox|g' /opt/google/chrome/google-chrome
-rm google-chrome.deb
+# Start mysql
+sudo service mysql start -- --initialize-insecure --skip-grant-tables --skip-networking --protocol=socket --skip-name-resolve=false
 
-sudo apt-get upgrade -y git
-
-ls -al /var/www/html
 sudo rsync -a project/ /var/www/html/
 # rm -rf project/*
 
 echo "Waiting for DB..."
-while ! mysql -uroot -h 127.0.0.1 -e "SELECT 1" >/dev/null 2>&1; do
+while ! mysql -uroot -h localhost -e "SELECT 1" >/dev/null 2>&1; do
     sleep 1
 done
 
-mysql -u root -h 127.0.0.1 circle_test < magento-sample-data-1.9.2.4/magento_sample_data_for_1.9.2.4.sql
+mysql -u root -h localhost -e "CREATE USER 'magento'@'127.0.0.1'"
+mysql -u root -h localhost -e "GRANT ALL PRIVILEGES ON *.* TO 'magento'@'127.0.0.1' WITH GRANT OPTION"
+mysql -u root -h localhost -e "FLUSH PRIVILEGES"
+mysql -u magento -h 127.0.0.1 -e "CREATE DATABASE IF NOT EXISTS magento"
+mysql -u magento -h 127.0.0.1 magento < magento-sample-data-1.9.2.4/magento_sample_data_for_1.9.2.4.sql
 php -d memroy_limit=512M n98-magerun.phar install --magentoVersionByName=magento-mirror-1.9.3.6 \
-  --installationFolder=/var/www/html --forceUseDb --noDownload --dbHost=127.0.0.1 --dbUser=root --dbName=circle_test  --dbPass="" \
+  --installationFolder=/var/www/html --forceUseDb --noDownload --dbHost=127.0.0.1 --dbUser=magento --dbName=magento  --dbPass="" \
   --installSampleData=yes --useDefaultConfigParams=yes --baseUrl=http://m1-test.integrations.dev.bolt.me
 php -d memroy_limit=512M n98-magerun.phar admin:user:create bolttest dev+m1-integration-admin@bolt.com bolt1234 \
   --root-dir /var/www/html --no-interaction
