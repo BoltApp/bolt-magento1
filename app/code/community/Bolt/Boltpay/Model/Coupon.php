@@ -421,6 +421,19 @@ class Bolt_Boltpay_Model_Coupon extends Bolt_Boltpay_Model_Abstract
                 422
             );
         }
+
+        if (!$immutableQuote->validateMinimumAmount()) {
+            $this->applyCouponToQuote($immutableQuote, '');
+            $this->applyCouponToQuote($this->getParentQuote(), '');
+            $this->setErrorResponseAndThrowException(
+                self::ERR_MINIMUM_CART_AMOUNT_REQUIRED,
+                $this->boltHelper()->__(
+                    "The minimum order amount of %s has not been met",
+                    $this->boltHelper()->getMinOrderAmountInStoreCurrency($immutableQuote->getStoreId())
+                ),
+                422
+            );
+        }
     }
 
     /**
