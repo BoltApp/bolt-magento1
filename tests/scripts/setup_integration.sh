@@ -7,19 +7,19 @@ set -x
 cd /home/circleci
 
 # Start mysql
-sudo service mysql start -- --initialize-insecure --skip-grant-tables --skip-networking --protocol=socket --skip-name-resolve=false
+sudo service mysql start -- --initialize-insecure --skip-grant-tables --skip-networking --protocol=socket
 
 sudo rsync -a project/ /var/www/html/
 # rm -rf project/*
 
 echo "Waiting for DB..."
-while ! mysql -uroot -h localhost -e "SELECT 1" >/dev/null 2>&1; do
+while ! sudo mysql -uroot -h localhost -e "SELECT 1" >/dev/null 2>&1; do
     sleep 1
 done
 
-mysql -u root -h localhost -e "CREATE USER 'magento'@'127.0.0.1'"
-mysql -u root -h localhost -e "GRANT ALL PRIVILEGES ON *.* TO 'magento'@'127.0.0.1' WITH GRANT OPTION"
-mysql -u root -h localhost -e "FLUSH PRIVILEGES"
+sudo mysql -u root -h localhost -e "CREATE USER 'magento'@'127.0.0.1'"
+sudo mysql -u root -h localhost -e "GRANT ALL PRIVILEGES ON *.* TO 'magento'@'127.0.0.1' WITH GRANT OPTION"
+sudo mysql -u root -h localhost -e "FLUSH PRIVILEGES"
 mysql -u magento -h 127.0.0.1 -e "CREATE DATABASE IF NOT EXISTS magento"
 mysql -u magento -h 127.0.0.1 magento < magento-sample-data-1.9.2.4/magento_sample_data_for_1.9.2.4.sql
 php -d memroy_limit=512M n98-magerun.phar install --magentoVersionByName=magento-mirror-1.9.3.6 \
