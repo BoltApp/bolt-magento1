@@ -137,3 +137,6 @@ RUN rm ngrok.zip
 RUN rm sample-data.tar.bz2
 RUN rm -r magento-sample-data-1.9.2.4/media
 RUN rm -r magento-sample-data-1.9.2.4/skin
+
+USER circleci
+WORKDIR /home/circleci
