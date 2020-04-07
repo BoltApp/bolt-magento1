@@ -28,6 +28,10 @@ php -d memroy_limit=512M n98-magerun.phar install --magentoVersionByName=magento
 php -d memroy_limit=512M n98-magerun.phar admin:user:create bolttest dev+m1-integration-admin@bolt.com bolt1234 \
   --root-dir /var/www/html --no-interaction
 
+INC_NUM=$((100*${CIRCLE_BUILD_NUM}))
+mysql -u magento -h 127.0.0.1 -e "USE magento; ALTER TABLE sales_flat_quote AUTO_INCREMENT=${INC_NUM};"
+
+
 cd /var/www/html
 php ~/project/operations/docker/php56-mage19/init-bolt.php $BOLT_SANDBOX_MERCHANT_API_KEY $BOLT_SANDBOX_MERCHANT_SIGNING_SECRET \
   $BOLT_SANDBOX_PUBLISHABLE_KEY_MULTISTEP $BOLT_SANDBOX_PUBLISHABLE_KEY_PAYMENTONLY $BOLT_SANDBOX_PUBLISHABLE_KEY_ADMIN
