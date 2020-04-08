@@ -1170,19 +1170,21 @@ class Bolt_Boltpay_Model_CouponTest extends PHPUnit_Framework_TestCase
                 'getCouponCode',
                 'applyCouponToQuote',
                 'setErrorResponseAndThrowException',
-                'boltHelper'
+                'boltHelper',
+                'getParentQuote',
             )
         )->getMock();
         $currentMock->method('getParentQuote')->willReturn($this->parentQuoteMock);
         $currentMock->method('getImmutableQuote')->willReturn($this->immutableQuoteMock);
         $currentMock->method('boltHelper')->willReturn($this->boltHelperMock);
         $currentMock->method('getCouponCode')->willReturn(self::$validCouponCode);
+        $currentMock->expects($this->exactly(2))->method('applyCouponToQuote')
+            ->withConsecutive(array($this->immutableQuoteMock, ''), array($this->parentQuoteMock, ''));
         $this->immutableQuoteMock->expects($this->once())->method('getCouponCode')
             ->willReturn(self::$validCouponCode);
         $this->immutableQuoteMock->expects($this->once())->method('validateMinimumAmount')->willReturn(false);
         $this->boltHelperMock->expects($this->once())->method('getMinOrderAmountInStoreCurrency')
             ->willReturn('$123.45');
-
 
         $currentMock->expects($this->once())->method('setErrorResponseAndThrowException')->with(
             Bolt_Boltpay_Model_Coupon::ERR_MINIMUM_CART_AMOUNT_REQUIRED,
