@@ -29,7 +29,7 @@ php -d memroy_limit=512M n98-magerun.phar admin:user:create bolttest dev+m1-inte
   --root-dir /var/www/html --no-interaction
 
 INC_NUM=$((100*${CIRCLE_BUILD_NUM}))
-mysql -u magento -h 127.0.0.1 -e "USE magento; TRUNCATE sales_flat_quote; ALTER TABLE sales_flat_quote AUTO_INCREMENT=${INC_NUM};"
+mysql -u magento -h 127.0.0.1 -e "SET SQL_MODE='ALLOW_INVALID_DATES'; USE magento; ALTER TABLE sales_flat_quote AUTO_INCREMENT=${INC_NUM};"
 
 cd /var/www/html
 php ~/project/operations/docker/php56-mage19/init-bolt.php $BOLT_SANDBOX_MERCHANT_API_KEY $BOLT_SANDBOX_MERCHANT_SIGNING_SECRET \
