@@ -10,7 +10,6 @@ cd /home/circleci
 sudo service mysql start -- --initialize-insecure --skip-grant-tables --skip-networking --protocol=socket
 
 sudo rsync -a project/ /var/www/html/
-# rm -rf project/*
 
 echo "Waiting for DB..."
 while ! sudo mysql -uroot -h localhost -e "SELECT 1" >/dev/null 2>&1; do
@@ -34,6 +33,7 @@ mysql -u magento -h 127.0.0.1 -e "SET SQL_MODE='ALLOW_INVALID_DATES'; USE magent
 cd /var/www/html
 php ~/project/operations/docker/php56-mage19/init-bolt.php $BOLT_SANDBOX_MERCHANT_API_KEY $BOLT_SANDBOX_MERCHANT_SIGNING_SECRET \
   $BOLT_SANDBOX_PUBLISHABLE_KEY_MULTISTEP $BOLT_SANDBOX_PUBLISHABLE_KEY_PAYMENTONLY $BOLT_SANDBOX_PUBLISHABLE_KEY_ADMIN
+rm -rf project/*
 
 sudo chown -R www-data:www-data /var/www/html
 
