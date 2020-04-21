@@ -324,7 +324,7 @@ JS;
         }
 
         // Skip pre-fill for Apple Pay related data.
-        if (!(@$prefill['email'] == 'fake@email.com' || @$prefill['phone'] == '1111111111')) {
+        if (!(@$prefill['email'] == 'na@bolt.com' || @$prefill['phone'] == '8005550111' || @$prefill['addressLine1'] == 'tbd')) {
             $hints['prefill'] = $prefill;
         }
 
