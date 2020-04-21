@@ -379,21 +379,17 @@ class Bolt_Boltpay_ShippingController
     }
 
     /**
-     * Checks whether this is an Apple Pay request.  Currently, Apple Pay request are populated with
-     * "n/a" in several required address fields, particularly the "name" field, which is Bolt defined,
-     *  not customer defined.  Additionally, the "phone" field will be null.
+     * Checks whether this is an Apple Pay request.  Currently, Apple Pay requests have "request_source"
+     * field set to "applePay". Shipping address data is populated with "tbd" in several required address
+     * fields, particularly the "name" field, which is Bolt defined, not customer defined.
+     * Additionally, the "phone" field will be "8005550111" and "email" will be "na@bolt.com".
      *
      * Standard Bolt request leave the "name" field as null while forcing the user to populate
      * the phone field, and therefore is never null.
      *
-     * We do anticipate Bolt server-side refinement for indicating Apple Pay request, likely via User-Agent
-     * or a custom HTTP request header.  For now, we'll rely on sentinel value detection.
+     * @return bool true if the request was made in the ApplePay context, otherwise false
      */
     private function isApplePayRequest() {
-        $requestData = $this->getRequestData();
-        $shippingAddress = $requestData->shipping_address;
-
-        // For a more strict check, we would enable verifying the phone number is null
-        return ($shippingAddress->name === 'n/a') /* && is_null($shippingAddress->phone) */;
+        return $this->getRequestData()->request_source === 'applePay';
     }
 }

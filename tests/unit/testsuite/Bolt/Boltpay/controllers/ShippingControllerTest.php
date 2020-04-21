@@ -878,7 +878,7 @@ class Bolt_Boltpay_ShippingControllerTest extends PHPUnit_Framework_TestCase
     public function isApplePayRequest_withAppleRedactedAddressName_returnsTrue()
     {
         $requestData = new stdClass();
-        $requestData->shipping_address->name = 'n/a';
+        $requestData->request_source = 'applePay';
         $this->currentMock->expects($this->once())->method('getRequestData')->willReturn($requestData);
         $this->assertTrue(TestHelper::callNonPublicFunction($this->currentMock, 'isApplePayRequest'));
     }
@@ -935,7 +935,9 @@ class Bolt_Boltpay_ShippingControllerTest extends PHPUnit_Framework_TestCase
                 'expectedResult' => true
             ),
             'Apple pay request - should not validate' => array(
-                'requestData'    => (object)array('shipping_address' => (object)array('name' => 'n/a')),
+                'requestData'    => (object)array(
+                    'request_source'   => 'applePay'
+                ),
                 'expectedResult' => false
             ),
         );
