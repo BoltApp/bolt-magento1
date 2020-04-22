@@ -25,14 +25,6 @@ jobs:
           path: ./integration-tests/test-results
       - store_artifacts:
           path: ./integration-tests/screenshots
-      - run:
-          name: Generate Report
-          command: |
-            cd integration-tests
-            npm run generate-report
-          when: always
-      - store_artifacts:
-          path: ./integration-tests/allure-report
 
 workflows:
   integration-tests:
