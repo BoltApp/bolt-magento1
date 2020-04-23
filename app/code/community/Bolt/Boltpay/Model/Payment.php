@@ -573,6 +573,17 @@ class Bolt_Boltpay_Model_Payment extends Mage_Payment_Model_Method_Abstract
         }
     }
 
+    /**
+     * Handles refund transaction initiated from Bolt Merchant Dashboard
+     *
+     * @param Mage_Payment_Model_Info $payment
+     * @param string                  $newTransactionStatus
+     * @param string                  $prevTransactionStatus
+     * @param float                   $transactionAmount
+     * @param object                  $transaction
+     *
+     * @throws Exception if unexpected error occurs
+     */
     public function handleRefundTransactionUpdate(
         Mage_Payment_Model_Info $payment,
         $newTransactionStatus,
@@ -581,6 +592,15 @@ class Bolt_Boltpay_Model_Payment extends Mage_Payment_Model_Method_Abstract
         $transaction
     ) {
         try {
+
+            if (Bolt_Boltpay_Helper_Data::$fromHooks) {
+                //disable observer responsible for returning products to stock
+                Mage::app()->getConfig()->setNode(
+                    'global/events/sales_order_creditmemo_save_after/observers/inventory/type',
+                    'disabled'
+                );
+            }
+
             /** @var Mage_Sales_Model_Order $order */
             $order             = $payment->getOrder();
             $transactionAmount = Mage::app()->getStore()->roundPrice($transactionAmount);
