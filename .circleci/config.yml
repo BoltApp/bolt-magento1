@@ -20,10 +20,24 @@ jobs:
               npm install
               mkdir -p ./screenshots
               TEST_SUITE=checkout_full_magento1 JUNIT_REPORT_DIR=./test-results SCREENSHOT_DIR=./screenshots TEST_ENV=plugin_ci npm run test-retry-runner
+      - run:
+          command: |
+            cat integration-tests/test_status.txt
+
+            if [[ -f ".integration-tests/test-results/failedSpecs$CIRCLE_NODE_INDEX.json" ]]; then
+              failed_files=$(cat ./test-results/failedSpecs$CIRCLE_NODE_INDEX.json | jq -r '.specs | join(" ")')
+              echo "\n"
+              echo "To re-run failed tests the command you want to run locally after setting the right env:"
+              echo "npm run test-spec $failed_files"
+            fi
+          name: get results
+          when: always
       - store_test_results:
           path: ./integration-tests/test-results
       - store_artifacts:
           path: ./integration-tests/screenshots
+      - store_artifacts:
+          path: ./integration-tests/test_status.txt
 
 workflows:
   integration-tests:
