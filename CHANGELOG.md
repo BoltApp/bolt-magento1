@@ -1,4 +1,10 @@
 # Changelog
+## [V2.6.0](https://bolt-public.s3-us-west-1.amazonaws.com/magento-integration-release/bolt-magento1-v2.6.0.zip) 2020-04-28
+ - Improve Apple Pay support
+ - Remove Inventory handling from merchant dashboard refunds
+ - Show notice message in backoffice when the key isn't set
+ - Improve error message if discount minimum order amount isn’t met
+ - Various other bugfixes
 ## [V2.5.0](https://bolt-public.s3-us-west-1.amazonaws.com/magento-integration-release/bolt-magento1-v2.5.0.zip) 2020-04-06
  - Reorganized and updated strings for admin settings
  - Fixed a bug with 0 dollar refund
