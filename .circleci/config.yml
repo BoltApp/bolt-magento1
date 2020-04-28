@@ -17,6 +17,7 @@ jobs:
               echo "Running integraiton test"
               git clone git@github.com:BoltApp/integration-tests.git
               cd integration-tests
+              git checkout expire-code
               npm install
               mkdir -p ./screenshots
               TEST_SUITE=checkout_full_magento1 JUNIT_REPORT_DIR=./test-results SCREENSHOT_DIR=./screenshots TEST_ENV=plugin_ci npm run test-retry-runner
