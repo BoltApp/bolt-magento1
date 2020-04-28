@@ -3539,6 +3539,90 @@ class Bolt_Boltpay_Model_PaymentTest extends PHPUnit_Framework_TestCase
     }
 
     /**
+     * Setup method for tests covering {@see Bolt_Boltpay_Model_Payment::handleRefundTransactionUpdate}
+     *
+     * @param int $productId to add to cart
+     *
+     * @return Mage_Sales_Model_Order
+     *
+     * @throws Mage_Core_Exception if unable to add product to cart
+     */
+    private function handleRefundTransactionUpdateSetUp($productId)
+    {
+        $paymentMethod = 'boltpay';
+        $cart = Mage::getModel('checkout/cart', array('quote' => Mage::getModel('sales/quote')));
+        $cart->addProduct($productId, 1);
+        $address = array(
+            'firstname'  => 'Luke',
+            'lastname'   => 'Skywalker',
+            'street'     => 'Sample Street 10',
+            'city'       => 'Los Angeles',
+            'postcode'   => '90014',
+            'telephone'  => '+1 867 345 123 5681',
+            'country_id' => 'US',
+            'region_id'  => 12
+        );
+        $quote = $cart->getQuote();
+        $quote->getBillingAddress()->addData($address);
+        $quote->getShippingAddress()->addData($address)->setCollectShippingRates(true)
+            ->setShippingMethod('flatrate_flatrate')
+            ->collectShippingRates()
+            ->setPaymentMethod($paymentMethod);
+        $quote->reserveOrderId();
+        $quote->getPayment()->importData(array('method' => $paymentMethod));
+        $service = Mage::getModel('sales/service_quote', $quote);
+        Bolt_Boltpay_Helper_Data::$fromHooks = true;
+        $service->submitAll();
+        Bolt_Boltpay_Helper_Data::$fromHooks = false;
+        /** @var Mage_Sales_Model_Order $order */
+        $order = Mage::getModel('sales/order')->load($service->getOrder()->getId());
+        /** @var Mage_Sales_Model_Order_Invoice $invoice */
+        $invoice = Mage::getModel('sales/service_order', $order)->prepareInvoice();
+        $invoice->setRequestedCaptureCase(Mage_Sales_Model_Order_Invoice::CAPTURE_OFFLINE);
+        $invoice->register();
+        $invoice->getOrder()->setIsInProcess(true);
+        $invoice->save();
+
+        return $order;
+    }
+
+    /**
+     * @test
+     * that handleRefundTransactionUpdate doesn't return products to stock even when Automatic Return is enabled
+     *
+     * @covers ::handleRefundTransactionUpdate
+     *
+     * @throws Exception if unable to stub config value
+     */
+    public function handleRefundTransactionUpdate_fromHookAndAutoReturn_doesNotReturnStock()
+    {
+        //unset events loaded by previous tests
+        Bolt_Boltpay_TestHelper::setNonPublicProperty(Mage::app(), '_events', array());
+
+        $productId = Bolt_Boltpay_ProductProvider::createDummyProduct(
+            uniqid('PHPUNIT_TEST_'),
+            array(),
+            20
+        );
+        $order = $this->handleRefundTransactionUpdateSetUp($productId);
+        Bolt_Boltpay_Helper_Data::$fromHooks = true;
+        Bolt_Boltpay_TestHelper::stubConfigValue(Mage_CatalogInventory_Helper_Data::XML_PATH_ITEM_AUTO_RETURN, true);
+        $stockBeforeRefund = Mage::getModel('cataloginventory/stock_item')->loadByProduct($productId)->getQty();
+        $this->currentMock->handleRefundTransactionUpdate(
+            $order->getPayment(),
+            '',
+            '',
+            $order->getBaseGrandTotal(),
+            new stdClass()
+        );
+        $stockAfterRefund = Mage::getModel('cataloginventory/stock_item')->loadByProduct($productId)->getQty();
+        $this->assertEquals($stockBeforeRefund, $stockAfterRefund);
+        Bolt_Boltpay_Helper_Data::$fromHooks = false;
+        Bolt_Boltpay_OrderHelper::deleteDummyOrder($order);
+        Bolt_Boltpay_ProductProvider::deleteDummyProduct($productId);
+    }
+
+    /**
      * Initializes the mock order used for testing transaction webhooks
      *
      * @param string $initialOrderState State to be set when creating test order. In some cases it will be

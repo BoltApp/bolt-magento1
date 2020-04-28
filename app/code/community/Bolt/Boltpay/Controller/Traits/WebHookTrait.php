@@ -130,7 +130,10 @@ trait Bolt_Boltpay_Controller_Traits_WebHookTrait {
 
         if ($exitImmediately) {
             $this->getResponse()->sendResponse();
-            Mage::dispatchEvent('controller_front_send_response_after');
+            Mage::dispatchEvent(
+                'controller_front_send_response_after',
+                array('front' => Mage::app()->getFrontController())
+            );
             $this->setFlag('', Mage_Core_Controller_Varien_Action::FLAG_NO_POST_DISPATCH, 1);
             $this->getResponse()->sendHeadersAndExit(); # workaround to early exit.
         }

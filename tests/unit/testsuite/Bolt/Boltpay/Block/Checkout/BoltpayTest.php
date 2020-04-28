@@ -546,16 +546,18 @@ class Bolt_Boltpay_Block_Checkout_BoltpayTest extends PHPUnit_Framework_TestCase
      * that getAddressHints doesn't return pre-fill data when quote address is Apple Pay related
      *
      * @covers ::getAddressHints
-     * @throws ReflectionException if getAddressHints method doesn't exist
+     * @dataProvider getAddressHints_withApplePayRelatedDataProvider
+     *
+     * @param array $shippingAddressData containing Apple Pay data
+     *
      * @throws Mage_Core_Exception from test setup if unable to stub customer session singleton
+     * @throws ReflectionException if getAddressHints method doesn't exist
      */
-    public function getAddressHints_withApplePayRelatedData_returnsArrayWithoutPrefill()
+    public function getAddressHints_withApplePayRelatedData_returnsArrayWithoutPreFill($shippingAddressData)
     {
         $checkoutType = BoltpayCheckoutBlock::CHECKOUT_TYPE_MULTI_PAGE;
         $shippingAddress = Mage::getModel('sales/quote_address');
-        $shippingAddress
-            ->setEmail('fake@email.com')
-            ->setTelephone('1111111111');
+        $shippingAddress->setData($shippingAddressData);
         $quote = $this->getAddressHintsSetUp(null, $shippingAddress);
 
         $result = TestHelper::callNonPublicFunction(
@@ -565,6 +567,20 @@ class Bolt_Boltpay_Block_Checkout_BoltpayTest extends PHPUnit_Framework_TestCase
         );
 
         $this->assertArrayNotHasKey('prefill', $result);
+    }
+
+    /**
+     * Data provider for {@see getAddressHints_withApplePayRelatedData_returnsArrayWithoutPreFill}
+     *
+     * @return string[][][] containing shipping address data related to Apple Pay
+     */
+    public function getAddressHints_withApplePayRelatedDataProvider()
+    {
+        return array(
+            array('shippingAddressData' => array('email' => 'na@bolt.com')),
+            array('shippingAddressData' => array('telephone' => '8005550111')),
+            array('shippingAddressData' => array('street' => 'tbd')),
+        );
     }
 
     /**

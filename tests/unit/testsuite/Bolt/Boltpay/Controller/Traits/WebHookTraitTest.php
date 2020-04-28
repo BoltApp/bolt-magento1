@@ -502,9 +502,13 @@ class Bolt_Boltpay_Controller_Traits_WebHookTraitTest extends PHPUnit_Framework_
             $appMock = $this->getMockBuilder('Mage_Core_Model_App')
                 ->setMethods(array('dispatchEvent'))
                 ->getMock();
+            $controllerFrontMock = $this->getMockBuilder('Mage_Core_Controller_Varien_Front')->getMock();
 
             $appMock->expects($this->exactly(2))->method('dispatchEvent')
-                ->withConsecutive('controller_front_send_response_after', 'controller_front_send_response_after');
+                ->withConsecutive(
+                    array('http_response_send_before', $this->anything()),
+                    array('controller_front_send_response_after', array('front' => $controllerFrontMock))
+                );
 
             TestHelper::setNonPublicProperty('Mage', '_app', $appMock);
 
@@ -523,6 +527,12 @@ class Bolt_Boltpay_Controller_Traits_WebHookTraitTest extends PHPUnit_Framework_
                 1
             );
 
+            TestHelper::setNonPublicProperty(
+                Mage::app(),
+                '_frontController',
+                $controllerFrontMock
+            );
+
             try {
                 TestHelper::callNonPublicFunction(
                     $this->currentMock,
@@ -536,6 +546,12 @@ class Bolt_Boltpay_Controller_Traits_WebHookTraitTest extends PHPUnit_Framework_
             } catch (Exception $e) {
                 $this->assertEquals("Simulated early exit for test", $e->getMessage());
             }
+
+            TestHelper::setNonPublicProperty(
+                Mage::app(),
+                '_frontController',
+                null
+            );
 
             $this->responseTearDown($tearDownData);
         } finally {
