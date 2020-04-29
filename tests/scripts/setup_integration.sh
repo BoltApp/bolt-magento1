@@ -24,7 +24,7 @@ mysql -u magento -h 127.0.0.1 magento < magento-sample-data-1.9.2.4/magento_samp
 php -d memory_limit=512M n98-magerun.phar install --magentoVersionByName=magento-mirror-1.9.3.6 \
   --installationFolder=/var/www/html --forceUseDb --noDownload --dbHost=127.0.0.1 --dbUser=magento --dbName=magento  --dbPass="" \
   --installSampleData=yes --useDefaultConfigParams=yes --baseUrl=http://m1-test.integrations.dev.bolt.me
-php -d memroy_limit=512M n98-magerun.phar admin:user:create bolttest dev+m1-integration-admin@bolt.com bolt1234 \
+php -d memory_limit=512M n98-magerun.phar admin:user:create bolttest dev+m1-integration-admin@bolt.com bolt1234 \
   --root-dir /var/www/html --no-interaction
 
 INC_NUM=$((100*${CIRCLE_BUILD_NUM}))
