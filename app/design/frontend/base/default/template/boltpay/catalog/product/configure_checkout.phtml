@@ -116,9 +116,12 @@ var boltConfigPDP = {
                 throw '<?php echo $this->__("The requested quantity is not available."); ?>';
             }
             this.validateMinOrderAmount();
+
             //TODO: support file type custom options
             //currently not supported because it would require custom upload and expiration logic
-            document.querySelectorAll("#product_addtocart_form input[type='file']").forEach(function(fileInput) {
+            var fileInputs = document.querySelectorAll("#product_addtocart_form input[type='file']");
+            for ( var i = 0; i < fileInputs.length; i++ ) {
+                var fileInput = fileInputs[i];
                 if (fileInput.value) {
                     var name = 'file-upload-not-supported-bolt';
                     var advice = Validation.getAdvice(name, fileInput);
@@ -129,11 +132,14 @@ var boltConfigPDP = {
                     fileInput.focus();
                     throw '<?php echo $this->__('Files not supported with Product Page BoltCheckout. Please add product to cart and then use Bolt from the cart page to checkout.'); ?>';
                 }
-            });
+            }
+
         } catch (e) {
             if (typeof BoltPopup !== 'undefined' && typeof e === 'string') {
                 BoltPopup.setMessage(e);
                 BoltPopup.show();
+            } else {
+                alert(e);
             }
             return false;
         }
@@ -226,9 +232,11 @@ document.addEventListener("DOMContentLoaded", function() {
         }, 50
     );
 
-    document.querySelectorAll(('input[name=qty], input[name*=super_group], input[name*=qty]')).forEach(function (input) {
-        input.addEventListener('input', boltConfigPDP.init.bind(boltConfigPDP));
-    });
+    var quantityInputs = document.querySelectorAll(('input[name=qty], input[name*=super_group], input[name*=qty]'));
+    for ( var i = 0; i < quantityInputs.length; i++ ) {
+        quantityInputs[i].addEventListener('input', boltConfigPDP.init.bind(boltConfigPDP));
+    }
+
     if (typeof spConfig !== 'undefined') {
         spConfig.configureSubscribe(boltConfigPDP.init.bind(boltConfigPDP));
     }
