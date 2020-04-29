@@ -119,8 +119,6 @@ RUN tar xjf sample-data.tar.bz2
 RUN cp -R magento-sample-data-1.9.2.4/media/* /var/www/html/media/.
 RUN cp -R magento-sample-data-1.9.2.4/skin/* /var/www/html/skin/.
 
-COPY init-bolt.php /var/www/html/.
-
 # Update chrome to the latest
 USER root
 RUN apt-get update && apt-get install -y lsb-release libappindicator3-1
