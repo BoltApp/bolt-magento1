@@ -106,7 +106,7 @@ USER circleci
 WORKDIR /home/circleci
 RUN curl -O https://files.magerun.net/n98-magerun.phar
 RUN chmod +x n98-magerun.phar
-RUN php -d memroy_limit=512M n98-magerun.phar install --magentoVersionByName=magento-mirror-1.9.3.6 \
+RUN php -d memory_limit=512M n98-magerun.phar install --magentoVersionByName=magento-mirror-1.9.3.6 \
   --installationFolder="/var/www/html" --only-download
 
 # Download ngrok
