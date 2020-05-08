@@ -12,7 +12,7 @@ commands:
     steps:
       - swissknife/run_if_modified:
           always-run-on-branch: master
-          pattern: ^\.circleci.*|.*\.php$
+          pattern: ^.*\.php$
           steps-to-run: << parameters.steps >>
           use-divergence-point: true
   notify-buildcop:
@@ -115,22 +115,24 @@ jobs:
       - image: selenium/standalone-chrome:3.141.59-20200326
     steps:
       - checkout
-      - run:
-          name: Integration test
-          command: |
-            MAGENTO_VERSION=magento-mirror-1.9.3.6 tests/scripts/setup_integration.sh
-            echo "Running integration test"
-            git clone git@github.com:BoltApp/integration-tests.git
-            cd integration-tests
-            npm install
-            mkdir -p ./screenshots
-            TEST_SUITE=checkout_full_magento1 JUNIT_REPORT_DIR=./test-results SCREENSHOT_DIR=./screenshots TEST_ENV=plugin_ci npm run test-retry-runner
-      - store_test_results:
-          path: ./integration-tests/test-results
-      - store_artifacts:
-          path: ./integration-tests/screenshots
-      - store_artifacts:
-          path: ./integration-tests/test_status.txt
+      - if-php-modified:
+          steps:
+            - run:
+                name: Integration test
+                command: |
+                  MAGENTO_VERSION=magento-mirror-1.9.3.6 tests/scripts/setup_integration.sh
+                  echo "Running integration test"
+                  git clone git@github.com:BoltApp/integration-tests.git
+                  cd integration-tests
+                  npm install
+                  mkdir -p ./screenshots
+                  TEST_SUITE=checkout_full_magento1 JUNIT_REPORT_DIR=./test-results SCREENSHOT_DIR=./screenshots TEST_ENV=plugin_ci npm run test-retry-runner
+            - store_test_results:
+                path: ./integration-tests/test-results
+            - store_artifacts:
+                path: ./integration-tests/screenshots
+            - store_artifacts:
+                path: ./integration-tests/test_status.txt
 
 workflows:
   tests:
