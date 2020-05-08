@@ -1,3 +1,3 @@
 # Automatically request reviews from M1 code-owners
-* @adentong @Jiyuan-Bolt @johnmccombs1 @matt-thomason @mccottry
-.circleci/* @adentong @Jiyuan-Bolt @johnmccombs1 @matt-thomason @mccottry @roopakv
+* @adentong @johnmccombs1 @matt-thomason @mccottry @vitaliyreznikov
+.circleci/* @adentong @johnmccombs1 @matt-thomason @mccottry @roopakv @vitaliyreznikov
