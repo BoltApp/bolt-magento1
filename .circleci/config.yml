@@ -12,7 +12,7 @@ commands:
     steps:
       - swissknife/run_if_modified:
           always-run-on-branch: master
-          pattern: ^.*\.php$
+          pattern: ^\.circleci.*|.*\.php$
           steps-to-run: << parameters.steps >>
           use-divergence-point: true
   notify-buildcop:
