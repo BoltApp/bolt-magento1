@@ -2016,6 +2016,52 @@ class Bolt_Boltpay_Model_BoltOrderTest extends PHPUnit_Framework_TestCase
 
     /**
      * @test
+     * that getBoltOrderToken trims user note field to 1024 characters before sending order request
+     *
+     * @covers ::getBoltOrderToken
+     *
+     * @throws Exception if test class name is not defined
+     */
+    public function getBoltOrderToken_whenUserNoteIsOverLimit_trimsUserNoteToLength()
+    {
+        $quoteMock = $this->getBoltOrderTokenSetUp(
+            self::$orderRequest['cart']['items'],
+            '',
+            false
+        );
+        $shippingMethodBlockMock = $this->getMockBuilder('Mage_Adminhtml_Block_Sales_Order_Create_Shipping_Method_Form')
+            ->setMethods(array('getActiveMethodRate'))
+            ->getMock();
+        $shippingMethodBlockMock->method('getActiveMethodRate')->willReturn(false);
+
+        /** @var MockObject|Bolt_Boltpay_Model_BoltOrder $currentMock */
+        $currentMock = $this->getTestClassPrototype()
+            ->setMethods(
+                array(
+                    'validateVirtualQuote',
+                    'buildOrder',
+                    'boltHelper',
+                    'isAdmin',
+                    'createLayoutBlock',
+                    'validateOrderRequest'
+                )
+            )
+            ->getMock();
+        $currentMock->method('validateVirtualQuote')->willReturn(false);
+        $currentMock->method('isAdmin')->willReturn(false);
+        $currentMock->method('createLayoutBlock')->willReturn($shippingMethodBlockMock);
+        $currentMock->method('buildOrder')->willReturn(array('user_note' => str_repeat('test', (1024 / 4) + 20)));
+        $currentMock->method('boltHelper')->willReturn($this->boltHelperMock);
+        $this->boltHelperMock->expects($this->once())->method('transmit')
+            ->with('orders', array('user_note' => str_repeat('test', 1024 / 4)));
+        $currentMock->getBoltOrderToken(
+            $quoteMock,
+            Bolt_Boltpay_Block_Checkout_Boltpay::CHECKOUT_TYPE_MULTI_PAGE
+        );
+    }
+
+    /**
+     * @test
      * that getBoltOrderTokenPromise returns javascript promise containing expected checkoutTokenUrl and parameters
      *
      * @covers ::getBoltOrderTokenPromise

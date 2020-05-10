@@ -769,6 +769,10 @@ class Bolt_Boltpay_Model_BoltOrder extends Bolt_Boltpay_Model_Abstract
         // Generates order data for sending to Bolt create order API.
         $orderRequest = $this->buildOrder($quote, $isMultiPage);
 
+        if (isset($orderRequest['user_note']) && strlen($orderRequest['user_note']) > 1024) {
+            $orderRequest['user_note'] = substr($orderRequest['user_note'], 0, 1024);
+        }
+
         // Calls Bolt create order API
         return $this->boltHelper()->transmit('orders', $orderRequest);
     }
