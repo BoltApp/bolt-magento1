@@ -448,7 +448,7 @@ class Bolt_Boltpay_Block_Catalog_Product_BoltpayTest extends PHPUnit_Framework_T
         $productMock->expects($this->once())->method('getFinalPrice')->willReturn(456.78);
         $productMock->expects($this->once())->method('getTierPrice')->willReturn($dummyTierPrices);
         $productMock->expects($this->once())->method('getStockItem')->willReturn($dummyTierPrices);
-        $productMock->expects($this->exactly(3))->method('getTypeId')
+        $productMock->expects($this->atLeastOnce())->method('getTypeId')
             ->willReturn(Mage_Catalog_Model_Product_Type::TYPE_SIMPLE);
         $stockItemMock->expects($this->once())->method('getManageStock')->willReturn(1);
         $stockItemMock->expects($this->once())->method('getIsInStock')->willReturn(1);
@@ -569,6 +569,119 @@ class Bolt_Boltpay_Block_Catalog_Product_BoltpayTest extends PHPUnit_Framework_T
                 array('id' => 456, 'name' => 'Test Product 3', 'price' => 321.12),
             ),
             $productData['associated_products']
+        );
+    }
+
+    /**
+     * @test
+     * that getProductJSON returns associated products for for configurable product
+     *
+     * @covers ::getProductJSON
+     *
+     * @throws Mage_Core_Exception if unable to stub current product registry value
+     */
+    public function getProductJSON_withConfigurableProduct_returnsConfigurableAttributesAndChildrenStock()
+    {
+        $productTypeInstanceMock = $this->getMockBuilder('Mage_Catalog_Model_Product_Type_Configurable')
+            ->setMethods(array())->getMock();
+        $productMock = $this->getMockBuilder('Mage_Catalog_Model_Product')
+            ->setMethods(
+                array(
+                    'getTypeId',
+                    'getTypeInstance',
+                    'getAssociatedProducts',
+                    'getStockItem',
+                    'getId',
+                    'getName',
+                    'getFinalPrice',
+                    'getTierPrice',
+                )
+            )
+            ->getMock();
+        $productMock->method('getStockItem')->willReturnSelf();
+        $productMock->expects($this->atLeastOnce())->method('getTypeId')
+            ->willReturn(Mage_Catalog_Model_Product_Type::TYPE_CONFIGURABLE);
+        $productMock->expects($this->once())->method('getTypeInstance')->with(true)
+            ->willReturn($productTypeInstanceMock);
+        $attributesCollectionMock = $this->getMockBuilder(
+            'Mage_Catalog_Model_Resource_Product_Type_Configurable_Attribute_Collection'
+        )->disableOriginalConstructor()->setMethods(array('getIterator', 'getColumnValues'))->getMock();
+        $attributesCollectionMock->expects($this->once())->method('getColumnValues')->with('attribute_id')
+            ->willReturn(array(92, 180));
+        $productTypeInstanceMock->expects($this->once())->method('getConfigurableAttributes')->with($productMock)
+            ->willReturn($attributesCollectionMock);
+        $childProducts = array(
+            Mage::getModel(
+                'catalog/product',
+                array(
+                    'color'      => 22,
+                    'size'       => 80,
+                    'stock_item' => Mage::getModel(
+                        'cataloginventory/stock_item',
+                        array('manage_stock' => 1, 'is_in_stock' => 1, 'qty' => 12)
+                    )
+                )
+            ),
+            Mage::getModel(
+                'catalog/product',
+                array(
+                    'color'      => 22,
+                    'size'       => 79,
+                    'stock_item' => Mage::getModel(
+                        'cataloginventory/stock_item',
+                        array('manage_stock' => 1, 'is_in_stock' => 1, 'qty' => 12)
+                    )
+                )
+            ),
+        );
+        $productTypeInstanceMock->expects($this->once())->method('getUsedProducts')->with(null, $productMock)
+            ->willReturn($childProducts);
+        $attributesCollectionMock->expects($this->exactly(count($childProducts)))->method('getIterator')
+            ->willReturn(
+                new ArrayIterator(
+                    array(
+                        Mage::getModel(
+                            'catalog/product_type_configurable_attribute',
+                            array(
+                                'attribute_id'      => 92,
+                                'product_attribute' => Mage::getModel(
+                                    'catalog/resource_eav_attribute',
+                                    array('attribute_code' => 'color')
+                                )
+                            )
+                        ),
+                        Mage::getModel(
+                            'catalog/product_type_configurable_attribute',
+                            array(
+                                'attribute_id'      => 180,
+                                'product_attribute' => Mage::getModel(
+                                    'catalog/resource_eav_attribute',
+                                    array('attribute_code' => 'size')
+                                )
+                            )
+                        ),
+                    )
+                )
+            );
+        TestHelper::stubRegistryValue('current_product', $productMock);
+        $productDataJSON = $this->currentMock->getProductJSON();
+        $this->assertJson($productDataJSON);
+        $productData = json_decode($productDataJSON, true);
+        $this->assertEquals(array(92, 180), $productData['configurable_attributes']);
+        $this->assertEquals(
+            array(
+                '{"92":"22","180":"80"}' => array(
+                    'manage' => true,
+                    'status' => true,
+                    'qty'    => 12,
+                ),
+                '{"92":"22","180":"79"}' => array(
+                    'manage' => true,
+                    'status' => true,
+                    'qty'    => 12,
+                ),
+            ),
+            $productData['stock']
         );
     }
 

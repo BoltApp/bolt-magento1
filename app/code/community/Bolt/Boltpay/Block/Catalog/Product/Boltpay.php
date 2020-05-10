@@ -81,7 +81,7 @@ class Bolt_Boltpay_Block_Catalog_Product_Boltpay extends Bolt_Boltpay_Block_Chec
                 'total'    => $totalAmount,
             ];
 
-             return json_encode($productCheckoutCart);
+            return json_encode($productCheckoutCart);
         } catch (Exception $e) {
             $this->boltHelper()->notifyException($e);
             return '""';
@@ -218,31 +218,60 @@ class Bolt_Boltpay_Block_Catalog_Product_Boltpay extends Bolt_Boltpay_Block_Chec
             'tier_prices' => $product->getTierPrice(),
             'type_id'     => $product->getTypeId(),
             'stock'       => array(
-                'manage' => in_array(
+                'manage' => (bool)(in_array(
                     $product->getTypeId(),
                     array(
                         Mage_Catalog_Model_Product_Type::TYPE_SIMPLE,
                         Mage_Catalog_Model_Product_Type::TYPE_VIRTUAL,
                         Mage_Downloadable_Model_Product_Type::TYPE_DOWNLOADABLE,
                     )
-                ) ? $stockItem->getManageStock() : false,
-                'status' => $stockItem->getIsInStock(),
-                'qty'    => (float) $stockItem->getQty(),
+                ) ? $stockItem->getManageStock() : false),
+                'status' => (bool)$stockItem->getIsInStock(),
+                'qty'    => (float)$stockItem->getQty(),
             ),
         );
-        if ($product->getTypeId() == Mage_Catalog_Model_Product_Type::TYPE_GROUPED) {
-            $productData['associated_products'] = array_map(
-                function ($associatedProduct) {
-                    /** @var Mage_Catalog_Model_Product $associatedProduct */
-                    return array(
-                        'id'    => $associatedProduct->getId(),
-                        'name'  => $associatedProduct->getName(),
-                        'price' => $associatedProduct->getFinalPrice(),
+        $productTypeInstance = $product->getTypeInstance(true);
+        switch ($product->getTypeId()) {
+            case Mage_Catalog_Model_Product_Type::TYPE_GROUPED:
+                /** @var Mage_Catalog_Model_Product_Type_Grouped $productTypeInstance */
+                $productData['associated_products'] = array_map(
+                    function ($associatedProduct) {
+                        /** @var Mage_Catalog_Model_Product $associatedProduct */
+                        return array(
+                            'id'    => $associatedProduct->getId(),
+                            'name'  => $associatedProduct->getName(),
+                            'price' => $associatedProduct->getFinalPrice(),
+                        );
+                    },
+                    $productTypeInstance->getAssociatedProducts($product)
+                );
+                break;
+            case Mage_Catalog_Model_Product_Type::TYPE_CONFIGURABLE:
+                /** @var Mage_Catalog_Model_Product_Type_Configurable $productTypeInstance */
+                /** @var Mage_Catalog_Model_Resource_Product_Type_Configurable_Attribute_Collection $attributesCollection */
+                $attributesCollection = $productTypeInstance->getConfigurableAttributes($product);
+                $productData['configurable_attributes'] = $attributesCollection->getColumnValues('attribute_id');
+                $productData['stock'] = array();
+                /** @var Mage_Catalog_Model_Product $childProduct */
+                foreach ($productTypeInstance->getUsedProducts(null, $product) as $childProduct) {
+                    $childProductKeyData = array();
+                    /** @var Mage_Catalog_Model_Product_Type_Configurable_Attribute $attribute */
+                    foreach ($attributesCollection as $attribute) {
+                        $childProductKeyData[(string)$attribute->getAttributeId()] = (string)$childProduct->getData(
+                            $attribute->getProductAttribute()->getAttributeCode()
+                        );
+                    };
+                    /** @var Mage_CatalogInventory_Model_Stock_Item $childProductStockItem */
+                    $childProductStockItem = $childProduct->getStockItem();
+                    $productData['stock'][json_encode($childProductKeyData)] = array(
+                        'manage' => (bool)$childProductStockItem->getManageStock(),
+                        'status' => (bool)$childProductStockItem->getIsInStock(),
+                        'qty'    => (float)$childProductStockItem->getQty(),
                     );
-                },
-                $product->getTypeInstance(true)->getAssociatedProducts($product)
-            );
+                }
+                break;
         }
+
         return Mage::helper('core')->jsonEncode($productData);
     }
 
@@ -264,9 +293,6 @@ class Bolt_Boltpay_Block_Catalog_Product_Boltpay extends Bolt_Boltpay_Block_Chec
      * Get configuration options that can affect product page checkout
      *
      * @return string
-     *
-     * @throws Mage_Core_Model_Store_Exception if unable to get store
-     * @throws Zend_Currency_Exception if unable to convert amount to currency
      */
     public function getConfigJSON()
     {
@@ -297,4 +323,5 @@ class Bolt_Boltpay_Block_Catalog_Product_Boltpay extends Bolt_Boltpay_Block_Chec
             )
         );
     }
+
 }
