@@ -486,13 +486,8 @@ JS;
      */
     private function isCustomerGroupDisabled($customerGroupId)
     {
-        $disabledCustomerGroups = Mage::getStoreConfig('payment/boltpay/bolt_disabled_customer_groups');
-        // Case of empty groups
-        if (empty($disabledCustomerGroups)) {
-            return false;
-        }
-        $disabledCustomerGroups = explode(',', $disabledCustomerGroups);
-        return in_array($customerGroupId, $disabledCustomerGroups);
+        $disabledCustomerGroups = explode(',', Mage::getStoreConfig('payment/boltpay/bolt_disabled_customer_groups'));
+        return in_array((string)$customerGroupId, $disabledCustomerGroups, true);
     }
 
     /**
