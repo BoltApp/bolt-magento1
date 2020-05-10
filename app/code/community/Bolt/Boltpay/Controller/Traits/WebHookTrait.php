@@ -77,6 +77,18 @@ trait Bolt_Boltpay_Controller_Traits_WebHookTrait {
     }
 
     /**
+     * Destroys session after webhook actions are complete
+     *
+     * @return Mage_Core_Controller_Front_Action
+     */
+    public function postDispatch()
+    {
+        parent::postDispatch();
+        $this->destroyWebhookSession();
+        return $this;
+    }
+
+    /**
      * Verifies that a request originated from and was signed by Bolt.  If not,
      * an error response is sent to caller and the execution of the script is halted
      * immediately
@@ -130,11 +142,9 @@ trait Bolt_Boltpay_Controller_Traits_WebHookTrait {
 
         if ($exitImmediately) {
             $this->getResponse()->sendResponse();
-            Mage::dispatchEvent(
-                'controller_front_send_response_after',
-                array('front' => Mage::app()->getFrontController())
-            );
+            Mage::dispatchEvent('controller_front_send_response_after');
             $this->setFlag('', Mage_Core_Controller_Varien_Action::FLAG_NO_POST_DISPATCH, 1);
+            $this->destroyWebhookSession();
             $this->getResponse()->sendHeadersAndExit(); # workaround to early exit.
         }
 
@@ -159,11 +169,6 @@ trait Bolt_Boltpay_Controller_Traits_WebHookTrait {
             fastcgi_finish_request();
         }
         ///////////////////////////////////////////////////////////
-
-        # Allow session to be accessed by other request while doing background processing
-        if ( session_id() ) {
-            session_write_close();
-        }
     }
 
     /**
@@ -173,5 +178,21 @@ trait Bolt_Boltpay_Controller_Traits_WebHookTrait {
      */
     public function getRequestData() {
         return json_decode($this->payload);
+    }
+
+    /**
+     * Destroys session for endpoints used by Bolt webhooks as they will never be re-used
+     * We only destroy session after signed requests as they must be coming from Bolt
+     */
+    protected function destroyWebhookSession()
+    {
+        if ($this->requestMustBeSigned) {
+            try {
+                session_destroy();
+            } catch (Exception $e) {
+                // session destruction is optional so we can safely resume
+                $this->boltHelper()->notifyException($e);
+            }
+        }
     }
 }
