@@ -2015,15 +2015,25 @@ SCSS;
     public function isCustomerGroupDisabled_withVariousConfigsProvider()
     {
         return array(
+            'False disabled customer group ids config - should return false'                       => array(
+                'customerGroupId'          => 0,
+                'disabledCustomerGroupIds' => false,
+                'expectedResult'           => false,
+            ),
+            'Null disabled customer group ids config - should return false'                        => array(
+                'customerGroupId'          => 0,
+                'disabledCustomerGroupIds' => null,
+                'expectedResult'           => false,
+            ),
             'Empty disabled customer group ids config - should return false'                       => array(
                 'customerGroupId'          => 0,
                 'disabledCustomerGroupIds' => '',
                 'expectedResult'           => false,
             ),
-            'Zero for disabled customer group ids - should return false'                           => array(
+            'Guest customer group and disabled - should return true'                               => array(
                 'customerGroupId'          => 0,
                 'disabledCustomerGroupIds' => '0',
-                'expectedResult'           => false,
+                'expectedResult'           => true,
             ),
             'General customer group with empty disabled customer groups - should return false'     => array(
                 'customerGroupId'          => 1,
@@ -2039,6 +2049,11 @@ SCSS;
                 'customerGroupId'          => 0,
                 'disabledCustomerGroupIds' => '1,2',
                 'expectedResult'           => false,
+            ),
+            'Not logged in customer group with group id in disabled ids - should return true'      => array(
+                'customerGroupId'          => 0,
+                'disabledCustomerGroupIds' => '1,2,0,4,6',
+                'expectedResult'           => true,
             ),
         );
     }

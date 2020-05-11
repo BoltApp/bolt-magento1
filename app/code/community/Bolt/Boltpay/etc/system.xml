@@ -302,7 +302,7 @@
                   <config_path>payment/boltpay/bolt_disabled_customer_groups</config_path>
                   <frontend_type>multiselect</frontend_type>
                   <can_be_empty>1</can_be_empty>
-                  <source_model>adminhtml/system_config_source_customer_group_multiselect</source_model>
+                  <source_model>customer/resource_group_collection</source_model>
                   <sort_order>55</sort_order>
                   <show_in_default>1</show_in_default>
                   <show_in_website>1</show_in_website>
