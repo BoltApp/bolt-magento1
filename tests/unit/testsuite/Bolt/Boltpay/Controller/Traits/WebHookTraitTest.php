@@ -8,6 +8,11 @@ use GuzzleHttp\Exception\GuzzleException;
  */
 class Bolt_Boltpay_Controller_Traits_WebHookTraitTest extends PHPUnit_Framework_TestCase
 {
+    use Bolt_Boltpay_MockingTrait;
+
+    /** @var string Name of the class tested */
+    protected $testClassName = 'Bolt_Boltpay_Controller_Traits_WebHookTraitMockObject';
+
     /**
      * @var string Dummy HMAC of test payload
      * calculated as trim(base64_encode(hash_hmac('sha256', TEST_PAYLOAD, TEST_SIGNING_SECRET, true)))
@@ -491,6 +496,8 @@ class Bolt_Boltpay_Controller_Traits_WebHookTraitTest extends PHPUnit_Framework_
      * sendResponse when $exitImmediately is true
      *
      * @covers Bolt_Boltpay_Controller_Traits_WebHookTrait::sendResponse
+     *
+     * @throws Exception if test class name is not defined
      */
     public function sendResponse_whenExitImmediatelyIsTrue_callsDispatchEvent()
     {
@@ -499,16 +506,17 @@ class Bolt_Boltpay_Controller_Traits_WebHookTraitTest extends PHPUnit_Framework_
             $httpResponseCode = 200;
             $tearDownData = $this->sendResponseSetUp($httpResponseCode);
 
+            $currentMock = $this->getTestClassPrototype()
+                ->setMethods(array('getRequest', 'getLayout', 'getResponse', 'setFlag', 'destroyWebhookSession'))
+                ->getMock();
+            $currentMock->method('getResponse')->willReturn($this->response);
+
             $appMock = $this->getMockBuilder('Mage_Core_Model_App')
                 ->setMethods(array('dispatchEvent'))
                 ->getMock();
-            $controllerFrontMock = $this->getMockBuilder('Mage_Core_Controller_Varien_Front')->getMock();
 
             $appMock->expects($this->exactly(2))->method('dispatchEvent')
-                ->withConsecutive(
-                    array('http_response_send_before', $this->anything()),
-                    array('controller_front_send_response_after', array('front' => $controllerFrontMock))
-                );
+                ->withConsecutive('controller_front_send_response_after', 'controller_front_send_response_after');
 
             TestHelper::setNonPublicProperty('Mage', '_app', $appMock);
 
@@ -521,21 +529,16 @@ class Bolt_Boltpay_Controller_Traits_WebHookTraitTest extends PHPUnit_Framework_
                 }
             );
 
-            $this->currentMock->expects($this->once())->method('setFlag')->with(
+            $currentMock->expects($this->once())->method('setFlag')->with(
                 '',
                 Mage_Core_Controller_Varien_Action::FLAG_NO_POST_DISPATCH,
                 1
             );
-
-            TestHelper::setNonPublicProperty(
-                Mage::app(),
-                '_frontController',
-                $controllerFrontMock
-            );
+            $currentMock->expects($this->once())->method('destroyWebhookSession');
 
             try {
                 TestHelper::callNonPublicFunction(
-                    $this->currentMock,
+                    $currentMock,
                     'sendResponse',
                     array(
                         $httpResponseCode,
@@ -546,12 +549,6 @@ class Bolt_Boltpay_Controller_Traits_WebHookTraitTest extends PHPUnit_Framework_
             } catch (Exception $e) {
                 $this->assertEquals("Simulated early exit for test", $e->getMessage());
             }
-
-            TestHelper::setNonPublicProperty(
-                Mage::app(),
-                '_frontController',
-                null
-            );
 
             $this->responseTearDown($tearDownData);
         } finally {
@@ -574,6 +571,160 @@ class Bolt_Boltpay_Controller_Traits_WebHookTraitTest extends PHPUnit_Framework_
         while (ob_get_level() < $outputBufferDataSettings['bufferingLevelBeforeTest']) {
             ob_start();
         }
+    }
+
+    /**
+     * @test
+     * that destroyWebhookSession destroys session if request is signed
+     *
+     * @covers Bolt_Boltpay_Controller_Traits_WebHookTrait::destroyWebhookSession
+     *
+     * @throws ReflectionException if requestMustBeSigned property or destroyWebhookSession method is not defined
+     */
+    public function destroyWebhookSession_withSignedRequest_destroysSession()
+    {
+        $this->assertTrue(session_start(), 'Unable to start session');
+        $this->assertEquals(PHP_SESSION_ACTIVE, session_status());
+        TestHelper::setNonPublicProperty($this->currentMock, 'requestMustBeSigned', true);
+        TestHelper::callNonPublicFunction($this->currentMock, 'destroyWebhookSession');
+        $this->assertEquals(PHP_SESSION_NONE, session_status());
+    }
+
+    /**
+     * @test
+     * that destroyWebhookSession doesn't destroy session if request is not signed
+     *
+     * @covers Bolt_Boltpay_Controller_Traits_WebHookTrait::destroyWebhookSession
+     *
+     * @throws ReflectionException if requestMustBeSigned property or destroyWebhookSession method is not defined
+     */
+    public function destroyWebhookSession_withNonSignedRequest_doesNotDestroySession()
+    {
+        $this->assertTrue(session_start(), 'Unable to start session');
+        $this->assertEquals(PHP_SESSION_ACTIVE, session_status());
+        TestHelper::setNonPublicProperty($this->currentMock, 'requestMustBeSigned', false);
+        TestHelper::callNonPublicFunction($this->currentMock, 'destroyWebhookSession');
+        $this->assertEquals(PHP_SESSION_ACTIVE, session_status());
+    }
+
+    /**
+     * @test
+     * that destroyWebhookSession triggers destroy method of custom session save handlers
+     * this is required to properly handle cases where database or redis is used to store session data
+     *
+     * @covers Bolt_Boltpay_Controller_Traits_WebHookTrait::destroyWebhookSession
+     * @dataProvider destroyWebhookSession_withCustomSaveHandlerProvider
+     *
+     * @param bool $requestMustBeSigned webhook property
+     * @param bool $expectSessionDestroy whether the session is expected to be destroyed
+     *
+     * @throws ReflectionException if requestMustBeSigned property or destroyWebhookSession method is not defined
+     */
+    public function destroyWebhookSession_withCustomSaveHandler_destroysSessionIfRequestMustBeSigned(
+        $requestMustBeSigned,
+        $expectSessionDestroy
+    ) {
+        if (version_compare(PHP_VERSION, '5.4.0', '<')) {
+            $this->markTestSkipped('Test supported on PHP version >= 5.4.0');
+        }
+
+        $sessionSaveHandlerMock = $this->getClassPrototype('SessionHandlerInterface')->setMethods(array('destroy'))
+            ->getMockForAbstractClass();
+        session_write_close(); #close session to be able to replace handler
+        $this->assertTrue(session_set_save_handler($sessionSaveHandlerMock, true));
+        session_start();
+
+        $sessionSaveHandlerMock->expects($expectSessionDestroy ? $this->once() : $this->never())->method('destroy')
+            ->with($this->isType('string'))->willReturn(true);
+        $this->assertEquals(PHP_SESSION_ACTIVE, session_status());
+        TestHelper::setNonPublicProperty($this->currentMock, 'requestMustBeSigned', $requestMustBeSigned);
+        TestHelper::callNonPublicFunction($this->currentMock, 'destroyWebhookSession');
+        $this->assertEquals($expectSessionDestroy ? PHP_SESSION_NONE : PHP_SESSION_ACTIVE, session_status());
+
+        session_write_close(); #close session to be able to restore default handler
+        $this->assertTrue(session_set_save_handler(new SessionHandler(), true));
+    }
+
+    /**
+     * Data provider for {@see destroyWebhookSession_withCustomSaveHandler_destroysSessionIfRequestMustBeSigned}
+     *
+     * @return array containing requestMustBeSigned and expectSessionDestroy flags
+     */
+    public function destroyWebhookSession_withCustomSaveHandlerProvider()
+    {
+        return array(
+            array('requestMustBeSigned' => true, 'expectSessionDestroy' => true),
+            array('requestMustBeSigned' => false, 'expectSessionDestroy' => false),
+        );
+    }
+
+    /**
+     * @test
+     * that destroyWebhookSession logs exception and proceeds if an exception or error occurs during session destroy
+     *
+     * @covers Bolt_Boltpay_Controller_Traits_WebHookTrait::destroyWebhookSession
+     *
+     * @throws ReflectionException if requestMustBeSigned property or destroyWebhookSession method is not defined
+     */
+    public function destroyWebhookSession_whenUnableToDestroySession_logsExceptionAndProceeds()
+    {
+        if (version_compare(PHP_VERSION, '5.4.0', '<')) {
+            $this->markTestSkipped('Test supported on PHP version >= 5.4.0');
+        }
+
+        $sessionSaveHandlerMock = $this->getClassPrototype('SessionHandlerInterface')->setMethods(array('destroy'))
+            ->getMockForAbstractClass();
+        session_write_close(); # close session to be able to replace handler
+        $this->assertTrue(
+            session_set_save_handler($sessionSaveHandlerMock, true),
+            'Unable to replace session save handler'
+        );
+        $this->assertTrue(session_start(), 'Unable to re-start session');
+        $exception = new Exception('session_destroy(): Trying to destroy uninitialized session');
+        $sessionSaveHandlerMock->expects($this->once())->method('destroy')
+            ->with($this->isType('string'))
+            ->willThrowException($exception);
+        $this->helperMock->expects($this->once())->method('notifyException')->with($exception);
+
+        $this->assertEquals(PHP_SESSION_ACTIVE, session_status());
+        TestHelper::setNonPublicProperty($this->currentMock, 'requestMustBeSigned', true);
+        TestHelper::callNonPublicFunction($this->currentMock, 'destroyWebhookSession');
+
+        session_write_close(); #close session to be able to restore default handler
+        $this->assertTrue(
+            session_set_save_handler(new SessionHandler(), true),
+            'Unable to restore default session save handler'
+        );
+    }
+
+    /**
+     * @test
+     * that postDispatch calls {@see Bolt_Boltpay_Controller_Traits_WebHookTrait::destroyWebhookSession}
+     *
+     * @covers Bolt_Boltpay_Controller_Traits_WebHookTrait::postDispatch
+     *
+     * @throws Exception if test class name is not defined
+     */
+    public function postDispatch_always_destroysWebhookSession()
+    {
+        /** @var Bolt_Boltpay_Controller_Traits_WebHookTraitMockObject|PHPUnit_Framework_MockObject_MockObject $currentMock */
+        $currentMock = $this->getTestClassPrototype()
+            ->setMethods(
+                array(
+                    'getRequest',
+                    'getLayout',
+                    'getResponse',
+                    'setFlag',
+                    'getFlag',
+                    'getFullActionName',
+                    'destroyWebhookSession'
+                )
+            )
+            ->getMock();
+        $currentMock->method('getResponse')->willReturn($this->response);
+        $currentMock->method('getRequest')->willReturn($this->request);
+        $currentMock->expects($this->once())->method('destroyWebhookSession');
+        $currentMock->postDispatch();
     }
 }
 
