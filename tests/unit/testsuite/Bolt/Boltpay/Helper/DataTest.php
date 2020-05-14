@@ -154,6 +154,23 @@ JS
 
     /**
      * @test
+     * that buildOnCheckCallback returns default empty string when checkout type is one page
+     *
+     * @covers ::buildOnCheckCallback
+     */
+    public function buildOnCheckCallback_whenCheckoutTypeIsOnePage_returnsDefaultString()
+    {
+        $expected = '';
+        $trueResult = $this->currentMock->buildOnCheckCallback(
+            Bolt_Boltpay_Block_Checkout_Boltpay::CHECKOUT_TYPE_ONE_PAGE,
+            true
+        );
+
+        $this->assertEquals($expected, $trueResult);
+    }
+
+    /**
+     * @test
      *
      * @covers ::buildOnSuccessCallback
      */

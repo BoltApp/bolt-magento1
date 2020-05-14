@@ -473,6 +473,8 @@ class Bolt_Boltpay_Model_Admin_ExtraConfigTest extends PHPUnit_Framework_TestCas
      * @test
      * that save method will save previous value if current is not valid JSON
      *
+     * @covers ::save
+     *
      * @throws Exception when there is an error saving the extra config to the database
      */
     public function save_withInvalidJSONAsValue_savesOldValue()

@@ -26,6 +26,8 @@ class Bolt_Boltpay_Helper_DataDogTraitTest extends PHPUnit_Framework_TestCase
     /**
      * @test
      * logInfo succeeds
+     *
+     * @covers Bolt_Boltpay_Helper_DataDogTrait::logInfo
      */
     public function logInfo_succeedsAndSetsLastResponseStatusToTrue()
     {
@@ -36,6 +38,8 @@ class Bolt_Boltpay_Helper_DataDogTraitTest extends PHPUnit_Framework_TestCase
     /**
      * @test
      * logWarning succeeds
+     *
+     * @covers Bolt_Boltpay_Helper_DataDogTrait::logWarning
      */
     public function logWarning_succeedsAndSetsLastResponseStatusToTrue()
     {
@@ -45,9 +49,11 @@ class Bolt_Boltpay_Helper_DataDogTraitTest extends PHPUnit_Framework_TestCase
 
     /**
      * @test
-     * logError succeeds
+     * logException succeeds
+     *
+     * @covers Bolt_Boltpay_Helper_DataDogTrait::logException
      */
-    public function logError_succeedsAndSetsLastResponseStatusToTrue()
+    public function logException_always_succeedsAndSetsLastResponseStatusToTrue()
     {
         $exception = new Exception(self::ERROR_MESSAGE);
         $errorLog = $this->datadogHelper->logException($exception);
@@ -57,6 +63,8 @@ class Bolt_Boltpay_Helper_DataDogTraitTest extends PHPUnit_Framework_TestCase
     /**
      * @test
      * init sets env to test if PHPUNIT_ENVIRONMENT is set
+     *
+     * @covers Bolt_Boltpay_Helper_DataDogTrait::init
      *
      * @throws ReflectionException
      */
@@ -73,6 +81,8 @@ class Bolt_Boltpay_Helper_DataDogTraitTest extends PHPUnit_Framework_TestCase
     /**
      * @test
      * init sets env to development if PHPUNIT_ENVIRONMENT is not set and payment/boltpay/test is true
+     *
+     * @covers Bolt_Boltpay_Helper_DataDogTrait::init
      *
      * @throws Mage_Core_Exception
      * @throws Mage_Core_Model_Store_Exception
@@ -92,6 +102,8 @@ class Bolt_Boltpay_Helper_DataDogTraitTest extends PHPUnit_Framework_TestCase
      * @test
      * init sets env to production if PHPUNIT_ENVIRONMENT is not set and payment/boltpay/test is not true
      *
+     * @covers Bolt_Boltpay_Helper_DataDogTrait::init
+     *
      * @throws Mage_Core_Exception
      * @throws Mage_Core_Model_Store_Exception
      * @throws ReflectionException
@@ -104,5 +116,40 @@ class Bolt_Boltpay_Helper_DataDogTraitTest extends PHPUnit_Framework_TestCase
         $actualEnv = TestHelper::getNonPublicProperty($this->datadogHelper, '_data')['env'];
         $this->assertEquals($expectedEnv, $actualEnv);
         TestHelper::restoreOriginals();
+    }
+
+    /**
+     * @test
+     * that getDataDog should return the {@see Bolt_Boltpay_Helper_DataDogTrait::_datadog}
+     *
+     * @covers Bolt_Boltpay_Helper_DataDogTrait::getDataDog
+     */
+    public function getDataDog_whenDataDogIsSet_returnsDataDog()
+    {
+        $dataDogMock = $this->getMockBuilder('Boltpay_DataDog_Client')->disableOriginalConstructor()->getMock();
+        TestHelper::setNonPublicProperty($this->datadogHelper, '_datadog', $dataDogMock);
+        $actualDataDog = TestHelper::callNonPublicFunction($this->datadogHelper, 'getDataDog');
+        $this->assertEquals($dataDogMock, $actualDataDog);
+    }
+
+    /**
+     * @test
+     * that getDataDog should call init method and set the {@see Bolt_Boltpay_Helper_DataDogTrait::_datadog}
+     * 
+     * @covers Bolt_Boltpay_Helper_DataDogTrait::getDataDog
+     */
+    public function getDataDog_whenDataDogIsNotSet_callsInitAndSetsDataDog()
+    {
+        $apiKey = '3dadasdasdas';
+        $this->datadogHelper = $this->getMockBuilder('Bolt_Boltpay_Helper_DataDogTrait')
+            ->setMethods(array('getApiKeyConfig', 'getSeverityConfig'))
+            ->getMockForTrait();
+        $this->datadogHelper->expects($this->once())->method('getApiKeyConfig')->willReturn($apiKey);
+        $this->datadogHelper->expects($this->once())->method('getSeverityConfig')->willReturn(array());
+        TestHelper::setNonPublicProperty($this->datadogHelper, '_datadog', null);
+        $actualDataDog = TestHelper::callNonPublicFunction($this->datadogHelper, 'getDataDog');
+
+        $this->assertEquals($apiKey, TestHelper::getNonPublicProperty($this->datadogHelper, '_apiKey'));
+        $this->assertAttributeEquals($actualDataDog, '_datadog', $this->datadogHelper);
     }
 }

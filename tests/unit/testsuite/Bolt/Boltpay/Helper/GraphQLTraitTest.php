@@ -38,7 +38,7 @@ class Bolt_Boltpay_Helper_GraphQLTest extends PHPUnit_Framework_TestCase
 
         $this->guzzleClientMock = $this->getMockBuilder('Boltpay_Guzzle_ApiClient')
             ->disableOriginalConstructor()
-            ->setMethods(array('post'))
+            ->setMethods(array('post', 'getBody'))
             ->getMock();
 
         $this->responseMock = $this->getMockForAbstractClass(
@@ -56,6 +56,65 @@ class Bolt_Boltpay_Helper_GraphQLTest extends PHPUnit_Framework_TestCase
 
     /**
      * @test
+     * that makeGqlCall returns api client response body
+     *
+     * @covers Bolt_Boltpay_Helper_GraphQLTrait::makeGqlCall
+     */
+    public function makeGqlCall_always_returnsApiClientResponse()
+    {
+        $operation = Boltpay_GraphQL_Constants::GET_FEATURE_SWITCHES_QUERY;
+        $variables = Boltpay_GraphQL_Constants::GET_FEATURE_SWITCHES_OPERATION;
+        $boltPluginVersion = \Bolt_Boltpay_Helper_ConfigTrait::getBoltPluginVersion();
+        $query = array(
+            "type" => Boltpay_GraphQL_Constants::PLUGIN_TYPE,
+            "version" => $boltPluginVersion
+        );
+
+        $gqlRequest = array(
+            "operationName" => $operation,
+            "variables" => $variables,
+            "query" => $query
+        );
+        $apiKey = 'stubbedApiKey_dasdasfasdasdasds';
+        Bolt_Boltpay_TestHelper::stubConfigValue('payment/boltpay/api_key', $apiKey);
+        $requestData = json_encode($gqlRequest, JSON_UNESCAPED_SLASHES);
+
+        $headerInfo = Bolt_Boltpay_TestHelper::callNonPublicFunction(
+            $this->currentMock,
+            'constructRequestHeaders',
+            array(
+                $requestData,
+                $apiKey
+            )
+        );
+        
+        unset($headerInfo['X-Nonce']);
+        $apiURL = 'https://api.bolt.com/v2/merchant/api';
+        
+        $this->guzzleClientMock->expects($this->once())
+            ->method('post')
+            ->with($apiURL, $requestData, new PHPUnit_Framework_Constraint_ArraySubset($headerInfo))
+            ->willReturnSelf();
+        $stubedResponse = json_encode(
+            array('status' => 200)
+        );
+        
+        $this->guzzleClientMock->expects($this->once())->method('getBody')->willReturn($stubedResponse);
+
+        $this->assertEquals(
+            json_decode($stubedResponse),
+            Bolt_Boltpay_TestHelper::callNonPublicFunction(
+                $this->currentMock,
+                'makeGqlCall',
+                array($query, $operation, $variables)
+            )
+        );
+    }
+
+    /**
+     * @test
+     *
+     * @covers Bolt_Boltpay_Helper_GraphQLTrait::getFeatureSwitches
      */
     public function getFeatureSwitches_withoutException_returnsResponseWithValues()
     {
