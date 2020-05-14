@@ -177,19 +177,7 @@ class Bolt_Boltpay_ConfigurationControllerTest extends PHPUnit_Framework_TestCas
      */
     public function checkAction_withStubbedCheckMethodResults_returnsSuccessOrErrorResponseProvider()
     {
-        $length = 5;
-        $numberOfIntegers = pow(2, $length);
-        $result = array();
-        for ($i = 0; $i < $numberOfIntegers; $i++) {
-            //get binary representation of the number
-            $binaryRepresentation = decbin($i);
-            //pad binary representation to length of 5 by adding 0 at the beginning
-            $binaryRepresentation = str_repeat(0, $length - strlen($binaryRepresentation)) . $binaryRepresentation;
-            //split each bit of the binary representation, cast to boolean and add to output
-            $result[] = array_map('boolval', str_split($binaryRepresentation, 1));
-        }
-
-        return $result;
+        return TestHelper::getAllBooleanCombinations(5);
     }
 
     /**

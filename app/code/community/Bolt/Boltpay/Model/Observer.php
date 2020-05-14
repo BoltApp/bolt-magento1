@@ -11,7 +11,7 @@
  *
  * @category   Bolt
  * @package    Bolt_Boltpay
- * @copyright  Copyright (c) 2019 Bolt Financial, Inc (https://www.bolt.com)
+ * @copyright  Copyright (c) 2016-2020 Bolt Financial, Inc (https://www.bolt.com)
  * @license    http://opensource.org/licenses/osl-3.0.php  Open Software License (OSL 3.0)
  */
 
@@ -431,5 +431,19 @@ class Bolt_Boltpay_Model_Observer
         }
 
         return false;
+    }
+
+    /**
+     * Adds admin notification if an update is available
+     *
+     * event: admin_session_user_login_success
+     */
+    public function addAdminUpdateNotification()
+    {
+        /** @var Bolt_Boltpay_Model_Updater $updater */
+        $updater = Mage::getSingleton('boltpay/updater');
+        if ($updater->isUpdateAvailable()) {
+            $updater->addUpdateMessage();
+        }
     }
 }

@@ -12,7 +12,7 @@
  *
  * @category   Bolt
  * @package    Bolt_Boltpay
- * @copyright  Copyright (c) 2019 Bolt Financial, Inc (https://www.bolt.com)
+ * @copyright  Copyright (c) 2016-2020 Bolt Financial, Inc (https://www.bolt.com)
  * @license    http://opensource.org/licenses/osl-3.0.php  Open Software License (OSL 3.0)
  */
 -->
@@ -29,7 +29,10 @@
     <adminhtml_sales_order_view>
         <reference name="before_body_end">
             <block type="boltpay/checkout_boltpay" name="bolt_refund_popup" as="bolt_popup" template="boltpay/refund_popup.phtml" />
-
+        </reference>
+    </adminhtml_sales_order_view>
+    <default>
+        <reference name="before_body_end">
             <!-- ******************************************************************************** -->
             <!-- * We re-use a frontend template in the backend by temporarily changing the area, -->
             <!-- * which afterwards we immediately restore to not affect potential other modules  -->
@@ -45,7 +48,11 @@
                 </action>
             </block>
             <!-- ******************************************************************************** -->
-
+            <block type="boltpay/adminhtml_updatePopup" name="bolt_update_popup"/>
         </reference>
-    </adminhtml_sales_order_view>
+        <reference name="notifications">
+            <block type="boltpay/adminhtml_notification" name="bolt_notifications" as="bolt_notifications"
+                   template="boltpay/notification.phtml"/>
+        </reference>
+    </default>
 </layout>

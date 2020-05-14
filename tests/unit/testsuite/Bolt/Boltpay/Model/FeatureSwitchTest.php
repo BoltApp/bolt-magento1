@@ -91,6 +91,11 @@ class Bolt_Boltpay_Model_FeatureSwitchTest extends PHPUnit_Framework_TestCase
                 'defaultValue' => false,
                 'rolloutPercentage' => 100
             ),
+            'M1_BOLT_UPDATE_USE_GIT' => array(
+                'value' => true,
+                'defaultValue' => false,
+                'rolloutPercentage' => 0
+            ),
         );
     }
 
@@ -102,7 +107,11 @@ class Bolt_Boltpay_Model_FeatureSwitchTest extends PHPUnit_Framework_TestCase
      */
     public function __construct_always_shouldSetDefaultFeaturesProperly()
     {
-        $this->assertAttributeEquals($this->generateDefaultSwitchesValue(), 'defaultSwitches', $this->currentMock);
+        $this->assertAttributeEquals(
+            $this->generateDefaultSwitchesValue(),
+            'defaultSwitches',
+            $this->currentMock
+        );
     }
 
     /**

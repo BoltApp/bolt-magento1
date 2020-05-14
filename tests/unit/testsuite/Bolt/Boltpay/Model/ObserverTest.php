@@ -1244,4 +1244,44 @@ class Bolt_Boltpay_Model_ObserverTest extends PHPUnit_Framework_TestCase
             ),
         );
     }
+
+    /**
+     * @test
+     * that addAdminUpdateNotification calls {@see Bolt_Boltpay_Model_Updater::addUpdateMessage}
+     * if an update is available ({@see Bolt_Boltpay_Model_Updater::isUpdateAvailable} returns true)
+     *
+     * @covers ::addAdminUpdateNotification
+     *
+     * @throws Mage_Core_Exception if unable to stub singleton
+     */
+    public function addAdminUpdateNotification_withUpdateAvailable_addsUpdateMessage()
+    {
+        $updater = $this->getClassPrototype('boltpay/updater')
+            ->setMethods(array('isUpdateAvailable', 'addUpdateMessage'))
+            ->getMock();
+        $updater->expects($this->once())->method('isUpdateAvailable')->willReturn(true);
+        $updater->expects($this->once())->method('addUpdateMessage');
+        TestHelper::stubSingleton('boltpay/updater', $updater);
+        $this->currentMock->addAdminUpdateNotification(new Varien_Event_Observer());
+    }
+
+    /**
+     * @test
+     * that addAdminUpdateNotification doesn't call {@see Bolt_Boltpay_Model_Updater::addUpdateMessage}
+     * if an update is not available ({@see Bolt_Boltpay_Model_Updater::isUpdateAvailable} returns false)
+     *
+     * @covers ::addAdminUpdateNotification
+     *
+     * @throws Mage_Core_Exception if unable to stub singleton
+     */
+    public function addAdminUpdateNotification_withUpdateUnavailable_doesNotAddUpdateMessage()
+    {
+        $updater = $this->getClassPrototype('boltpay/updater')
+            ->setMethods(array('isUpdateAvailable', 'addUpdateMessage'))
+            ->getMock();
+        $updater->expects($this->once())->method('isUpdateAvailable')->willReturn(false);
+        $updater->expects($this->never())->method('addUpdateMessage');
+        TestHelper::stubSingleton('boltpay/updater', $updater);
+        $this->currentMock->addAdminUpdateNotification(new Varien_Event_Observer());
+    }
 }
