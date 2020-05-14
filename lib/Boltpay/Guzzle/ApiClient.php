@@ -10,7 +10,7 @@
  * https://opensource.org/licenses/MIT
  *
  * @category   Bolt
- * @copyright  Copyright (c) 2019 Bolt Financial, Inc (https://www.bolt.com)
+ * @copyright  Copyright (c) 2016-2020 Bolt Financial, Inc (https://www.bolt.com)
  * @license    https://opensource.org/licenses/MIT  MIT License (MIT)
  */
 
