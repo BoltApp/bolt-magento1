@@ -111,7 +111,7 @@ class Bolt_Boltpay_Model_ObserverTest extends PHPUnit_Framework_TestCase
      * @test
      * that Mage::getModel('boltpay/observer') returns instance of the observer
      *
-     * @coversNothing
+     * @covers ::__construct
      */
     public function __construct_always_createsInstanceOfTheModel()
     {
@@ -212,6 +212,30 @@ class Bolt_Boltpay_Model_ObserverTest extends PHPUnit_Framework_TestCase
         $this->updateFeatureSwitchesSetUp();
         Bolt_Boltpay_Model_FeatureSwitch::$shouldUpdateFeatureSwitches = false;
         $this->featureSwitchMock->expects($this->never())->method('updateFeatureSwitches');
+        $this->currentMock->updateFeatureSwitches();
+    }
+
+    /**
+     * @test
+     * that updateFeatureSwitches logs exception if thrown from 
+     * {@see Bolt_Boltpay_Model_FeatureSwitch::updateFeatureSwitches}
+     *
+     * @covers ::updateFeatureSwitches
+     *
+     * @throws Mage_Core_Exception if unable to stub or restore feature switch singleton
+     */
+    public function updateFeatureSwitches_whenUpdateFeatureSwitchesThrowException_logsException()
+    {
+        $this->updateFeatureSwitchesSetUp();
+        Bolt_Boltpay_Model_FeatureSwitch::$shouldUpdateFeatureSwitches = true;
+        $exception = new GuzzleHttp\Exception\RequestException('error', null);
+
+        $this->featureSwitchMock->expects($this->once())->method('updateFeatureSwitches')
+            ->willThrowException($exception);
+        
+        $this->boltHelperMock->expects($this->once())->method('notifyException')->with($exception);
+        $this->boltHelperMock->expects($this->once())->method('logException')->with($exception)->willReturnSelf();
+
         $this->currentMock->updateFeatureSwitches();
     }
 

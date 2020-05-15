@@ -431,6 +431,8 @@ class Bolt_Boltpay_Model_FeatureSwitchTest extends PHPUnit_Framework_TestCase
      * - make 10 attempt, 5000 calls in one attempt
      * - calculate tolerance for each attempt
      * - compare the smallest and the biggest tolerance with expected values
+     *
+     * @covers ::isMarkedForRollout
      */
     public function isMarkedForRollout_whenCalledManyTimes_shouldReturnExpectedDistribution()
     {

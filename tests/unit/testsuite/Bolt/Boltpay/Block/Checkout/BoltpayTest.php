@@ -1909,6 +1909,8 @@ SCSS;
      * @test
      * that getConfigSelectors returns config value for selectors in JSON format
      *
+     * @covers ::getConfigSelectors
+     *
      * @dataProvider getConfigSelectors_withVariousConfigsProvider
      *
      * @param string $selectors configuration value for selectors
@@ -2139,7 +2141,7 @@ SCSS;
      * @test
      * that getQuote returns quote from checkout/session singleton
      *
-     * @coves ::getQuote
+     * @covers ::getQuote
      */
     public function getQuote_always_returnsQuoteFromCheckoutSession()
     {

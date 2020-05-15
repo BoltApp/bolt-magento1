@@ -1,6 +1,7 @@
 <?php
 
 use Bolt_Boltpay_Controller_Interface as RESPONSE_CODE;
+use Bolt_Boltpay_TestHelper as TestHelper;
 
 /**
  * Class Bolt_Boltpay_OrderCreationExceptionTest
@@ -12,8 +13,10 @@ class Bolt_Boltpay_OrderCreationExceptionTest extends PHPUnit_Framework_TestCase
     /**
      * @test
      * JSON response for general error with default parameters
+     *
+     * @covers ::__construct
      */
-    public function initialize_withGeneralException_setsCorrectJsonAndHttpCode()
+    public function __construct_withGeneralException_setsCorrectJsonAndHttpCode()
     {
         $reason = 'test error';
         $boltOrderCreationException = new Bolt_Boltpay_OrderCreationException(
@@ -38,8 +41,10 @@ class Bolt_Boltpay_OrderCreationExceptionTest extends PHPUnit_Framework_TestCase
     /**
      * @test
      * for correct data for existing order exception
+     *
+     * @covers ::__construct
      */
-    public function initialize_withExistingCartException_setsCorrectJsonAndHttpCode()
+    public function __construct_withExistingCartException_setsCorrectJsonAndHttpCode()
     {
         $dataValues = ['id_123', 'pending'];
         $boltOrderCreationException = new Bolt_Boltpay_OrderCreationException(
@@ -59,8 +64,10 @@ class Bolt_Boltpay_OrderCreationExceptionTest extends PHPUnit_Framework_TestCase
     /**
      * @test
      * for correct data for various cart exceptions
+     *
+     * @covers ::__construct
      */
-    public function initialize_withCartException_setsCorrectJsonAndHttpCode()
+    public function __construct_withCartException_setsCorrectJsonAndHttpCode()
     {
         // Empty cart
         $boltOrderCreationException = new Bolt_Boltpay_OrderCreationException(
@@ -185,8 +192,10 @@ class Bolt_Boltpay_OrderCreationExceptionTest extends PHPUnit_Framework_TestCase
     /**
      * @test
      * for correct data for item price has been updated exception
+     *
+     * @covers ::__construct
      */
-    public function initialize_withItemPriceException_setsCorrectJsonAndHttpCode()
+    public function __construct_withItemPriceException_setsCorrectJsonAndHttpCode()
     {
         $dataValues = [905, 100, 150];
         $boltOrderCreationException = new Bolt_Boltpay_OrderCreationException(
@@ -207,8 +216,10 @@ class Bolt_Boltpay_OrderCreationExceptionTest extends PHPUnit_Framework_TestCase
     /**
      * @test
      * for correct data for out of inventory exception
+     *
+     * @covers ::__construct
      */
-    public function initialize_withCartInventoryException_setsCorrectJsonAndHttpCode()
+    public function __construct_withCartInventoryException_setsCorrectJsonAndHttpCode()
     {
         $dataValues = [905, 100, 150];
         $boltOrderCreationException = new Bolt_Boltpay_OrderCreationException(
@@ -229,8 +240,10 @@ class Bolt_Boltpay_OrderCreationExceptionTest extends PHPUnit_Framework_TestCase
     /**
      * @test
      * for correct exception data when discount can not be applied
+     *
+     * @covers ::__construct
      */
-    public function initialize_withDiscountCanNotBeAppliedException_setsCorrectJsonAndHttpCode()
+    public function __construct_withDiscountCanNotBeAppliedException_setsCorrectJsonAndHttpCode()
     {
         // Generic exception
         $dataValues = ['Discount code too cool to be used', 'FREE_BEER_FOR_LIFE'];
@@ -265,8 +278,10 @@ class Bolt_Boltpay_OrderCreationExceptionTest extends PHPUnit_Framework_TestCase
     /**
      * @test
      * for correct exception data when discount code is invalid
+     *
+     * @covers ::__construct
      */
-    public function initialize_withInvalidDiscountCodeException_setsCorrectJsonAndHttpCode()
+    public function __construct_withInvalidDiscountCodeException_setsCorrectJsonAndHttpCode()
     {
         $dataValues = ['GIVE_ME_FREE'];
         $boltOrderCreationException = new Bolt_Boltpay_OrderCreationException(
@@ -285,8 +300,10 @@ class Bolt_Boltpay_OrderCreationExceptionTest extends PHPUnit_Framework_TestCase
     /**
      * @test
      * for correct exception when shipping price or tax are changed
+     *
+     * @covers ::__construct
      */
-    public function initialize_withShippingPriceOrTaxChangedException_setsCorrectJsonAndHttpCode()
+    public function __construct_withShippingPriceOrTaxChangedException_setsCorrectJsonAndHttpCode()
     {
         $dataValues = [100, 150];
         $boltOrderCreationException = new Bolt_Boltpay_OrderCreationException(
@@ -307,8 +324,10 @@ class Bolt_Boltpay_OrderCreationExceptionTest extends PHPUnit_Framework_TestCase
     /**
      * @test
      * In case when we pass string data instead of expected numbers, values in the response will be set to zero.
+     *
+     * @covers ::__construct
      */
-    public function initialize_withIncorrectData_setsValuesInResponseToZero()
+    public function __construct_withIncorrectData_setsValuesInResponseToZero()
     {
         $dataValues = ['hundred', 'hundred and fifty'];
         $boltOrderCreationException = new Bolt_Boltpay_OrderCreationException(
@@ -335,7 +354,7 @@ class Bolt_Boltpay_OrderCreationExceptionTest extends PHPUnit_Framework_TestCase
      *
      * @covers ::__construct
      */
-    public function initialize_withMinimumPriceNotMetException_setsCorrectJsonAndHttpCode()
+    public function __construct_withMinimumPriceNotMetException_setsCorrectJsonAndHttpCode()
     {
         $boltOrderCreationException = new Bolt_Boltpay_OrderCreationException(
             Bolt_Boltpay_OrderCreationException::E_BOLT_MINIMUM_PRICE_NOT_MET,
@@ -355,8 +374,10 @@ class Bolt_Boltpay_OrderCreationExceptionTest extends PHPUnit_Framework_TestCase
     /**
      * @test
      * if OrderCreationException is keeping a reference to previous error
+     *
+     * @covers ::__construct
      */
-    public function initialize_withExceptionWithPreviousException_setsPreviousExceptionInResponse()
+    public function __construct_withExceptionWithPreviousException_setsPreviousExceptionInResponse()
     {
         $reason = 'test with previous error';
         $previousException = new Exception('This is previous error');
@@ -385,8 +406,10 @@ class Bolt_Boltpay_OrderCreationExceptionTest extends PHPUnit_Framework_TestCase
     /**
      * @test
      * if special characters are escaped in JSON response
+     *
+     * @covers ::__construct
      */
-    public function initialize_withEscapedSpecialCharacters_setsCorrectJsonAndHttpCode()
+    public function __construct_withEscapedSpecialCharacters_setsCorrectJsonAndHttpCode()
     {
         $reason = 'test "error" \path\example';
         $boltOrderCreationException = new Bolt_Boltpay_OrderCreationException(
@@ -406,8 +429,10 @@ class Bolt_Boltpay_OrderCreationExceptionTest extends PHPUnit_Framework_TestCase
     /**
      * @test
      * If non-registered code is passed to a constructor it should generate generic exception.
+     *
+     * @covers ::__construct
      */
-    public function initialize_withNonRegisteredErrorCode_shouldGenerateGenericException()
+    public function __construct_withNonRegisteredErrorCode_shouldGenerateGenericException()
     {
 
         $errorMessage = 'test non-existing code';
@@ -440,8 +465,11 @@ class Bolt_Boltpay_OrderCreationExceptionTest extends PHPUnit_Framework_TestCase
     /**
      * @test
      * HTTP response code for general exception with default parameters
+     *
+     * @covers ::__construct
+     * @covers ::getHttpCode
      */
-    public function initialize_withDefaultParameters_shouldSetResponseCodeTo422()
+    public function __construct_withDefaultParameters_shouldSetResponseCodeTo422()
     {
         $boltOrderCreationException = new Bolt_Boltpay_OrderCreationException();
         $this->assertEquals(RESPONSE_CODE::HTTP_UNPROCESSABLE_ENTITY, $boltOrderCreationException->getHttpCode());
@@ -450,14 +478,151 @@ class Bolt_Boltpay_OrderCreationExceptionTest extends PHPUnit_Framework_TestCase
     /**
      * @test
      * HTTP response code for general exception with invalid HMAC header
+     *
+     * @covers ::__construct
+     * @covers ::getHttpCode
      */
-    public function initialize_withInvalidHMACHeader_shouldSetResponseCodeTo401()
+    public function __construct_withInvalidHMACHeader_shouldSetResponseCodeTo401()
     {
         $boltOrderCreationException = new Bolt_Boltpay_OrderCreationException(
             Bolt_Boltpay_OrderCreationException::E_BOLT_GENERAL_ERROR,
             Bolt_Boltpay_OrderCreationException::E_BOLT_GENERAL_ERROR_TMPL_HMAC
         );
         $this->assertEquals(RESPONSE_CODE::HTTP_UNAUTHORIZED, $boltOrderCreationException->getHttpCode());
+    }
+
+    /**
+     * @test
+     * that selectHttpCode should return HTTP conflict code when the input parameter code indicates an order already
+     * exists
+     *
+     * @covers ::selectHttpCode
+     */
+    public function selectHttpCode_whenOrderAlreadyExists_returns409()
+    {
+        $boltOrderCreationException = new Bolt_Boltpay_OrderCreationException();
+
+        $this->assertEquals(
+            RESPONSE_CODE::HTTP_CONFLICT,
+            $boltOrderCreationException->selectHttpCode(
+                Bolt_Boltpay_OrderCreationException::E_BOLT_ORDER_ALREADY_EXISTS,
+                ''
+            )
+        );
+    }
+
+    /**
+     * @test
+     * that selectHttpCode should return HTTP not found code when input parameter code indicates an cart has expired
+     * and template not found
+     *
+     * @covers ::selectHttpCode
+     */
+    public function selectHttpCode_whenCartIsNotFound_returns404()
+    {
+        $boltOrderCreationException = new Bolt_Boltpay_OrderCreationException();
+
+        $this->assertEquals(
+            RESPONSE_CODE::HTTP_NOT_FOUND,
+            $boltOrderCreationException->selectHttpCode(
+                Bolt_Boltpay_OrderCreationException::E_BOLT_CART_HAS_EXPIRED,
+                Bolt_Boltpay_OrderCreationException::E_BOLT_CART_HAS_EXPIRED_TMPL_NOT_FOUND
+            )
+        );
+    }
+
+    /**
+     * @test
+     * that selectHttpCode should return HTTP gone code when input parameter code indicates an cart has expired and
+     * and template expired
+     *
+     * @covers ::selectHttpCode
+     */
+    public function selectHttpCode_whenCartHasExpired_returns410()
+    {
+        $boltOrderCreationException = new Bolt_Boltpay_OrderCreationException();
+
+        $this->assertEquals(
+            RESPONSE_CODE::HTTP_GONE,
+            $boltOrderCreationException->selectHttpCode(
+                Bolt_Boltpay_OrderCreationException::E_BOLT_CART_HAS_EXPIRED,
+                Bolt_Boltpay_OrderCreationException::E_BOLT_CART_HAS_EXPIRED_TMPL_EXPIRED
+            )
+        );
+    }
+
+    /**
+     * @test
+     * that selectHttpCode should return HTTP gone code when input parameter code indicates an cart has expired and
+     * template has expired
+     *
+     * @covers ::selectHttpCode
+     */
+    public function selectHttpCode_whenGeneralErrorOccur_returns401()
+    {
+        $boltOrderCreationException = new Bolt_Boltpay_OrderCreationException();
+
+        $this->assertEquals(
+            RESPONSE_CODE::HTTP_UNAUTHORIZED,
+            $boltOrderCreationException->selectHttpCode(
+                Bolt_Boltpay_OrderCreationException::E_BOLT_GENERAL_ERROR,
+                Bolt_Boltpay_OrderCreationException::E_BOLT_GENERAL_ERROR_TMPL_HMAC
+            )
+        );
+    }
+
+    /**
+     * @test
+     * that selectHttpCode should return HTTP unprocessable entity when input parameter code indicates an discount
+     * cannot apply
+     *
+     * @covers ::selectHttpCode
+     */
+    public function selectHttpCode_whenDiscountCannotApply_422()
+    {
+        $boltOrderCreationException = new Bolt_Boltpay_OrderCreationException();
+
+        $this->assertEquals(
+            RESPONSE_CODE::HTTP_UNPROCESSABLE_ENTITY,
+            $boltOrderCreationException->selectHttpCode(
+                Bolt_Boltpay_OrderCreationException::E_BOLT_DISCOUNT_CANNOT_APPLY,
+                ''
+            )
+        );
+    }
+
+    /**
+     * @test
+     * that createJson returns json data response
+     * 
+     * @covers ::createJson
+     */
+    public function createJson_always_returnsJsonString()
+    {
+        $actualResult = TestHelper::callNonPublicFunction(
+            new Bolt_Boltpay_OrderCreationException(),
+            'createJson',
+            [RESPONSE_CODE::HTTP_GONE, Bolt_Boltpay_OrderCreationException::E_BOLT_GENERAL_ERROR_TMPL_GENERIC]
+        );
+
+        $this->assertJson($actualResult);
+    }
+    
+    /**
+     * @test
+     * that getJson returns json response
+     *
+     * @covers ::getJson
+     */
+    public function getJson_always_returnsJsonString()
+    {
+        $dataValues = ['id_123', 'pending'];
+        $boltOrderCreationException = new Bolt_Boltpay_OrderCreationException(
+            Bolt_Boltpay_OrderCreationException::E_BOLT_ORDER_ALREADY_EXISTS,
+            Bolt_Boltpay_OrderCreationException::E_BOLT_ORDER_ALREADY_EXISTS_TMPL,
+            $dataValues);
+        
+        $this->assertJson($boltOrderCreationException->getJson());
     }
 
     /**
