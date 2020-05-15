@@ -468,5 +468,18 @@ class Bolt_Boltpay_Helper_ConfigTraitTest extends PHPUnit_Framework_TestCase
         );
     }
 
+    /**
+     * @test
+     * that getExtraConfig will return extra config from mage model
+     *
+     * @covers Bolt_Boltpay_Helper_ConfigTrait::getExtraConfig
+     */
+    public function getExtraConfig_always_returns()
+    {
+        $extraConfigModel = Mage::getSingleton('boltpay/admin_extraConfig');
+        $result = $extraConfigModel->getExtraConfig('cloneOnClick');
 
+        $actual = $this->currentMock->getExtraConfig('cloneOnClick');
+        $this->assertEquals($result, $actual);
+    }
 }

@@ -740,6 +740,8 @@ class Bolt_Boltpay_ConfigurationControllerTest extends PHPUnit_Framework_TestCas
      * @test
      * Setting response with error data
      *
+     * @covers ::setErrorResponseData
+     *
      * @dataProvider setErrorResponseData_withSpecificMessage_altersFirstParameterProvider
      *
      * @param string $message to be added to response messages
