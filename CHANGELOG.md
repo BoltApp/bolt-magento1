@@ -1,4 +1,9 @@
 # Changelog
+## [V2.7.0](https://bolt-public.s3-us-west-1.amazonaws.com/magento-integration-release/bolt-magento1-v2.7.0.zip) 2020-05-19
+ - Implement frontend stock validation for PPC for configurable products
+ - Add support for logged-in user only checkout
+ - Improve session clean up
+ - Various other bugfixes
 ## [V2.6.0](https://bolt-public.s3-us-west-1.amazonaws.com/magento-integration-release/bolt-magento1-v2.6.0.zip) 2020-04-28
  - Improve Apple Pay support
  - Remove Inventory handling from merchant dashboard refunds
