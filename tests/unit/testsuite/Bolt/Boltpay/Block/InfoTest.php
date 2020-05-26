@@ -14,29 +14,48 @@ class Bolt_Boltpay_Block_InfoTest extends PHPUnit_Framework_TestCase
     private $currentMock;
 
     /**
+     * @var PHPUnit_Framework_MockObject_MockObject|Mage_Payment_Block_Info
+     */
+    private $infoMock;
+
+    /**
      * Setup test dependencies, called before each test
      */
     public function setUp()
     {
         Mage::app('default');
         $this->currentMock = $this->getMockBuilder('Bolt_Boltpay_Block_Info')
-            ->setMethods(array('setTemplate'))
+            ->setMethods(array('getInfo'))
             ->disableOriginalConstructor()
             ->disableOriginalClone()
             ->disableArgumentCloning()
             ->getMock();
+
+        $this->infoMock = $this->getMockBuilder('Mage_Payment_Block_Info')
+            ->setMethods(array('getCcType','getCcLast4'))
+            ->disableOriginalConstructor()
+            ->disableOriginalClone()
+            ->disableArgumentCloning()
+            ->getMock();
+
     }
 
     /**
      * @test
-     * Verify that internal constructor sets the template correctly
-     *
-     * @covers ::_construct
+     * that prepareSpecificInformation return a dummy cc info array
+     * @covers ::_prepareSpecificInformation
      */
-    public function _construct()
+    public function prepareSpecificInformation()
     {
-        $this->currentMock->expects($this->atLeastOnce())->method('setTemplate')->with('boltpay/info.phtml');
-
-        TestHelper::callNonPublicFunction($this->currentMock, '_construct');
+        $this->currentMock->expects(self::any())->method('getInfo')->willReturn($this->infoMock);
+        $this->infoMock->expects(self::once())->method('getCcType')->willReturn('visa');
+        $this->infoMock->expects(self::once())->method('getCcLast4')->willReturn('1111');
+        $data = TestHelper::callNonPublicFunction($this->currentMock, '_prepareSpecificInformation', [null]);
+        $this->assertEquals(
+            [
+                'Credit Card Type' => 'VISA',
+                'Credit Card Number' => 'xxxx-1111'
+            ], $data->getData()
+        );
     }
 }

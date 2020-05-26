@@ -56,7 +56,7 @@ class Bolt_Boltpay_Model_PaymentTest extends PHPUnit_Framework_TestCase
         $this->boltHelperMock = $this->getClassPrototype('Bolt_Boltpay_Helper_Data')
             ->setMethods(array('transmit', 'canUseBolt', 'notifyException', 'logWarning', 'fetchTransaction'))
             ->getMock();
-        $this->paymentMock = $this->getTestClassPrototype()->setMethods(array('getAdditionalInformation', 'getOrder'))
+        $this->paymentMock = $this->getTestClassPrototype()->setMethods(array('getAdditionalInformation', 'getOrder','setCcLast4','setCcType'))
             ->getMock();
         $this->orderMock = $this->getClassPrototype('Mage_Sales_Model_Order')
             ->setMethods(array())->getMock();
@@ -3722,5 +3722,45 @@ class Bolt_Boltpay_Model_PaymentTest extends PHPUnit_Framework_TestCase
         /** @var Mage_Sales_Model_Order $order */
         $order = Mage::getModel('sales/order')->load($service->getOrder()->getId());
         return $order;
+    }
+
+    /**
+     * @test
+     * that setOrderPaymentInfoData with transaction
+     *
+     * @covers ::setOrderPaymentInfoData
+     */
+    public function setOrderPaymentInfoData_withTransaction() {
+        $transaction = $this->generateTestTransactionObject();
+        $this->paymentMock->expects($this->once())->method('setCcLast4')->with($this->equalTo('1111'))->willReturnSelf();
+        $this->paymentMock->expects($this->once())->method('setCcType')->with($this->equalTo('visa'))->willReturnSelf();
+
+        Bolt_Boltpay_TestHelper::callNonPublicFunction($this->currentMock, 'setOrderPaymentInfoData', [$this->paymentMock, 'TEST-BOLT-TRNX', $transaction]);
+    }
+
+    /**
+     * @test
+     * that setOrderPaymentInfoData without transaction
+     *
+     * @covers ::setOrderPaymentInfoData
+     */
+    public function setOrderPaymentInfoData_withoutTransaction() {
+        $transaction = $this->generateTestTransactionObject();
+        $this->boltHelperMock->expects($this->once())->method('fetchTransaction')->with($this->equalTo('TEST-BOLT-TRNX'))->willReturn($transaction);
+        $this->paymentMock->expects($this->once())->method('setCcLast4')->with($this->equalTo('1111'))->willReturnSelf();
+        $this->paymentMock->expects($this->once())->method('setCcType')->with($this->equalTo('visa'))->willReturnSelf();
+
+        Bolt_Boltpay_TestHelper::callNonPublicFunction($this->currentMock, 'setOrderPaymentInfoData', [$this->paymentMock, 'TEST-BOLT-TRNX']);
+    }
+
+    private function generateTestTransactionObject(){
+        $transaction = new stdClass();
+        $transaction->reference = 'TEST-BOLT-TRNX';
+        $transaction->id = 'TRboltx0test1';
+        $transaction->display_id = '00000000';
+        $transaction->from_credit_card->last4 = '1111';
+        $transaction->from_credit_card->network = 'visa';
+
+        return $transaction;
     }
 }
