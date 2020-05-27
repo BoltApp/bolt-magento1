@@ -1695,7 +1695,7 @@ class Bolt_Boltpay_Model_OrderTest extends PHPUnit_Framework_TestCase
 
     /**
      * @test
-     * that when checked on an order without a paymenty, false is returned
+     * that when checked on an order without a payment, false is returned without error
      *
      * @covers ::isBoltOrder
      */
