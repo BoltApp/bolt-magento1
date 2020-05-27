@@ -1695,6 +1695,19 @@ class Bolt_Boltpay_Model_OrderTest extends PHPUnit_Framework_TestCase
 
     /**
      * @test
+     * that when checked on an order without a payment, false is returned without error
+     *
+     * @covers ::isBoltOrder
+     */
+    public function isBoltOrder_withoutPayment_willReturnFalse()
+    {
+        $orderMock = $this->getClassPrototype('sales/order')->setMethods(array('getPayment'))->getMock();
+        $orderMock->method('getPayment')->willReturn(null);
+        $this->assertFalse($this->currentMock->isBoltOrder($orderMock));
+    }
+
+    /**
+     * @test
      * that isBoltOrder successfully determines if order is a Bolt order based on orders payment method code
      *
      * @covers ::isBoltOrder

@@ -1111,7 +1111,7 @@ class Bolt_Boltpay_Model_Order extends Bolt_Boltpay_Model_Abstract
      * @return bool true if the payment method for this order is currently set to Bolt, otherwise false
      */
     public function isBoltOrder($order) {
-        return (strtolower($order->getPayment()->getMethod()) === Bolt_Boltpay_Model_Payment::METHOD_CODE);
+        return ($order->getPayment() && strtolower($order->getPayment()->getMethod()) === Bolt_Boltpay_Model_Payment::METHOD_CODE);
     }
 
     /**
