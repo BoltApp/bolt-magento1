@@ -35,7 +35,12 @@ class Bolt_Boltpay_Model_FeatureSwitch extends Bolt_Boltpay_Model_Abstract
     const ROLLOUT_KEY = 'rolloutPercentage';
 
     /**
-     * Determines if the Bolt server side has disabled the plugin. A false value will override local settings.
+     * @var string Feature switch that determines whether Git should be used as source for updates instead of Magento Connect
+     */
+    const BOLT_UPDATE_USE_GIT_SWITCH_NAME = 'M1_BOLT_UPDATE_USE_GIT';
+
+    /**
+     * @var string Determines if the Bolt server side has disabled the plugin. A false value will override local settings.
      */
     const BOLT_ENABLED_SWITCH_NAME = 'M1_BOLT_ENABLED';
 
@@ -63,6 +68,11 @@ class Bolt_Boltpay_Model_FeatureSwitch extends Bolt_Boltpay_Model_Abstract
                 self::VAL_KEY => true,
                 self::DEFAULT_VAL_KEY => false,
                 self::ROLLOUT_KEY => 100
+            ),
+            self::BOLT_UPDATE_USE_GIT_SWITCH_NAME => array(
+                self::VAL_KEY => true,
+                self::DEFAULT_VAL_KEY => false,
+                self::ROLLOUT_KEY => 0
             ),
         );
     }
