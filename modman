@@ -8,4 +8,4 @@ js/boltpay/* js/boltpay/
 lib/Boltpay/* lib/Boltpay/
 skin/frontend/base/default/boltpay/* skin/frontend/base/default/boltpay/
 skin/frontend/base/default/css/boltpay/* skin/frontend/base/default/css/boltpay/
-skin/adminhtml/base/default/boltpay/*                       skin/adminhtml/base/default/boltpay/
+skin/adminhtml/base/default/boltpay/* skin/adminhtml/base/default/boltpay/
