@@ -220,6 +220,17 @@
         </boltpay>
       </updates>
     </layout>
+
+    <events>
+      <admin_session_user_login_success>
+        <observers>
+          <bolt_boltpay_add_update_notification>
+            <class>Bolt_Boltpay_Model_Observer</class>
+            <method>addAdminUpdateNotification</method>
+          </bolt_boltpay_add_update_notification>
+        </observers>
+      </admin_session_user_login_success>
+    </events>
   </adminhtml>
 
   <frontend>
@@ -279,6 +290,7 @@
         <selectors><![CDATA[.btn-proceed-checkout, .minicart-actions .checkout-button, body.firecheckout-index-index .button.btn-checkout]]></selectors>
         <enable_product_page_checkout>0</enable_product_page_checkout>
         <product_page_checkout_selector>.btn-cart</product_page_checkout_selector>
+        <disable_notifications_for_non_critical_updates>0</disable_notifications_for_non_critical_updates>
         <additional_css>
 #checkout-review-submit .bolt-checkout-button {
   clear: both;
