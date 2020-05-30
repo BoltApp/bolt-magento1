@@ -117,6 +117,16 @@ trait Bolt_Boltpay_Helper_ConfigTrait
     }
 
     /**
+     * Gets configuration value for disabling notifications for non-critical updates
+     *
+     * @return bool true if non-critical updates shouldn't show notifications, otherwise false
+     */
+    public function getShouldDisableNotificationsForNonCriticalUpdates()
+    {
+        return Mage::getStoreConfigFlag('payment/boltpay/disable_notifications_for_non_critical_updates');
+    }
+
+    /**
      * @return mixed
      */
     public function getAutoCreateInvoiceAfterCreatingShipment()
