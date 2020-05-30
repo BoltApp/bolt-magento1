@@ -47,7 +47,14 @@ class Bolt_Boltpay_Model_UpdaterTest extends PHPUnit_Framework_TestCase
     protected function setUp()
     {
         $this->boltHelperMock = $this->getClassPrototype('Bolt_Boltpay_Helper_Data')
-            ->setMethods(array('getApiClient', 'notifyException', 'isModuleEnabled', 'getShouldDisableNotificationsForNonCriticalUpdates'))
+            ->setMethods(
+                array(
+                    'getApiClient',
+                    'notifyException',
+                    'isModuleEnabled',
+                    'getShouldDisableNotificationsForNonCriticalUpdates'
+                )
+            )
             ->getMock();
         $this->apiClientMock = $this->getClassPrototype('Boltpay_Guzzle_ApiClient')
             ->setMethods(array('get'))->getMock();
@@ -55,7 +62,7 @@ class Bolt_Boltpay_Model_UpdaterTest extends PHPUnit_Framework_TestCase
             ->setMethods(array('getStatusCode', 'getBody'))->getMock();
         $this->boltHelperMock->method('getApiClient')->willReturn($this->apiClientMock);
         $this->currentMock = $this->getTestClassPrototype()
-            ->setMethods(array('getPatchVersion', 'getLatestVersion', 'boltHelper'))
+            ->setMethods(array('hasPatch', 'getLatestVersion', 'boltHelper'))
             ->getMock();
         $this->currentMock->method('boltHelper')->willReturn($this->boltHelperMock);
         $this->originalVersion = Bolt_Boltpay_Helper_ConfigTrait::getBoltPluginVersion();
@@ -256,19 +263,15 @@ class Bolt_Boltpay_Model_UpdaterTest extends PHPUnit_Framework_TestCase
      *
      * @param mixed $installedVersion of the Bolt module
      * @param mixed $latestVersion of the Bolt module
-     * @param mixed $patchVersion available for current version
      * @param bool  $expectedResult of the method call
      */
     public function isUpdateAvailable_withVariousVersionCombination_determinesIfUpdateIsAvailable(
         $installedVersion,
         $latestVersion,
-        $patchVersion,
         $expectedResult
     ) {
         $originalVersion = Bolt_Boltpay_Helper_ConfigTrait::getBoltPluginVersion();
         Mage::getConfig()->setNode('modules/Bolt_Boltpay/version', $installedVersion);
-        $this->currentMock->expects($this->once())->method('getPatchVersion')->with($installedVersion)
-            ->willReturn($patchVersion);
         $this->currentMock->expects($this->any())->method('getLatestVersion')->willReturn($latestVersion);
         $this->assertEquals($expectedResult, $this->currentMock->isUpdateAvailable());
         Mage::getConfig()->setNode('modules/Bolt_Boltpay/version', $originalVersion);
@@ -285,73 +288,46 @@ class Bolt_Boltpay_Model_UpdaterTest extends PHPUnit_Framework_TestCase
             array(
                 'installedVersion' => false,
                 'latestVersion'    => false,
-                'patchVersion'     => null,
                 'expectedResult'   => false
             ),
             array(
                 'installedVersion' => '1.0.0',
                 'latestVersion'    => false,
-                'patchVersion'     => null,
                 'expectedResult'   => false
             ),
             array(
                 'installedVersion' => '1.0.0',
                 'latestVersion'    => null,
-                'patchVersion'     => null,
                 'expectedResult'   => false
             ),
             array(
                 'installedVersion' => '1.0.0',
                 'latestVersion'    => '1.0.0',
-                'patchVersion'     => null,
                 'expectedResult'   => false
             ),
             array(
                 'installedVersion' => '1.0.0',
                 'latestVersion'    => '1.0.1',
-                'patchVersion'     => null,
                 'expectedResult'   => true
             ),
             array(
                 'installedVersion' => '1.0.2',
                 'latestVersion'    => '1.0.1',
-                'patchVersion'     => null,
                 'expectedResult'   => false
             ),
             array(
                 'installedVersion' => '1.0.2',
                 'latestVersion'    => '1.2.2',
-                'patchVersion'     => null,
                 'expectedResult'   => true
             ),
             array(
                 'installedVersion' => '1.0.2',
                 'latestVersion'    => '2.0.2',
-                'patchVersion'     => null,
                 'expectedResult'   => true
             ),
             array(
                 'installedVersion' => '1.0.2',
                 'latestVersion'    => '1.0.21',
-                'patchVersion'     => null,
-                'expectedResult'   => true
-            ),
-            array(
-                'installedVersion' => '1.0.2',
-                'latestVersion'    => '1.0.2',
-                'patchVersion'     => '1.0.3',
-                'expectedResult'   => true
-            ),
-            array(
-                'installedVersion' => '1.0.2',
-                'latestVersion'    => '1.0.2',
-                'patchVersion'     => '1.0.4',
-                'expectedResult'   => true
-            ),
-            array(
-                'installedVersion' => '1.0.2',
-                'latestVersion'    => '1.0.2',
-                'patchVersion'     => '1.0.5',
                 'expectedResult'   => true
             ),
         );
@@ -411,7 +387,7 @@ class Bolt_Boltpay_Model_UpdaterTest extends PHPUnit_Framework_TestCase
      *
      * @param string $installedVersion of the Bolt module
      * @param string $latestVersion of the Bolt module
-     * @param string $patchVersion available for the current version
+     * @param bool   $hasPatch current version has patch update
      * @param string $expectedResult of the method call
      *
      * @throws Exception if test class name is not defined
@@ -419,15 +395,15 @@ class Bolt_Boltpay_Model_UpdaterTest extends PHPUnit_Framework_TestCase
     public function getUpdateSeverity_withVariousVersionCombinations_returnsUpdateSeverity(
         $installedVersion,
         $latestVersion,
-        $patchVersion,
+        $hasPatch,
         $expectedResult
     ) {
         $originalVersion = Bolt_Boltpay_Helper_ConfigTrait::getBoltPluginVersion();
         Mage::getConfig()->setNode('modules/Bolt_Boltpay/version', $installedVersion);
         /** @var Bolt_Boltpay_Model_Updater|MockObject $currentMock */
-        $currentMock = $this->getTestClassPrototype()->setMethods(array('getPatchVersion', 'getLatestVersion'))
+        $currentMock = $this->getTestClassPrototype()->setMethods(array('hasPatch', 'getLatestVersion'))
             ->getMock();
-        $currentMock->method('getPatchVersion')->willReturn($patchVersion);
+        $currentMock->method('hasPatch')->willReturn($hasPatch);
         $currentMock->method('getLatestVersion')->willReturn($latestVersion);
         $this->assertEquals($expectedResult, $currentMock->getUpdateSeverity());
         Mage::getConfig()->setNode('modules/Bolt_Boltpay/version', $originalVersion);
@@ -444,31 +420,31 @@ class Bolt_Boltpay_Model_UpdaterTest extends PHPUnit_Framework_TestCase
             array(
                 'installedVersion'             => '1.0.0',
                 'latestVersion'                => '1.0.1',
-                'patchVersion'                 => null,
+                'hasPatch'                     => false,
                 'expectedNotificationSeverity' => 'patch'
             ),
             array(
                 'installedVersion'             => '1.0.0',
                 'latestVersion'                => '1.1.1',
-                'patchVersion'                 => null,
+                'hasPatch'                     => false,
                 'expectedNotificationSeverity' => 'minor'
             ),
             array(
                 'installedVersion'             => '1.0.0',
                 'latestVersion'                => '2.1.1',
-                'patchVersion'                 => null,
+                'hasPatch'                     => false,
                 'expectedNotificationSeverity' => 'major'
             ),
             array(
                 'installedVersion'             => '1.0.0',
                 'latestVersion'                => '1.0.0',
-                'patchVersion'                 => null,
+                'hasPatch'                     => false,
                 'expectedNotificationSeverity' => null
             ),
             array(
                 'installedVersion'             => '1.0.0',
                 'latestVersion'                => '1.0.0',
-                'patchVersion'                 => '1.0.1',
+                'hasPatch'                     => true,
                 'expectedNotificationSeverity' => 'patch'
             ),
         );
@@ -484,7 +460,7 @@ class Bolt_Boltpay_Model_UpdaterTest extends PHPUnit_Framework_TestCase
      *
      * @param string $installedVersion of the Bolt module
      * @param string $latestVersion of the Bolt module
-     * @param string $patchVersion for current version
+     * @param bool   $hasPatch for current version
      * @param string $expectedNotificationTitle of the admin notification message
      * @param string $expectedNotificationSeverity of the admin notification message
      *
@@ -493,14 +469,14 @@ class Bolt_Boltpay_Model_UpdaterTest extends PHPUnit_Framework_TestCase
     public function addUpdateMessage_withVariousVersionCombinations_addsInboxNotification(
         $installedVersion,
         $latestVersion,
-        $patchVersion,
+        $hasPatch,
         $expectedNotificationTitle,
         $expectedNotificationSeverity
     ) {
         Mage::getConfig()->setNode('modules/Bolt_Boltpay/version', $installedVersion);
         /** @var Bolt_Boltpay_Model_Updater|MockObject $currentMock */
         $currentMock = $this->getTestClassPrototype()
-            ->setMethods(array('getPatchVersion', 'getLatestVersion', 'boltHelper'))
+            ->setMethods(array('hasPatch', 'getLatestVersion', 'boltHelper'))
             ->getMock();
         $currentMock->method('boltHelper')->willReturn($this->boltHelperMock);
         $this->boltHelperMock->expects($this->once())->method('isModuleEnabled')->with('Mage_AdminNotification')
@@ -512,11 +488,11 @@ class Bolt_Boltpay_Model_UpdaterTest extends PHPUnit_Framework_TestCase
             sprintf(
                 'Installed version: %s. Latest version: %s',
                 $installedVersion,
-                $patchVersion ?: $latestVersion
+                $latestVersion
             )
         );
         Bolt_Boltpay_TestHelper::stubSingleton('adminnotification/inbox', $inboxMock);
-        $currentMock->method('getPatchVersion')->willReturn($patchVersion);
+        $currentMock->method('hasPatch')->willReturn($hasPatch);
         $currentMock->method('getLatestVersion')->willReturn($latestVersion);
         $currentMock->addUpdateMessage();
     }
@@ -532,28 +508,28 @@ class Bolt_Boltpay_Model_UpdaterTest extends PHPUnit_Framework_TestCase
             array(
                 'installedVersion'             => '1.0.0',
                 'latestVersion'                => '1.0.1',
-                'patchVersion'                 => null,
+                'hasPatch'                     => false,
                 'expectedNotificationTitle'    => 'Bolt version 1.0.1 is available to address a CRITICAL issue.',
                 'expectedNotificationSeverity' => Mage_AdminNotification_Model_Inbox::SEVERITY_CRITICAL,
             ),
             array(
                 'installedVersion'             => '1.0.0',
-                'latestVersion'                => '1.0.0',
-                'patchVersion'                 => '1.0.1',
+                'latestVersion'                => '1.0.1',
+                'hasPatch'                     => true,
                 'expectedNotificationTitle'    => 'Bolt version 1.0.1 is available to address a CRITICAL issue.',
                 'expectedNotificationSeverity' => Mage_AdminNotification_Model_Inbox::SEVERITY_CRITICAL,
             ),
             array(
                 'installedVersion'             => '1.0.0',
                 'latestVersion'                => '1.1.1',
-                'patchVersion'                 => null,
+                'hasPatch'                     => false,
                 'expectedNotificationTitle'    => 'Bolt version 1.1.1 is now available!',
                 'expectedNotificationSeverity' => Mage_AdminNotification_Model_Inbox::SEVERITY_NOTICE,
             ),
             array(
                 'installedVersion'             => '1.0.0',
                 'latestVersion'                => '2.1.1',
-                'patchVersion'                 => null,
+                'hasPatch'                     => false,
                 'expectedNotificationTitle'    => 'Bolt version 2.1.1 is now available!',
                 'expectedNotificationSeverity' => Mage_AdminNotification_Model_Inbox::SEVERITY_MAJOR,
             ),
@@ -623,7 +599,7 @@ class Bolt_Boltpay_Model_UpdaterTest extends PHPUnit_Framework_TestCase
     public function addUpdateMessage_withMinorUpdateAndNonCriticalUpdateNotificationsDisabled_doesNotAddMessage()
     {
         $currentMock = $this->getTestClassPrototype()
-            ->setMethods(array('getUpdateSeverity', 'boltHelper', 'getLatestVersion', 'getPatchVersion'))->getMock();
+            ->setMethods(array('getUpdateSeverity', 'boltHelper', 'getLatestVersion', 'hasPatch'))->getMock();
         $this->boltHelperMock->expects($this->once())->method('isModuleEnabled')->with('Mage_AdminNotification')
             ->willReturn(true);
         $this->boltHelperMock->expects($this->once())->method('getShouldDisableNotificationsForNonCriticalUpdates')
@@ -638,54 +614,56 @@ class Bolt_Boltpay_Model_UpdaterTest extends PHPUnit_Framework_TestCase
 
     /**
      * @test
-     * that getPatchVersion returns correct patched version for known releases
+     * that hasPatch returns correct patched version for known releases
      *
-     * @covers ::getPatchVersion
+     * @covers ::hasPatch
      *
-     * @dataProvider getPatchVersion_withKnownVersionsThatArePatchedProvider
+     * @dataProvider hasPatch_withKnownVersionsThatArePatchedProvider
      *
      * @param string $version for which to retrieve patched version
-     * @param string $patchedVersion expected output of the method call
+     * @param string $hasPatch expected output of the method call
      *
      * @throws GuzzleHttp\Exception\GuzzleException if unable to retrieve Github rate limit
      */
-    public function getPatchVersion_withKnownVersionsThatArePatched_returnsPatchedVersion($version, $patchedVersion)
+    public function hasPatch_withKnownVersionsThatArePatched_returnsPatchedVersion($version, $hasPatch)
     {
-        $githubLimit = json_decode(Mage::helper('boltpay')->getApiClient()->get('https://api.github.com/rate_limit')->getBody());
+        $githubLimit = json_decode(
+            Mage::helper('boltpay')->getApiClient()->get('https://api.github.com/rate_limit')->getBody()
+        );
         if ($githubLimit->rate->remaining < 1) {
             $this->markTestSkipped('Github API limit exceeded');
         }
 
-        $this->assertEquals($patchedVersion, Mage::getModel('boltpay/updater')->getPatchVersion($version));
+        $this->assertEquals($hasPatch, Mage::getModel('boltpay/updater')->hasPatch($version));
     }
 
     /**
-     * Data provider for {@see getPatchVersion_withKnownVersionsThatArePatched_returnsPatchedVersion}
+     * Data provider for {@see hasPatch_withKnownVersionsThatArePatched_returnsPatchedVersion}
      *
      * @return array containing installed and corresponding patched version
      */
-    public function getPatchVersion_withKnownVersionsThatArePatchedProvider()
+    public function hasPatch_withKnownVersionsThatArePatchedProvider()
     {
         return array(
-            array('version' => '2.4.1', 'patchedVersion' => null),
-            array('version' => '2.4.0', 'patchedVersion' => '2.4.1'),
-            array('version' => '2.0.0', 'patchedVersion' => '2.0.2'),
-            array('version' => '1.4.0', 'patchedVersion' => '1.4.1'),
-            array('version' => '1.3.2', 'patchedVersion' => '1.3.8'),
-            array('version' => '1.0.0', 'patchedVersion' => '1.0.12'),
-            array('version' => '1.0.10', 'patchedVersion' => '1.0.12'),
+            array('version' => '2.4.1', 'hasPatch' => false),
+            array('version' => '2.4.0', 'hasPatch' => true),
+            array('version' => '2.0.0', 'hasPatch' => true),
+            array('version' => '1.4.0', 'hasPatch' => true),
+            array('version' => '1.3.2', 'hasPatch' => true),
+            array('version' => '1.0.0', 'hasPatch' => true),
+            array('version' => '1.0.10', 'hasPatch' => true),
         );
     }
 
     /**
      * @test
-     * that getPatchVersion logs exception and returns null if an exception occurs during Github tags request
+     * that hasPatch logs exception and returns null if an exception occurs during Github tags request
      *
-     * @covers ::getPatchVersion
+     * @covers ::hasPatch
      *
      * @throws Exception if test class name is not defined
      */
-    public function getPatchVersion_whenExceptionIsThrownWhenRetrievingTags_logsExceptionAndReturnsNull()
+    public function hasPatch_whenExceptionIsThrownWhenRetrievingTags_logsExceptionAndReturnsNull()
     {
         /** @var Bolt_Boltpay_Model_Updater|MockObject $currentMock */
         $currentMock = $this->getTestClassPrototype()->setMethods(array('boltHelper'))->getMock();
@@ -693,19 +671,20 @@ class Bolt_Boltpay_Model_UpdaterTest extends PHPUnit_Framework_TestCase
         $requestException = new RequestException('', null);
         $this->apiClientMock->expects($this->once())->method('get')->willThrowException($requestException);
         $this->boltHelperMock->expects($this->once())->method('notifyException')->with($requestException);
-        $currentMock->getPatchVersion('1.2.3');
+        $currentMock->hasPatch('1.2.3');
     }
 
     /**
      * @test
-     * that getPatchVersion successfully retrieves patch from Github tag that is not on the first page
+     * that hasPatch successfully retrieves patch from Github tag that is not on the first page
      *
-     * @covers ::getPatchVersion
+     * @covers ::hasPatch
      *
      * @throws Exception if test class name is not defined
      */
-    public function getPatchVersion_withMultiplePages_returnsPatchVersion()
+    public function hasPatch_withMultiplePages_returnsPatchVersion()
     {
+        Mage::unregister('_singleton/adminhtml/session');
         /** @var Bolt_Boltpay_Model_Updater|MockObject $currentMock */
         $currentMock = $this->getTestClassPrototype()->setMethods(array('boltHelper'))->getMock();
         $currentMock->method('boltHelper')->willReturn($this->boltHelperMock);
@@ -713,18 +692,22 @@ class Bolt_Boltpay_Model_UpdaterTest extends PHPUnit_Framework_TestCase
         $nextPageUrl = 'https://api.github.com/repositories/125256996/tags?page=2&per_page=100';
         $this->apiClientMock->expects($this->exactly(2))->method('get')
             ->withConsecutive(
-                array(Bolt_Boltpay_Model_Updater::GITHUB_API_BOLT_REPOSITORY_URL . 'tags' . '?' . http_build_query(array('per_page' => 100))),
+                array(
+                    Bolt_Boltpay_Model_Updater::GITHUB_API_BOLT_REPOSITORY_URL . 'tags' . '?' . http_build_query(
+                        array('per_page' => 100)
+                    )
+                ),
                 array($nextPageUrl)
             )
             ->willReturn($tagResponseMock);
         $tagResponseMock->expects($this->exactly(2))->method('getBody')->willReturnOnConsecutiveCalls(
             '[{"name": "1.3.8"}]',
-            '[{"name": "1.2.4"}]'
+            '[{"name": "0.1.2"}]'
         );
         $tagResponseMock->expects($this->once())->method('getHeaderLine')->with('link')->willReturn(
-            '<https://api.github.com/repositories/125256996/tags?page=1&per_page=1>; rel="prev", <'. $nextPageUrl .'>; rel="next", <https://api.github.com/repositories/125256996/tags?page=54&per_page=1>; rel="last", <https://api.github.com/repositories/125256996/tags?page=1&per_page=1>; rel="first"'
+            '<https://api.github.com/repositories/125256996/tags?page=1&per_page=1>; rel="prev", <' . $nextPageUrl . '>; rel="next", <https://api.github.com/repositories/125256996/tags?page=54&per_page=1>; rel="last", <https://api.github.com/repositories/125256996/tags?page=1&per_page=1>; rel="first"'
         );
-        $this->assertEquals('1.2.4', $currentMock->getPatchVersion('1.2.3'));
+        $this->assertTrue($currentMock->hasPatch('0.1.1'));
     }
 
     /**
