@@ -122,7 +122,7 @@ class Bolt_Boltpay_Model_Updater extends Mage_Core_Model_Abstract
     public function isUpdateAvailable()
     {
         $currentVersion = Bolt_Boltpay_Helper_ConfigTrait::getBoltPluginVersion();
-        return $this->getPatchVersion($currentVersion) || version_compare($currentVersion, $this->getLatestVersion(), '<');
+        return version_compare($currentVersion, $this->getLatestVersion(), '<');
     }
 
     /**
@@ -151,11 +151,12 @@ class Bolt_Boltpay_Model_Updater extends Mage_Core_Model_Abstract
      */
     public function getUpdateSeverity()
     {
-        if ($this->getPatchVersion(Bolt_Boltpay_Helper_ConfigTrait::getBoltPluginVersion())) {
+        $currentVersion = Bolt_Boltpay_Helper_ConfigTrait::getBoltPluginVersion();
+        if ($this->hasPatch($currentVersion)) {
             return 'patch';
         }
 
-        $installed = explode('.', Bolt_Boltpay_Helper_ConfigTrait::getBoltPluginVersion());
+        $installed = explode('.', $currentVersion);
         $latest = explode('.', $this->getLatestVersion());
         if ($latest[0] - $installed[0] > 0) {
             return 'major';
@@ -176,7 +177,6 @@ class Bolt_Boltpay_Model_Updater extends Mage_Core_Model_Abstract
         }
 
         $latestVersion = $this->getLatestVersion();
-        $patchVersion = $this->getPatchVersion(Bolt_Boltpay_Helper_ConfigTrait::getBoltPluginVersion());
         switch ($this->getUpdateSeverity()) {
             default:
             case 'major':
@@ -193,14 +193,14 @@ class Bolt_Boltpay_Model_Updater extends Mage_Core_Model_Abstract
                 break;
             case 'patch':
                 $notificationSeverity = Mage_AdminNotification_Model_Inbox::SEVERITY_CRITICAL;
-                $title = $this->boltHelper()->__('Bolt version %s is available to address a CRITICAL issue.', $patchVersion ?: $latestVersion);
+                $title = $this->boltHelper()->__('Bolt version %s is available to address a CRITICAL issue.', $latestVersion);
                 break;
         }
 
         $description = $this->boltHelper()->__(
             'Installed version: %s. Latest version: %s',
             Bolt_Boltpay_Helper_ConfigTrait::getBoltPluginVersion(),
-            $patchVersion ?: $latestVersion
+            $latestVersion
         );
         /** @var Mage_AdminNotification_Model_Resource_Inbox_Collection $collection */
         $collection = Mage::getModel('adminnotification/inbox')->getCollection()
@@ -219,11 +219,11 @@ class Bolt_Boltpay_Model_Updater extends Mage_Core_Model_Abstract
      *
      * @param string $version for which to retrieve patch version
      *
-     * @return string|null patch version if found, otherwise null
+     * @return bool true if patch is found found, otherwise false
      */
-    public function getPatchVersion($version)
+    public function hasPatch($version)
     {
-        if (!$this->_getSession()->hasData('bolt_patch_version_for_v' . $version)) {
+        if (!$this->_getSession()->hasData('bolt_has_patch_for_version_' . $version)) {
             $currentVersion = explode('.', $version);
             $tagsUrl = self::GITHUB_API_BOLT_REPOSITORY_URL . 'tags' . '?' . http_build_query(array('per_page' => 100));
             do {
@@ -240,8 +240,8 @@ class Bolt_Boltpay_Model_Updater extends Mage_Core_Model_Abstract
                     if ($currentVersion[0] == $newVersion[0]
                         && $currentVersion[1] == $newVersion[1]
                         && (int)$currentVersion[2] < (int)$newVersion[2]) {
-                        $this->_getSession()->setData('bolt_patch_version_for_v' . $version, $tag->name);
-                        return $tag->name;
+                        $this->_getSession()->setData('bolt_has_patch_for_version_' . $version, true);
+                        return true;
                     }
                 }
 
@@ -251,9 +251,10 @@ class Bolt_Boltpay_Model_Updater extends Mage_Core_Model_Abstract
                 $link = $tagResponse->getHeaderLine('link');
                 $tagsUrl = preg_match("/.*\<(?'url'.*?)\>; rel=\"next\"/", $link, $matches) ? $matches['url'] : null;
             } while ($tagsUrl);
+            $this->_getSession()->setData('bolt_has_patch_for_version_' . $version, false);
         }
 
-        return $this->_getSession()->getData('bolt_patch_version_for_v' . $version);
+        return $this->_getSession()->getData('bolt_has_patch_for_version_' . $version);
     }
 
     /**
@@ -289,7 +290,7 @@ class Bolt_Boltpay_Model_Updater extends Mage_Core_Model_Abstract
     }
 
     /**
-     * Ckeks whether Magento Connect Rest class is available
+     * Checks whether Magento Connect Rest class is available
      *
      * @return bool true if available, otherwise false
      */
