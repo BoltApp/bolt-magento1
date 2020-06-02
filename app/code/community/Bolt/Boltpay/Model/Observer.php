@@ -432,4 +432,18 @@ class Bolt_Boltpay_Model_Observer
 
         return false;
     }
+
+    /**
+     * Adds admin notification if an update is available
+     *
+     * event: admin_session_user_login_success
+     */
+    public function addAdminUpdateNotification()
+    {
+        /** @var Bolt_Boltpay_Model_Updater $updater */
+        $updater = Mage::getSingleton('boltpay/updater');
+        if ($updater->isUpdateAvailable()) {
+            $updater->addUpdateMessage();
+        }
+    }
 }
