@@ -200,6 +200,14 @@
                   <show_in_website>1</show_in_website>
                   <show_in_store>1</show_in_store>
                 </product_page_checkout_selector>
+                <disable_notifications_for_non_critical_updates translate="label">
+                  <label>Disable Notifications for Non-Critical Updates</label>
+                  <config_path>payment/boltpay/disable_notifications_for_non_critical_updates</config_path>
+                  <frontend_type>select</frontend_type>
+                  <source_model>adminhtml/system_config_source_yesno</source_model>
+                  <sort_order>25</sort_order>
+                  <show_in_default>1</show_in_default>
+                </disable_notifications_for_non_critical_updates>
                 <additional_css translate="label comment">
                   <label>Additional CSS</label>
                   <config_path>payment/boltpay/additional_css</config_path>

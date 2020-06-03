@@ -43,7 +43,7 @@ class Bolt_Boltpay_Helper_ConfigTraitTest extends PHPUnit_Framework_TestCase
             'payment/boltpay/allowed_button_by_custom_routes',
             "testroute, test-route, \r, \n, \r\n, 0, a"
         );
-        $result = ['testroute', 'test-route', '0', 'a'];
+        $result = array('testroute', 'test-route', '0', 'a');
         $this->assertEquals($result, $this->currentMock->getAllowedButtonByCustomRoutes());
         TestHelper::restoreOriginals();
     }
@@ -57,7 +57,7 @@ class Bolt_Boltpay_Helper_ConfigTraitTest extends PHPUnit_Framework_TestCase
     public function getAllowedButtonByCustomRoutes_doesNotSplitBySpace_forValuesWithoutComma()
     {
         TestHelper::stubConfigValue('payment/boltpay/allowed_button_by_custom_routes', 'testroute test-route');
-        $result = ['testroute test-route'];
+        $result = array('testroute test-route');
         $this->assertEquals($result, $this->currentMock->getAllowedButtonByCustomRoutes());
         TestHelper::restoreOriginals();
     }
@@ -116,7 +116,7 @@ class Bolt_Boltpay_Helper_ConfigTraitTest extends PHPUnit_Framework_TestCase
     {
         $datadogConfig = json_encode(array('datadogKeySeverity' => '  error , info  , warning   '));
         TestHelper::stubConfigValue('payment/boltpay/extra_options', $datadogConfig);
-        $this->assertEquals(['error', 'info', 'warning'], $this->currentMock->getSeverityConfig());
+        $this->assertEquals(array('error', 'info', 'warning'), $this->currentMock->getSeverityConfig());
         TestHelper::restoreOriginals();
     }
 
@@ -295,10 +295,14 @@ class Bolt_Boltpay_Helper_ConfigTraitTest extends PHPUnit_Framework_TestCase
         TestHelper::stubConfigValue('payment/boltpay/publishable_key_onepage', 'onepage key');
         TestHelper::stubConfigValue('payment/boltpay/publishable_key_admin', 'backoffice key');
         TestHelper::stubConfigValue('payment/boltpay/add_button_everywhere', 'true');
-        TestHelper::stubConfigValue('payment/boltpay/extra_options', json_encode(array(
-            'boltPrimaryColor' => '#000000',
-            'datadogKey' => 'datadog key'
-        )));
+        TestHelper::stubConfigValue(
+            'payment/boltpay/extra_options', json_encode(
+                array(
+                'boltPrimaryColor' => '#000000',
+                'datadogKey' => 'datadog key'
+                )
+            )
+        );
         TestHelper::stubConfigValue('payment/boltpay/button_classes', 'btnClass');
         TestHelper::stubConfigValue('payment/boltpay/enable_product_page_checkout', 'true');
         TestHelper::stubConfigValue('payment/boltpay/product_page_checkout_selector', '.ppcBtn');
@@ -354,7 +358,8 @@ class Bolt_Boltpay_Helper_ConfigTraitTest extends PHPUnit_Framework_TestCase
      *
      * @return array containing $isBoltActiveLocally, $isBoltEnabledServerSide, $expectedValue
      */
-    public function isBoltPayActiveProvider() {
+    public function isBoltPayActiveProvider()
+    {
         return array(
             array(
                 'isBoltActiveLocally' => true,
@@ -425,8 +430,51 @@ class Bolt_Boltpay_Helper_ConfigTraitTest extends PHPUnit_Framework_TestCase
         TestHelper::stubConfigValue('sales/minimum_order/amount', 123);
         $this->assertRegExp(
             '/\$?123(\.|,)00(.+\$)?/', # Supports American and European locale
-            $this->currentMock->getMinOrderAmountInStoreCurrency())
-        ;
+            $this->currentMock->getMinOrderAmountInStoreCurrency()
+        );
+    }
+
+    /**
+     * @test
+     * that getShouldDisableNotificationsForNonCriticalUpdates returns config flag for
+     * payment/boltpay/disable_notifications_for_non_critical_updates path
+     *
+     * @covers Bolt_Boltpay_Helper_ConfigTrait::getShouldDisableNotificationsForNonCriticalUpdates
+     * @dataProvider getShouldDisableNotificationsForNonCriticalUpdates_withVariousConfigsProvider
+     *
+     * @param mixed $config value stored in the database
+     * @param bool $expectedResult of the method call
+     *
+     * @throws Mage_Core_Exception if unable to restore original config value
+     * @throws Mage_Core_Model_Store_Exception if unable to stub config value
+     * @throws ReflectionException if unable to restore original config value
+     */
+    public function getShouldDisableNotificationsForNonCriticalUpdates_withVariousConfigs_returnsConfigFlag(
+        $config,
+        $expectedResult
+    ) {
+        TestHelper::stubConfigValue('payment/boltpay/disable_notifications_for_non_critical_updates', $config);
+        $this->assertEquals($expectedResult, $this->currentMock->getShouldDisableNotificationsForNonCriticalUpdates());
+        TestHelper::restoreOriginals();
+    }
+
+    /**
+     * Data provider for {@see getShouldDisableNotificationsForNonCriticalUpdates_withVariousConfigs_returnsConfigFlag}
+     *
+     * @return mixed[][] containing configuration value and expected result
+     */
+    public function getShouldDisableNotificationsForNonCriticalUpdates_withVariousConfigsProvider()
+    {
+        return array(
+            'Empty value should return false'   => array('config' => '', 'expectedResult' => false),
+            'Zero should return false'          => array('config' => '0', 'expectedResult' => false),
+            'Null should return false'          => array('config' => null, 'expectedResult' => false),
+            'Boolean false should return false' => array('config' => 'false', 'expectedResult' => false),
+            'String false should return false'  => array('config' => false, 'expectedResult' => false),
+            'String true should return true'    => array('config' => 'true', 'expectedResult' => true),
+            'String one should return true'     => array('config' => '1', 'expectedResult' => true),
+            'Integer one should return true'    => array('config' => 1, 'expectedResult' => true),
+        );
     }
 
     /**
