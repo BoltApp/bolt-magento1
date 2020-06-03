@@ -1,0 +1,199 @@
+<?php
+/**
+ * Bolt magento plugin
+ *
+ * NOTICE OF LICENSE
+ *
+ * This source file is subject to the Open Software License (OSL 3.0)
+ * that is bundled with this package in the file LICENSE.txt.
+ * It is also available through the world-wide-web at this URL:
+ * http://opensource.org/licenses/osl-3.0.php
+ *
+ * @category   Bolt
+ * @package    Bolt_Boltpay
+ * @copyright  Copyright (c) 2019 Bolt Financial, Inc (https://www.bolt.com)
+ * @license    http://opensource.org/licenses/osl-3.0.php  Open Software License (OSL 3.0)
+ */
+
+/* @var Bolt_Boltpay_Block_Adminhtml_UpdatePopup $this */
+$downloaderUrl = $this->getUpdater()->getConnectManagerURL();
+$updateSeverity = $this->getUpdater()->getUpdateSeverity();
+$latestVersion = $this->getUpdater()->getLatestVersion();
+$hasPatch = $this->getUpdater()->hasPatch(Bolt_Boltpay_Helper_ConfigTrait::getBoltPluginVersion());
+$versionsAvailableInMarketplace = array_column(
+    $this->getUpdater()->getBoltMarketplaceReleases(),
+    Bolt_Boltpay_Model_Updater::MAGENTO_CONNECT_PACKAGE_XML_VERSION_FIELD
+);
+$releaseDownloadLink = $this->getReleaseDownloadLink($latestVersion);
+?>
+<script type="text/template" id="bolt_update_popup_template">
+    <h3>
+        <?php echo $this->__(
+            'Before upgrading Bolt plugin on production, this process and code should be tested in a staging environment'
+        ); ?>
+    </h3>
+    <h3>
+        <?php echo $this->__(
+            'You can find our guide to production readiness testing <a href="%s">here</a>',
+            'https://support.bolt.com/hc/en-us/articles/360046487254-Production-Readiness'
+        ); ?>
+    </h3>
+    <h3>
+        <?php echo $this->__(
+            'As a standard practice for all Magento plugin additions or upgrades, it is also advised that you <a href="%s">back up your store</a>',
+            'https://docs.magento.com/m1/ce/user_guide/system-operations/server-backup-rollback.html'
+        ); ?>
+    </h3>
+    <ul class="options-list">
+        <?php if (in_array($latestVersion, $versionsAvailableInMarketplace)): ?>
+            <li>
+                <h3>
+                    <?php echo $this->__('Update using Magento Connect Manager'); ?>
+                    <a href="https://docs.magento.com/m1/ce/user_guide/magento/magento-connect-extension-install.html"
+                       class="read-more">
+                        <?php echo $this->__('(read more)'); ?>
+                    </a>
+                </h3>
+                <ol>
+                    <li>
+                        <?php echo $downloaderUrl
+                            ? $this->__('Open <a href="%s" target="_blank">Magento Connect Manager</a>', $downloaderUrl)
+                            : $this->__('Open Magento Connect Manager');
+                        ?>
+                    </li>
+                    <li><?php echo $this->__('Enter your administrator credentials and login'); ?></li>
+                    <li>
+                        <?php echo $this->__(
+                            'Find package named "%s"',
+                            Bolt_Boltpay_Model_Updater::MAGENTO_CONNECT_BOLT_PACKAGE
+                        ); ?>
+                    </li>
+                    <li>
+                        <?php echo $this->__(
+                            'From actions dropdown select "Upgrade to %s"',
+                            $this->getUpdater()->getLatestVersion()
+                        ); ?>
+                    </li>
+                    <li><?php echo $this->__('Click "Commit Changes"'); ?></li>
+                </ol>
+            </li>
+        <?php endif; ?>
+        <?php if ($releaseDownloadLink): ?>
+            <li>
+                <h3>
+                    <?php echo $this->__('Update manually'); ?>
+                    <a href="https://docs.bolt.com/docs/magento-1-integration#section-2-setup-bolt-extension"
+                       class="read-more">
+                        <?php echo $this->__('(read more)'); ?>
+                    </a>
+                </h3>
+                <ol>
+                    <li>
+                        <?php echo $this->__(
+                            'Download updated version <a href="%s" target="_blank">release archive</a>',
+                            $releaseDownloadLink
+                        ); ?>
+                    </li>
+                    <li>
+                        <?php echo $this->__(
+                            'Unpack downloaded archive to the top level of your Magento store installation'
+                        ); ?>
+                    </li>
+                    <li>
+                        <?php echo $this->__(
+                            '<a href="%s">Flush Magento cache</a>',
+                            $this->getUrl('*/cache/flushSystem')
+                        ); ?>
+                    </li>
+                </ol>
+            </li>
+        <?php endif; ?>
+    </ul>
+</script>
+<script>
+    (function () {
+        function showUpdatePopup() {
+            BoltPopup.setTitle('<?php echo $this->__(
+                $hasPatch ? 'Bolt version %s is available to address a CRITICAL issue.' : 'Bolt version %s is now available!',
+                $latestVersion
+            ); ?>');
+            BoltPopup.setMessage(document.getElementById('bolt_update_popup_template').innerHTML);
+            BoltPopup.show();
+        }
+
+        if (typeof BoltPopup == 'undefined') {
+            document.addEventListener('boltpopup:initialized', showUpdatePopup);
+        } else {
+            showUpdatePopup();
+        }
+    })();
+</script>
+<style type="text/css">
+    #bolt-popup .popup-wrapper .popup-title {
+        font-weight: bold;
+        font-size: 18px;
+        padding-bottom: 15px;
+        margin-bottom: 15px;
+        border-bottom: 2px solid #eaeaea;
+    }
+
+    #bolt-popup .popup-wrapper .popup-title:before {
+    <?php if($hasPatch): ?>
+        content: ' ';
+        display: inline-block;
+        width: 20px;
+        height: 20px;
+        font-weight: bold;
+        font-size: 18px;
+        background: #fff url(<?php echo $this->getSeverityIconUrl() ?>) 0px 0px no-repeat;
+        background-size: 20px;
+        margin-bottom: -3px;
+        padding: 0px 5px;
+    <?php else: ?>
+        width: 15px;
+        height: 15px;
+        content: '\2713';
+        color: #fff;
+        display: inline-block;
+        background-color: #129c12;
+        border: 1px solid #6e9a23;
+        border-radius: 50%;
+        margin-right: 5px;
+        padding: 1px;
+    <?php endif; ?>
+    }
+
+    #bolt-popup .popup-wrapper .popup-content {
+        text-align: left;
+    }
+
+    #bolt-popup .popup-wrapper .popup-content a {
+        color: #2a8dfa;
+    }
+
+    #bolt-popup .popup-wrapper .popup-content .read-more {
+        font-size: 12px;
+    }
+
+    #bolt-popup .popup-wrapper .popup-content .options-list > li {
+        max-width: 44%;
+        padding: 10px;
+        border: 2px solid #eaeaea;
+        display: inline-block;
+        float: left;
+    }
+
+    #bolt-popup .popup-wrapper .popup-content .options-list > li:first-child {
+        margin-right: 10px;
+    }
+
+    #bolt-popup .popup-wrapper .popup-content .options-list > li > ol {
+        padding-left: 15px;
+        list-style: decimal;
+    }
+
+    #bolt-popup .popup-wrapper .popup-action {
+        clear: both;
+        text-align: center;
+    }
+</style>

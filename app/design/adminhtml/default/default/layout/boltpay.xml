@@ -48,6 +48,7 @@
                 </action>
             </block>
             <!-- ******************************************************************************** -->
+            <block type="boltpay/adminhtml_updatePopup" name="bolt_update_popup"/>
         </reference>
         <reference name="notifications">
             <block type="boltpay/adminhtml_notification" name="bolt_notifications" as="bolt_notifications"

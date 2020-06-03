@@ -37,6 +37,9 @@
         init: function() {
             this.popupElm = document.getElementById(this.popupElmId);
             this.initPopupEvents()
+            var event = document.createEvent('Event');
+            event.initEvent('boltpopup:initialized', true, true);
+            document.dispatchEvent(event)
         },
         initPopupEvents: function() {
             var self = this;
