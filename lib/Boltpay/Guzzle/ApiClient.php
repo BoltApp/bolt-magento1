@@ -25,6 +25,9 @@ class Boltpay_Guzzle_ApiClient
     const REQUEST_TYPE_GET = 'GET';
     const REQUEST_TYPE_POST = 'POST';
 
+    /** @var string Request type constant for HEAD request */
+    const REQUEST_TYPE_HEAD = 'HEAD';
+
     /**
      * @param $additional
      * @return \GuzzleHttp\Client
@@ -63,9 +66,20 @@ class Boltpay_Guzzle_ApiClient
         $client = $this->getApiClient($additional);
         return $client->request(self::REQUEST_TYPE_GET, $url);
     }
+
+    /**
+     * Makes HEAD request to provided url with additional headers if provided
+     *
+     * @param string $url to be requested
+     * @param array $additional headers to be added to request
+     *
+     * @return mixed|\Psr\Http\Message\ResponseInterface request response
+     *
+     * @throws \GuzzleHttp\Exception\GuzzleException if request is unable to be completed
+     */
+    public function head($url, $additional = array())
+    {
+        $client = $this->getApiClient($additional);
+        return $client->request(self::REQUEST_TYPE_HEAD, $url);
+    }
 }
-
-
-
-
-
