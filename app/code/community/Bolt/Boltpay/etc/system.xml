@@ -200,7 +200,7 @@
                   <show_in_website>1</show_in_website>
                   <show_in_store>1</show_in_store>
                 </product_page_checkout_selector>
-                <disable_notifications_for_non_critical_updates translate="label comment">
+                <disable_notifications_for_non_critical_updates translate="label">
                   <label>Disable Notifications for Non-Critical Updates</label>
                   <config_path>payment/boltpay/disable_notifications_for_non_critical_updates</config_path>
                   <frontend_type>select</frontend_type>
