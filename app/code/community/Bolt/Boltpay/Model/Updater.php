@@ -307,11 +307,24 @@ class Bolt_Boltpay_Model_Updater extends Mage_Core_Model_Abstract
      */
     public function getBoltMarketplaceReleases()
     {
+        $releases = null;
         if ($this->isMagentoConnectRestClientAvailable()) {
             $rest = new Mage_Connect_Rest('https');
             $rest->setChannel(self::MAGENTO_CONNECT_CHANNEL);
-            $releases = $rest->getReleases(self::MAGENTO_CONNECT_BOLT_PACKAGE);
-        } else {
+            try {
+                $releases = $rest->getReleases(self::MAGENTO_CONNECT_BOLT_PACKAGE); # returns array|false
+            } catch (Exception $exception) {
+                /*
+                  If an exception occurs, like the known Magento bug
+                  "Invalid response line returned from server: HTTP/2 200"
+                  Then we will fallback to using our own custom Guzzle client
+                  and manual parsing logic below
+                  see: https://magento.stackexchange.com/questions/249737/magento-2-invalid-response-line-returned-from-server-http-2-200
+                */
+            }
+        }
+
+        if (is_null($releases)) {
             try {
                 /** @var string $releasesXML */
                 /**

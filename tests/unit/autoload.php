@@ -27,7 +27,7 @@ spl_autoload_register(
         $classPathParts = preg_split("/[_\\\\]/", $name);
         $classFile = implode(DS, $classPathParts) . '.php';
 
-        $testClassPath = implode(DS, array(BP, 'tests', 'unit', 'testsuite')). DS . $classFile;
+        $testClassPath = implode(DS, array(BP, 'tests', 'unit', 'testsuite', $classFile));
         if (file_exists($testClassPath)) {
             require $testClassPath;
             return;

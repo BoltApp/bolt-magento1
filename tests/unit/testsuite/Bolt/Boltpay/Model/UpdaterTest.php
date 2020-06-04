@@ -1050,6 +1050,37 @@ class Bolt_Boltpay_Model_UpdaterTest extends PHPUnit_Framework_TestCase
 
     /**
      * @test
+     * that getBoltMarketplaceReleases when using the Mage_Connect_Rest class which throws an exception,
+     * will fallback to the manual retrieval and parsing code
+     *
+     * @covers ::getBoltMarketplaceReleases
+     *
+     * @throws Exception if test class name is not defined
+     */
+    public function getBoltMarketplaceReleases_whenConnectClassesThrowsException_fallsBackToManualLogic()
+    {
+        Mage_Connect_Rest::$isInStubMode = true;
+
+        /** @var MockObject|Bolt_Boltpay_Model_Updater $currentMock */
+        $currentMock = $this->getTestClassPrototype()
+            ->setMethods(array('isMagentoConnectRestClientAvailable', 'boltHelper'))
+            ->getMock();
+        $currentMock->expects($this->once())->method('isMagentoConnectRestClientAvailable')
+            ->willReturn(true);
+        $currentMock->method('boltHelper')->willReturn($this->boltHelperMock);
+        $exception = new RequestException('mock exception', null);
+        $this->boltHelperMock->expects($this->once())->method('notifyException')->with($exception);
+
+        $this->apiClientMock->expects($this->once())->method('get')  # this indicates the fallback routine is used
+            ->willThrowException($exception);
+
+        Bolt_Boltpay_TestHelper::callNonPublicFunction($currentMock, 'getBoltMarketplaceReleases');
+
+        Mage_Connect_Rest::$isInStubMode = false;
+    }
+
+    /**
+     * @test
      * that getBoltMarketplaceReleases returns false and notifies exception if one occurs
      * when retrieving releases from Magento Connect
      *
@@ -1065,7 +1096,7 @@ class Bolt_Boltpay_Model_UpdaterTest extends PHPUnit_Framework_TestCase
         $currentMock->expects($this->once())->method('isMagentoConnectRestClientAvailable')
             ->willReturn(false);
         $currentMock->method('boltHelper')->willReturn($this->boltHelperMock);
-        $exception = new RequestException('', null);
+        $exception = new RequestException('mock exception', null);
         $this->boltHelperMock->expects($this->once())->method('notifyException')->with($exception);
         $this->apiClientMock->expects($this->once())->method('get')
             ->willThrowException($exception);
@@ -1092,5 +1123,77 @@ class Bolt_Boltpay_Model_UpdaterTest extends PHPUnit_Framework_TestCase
                 '_getSession'
             )
         );
+    }
+}
+
+
+/**
+ * Class Mage_Connect_Rest
+ *
+ * Mock class for the native Mage_Connect_Rest
+ */
+class Mage_Connect_Rest {
+
+    /**
+     * @var bool If true, then global mocking/stubbing behavior takes over.  This is similar
+     *           to the setUpBeforeClass approach.
+     */
+    public static $isInStubMode = false;
+
+    /**
+     * @var \BoltTest\Mage_Connect_Rest  Proxy instance used by this class based from lib/Mage/Connect/Rest.php
+     */
+    private $proxy;
+
+    /**
+     * Uses true Magento library class to create a proxy for stubbing
+     *
+     * @param string $protocol  The protocol used to make the network connection
+     */
+    public function __construct($protocol="http")
+    {
+        if (!class_exists('Mage_Connect_RestProxy')) {
+            $proxyClassFileName = implode(DS,array(BP, 'lib','Mage','Connect','Rest.php'));
+            $proxyClassSource = file_get_contents($proxyClassFileName);
+
+            eval(
+                str_replace(
+                    array('<?php', 'Mage_Connect_Rest'),
+                    array('', 'Mage_Connect_RestProxy'),
+                    $proxyClassSource
+                )
+            );
+        }
+
+        $this->proxy = new Mage_Connect_RestProxy($protocol);
+    }
+
+    /**
+     * Passes all calls to any non-stubbed method to the proxy
+     *
+     * @param string $methodName the name of the method being called.
+     * @param array $arguments the parameters passed to the $name'ed method
+     *
+     * @return mixed  returns whatever is normally returned from the proxy's method
+     */
+    public function __call($methodName, $arguments)
+    {
+        return call_user_func_array(array($this->proxy, $methodName), $arguments);
+    }
+
+    /**
+     * Get releases list of package on current channel, or throws exception if in mock mode
+     *
+     * @param string $package package name
+     *
+     * @return array|false  An array of release data if the releases were retrieved, otherwise false
+     */
+    public function getReleases($package)
+    {
+        if (!self::$isInStubMode) {
+            return $this->proxy->getReleases($package);
+        }
+
+        throw new Exception( 'stub mode exception' );
     }
 }
