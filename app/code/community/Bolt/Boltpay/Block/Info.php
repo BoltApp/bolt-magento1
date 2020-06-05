@@ -24,8 +24,28 @@ class Bolt_Boltpay_Block_Info extends Mage_Payment_Block_Info
 {
     use Bolt_Boltpay_BoltGlobalTrait;
 
-    public function _construct() 
+    /**
+     * @param null $transport
+     * @return Varien_Object|null
+     */
+    protected function _prepareSpecificInformation($transport = null)
     {
-        $this->setTemplate('boltpay/info.phtml');
+        $transport = parent::_prepareSpecificInformation($transport);
+        $info = $this->getInfo();
+        $data = [];
+
+        if ($ccType = $info->getCcType()){
+            $data['Credit Card Type'] = strtoupper($ccType);
+        }
+
+        if ($ccLast4 = $info->getCcLast4()){
+            $data['Credit Card Number'] = sprintf('xxxx-%s', $ccLast4);
+        }
+
+        if ($data){
+            $transport->setData(array_merge($transport->getData(), $data));
+        }
+
+        return $transport;
     }
 }

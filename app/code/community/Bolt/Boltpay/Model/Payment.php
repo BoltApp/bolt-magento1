@@ -551,6 +551,9 @@ class Bolt_Boltpay_Model_Payment extends Mage_Payment_Model_Method_Abstract
 
                 $this->_handleBoltTransactionStatus($payment, $newTransactionStatus);
                 $payment->setAdditionalInformation('bolt_transaction_status', $newTransactionStatus);
+
+                $this->setOrderPaymentInfoData($payment, $reference, $boltTransaction);
+
                 $payment->save();
             } else {
                 $payment->setShouldCloseParentTransaction(true);
@@ -570,6 +573,29 @@ class Bolt_Boltpay_Model_Payment extends Mage_Payment_Model_Method_Abstract
             );
 
             throw $e;
+        }
+    }
+
+    /**
+     * Assign data to the order payment
+     *
+     * @param $payment
+     * @param $reference
+     * @param null $transaction
+     */
+    protected function setOrderPaymentInfoData($payment, $reference, $transaction = null) {
+        try {
+            if (empty($transaction)) {
+                $transaction = $this->boltHelper()->fetchTransaction($reference);
+            }
+            if (empty($payment->getCcLast4()) && ! empty($transaction->from_credit_card->last4)) {
+                $payment->setCcLast4($transaction->from_credit_card->last4);
+            }
+            if (empty($payment->getCcType()) && ! empty($transaction->from_credit_card->network)) {
+                $payment->setCcType($transaction->from_credit_card->network);
+            }
+        }catch (\Exception $e){
+            $this->boltHelper()->logException($e);
         }
     }
 
