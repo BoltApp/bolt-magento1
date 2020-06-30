@@ -141,13 +141,3 @@ workflows:
       - unit-php56-mage19
       - integration-tests:
           context: integration-tests-secrets
-  tagger:
-    triggers:
-      - schedule:
-          cron: "0 5 * * 4" # Every Thursday at 5AM UTC
-          filters:
-            branches:
-              only:
-                - master
-    jobs:
-      - tag-release-candidate
