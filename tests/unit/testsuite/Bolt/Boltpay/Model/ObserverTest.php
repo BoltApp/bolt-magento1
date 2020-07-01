@@ -70,6 +70,7 @@ class Bolt_Boltpay_Model_ObserverTest extends PHPUnit_Framework_TestCase
             )
             ->getMock();
         $this->currentMock->method('boltHelper')->willReturn($this->boltHelperMock);
+        Bolt_Boltpay_TestHelper::stubSingleton('boltpay/featureSwitch', $this->featureSwitchMock);
     }
 
     /**
@@ -843,7 +844,7 @@ class Bolt_Boltpay_Model_ObserverTest extends PHPUnit_Framework_TestCase
         $this->assertTrue(Bolt_Boltpay_Helper_Data::$canChangePreAuthStatus);
 
         Bolt_Boltpay_Helper_Data::$fromHooks = false;
-        $order->setState(Mage_Sales_Model_Order::STATE_NEW, 'pending' )
+        $order->setState(Mage_Sales_Model_Order::STATE_NEW, 'pending')
             ->save(); # triggers safeguardPreAuthStatus
         $this->assertEquals(Mage_Sales_Model_Order::STATE_NEW, $order->getState());
         $this->assertEquals('pending', $order->getStatus());
@@ -873,8 +874,7 @@ class Bolt_Boltpay_Model_ObserverTest extends PHPUnit_Framework_TestCase
     public function safeguardPreAuthStatus_whenNotFromHookAndStatusIsPreAuth_overridesStatusToOriginalValue(
         $preAuthState,
         $preAuthStatus
-    )
-    {
+    ) {
         Bolt_Boltpay_Helper_Data::$fromHooks = true;
         $order = Bolt_Boltpay_OrderHelper::createDummyOrder(self::$productId);
 
@@ -896,7 +896,7 @@ class Bolt_Boltpay_Model_ObserverTest extends PHPUnit_Framework_TestCase
         ///  context outside of webhooks
         /////////////////////////////////////////////////////////////////////////////////
         Bolt_Boltpay_Helper_Data::$fromHooks = false;
-        $order->setState(Mage_Sales_Model_Order::STATE_NEW, 'pending' )->save();
+        $order->setState(Mage_Sales_Model_Order::STATE_NEW, 'pending')->save();
         $this->assertNotEquals(Mage_Sales_Model_Order::STATE_NEW, $order->getState());
         $this->assertNotEquals('pending', $order->getStatus());
         $this->assertEquals($preAuthState, $order->getState());
@@ -1270,6 +1270,19 @@ class Bolt_Boltpay_Model_ObserverTest extends PHPUnit_Framework_TestCase
     }
 
     /**
+     * Setup method for tests covering {@see Bolt_Boltpay_Model_Observer::addAdminUpdateNotification}
+     * Creates feature switch mock and stubs it as singleton
+     *
+     * @throws Mage_Core_Exception if unable to stub singleton
+     */
+    protected function addAdminUpdateNotificationSetUp()
+    {
+        $this->featureSwitchMock = $this->getClassPrototype('boltpay/featureSwitch')
+            ->setMethods(array('isSwitchEnabled'))->getMock();
+        Bolt_Boltpay_TestHelper::stubSingleton('boltpay/featureSwitch', $this->featureSwitchMock);
+    }
+
+    /**
      * @test
      * that addAdminUpdateNotification calls {@see Bolt_Boltpay_Model_Updater::addUpdateMessage}
      * if an update is available ({@see Bolt_Boltpay_Model_Updater::isUpdateAvailable} returns true)
@@ -1280,6 +1293,10 @@ class Bolt_Boltpay_Model_ObserverTest extends PHPUnit_Framework_TestCase
      */
     public function addAdminUpdateNotification_withUpdateAvailable_addsUpdateMessage()
     {
+        $this->addAdminUpdateNotificationSetUp();
+        $this->featureSwitchMock->expects($this->once())->method('isSwitchEnabled')
+            ->with(Bolt_Boltpay_Model_FeatureSwitch::BOLT_NEW_RELEASE_NOTIFICATIONS_SWITCH_NAME)
+            ->willReturn(true);
         $updater = $this->getClassPrototype('boltpay/updater')
             ->setMethods(array('isUpdateAvailable', 'addUpdateMessage'))
             ->getMock();
@@ -1300,10 +1317,38 @@ class Bolt_Boltpay_Model_ObserverTest extends PHPUnit_Framework_TestCase
      */
     public function addAdminUpdateNotification_withUpdateUnavailable_doesNotAddUpdateMessage()
     {
+        $this->addAdminUpdateNotificationSetUp();
+        $this->featureSwitchMock->expects($this->once())->method('isSwitchEnabled')
+            ->with(Bolt_Boltpay_Model_FeatureSwitch::BOLT_NEW_RELEASE_NOTIFICATIONS_SWITCH_NAME)
+            ->willReturn(true);
         $updater = $this->getClassPrototype('boltpay/updater')
             ->setMethods(array('isUpdateAvailable', 'addUpdateMessage'))
             ->getMock();
         $updater->expects($this->once())->method('isUpdateAvailable')->willReturn(false);
+        $updater->expects($this->never())->method('addUpdateMessage');
+        TestHelper::stubSingleton('boltpay/updater', $updater);
+        $this->currentMock->addAdminUpdateNotification(new Varien_Event_Observer());
+    }
+
+    /**
+     * @test
+     * that addAdminUpdateNotification doesn't call {@see Bolt_Boltpay_Model_Updater::addUpdateMessage}
+     * if an M1_BOLT_NEW_RELEASE_NOTIFICATIONS feature switch is not enabled
+     *
+     * @covers ::addAdminUpdateNotification
+     *
+     * @throws Mage_Core_Exception if unable to stub singleton
+     */
+    public function addAdminUpdateNotification_whenFeatureSwitchDisabled_doesNotAddUpdateMessage()
+    {
+        $this->addAdminUpdateNotificationSetUp();
+        $this->featureSwitchMock->expects($this->once())->method('isSwitchEnabled')
+            ->with(Bolt_Boltpay_Model_FeatureSwitch::BOLT_NEW_RELEASE_NOTIFICATIONS_SWITCH_NAME)
+            ->willReturn(false);
+        $updater = $this->getClassPrototype('boltpay/updater')
+            ->setMethods(array('isUpdateAvailable', 'addUpdateMessage'))
+            ->getMock();
+        $updater->expects($this->never())->method('isUpdateAvailable')->willReturn(false);
         $updater->expects($this->never())->method('addUpdateMessage');
         TestHelper::stubSingleton('boltpay/updater', $updater);
         $this->currentMock->addAdminUpdateNotification(new Varien_Event_Observer());

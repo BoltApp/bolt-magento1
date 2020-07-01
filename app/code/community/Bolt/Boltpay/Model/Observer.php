@@ -437,9 +437,15 @@ class Bolt_Boltpay_Model_Observer
      * Adds admin notification if an update is available
      *
      * event: admin_session_user_login_success
+     *
+     * @throws Exception if M1_BOLT_NEW_RELEASE_NOTIFICATIONS feature switch default value is not defined
      */
     public function addAdminUpdateNotification()
     {
+        if (!Mage::getSingleton("boltpay/featureSwitch")
+            ->isSwitchEnabled(Bolt_Boltpay_Model_FeatureSwitch::BOLT_NEW_RELEASE_NOTIFICATIONS_SWITCH_NAME)) {
+            return;
+        }
         /** @var Bolt_Boltpay_Model_Updater $updater */
         $updater = Mage::getSingleton('boltpay/updater');
         if ($updater->isUpdateAvailable()) {

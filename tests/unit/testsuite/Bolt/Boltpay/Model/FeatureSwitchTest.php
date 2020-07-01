@@ -96,6 +96,11 @@ class Bolt_Boltpay_Model_FeatureSwitchTest extends PHPUnit_Framework_TestCase
                 'defaultValue' => false,
                 'rolloutPercentage' => 0
             ),
+            'M1_BOLT_NEW_RELEASE_NOTIFICATIONS' => array(
+                'value' => true,
+                'defaultValue' => false,
+                'rolloutPercentage' => 100
+            ),
         );
     }
 

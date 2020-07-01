@@ -53,10 +53,14 @@ class Bolt_Boltpay_Block_Adminhtml_Notification extends Mage_Adminhtml_Block_Tem
      * 5. Notifications are not disabled for non critical updates (only for minor updates)
      *
      * @return bool true if all conditions are met, otherwise false
+     *
+     * @throws Exception if M1_BOLT_NEW_RELEASE_NOTIFICATIONS feature switch default value is not defined
      */
     protected function shouldDisplay()
     {
-        return $this->boltHelper()->isModuleEnabled('Mage_AdminNotification')
+        return Mage::getSingleton("boltpay/featureSwitch")
+                ->isSwitchEnabled(Bolt_Boltpay_Model_FeatureSwitch::BOLT_NEW_RELEASE_NOTIFICATIONS_SWITCH_NAME)
+            && $this->boltHelper()->isModuleEnabled('Mage_AdminNotification')
             && $this->isOutputEnabled('Mage_AdminNotification')
             && $this->_getSession()->isAllowed('admin/system/adminnotification/show_toolbar')
             && $this->getUpdater()->isUpdateAvailable()
