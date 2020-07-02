@@ -39,6 +39,11 @@ class Bolt_Boltpay_Block_Adminhtml_UpdatePopupTest extends PHPUnit_Framework_Tes
     private $apiClientMock;
 
     /**
+     * @var PHPUnit_Framework_MockObject_MockObject mocked instance of the Bolt feature switch model
+     */
+    private $featureSwitchMock;
+
+    /**
      * Setup test dependencies, called before each test
      *
      * @throws Exception if test class name is not defined
@@ -54,11 +59,26 @@ class Bolt_Boltpay_Block_Adminhtml_UpdatePopupTest extends PHPUnit_Framework_Tes
         $this->currentMock = $this->getTestClassPrototype()
             ->setMethods(array('boltHelper', 'isOutputEnabled', '_getSession', 'getUpdater', 'getLayout'))
             ->getMock();
+        $this->featureSwitchMock = $this->getClassPrototype('boltpay/featureSwitch')
+            ->setMethods(array('isSwitchEnabled'))->getMock();
+        Bolt_Boltpay_TestHelper::stubSingleton('boltpay/featureSwitch', $this->featureSwitchMock);
         $this->boltHelperMock->method('getApiClient')->willReturn($this->apiClientMock);
         $this->currentMock->method('boltHelper')->willReturn($this->boltHelperMock);
         $this->currentMock->method('_getSession')->willReturn($this->sessionMock);
         $this->currentMock->method('getUpdater')->willReturn($this->updaterMock);
         $this->currentMock->method('getLayout')->willReturn(Mage::getSingleton('core/layout'));
+    }
+
+    /**
+     * Restore original values
+     *
+     * @throws ReflectionException if unable to restore _config property of Mage class
+     * @throws Mage_Core_Model_Store_Exception if unable to restore original config values due to missing store
+     * @throws Mage_Core_Exception if unable to restore original registry value due to key already been defined
+     */
+    protected function tearDown()
+    {
+        Bolt_Boltpay_TestHelper::restoreOriginals();
     }
 
     /**
@@ -74,6 +94,7 @@ class Bolt_Boltpay_Block_Adminhtml_UpdatePopupTest extends PHPUnit_Framework_Tes
      * @covers ::shouldDisplay
      * @dataProvider shouldDisplay_withVariousResultsOfTheCheckMethodsProvider
      *
+     * @param bool $isNewReleaseNotificationsFeatureSwitchEnabled stubbed result of {@see Bolt_Boltpay_Model_FeatureSwitch::isSwitchEnabled}
      * @param bool $isAdminNotificationModuleEnabled stubbed result of {@see Mage_Core_Helper_Abstract::isModuleEnabled}
      * @param bool $isAdminNotificationModuleOutputEnabled stubbed result of {@see Mage_Adminhtml_Block_Template::isOutputEnabled}
      * @param bool $isNotificationToolbarAllowedByACL stubbed result of {@see Mage_Admin_Model_Session::isAllowed}
@@ -83,12 +104,15 @@ class Bolt_Boltpay_Block_Adminhtml_UpdatePopupTest extends PHPUnit_Framework_Tes
      * @throws ReflectionException if shouldDisplay method is not defined
      */
     public function shouldDisplay_withVariousResultsOfTheCheckMethods_determinesIfBlockShouldBeShown(
+        $isNewReleaseNotificationsFeatureSwitchEnabled,
         $isAdminNotificationModuleEnabled,
         $isAdminNotificationModuleOutputEnabled,
         $isNotificationToolbarAllowedByACL,
         $isUpdateAvailable,
         $isFirstPageAfterLogin
     ) {
+        $this->featureSwitchMock->method('isSwitchEnabled')->with(Bolt_Boltpay_Model_FeatureSwitch::BOLT_NEW_RELEASE_NOTIFICATIONS_SWITCH_NAME)
+            ->willReturn($isNewReleaseNotificationsFeatureSwitchEnabled);
         $this->boltHelperMock->method('isModuleEnabled')->with('Mage_AdminNotification')
             ->willReturn($isAdminNotificationModuleEnabled);
         $this->currentMock->method('isOutputEnabled')->with('Mage_AdminNotification')
@@ -99,7 +123,8 @@ class Bolt_Boltpay_Block_Adminhtml_UpdatePopupTest extends PHPUnit_Framework_Tes
         $this->updaterMock->method('isUpdateAvailable')->willReturn($isUpdateAvailable);
         $this->updaterMock->method('getUpdateSeverity')->willReturn('patch');
         $this->assertEquals(
-            $isAdminNotificationModuleEnabled && $isAdminNotificationModuleOutputEnabled
+            $isNewReleaseNotificationsFeatureSwitchEnabled && $isAdminNotificationModuleEnabled
+            && $isAdminNotificationModuleOutputEnabled
             && $isNotificationToolbarAllowedByACL && $isUpdateAvailable && $isFirstPageAfterLogin,
             Bolt_Boltpay_TestHelper::callNonPublicFunction($this->currentMock, 'shouldDisplay')
         );
@@ -113,7 +138,7 @@ class Bolt_Boltpay_Block_Adminhtml_UpdatePopupTest extends PHPUnit_Framework_Tes
      */
     public function shouldDisplay_withVariousResultsOfTheCheckMethodsProvider()
     {
-        return Bolt_Boltpay_TestHelper::getAllBooleanCombinations(5);
+        return Bolt_Boltpay_TestHelper::getAllBooleanCombinations(6);
     }
 
     /**
@@ -138,6 +163,10 @@ class Bolt_Boltpay_Block_Adminhtml_UpdatePopupTest extends PHPUnit_Framework_Tes
         $nonCriticalUpdateNotificationsDisabled,
         $expectedResult
     ) {
+
+        $this->featureSwitchMock->method('isSwitchEnabled')
+            ->with(Bolt_Boltpay_Model_FeatureSwitch::BOLT_NEW_RELEASE_NOTIFICATIONS_SWITCH_NAME)
+            ->willReturn(true);
         $this->boltHelperMock->method('isModuleEnabled')->with('Mage_AdminNotification')->willReturn(true);
         $this->currentMock->method('isOutputEnabled')->with('Mage_AdminNotification')->willReturn(true);
         $this->sessionMock->method('isAllowed')->with('admin/system/adminnotification/show_toolbar')->willReturn(true);

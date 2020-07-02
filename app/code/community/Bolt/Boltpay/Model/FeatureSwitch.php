@@ -35,6 +35,11 @@ class Bolt_Boltpay_Model_FeatureSwitch extends Bolt_Boltpay_Model_Abstract
     const ROLLOUT_KEY = 'rolloutPercentage';
 
     /**
+     * @var string Feature switch that determines whether notifications should be displayed for available updates
+     */
+    const BOLT_NEW_RELEASE_NOTIFICATIONS_SWITCH_NAME = 'M1_BOLT_NEW_RELEASE_NOTIFICATIONS';
+
+    /**
      * @var string Feature switch that determines whether Git should be used as source for updates instead of Magento Connect
      */
     const BOLT_UPDATE_USE_GIT_SWITCH_NAME = 'M1_BOLT_UPDATE_USE_GIT';
@@ -73,6 +78,11 @@ class Bolt_Boltpay_Model_FeatureSwitch extends Bolt_Boltpay_Model_Abstract
                 self::VAL_KEY => true,
                 self::DEFAULT_VAL_KEY => false,
                 self::ROLLOUT_KEY => 0
+            ),
+            self::BOLT_NEW_RELEASE_NOTIFICATIONS_SWITCH_NAME => array(
+                self::VAL_KEY => true,
+                self::DEFAULT_VAL_KEY => false,
+                self::ROLLOUT_KEY => 100
             ),
         );
     }
