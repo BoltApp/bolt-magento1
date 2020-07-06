@@ -65,7 +65,7 @@ class Bolt_Boltpay_Block_Info extends Mage_Payment_Block_Info
 
     /**
      * Displays Bolt and any auxiliary payment services in the title used for emails and invoices.
-     * This also applies to store-front (frontend) customer checkouts, particulary one-page-checkout.
+     * This also applies to store-front (frontend) customer checkouts, particularly one-page-checkout.
      * In this frontend, since the payment processor has not yet been added to additional information,
      *
      *
