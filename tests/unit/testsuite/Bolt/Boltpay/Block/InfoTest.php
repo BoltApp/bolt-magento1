@@ -60,7 +60,7 @@ class Bolt_Boltpay_Block_InfoTest extends PHPUnit_Framework_TestCase
         $this->currentMock->expects(self::any())->method('getInfo')->willReturn($this->infoMock);
         $this->infoMock->expects(self::once())->method('getCcType')->willReturn('visa');
         $this->infoMock->expects(self::once())->method('getCcLast4')->willReturn('1111');
-        $this->infoMock->expects(self::once())->method('getAdditionalInformation')->with('bolt_processor')
+        $this->infoMock->expects(self::once())->method('getAdditionalInformation')->with('bolt_payment_processor')
             ->willReturn('vantiv');
         $data = TestHelper::callNonPublicFunction($this->currentMock, '_prepareSpecificInformation', [null]);
         $this->assertEquals(
@@ -80,7 +80,7 @@ class Bolt_Boltpay_Block_InfoTest extends PHPUnit_Framework_TestCase
     {
         $this->currentMock->expects(self::any())->method('getInfo')->willReturn($this->infoMock);
         $this->currentMock->expects(self::any())->method('getMethod')->willReturn($this->paymentMock);
-        $this->infoMock->expects(self::once())->method('getAdditionalInformation')->with('bolt_processor')
+        $this->infoMock->expects(self::once())->method('getAdditionalInformation')->with('bolt_payment_processor')
             ->willReturn('vantiv');
         $this->paymentMock->expects(self::once())->method('getTitle')->willReturn('Credit and Debit Card (Powered by Bolt)');
         $this->assertEquals(
@@ -97,7 +97,7 @@ class Bolt_Boltpay_Block_InfoTest extends PHPUnit_Framework_TestCase
     public function displayPaymentMethodTitle_ifOrderPaidWithPaypal_returnPaypalTitle()
     {
         $this->currentMock->expects(self::any())->method('getInfo')->willReturn($this->infoMock);
-        $this->infoMock->expects(self::once())->method('getAdditionalInformation')->with('bolt_processor')
+        $this->infoMock->expects(self::once())->method('getAdditionalInformation')->with('bolt_payment_processor')
             ->willReturn('paypal');
         $this->assertEquals(
             'Bolt-PayPal',

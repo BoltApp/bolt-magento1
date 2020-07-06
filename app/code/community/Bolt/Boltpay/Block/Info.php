@@ -16,14 +16,17 @@
  */
 
 /**
- * This generated Bolt Payment information
+ * This generates the Bolt Payment information
  * Its primarily used in sending out order confirmation
- * emails from the merchant
+ * emails from the merchant and what is used on invoices
  */
 class Bolt_Boltpay_Block_Info extends Mage_Payment_Block_Info
 {
     use Bolt_Boltpay_BoltGlobalTrait;
-    
+
+    /**
+     * Assigns a default template to be used
+     */
     protected function _construct()
     {
         parent::_construct();
@@ -31,7 +34,9 @@ class Bolt_Boltpay_Block_Info extends Mage_Payment_Block_Info
     }
 
     /**
-     * @param null $transport
+     * Gets the credit card data and adds it to what will be displayed for Bolt payments
+     *
+     * @param Varien_Object|array|null $transport
      * @return Varien_Object|null
      */
     protected function _prepareSpecificInformation($transport = null)
@@ -39,9 +44,9 @@ class Bolt_Boltpay_Block_Info extends Mage_Payment_Block_Info
         $transport = parent::_prepareSpecificInformation($transport);
         $info = $this->getInfo();
         $data = [];
-        $boltProcessor = $info->getAdditionalInformation('bolt_processor');
+        $paymentProcessor = $info->getAdditionalInformation('bolt_payment_processor');
         
-        if ( empty($boltProcessor) || $boltProcessor == Bolt_Boltpay_Model_Payment::TP_VANTIV ) {
+        if ( empty($paymentProcessor) || $paymentProcessor == Bolt_Boltpay_Model_Payment::PROCESSOR_VANTIV ) {
             if ($ccType = $info->getCcType()){
                 $data['Credit Card Type'] = strtoupper($ccType);
             }
@@ -57,18 +62,27 @@ class Bolt_Boltpay_Block_Info extends Mage_Payment_Block_Info
 
         return $transport;
     }
-    
+
+    /**
+     * Displays Bolt and any auxiliary payment services in the title used for emails and invoices.
+     * This also applies to store-front (frontend) customer checkouts, particulary one-page-checkout.
+     * In this frontend, since the payment processor has not yet been added to additional information,
+     *
+     *
+     * @return string  A string indicating Bolt was used as a payment.  If an auxiliary method was
+     *                 used, it is appended as a hyphenated string
+     */
     public function displayPaymentMethodTitle()
     {
         $info = $this->getInfo();
-        $boltProcessor = $info->getAdditionalInformation('bolt_processor');
+        $paymentProcessor = $info->getAdditionalInformation('bolt_payment_processor');
         
-        if ( empty($boltProcessor) || $boltProcessor == Bolt_Boltpay_Model_Payment::TP_VANTIV ) {
+        if ( empty($paymentProcessor) || $paymentProcessor == Bolt_Boltpay_Model_Payment::PROCESSOR_VANTIV ) {
             $paymentTitle = $this->getMethod()->getTitle();
         } else {
-            $paymentTitle = array_key_exists( $boltProcessor, Bolt_Boltpay_Model_Payment::$_tpMethodDisplay )
-                ? 'Bolt-' . Bolt_Boltpay_Model_Payment::$_tpMethodDisplay[ $boltProcessor ]
-                : 'Bolt-' . strtoupper( $boltProcessor );
+            $paymentTitle = array_key_exists( $paymentProcessor, Bolt_Boltpay_Model_Payment::$_processorDisplayNames )
+                ? 'Bolt-' . Bolt_Boltpay_Model_Payment::$_processorDisplayNames[ $paymentProcessor ]
+                : 'Bolt-' . strtoupper( $paymentProcessor );
         }
         
         return $paymentTitle;
