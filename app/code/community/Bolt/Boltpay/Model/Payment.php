@@ -57,6 +57,10 @@ class Bolt_Boltpay_Model_Payment extends Mage_Payment_Model_Method_Abstract
     const HOOK_TYPE_REFUND = 'credit';
 
     const CAPTURE_TYPE = 'online';
+    
+    const TP_VANTIV = 'vantiv';
+    const TP_PAYPAL = 'paypal';
+    const TP_AFTERPAY = 'afterpay';
 
     protected $_code               = self::METHOD_CODE;
     protected $_formBlockType      = 'boltpay/form';
@@ -101,6 +105,11 @@ class Bolt_Boltpay_Model_Payment extends Mage_Payment_Model_Method_Abstract
         self::HOOK_TYPE_REJECTED_IRREVERSIBLE => self::TRANSACTION_REJECTED_IRREVERSIBLE,
         self::HOOK_TYPE_VOID => self::TRANSACTION_CANCELLED,
         self::HOOK_TYPE_REFUND => self::TRANSACTION_REFUND
+    );
+    
+    public static $_tpMethodDisplay = array(
+        'paypal' => 'PayPal',
+        'afterpay' => 'Afterpay',
     );
 
 
@@ -588,12 +597,18 @@ class Bolt_Boltpay_Model_Payment extends Mage_Payment_Model_Method_Abstract
             if (empty($transaction)) {
                 $transaction = $this->boltHelper()->fetchTransaction($reference);
             }
-            if (empty($payment->getCcLast4()) && ! empty($transaction->from_credit_card->last4)) {
-                $payment->setCcLast4($transaction->from_credit_card->last4);
+            if (empty($transaction->processor) || $transaction->processor == self::TP_VANTIV) {
+                if (empty($payment->getCcLast4()) && ! empty($transaction->from_credit_card->last4)) {
+                    $payment->setCcLast4($transaction->from_credit_card->last4);
+                }
+                if (empty($payment->getCcType()) && ! empty($transaction->from_credit_card->network)) {
+                    $payment->setCcType($transaction->from_credit_card->network);
+                }    
             }
-            if (empty($payment->getCcType()) && ! empty($transaction->from_credit_card->network)) {
-                $payment->setCcType($transaction->from_credit_card->network);
+            if (empty($payment->getAdditionalInformation('bolt_processor'))) {
+                $payment->setAdditionalInformation('bolt_processor', $transaction->processor);
             }
+            
         }catch (\Exception $e){
             $this->boltHelper()->logException($e);
         }

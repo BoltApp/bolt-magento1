@@ -56,7 +56,7 @@ class Bolt_Boltpay_Model_PaymentTest extends PHPUnit_Framework_TestCase
         $this->boltHelperMock = $this->getClassPrototype('Bolt_Boltpay_Helper_Data')
             ->setMethods(array('transmit', 'canUseBolt', 'notifyException', 'logWarning', 'fetchTransaction'))
             ->getMock();
-        $this->paymentMock = $this->getTestClassPrototype()->setMethods(array('getAdditionalInformation', 'getOrder','setCcLast4','setCcType'))
+        $this->paymentMock = $this->getTestClassPrototype()->setMethods(array('getAdditionalInformation','setAdditionalInformation','getOrder','setCcLast4','setCcType'))
             ->getMock();
         $this->orderMock = $this->getClassPrototype('Mage_Sales_Model_Order')
             ->setMethods(array())->getMock();
@@ -3730,10 +3730,30 @@ class Bolt_Boltpay_Model_PaymentTest extends PHPUnit_Framework_TestCase
      *
      * @covers ::setOrderPaymentInfoData
      */
-    public function setOrderPaymentInfoData_withTransaction() {
+    public function setOrderPaymentInfoData_withTransaction_ProcessorCreditCard() {
         $transaction = $this->generateTestTransactionObject();
+        $transaction->processor = 'vantiv';
         $this->paymentMock->expects($this->once())->method('setCcLast4')->with($this->equalTo('1111'))->willReturnSelf();
         $this->paymentMock->expects($this->once())->method('setCcType')->with($this->equalTo('visa'))->willReturnSelf();
+        $this->paymentMock->expects($this->once())->method('getAdditionalInformation')->with($this->equalTo('bolt_processor'))->willReturn(false);
+        $this->paymentMock->expects($this->once())->method('setAdditionalInformation')->with('bolt_processor', 'vantiv')->willReturnSelf();
+
+        Bolt_Boltpay_TestHelper::callNonPublicFunction($this->currentMock, 'setOrderPaymentInfoData', [$this->paymentMock, 'TEST-BOLT-TRNX', $transaction]);
+    }
+    
+    /**
+     * @test
+     * that setOrderPaymentInfoData with transaction
+     *
+     * @covers ::setOrderPaymentInfoData
+     */
+    public function setOrderPaymentInfoData_withTransaction_ProcessorPaypal() {
+        $transaction = $this->generateTestTransactionObject();
+        $transaction->processor = 'paypal';
+        $this->paymentMock->expects($this->never())->method('setCcLast4');
+        $this->paymentMock->expects($this->never())->method('setCcType');
+        $this->paymentMock->expects($this->once())->method('getAdditionalInformation')->with($this->equalTo('bolt_processor'))->willReturn(false);
+        $this->paymentMock->expects($this->once())->method('setAdditionalInformation')->with('bolt_processor', 'paypal')->willReturnSelf();
 
         Bolt_Boltpay_TestHelper::callNonPublicFunction($this->currentMock, 'setOrderPaymentInfoData', [$this->paymentMock, 'TEST-BOLT-TRNX', $transaction]);
     }

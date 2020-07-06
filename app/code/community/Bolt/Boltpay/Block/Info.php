@@ -23,6 +23,12 @@
 class Bolt_Boltpay_Block_Info extends Mage_Payment_Block_Info
 {
     use Bolt_Boltpay_BoltGlobalTrait;
+    
+    protected function _construct()
+    {
+        parent::_construct();
+        $this->setTemplate('boltpay/info/default.phtml');
+    }
 
     /**
      * @param null $transport
@@ -33,19 +39,38 @@ class Bolt_Boltpay_Block_Info extends Mage_Payment_Block_Info
         $transport = parent::_prepareSpecificInformation($transport);
         $info = $this->getInfo();
         $data = [];
-
-        if ($ccType = $info->getCcType()){
-            $data['Credit Card Type'] = strtoupper($ccType);
-        }
-
-        if ($ccLast4 = $info->getCcLast4()){
-            $data['Credit Card Number'] = sprintf('xxxx-%s', $ccLast4);
-        }
+        $boltProcessor = $info->getAdditionalInformation('bolt_processor');
+        
+        if ( empty($boltProcessor) || $boltProcessor == Bolt_Boltpay_Model_Payment::TP_VANTIV ) {
+            if ($ccType = $info->getCcType()){
+                $data['Credit Card Type'] = strtoupper($ccType);
+            }
+    
+            if ($ccLast4 = $info->getCcLast4()){
+                $data['Credit Card Number'] = sprintf('xxxx-%s', $ccLast4);
+            }    
+        }        
 
         if ($data){
             $transport->setData(array_merge($transport->getData(), $data));
         }
 
         return $transport;
+    }
+    
+    public function displayPaymentMethodTitle()
+    {
+        $info = $this->getInfo();
+        $boltProcessor = $info->getAdditionalInformation('bolt_processor');
+        
+        if ( empty($boltProcessor) || $boltProcessor == Bolt_Boltpay_Model_Payment::TP_VANTIV ) {
+            $paymentTitle = $this->getMethod()->getTitle();
+        } else {
+            $paymentTitle = array_key_exists( $boltProcessor, Bolt_Boltpay_Model_Payment::$_tpMethodDisplay )
+                ? 'Bolt-' . Bolt_Boltpay_Model_Payment::$_tpMethodDisplay[ $boltProcessor ]
+                : 'Bolt-' . strtoupper( $boltProcessor );
+        }
+        
+        return $paymentTitle;
     }
 }
