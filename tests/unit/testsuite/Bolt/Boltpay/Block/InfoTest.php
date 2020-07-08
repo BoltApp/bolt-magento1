@@ -76,15 +76,16 @@ class Bolt_Boltpay_Block_InfoTest extends PHPUnit_Framework_TestCase
      * 
      * @covers ::displayPaymentMethodTitle
      */
-    public function displayPaymentMethodTitle_ifOrderPaidWithCreditCard_returnDefaultTitle()
+    public function displayPaymentMethodTitle_ifOrderPaidWithCreditCardFromFrontend_returnConfigTitle()
     {
+        Mage::app()->getStore()->setId(1);
         $this->currentMock->expects(self::any())->method('getInfo')->willReturn($this->infoMock);
         $this->currentMock->expects(self::any())->method('getMethod')->willReturn($this->paymentMock);
         $this->infoMock->expects(self::once())->method('getAdditionalInformation')->with('bolt_payment_processor')
             ->willReturn('vantiv');
-        $this->paymentMock->expects(self::once())->method('getTitle')->willReturn('Credit and Debit Card (Powered by Bolt)');
+        $this->paymentMock->expects(self::once())->method('getTitle')->willReturn(Mage::getStoreConfig('payment/boltpay/title'));
         $this->assertEquals(
-            'Credit and Debit Card (Powered by Bolt)',
+            Mage::getStoreConfig('payment/boltpay/title'),
             $this->currentMock->displayPaymentMethodTitle()
         );
     }
@@ -94,14 +95,55 @@ class Bolt_Boltpay_Block_InfoTest extends PHPUnit_Framework_TestCase
      * 
      * @covers ::displayPaymentMethodTitle
      */
-    public function displayPaymentMethodTitle_ifOrderPaidWithPaypal_returnPaypalTitle()
+    public function displayPaymentMethodTitle_ifOrderPaidWithCreditCardFromAdminArea_returnDefaultTitle()
+    {
+        $this->currentMock->expects(self::any())->method('getInfo')->willReturn($this->infoMock);
+        $this->currentMock->expects(self::any())->method('getMethod')->willReturn($this->paymentMock);
+        $this->infoMock->expects(self::once())->method('getAdditionalInformation')->with('bolt_payment_processor')
+            ->willReturn('vantiv');
+        $this->paymentMock->expects(self::once())->method('getTitle')->willReturn(Bolt_Boltpay_Model_Payment::TITLE);
+        $this->assertEquals(
+            Bolt_Boltpay_Model_Payment::TITLE,
+            $this->currentMock->displayPaymentMethodTitle()
+        );
+    }
+    
+    /**
+     * @test
+     * 
+     * @covers ::displayPaymentMethodTitle
+     */
+    public function displayPaymentMethodTitle_ifOrderPaidWithAPM_returnProperTitle($boltPaymentProcessor, $expectedResult)
     {
         $this->currentMock->expects(self::any())->method('getInfo')->willReturn($this->infoMock);
         $this->infoMock->expects(self::once())->method('getAdditionalInformation')->with('bolt_payment_processor')
-            ->willReturn('paypal');
+            ->willReturn($boltPaymentProcessor);
         $this->assertEquals(
-            'Bolt-PayPal',
+            $expectedResult,
             $this->currentMock->displayPaymentMethodTitle()
+        );
+    }
+    
+    /**
+     * Data provider for {@see displayPaymentMethodTitle_ifOrderPaidWithAPM_returnProperTitle}
+     *
+     * @return array containing available payment gateways
+     */
+    public function displayPaymentMethodTitle_ifOrderPaidWithAPM_Provider()
+    {
+        return array(
+            array(
+                'boltPaymentProcessor'  => 'paypal',
+                'expectedResult'        => 'Bolt-PayPal'
+            ),
+            array(
+                'boltPaymentProcessor'  => 'afterpay',
+                'expectedResult'        => 'Bolt-Afterpay'
+            ),
+            array(
+                'newTransactionStatus'  => 'newapm',
+                'expectedResult'        => 'Bolt-NEWAPM'
+            ),
         );
     }
 }
