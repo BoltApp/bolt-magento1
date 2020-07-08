@@ -57,6 +57,10 @@ class Bolt_Boltpay_Model_Payment extends Mage_Payment_Model_Method_Abstract
     const HOOK_TYPE_REFUND = 'credit';
 
     const CAPTURE_TYPE = 'online';
+    
+    const PROCESSOR_VANTIV = 'vantiv';
+    const PROCESSOR_PAYPAL = 'paypal';
+    const PROCESSOR_AFTERPAY = 'afterpay';
 
     protected $_code               = self::METHOD_CODE;
     protected $_formBlockType      = 'boltpay/form';
@@ -101,6 +105,11 @@ class Bolt_Boltpay_Model_Payment extends Mage_Payment_Model_Method_Abstract
         self::HOOK_TYPE_REJECTED_IRREVERSIBLE => self::TRANSACTION_REJECTED_IRREVERSIBLE,
         self::HOOK_TYPE_VOID => self::TRANSACTION_CANCELLED,
         self::HOOK_TYPE_REFUND => self::TRANSACTION_REFUND
+    );
+    
+    public static $_processorDisplayNames = array(
+        'paypal' => 'PayPal',
+        'afterpay' => 'Afterpay',
     );
 
 
@@ -159,8 +168,6 @@ class Bolt_Boltpay_Model_Payment extends Mage_Payment_Model_Method_Abstract
         if ($field == 'title') {
             if ($this->isAdminArea()) {
                 return self::TITLE_ADMIN;
-            } else {
-                return self::TITLE;
             }
         }
 
@@ -588,12 +595,18 @@ class Bolt_Boltpay_Model_Payment extends Mage_Payment_Model_Method_Abstract
             if (empty($transaction)) {
                 $transaction = $this->boltHelper()->fetchTransaction($reference);
             }
-            if (empty($payment->getCcLast4()) && ! empty($transaction->from_credit_card->last4)) {
-                $payment->setCcLast4($transaction->from_credit_card->last4);
+            if (empty($transaction->processor) || $transaction->processor == self::PROCESSOR_VANTIV) {
+                if (empty($payment->getCcLast4()) && ! empty($transaction->from_credit_card->last4)) {
+                    $payment->setCcLast4($transaction->from_credit_card->last4);
+                }
+                if (empty($payment->getCcType()) && ! empty($transaction->from_credit_card->network)) {
+                    $payment->setCcType($transaction->from_credit_card->network);
+                }    
             }
-            if (empty($payment->getCcType()) && ! empty($transaction->from_credit_card->network)) {
-                $payment->setCcType($transaction->from_credit_card->network);
+            if (empty($payment->getAdditionalInformation('bolt_payment_processor'))) {
+                $payment->setAdditionalInformation('bolt_payment_processor', $transaction->processor);
             }
+            
         }catch (\Exception $e){
             $this->boltHelper()->logException($e);
         }

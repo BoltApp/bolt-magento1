@@ -56,7 +56,7 @@ class Bolt_Boltpay_Model_PaymentTest extends PHPUnit_Framework_TestCase
         $this->boltHelperMock = $this->getClassPrototype('Bolt_Boltpay_Helper_Data')
             ->setMethods(array('transmit', 'canUseBolt', 'notifyException', 'logWarning', 'fetchTransaction'))
             ->getMock();
-        $this->paymentMock = $this->getTestClassPrototype()->setMethods(array('getAdditionalInformation', 'getOrder','setCcLast4','setCcType'))
+        $this->paymentMock = $this->getTestClassPrototype()->setMethods(array('getAdditionalInformation','setAdditionalInformation','getOrder','setCcLast4','setCcType'))
             ->getMock();
         $this->orderMock = $this->getClassPrototype('Mage_Sales_Model_Order')
             ->setMethods(array())->getMock();
@@ -278,21 +278,22 @@ class Bolt_Boltpay_Model_PaymentTest extends PHPUnit_Framework_TestCase
 
     /**
      * @test
-     * that getConfigData returns {@see Bolt_Boltpay_Model_Payment::TITLE} constant for title if not in admin area
+     * that getConfigData returns the defined config for 'title' if not in the admin area
      *
      * @covers ::getConfigData
      *
      * @throws Mage_Core_Model_Store_Exception if unable to stub config value
      */
-    public function getConfigData_notAdminAreaWithFieldTitle_returnsTitleConstant()
+    public function getConfigData_notAdminAreaWithFieldTitle_returnsConfigValue()
     {
         Bolt_Boltpay_TestHelper::stubConfigValue('payment/boltpay/skip_payment', 1);
+        Bolt_Boltpay_TestHelper::stubConfigValue('payment/boltpay/title', 'Mock Bolt Title');
 
         $this->currentMock->expects($this->once())->method('isAdminArea')->willReturn(false);
 
         $result = $this->currentMock->getConfigData('title');
 
-        $this->assertEquals(Bolt_Boltpay_Model_Payment::TITLE, $result, 'TITLE field does not match');
+        $this->assertEquals('Mock Bolt Title', $result, 'TITLE field does not match');
     }
 
     /**
@@ -3730,10 +3731,30 @@ class Bolt_Boltpay_Model_PaymentTest extends PHPUnit_Framework_TestCase
      *
      * @covers ::setOrderPaymentInfoData
      */
-    public function setOrderPaymentInfoData_withTransaction() {
+    public function setOrderPaymentInfoData_withTransaction_ProcessorCreditCard() {
         $transaction = $this->generateTestTransactionObject();
+        $transaction->processor = 'vantiv';
         $this->paymentMock->expects($this->once())->method('setCcLast4')->with($this->equalTo('1111'))->willReturnSelf();
         $this->paymentMock->expects($this->once())->method('setCcType')->with($this->equalTo('visa'))->willReturnSelf();
+        $this->paymentMock->expects($this->once())->method('getAdditionalInformation')->with($this->equalTo('bolt_payment_processor'))->willReturn(false);
+        $this->paymentMock->expects($this->once())->method('setAdditionalInformation')->with('bolt_payment_processor', 'vantiv')->willReturnSelf();
+
+        Bolt_Boltpay_TestHelper::callNonPublicFunction($this->currentMock, 'setOrderPaymentInfoData', [$this->paymentMock, 'TEST-BOLT-TRNX', $transaction]);
+    }
+    
+    /**
+     * @test
+     * that setOrderPaymentInfoData with transaction
+     *
+     * @covers ::setOrderPaymentInfoData
+     */
+    public function setOrderPaymentInfoData_withTransaction_ProcessorPaypal() {
+        $transaction = $this->generateTestTransactionObject();
+        $transaction->processor = 'paypal';
+        $this->paymentMock->expects($this->never())->method('setCcLast4');
+        $this->paymentMock->expects($this->never())->method('setCcType');
+        $this->paymentMock->expects($this->once())->method('getAdditionalInformation')->with($this->equalTo('bolt_payment_processor'))->willReturn(false);
+        $this->paymentMock->expects($this->once())->method('setAdditionalInformation')->with('bolt_payment_processor', 'paypal')->willReturnSelf();
 
         Bolt_Boltpay_TestHelper::callNonPublicFunction($this->currentMock, 'setOrderPaymentInfoData', [$this->paymentMock, 'TEST-BOLT-TRNX', $transaction]);
     }

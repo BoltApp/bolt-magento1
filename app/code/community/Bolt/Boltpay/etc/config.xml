@@ -299,7 +299,7 @@
   min-width: max-content !important;
 }
         </additional_css>
-        <title>Credit card</title>
+        <title>Credit &amp; Debit Card</title>
         <button_classes>with-cards</button_classes>
         <selector_styles>
 .btn-proceed-checkout {
