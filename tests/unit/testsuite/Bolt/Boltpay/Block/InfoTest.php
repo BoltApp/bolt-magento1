@@ -110,6 +110,8 @@ class Bolt_Boltpay_Block_InfoTest extends PHPUnit_Framework_TestCase
     
     /**
      * @test
+     *
+     * @dataProvider displayPaymentMethodTitle_ifOrderPaidWithAPM_Provider
      * 
      * @covers ::displayPaymentMethodTitle
      */
