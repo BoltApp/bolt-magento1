@@ -276,12 +276,14 @@ class Bolt_Boltpay_ApiController extends Mage_Core_Controller_Front_Action imple
                 ),
                 false
             );
+            benchmark( "Response sent to Bolt");
         } catch ( Bolt_Boltpay_OrderCreationException $orderCreationException ) {
             $this->sendResponse(
                 $orderCreationException->getHttpCode(),
                 $orderCreationException->getJson(),
                 false
             );
+            benchmark( "Response sent to Bolt");
 
             //////////////////////////////////////////////////////
             /// Send the computed cart to Bugsnag for comparison
@@ -290,9 +292,6 @@ class Bolt_Boltpay_ApiController extends Mage_Core_Controller_Front_Action imple
             $computedCart = Mage::getModel('boltpay/boltOrder')->buildCart($immutableQuote, false );
             $this->boltHelper()->notifyException($orderCreationException, array( 'magento_order_details' => json_encode($computedCart)));
             //////////////////////////////////////////////////////
-
-        } finally {
-            benchmark( "Response sent to Bolt");
         }
     }
 

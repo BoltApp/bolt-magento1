@@ -886,6 +886,30 @@ class Bolt_Boltpay_Model_ShippingAndTaxTest extends PHPUnit_Framework_TestCase
 
     /**
      * @test
+     * that getShippingAndTaxEstimate will reset the original coupon code if an exception occurs
+     *
+     * @covers ::getShippingAndTaxEstimate
+     *
+     * @expectedException Exception
+     * @expectedExceptionMessage Stubbed coupon exception
+     */
+    public function getShippingAndTaxEstimate_onException_resetsOriginalCouponCode()
+    {
+        $this->boltHelperMock->expects($this->once())->method('collectTotals')
+            ->willThrowException(new Exception("Stubbed coupon exception"));
+        TestHelper::stubHelper('boltpay', $this->boltHelperMock);
+
+        /** @var MockObject|Mage_Sales_Model_Quote $quoteMock */
+        $quoteMock = $this->getClassPrototype('Mage_Sales_Model_Quote')
+            ->setMethods(array('getCouponCode', 'setCouponCode','getId'))
+            ->getMock();
+        $quoteMock->expects($this->once())->method('getCouponCode')->willReturn("ORIGINAL_STUBBED_COUPON_CODE");
+        $quoteMock->expects($this->once())->method('setCouponCode')->with("ORIGINAL_STUBBED_COUPON_CODE");
+        $this->currentMock->getShippingAndTaxEstimate($quoteMock);
+    }
+
+    /**
+     * @test
      * that applyShippingRate sets shipping method, collects totals, and restores item discount data
      *
      * @covers ::applyShippingRate

@@ -81,10 +81,10 @@ class RequestException extends TransferException
         $level = (int) floor($response->getStatusCode() / 100);
         if ($level === 4) {
             $label = 'Client error';
-            $className = ClientException::class;
+            $className = 'GuzzleHttp\Exception\ClientException';
         } elseif ($level === 5) {
             $label = 'Server error';
-            $className = ServerException::class;
+            $className = 'GuzzleHttp\Exception\ServerException';
         } else {
             $label = 'Unsuccessful request';
             $className = __CLASS__;

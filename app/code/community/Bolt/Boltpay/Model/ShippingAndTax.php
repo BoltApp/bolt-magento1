@@ -294,9 +294,13 @@ class Bolt_Boltpay_Model_ShippingAndTax extends Bolt_Boltpay_Model_Abstract
                 benchmark('Creating New Estimate: dispatched event bolt_boltpay_shipping_option_added');
             }
 
-        } finally {
+        } catch ( Exception $exception ) {
+            // catching and rethrowing exception in place of finally to support PHP 5.4
             $quote->setCouponCode($originalCouponCode);
+            throw $exception;
         }
+
+        $quote->setCouponCode($originalCouponCode);
 
         return $response;
     }
