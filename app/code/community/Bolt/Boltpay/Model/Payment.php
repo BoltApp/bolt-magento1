@@ -217,7 +217,10 @@ class Bolt_Boltpay_Model_Payment extends Mage_Payment_Model_Method_Abstract
             }
 
             $reference = $payment->getAdditionalInformation('bolt_reference');
-            $response = $this->boltHelper()->transmit($reference, null);
+            /** @var Mage_Sales_Model_Order $order */
+            $order = $payment->getOrder();
+            $storeId = $order->getStoreId();
+            $response = $this->boltHelper()->transmit($reference, null, 'merchant', 'transactions', $storeId);
             if (strlen($response->status) == 0) {
                 $message = $this->boltHelper()->__('Bad fetch transaction response. Empty transaction status');
                 $this->boltHelper()->logWarning($message);
@@ -226,8 +229,6 @@ class Bolt_Boltpay_Model_Payment extends Mage_Payment_Model_Method_Abstract
 
             $transactionStatus = strtolower($response->status);
 
-            /** @var Mage_Sales_Model_Order $order */
-            $order = $payment->getOrder();
             $prevTransactionStatus = ($order && ($order->getState() === Mage_Sales_Model_Order::STATE_PAYMENT_REVIEW))
                 ? self::TRANSACTION_PENDING
                 : $payment->getAdditionalInformation('bolt_transaction_status');
@@ -302,13 +303,16 @@ class Bolt_Boltpay_Model_Payment extends Mage_Payment_Model_Method_Abstract
             }
 
             if ($transactionStatus == self::TRANSACTION_AUTHORIZED) {
+                $order = $payment->getOrder();
                 $captureRequest = array(
                     'transaction_id' => $merchantTransId,
                     'amount'         => (int)round($amount * 100),
-                    'currency'       => $payment->getOrder()->getOrderCurrencyCode(),
+                    'currency'       => $order->getOrderCurrencyCode(),
                     'skip_hook_notification' => true
                 );
-                $response = $this->boltHelper()->transmit('capture', $captureRequest);
+
+                $storeId = $order->getStoreId();
+                $response = $this->boltHelper()->transmit('capture', $captureRequest, 'merchant', 'transactions', $storeId);
                 if (strlen($response->status) == 0) {
                     $message = $this->boltHelper()->__('Bad capture response. Empty transaction status');
                     $this->boltHelper()->logWarning($message);
@@ -382,7 +386,10 @@ class Bolt_Boltpay_Model_Payment extends Mage_Payment_Model_Method_Abstract
                 'currency' => $order->getOrderCurrencyCode(),
                 'skip_hook_notification' => true,
             );
-            $response = $this->boltHelper()->transmit('credit', $data);
+
+            $storeId = $order->getStoreId();
+
+            $response = $this->boltHelper()->transmit('credit', $data, 'merchant', 'transactions', $storeId);
 
             if (strlen($response->reference) == 0) {
                 $message = $this->boltHelper()->__('Bad refund response. Empty transaction reference');
@@ -445,7 +452,8 @@ class Bolt_Boltpay_Model_Payment extends Mage_Payment_Model_Method_Abstract
                 'transaction_id' => $transId,
                 'skip_hook_notification' => true
             );
-            $response = $this->boltHelper()->transmit('void', $data);
+            $storeId = $payment->getOrder()->getStoreId();
+            $response = $this->boltHelper()->transmit('void', $data, 'merchant', 'transactions', $storeId);
             if (strlen($response->status) == 0) {
                 $message = $this->boltHelper()->__('Bad void response. Empty transaction status');
                 $this->boltHelper()->logWarning($message);
@@ -1303,8 +1311,8 @@ class Bolt_Boltpay_Model_Payment extends Mage_Payment_Model_Method_Abstract
                 'transaction_id' => $transId,
                 'decision'       => $review,
             );
-
-            $response = $this->boltHelper()->transmit("review", $data);
+            $storeId = $payment->getOrder()->getStoreId();
+            $response = $this->boltHelper()->transmit("review", $data, 'merchant', 'transactions', $storeId);
 
             if (strlen($response->reference) == 0) {
                 $message = $this->boltHelper()->__('Bad review response. Empty transaction reference');

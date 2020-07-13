@@ -14,6 +14,7 @@ class Bolt_Boltpay_Model_PaymentTest extends PHPUnit_Framework_TestCase
 
     /** @var string Dummy Bolt Transaction Reference */
     const BOLT_TRANSACTION_REFERENCE = '92XB-GBX4-T49L';
+    const STORE_ID = '2';
 
     /** @var string Name of the class tested */
     protected $testClassName = 'Bolt_Boltpay_Model_Payment';
@@ -450,10 +451,11 @@ class Bolt_Boltpay_Model_PaymentTest extends PHPUnit_Framework_TestCase
                 'additional_information' => array(
                     'bolt_merchant_transaction_id' => self::BOLT_MERCHANT_TRANSACTION_ID,
                     'bolt_reference'               => self::BOLT_TRANSACTION_REFERENCE
-                )
+                ),
+                'order' => Mage::getModel('sales/order', array('order_currency_code' => 'USD', 'store_id' => self::STORE_ID))
             )
         );
-        $this->boltHelperMock->expects($this->once())->method('transmit')->with(self::BOLT_TRANSACTION_REFERENCE, null)
+        $this->boltHelperMock->expects($this->once())->method('transmit')->with(self::BOLT_TRANSACTION_REFERENCE, null, 'merchant', 'transactions', self::STORE_ID)
             ->willReturn((object)array('status' => null));
         $this->currentMock->fetchTransactionInfo($payment, self::BOLT_MERCHANT_TRANSACTION_ID);
     }
@@ -475,14 +477,15 @@ class Bolt_Boltpay_Model_PaymentTest extends PHPUnit_Framework_TestCase
                 'additional_information' => array(
                     'bolt_merchant_transaction_id' => self::BOLT_MERCHANT_TRANSACTION_ID,
                     'bolt_reference'               => self::BOLT_TRANSACTION_REFERENCE
-                )
+                ),
+                'order' => Mage::getModel('sales/order', array('order_currency_code' => 'USD', 'store_id' => self::STORE_ID))
             )
         );
         /** @var MockObject|Bolt_Boltpay_Model_Payment $currentMock */
         $currentMock = $this->getTestClassPrototype()
             ->setMethods(array('boltHelper', 'handleTransactionUpdate'))
             ->getMock();
-        $this->boltHelperMock->expects($this->once())->method('transmit')->with(self::BOLT_TRANSACTION_REFERENCE, null)
+        $this->boltHelperMock->expects($this->once())->method('transmit')->with(self::BOLT_TRANSACTION_REFERENCE, null, 'merchant', 'transactions', self::STORE_ID)
             ->willReturn((object)array('status' => Bolt_Boltpay_Model_Payment::TRANSACTION_PENDING));
         $currentMock->method('boltHelper')->willReturn($this->boltHelperMock);
         $currentMock->expects($this->once())->method('handleTransactionUpdate')->with(
@@ -611,7 +614,7 @@ class Bolt_Boltpay_Model_PaymentTest extends PHPUnit_Framework_TestCase
                     'bolt_transaction_status'      => Bolt_Boltpay_Model_Payment::TRANSACTION_AUTHORIZED,
                 ),
                 'auto_capture'           => false,
-                'order'                  => Mage::getModel('sales/order', array('order_currency_code' => 'USD'))
+                'order'                  => Mage::getModel('sales/order', array('order_currency_code' => 'USD', 'store_id' => self::STORE_ID))
             )
         );
         $this->boltHelperMock->expects($this->once())->method('transmit')
@@ -622,7 +625,10 @@ class Bolt_Boltpay_Model_PaymentTest extends PHPUnit_Framework_TestCase
                     'amount'                 => (int)round(123 * 100),
                     'currency'               => 'USD',
                     'skip_hook_notification' => true
-                )
+                ),
+                'merchant',
+                'transactions',
+                self::STORE_ID
             )
             ->willReturn((object)array('status' => null));
         $this->boltHelperMock->expects($this->once())->method('logWarning')
@@ -699,7 +705,7 @@ class Bolt_Boltpay_Model_PaymentTest extends PHPUnit_Framework_TestCase
                 )
             );
         $payment->expects($this->once())->method('getOrder')->willReturn(
-            Mage::getModel('sales/order', array('order_currency_code' => 'USD'))
+            Mage::getModel('sales/order', array('order_currency_code' => 'USD','store_id' => self::STORE_ID))
         );
         $currentMock->expects($this->once())->method('_handleBoltTransactionStatus')
             ->with($payment, Bolt_Boltpay_Model_Payment::TRANSACTION_COMPLETED);
@@ -720,7 +726,8 @@ class Bolt_Boltpay_Model_PaymentTest extends PHPUnit_Framework_TestCase
                     'amount'                 => (int)round(123 * 100),
                     'currency'               => 'USD',
                     'skip_hook_notification' => true
-                )
+                ),
+                'merchant', 'transactions', self::STORE_ID
             )
             ->willReturn((object)array('status' => Bolt_Boltpay_Model_Payment::TRANSACTION_COMPLETED));
         $this->assertEquals($currentMock, $currentMock->capture($payment, 123));
@@ -802,10 +809,12 @@ class Bolt_Boltpay_Model_PaymentTest extends PHPUnit_Framework_TestCase
                 ),
                 'order'                  => Mage::getModel(
                     'sales/order',
-                    array('order_currency_code' => 'USD')
+                    array('order_currency_code' => 'USD','store_id' => self::STORE_ID)
                 )
             )
         );
+
+
         $this->currentMock->expects($this->once())->method('getInfoInstance')->willReturn($payment);
         $this->boltHelperMock->expects($this->once())->method('transmit')->with(
             'credit',
@@ -814,7 +823,8 @@ class Bolt_Boltpay_Model_PaymentTest extends PHPUnit_Framework_TestCase
                 'amount'                 => (int)round(12300),
                 'currency'               => 'USD',
                 'skip_hook_notification' => true,
-            )
+            ),
+            'merchant', 'transactions', self::STORE_ID
         )->willReturn((object)array('reference' => null));
         $this->currentMock->refund($payment, 123);
     }
@@ -842,7 +852,10 @@ class Bolt_Boltpay_Model_PaymentTest extends PHPUnit_Framework_TestCase
                 ),
                 'order'                  => Mage::getModel(
                     'sales/order',
-                    array('order_currency_code' => 'USD')
+                    array(
+                        'order_currency_code' => 'USD',
+                        'store_id' =>  self::STORE_ID
+                    )
                 )
             )
         );
@@ -854,7 +867,8 @@ class Bolt_Boltpay_Model_PaymentTest extends PHPUnit_Framework_TestCase
                 'amount'                 => (int)round(12300),
                 'currency'               => 'USD',
                 'skip_hook_notification' => true,
-            )
+            ),
+            'merchant', 'transactions', self::STORE_ID
         )->willReturn((object)array('reference' => self::BOLT_TRANSACTION_REFERENCE, 'id' => null));
         $this->currentMock->refund($payment, 123);
     }
@@ -879,7 +893,10 @@ class Bolt_Boltpay_Model_PaymentTest extends PHPUnit_Framework_TestCase
                 ),
                 'order'                  => Mage::getModel(
                     'sales/order',
-                    array('order_currency_code' => 'USD')
+                    array(
+                        'order_currency_code' => 'USD',
+                        'store_id' => self::STORE_ID
+                    )
                 )
             )
         );
@@ -899,7 +916,8 @@ class Bolt_Boltpay_Model_PaymentTest extends PHPUnit_Framework_TestCase
                 'amount'                 => (int)round(12300),
                 'currency'               => 'USD',
                 'skip_hook_notification' => true,
-            )
+            ),
+            'merchant', 'transactions', self::STORE_ID
         )->willReturn($response);
         $currentMock->refund($payment, 123);
     }
@@ -948,6 +966,13 @@ class Bolt_Boltpay_Model_PaymentTest extends PHPUnit_Framework_TestCase
             array(
                 'additional_information' => array(
                     'bolt_merchant_transaction_id' => self::BOLT_MERCHANT_TRANSACTION_ID
+                ),
+                'order' => Mage::getModel(
+                    'sales/order',
+                    array(
+                        'order_currency_code' => 'USD',
+                        'store_id' => self::STORE_ID
+                    )
                 )
             )
         );
@@ -956,7 +981,7 @@ class Bolt_Boltpay_Model_PaymentTest extends PHPUnit_Framework_TestCase
             array(
                 'transaction_id'         => self::BOLT_MERCHANT_TRANSACTION_ID,
                 'skip_hook_notification' => true
-            )
+            ), 'merchant', 'transactions', self::STORE_ID
         )->willReturn((object)array('status' => null));
         $this->currentMock->void($payment);
     }
@@ -979,6 +1004,7 @@ class Bolt_Boltpay_Model_PaymentTest extends PHPUnit_Framework_TestCase
                     'setAdditionalInformation',
                     'setParentTransactionId',
                     'setTransactionId',
+                    'getOrder'
                 )
             )
             ->getMock();
@@ -989,6 +1015,10 @@ class Bolt_Boltpay_Model_PaymentTest extends PHPUnit_Framework_TestCase
                     array('bolt_reference', self::BOLT_TRANSACTION_REFERENCE),
                 )
             );
+
+        $payment->expects($this->once())->method('getOrder')->willReturn(
+            Mage::getModel('sales/order', array('order_currency_code' => 'USD','store_id' => self::STORE_ID))
+        );
         $payment->expects($this->once())->method('setAdditionalInformation')
             ->with('bolt_transaction_status', Bolt_Boltpay_Model_Payment::TRANSACTION_CANCELLED);
 
@@ -1002,7 +1032,7 @@ class Bolt_Boltpay_Model_PaymentTest extends PHPUnit_Framework_TestCase
                 array(
                     'transaction_id'         => self::BOLT_MERCHANT_TRANSACTION_ID,
                     'skip_hook_notification' => true
-                )
+                ), 'merchant', 'transactions', self::STORE_ID
             )
             ->willReturn((object)array('status' => Bolt_Boltpay_Model_Payment::TRANSACTION_CANCELLED));
         $this->assertEquals($this->currentMock, $this->currentMock->void($payment));
@@ -3356,7 +3386,8 @@ class Bolt_Boltpay_Model_PaymentTest extends PHPUnit_Framework_TestCase
             array(
                 'transaction_id' => self::BOLT_MERCHANT_TRANSACTION_ID,
                 'decision'       => Bolt_Boltpay_Model_Payment::DECISION_APPROVE,
-            )
+            ),
+            'merchant', 'transactions', self::STORE_ID
         )->willReturn((object)array('reference' => null));
         $this->assertFalse(
             Bolt_Boltpay_TestHelper::callNonPublicFunction(
@@ -3368,7 +3399,8 @@ class Bolt_Boltpay_Model_PaymentTest extends PHPUnit_Framework_TestCase
                         array(
                             'additional_information' => array(
                                 'bolt_merchant_transaction_id' => self::BOLT_MERCHANT_TRANSACTION_ID
-                            )
+                            ),
+                            'order' => Mage::getModel('sales/order', array('order_currency_code' => 'USD', 'store_id' => self::STORE_ID))
                         )
                     ),
                     Bolt_Boltpay_Model_Payment::DECISION_APPROVE
@@ -3397,14 +3429,16 @@ class Bolt_Boltpay_Model_PaymentTest extends PHPUnit_Framework_TestCase
             array(
                 'transaction_id' => self::BOLT_MERCHANT_TRANSACTION_ID,
                 'decision'       => Bolt_Boltpay_Model_Payment::DECISION_APPROVE,
-            )
+            ),
+            'merchant', 'transactions', self::STORE_ID
         )->willReturn((object)array('reference' => self::BOLT_TRANSACTION_REFERENCE));
         $payment = Mage::getModel(
             'payment/info',
             array(
                 'additional_information' => array(
                     'bolt_merchant_transaction_id' => self::BOLT_MERCHANT_TRANSACTION_ID
-                )
+                ),
+                'order' => Mage::getModel('sales/order', array('order_currency_code' => 'USD', 'store_id' => self::STORE_ID))
             )
         );
         $currentMock->expects($this->once())->method('updateReviewedOrderHistory')->with($payment);
