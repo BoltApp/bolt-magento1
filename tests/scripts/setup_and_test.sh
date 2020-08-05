@@ -8,7 +8,7 @@ echo "Installing magento..."
 if [ "${PHP_VERSION}" == "5.5" ]; then
   curl -o  n98-magerun.phar https://files.magerun.net/n98-magerun-1.103.3.phar
 else
- curl -O https://files.magerun.net/n98-magerun.phar
+  curl -O https://files.magerun.net/n98-magerun.phar
 fi
 chmod +x n98-magerun.phar
 MAGENTO_DIR='./magento'
