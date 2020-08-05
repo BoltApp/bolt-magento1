@@ -71,7 +71,7 @@ jobs:
           steps:
             - run:
                 name: PHP 5.5 Magento 1.9
-                command: PHP_VERSION=5.5 MAGENTO_VERSION=magento-mirror-1.9.3.6 PHPUNIT_PHAR=tests/unit/phpunit-4.8.36.phar tests/scripts/setup_and_test.sh nocov
+                command: PHP_VERSION=5.5 MAGENTO_VERSION=magento-mirror-1.9.4.1 PHPUNIT_PHAR=tests/unit/phpunit-4.8.36.phar tests/scripts/setup_and_test.sh nocov
             - notify-buildcop
   unit-php56-mage18:
     docker:
@@ -101,7 +101,7 @@ jobs:
                 name: PHP 5.6 Magento 1.9
                 command: |
                   mkdir ./artifacts
-                  PHP_VERSION=5.6 MAGENTO_VERSION=magento-mirror-1.9.3.6 PHPUNIT_PHAR=tests/unit/phpunit-5.7.9.phar tests/scripts/setup_and_test.sh withcov
+                  PHP_VERSION=5.6 MAGENTO_VERSION=magento-mirror-1.9.4.5 PHPUNIT_PHAR=tests/unit/phpunit-5.7.9.phar tests/scripts/setup_and_test.sh withcov
             - store_artifacts:
                 path: ./artifacts
             - notify-buildcop
@@ -118,7 +118,7 @@ jobs:
       - run:
           name: Integration test
           command: |
-            MAGENTO_VERSION=magento-mirror-1.9.3.6 tests/scripts/setup_integration.sh
+            MAGENTO_VERSION=magento-mirror-1.9.4.5 tests/scripts/setup_integration.sh
             echo "Running integration test"
             git clone git@github.com:BoltApp/integration-tests.git
             cd integration-tests
