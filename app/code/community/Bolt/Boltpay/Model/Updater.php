@@ -364,7 +364,7 @@ class Bolt_Boltpay_Model_Updater extends Mage_Core_Model_Abstract
                 }
             } catch (GuzzleException $e) {
                 $this->boltHelper()->notifyException($e);
-                $releases = array();
+                $releases = false;
             }
         }
 
