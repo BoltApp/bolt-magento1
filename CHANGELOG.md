@@ -1,4 +1,7 @@
 # Changelog
+## [V2.9.0](https://bolt-public.s3-us-west-1.amazonaws.com/magento-integration-release/bolt-magento1-v2.9.0.zip) 2020-09-01
+ - Compability changes for PHP 5.4
+ - Various other bugfixes
 ## [V2.8.0](https://bolt-public.s3-us-west-1.amazonaws.com/magento-integration-release/bolt-magento1-v2.8.0.zip) 2020-06-08
  - New feature: automatic notification in Magento admin console when a new version of Bolt is released
  - Various other bugfixes
