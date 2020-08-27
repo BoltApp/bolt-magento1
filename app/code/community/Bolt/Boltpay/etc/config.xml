@@ -19,7 +19,7 @@
 <config>
   <modules>
     <Bolt_Boltpay>
-      <version>2.8.0</version> <!-- version number should be incremented appropriately  -->
+      <version>2.9.0</version> <!-- version number should be incremented appropriately  -->
     </Bolt_Boltpay>
   </modules>
 
