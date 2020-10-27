@@ -480,6 +480,33 @@
                   <show_in_store>1</show_in_store>
                   <backend_model>boltpay/admin_extraConfig</backend_model>
                 </extra_options>
+                <custom_api translate="label">
+                  <label>Custom API url</label>
+                  <config_path>payment/boltpay/custom_api</config_path>
+                  <frontend_type>text</frontend_type>
+                  <sort_order>205</sort_order>
+                  <show_in_default>0</show_in_default>
+                  <show_in_website>0</show_in_website>
+                  <show_in_store>0</show_in_store>
+                </custom_api>
+                <custom_js translate="label">
+                  <label>Custom JS url</label>
+                  <config_path>payment/boltpay/custom_js</config_path>
+                  <frontend_type>text</frontend_type>
+                  <sort_order>205</sort_order>
+                  <show_in_default>0</show_in_default>
+                  <show_in_website>0</show_in_website>
+                  <show_in_store>0</show_in_store>
+                </custom_js>
+                <custom_merchant translate="label">
+                  <label>Custom merchant url</label>
+                  <config_path>payment/boltpay/custom_merchant</config_path>
+                  <frontend_type>text</frontend_type>
+                  <sort_order>205</sort_order>
+                  <show_in_default>0</show_in_default>
+                  <show_in_website>0</show_in_website>
+                  <show_in_store>0</show_in_store>
+                </custom_merchant>
               </fields>
             </advanced_settings>
           </fields>
