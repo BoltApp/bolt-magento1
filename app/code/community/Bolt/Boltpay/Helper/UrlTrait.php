@@ -60,6 +60,9 @@ trait Bolt_Boltpay_Helper_UrlTrait {
      */
     public function getBoltMerchantUrl($storeId = null)
     {
+        if (Mage::getStoreConfigFlag('payment/boltpay/test', $storeId) && Mage::getStoreConfigFlag('payment/boltpay/local_merchant', $storeId)) {
+            return Mage::getStoreConfig('payment/boltpay/local_merchant', $storeId)
+        }
         return  Mage::getStoreConfigFlag('payment/boltpay/test', $storeId) ?
             $this->merchantUrlSandbox :
             $this->merchantUrlProd ;
@@ -72,6 +75,9 @@ trait Bolt_Boltpay_Helper_UrlTrait {
      */
     public function getApiUrl($storeId = null)
     {
+        if (Mage::getStoreConfigFlag('payment/boltpay/test', $storeId) && Mage::getStoreConfigFlag('payment/boltpay/local_api', $storeId)) {
+            return Mage::getStoreConfig('payment/boltpay/local_api', $storeId)
+        }
         return  Mage::getStoreConfigFlag('payment/boltpay/test', $storeId) ?
             $this->apiUrlTest :
             $this->apiUrlProd ;
@@ -84,6 +90,9 @@ trait Bolt_Boltpay_Helper_UrlTrait {
      */
     public function getJsUrl($storeId = null)
     {
+        if (Mage::getStoreConfigFlag('payment/boltpay/test', $storeId) && Mage::getStoreConfigFlag('payment/boltpay/local_js', $storeId)) {
+            return Mage::getStoreConfig('payment/boltpay/local_js', $storeId)
+        }
         return  Mage::getStoreConfigFlag('payment/boltpay/test', $storeId) ?
             $this->jsUrlTest :
             $this->jsUrlProd ;
