@@ -63,11 +63,11 @@ class Bolt_Boltpay_Helper_UrlTraitTest extends PHPUnit_Framework_TestCase
 
     public function providerGetApiUrl() {
         return [
-            [false, '', 'https://api.bolt.com'],
-            [false, 'https://api.vitaliy.dev.bolt.me', 'https://api.bolt.com'],
-            [true, '', 'https://api-sandbox.bolt.com'],
-            [true, 'https://wrong.url.com', 'https://api-sandbox.bolt.com'],
-            [true, 'https://api.vitaliy.dev.bolt.me', 'https://api.vitaliy.dev.bolt.me'],
+            [false, '', 'https://api.bolt.com/'],
+            [false, 'https://api.vitaliy.dev.bolt.me/', 'https://api.bolt.com/'],
+            [true, '', 'https://api-sandbox.bolt.com/'],
+            [true, 'https://wrong.url.com/', 'https://api-sandbox.bolt.com/'],
+            [true, 'https://api.vitaliy.dev.bolt.me/', 'https://api.vitaliy.dev.bolt.me/'],
         ];
     }
 
