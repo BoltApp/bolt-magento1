@@ -66,7 +66,7 @@ trait Bolt_Boltpay_Helper_UrlTrait {
      * @param $url
      * @return bool
      */
-    protected function validateCustomUrl($url)
+    public function validateCustomUrl($url)
     {
         return (
             $url
