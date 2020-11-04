@@ -124,6 +124,7 @@ class Bolt_Boltpay_Block_Checkout_BoltpayTest extends PHPUnit_Framework_TestCase
     public function _construct_inSandbox_setsJSUrlFromHelper()
     {
         TestHelper::stubConfigValue('payment/boltpay/test', 1);
+        TestHelper::stubConfigValue('payment/boltpay/custom_js', '');
         $currentObject = new BoltpayCheckoutBlock();
         $this->assertAttributeEquals('https://connect-sandbox.bolt.com/connect.js', '_jsUrl', $currentObject);
     }
@@ -154,6 +155,7 @@ class Bolt_Boltpay_Block_Checkout_BoltpayTest extends PHPUnit_Framework_TestCase
     public function getTrackJsUrl_inSandbox_returnsJSUrlFromHelperWithSuffix()
     {
         TestHelper::stubConfigValue('payment/boltpay/test', 1);
+        TestHelper::stubConfigValue('payment/boltpay/custom_js', '');
         $this->assertEquals(
             'https://connect-sandbox.bolt.com/track.js',
             $this->currentMock->getTrackJsUrl()

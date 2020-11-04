@@ -179,6 +179,7 @@ class Bolt_Boltpay_Helper_ApiTraitTest extends PHPUnit_Framework_TestCase
     {
         TestHelper::stubConfigValue('payment/boltpay/publishable_key_multipage', 'publishable_key_multipage');
         TestHelper::stubConfigValue('payment/boltpay/api_key', 'api_key');
+        TestHelper::stubConfigValue('payment/boltpay/test', false);
         $currentMock = $this->getCurrentMock();
         srand(1);
         $headerInfo = TestHelper::callNonPublicFunction($currentMock, 'constructRequestHeaders', array($params, $key));
