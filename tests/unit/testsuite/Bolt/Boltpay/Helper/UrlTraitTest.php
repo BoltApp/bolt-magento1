@@ -68,6 +68,7 @@ class Bolt_Boltpay_Helper_UrlTraitTest extends PHPUnit_Framework_TestCase
             [true, '', 'https://api-sandbox.bolt.com/'],
             [true, 'https://wrong.url.com/', 'https://api-sandbox.bolt.com/'],
             [true, 'https://api.vitaliy.dev.bolt.me/', 'https://api.vitaliy.dev.bolt.me/'],
+            [true, 'https://api-staging.bolt.com/', 'https://api-staging.bolt.com/'],
         ];
     }
 
@@ -92,6 +93,7 @@ class Bolt_Boltpay_Helper_UrlTraitTest extends PHPUnit_Framework_TestCase
             [true, '', 'https://merchant-sandbox.bolt.com'],
             [true, 'https://wrong.url.com', 'https://merchant-sandbox.bolt.com'],
             [true, 'https://merchant.vitaliy.dev.bolt.me', 'https://merchant.vitaliy.dev.bolt.me'],
+            [true, 'https://merchant-staging.bolt.com', 'https://merchant-staging.bolt.com'],
         ];
     }
 
@@ -116,6 +118,7 @@ class Bolt_Boltpay_Helper_UrlTraitTest extends PHPUnit_Framework_TestCase
             [true, '', 'https://connect-sandbox.bolt.com'],
             [true, 'https://wrong.url.com', 'https://connect-sandbox.bolt.com'],
             [true, 'https://connect.vitaliy.dev.bolt.me', 'https://connect.vitaliy.dev.bolt.me'],
+            [true, 'https://connect-staging.bolt.com', 'https://connect-staging.bolt.com'],
         ];
     }
 
