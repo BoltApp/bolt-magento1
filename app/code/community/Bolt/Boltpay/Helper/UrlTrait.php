@@ -52,6 +52,27 @@ trait Bolt_Boltpay_Helper_UrlTrait {
      */
     protected $merchantUrlProd = 'https://merchant.bolt.com';
 
+    /**
+     * @param $storedValue
+     * @param $default
+     * @return mixed
+     */
+    public function getCustomURLValueOrDefault($storedValue, $default)
+    {
+        return $this->validateCustomUrl($storedValue) ? $storedValue : $default;
+    }
+
+    /**
+     * @param $url
+     * @return bool
+     */
+    public function validateCustomUrl($url)
+    {
+        return (
+            $url
+            && preg_match("/^https?:\/\/([a-zA-Z0-9-]+\.)+bolt.(me|com)\/?$/", $url)
+        );
+    }
 
     /**
      * Returns the Bolt merchant url, sandbox or production, depending on the store configuration.
@@ -60,9 +81,14 @@ trait Bolt_Boltpay_Helper_UrlTrait {
      */
     public function getBoltMerchantUrl($storeId = null)
     {
-        return  Mage::getStoreConfigFlag('payment/boltpay/test', $storeId) ?
-            $this->merchantUrlSandbox :
-            $this->merchantUrlProd ;
+        if (Mage::getStoreConfigFlag('payment/boltpay/test', $storeId)) {
+            return $this->getCustomURLValueOrDefault(
+                Mage::getStoreConfig('payment/boltpay/custom_merchant', $storeId),
+                $this->merchantUrlSandbox
+            );
+        } else {
+            return $this->merchantUrlProd;
+        }
     }
 
     /**
@@ -72,9 +98,14 @@ trait Bolt_Boltpay_Helper_UrlTrait {
      */
     public function getApiUrl($storeId = null)
     {
-        return  Mage::getStoreConfigFlag('payment/boltpay/test', $storeId) ?
-            $this->apiUrlTest :
-            $this->apiUrlProd ;
+        if (Mage::getStoreConfigFlag('payment/boltpay/test', $storeId)) {
+            return $this->getCustomURLValueOrDefault(
+                Mage::getStoreConfig('payment/boltpay/custom_api', $storeID),
+                $this->apiUrlTest
+            );
+        } else {
+            return $this->apiUrlProd;
+        }
     }
 
     /**
@@ -84,9 +115,14 @@ trait Bolt_Boltpay_Helper_UrlTrait {
      */
     public function getJsUrl($storeId = null)
     {
-        return  Mage::getStoreConfigFlag('payment/boltpay/test', $storeId) ?
-            $this->jsUrlTest :
-            $this->jsUrlProd ;
+        if (Mage::getStoreConfig('payment/boltpay/test', $storeId)) {
+            return $this->getCustomURLValueOrDefault(
+                Mage::getStoreConfig('payment/boltpay/custom_js', $storeID),
+                $this->jsUrlTest
+            );
+        } else {
+            return $this->jsUrlProd;
+        }
     }
 
     /**

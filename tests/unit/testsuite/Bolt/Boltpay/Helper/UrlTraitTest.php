@@ -49,110 +49,77 @@ class Bolt_Boltpay_Helper_UrlTraitTest extends PHPUnit_Framework_TestCase
 
     /**
      * @test
-     * that getBoltMerchantUrl returns production merchant url when sandbox mode is set to false in configuration
-     *
-     * @covers Bolt_Boltpay_Helper_UrlTrait::getBoltMerchantUrl
-     *
-     * @throws ReflectionException if trait doesn't have merchantUrlProd property
-     * @throws Mage_Core_Model_Store_Exception from test helper if store doesn't exist
-     */
-    public function getBoltMerchantUrl_withTestConfigurationSetToFalse_returnsProductionMerchantUrl()
-    {
-        Bolt_Boltpay_TestHelper::stubConfigValue('payment/boltpay/test', false);
-        $this->assertEquals(
-            Bolt_Boltpay_TestHelper::getNonPublicProperty($this->currentMock, 'merchantUrlProd'),
-            $this->currentMock->getBoltMerchantUrl()
-        );
-    }
-
-    /**
-     * @test
-     * that getBoltMerchantUrl returns sandbox merchant url when sandbox mode is set to true in configuration
-     *
-     * @covers Bolt_Boltpay_Helper_UrlTrait::getBoltMerchantUrl
-     *
-     * @throws ReflectionException if trait doesn't have merchantUrlSandbox property
-     * @throws Mage_Core_Model_Store_Exception from test helper if store doesn't exist
-     */
-    public function getBoltMerchantUrl_withTestConfigurationSetToTrue_returnsSandboxMerchantUrl()
-    {
-        Bolt_Boltpay_TestHelper::stubConfigValue('payment/boltpay/test', true);
-        $this->assertEquals(
-            Bolt_Boltpay_TestHelper::getNonPublicProperty($this->currentMock, 'merchantUrlSandbox'),
-            $this->currentMock->getBoltMerchantUrl()
-        );
-    }
-
-    /**
-     * @test
-     * that getApiUrl returns production API url when sandbox mode is set to false in configuration
-     *
      * @covers Bolt_Boltpay_Helper_UrlTrait::getApiUrl
-     *
-     * @throws ReflectionException if trait doesn't have apiUrlProd property
-     * @throws Mage_Core_Model_Store_Exception from test helper if store doesn't exist
+     * @dataProvider providerGetApiUrl
      */
-    public function getApiUrl_withTestConfigurationSetToFalse_returnsProductionAPIUrl()
-    {
-        Bolt_Boltpay_TestHelper::stubConfigValue('payment/boltpay/test', false);
+    public function getApiUrl($test, $customValue, $result) {
+        Bolt_Boltpay_TestHelper::stubConfigValue('payment/boltpay/test', $test);
+        Bolt_Boltpay_TestHelper::stubConfigValue('payment/boltpay/custom_api', $customValue);
         $this->assertEquals(
-            Bolt_Boltpay_TestHelper::getNonPublicProperty($this->currentMock, 'apiUrlProd'),
+            $result,
             $this->currentMock->getApiUrl()
         );
     }
 
-    /**
-     * @test
-     * that getApiUrl returns sandbox API url when sandbox mode is set to true in configuration
-     *
-     * @covers Bolt_Boltpay_Helper_UrlTrait::getApiUrl
-     *
-     * @throws ReflectionException if trait doesn't have apiUrlTest property
-     * @throws Mage_Core_Model_Store_Exception from test helper if store doesn't exist
-     */
-    public function getApiUrl_withTestConfigurationSetToTrue_returnsSandboxAPIUrl()
-    {
-        Bolt_Boltpay_TestHelper::stubConfigValue('payment/boltpay/test', true);
-        $this->assertEquals(
-            Bolt_Boltpay_TestHelper::getNonPublicProperty($this->currentMock, 'apiUrlTest'),
-            $this->currentMock->getApiUrl()
-        );
+    public function providerGetApiUrl() {
+        return [
+            [false, '', 'https://api.bolt.com/'],
+            [false, 'https://api.vitaliy.dev.bolt.me/', 'https://api.bolt.com/'],
+            [true, '', 'https://api-sandbox.bolt.com/'],
+            [true, 'https://wrong.url.com/', 'https://api-sandbox.bolt.com/'],
+            [true, 'https://api.vitaliy.dev.bolt.me/', 'https://api.vitaliy.dev.bolt.me/'],
+            [true, 'https://api-staging.bolt.com/', 'https://api-staging.bolt.com/'],
+        ];
     }
 
     /**
      * @test
-     * that getJsUrl returns production JS url when sandbox mode is set to false in configuration
-     *
-     * @covers Bolt_Boltpay_Helper_UrlTrait::getJsUrl
-     *
-     * @throws ReflectionException if trait doesn't have jsUrlProd property
-     * @throws Mage_Core_Model_Store_Exception from test helper if store doesn't exist
+     * @covers Bolt_Boltpay_Helper_UrlTrait::getBoltMerchantUrl
+     * @dataProvider providerGetBoltMerchantUrl
      */
-    public function getJsUrl_withTestConfigurationSetToFalse_returnsProductionJSUrl()
-    {
-        Bolt_Boltpay_TestHelper::stubConfigValue('payment/boltpay/test', false);
+    public function getBoltMerchantUrl($test, $customValue, $result) {
+        Bolt_Boltpay_TestHelper::stubConfigValue('payment/boltpay/test', $test);
+        Bolt_Boltpay_TestHelper::stubConfigValue('payment/boltpay/custom_merchant', $customValue);
         $this->assertEquals(
-            Bolt_Boltpay_TestHelper::getNonPublicProperty($this->currentMock, 'jsUrlProd'),
-            $this->currentMock->getJsUrl()
+            $result,
+            $this->currentMock->getBoltMerchantUrl()
         );
+    }
+
+    public function providerGetBoltMerchantUrl() {
+        return [
+            [false, '', 'https://merchant.bolt.com'],
+            [false, 'https://merchant.vitaliy.dev.bolt.me', 'https://merchant.bolt.com'],
+            [true, '', 'https://merchant-sandbox.bolt.com'],
+            [true, 'https://wrong.url.com', 'https://merchant-sandbox.bolt.com'],
+            [true, 'https://merchant.vitaliy.dev.bolt.me', 'https://merchant.vitaliy.dev.bolt.me'],
+            [true, 'https://merchant-staging.bolt.com', 'https://merchant-staging.bolt.com'],
+        ];
     }
 
     /**
      * @test
-     * that getJsUrl returns sandbox JS url when sandbox mode is set to true in configuration
-     *
      * @covers Bolt_Boltpay_Helper_UrlTrait::getJsUrl
-     *
-     * @throws ReflectionException if trait doesn't have jsUrlTest property
-     * @throws Mage_Core_Model_Store_Exception from test helper if store doesn't exist
+     * @dataProvider providerGetJsUrl
      */
-    public function getJsUrl_withTestConfigurationSetToFalse_returnsSandboxJSUrl()
-    {
-        Bolt_Boltpay_TestHelper::stubConfigValue('payment/boltpay/test', true);
+    public function getJsUrl($test, $customValue, $result) {
+        Bolt_Boltpay_TestHelper::stubConfigValue('payment/boltpay/test', $test);
+        Bolt_Boltpay_TestHelper::stubConfigValue('payment/boltpay/custom_js', $customValue);
         $this->assertEquals(
-            Bolt_Boltpay_TestHelper::getNonPublicProperty($this->currentMock, 'jsUrlTest'),
+            $result,
             $this->currentMock->getJsUrl()
         );
+    }
+
+    public function providerGetJsUrl() {
+        return [
+            [false, '', 'https://connect.bolt.com'],
+            [false, 'https://connect.vitaliy.dev.bolt.me', 'https://connect.bolt.com'],
+            [true, '', 'https://connect-sandbox.bolt.com'],
+            [true, 'https://wrong.url.com', 'https://connect-sandbox.bolt.com'],
+            [true, 'https://connect.vitaliy.dev.bolt.me', 'https://connect.vitaliy.dev.bolt.me'],
+            [true, 'https://connect-staging.bolt.com', 'https://connect-staging.bolt.com'],
+        ];
     }
 
     /**
@@ -185,6 +152,7 @@ class Bolt_Boltpay_Helper_UrlTraitTest extends PHPUnit_Framework_TestCase
     public function getConnectJsUrl_withTestConfigurationSetToTrue_returnsSandboxJSUrlAppendedWithConnectFilename()
     {
         Bolt_Boltpay_TestHelper::stubConfigValue('payment/boltpay/test', true);
+        Bolt_Boltpay_TestHelper::stubConfigValue('payment/boltpay/ls', '');
         $this->assertEquals(
             Bolt_Boltpay_TestHelper::getNonPublicProperty($this->currentMock, 'jsUrlTest') . "/connect.js",
             $this->currentMock->getConnectJsUrl()
@@ -320,5 +288,37 @@ class Bolt_Boltpay_Helper_UrlTraitTest extends PHPUnit_Framework_TestCase
                 'params' => array('referrer' => base64_encode('http://localhost'))
             ),
         );
+    }
+
+    /**
+     * @test
+     * @covers ::validateCustomUrl
+     * @dataProvider providerValidateCustomUrl
+     *
+     * @param $url
+     * @param $expected
+     * @throws \ReflectionException
+     */
+    public function validateCustomUrl($url, $expected)
+    {
+        $result = $this->currentMock->validateCustomUrl($url);
+        $this->assertEquals($expected, $result);
+    }
+
+    public function providerValidateCustomUrl()
+    {
+        return [
+            ['https://test.bolt.me', true],
+            ['https://test.bolt.me/', true],
+            ['https://api.test.bolt.me/', true],
+            ['https://test.bolt.com', true],
+            ['https://connect-staging.bolt.com', true],
+            ['https://test .bolt.com', false],
+            ['https://testbolt.me', false],
+            ['https://test.com', false],
+            ['test.bolt.me', false],
+            ['gopher://127.0.0.1:6379/_FLUSHALL%0D%0Abolt.me', false],
+
+        ];
     }
 }
