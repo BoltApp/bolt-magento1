@@ -4,8 +4,6 @@ set -e
 set -u
 set -x
 
-git clone --depth 1 git@github.com:BoltApp/integration-tests.git
-
 cd /home/circleci
 
 # Start mysql
@@ -31,9 +29,6 @@ php -d memory_limit=512M n98-magerun.phar admin:user:create bolttest dev+m1-inte
 
 INC_NUM=$((100 * ${CIRCLE_BUILD_NUM}))
 mysql -u magento -h 127.0.0.1 -e "SET SQL_MODE='ALLOW_INVALID_DATES'; USE magento; ALTER TABLE sales_flat_quote AUTO_INCREMENT=${INC_NUM};"
-
-
-NGROK_URL='m1ci.bolt-integrations.ngrok.io';
 
 cd /var/www/html
 php ~/project/tests/scripts/init-bolt.php $NGROK_URL $BOLT_STAGING_MERCHANT_API_KEY $BOLT_STAGING_MERCHANT_SIGNING_SECRET \
