@@ -4,11 +4,15 @@ include_once 'app/Mage.php';
 
 Mage::init();
 
-$api_key = Mage::getModel('core/encryption')->encrypt($argv[1]);
-$signing_key = Mage::getModel('core/encryption')->encrypt($argv[2]);
-$publishable_key_multipage = $argv[3];
-$publishable_key_paymentonly = $argv[4];
-$publishable_key_admin = $argv[5];
+$url = "http://{$argv[1]}/";
+$api_key = Mage::getModel('core/encryption')->encrypt($argv[2]);
+$signing_key = Mage::getModel('core/encryption')->encrypt($argv[3]);
+$publishable_key_multipage = Mage::getModel('core/encryption')->encrypt($argv[4]);
+$publishable_key_paymentonly = Mage::getModel('core/encryption')->encrypt($argv[5]);
+$publishable_key_admin = Mage::getModel('core/encryption')->encrypt($argv[6]);
+
+Mage::getModel('core/config')->saveConfig('web/unsecure/base_url', $url);
+Mage::getModel('core/config')->saveConfig('web/secure/base_url', $url);
 
 // Save configs
 Mage::getModel('core/config')->saveConfig('general/locale/code', 'en_US');
@@ -24,6 +28,12 @@ Mage::getModel('core/config')->saveConfig('payment/boltpay/signing_key', $signin
 Mage::getModel('core/config')->saveConfig('payment/boltpay/publishable_key_multipage', $publishable_key_multipage);
 Mage::getModel('core/config')->saveConfig('payment/boltpay/publishable_key_onepage', $publishable_key_paymentonly);
 Mage::getModel('core/config')->saveConfig('payment/boltpay/publishable_key_admin', $publishable_key_admin);
+
+// Set staging
+Mage::getModel('core/config')->saveConfig('payment/boltpay/test', true);
+Mage::getModel('core/config')->saveConfig('payment/boltpay/custom_api', 'https://api-staging.bolt.com/');
+Mage::getModel('core/config')->saveConfig('payment/boltpay/custom_merchant', 'https://merchant-staging.bolt.com');
+Mage::getModel('core/config')->saveConfig('payment/boltpay/custom_js', 'https://connect-staging.bolt.com');
 
 // Create discounts
 function createDiscountRule($couponCode, $action, $additionalData)
@@ -60,16 +70,16 @@ function createDiscountRule($couponCode, $action, $additionalData)
     return $rule->getId();
 }
 
-createDiscountRule("30poff", Mage_SalesRule_Model_Rule::BY_PERCENT_ACTION, array(
-    'discount_amount' => '30',
+createDiscountRule("at_cart_10p", Mage_SalesRule_Model_Rule::BY_PERCENT_ACTION, array(
+    'discount_amount' => '10',
 ));
-createDiscountRule("1234centsoff", Mage_SalesRule_Model_Rule::BY_FIXED_ACTION, array(
-    'discount_amount' => '12.34',
+createDiscountRule("at_cart_5d", Mage_SalesRule_Model_Rule::BY_FIXED_ACTION, array(
+    'discount_amount' => '5.00',
 ));
-createDiscountRule("freeship", Mage_SalesRule_Model_Rule::BY_FIXED_ACTION, array(
+createDiscountRule("at_free_shipping", Mage_SalesRule_Model_Rule::BY_FIXED_ACTION, array(
     'simple_free_shipping' => '1',
 ));
-createDiscountRule("expired", Mage_SalesRule_Model_Rule::BY_FIXED_ACTION, array(
+createDiscountRule("at_expired", Mage_SalesRule_Model_Rule::BY_FIXED_ACTION, array(
     'from_date' => '2000-01-01',
     'to_date' => '2000-01-02',
 ));
