@@ -1,5 +1,5 @@
 # Changelog
-## [V2.10.0](https://bolt-public.s3-us-west-1.amazonaws.com/magento-integration-release/bolt-magento1-v2.10.0.zip) 2020-11-05
+## [V2.10.0](https://bolt-public.s3-us-west-1.amazonaws.com/magento-integration-release/bolt-magento1-v2.10.0.zip) 2020-11-20
  - Added: custom URLs for staging and dev are now supported.
 ## [V2.9.0](https://bolt-public.s3-us-west-1.amazonaws.com/magento-integration-release/bolt-magento1-v2.9.0.zip) 2020-09-01
  - Compability changes for PHP 5.4
