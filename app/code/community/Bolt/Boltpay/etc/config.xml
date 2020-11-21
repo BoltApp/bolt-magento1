@@ -143,6 +143,15 @@
           </bolt_boltpay_create_invoice_after_creating_shipment>
         </observers>
       </sales_order_shipment_save_after>
+      <sales_order_delete_before>
+        <observers>
+          <sales_order_delete_after>
+            <type>singleton</type>
+            <class>Bolt_Boltpay_Model_Observer</class>
+            <method>logInfoToBugsnag</method>
+          </sales_order_delete_after>
+        </observers>
+      </sales_order_delete_before>
     </events>
 
     <sales>

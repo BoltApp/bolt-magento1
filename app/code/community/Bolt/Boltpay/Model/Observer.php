@@ -368,4 +368,19 @@ class Bolt_Boltpay_Model_Observer
 
         return false;
     }
+
+    /**
+     * @param $observer
+     */
+    public function logInfoToBugsnag($observer)
+    {
+        $order = $observer->getEvent()->getOrder();
+        if (!$order->getPayment() || $order->getPayment()->getMethod() !== Bolt_Boltpay_Model_Payment::METHOD_CODE){
+            return;
+        }
+
+        $exception = new Exception('Delete Order: '. $order->getIncrementId());
+        $this->boltHelper()->logException($exception);
+        $this->boltHelper()->notifyException($exception);
+    }
 }
