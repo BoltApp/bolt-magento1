@@ -2019,7 +2019,6 @@ class Bolt_Boltpay_Model_BoltOrderTest extends PHPUnit_Framework_TestCase
                                     if(response.responseJSON.error) {                                                        
                                         reject(response.responseJSON.error_messages);
                                         
-                                        // BoltCheckout is currently not doing anything reasonable to alert the user of a problem, so we will do something as a backup
                                         alert(response.responseJSON.error_messages);
                                         location.reload();
                                     } else {                                     
