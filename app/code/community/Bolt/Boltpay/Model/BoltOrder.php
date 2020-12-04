@@ -789,8 +789,6 @@ class Bolt_Boltpay_Model_BoltOrder extends Bolt_Boltpay_Model_Abstract
                                 onSuccess: function(response) {
                                     if(response.responseJSON.error) {                                                        
                                         reject(response.responseJSON.error_messages);
-                                        
-                                        // BoltCheckout is currently not doing anything reasonable to alert the user of a problem, so we will do something as a backup
                                         alert(response.responseJSON.error_messages);
                                         location.reload();
                                     } else {                                     
