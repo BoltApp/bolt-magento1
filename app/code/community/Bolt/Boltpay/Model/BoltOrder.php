@@ -140,6 +140,12 @@ class Bolt_Boltpay_Model_BoltOrder extends Bolt_Boltpay_Model_Abstract
                     $imageUrl = $this->boltHelper()->getItemImageUrl($item);
                     $product = Mage::getModel('catalog/product')->load($item->getProductId());
                     $type = $product->getTypeId() == 'virtual' ? self::ITEM_TYPE_DIGITAL : self::ITEM_TYPE_PHYSICAL;
+                    $type = $this->boltHelper()->doFilterEvent(
+                        'bolt_boltpay_filter_product_type',
+                        $type,
+                        array('product' => $product)
+                    );
+
                     $calculatedTotal += round($item->getPrice() * 100 * $item->getQty());
                     return array(
                         'reference'    => $isProductPage ? $item->getProductId() : $item->getId(),
