@@ -21,6 +21,7 @@ $version = Bolt_Boltpay_Helper_ConfigTrait::getBoltPluginVersion();
 ?>
 <?php if($this->isBoltActive()): ?>
     <script
+            defer
             id="bolt-track"
             type="text/javascript"
             src="<?= $this->getTrackJsUrl(); ?>"
