@@ -1,0 +1,1575 @@
+Subject: [PATCH] Point Bolt URLs at boltapp.com (plugin 2.9.0)
+
+Port of the bolt-magento2 domain migration (BoltApp/bolt-magento2 #1973) onto
+the Magento 1 plugin's 2.9.0 release tag, extended to every bolt.com reference
+in the tree.
+
+Runtime hosts: the six constants in Helper/UrlTrait.php -- api, connect and
+merchant, production and sandbox -- move from bolt.com to boltapp.com.
+Block/Checkout/Boltpay.php builds connect.js and track.js from them, and the
+API, GraphQL and configuration helpers go through getApiUrl() and
+getBoltMerchantUrl(), so that is the whole request surface. The admin help
+text in etc/system.xml that names merchant.bolt.com/settings moves with them.
+
+Apple Pay placeholder: Block/Checkout/Boltpay.php compares the prefilled
+email against na@bolt.com to detect Apple Pay's masked address. Bolt's
+checkout still sends na@bolt.com today, so the check now accepts both
+na@bolt.com and na@boltapp.com instead of swapping one for the other.
+
+Help links: docs.bolt.com and support.bolt.com no longer resolve, and no
+Magento 1 page exists on help.boltapp.com, so the installation and
+operations links in README.md, refund_popup.phtml and update_popup.phtml
+point at the help centre root, and the production-readiness article at
+help.boltapp.com/developers/production-readiness-guides/.
+
+Metadata: the copyright header in every file (2.9.0 ships 106 of them,
+tests included) reads https://www.boltapp.com; composer.json's homepage
+and dev@ contact address move to boltapp.com.
+
+Left alone: dummy test fixtures such as test@bolt.com and https://bolt.com
+image URLs, the *.dev.bolt.me and *-staging.bolt.com custom-URL test cases,
+and CHANGELOG.md, which has no bolt.com reference.
+
+Apply from the Magento root (the directory that holds app/ and js/):
+
+    git apply bolt-magento1-2.9.0-boltapp-domains.patch
+    # or, without git:
+    patch -p1 < bolt-magento1-2.9.0-boltapp-domains.patch
+
+---
+diff --git a/README.md b/README.md
+--- a/README.md
++++ b/README.md
+@@ -15,7 +15,7 @@
+ 5.4+
+ 
+ ## Installation guide
+-[Magento 1 plugin installation guide](https://docs.bolt.com/docs/magento-1-integration)
++[Magento 1 plugin installation guide](https://help.boltapp.com/)
+ 
+ ## Run tests
+ 
+diff --git a/app/code/community/Bolt/Boltpay/BadInputException.php b/app/code/community/Bolt/Boltpay/BadInputException.php
+--- a/app/code/community/Bolt/Boltpay/BadInputException.php
++++ b/app/code/community/Bolt/Boltpay/BadInputException.php
+@@ -11,7 +11,7 @@
+  *
+  * @category   Bolt
+  * @package    Bolt_Boltpay
+- * @copyright  Copyright (c) 2016-2020 Bolt Financial, Inc (https://www.bolt.com)
++ * @copyright  Copyright (c) 2016-2020 Bolt Financial, Inc (https://www.boltapp.com)
+  * @license    http://opensource.org/licenses/osl-3.0.php  Open Software License (OSL 3.0)
+  */
+ 
+diff --git a/app/code/community/Bolt/Boltpay/Block/Adminhtml/Notification.php b/app/code/community/Bolt/Boltpay/Block/Adminhtml/Notification.php
+--- a/app/code/community/Bolt/Boltpay/Block/Adminhtml/Notification.php
++++ b/app/code/community/Bolt/Boltpay/Block/Adminhtml/Notification.php
+@@ -11,7 +11,7 @@
+  *
+  * @category   Bolt
+  * @package    Bolt_Boltpay
+- * @copyright  Copyright (c) 2019 Bolt Financial, Inc (https://www.bolt.com)
++ * @copyright  Copyright (c) 2019 Bolt Financial, Inc (https://www.boltapp.com)
+  * @license    http://opensource.org/licenses/osl-3.0.php  Open Software License (OSL 3.0)
+  */
+ 
+diff --git a/app/code/community/Bolt/Boltpay/Block/Adminhtml/System/Config/Form/Button.php b/app/code/community/Bolt/Boltpay/Block/Adminhtml/System/Config/Form/Button.php
+--- a/app/code/community/Bolt/Boltpay/Block/Adminhtml/System/Config/Form/Button.php
++++ b/app/code/community/Bolt/Boltpay/Block/Adminhtml/System/Config/Form/Button.php
+@@ -11,7 +11,7 @@
+  *
+  * @category   Bolt
+  * @package    Bolt_Boltpay
+- * @copyright  Copyright (c) 2016-2020 Bolt Financial, Inc (https://www.bolt.com)
++ * @copyright  Copyright (c) 2016-2020 Bolt Financial, Inc (https://www.boltapp.com)
+  * @license    http://opensource.org/licenses/osl-3.0.php  Open Software License (OSL 3.0)
+  */
+ 
+diff --git a/app/code/community/Bolt/Boltpay/Block/Adminhtml/UpdatePopup.php b/app/code/community/Bolt/Boltpay/Block/Adminhtml/UpdatePopup.php
+--- a/app/code/community/Bolt/Boltpay/Block/Adminhtml/UpdatePopup.php
++++ b/app/code/community/Bolt/Boltpay/Block/Adminhtml/UpdatePopup.php
+@@ -11,7 +11,7 @@
+  *
+  * @category   Bolt
+  * @package    Bolt_Boltpay
+- * @copyright  Copyright (c) 2019 Bolt Financial, Inc (https://www.bolt.com)
++ * @copyright  Copyright (c) 2019 Bolt Financial, Inc (https://www.boltapp.com)
+  * @license    http://opensource.org/licenses/osl-3.0.php  Open Software License (OSL 3.0)
+  */
+ 
+diff --git a/app/code/community/Bolt/Boltpay/Block/Catalog/Product/Boltpay.php b/app/code/community/Bolt/Boltpay/Block/Catalog/Product/Boltpay.php
+--- a/app/code/community/Bolt/Boltpay/Block/Catalog/Product/Boltpay.php
++++ b/app/code/community/Bolt/Boltpay/Block/Catalog/Product/Boltpay.php
+@@ -11,7 +11,7 @@
+  *
+  * @category   Bolt
+  * @package    Bolt_Boltpay
+- * @copyright  Copyright (c) 2016-2020 Bolt Financial, Inc (https://www.bolt.com)
++ * @copyright  Copyright (c) 2016-2020 Bolt Financial, Inc (https://www.boltapp.com)
+  * @license    http://opensource.org/licenses/osl-3.0.php  Open Software License (OSL 3.0)
+  */
+ 
+diff --git a/app/code/community/Bolt/Boltpay/Block/Checkout/Boltpay.php b/app/code/community/Bolt/Boltpay/Block/Checkout/Boltpay.php
+--- a/app/code/community/Bolt/Boltpay/Block/Checkout/Boltpay.php
++++ b/app/code/community/Bolt/Boltpay/Block/Checkout/Boltpay.php
+@@ -11,7 +11,7 @@
+  *
+  * @category   Bolt
+  * @package    Bolt_Boltpay
+- * @copyright  Copyright (c) 2016-2020 Bolt Financial, Inc (https://www.bolt.com)
++ * @copyright  Copyright (c) 2016-2020 Bolt Financial, Inc (https://www.boltapp.com)
+  * @license    http://opensource.org/licenses/osl-3.0.php  Open Software License (OSL 3.0)
+  */
+ 
+@@ -324,7 +324,7 @@
+         }
+ 
+         // Skip pre-fill for Apple Pay related data.
+-        if (!(@$prefill['email'] == 'na@bolt.com' || @$prefill['phone'] == '8005550111' || @$prefill['addressLine1'] == 'tbd')) {
++        if (!(in_array(@$prefill['email'], array('na@bolt.com', 'na@boltapp.com')) || @$prefill['phone'] == '8005550111' || @$prefill['addressLine1'] == 'tbd')) {
+             $hints['prefill'] = $prefill;
+         }
+ 
+diff --git a/app/code/community/Bolt/Boltpay/Block/Form.php b/app/code/community/Bolt/Boltpay/Block/Form.php
+--- a/app/code/community/Bolt/Boltpay/Block/Form.php
++++ b/app/code/community/Bolt/Boltpay/Block/Form.php
+@@ -11,7 +11,7 @@
+  *
+  * @category   Bolt
+  * @package    Bolt_Boltpay
+- * @copyright  Copyright (c) 2016-2020 Bolt Financial, Inc (https://www.bolt.com)
++ * @copyright  Copyright (c) 2016-2020 Bolt Financial, Inc (https://www.boltapp.com)
+  * @license    http://opensource.org/licenses/osl-3.0.php  Open Software License (OSL 3.0)
+  */
+ 
+diff --git a/app/code/community/Bolt/Boltpay/Block/Info.php b/app/code/community/Bolt/Boltpay/Block/Info.php
+--- a/app/code/community/Bolt/Boltpay/Block/Info.php
++++ b/app/code/community/Bolt/Boltpay/Block/Info.php
+@@ -11,7 +11,7 @@
+  *
+  * @category   Bolt
+  * @package    Bolt_Boltpay
+- * @copyright  Copyright (c) 2016-2020 Bolt Financial, Inc (https://www.bolt.com)
++ * @copyright  Copyright (c) 2016-2020 Bolt Financial, Inc (https://www.boltapp.com)
+  * @license    http://opensource.org/licenses/osl-3.0.php  Open Software License (OSL 3.0)
+  */
+ 
+diff --git a/app/code/community/Bolt/Boltpay/Block/Rewrite/Onepage.php b/app/code/community/Bolt/Boltpay/Block/Rewrite/Onepage.php
+--- a/app/code/community/Bolt/Boltpay/Block/Rewrite/Onepage.php
++++ b/app/code/community/Bolt/Boltpay/Block/Rewrite/Onepage.php
+@@ -11,7 +11,7 @@
+  *
+  * @category   Bolt
+  * @package    Bolt_Boltpay
+- * @copyright  Copyright (c) 2016-2020 Bolt Financial, Inc (https://www.bolt.com)
++ * @copyright  Copyright (c) 2016-2020 Bolt Financial, Inc (https://www.boltapp.com)
+  * @license    http://opensource.org/licenses/osl-3.0.php  Open Software License (OSL 3.0)
+  */
+ 
+diff --git a/app/code/community/Bolt/Boltpay/BoltException.php b/app/code/community/Bolt/Boltpay/BoltException.php
+--- a/app/code/community/Bolt/Boltpay/BoltException.php
++++ b/app/code/community/Bolt/Boltpay/BoltException.php
+@@ -11,7 +11,7 @@
+  *
+  * @category   Bolt
+  * @package    Bolt_Boltpay
+- * @copyright  Copyright (c) 2016-2020 Bolt Financial, Inc (https://www.bolt.com)
++ * @copyright  Copyright (c) 2016-2020 Bolt Financial, Inc (https://www.boltapp.com)
+  * @license    http://opensource.org/licenses/osl-3.0.php  Open Software License (OSL 3.0)
+  */
+ 
+diff --git a/app/code/community/Bolt/Boltpay/BoltGlobalTrait.php b/app/code/community/Bolt/Boltpay/BoltGlobalTrait.php
+--- a/app/code/community/Bolt/Boltpay/BoltGlobalTrait.php
++++ b/app/code/community/Bolt/Boltpay/BoltGlobalTrait.php
+@@ -11,7 +11,7 @@
+  *
+  * @category   Bolt
+  * @package    Bolt_Boltpay
+- * @copyright  Copyright (c) 2016-2020 Bolt Financial, Inc (https://www.bolt.com)
++ * @copyright  Copyright (c) 2016-2020 Bolt Financial, Inc (https://www.boltapp.com)
+  * @license    http://opensource.org/licenses/osl-3.0.php  Open Software License (OSL 3.0)
+  */
+ 
+diff --git a/app/code/community/Bolt/Boltpay/Controller/Interface.php b/app/code/community/Bolt/Boltpay/Controller/Interface.php
+--- a/app/code/community/Bolt/Boltpay/Controller/Interface.php
++++ b/app/code/community/Bolt/Boltpay/Controller/Interface.php
+@@ -11,7 +11,7 @@
+  *
+  * @category   Bolt
+  * @package    Bolt_Boltpay
+- * @copyright  Copyright (c) 2016-2020 Bolt Financial, Inc (https://www.bolt.com)
++ * @copyright  Copyright (c) 2016-2020 Bolt Financial, Inc (https://www.boltapp.com)
+  * @license    http://opensource.org/licenses/osl-3.0.php  Open Software License (OSL 3.0)
+  */
+ 
+diff --git a/app/code/community/Bolt/Boltpay/Controller/Traits/OrderControllerTrait.php b/app/code/community/Bolt/Boltpay/Controller/Traits/OrderControllerTrait.php
+--- a/app/code/community/Bolt/Boltpay/Controller/Traits/OrderControllerTrait.php
++++ b/app/code/community/Bolt/Boltpay/Controller/Traits/OrderControllerTrait.php
+@@ -11,7 +11,7 @@
+  *
+  * @category   Bolt
+  * @package    Bolt_Boltpay
+- * @copyright  Copyright (c) 2016-2020 Bolt Financial, Inc (https://www.bolt.com)
++ * @copyright  Copyright (c) 2016-2020 Bolt Financial, Inc (https://www.boltapp.com)
+  * @license    http://opensource.org/licenses/osl-3.0.php  Open Software License (OSL 3.0)
+  */
+ 
+diff --git a/app/code/community/Bolt/Boltpay/Controller/Traits/WebHookTrait.php b/app/code/community/Bolt/Boltpay/Controller/Traits/WebHookTrait.php
+--- a/app/code/community/Bolt/Boltpay/Controller/Traits/WebHookTrait.php
++++ b/app/code/community/Bolt/Boltpay/Controller/Traits/WebHookTrait.php
+@@ -11,7 +11,7 @@
+  *
+  * @category   Bolt
+  * @package    Bolt_Boltpay
+- * @copyright  Copyright (c) 2016-2020 Bolt Financial, Inc (https://www.bolt.com)
++ * @copyright  Copyright (c) 2016-2020 Bolt Financial, Inc (https://www.boltapp.com)
+  * @license    http://opensource.org/licenses/osl-3.0.php  Open Software License (OSL 3.0)
+  */
+ 
+diff --git a/app/code/community/Bolt/Boltpay/Helper/ApiTrait.php b/app/code/community/Bolt/Boltpay/Helper/ApiTrait.php
+--- a/app/code/community/Bolt/Boltpay/Helper/ApiTrait.php
++++ b/app/code/community/Bolt/Boltpay/Helper/ApiTrait.php
+@@ -11,7 +11,7 @@
+  *
+  * @category   Bolt
+  * @package    Bolt_Boltpay
+- * @copyright  Copyright (c) 2016-2020 Bolt Financial, Inc (https://www.bolt.com)
++ * @copyright  Copyright (c) 2016-2020 Bolt Financial, Inc (https://www.boltapp.com)
+  * @license    http://opensource.org/licenses/osl-3.0.php  Open Software License (OSL 3.0)
+  */
+ 
+diff --git a/app/code/community/Bolt/Boltpay/Helper/BugsnagTrait.php b/app/code/community/Bolt/Boltpay/Helper/BugsnagTrait.php
+--- a/app/code/community/Bolt/Boltpay/Helper/BugsnagTrait.php
++++ b/app/code/community/Bolt/Boltpay/Helper/BugsnagTrait.php
+@@ -11,7 +11,7 @@
+  *
+  * @category   Bolt
+  * @package    Bolt_Boltpay
+- * @copyright  Copyright (c) 2016-2020 Bolt Financial, Inc (https://www.bolt.com)
++ * @copyright  Copyright (c) 2016-2020 Bolt Financial, Inc (https://www.boltapp.com)
+  * @license    http://opensource.org/licenses/osl-3.0.php  Open Software License (OSL 3.0)
+  */
+ 
+diff --git a/app/code/community/Bolt/Boltpay/Helper/ConfigTrait.php b/app/code/community/Bolt/Boltpay/Helper/ConfigTrait.php
+--- a/app/code/community/Bolt/Boltpay/Helper/ConfigTrait.php
++++ b/app/code/community/Bolt/Boltpay/Helper/ConfigTrait.php
+@@ -11,7 +11,7 @@
+  *
+  * @category   Bolt
+  * @package    Bolt_Boltpay
+- * @copyright  Copyright (c) 2016-2020 Bolt Financial, Inc (https://www.bolt.com)
++ * @copyright  Copyright (c) 2016-2020 Bolt Financial, Inc (https://www.boltapp.com)
+  * @license    http://opensource.org/licenses/osl-3.0.php  Open Software License (OSL 3.0)
+  */
+ 
+diff --git a/app/code/community/Bolt/Boltpay/Helper/Data.php b/app/code/community/Bolt/Boltpay/Helper/Data.php
+--- a/app/code/community/Bolt/Boltpay/Helper/Data.php
++++ b/app/code/community/Bolt/Boltpay/Helper/Data.php
+@@ -11,7 +11,7 @@
+  *
+  * @category   Bolt
+  * @package    Bolt_Boltpay
+- * @copyright  Copyright (c) 2016-2020 Bolt Financial, Inc (https://www.bolt.com)
++ * @copyright  Copyright (c) 2016-2020 Bolt Financial, Inc (https://www.boltapp.com)
+  * @license    http://opensource.org/licenses/osl-3.0.php  Open Software License (OSL 3.0)
+  */
+ 
+diff --git a/app/code/community/Bolt/Boltpay/Helper/DataDogTrait.php b/app/code/community/Bolt/Boltpay/Helper/DataDogTrait.php
+--- a/app/code/community/Bolt/Boltpay/Helper/DataDogTrait.php
++++ b/app/code/community/Bolt/Boltpay/Helper/DataDogTrait.php
+@@ -11,7 +11,7 @@
+  *
+  * @category   Bolt
+  * @package    Bolt_Boltpay
+- * @copyright  Copyright (c) 2016-2020 Bolt Financial, Inc (https://www.bolt.com)
++ * @copyright  Copyright (c) 2016-2020 Bolt Financial, Inc (https://www.boltapp.com)
+  * @license    http://opensource.org/licenses/osl-3.0.php  Open Software License (OSL 3.0)
+  */
+ 
+diff --git a/app/code/community/Bolt/Boltpay/Helper/GeneralTrait.php b/app/code/community/Bolt/Boltpay/Helper/GeneralTrait.php
+--- a/app/code/community/Bolt/Boltpay/Helper/GeneralTrait.php
++++ b/app/code/community/Bolt/Boltpay/Helper/GeneralTrait.php
+@@ -11,7 +11,7 @@
+  *
+  * @category   Bolt
+  * @package    Bolt_Boltpay
+- * @copyright  Copyright (c) 2016-2020 Bolt Financial, Inc (https://www.bolt.com)
++ * @copyright  Copyright (c) 2016-2020 Bolt Financial, Inc (https://www.boltapp.com)
+  * @license    http://opensource.org/licenses/osl-3.0.php  Open Software License (OSL 3.0)
+  */
+ 
+diff --git a/app/code/community/Bolt/Boltpay/Helper/GraphQLTrait.php b/app/code/community/Bolt/Boltpay/Helper/GraphQLTrait.php
+--- a/app/code/community/Bolt/Boltpay/Helper/GraphQLTrait.php
++++ b/app/code/community/Bolt/Boltpay/Helper/GraphQLTrait.php
+@@ -12,7 +12,7 @@
+  *
+  * @category   Bolt
+  * @package    Bolt_Boltpay
+- * @copyright  Copyright (c) 2016-2020 Bolt Financial, Inc (https://www.bolt.com)
++ * @copyright  Copyright (c) 2016-2020 Bolt Financial, Inc (https://www.boltapp.com)
+  * @license    http://opensource.org/licenses/osl-3.0.php  Open Software License (OSL 3.0)
+  */
+ 
+diff --git a/app/code/community/Bolt/Boltpay/Helper/LoggerTrait.php b/app/code/community/Bolt/Boltpay/Helper/LoggerTrait.php
+--- a/app/code/community/Bolt/Boltpay/Helper/LoggerTrait.php
++++ b/app/code/community/Bolt/Boltpay/Helper/LoggerTrait.php
+@@ -11,7 +11,7 @@
+  *
+  * @category   Bolt
+  * @package    Bolt_Boltpay
+- * @copyright  Copyright (c) 2016-2020 Bolt Financial, Inc (https://www.bolt.com)
++ * @copyright  Copyright (c) 2016-2020 Bolt Financial, Inc (https://www.boltapp.com)
+  * @license    http://opensource.org/licenses/osl-3.0.php  Open Software License (OSL 3.0)
+  */
+ 
+diff --git a/app/code/community/Bolt/Boltpay/Helper/TransactionTrait.php b/app/code/community/Bolt/Boltpay/Helper/TransactionTrait.php
+--- a/app/code/community/Bolt/Boltpay/Helper/TransactionTrait.php
++++ b/app/code/community/Bolt/Boltpay/Helper/TransactionTrait.php
+@@ -11,7 +11,7 @@
+  *
+  * @category   Bolt
+  * @package    Bolt_Boltpay
+- * @copyright  Copyright (c) 2016-2020 Bolt Financial, Inc (https://www.bolt.com)
++ * @copyright  Copyright (c) 2016-2020 Bolt Financial, Inc (https://www.boltapp.com)
+  * @license    http://opensource.org/licenses/osl-3.0.php  Open Software License (OSL 3.0)
+  */
+ 
+diff --git a/app/code/community/Bolt/Boltpay/Helper/UrlTrait.php b/app/code/community/Bolt/Boltpay/Helper/UrlTrait.php
+--- a/app/code/community/Bolt/Boltpay/Helper/UrlTrait.php
++++ b/app/code/community/Bolt/Boltpay/Helper/UrlTrait.php
+@@ -11,7 +11,7 @@
+  *
+  * @category   Bolt
+  * @package    Bolt_Boltpay
+- * @copyright  Copyright (c) 2016-2020 Bolt Financial, Inc (https://www.bolt.com)
++ * @copyright  Copyright (c) 2016-2020 Bolt Financial, Inc (https://www.boltapp.com)
+  * @license    http://opensource.org/licenses/osl-3.0.php  Open Software License (OSL 3.0)
+  */
+ 
+@@ -25,32 +25,32 @@
+     /**
+      * @var string The Bolt sandbox url for the api
+      */
+-    protected $apiUrlTest = 'https://api-sandbox.bolt.com/';
++    protected $apiUrlTest = 'https://api-sandbox.boltapp.com/';
+ 
+     /**
+      * @var string The Bolt production url for the api
+      */
+-    protected $apiUrlProd = 'https://api.bolt.com/';
++    protected $apiUrlProd = 'https://api.boltapp.com/';
+ 
+     /**
+      * @var string The Bolt sandbox url for the javascript
+      */
+-    protected $jsUrlTest = 'https://connect-sandbox.bolt.com';
++    protected $jsUrlTest = 'https://connect-sandbox.boltapp.com';
+ 
+     /**
+      * @var string The Bolt production url for the javascript
+      */
+-    protected $jsUrlProd = 'https://connect.bolt.com';
++    protected $jsUrlProd = 'https://connect.boltapp.com';
+ 
+     /**
+      * @var string The Bolt sandbox url for the merchant
+      */
+-    protected $merchantUrlSandbox = 'https://merchant-sandbox.bolt.com';
++    protected $merchantUrlSandbox = 'https://merchant-sandbox.boltapp.com';
+ 
+     /**
+      * @var string The Bolt production url for the merchant
+      */
+-    protected $merchantUrlProd = 'https://merchant.bolt.com';
++    protected $merchantUrlProd = 'https://merchant.boltapp.com';
+ 
+ 
+     /**
+diff --git a/app/code/community/Bolt/Boltpay/InvalidTransitionException.php b/app/code/community/Bolt/Boltpay/InvalidTransitionException.php
+--- a/app/code/community/Bolt/Boltpay/InvalidTransitionException.php
++++ b/app/code/community/Bolt/Boltpay/InvalidTransitionException.php
+@@ -11,7 +11,7 @@
+  *
+  * @category   Bolt
+  * @package    Bolt_Boltpay
+- * @copyright  Copyright (c) 2016-2020 Bolt Financial, Inc (https://www.bolt.com)
++ * @copyright  Copyright (c) 2016-2020 Bolt Financial, Inc (https://www.boltapp.com)
+  * @license    http://opensource.org/licenses/osl-3.0.php  Open Software License (OSL 3.0)
+  */
+ 
+diff --git a/app/code/community/Bolt/Boltpay/Model/Abstract.php b/app/code/community/Bolt/Boltpay/Model/Abstract.php
+--- a/app/code/community/Bolt/Boltpay/Model/Abstract.php
++++ b/app/code/community/Bolt/Boltpay/Model/Abstract.php
+@@ -11,7 +11,7 @@
+  *
+  * @category   Bolt
+  * @package    Bolt_Boltpay
+- * @copyright  Copyright (c) 2016-2020 Bolt Financial, Inc (https://www.bolt.com)
++ * @copyright  Copyright (c) 2016-2020 Bolt Financial, Inc (https://www.boltapp.com)
+  * @license    http://opensource.org/licenses/osl-3.0.php  Open Software License (OSL 3.0)
+  */
+ 
+diff --git a/app/code/community/Bolt/Boltpay/Model/Admin/ApiKey.php b/app/code/community/Bolt/Boltpay/Model/Admin/ApiKey.php
+--- a/app/code/community/Bolt/Boltpay/Model/Admin/ApiKey.php
++++ b/app/code/community/Bolt/Boltpay/Model/Admin/ApiKey.php
+@@ -11,7 +11,7 @@
+  *
+  * @category   Bolt
+  * @package    Bolt_Boltpay
+- * @copyright  Copyright (c) 2016-2020 Bolt Financial, Inc (https://www.bolt.com)
++ * @copyright  Copyright (c) 2016-2020 Bolt Financial, Inc (https://www.boltapp.com)
+  * @license    http://opensource.org/licenses/osl-3.0.php  Open Software License (OSL 3.0)
+  */
+ 
+diff --git a/app/code/community/Bolt/Boltpay/Model/Admin/ExtraConfig.php b/app/code/community/Bolt/Boltpay/Model/Admin/ExtraConfig.php
+--- a/app/code/community/Bolt/Boltpay/Model/Admin/ExtraConfig.php
++++ b/app/code/community/Bolt/Boltpay/Model/Admin/ExtraConfig.php
+@@ -11,7 +11,7 @@
+  *
+  * @category   Bolt
+  * @package    Bolt_Boltpay
+- * @copyright  Copyright (c) 2016-2020 Bolt Financial, Inc (https://www.bolt.com)
++ * @copyright  Copyright (c) 2016-2020 Bolt Financial, Inc (https://www.boltapp.com)
+  * @license    http://opensource.org/licenses/osl-3.0.php  Open Software License (OSL 3.0)
+  */
+ 
+diff --git a/app/code/community/Bolt/Boltpay/Model/BoltOrder.php b/app/code/community/Bolt/Boltpay/Model/BoltOrder.php
+--- a/app/code/community/Bolt/Boltpay/Model/BoltOrder.php
++++ b/app/code/community/Bolt/Boltpay/Model/BoltOrder.php
+@@ -11,7 +11,7 @@
+  *
+  * @category   Bolt
+  * @package    Bolt_Boltpay
+- * @copyright  Copyright (c) 2016-2020 Bolt Financial, Inc (https://www.bolt.com)
++ * @copyright  Copyright (c) 2016-2020 Bolt Financial, Inc (https://www.boltapp.com)
+  * @license    http://opensource.org/licenses/osl-3.0.php  Open Software License (OSL 3.0)
+  */
+ 
+diff --git a/app/code/community/Bolt/Boltpay/Model/Coupon.php b/app/code/community/Bolt/Boltpay/Model/Coupon.php
+--- a/app/code/community/Bolt/Boltpay/Model/Coupon.php
++++ b/app/code/community/Bolt/Boltpay/Model/Coupon.php
+@@ -11,7 +11,7 @@
+  *
+  * @category   Bolt
+  * @package    Bolt_Boltpay
+- * @copyright  Copyright (c) 2016-2020 Bolt Financial, Inc (https://www.bolt.com)
++ * @copyright  Copyright (c) 2016-2020 Bolt Financial, Inc (https://www.boltapp.com)
+  * @license    http://opensource.org/licenses/osl-3.0.php  Open Software License (OSL 3.0)
+  */
+ 
+diff --git a/app/code/community/Bolt/Boltpay/Model/Cron.php b/app/code/community/Bolt/Boltpay/Model/Cron.php
+--- a/app/code/community/Bolt/Boltpay/Model/Cron.php
++++ b/app/code/community/Bolt/Boltpay/Model/Cron.php
+@@ -11,7 +11,7 @@
+  *
+  * @category   Bolt
+  * @package    Bolt_Boltpay
+- * @copyright  Copyright (c) 2016-2020 Bolt Financial, Inc (https://www.bolt.com)
++ * @copyright  Copyright (c) 2016-2020 Bolt Financial, Inc (https://www.boltapp.com)
+  * @license    http://opensource.org/licenses/osl-3.0.php  Open Software License (OSL 3.0)
+  */
+ 
+diff --git a/app/code/community/Bolt/Boltpay/Model/FeatureSwitch.php b/app/code/community/Bolt/Boltpay/Model/FeatureSwitch.php
+--- a/app/code/community/Bolt/Boltpay/Model/FeatureSwitch.php
++++ b/app/code/community/Bolt/Boltpay/Model/FeatureSwitch.php
+@@ -12,7 +12,7 @@
+  *
+  * @category   Bolt
+  * @package    Bolt_Boltpay
+- * @copyright  Copyright (c) 2016-2020 Bolt Financial, Inc (https://www.bolt.com)
++ * @copyright  Copyright (c) 2016-2020 Bolt Financial, Inc (https://www.boltapp.com)
+  * @license    http://opensource.org/licenses/osl-3.0.php  Open Software License (OSL 3.0)
+  */
+ 
+diff --git a/app/code/community/Bolt/Boltpay/Model/Observer.php b/app/code/community/Bolt/Boltpay/Model/Observer.php
+--- a/app/code/community/Bolt/Boltpay/Model/Observer.php
++++ b/app/code/community/Bolt/Boltpay/Model/Observer.php
+@@ -11,7 +11,7 @@
+  *
+  * @category   Bolt
+  * @package    Bolt_Boltpay
+- * @copyright  Copyright (c) 2016-2020 Bolt Financial, Inc (https://www.bolt.com)
++ * @copyright  Copyright (c) 2016-2020 Bolt Financial, Inc (https://www.boltapp.com)
+  * @license    http://opensource.org/licenses/osl-3.0.php  Open Software License (OSL 3.0)
+  */
+ 
+diff --git a/app/code/community/Bolt/Boltpay/Model/Order.php b/app/code/community/Bolt/Boltpay/Model/Order.php
+--- a/app/code/community/Bolt/Boltpay/Model/Order.php
++++ b/app/code/community/Bolt/Boltpay/Model/Order.php
+@@ -11,7 +11,7 @@
+  *
+  * @category   Bolt
+  * @package    Bolt_Boltpay
+- * @copyright  Copyright (c) 2016-2020 Bolt Financial, Inc (https://www.bolt.com)
++ * @copyright  Copyright (c) 2016-2020 Bolt Financial, Inc (https://www.boltapp.com)
+  * @license    http://opensource.org/licenses/osl-3.0.php  Open Software License (OSL 3.0)
+  */
+ 
+diff --git a/app/code/community/Bolt/Boltpay/Model/Order/Detail.php b/app/code/community/Bolt/Boltpay/Model/Order/Detail.php
+--- a/app/code/community/Bolt/Boltpay/Model/Order/Detail.php
++++ b/app/code/community/Bolt/Boltpay/Model/Order/Detail.php
+@@ -11,7 +11,7 @@
+  *
+  * @category   Bolt
+  * @package    Bolt_Boltpay
+- * @copyright  Copyright (c) 2016-2020 Bolt Financial, Inc (https://www.bolt.com)
++ * @copyright  Copyright (c) 2016-2020 Bolt Financial, Inc (https://www.boltapp.com)
+  * @license    http://opensource.org/licenses/osl-3.0.php  Open Software License (OSL 3.0)
+  */
+ 
+diff --git a/app/code/community/Bolt/Boltpay/Model/Payment.php b/app/code/community/Bolt/Boltpay/Model/Payment.php
+--- a/app/code/community/Bolt/Boltpay/Model/Payment.php
++++ b/app/code/community/Bolt/Boltpay/Model/Payment.php
+@@ -11,7 +11,7 @@
+  *
+  * @category   Bolt
+  * @package    Bolt_Boltpay
+- * @copyright  Copyright (c) 2016-2020 Bolt Financial, Inc (https://www.bolt.com)
++ * @copyright  Copyright (c) 2016-2020 Bolt Financial, Inc (https://www.boltapp.com)
+  * @license    http://opensource.org/licenses/osl-3.0.php  Open Software License (OSL 3.0)
+  */
+ 
+diff --git a/app/code/community/Bolt/Boltpay/Model/Productpage/Cart.php b/app/code/community/Bolt/Boltpay/Model/Productpage/Cart.php
+--- a/app/code/community/Bolt/Boltpay/Model/Productpage/Cart.php
++++ b/app/code/community/Bolt/Boltpay/Model/Productpage/Cart.php
+@@ -11,7 +11,7 @@
+  *
+  * @category   Bolt
+  * @package    Bolt_Boltpay
+- * @copyright  Copyright (c) 2016-2020 Bolt Financial, Inc (https://www.bolt.com)
++ * @copyright  Copyright (c) 2016-2020 Bolt Financial, Inc (https://www.boltapp.com)
+  * @license    http://opensource.org/licenses/osl-3.0.php  Open Software License (OSL 3.0)
+  */
+ 
+diff --git a/app/code/community/Bolt/Boltpay/Model/Service/Order.php b/app/code/community/Bolt/Boltpay/Model/Service/Order.php
+--- a/app/code/community/Bolt/Boltpay/Model/Service/Order.php
++++ b/app/code/community/Bolt/Boltpay/Model/Service/Order.php
+@@ -11,7 +11,7 @@
+  *
+  * @category   Bolt
+  * @package    Bolt_Boltpay
+- * @copyright  Copyright (c) 2016-2020 Bolt Financial, Inc (https://www.bolt.com)
++ * @copyright  Copyright (c) 2016-2020 Bolt Financial, Inc (https://www.boltapp.com)
+  * @license    http://opensource.org/licenses/osl-3.0.php  Open Software License (OSL 3.0)
+  */
+ 
+diff --git a/app/code/community/Bolt/Boltpay/Model/Setup.php b/app/code/community/Bolt/Boltpay/Model/Setup.php
+--- a/app/code/community/Bolt/Boltpay/Model/Setup.php
++++ b/app/code/community/Bolt/Boltpay/Model/Setup.php
+@@ -11,7 +11,7 @@
+  *
+  * @category   Bolt
+  * @package    Bolt_Boltpay
+- * @copyright  Copyright (c) 2016-2020 Bolt Financial, Inc (https://www.bolt.com)
++ * @copyright  Copyright (c) 2016-2020 Bolt Financial, Inc (https://www.boltapp.com)
+  * @license    http://opensource.org/licenses/osl-3.0.php  Open Software License (OSL 3.0)
+  */
+ 
+diff --git a/app/code/community/Bolt/Boltpay/Model/ShippingAndTax.php b/app/code/community/Bolt/Boltpay/Model/ShippingAndTax.php
+--- a/app/code/community/Bolt/Boltpay/Model/ShippingAndTax.php
++++ b/app/code/community/Bolt/Boltpay/Model/ShippingAndTax.php
+@@ -11,7 +11,7 @@
+  *
+  * @category   Bolt
+  * @package    Bolt_Boltpay
+- * @copyright  Copyright (c) 2016-2020 Bolt Financial, Inc (https://www.bolt.com)
++ * @copyright  Copyright (c) 2016-2020 Bolt Financial, Inc (https://www.boltapp.com)
+  * @license    http://opensource.org/licenses/osl-3.0.php  Open Software License (OSL 3.0)
+  */
+ 
+diff --git a/app/code/community/Bolt/Boltpay/Model/Source/Themes.php b/app/code/community/Bolt/Boltpay/Model/Source/Themes.php
+--- a/app/code/community/Bolt/Boltpay/Model/Source/Themes.php
++++ b/app/code/community/Bolt/Boltpay/Model/Source/Themes.php
+@@ -11,7 +11,7 @@
+  *
+  * @category   Bolt
+  * @package    Bolt_Boltpay
+- * @copyright  Copyright (c) 2016-2020 Bolt Financial, Inc (https://www.bolt.com)
++ * @copyright  Copyright (c) 2016-2020 Bolt Financial, Inc (https://www.boltapp.com)
+  * @license    http://opensource.org/licenses/osl-3.0.php  Open Software License (OSL 3.0)
+  */
+ 
+diff --git a/app/code/community/Bolt/Boltpay/Model/Stats.php b/app/code/community/Bolt/Boltpay/Model/Stats.php
+--- a/app/code/community/Bolt/Boltpay/Model/Stats.php
++++ b/app/code/community/Bolt/Boltpay/Model/Stats.php
+@@ -11,7 +11,7 @@
+  *
+  * @category   Bolt
+  * @package    Bolt_Boltpay
+- * @copyright  Copyright (c) 2016-2020 Bolt Financial, Inc (https://www.bolt.com)
++ * @copyright  Copyright (c) 2016-2020 Bolt Financial, Inc (https://www.boltapp.com)
+  * @license    http://opensource.org/licenses/osl-3.0.php  Open Software License (OSL 3.0)
+  */
+ 
+diff --git a/app/code/community/Bolt/Boltpay/Model/Traits/ValidatorTrait.php b/app/code/community/Bolt/Boltpay/Model/Traits/ValidatorTrait.php
+--- a/app/code/community/Bolt/Boltpay/Model/Traits/ValidatorTrait.php
++++ b/app/code/community/Bolt/Boltpay/Model/Traits/ValidatorTrait.php
+@@ -11,7 +11,7 @@
+  *
+  * @category   Bolt
+  * @package    Bolt_Boltpay
+- * @copyright  Copyright (c) 2016-2020 Bolt Financial, Inc (https://www.bolt.com)
++ * @copyright  Copyright (c) 2016-2020 Bolt Financial, Inc (https://www.boltapp.com)
+  * @license    http://opensource.org/licenses/osl-3.0.php  Open Software License (OSL 3.0)
+  */
+ 
+diff --git a/app/code/community/Bolt/Boltpay/Model/Updater.php b/app/code/community/Bolt/Boltpay/Model/Updater.php
+--- a/app/code/community/Bolt/Boltpay/Model/Updater.php
++++ b/app/code/community/Bolt/Boltpay/Model/Updater.php
+@@ -11,7 +11,7 @@
+  *
+  * @category   Bolt
+  * @package    Bolt_Boltpay
+- * @copyright  Copyright (c) 2019 Bolt Financial, Inc (https://www.bolt.com)
++ * @copyright  Copyright (c) 2019 Bolt Financial, Inc (https://www.boltapp.com)
+  * @license    http://opensource.org/licenses/osl-3.0.php  Open Software License (OSL 3.0)
+  */
+ 
+diff --git a/app/code/community/Bolt/Boltpay/Model/Validator.php b/app/code/community/Bolt/Boltpay/Model/Validator.php
+--- a/app/code/community/Bolt/Boltpay/Model/Validator.php
++++ b/app/code/community/Bolt/Boltpay/Model/Validator.php
+@@ -11,7 +11,7 @@
+  *
+  * @category   Bolt
+  * @package    Bolt_Boltpay
+- * @copyright  Copyright (c) 2016-2020 Bolt Financial, Inc (https://www.bolt.com)
++ * @copyright  Copyright (c) 2016-2020 Bolt Financial, Inc (https://www.boltapp.com)
+  * @license    http://opensource.org/licenses/osl-3.0.php  Open Software License (OSL 3.0)
+  */
+ 
+diff --git a/app/code/community/Bolt/Boltpay/OrderCreationException.php b/app/code/community/Bolt/Boltpay/OrderCreationException.php
+--- a/app/code/community/Bolt/Boltpay/OrderCreationException.php
++++ b/app/code/community/Bolt/Boltpay/OrderCreationException.php
+@@ -11,7 +11,7 @@
+  *
+  * @category   Bolt
+  * @package    Bolt_Boltpay
+- * @copyright  Copyright (c) 2016-2020 Bolt Financial, Inc (https://www.bolt.com)
++ * @copyright  Copyright (c) 2016-2020 Bolt Financial, Inc (https://www.boltapp.com)
+  * @license    http://opensource.org/licenses/osl-3.0.php  Open Software License (OSL 3.0)
+  */
+ 
+diff --git a/app/code/community/Bolt/Boltpay/controllers/Adminhtml/Sales/Order/CreateController.php b/app/code/community/Bolt/Boltpay/controllers/Adminhtml/Sales/Order/CreateController.php
+--- a/app/code/community/Bolt/Boltpay/controllers/Adminhtml/Sales/Order/CreateController.php
++++ b/app/code/community/Bolt/Boltpay/controllers/Adminhtml/Sales/Order/CreateController.php
+@@ -11,7 +11,7 @@
+  *
+  * @category   Bolt
+  * @package    Bolt_Boltpay
+- * @copyright  Copyright (c) 2016-2020 Bolt Financial, Inc (https://www.bolt.com)
++ * @copyright  Copyright (c) 2016-2020 Bolt Financial, Inc (https://www.boltapp.com)
+  * @license    http://opensource.org/licenses/osl-3.0.php  Open Software License (OSL 3.0)
+  */
+ 
+diff --git a/app/code/community/Bolt/Boltpay/controllers/ApiController.php b/app/code/community/Bolt/Boltpay/controllers/ApiController.php
+--- a/app/code/community/Bolt/Boltpay/controllers/ApiController.php
++++ b/app/code/community/Bolt/Boltpay/controllers/ApiController.php
+@@ -11,7 +11,7 @@
+  *
+  * @category   Bolt
+  * @package    Bolt_Boltpay
+- * @copyright  Copyright (c) 2016-2020 Bolt Financial, Inc (https://www.bolt.com)
++ * @copyright  Copyright (c) 2016-2020 Bolt Financial, Inc (https://www.boltapp.com)
+  * @license    http://opensource.org/licenses/osl-3.0.php  Open Software License (OSL 3.0)
+  */
+ 
+diff --git a/app/code/community/Bolt/Boltpay/controllers/ConfigurationController.php b/app/code/community/Bolt/Boltpay/controllers/ConfigurationController.php
+--- a/app/code/community/Bolt/Boltpay/controllers/ConfigurationController.php
++++ b/app/code/community/Bolt/Boltpay/controllers/ConfigurationController.php
+@@ -11,7 +11,7 @@
+  *
+  * @category   Bolt
+  * @package    Bolt_Boltpay
+- * @copyright  Copyright (c) 2016-2020 Bolt Financial, Inc (https://www.bolt.com)
++ * @copyright  Copyright (c) 2016-2020 Bolt Financial, Inc (https://www.boltapp.com)
+  * @license    http://opensource.org/licenses/osl-3.0.php  Open Software License (OSL 3.0)
+  */
+ 
+diff --git a/app/code/community/Bolt/Boltpay/controllers/FeatureswitchesController.php b/app/code/community/Bolt/Boltpay/controllers/FeatureswitchesController.php
+--- a/app/code/community/Bolt/Boltpay/controllers/FeatureswitchesController.php
++++ b/app/code/community/Bolt/Boltpay/controllers/FeatureswitchesController.php
+@@ -11,7 +11,7 @@
+  *
+  * @category   Bolt
+  * @package    Bolt_Boltpay
+- * @copyright  Copyright (c) 2016-2020 Bolt Financial, Inc (https://www.bolt.com)
++ * @copyright  Copyright (c) 2016-2020 Bolt Financial, Inc (https://www.boltapp.com)
+  * @license    http://opensource.org/licenses/osl-3.0.php  Open Software License (OSL 3.0)
+  */
+ 
+diff --git a/app/code/community/Bolt/Boltpay/controllers/OrderController.php b/app/code/community/Bolt/Boltpay/controllers/OrderController.php
+--- a/app/code/community/Bolt/Boltpay/controllers/OrderController.php
++++ b/app/code/community/Bolt/Boltpay/controllers/OrderController.php
+@@ -11,7 +11,7 @@
+  *
+  * @category   Bolt
+  * @package    Bolt_Boltpay
+- * @copyright  Copyright (c) 2016-2020 Bolt Financial, Inc (https://www.bolt.com)
++ * @copyright  Copyright (c) 2016-2020 Bolt Financial, Inc (https://www.boltapp.com)
+  * @license    http://opensource.org/licenses/osl-3.0.php  Open Software License (OSL 3.0)
+  */
+ 
+diff --git a/app/code/community/Bolt/Boltpay/controllers/ProductpageController.php b/app/code/community/Bolt/Boltpay/controllers/ProductpageController.php
+--- a/app/code/community/Bolt/Boltpay/controllers/ProductpageController.php
++++ b/app/code/community/Bolt/Boltpay/controllers/ProductpageController.php
+@@ -11,7 +11,7 @@
+  *
+  * @category   Bolt
+  * @package    Bolt_Boltpay
+- * @copyright  Copyright (c) 2016-2020 Bolt Financial, Inc (https://www.bolt.com)
++ * @copyright  Copyright (c) 2016-2020 Bolt Financial, Inc (https://www.boltapp.com)
+  * @license    http://opensource.org/licenses/osl-3.0.php  Open Software License (OSL 3.0)
+  */
+ 
+diff --git a/app/code/community/Bolt/Boltpay/controllers/ShippingController.php b/app/code/community/Bolt/Boltpay/controllers/ShippingController.php
+--- a/app/code/community/Bolt/Boltpay/controllers/ShippingController.php
++++ b/app/code/community/Bolt/Boltpay/controllers/ShippingController.php
+@@ -11,7 +11,7 @@
+  *
+  * @category   Bolt
+  * @package    Bolt_Boltpay
+- * @copyright  Copyright (c) 2016-2020 Bolt Financial, Inc (https://www.bolt.com)
++ * @copyright  Copyright (c) 2016-2020 Bolt Financial, Inc (https://www.boltapp.com)
+  * @license    http://opensource.org/licenses/osl-3.0.php  Open Software License (OSL 3.0)
+  */
+ 
+@@ -382,7 +382,7 @@
+      * Checks whether this is an Apple Pay request.  Currently, Apple Pay requests have "request_source"
+      * field set to "applePay". Shipping address data is populated with "tbd" in several required address
+      * fields, particularly the "name" field, which is Bolt defined, not customer defined.
+-     * Additionally, the "phone" field will be "8005550111" and "email" will be "na@bolt.com".
++     * Additionally, the "phone" field will be "8005550111" and "email" will be "na@bolt.com" or "na@boltapp.com".
+      *
+      * Standard Bolt request leave the "name" field as null while forcing the user to populate
+      * the phone field, and therefore is never null.
+diff --git a/app/code/community/Bolt/Boltpay/etc/config.xml b/app/code/community/Bolt/Boltpay/etc/config.xml
+--- a/app/code/community/Bolt/Boltpay/etc/config.xml
++++ b/app/code/community/Bolt/Boltpay/etc/config.xml
+@@ -12,7 +12,7 @@
+  *
+  * @category   Bolt
+  * @package    Bolt_Boltpay
+- * @copyright  Copyright (c) 2016-2020 Bolt Financial, Inc (https://www.bolt.com)
++ * @copyright  Copyright (c) 2016-2020 Bolt Financial, Inc (https://www.boltapp.com)
+  * @license    http://opensource.org/licenses/osl-3.0.php  Open Software License (OSL 3.0)
+  */
+ -->
+diff --git a/app/code/community/Bolt/Boltpay/etc/system.xml b/app/code/community/Bolt/Boltpay/etc/system.xml
+--- a/app/code/community/Bolt/Boltpay/etc/system.xml
++++ b/app/code/community/Bolt/Boltpay/etc/system.xml
+@@ -12,7 +12,7 @@
+  *
+  * @category   Bolt
+  * @package    Bolt_Boltpay
+- * @copyright  Copyright (c) 2016-2020 Bolt Financial, Inc (https://www.bolt.com)
++ * @copyright  Copyright (c) 2016-2020 Bolt Financial, Inc (https://www.boltapp.com)
+  * @license    http://opensource.org/licenses/osl-3.0.php  Open Software License (OSL 3.0)
+  */
+ -->
+@@ -49,7 +49,7 @@
+             </test>
+             <keys type="group" translate="label comment">
+               <label>Keys</label>
+-              <comment><![CDATA[<div style="margin-left:-5px;margin-right:-5px;font-weight:bold;">Keys and URL Configurations can be found at <a href="merchant.bolt.com/settings">merchant.bolt.com/settings</a> or <a href="merchant-sandbox.bolt.com/settings">merchant-sandbox.bolt.com/settings</a>.</div>]]></comment>
++              <comment><![CDATA[<div style="margin-left:-5px;margin-right:-5px;font-weight:bold;">Keys and URL Configurations can be found at <a href="merchant.boltapp.com/settings">merchant.boltapp.com/settings</a> or <a href="merchant-sandbox.boltapp.com/settings">merchant-sandbox.boltapp.com/settings</a>.</div>]]></comment>
+               <sort_order>30</sort_order>
+               <show_in_default>1</show_in_default>
+               <show_in_website>1</show_in_website>
+diff --git a/app/code/community/Bolt/Boltpay/sql/bolt_boltpay_setup/install-0.0.9.php b/app/code/community/Bolt/Boltpay/sql/bolt_boltpay_setup/install-0.0.9.php
+--- a/app/code/community/Bolt/Boltpay/sql/bolt_boltpay_setup/install-0.0.9.php
++++ b/app/code/community/Bolt/Boltpay/sql/bolt_boltpay_setup/install-0.0.9.php
+@@ -11,7 +11,7 @@
+  *
+  * @category   Bolt
+  * @package    Bolt_Boltpay
+- * @copyright  Copyright (c) 2016-2020 Bolt Financial, Inc (https://www.bolt.com)
++ * @copyright  Copyright (c) 2016-2020 Bolt Financial, Inc (https://www.boltapp.com)
+  * @license    http://opensource.org/licenses/osl-3.0.php  Open Software License (OSL 3.0)
+  */
+ 
+diff --git a/app/code/community/Bolt/Boltpay/sql/bolt_boltpay_setup/upgrade-0.0.16-0.0.17.php b/app/code/community/Bolt/Boltpay/sql/bolt_boltpay_setup/upgrade-0.0.16-0.0.17.php
+--- a/app/code/community/Bolt/Boltpay/sql/bolt_boltpay_setup/upgrade-0.0.16-0.0.17.php
++++ b/app/code/community/Bolt/Boltpay/sql/bolt_boltpay_setup/upgrade-0.0.16-0.0.17.php
+@@ -11,7 +11,7 @@
+  *
+  * @category   Bolt
+  * @package    Bolt_Boltpay
+- * @copyright  Copyright (c) 2016-2020 Bolt Financial, Inc (https://www.bolt.com)
++ * @copyright  Copyright (c) 2016-2020 Bolt Financial, Inc (https://www.boltapp.com)
+  * @license    http://opensource.org/licenses/osl-3.0.php  Open Software License (OSL 3.0)
+  */
+ 
+diff --git a/app/code/community/Bolt/Boltpay/sql/bolt_boltpay_setup/upgrade-1.0.99-1.1.0.php b/app/code/community/Bolt/Boltpay/sql/bolt_boltpay_setup/upgrade-1.0.99-1.1.0.php
+--- a/app/code/community/Bolt/Boltpay/sql/bolt_boltpay_setup/upgrade-1.0.99-1.1.0.php
++++ b/app/code/community/Bolt/Boltpay/sql/bolt_boltpay_setup/upgrade-1.0.99-1.1.0.php
+@@ -11,7 +11,7 @@
+  *
+  * @category   Bolt
+  * @package    Bolt_Boltpay
+- * @copyright  Copyright (c) 2016-2020 Bolt Financial, Inc (https://www.bolt.com)
++ * @copyright  Copyright (c) 2016-2020 Bolt Financial, Inc (https://www.boltapp.com)
+  * @license    http://opensource.org/licenses/osl-3.0.php  Open Software License (OSL 3.0)
+  */
+ 
+diff --git a/app/code/community/Bolt/Boltpay/sql/bolt_boltpay_setup/upgrade-1.1.2-1.1.3.php b/app/code/community/Bolt/Boltpay/sql/bolt_boltpay_setup/upgrade-1.1.2-1.1.3.php
+--- a/app/code/community/Bolt/Boltpay/sql/bolt_boltpay_setup/upgrade-1.1.2-1.1.3.php
++++ b/app/code/community/Bolt/Boltpay/sql/bolt_boltpay_setup/upgrade-1.1.2-1.1.3.php
+@@ -11,7 +11,7 @@
+  *
+  * @category   Bolt
+  * @package    Bolt_Boltpay
+- * @copyright  Copyright (c) 2016-2020 Bolt Financial, Inc (https://www.bolt.com)
++ * @copyright  Copyright (c) 2016-2020 Bolt Financial, Inc (https://www.boltapp.com)
+  * @license    http://opensource.org/licenses/osl-3.0.php  Open Software License (OSL 3.0)
+  */
+ /**
+diff --git a/app/code/community/Bolt/Boltpay/sql/bolt_boltpay_setup/upgrade-1.1.4-1.1.4.9.php b/app/code/community/Bolt/Boltpay/sql/bolt_boltpay_setup/upgrade-1.1.4-1.1.4.9.php
+--- a/app/code/community/Bolt/Boltpay/sql/bolt_boltpay_setup/upgrade-1.1.4-1.1.4.9.php
++++ b/app/code/community/Bolt/Boltpay/sql/bolt_boltpay_setup/upgrade-1.1.4-1.1.4.9.php
+@@ -11,7 +11,7 @@
+  *
+  * @category   Bolt
+  * @package    Bolt_Boltpay
+- * @copyright  Copyright (c) 2016-2020 Bolt Financial, Inc (https://www.bolt.com)
++ * @copyright  Copyright (c) 2016-2020 Bolt Financial, Inc (https://www.boltapp.com)
+  * @license    http://opensource.org/licenses/osl-3.0.php  Open Software License (OSL 3.0)
+  */
+ /**
+diff --git a/app/code/community/Bolt/Boltpay/sql/bolt_boltpay_setup/upgrade-1.3.7-1.3.7.9.php b/app/code/community/Bolt/Boltpay/sql/bolt_boltpay_setup/upgrade-1.3.7-1.3.7.9.php
+--- a/app/code/community/Bolt/Boltpay/sql/bolt_boltpay_setup/upgrade-1.3.7-1.3.7.9.php
++++ b/app/code/community/Bolt/Boltpay/sql/bolt_boltpay_setup/upgrade-1.3.7-1.3.7.9.php
+@@ -11,7 +11,7 @@
+  *
+  * @category   Bolt
+  * @package    Bolt_Boltpay
+- * @copyright  Copyright (c) 2016-2020 Bolt Financial, Inc (https://www.bolt.com)
++ * @copyright  Copyright (c) 2016-2020 Bolt Financial, Inc (https://www.boltapp.com)
+  * @license    http://opensource.org/licenses/osl-3.0.php  Open Software License (OSL 3.0)
+  */
+ /**
+diff --git a/app/code/community/Bolt/Boltpay/sql/bolt_boltpay_setup/upgrade-1.4.1-1.4.1.1.php b/app/code/community/Bolt/Boltpay/sql/bolt_boltpay_setup/upgrade-1.4.1-1.4.1.1.php
+--- a/app/code/community/Bolt/Boltpay/sql/bolt_boltpay_setup/upgrade-1.4.1-1.4.1.1.php
++++ b/app/code/community/Bolt/Boltpay/sql/bolt_boltpay_setup/upgrade-1.4.1-1.4.1.1.php
+@@ -11,7 +11,7 @@
+  *
+  * @category   Bolt
+  * @package    Bolt_Boltpay
+- * @copyright  Copyright (c) 2016-2020 Bolt Financial, Inc (https://www.bolt.com)
++ * @copyright  Copyright (c) 2016-2020 Bolt Financial, Inc (https://www.boltapp.com)
+  * @license    http://opensource.org/licenses/osl-3.0.php  Open Software License (OSL 3.0)
+  */
+ /**
+diff --git a/app/code/community/Bolt/Boltpay/sql/bolt_boltpay_setup/upgrade-1.4.1.1-1.4.1.2.php b/app/code/community/Bolt/Boltpay/sql/bolt_boltpay_setup/upgrade-1.4.1.1-1.4.1.2.php
+--- a/app/code/community/Bolt/Boltpay/sql/bolt_boltpay_setup/upgrade-1.4.1.1-1.4.1.2.php
++++ b/app/code/community/Bolt/Boltpay/sql/bolt_boltpay_setup/upgrade-1.4.1.1-1.4.1.2.php
+@@ -11,7 +11,7 @@
+  *
+  * @category   Bolt
+  * @package    Bolt_Boltpay
+- * @copyright  Copyright (c) 2016-2020 Bolt Financial, Inc (https://www.bolt.com)
++ * @copyright  Copyright (c) 2016-2020 Bolt Financial, Inc (https://www.boltapp.com)
+  * @license    http://opensource.org/licenses/osl-3.0.php  Open Software License (OSL 3.0)
+  */
+ 
+diff --git a/app/code/community/Bolt/Boltpay/sql/bolt_boltpay_setup/upgrade-1.4.1.2-2.0.0.php b/app/code/community/Bolt/Boltpay/sql/bolt_boltpay_setup/upgrade-1.4.1.2-2.0.0.php
+--- a/app/code/community/Bolt/Boltpay/sql/bolt_boltpay_setup/upgrade-1.4.1.2-2.0.0.php
++++ b/app/code/community/Bolt/Boltpay/sql/bolt_boltpay_setup/upgrade-1.4.1.2-2.0.0.php
+@@ -11,7 +11,7 @@
+  *
+  * @category   Bolt
+  * @package    Bolt_Boltpay
+- * @copyright  Copyright (c) 2016-2020 Bolt Financial, Inc (https://www.bolt.com)
++ * @copyright  Copyright (c) 2016-2020 Bolt Financial, Inc (https://www.boltapp.com)
+  * @license    http://opensource.org/licenses/osl-3.0.php  Open Software License (OSL 3.0)
+  */
+ 
+diff --git a/app/code/community/Bolt/Boltpay/sql/bolt_boltpay_setup/upgrade-2.0.1-2.0.1.1.php b/app/code/community/Bolt/Boltpay/sql/bolt_boltpay_setup/upgrade-2.0.1-2.0.1.1.php
+--- a/app/code/community/Bolt/Boltpay/sql/bolt_boltpay_setup/upgrade-2.0.1-2.0.1.1.php
++++ b/app/code/community/Bolt/Boltpay/sql/bolt_boltpay_setup/upgrade-2.0.1-2.0.1.1.php
+@@ -11,7 +11,7 @@
+  *
+  * @category   Bolt
+  * @package    Bolt_Boltpay
+- * @copyright  Copyright (c) 2016-2020 Bolt Financial, Inc (https://www.bolt.com)
++ * @copyright  Copyright (c) 2016-2020 Bolt Financial, Inc (https://www.boltapp.com)
+  * @license    http://opensource.org/licenses/osl-3.0.php  Open Software License (OSL 3.0)
+  */
+ /**
+diff --git a/app/design/adminhtml/default/default/layout/boltpay.xml b/app/design/adminhtml/default/default/layout/boltpay.xml
+--- a/app/design/adminhtml/default/default/layout/boltpay.xml
++++ b/app/design/adminhtml/default/default/layout/boltpay.xml
+@@ -12,7 +12,7 @@
+  *
+  * @category   Bolt
+  * @package    Bolt_Boltpay
+- * @copyright  Copyright (c) 2016-2020 Bolt Financial, Inc (https://www.bolt.com)
++ * @copyright  Copyright (c) 2016-2020 Bolt Financial, Inc (https://www.boltapp.com)
+  * @license    http://opensource.org/licenses/osl-3.0.php  Open Software License (OSL 3.0)
+  */
+ -->
+diff --git a/app/design/adminhtml/default/default/template/boltpay/connectjs.phtml b/app/design/adminhtml/default/default/template/boltpay/connectjs.phtml
+--- a/app/design/adminhtml/default/default/template/boltpay/connectjs.phtml
++++ b/app/design/adminhtml/default/default/template/boltpay/connectjs.phtml
+@@ -11,7 +11,7 @@
+  *
+  * @category   Bolt
+  * @package    Bolt_Boltpay
+- * @copyright  Copyright (c) 2016-2020 Bolt Financial, Inc (https://www.bolt.com)
++ * @copyright  Copyright (c) 2016-2020 Bolt Financial, Inc (https://www.boltapp.com)
+  * @license    http://opensource.org/licenses/osl-3.0.php  Open Software License (OSL 3.0)
+  */
+ ?>
+diff --git a/app/design/adminhtml/default/default/template/boltpay/form.phtml b/app/design/adminhtml/default/default/template/boltpay/form.phtml
+--- a/app/design/adminhtml/default/default/template/boltpay/form.phtml
++++ b/app/design/adminhtml/default/default/template/boltpay/form.phtml
+@@ -11,7 +11,7 @@
+  *
+  * @category   Bolt
+  * @package    Bolt_Boltpay
+- * @copyright  Copyright (c) 2016-2020 Bolt Financial, Inc (https://www.bolt.com)
++ * @copyright  Copyright (c) 2016-2020 Bolt Financial, Inc (https://www.boltapp.com)
+  * @license    http://opensource.org/licenses/osl-3.0.php  Open Software License (OSL 3.0)
+  */
+ ?>
+diff --git a/app/design/adminhtml/default/default/template/boltpay/notification.phtml b/app/design/adminhtml/default/default/template/boltpay/notification.phtml
+--- a/app/design/adminhtml/default/default/template/boltpay/notification.phtml
++++ b/app/design/adminhtml/default/default/template/boltpay/notification.phtml
+@@ -11,7 +11,7 @@
+  *
+  * @category   Bolt
+  * @package    Bolt_Boltpay
+- * @copyright  Copyright (c) 2019 Bolt Financial, Inc (https://www.bolt.com)
++ * @copyright  Copyright (c) 2019 Bolt Financial, Inc (https://www.boltapp.com)
+  * @license    http://opensource.org/licenses/osl-3.0.php  Open Software License (OSL 3.0)
+  */
+ 
+diff --git a/app/design/adminhtml/default/default/template/boltpay/refund_popup.phtml b/app/design/adminhtml/default/default/template/boltpay/refund_popup.phtml
+--- a/app/design/adminhtml/default/default/template/boltpay/refund_popup.phtml
++++ b/app/design/adminhtml/default/default/template/boltpay/refund_popup.phtml
+@@ -11,7 +11,7 @@
+  *
+  * @category   Bolt
+  * @package    Bolt_Boltpay
+- * @copyright  Copyright (c) 2016-2020 Bolt Financial, Inc (https://www.bolt.com)
++ * @copyright  Copyright (c) 2016-2020 Bolt Financial, Inc (https://www.boltapp.com)
+  * @license    http://opensource.org/licenses/osl-3.0.php  Open Software License (OSL 3.0)
+  */
+ 
+@@ -54,7 +54,7 @@
+ 
+             if ((typeof BoltPopup !== 'undefined') && buttons) {
+                 BoltPopup.setTitle('<?= $this->__('Did you mean to issue a refund with Bolt on this order?'); ?>');
+-                BoltPopup.setMessage('<?= $this->__('Issue a refund by selecting an <b>Invoice</b> and then issuing a <b>Credit Memo</b> from the Invoice.<br/>Instructions manual: <a href="https://docs.bolt.com/docs/magento-1-operations">LINK</a>'); ?>');
++                BoltPopup.setMessage('<?= $this->__('Issue a refund by selecting an <b>Invoice</b> and then issuing a <b>Credit Memo</b> from the Invoice.<br/>Instructions manual: <a href="https://help.boltapp.com/">LINK</a>'); ?>');
+ 
+                 var button_container = document.querySelector('#bolt-popup .popup-action');
+                 button_container.prepend(refund_offline_button);
+diff --git a/app/design/adminhtml/default/default/template/boltpay/system/config/button.phtml b/app/design/adminhtml/default/default/template/boltpay/system/config/button.phtml
+--- a/app/design/adminhtml/default/default/template/boltpay/system/config/button.phtml
++++ b/app/design/adminhtml/default/default/template/boltpay/system/config/button.phtml
+@@ -11,7 +11,7 @@
+  *
+  * @category   Bolt
+  * @package    Bolt_Boltpay
+- * @copyright  Copyright (c) 2016-2020 Bolt Financial, Inc (https://www.bolt.com)
++ * @copyright  Copyright (c) 2016-2020 Bolt Financial, Inc (https://www.boltapp.com)
+  * @license    http://opensource.org/licenses/osl-3.0.php  Open Software License (OSL 3.0)
+  */
+ 
+diff --git a/app/design/adminhtml/default/default/template/boltpay/update_popup.phtml b/app/design/adminhtml/default/default/template/boltpay/update_popup.phtml
+--- a/app/design/adminhtml/default/default/template/boltpay/update_popup.phtml
++++ b/app/design/adminhtml/default/default/template/boltpay/update_popup.phtml
+@@ -11,7 +11,7 @@
+  *
+  * @category   Bolt
+  * @package    Bolt_Boltpay
+- * @copyright  Copyright (c) 2019 Bolt Financial, Inc (https://www.bolt.com)
++ * @copyright  Copyright (c) 2019 Bolt Financial, Inc (https://www.boltapp.com)
+  * @license    http://opensource.org/licenses/osl-3.0.php  Open Software License (OSL 3.0)
+  */
+ 
+@@ -35,7 +35,7 @@
+     <h3>
+         <?php echo $this->__(
+             'You can find our guide to production readiness testing <a href="%s">here</a>',
+-            'https://support.bolt.com/hc/en-us/articles/360046487254-Production-Readiness'
++            'https://help.boltapp.com/developers/production-readiness-guides/'
+         ); ?>
+     </h3>
+     <h3>
+@@ -82,7 +82,7 @@
+             <li>
+                 <h3>
+                     <?php echo $this->__('Update manually'); ?>
+-                    <a href="https://docs.bolt.com/docs/magento-1-integration#section-2-setup-bolt-extension"
++                    <a href="https://help.boltapp.com/"
+                        class="read-more">
+                         <?php echo $this->__('(read more)'); ?>
+                     </a>
+diff --git a/app/design/frontend/base/default/layout/boltpay.xml b/app/design/frontend/base/default/layout/boltpay.xml
+--- a/app/design/frontend/base/default/layout/boltpay.xml
++++ b/app/design/frontend/base/default/layout/boltpay.xml
+@@ -12,7 +12,7 @@
+  *
+  * @category   Bolt
+  * @package    Bolt_Boltpay
+- * @copyright  Copyright (c) 2016-2020 Bolt Financial, Inc (https://www.bolt.com)
++ * @copyright  Copyright (c) 2016-2020 Bolt Financial, Inc (https://www.boltapp.com)
+  * @license    http://opensource.org/licenses/osl-3.0.php  Open Software License (OSL 3.0)
+  */
+  -->
+diff --git a/app/design/frontend/base/default/template/boltpay/boltjs.phtml b/app/design/frontend/base/default/template/boltpay/boltjs.phtml
+--- a/app/design/frontend/base/default/template/boltpay/boltjs.phtml
++++ b/app/design/frontend/base/default/template/boltpay/boltjs.phtml
+@@ -11,7 +11,7 @@
+  *
+  * @category   Bolt
+  * @package    Bolt_Boltpay
+- * @copyright  Copyright (c) 2016-2020 Bolt Financial, Inc (https://www.bolt.com)
++ * @copyright  Copyright (c) 2016-2020 Bolt Financial, Inc (https://www.boltapp.com)
+  * @license    http://opensource.org/licenses/osl-3.0.php  Open Software License (OSL 3.0)
+  */
+ 
+diff --git a/app/design/frontend/base/default/template/boltpay/catalog/product/button.phtml b/app/design/frontend/base/default/template/boltpay/catalog/product/button.phtml
+--- a/app/design/frontend/base/default/template/boltpay/catalog/product/button.phtml
++++ b/app/design/frontend/base/default/template/boltpay/catalog/product/button.phtml
+@@ -11,7 +11,7 @@
+  *
+  * @category   Bolt
+  * @package    Bolt_Boltpay
+- * @copyright  Copyright (c) 2016-2020 Bolt Financial, Inc (https://www.bolt.com)
++ * @copyright  Copyright (c) 2016-2020 Bolt Financial, Inc (https://www.boltapp.com)
+  * @license    http://opensource.org/licenses/osl-3.0.php  Open Software License (OSL 3.0)
+  */
+ 
+diff --git a/app/design/frontend/base/default/template/boltpay/catalog/product/configure_checkout.phtml b/app/design/frontend/base/default/template/boltpay/catalog/product/configure_checkout.phtml
+--- a/app/design/frontend/base/default/template/boltpay/catalog/product/configure_checkout.phtml
++++ b/app/design/frontend/base/default/template/boltpay/catalog/product/configure_checkout.phtml
+@@ -11,7 +11,7 @@
+  *
+  * @category   Bolt
+  * @package    Bolt_Boltpay
+- * @copyright  Copyright (c) 2016-2020 Bolt Financial, Inc (https://www.bolt.com)
++ * @copyright  Copyright (c) 2016-2020 Bolt Financial, Inc (https://www.boltapp.com)
+  * @license    http://opensource.org/licenses/osl-3.0.php  Open Software License (OSL 3.0)
+  */
+ 
+diff --git a/app/design/frontend/base/default/template/boltpay/connectjs.phtml b/app/design/frontend/base/default/template/boltpay/connectjs.phtml
+--- a/app/design/frontend/base/default/template/boltpay/connectjs.phtml
++++ b/app/design/frontend/base/default/template/boltpay/connectjs.phtml
+@@ -11,7 +11,7 @@
+  *
+  * @category   Bolt
+  * @package    Bolt_Boltpay
+- * @copyright  Copyright (c) 2016-2020 Bolt Financial, Inc (https://www.bolt.com)
++ * @copyright  Copyright (c) 2016-2020 Bolt Financial, Inc (https://www.boltapp.com)
+  * @license    http://opensource.org/licenses/osl-3.0.php  Open Software License (OSL 3.0)
+  */
+ ?>
+diff --git a/app/design/frontend/base/default/template/boltpay/form.phtml b/app/design/frontend/base/default/template/boltpay/form.phtml
+--- a/app/design/frontend/base/default/template/boltpay/form.phtml
++++ b/app/design/frontend/base/default/template/boltpay/form.phtml
+@@ -11,7 +11,7 @@
+  *
+  * @category   Bolt
+  * @package    Bolt_Boltpay
+- * @copyright  Copyright (c) 2016-2020 Bolt Financial, Inc (https://www.bolt.com)
++ * @copyright  Copyright (c) 2016-2020 Bolt Financial, Inc (https://www.boltapp.com)
+  * @license    http://opensource.org/licenses/osl-3.0.php  Open Software License (OSL 3.0)
+  */
+ ?>
+diff --git a/app/design/frontend/base/default/template/boltpay/mark.phtml b/app/design/frontend/base/default/template/boltpay/mark.phtml
+--- a/app/design/frontend/base/default/template/boltpay/mark.phtml
++++ b/app/design/frontend/base/default/template/boltpay/mark.phtml
+@@ -11,7 +11,7 @@
+  *
+  * @category   Bolt
+  * @package    Bolt_Boltpay
+- * @copyright  Copyright (c) 2016-2020 Bolt Financial, Inc (https://www.bolt.com)
++ * @copyright  Copyright (c) 2016-2020 Bolt Financial, Inc (https://www.boltapp.com)
+  * @license    http://opensource.org/licenses/osl-3.0.php  Open Software License (OSL 3.0)
+  */
+ ?>
+diff --git a/app/design/frontend/base/default/template/boltpay/payment.phtml b/app/design/frontend/base/default/template/boltpay/payment.phtml
+--- a/app/design/frontend/base/default/template/boltpay/payment.phtml
++++ b/app/design/frontend/base/default/template/boltpay/payment.phtml
+@@ -11,7 +11,7 @@
+  *
+  * @category   Bolt
+  * @package    Bolt_Boltpay
+- * @copyright  Copyright (c) 2016-2020 Bolt Financial, Inc (https://www.bolt.com)
++ * @copyright  Copyright (c) 2016-2020 Bolt Financial, Inc (https://www.boltapp.com)
+  * @license    http://opensource.org/licenses/osl-3.0.php  Open Software License (OSL 3.0)
+  */
+ ?>
+diff --git a/app/design/frontend/base/default/template/boltpay/popup.phtml b/app/design/frontend/base/default/template/boltpay/popup.phtml
+--- a/app/design/frontend/base/default/template/boltpay/popup.phtml
++++ b/app/design/frontend/base/default/template/boltpay/popup.phtml
+@@ -11,7 +11,7 @@
+  *
+  * @category   Bolt
+  * @package    Bolt_Boltpay
+- * @copyright  Copyright (c) 2016-2020 Bolt Financial, Inc (https://www.bolt.com)
++ * @copyright  Copyright (c) 2016-2020 Bolt Financial, Inc (https://www.boltapp.com)
+  * @license    http://opensource.org/licenses/osl-3.0.php  Open Software License (OSL 3.0)
+  */
+ 
+diff --git a/app/design/frontend/base/default/template/boltpay/prefetch_shipping_quote.phtml b/app/design/frontend/base/default/template/boltpay/prefetch_shipping_quote.phtml
+--- a/app/design/frontend/base/default/template/boltpay/prefetch_shipping_quote.phtml
++++ b/app/design/frontend/base/default/template/boltpay/prefetch_shipping_quote.phtml
+@@ -11,7 +11,7 @@
+  *
+  * @category   Bolt
+  * @package    Bolt_Boltpay
+- * @copyright  Copyright (c) 2016-2020 Bolt Financial, Inc (https://www.bolt.com)
++ * @copyright  Copyright (c) 2016-2020 Bolt Financial, Inc (https://www.boltapp.com)
+  * @license    http://opensource.org/licenses/osl-3.0.php  Open Software License (OSL 3.0)
+  */
+ /* @var $this Bolt_Boltpay_Block_Checkout_Boltpay */
+diff --git a/app/design/frontend/base/default/template/boltpay/replace.phtml b/app/design/frontend/base/default/template/boltpay/replace.phtml
+--- a/app/design/frontend/base/default/template/boltpay/replace.phtml
++++ b/app/design/frontend/base/default/template/boltpay/replace.phtml
+@@ -11,7 +11,7 @@
+  *
+  * @category   Bolt
+  * @package    Bolt_Boltpay
+- * @copyright  Copyright (c) 2016-2020 Bolt Financial, Inc (https://www.bolt.com)
++ * @copyright  Copyright (c) 2016-2020 Bolt Financial, Inc (https://www.boltapp.com)
+  * @license    http://opensource.org/licenses/osl-3.0.php  Open Software License (OSL 3.0)
+  */
+ 
+diff --git a/app/design/frontend/base/default/template/boltpay/replace_firecheckout.phtml b/app/design/frontend/base/default/template/boltpay/replace_firecheckout.phtml
+--- a/app/design/frontend/base/default/template/boltpay/replace_firecheckout.phtml
++++ b/app/design/frontend/base/default/template/boltpay/replace_firecheckout.phtml
+@@ -11,7 +11,7 @@
+  *
+  * @category   Bolt
+  * @package    Bolt_Boltpay
+- * @copyright  Copyright (c) 2016-2020 Bolt Financial, Inc (https://www.bolt.com)
++ * @copyright  Copyright (c) 2016-2020 Bolt Financial, Inc (https://www.boltapp.com)
+  * @license    http://opensource.org/licenses/osl-3.0.php  Open Software License (OSL 3.0)
+  */
+ 
+diff --git a/app/design/frontend/base/default/template/boltpay/track.phtml b/app/design/frontend/base/default/template/boltpay/track.phtml
+--- a/app/design/frontend/base/default/template/boltpay/track.phtml
++++ b/app/design/frontend/base/default/template/boltpay/track.phtml
+@@ -11,7 +11,7 @@
+  *
+  * @category   Bolt
+  * @package    Bolt_Boltpay
+- * @copyright  Copyright (c) 2016-2020 Bolt Financial, Inc (https://www.bolt.com)
++ * @copyright  Copyright (c) 2016-2020 Bolt Financial, Inc (https://www.boltapp.com)
+  * @license    http://opensource.org/licenses/osl-3.0.php  Open Software License (OSL 3.0)
+  */
+ ?>
+diff --git a/app/etc/modules/Bolt_Boltpay.xml b/app/etc/modules/Bolt_Boltpay.xml
+--- a/app/etc/modules/Bolt_Boltpay.xml
++++ b/app/etc/modules/Bolt_Boltpay.xml
+@@ -12,7 +12,7 @@
+  *
+  * @category   Bolt
+  * @package    Bolt_Boltpay
+- * @copyright  Copyright (c) 2016-2020 Bolt Financial, Inc (https://www.bolt.com)
++ * @copyright  Copyright (c) 2016-2020 Bolt Financial, Inc (https://www.boltapp.com)
+  * @license    http://opensource.org/licenses/osl-3.0.php  Open Software License (OSL 3.0)
+  */
+ -->
+diff --git a/composer.json b/composer.json
+--- a/composer.json
++++ b/composer.json
+@@ -1,13 +1,13 @@
+ {
+   "name": "boltpay/bolt-magento1",
+-  "homepage": "https://bolt.com",
++  "homepage": "https://www.boltapp.com",
+   "type": "magento-module",
+   "license":"Open Software License (OSL 3.0)",
+   "description":"Plugin to integrate Bolt with Magento 1",
+   "authors":[
+     {
+       "name": "Bolt Engineering",
+-      "email": "dev@bolt.com"
++      "email": "dev@boltapp.com"
+     }
+   ],
+   "require": {
+diff --git a/docker-container/README.md b/docker-container/README.md
+--- a/docker-container/README.md
++++ b/docker-container/README.md
+@@ -11,7 +11,7 @@
+ [https://ngrok.com/](https://ngrok.com/)
+ [https://ngrok.com/pricing](https://ngrok.com/pricing)
+ 
+-In order for your docker container to communicate with the webhook and shipping & tax url set on [merchant-sandbox.bolt.com](http://merchant-sandbox.bolt.com/), one must set up an ngrok account to expose your store's docker ports to a public IP address. In order to do this one must have at least the Basic plan with ngrok to reserve a domain for themselves. 
++In order for your docker container to communicate with the webhook and shipping & tax url set on [merchant-sandbox.boltapp.com](http://merchant-sandbox.boltapp.com/), one must set up an ngrok account to expose your store's docker ports to a public IP address. In order to do this one must have at least the Basic plan with ngrok to reserve a domain for themselves. 
+ 
+ Once the initial configuration scripts are ran in your local environment and a public domain is reserved, run the following command 
+ 
+diff --git a/js/boltpay/admin_order.js b/js/boltpay/admin_order.js
+--- a/js/boltpay/admin_order.js
++++ b/js/boltpay/admin_order.js
+@@ -10,7 +10,7 @@
+  *
+  * @category   Bolt
+  * @package    Bolt_Boltpay
+- * @copyright  Copyright (c) 2016-2020 Bolt Financial, Inc (https://www.bolt.com)
++ * @copyright  Copyright (c) 2016-2020 Bolt Financial, Inc (https://www.boltapp.com)
+  * @license    http://opensource.org/licenses/osl-3.0.php  Open Software License (OSL 3.0)
+  */
+ 
+diff --git a/lib/Boltpay/Bugsnag/Client.php b/lib/Boltpay/Bugsnag/Client.php
+--- a/lib/Boltpay/Bugsnag/Client.php
++++ b/lib/Boltpay/Bugsnag/Client.php
+@@ -11,7 +11,7 @@
+  *
+  * @category   Bolt
+  * @package    Bolt_Boltpay
+- * @copyright  Copyright (c) 2016-2020 Bolt Financial, Inc (https://www.bolt.com)
++ * @copyright  Copyright (c) 2016-2020 Bolt Financial, Inc (https://www.boltapp.com)
+  * @license    http://opensource.org/licenses/osl-3.0.php  Open Software License (OSL 3.0)
+  */
+ 
+diff --git a/lib/Boltpay/Bugsnag/Configuration.php b/lib/Boltpay/Bugsnag/Configuration.php
+--- a/lib/Boltpay/Bugsnag/Configuration.php
++++ b/lib/Boltpay/Bugsnag/Configuration.php
+@@ -11,7 +11,7 @@
+  *
+  * @category   Bolt
+  * @package    Bolt_Boltpay
+- * @copyright  Copyright (c) 2016-2020 Bolt Financial, Inc (https://www.bolt.com)
++ * @copyright  Copyright (c) 2016-2020 Bolt Financial, Inc (https://www.boltapp.com)
+  * @license    http://opensource.org/licenses/osl-3.0.php  Open Software License (OSL 3.0)
+  */
+ 
+diff --git a/lib/Boltpay/Bugsnag/Diagnostics.php b/lib/Boltpay/Bugsnag/Diagnostics.php
+--- a/lib/Boltpay/Bugsnag/Diagnostics.php
++++ b/lib/Boltpay/Bugsnag/Diagnostics.php
+@@ -11,7 +11,7 @@
+  *
+  * @category   Bolt
+  * @package    Bolt_Boltpay
+- * @copyright  Copyright (c) 2016-2020 Bolt Financial, Inc (https://www.bolt.com)
++ * @copyright  Copyright (c) 2016-2020 Bolt Financial, Inc (https://www.boltapp.com)
+  * @license    http://opensource.org/licenses/osl-3.0.php  Open Software License (OSL 3.0)
+  */
+ 
+diff --git a/lib/Boltpay/Bugsnag/Error.php b/lib/Boltpay/Bugsnag/Error.php
+--- a/lib/Boltpay/Bugsnag/Error.php
++++ b/lib/Boltpay/Bugsnag/Error.php
+@@ -11,7 +11,7 @@
+  *
+  * @category   Bolt
+  * @package    Bolt_Boltpay
+- * @copyright  Copyright (c) 2016-2020 Bolt Financial, Inc (https://www.bolt.com)
++ * @copyright  Copyright (c) 2016-2020 Bolt Financial, Inc (https://www.boltapp.com)
+  * @license    http://opensource.org/licenses/osl-3.0.php  Open Software License (OSL 3.0)
+  */
+ 
+diff --git a/lib/Boltpay/Bugsnag/ErrorTypes.php b/lib/Boltpay/Bugsnag/ErrorTypes.php
+--- a/lib/Boltpay/Bugsnag/ErrorTypes.php
++++ b/lib/Boltpay/Bugsnag/ErrorTypes.php
+@@ -11,7 +11,7 @@
+  *
+  * @category   Bolt
+  * @package    Bolt_Boltpay
+- * @copyright  Copyright (c) 2016-2020 Bolt Financial, Inc (https://www.bolt.com)
++ * @copyright  Copyright (c) 2016-2020 Bolt Financial, Inc (https://www.boltapp.com)
+  * @license    http://opensource.org/licenses/osl-3.0.php  Open Software License (OSL 3.0)
+  */
+ 
+diff --git a/lib/Boltpay/Bugsnag/Notification.php b/lib/Boltpay/Bugsnag/Notification.php
+--- a/lib/Boltpay/Bugsnag/Notification.php
++++ b/lib/Boltpay/Bugsnag/Notification.php
+@@ -11,7 +11,7 @@
+  *
+  * @category   Bolt
+  * @package    Bolt_Boltpay
+- * @copyright  Copyright (c) 2016-2020 Bolt Financial, Inc (https://www.bolt.com)
++ * @copyright  Copyright (c) 2016-2020 Bolt Financial, Inc (https://www.boltapp.com)
+  * @license    http://opensource.org/licenses/osl-3.0.php  Open Software License (OSL 3.0)
+  */
+ 
+diff --git a/lib/Boltpay/Bugsnag/Request.php b/lib/Boltpay/Bugsnag/Request.php
+--- a/lib/Boltpay/Bugsnag/Request.php
++++ b/lib/Boltpay/Bugsnag/Request.php
+@@ -11,7 +11,7 @@
+  *
+  * @category   Bolt
+  * @package    Bolt_Boltpay
+- * @copyright  Copyright (c) 2016-2020 Bolt Financial, Inc (https://www.bolt.com)
++ * @copyright  Copyright (c) 2016-2020 Bolt Financial, Inc (https://www.boltapp.com)
+  * @license    http://opensource.org/licenses/osl-3.0.php  Open Software License (OSL 3.0)
+  */
+ 
+diff --git a/lib/Boltpay/Bugsnag/Stacktrace.php b/lib/Boltpay/Bugsnag/Stacktrace.php
+--- a/lib/Boltpay/Bugsnag/Stacktrace.php
++++ b/lib/Boltpay/Bugsnag/Stacktrace.php
+@@ -11,7 +11,7 @@
+  *
+  * @category   Bolt
+  * @package    Bolt_Boltpay
+- * @copyright  Copyright (c) 2016-2020 Bolt Financial, Inc (https://www.bolt.com)
++ * @copyright  Copyright (c) 2016-2020 Bolt Financial, Inc (https://www.boltapp.com)
+  * @license    http://opensource.org/licenses/osl-3.0.php  Open Software License (OSL 3.0)
+  */
+ 
+diff --git a/lib/Boltpay/DataDog/Client.php b/lib/Boltpay/DataDog/Client.php
+--- a/lib/Boltpay/DataDog/Client.php
++++ b/lib/Boltpay/DataDog/Client.php
+@@ -11,7 +11,7 @@
+  *
+  * @category   Bolt
+  * @package    Bolt_Boltpay
+- * @copyright  Copyright (c) 2016-2020 Bolt Financial, Inc (https://www.bolt.com)
++ * @copyright  Copyright (c) 2016-2020 Bolt Financial, Inc (https://www.boltapp.com)
+  * @license    http://opensource.org/licenses/osl-3.0.php  Open Software License (OSL 3.0)
+  */
+ 
+diff --git a/lib/Boltpay/DataDog/Environment.php b/lib/Boltpay/DataDog/Environment.php
+--- a/lib/Boltpay/DataDog/Environment.php
++++ b/lib/Boltpay/DataDog/Environment.php
+@@ -11,7 +11,7 @@
+  *
+  * @category   Bolt
+  * @package    Bolt_Boltpay
+- * @copyright  Copyright (c) 2016-2020 Bolt Financial, Inc (https://www.bolt.com)
++ * @copyright  Copyright (c) 2016-2020 Bolt Financial, Inc (https://www.boltapp.com)
+  * @license    http://opensource.org/licenses/osl-3.0.php  Open Software License (OSL 3.0)
+  */
+ 
+diff --git a/lib/Boltpay/DataDog/ErrorTypes.php b/lib/Boltpay/DataDog/ErrorTypes.php
+--- a/lib/Boltpay/DataDog/ErrorTypes.php
++++ b/lib/Boltpay/DataDog/ErrorTypes.php
+@@ -11,7 +11,7 @@
+  *
+  * @category   Bolt
+  * @package    Bolt_Boltpay
+- * @copyright  Copyright (c) 2016-2020 Bolt Financial, Inc (https://www.bolt.com)
++ * @copyright  Copyright (c) 2016-2020 Bolt Financial, Inc (https://www.boltapp.com)
+  * @license    http://opensource.org/licenses/osl-3.0.php  Open Software License (OSL 3.0)
+  */
+ 
+diff --git a/lib/Boltpay/DataDog/Request.php b/lib/Boltpay/DataDog/Request.php
+--- a/lib/Boltpay/DataDog/Request.php
++++ b/lib/Boltpay/DataDog/Request.php
+@@ -11,7 +11,7 @@
+  *
+  * @category   Bolt
+  * @package    Bolt_Boltpay
+- * @copyright  Copyright (c) 2016-2020 Bolt Financial, Inc (https://www.bolt.com)
++ * @copyright  Copyright (c) 2016-2020 Bolt Financial, Inc (https://www.boltapp.com)
+  * @license    http://opensource.org/licenses/osl-3.0.php  Open Software License (OSL 3.0)
+  */
+ 
+diff --git a/lib/Boltpay/Guzzle/ApiClient.php b/lib/Boltpay/Guzzle/ApiClient.php
+--- a/lib/Boltpay/Guzzle/ApiClient.php
++++ b/lib/Boltpay/Guzzle/ApiClient.php
+@@ -10,7 +10,7 @@
+  * https://opensource.org/licenses/MIT
+  *
+  * @category   Bolt
+- * @copyright  Copyright (c) 2016-2020 Bolt Financial, Inc (https://www.bolt.com)
++ * @copyright  Copyright (c) 2016-2020 Bolt Financial, Inc (https://www.boltapp.com)
+  * @license    https://opensource.org/licenses/MIT  MIT License (MIT)
+  */
+ 
+diff --git a/lib/Boltpay/GuzzleHttp/autoload.php b/lib/Boltpay/GuzzleHttp/autoload.php
+--- a/lib/Boltpay/GuzzleHttp/autoload.php
++++ b/lib/Boltpay/GuzzleHttp/autoload.php
+@@ -11,7 +11,7 @@
+  *
+  * @category   Bolt
+  * @package    Bolt_Boltpay
+- * @copyright  Copyright (c) 2016-2020 Bolt Financial, Inc (https://www.bolt.com)
++ * @copyright  Copyright (c) 2016-2020 Bolt Financial, Inc (https://www.boltapp.com)
+  * @license    http://opensource.org/licenses/osl-3.0.php  Open Software License (OSL 3.0)
+  */
+ 
+diff --git a/lib/Boltpay/Psr/autoload.php b/lib/Boltpay/Psr/autoload.php
+--- a/lib/Boltpay/Psr/autoload.php
++++ b/lib/Boltpay/Psr/autoload.php
+@@ -11,7 +11,7 @@
+  *
+  * @category   Bolt
+  * @package    Bolt_Boltpay
+- * @copyright  Copyright (c) 2016-2020 Bolt Financial, Inc (https://www.bolt.com)
++ * @copyright  Copyright (c) 2016-2020 Bolt Financial, Inc (https://www.boltapp.com)
+  * @license    http://opensource.org/licenses/osl-3.0.php  Open Software License (OSL 3.0)
+  */
+ 
+diff --git a/skin/frontend/base/default/boltpay/opcheckout.js b/skin/frontend/base/default/boltpay/opcheckout.js
+--- a/skin/frontend/base/default/boltpay/opcheckout.js
++++ b/skin/frontend/base/default/boltpay/opcheckout.js
+@@ -10,7 +10,7 @@
+  *
+  * @category   Bolt
+  * @package    Bolt_Boltpay
+- * @copyright  Copyright (c) 2016-2020 Bolt Financial, Inc (https://www.bolt.com)
++ * @copyright  Copyright (c) 2016-2020 Bolt Financial, Inc (https://www.boltapp.com)
+  * @license    http://opensource.org/licenses/osl-3.0.php  Open Software License (OSL 3.0)
+  */
+ 
+diff --git a/skin/frontend/base/default/css/boltpay/minicart.css b/skin/frontend/base/default/css/boltpay/minicart.css
+--- a/skin/frontend/base/default/css/boltpay/minicart.css
++++ b/skin/frontend/base/default/css/boltpay/minicart.css
+@@ -10,7 +10,7 @@
+  *
+  * @category   Bolt
+  * @package    Bolt_Boltpay
+- * @copyright  Copyright (c) 2016-2020 Bolt Financial, Inc (https://www.bolt.com)
++ * @copyright  Copyright (c) 2016-2020 Bolt Financial, Inc (https://www.boltapp.com)
+  * @license    http://opensource.org/licenses/osl-3.0.php  Open Software License (OSL 3.0)
+  */
+ 
+diff --git a/tests/load/setup_files/CartDataLoadTest.php b/tests/load/setup_files/CartDataLoadTest.php
+--- a/tests/load/setup_files/CartDataLoadTest.php
++++ b/tests/load/setup_files/CartDataLoadTest.php
+@@ -11,7 +11,7 @@
+  *
+  * @category   Bolt
+  * @package    Bolt_Boltpay
+- * @copyright  Copyright (c) 2016-2020 Bolt Financial, Inc (https://www.bolt.com)
++ * @copyright  Copyright (c) 2016-2020 Bolt Financial, Inc (https://www.boltapp.com)
+  * @license    http://opensource.org/licenses/osl-3.0.php  Open Software License (OSL 3.0)
+  */
+ 
+diff --git a/tests/load/setup_files/CartDataLoadTestController.php b/tests/load/setup_files/CartDataLoadTestController.php
+--- a/tests/load/setup_files/CartDataLoadTestController.php
++++ b/tests/load/setup_files/CartDataLoadTestController.php
+@@ -11,7 +11,7 @@
+  *
+  * @category   Bolt
+  * @package    Bolt_Boltpay
+- * @copyright  Copyright (c) 2016-2020 Bolt Financial, Inc (https://www.bolt.com)
++ * @copyright  Copyright (c) 2016-2020 Bolt Financial, Inc (https://www.boltapp.com)
+  * @license    http://opensource.org/licenses/osl-3.0.php  Open Software License (OSL 3.0)
+  */
+ 
+diff --git a/tests/load/setup_files/README.md b/tests/load/setup_files/README.md
+--- a/tests/load/setup_files/README.md
++++ b/tests/load/setup_files/README.md
+@@ -1,6 +1,6 @@
+ # Load Test Setup 
+ 1. Create an M1 store as described here: [Configure Store on Lightsail](https://www.notion.so/boltteam/Creating-Stores-in-Lightsail-c1457819c4ba454fbb668ca76d50ad87)
+ 
+-2. Configure Bolt on your M1 store as described here: [Configure Bolt](https://docs.bolt.com/docs/magento-1-integration)
++2. Configure Bolt on your M1 store as described here: [Configure Bolt](https://help.boltapp.com/)
+ 
+ 3. Then run `source setup.sh`
+diff --git a/tests/unit/testsuite/Bolt/Boltpay/Block/Checkout/BoltpayTest.php b/tests/unit/testsuite/Bolt/Boltpay/Block/Checkout/BoltpayTest.php
+--- a/tests/unit/testsuite/Bolt/Boltpay/Block/Checkout/BoltpayTest.php
++++ b/tests/unit/testsuite/Bolt/Boltpay/Block/Checkout/BoltpayTest.php
+@@ -125,7 +125,7 @@
+     {
+         TestHelper::stubConfigValue('payment/boltpay/test', 1);
+         $currentObject = new BoltpayCheckoutBlock();
+-        $this->assertAttributeEquals('https://connect-sandbox.bolt.com/connect.js', '_jsUrl', $currentObject);
++        $this->assertAttributeEquals('https://connect-sandbox.boltapp.com/connect.js', '_jsUrl', $currentObject);
+     }
+ 
+     /**
+@@ -140,7 +140,7 @@
+     {
+         TestHelper::stubConfigValue('payment/boltpay/test', 0);
+         $currentObject = new BoltpayCheckoutBlock();
+-        $this->assertAttributeEquals('https://connect.bolt.com/connect.js', '_jsUrl', $currentObject);
++        $this->assertAttributeEquals('https://connect.boltapp.com/connect.js', '_jsUrl', $currentObject);
+     }
+ 
+     /**
+@@ -155,7 +155,7 @@
+     {
+         TestHelper::stubConfigValue('payment/boltpay/test', 1);
+         $this->assertEquals(
+-            'https://connect-sandbox.bolt.com/track.js',
++            'https://connect-sandbox.boltapp.com/track.js',
+             $this->currentMock->getTrackJsUrl()
+         );
+     }
+@@ -172,7 +172,7 @@
+     {
+         TestHelper::stubConfigValue('payment/boltpay/test', 0);
+         $this->assertEquals(
+-            'https://connect.bolt.com/track.js',
++            'https://connect.boltapp.com/track.js',
+             $this->currentMock->getTrackJsUrl()
+         );
+     }
+diff --git a/tests/unit/testsuite/Bolt/Boltpay/Helper/ApiTraitTest.php b/tests/unit/testsuite/Bolt/Boltpay/Helper/ApiTraitTest.php
+--- a/tests/unit/testsuite/Bolt/Boltpay/Helper/ApiTraitTest.php
++++ b/tests/unit/testsuite/Bolt/Boltpay/Helper/ApiTraitTest.php
+@@ -217,7 +217,7 @@
+                 'data' => null,
+                 'object' => 'merchant',
+                 'type' => 'transactions',
+-                'url' => 'https://api.bolt.com/v1/merchant/sign',
++                'url' => 'https://api.boltapp.com/v1/merchant/sign',
+                 'params' => '',
+                 'key' => 'api_key'
+             ),
+@@ -226,7 +226,7 @@
+                 'data' => null,
+                 'object' => 'merchant',
+                 'type' => 'transactions',
+-                'url' => 'https://api.bolt.com/v1/merchant/orders',
++                'url' => 'https://api.boltapp.com/v1/merchant/orders',
+                 'params' => '',
+                 'key' => 'api_key'
+             ),
+@@ -235,7 +235,7 @@
+                 'data' => null,
+                 'object' => 'merchant',
+                 'type' => 'transactions',
+-                'url' => 'https://api.bolt.com/v1/merchant',
++                'url' => 'https://api.boltapp.com/v1/merchant',
+                 'params' => '',
+                 'key' => 'api_key'
+             ),
+@@ -244,7 +244,7 @@
+                 'data' => null,
+                 'object' => 'merchant',
+                 'type' => '',
+-                'url' => 'https://api.bolt.com/v1/merchant',
++                'url' => 'https://api.boltapp.com/v1/merchant',
+                 'params' => '',
+                 'key' => 'publishable_key_multipage'
+             ),
+@@ -253,7 +253,7 @@
+                 'data' => array('data'),
+                 'object' => 'testobj',
+                 'type' => 'transactions',
+-                'url' => 'https://api.bolt.com/v1/testobj/transactions/testcmd',
++                'url' => 'https://api.boltapp.com/v1/testobj/transactions/testcmd',
+                 'params' => json_encode(array('data')),
+                 'key' => 'api_key'
+             )
+diff --git a/tests/unit/testsuite/Bolt/Boltpay/Helper/GraphQLTraitTest.php b/tests/unit/testsuite/Bolt/Boltpay/Helper/GraphQLTraitTest.php
+--- a/tests/unit/testsuite/Bolt/Boltpay/Helper/GraphQLTraitTest.php
++++ b/tests/unit/testsuite/Bolt/Boltpay/Helper/GraphQLTraitTest.php
+@@ -33,7 +33,7 @@
+             ->setMethods(array('getApiClient', 'getContextInfo', 'addMetaData', 'getBoltPluginVersion', 'getApiUrl', 'notifyException', 'logException'))
+             ->getMockForTrait();
+         $this->currentMock->method('getBoltPluginVersion')->willReturn('2.3.0');
+-        $this->currentMock->method('getApiUrl')->willReturn('https://api.bolt.com/');
++        $this->currentMock->method('getApiUrl')->willReturn('https://api.boltapp.com/');
+ 
+ 
+         $this->guzzleClientMock = $this->getMockBuilder('Boltpay_Guzzle_ApiClient')
+@@ -89,7 +89,7 @@
+         );
+         
+         unset($headerInfo['X-Nonce']);
+-        $apiURL = 'https://api.bolt.com/v2/merchant/api';
++        $apiURL = 'https://api.boltapp.com/v2/merchant/api';
+         
+         $this->guzzleClientMock->expects($this->once())
+             ->method('post')
+@@ -119,7 +119,7 @@
+     public function getFeatureSwitches_withoutException_returnsResponseWithValues()
+     {
+         $this->guzzleClientMock->expects($this->once())->method('post')->with(
+-            'https://api.bolt.com/v2/merchant/api',
++            'https://api.boltapp.com/v2/merchant/api',
+             $this->callback(function ($jsonData) {
+                 $testJsonData = '{"operationName":"GetFeatureSwitches","variables":{"type":"MAGENTO_1","version":"2.3.0"},"query":"query GetFeatureSwitches($type: PluginType!, $version: String!) {\n  plugin(type: $type, version: $version) {\n    features {\n      name\n      value\n      defaultValue\n      rolloutPercentage\n    }\n  }\n}"}';
+                 return str_replace('\r\n', '\n', $jsonData) == $testJsonData;
