@@ -1,0 +1,198 @@
+Subject: [PATCH] Point functional Bolt URLs at boltapp.com (plugin 2.9.0)
+
+Port of the bolt-magento2 domain migration (BoltApp/bolt-magento2 #1973) onto
+the Magento 1 plugin's 2.9.0 release tag.
+
+Rewrites the Bolt service hosts the plugin calls at runtime -- api, connect and
+merchant, production and sandbox -- from bolt.com to boltapp.com. All of them
+live in Helper/UrlTrait.php; Block/Checkout/Boltpay.php builds connect.js and
+track.js from those constants, and the API, GraphQL and configuration helpers
+go through getApiUrl() / getBoltMerchantUrl(). The admin help text in
+etc/system.xml that names merchant.bolt.com/settings moves with them.
+
+Left alone on purpose: the www.bolt.com copyright headers, the dev@bolt.com
+contact address, the na@bolt.com Apple Pay prefill sentinel (a value match, not
+a host), docs.bolt.com and support.bolt.com help links (docs.boltapp.com does
+not resolve), and CHANGELOG.md.
+
+The unit tests that assert the old hosts are updated in the same patch, so the
+suite stays green.
+
+Apply from the plugin root (the directory that holds app/ and js/):
+
+    git apply bolt-magento1-2.9.0-boltapp-domains.patch
+    # or, without git:
+    patch -p1 < bolt-magento1-2.9.0-boltapp-domains.patch
+
+---
+diff --git a/app/code/community/Bolt/Boltpay/Helper/UrlTrait.php b/app/code/community/Bolt/Boltpay/Helper/UrlTrait.php
+--- a/app/code/community/Bolt/Boltpay/Helper/UrlTrait.php
++++ b/app/code/community/Bolt/Boltpay/Helper/UrlTrait.php
+@@ -25,32 +25,32 @@
+     /**
+      * @var string The Bolt sandbox url for the api
+      */
+-    protected $apiUrlTest = 'https://api-sandbox.bolt.com/';
++    protected $apiUrlTest = 'https://api-sandbox.boltapp.com/';
+ 
+     /**
+      * @var string The Bolt production url for the api
+      */
+-    protected $apiUrlProd = 'https://api.bolt.com/';
++    protected $apiUrlProd = 'https://api.boltapp.com/';
+ 
+     /**
+      * @var string The Bolt sandbox url for the javascript
+      */
+-    protected $jsUrlTest = 'https://connect-sandbox.bolt.com';
++    protected $jsUrlTest = 'https://connect-sandbox.boltapp.com';
+ 
+     /**
+      * @var string The Bolt production url for the javascript
+      */
+-    protected $jsUrlProd = 'https://connect.bolt.com';
++    protected $jsUrlProd = 'https://connect.boltapp.com';
+ 
+     /**
+      * @var string The Bolt sandbox url for the merchant
+      */
+-    protected $merchantUrlSandbox = 'https://merchant-sandbox.bolt.com';
++    protected $merchantUrlSandbox = 'https://merchant-sandbox.boltapp.com';
+ 
+     /**
+      * @var string The Bolt production url for the merchant
+      */
+-    protected $merchantUrlProd = 'https://merchant.bolt.com';
++    protected $merchantUrlProd = 'https://merchant.boltapp.com';
+ 
+ 
+     /**
+diff --git a/app/code/community/Bolt/Boltpay/etc/system.xml b/app/code/community/Bolt/Boltpay/etc/system.xml
+--- a/app/code/community/Bolt/Boltpay/etc/system.xml
++++ b/app/code/community/Bolt/Boltpay/etc/system.xml
+@@ -49,7 +49,7 @@
+             </test>
+             <keys type="group" translate="label comment">
+               <label>Keys</label>
+-              <comment><![CDATA[<div style="margin-left:-5px;margin-right:-5px;font-weight:bold;">Keys and URL Configurations can be found at <a href="merchant.bolt.com/settings">merchant.bolt.com/settings</a> or <a href="merchant-sandbox.bolt.com/settings">merchant-sandbox.bolt.com/settings</a>.</div>]]></comment>
++              <comment><![CDATA[<div style="margin-left:-5px;margin-right:-5px;font-weight:bold;">Keys and URL Configurations can be found at <a href="merchant.boltapp.com/settings">merchant.boltapp.com/settings</a> or <a href="merchant-sandbox.boltapp.com/settings">merchant-sandbox.boltapp.com/settings</a>.</div>]]></comment>
+               <sort_order>30</sort_order>
+               <show_in_default>1</show_in_default>
+               <show_in_website>1</show_in_website>
+diff --git a/tests/unit/testsuite/Bolt/Boltpay/Block/Checkout/BoltpayTest.php b/tests/unit/testsuite/Bolt/Boltpay/Block/Checkout/BoltpayTest.php
+--- a/tests/unit/testsuite/Bolt/Boltpay/Block/Checkout/BoltpayTest.php
++++ b/tests/unit/testsuite/Bolt/Boltpay/Block/Checkout/BoltpayTest.php
+@@ -125,7 +125,7 @@
+     {
+         TestHelper::stubConfigValue('payment/boltpay/test', 1);
+         $currentObject = new BoltpayCheckoutBlock();
+-        $this->assertAttributeEquals('https://connect-sandbox.bolt.com/connect.js', '_jsUrl', $currentObject);
++        $this->assertAttributeEquals('https://connect-sandbox.boltapp.com/connect.js', '_jsUrl', $currentObject);
+     }
+ 
+     /**
+@@ -140,7 +140,7 @@
+     {
+         TestHelper::stubConfigValue('payment/boltpay/test', 0);
+         $currentObject = new BoltpayCheckoutBlock();
+-        $this->assertAttributeEquals('https://connect.bolt.com/connect.js', '_jsUrl', $currentObject);
++        $this->assertAttributeEquals('https://connect.boltapp.com/connect.js', '_jsUrl', $currentObject);
+     }
+ 
+     /**
+@@ -155,7 +155,7 @@
+     {
+         TestHelper::stubConfigValue('payment/boltpay/test', 1);
+         $this->assertEquals(
+-            'https://connect-sandbox.bolt.com/track.js',
++            'https://connect-sandbox.boltapp.com/track.js',
+             $this->currentMock->getTrackJsUrl()
+         );
+     }
+@@ -172,7 +172,7 @@
+     {
+         TestHelper::stubConfigValue('payment/boltpay/test', 0);
+         $this->assertEquals(
+-            'https://connect.bolt.com/track.js',
++            'https://connect.boltapp.com/track.js',
+             $this->currentMock->getTrackJsUrl()
+         );
+     }
+diff --git a/tests/unit/testsuite/Bolt/Boltpay/Helper/ApiTraitTest.php b/tests/unit/testsuite/Bolt/Boltpay/Helper/ApiTraitTest.php
+--- a/tests/unit/testsuite/Bolt/Boltpay/Helper/ApiTraitTest.php
++++ b/tests/unit/testsuite/Bolt/Boltpay/Helper/ApiTraitTest.php
+@@ -217,7 +217,7 @@
+                 'data' => null,
+                 'object' => 'merchant',
+                 'type' => 'transactions',
+-                'url' => 'https://api.bolt.com/v1/merchant/sign',
++                'url' => 'https://api.boltapp.com/v1/merchant/sign',
+                 'params' => '',
+                 'key' => 'api_key'
+             ),
+@@ -226,7 +226,7 @@
+                 'data' => null,
+                 'object' => 'merchant',
+                 'type' => 'transactions',
+-                'url' => 'https://api.bolt.com/v1/merchant/orders',
++                'url' => 'https://api.boltapp.com/v1/merchant/orders',
+                 'params' => '',
+                 'key' => 'api_key'
+             ),
+@@ -235,7 +235,7 @@
+                 'data' => null,
+                 'object' => 'merchant',
+                 'type' => 'transactions',
+-                'url' => 'https://api.bolt.com/v1/merchant',
++                'url' => 'https://api.boltapp.com/v1/merchant',
+                 'params' => '',
+                 'key' => 'api_key'
+             ),
+@@ -244,7 +244,7 @@
+                 'data' => null,
+                 'object' => 'merchant',
+                 'type' => '',
+-                'url' => 'https://api.bolt.com/v1/merchant',
++                'url' => 'https://api.boltapp.com/v1/merchant',
+                 'params' => '',
+                 'key' => 'publishable_key_multipage'
+             ),
+@@ -253,7 +253,7 @@
+                 'data' => array('data'),
+                 'object' => 'testobj',
+                 'type' => 'transactions',
+-                'url' => 'https://api.bolt.com/v1/testobj/transactions/testcmd',
++                'url' => 'https://api.boltapp.com/v1/testobj/transactions/testcmd',
+                 'params' => json_encode(array('data')),
+                 'key' => 'api_key'
+             )
+diff --git a/tests/unit/testsuite/Bolt/Boltpay/Helper/GraphQLTraitTest.php b/tests/unit/testsuite/Bolt/Boltpay/Helper/GraphQLTraitTest.php
+--- a/tests/unit/testsuite/Bolt/Boltpay/Helper/GraphQLTraitTest.php
++++ b/tests/unit/testsuite/Bolt/Boltpay/Helper/GraphQLTraitTest.php
+@@ -33,7 +33,7 @@
+             ->setMethods(array('getApiClient', 'getContextInfo', 'addMetaData', 'getBoltPluginVersion', 'getApiUrl', 'notifyException', 'logException'))
+             ->getMockForTrait();
+         $this->currentMock->method('getBoltPluginVersion')->willReturn('2.3.0');
+-        $this->currentMock->method('getApiUrl')->willReturn('https://api.bolt.com/');
++        $this->currentMock->method('getApiUrl')->willReturn('https://api.boltapp.com/');
+ 
+ 
+         $this->guzzleClientMock = $this->getMockBuilder('Boltpay_Guzzle_ApiClient')
+@@ -89,7 +89,7 @@
+         );
+         
+         unset($headerInfo['X-Nonce']);
+-        $apiURL = 'https://api.bolt.com/v2/merchant/api';
++        $apiURL = 'https://api.boltapp.com/v2/merchant/api';
+         
+         $this->guzzleClientMock->expects($this->once())
+             ->method('post')
+@@ -119,7 +119,7 @@
+     public function getFeatureSwitches_withoutException_returnsResponseWithValues()
+     {
+         $this->guzzleClientMock->expects($this->once())->method('post')->with(
+-            'https://api.bolt.com/v2/merchant/api',
++            'https://api.boltapp.com/v2/merchant/api',
+             $this->callback(function ($jsonData) {
+                 $testJsonData = '{"operationName":"GetFeatureSwitches","variables":{"type":"MAGENTO_1","version":"2.3.0"},"query":"query GetFeatureSwitches($type: PluginType!, $version: String!) {\n  plugin(type: $type, version: $version) {\n    features {\n      name\n      value\n      defaultValue\n      rolloutPercentage\n    }\n  }\n}"}';
+                 return str_replace('\r\n', '\n', $jsonData) == $testJsonData;
