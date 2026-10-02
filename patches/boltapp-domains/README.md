@@ -65,8 +65,8 @@ order should complete normally.
 
 ## What the patch changes
 
-The Bolt hosts the plugin calls at runtime move to `boltapp.com`: `api`,
-`api-sandbox`, `connect`, `connect-sandbox`, `merchant` and `merchant-sandbox`.
+**Runtime hosts.** The Bolt hosts the plugin calls at runtime move to `boltapp.com`:
+`api`, `api-sandbox`, `connect`, `connect-sandbox`, `merchant` and `merchant-sandbox`.
 All of them are constants in `Helper/UrlTrait.php`; every request and script URL
 the plugin builds goes through that helper. The admin help text that links to
 `merchant.bolt.com/settings` moves with them.
@@ -75,13 +75,27 @@ On **2.10.0** the validator behind the custom URL overrides in sandbox mode
 (`validateCustomUrl`) is widened to accept `boltapp.com`. Without that, a custom
 Bolt URL set to a `boltapp.com` host is silently rejected and replaced with the
 default. `bolt.com` and `bolt.me` hosts stay accepted. 2.9.0 has no such validator,
-which is the only difference between the two patches.
+which is the only functional difference between the two patches.
+
+**Apple Pay placeholder.** The checkout block detects Apple Pay's masked address by
+comparing the prefilled email against `na@bolt.com`. Bolt's checkout still sends
+that value today, so the check now accepts both `na@bolt.com` and `na@boltapp.com`.
+
+**Help links.** `docs.bolt.com` and `support.bolt.com` no longer resolve. The
+installation and operations links in the README and the admin popups now point at
+[help.boltapp.com](https://help.boltapp.com/), and the production-readiness link at
+[the production-readiness guides](https://help.boltapp.com/developers/production-readiness-guides/).
+There is no Magento 1 specific page on the new help centre.
+
+**Metadata.** Every file's copyright header reads `https://www.boltapp.com`, and
+`composer.json` lists `https://www.boltapp.com` and `dev@boltapp.com`. These are the
+bulk of the patch by file count and change nothing at runtime.
 
 Unit tests are updated alongside the code, so applying a patch to a checkout of the
 repository does not leave a failing build.
 
 ### Deliberately unchanged
 
-Copyright headers, the `dev@bolt.com` contact address, the `na@bolt.com` placeholder
-the Apple Pay flow compares against (a value, not a host), `CHANGELOG.md`, and the
-`docs.bolt.com` and `support.bolt.com` help links in the admin.
+Dummy test fixtures such as `test@bolt.com` and `https://bolt.com` image URLs, the
+`*.dev.bolt.me` and `*-staging.bolt.com` custom-URL test cases, and `CHANGELOG.md`,
+which has no `bolt.com` reference.
